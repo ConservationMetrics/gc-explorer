@@ -64,7 +64,7 @@ const featureWithPreparedCoordinates = (feature) => ({
     id="galleryContainer"
     class="gallery p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
   >
-    <div class="sticky top-10 right-10 z-10" v-if="filterColumn">
+    <div v-if="filterColumn" class="sticky top-10 right-10 z-10">
       <DataFilter
         :data="galleryData"
         :filter-column="filterColumn"
@@ -73,10 +73,10 @@ const featureWithPreparedCoordinates = (feature) => ({
     </div>
     <DataFeature
       v-for="(feature, index) in paginatedData"
+      :key="index"
       :allowed-file-extensions="allowedFileExtensions"
       :feature="featureWithPreparedCoordinates(feature)"
       :file-paths="getFilePathsWithExtension(feature, allowedFileExtensions)"
-      :key="index"
       :media-base-path="mediaBasePath"
     />
   </div>

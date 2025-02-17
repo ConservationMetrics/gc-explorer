@@ -1,5 +1,5 @@
-import pg from "pg";
-import sqlite3 from "sqlite3";
+import type pg from "pg";
+import type sqlite3 from "sqlite3";
 
 export type DatabaseConnection = pg.Client | sqlite3.Database | null;
 

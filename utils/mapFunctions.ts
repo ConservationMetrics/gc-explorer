@@ -1,4 +1,4 @@
-import mapboxgl from "mapbox-gl";
+import type mapboxgl from "mapbox-gl";
 
 interface Basemap {
   id: string;

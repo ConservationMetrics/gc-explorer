@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-const { t } = useI18n();
 
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -22,6 +21,7 @@ import {
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
 import MapLegend from "@/components/shared/MapLegend.vue";
+const { t } = useI18n();
 
 const props = defineProps({
   alertsData: Object,
@@ -761,7 +761,7 @@ const handleDateRangeChanged = (newRange) => {
     const recentAlertsLayers = map.value
       .getStyle()
       .layers.filter((layer) => layer.id.startsWith("most-recent-alerts"));
-    let recentAlertsFeatures = [];
+    const recentAlertsFeatures = [];
     recentAlertsLayers.forEach((layer) => {
       recentAlertsFeatures.push(
         ...map.value.querySourceFeatures(layer.source, {
@@ -832,7 +832,7 @@ const selectedFeatureGeojson = ref(null);
 const selectedFeatureId = ref(null);
 const selectedFeatureSource = ref(null);
 const selectFeature = (feature, layerId) => {
-  let featureObject = feature.properties;
+  const featureObject = feature.properties;
 
   const featureGeojson = {
     type: feature.type,
@@ -971,8 +971,8 @@ onBeforeUnmount(() => {
     <div id="map"></div>
     <button
       v-if="!showSidebar"
-      @click="resetToInitialState"
       class="reset-button bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
+      @click="resetToInitialState"
     >
       {{ $t("resetDashboard") }}
     </button>
@@ -1006,7 +1006,7 @@ onBeforeUnmount(() => {
       :has-ruler-control="hasRulerControl"
       :mapbox-style="mapboxStyle"
       :planet-api-key="planetApiKey"
-      @basemapSelected="handleBasemapChange"
+      @basemap-selected="handleBasemapChange"
     />
   </div>
 </template>

@@ -92,46 +92,46 @@ const emitBasemapChange = () => {
         <h3 class="font-semibold mb-2">{{ $t("selectBasemap") }}</h3>
         <label>
           <input
+            v-model="selectedBasemap"
             type="radio"
             :value="{ id: 'custom', style: mapboxStyle }"
             name="basemap"
-            v-model="selectedBasemap"
             @change="emitBasemapChange"
           />
           {{ $t("yourMapboxStyleDefault") }}
         </label>
         <label>
           <input
+            v-model="selectedBasemap"
             type="radio"
             :value="{
               id: 'satellite-streets',
               style: 'mapbox://styles/mapbox/satellite-streets-v12',
             }"
             name="basemap"
-            v-model="selectedBasemap"
             @change="emitBasemapChange"
           />
           {{ $t("mapboxSatelliteUpTo2019") }}
         </label>
         <label>
           <input
+            v-model="selectedBasemap"
             type="radio"
             :value="{
               id: 'streets',
               style: 'mapbox://styles/mapbox/streets-v12',
             }"
             name="basemap"
-            v-model="selectedBasemap"
             @change="emitBasemapChange"
           />
           {{ $t("mapboxStreets") }}
         </label>
         <label v-if="planetApiKey">
           <input
+            v-model="selectedBasemap"
             type="radio"
             :value="{ id: 'planet', monthYear: monthYear }"
             name="basemap"
-            v-model="selectedBasemap"
             @change="emitBasemapChange"
           />
           {{ $t("planetMonthlyVisualBasemap") }}
@@ -146,7 +146,7 @@ const emitBasemapChange = () => {
             :disabled-date="setPlanetDateRange"
             :clearable="false"
             @selected="updatePlanetBasemap"
-          ></Datepicker>
+          />
         </label>
       </div>
     </div>

@@ -48,12 +48,12 @@ watch(
       class="legend-item"
     >
       <input
-        class="mr-2"
-        type="checkbox"
         :id="item.id"
         v-model="item.visible"
-        @change="toggleLayerVisibility(item)"
+        class="mr-2"
+        type="checkbox"
         :checked="item.visible"
+        @change="toggleLayerVisibility(item)"
       />
       <label :for="item.id">
         <div

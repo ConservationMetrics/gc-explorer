@@ -1,9 +1,9 @@
 <script setup>
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
-const { t } = useI18n();
 
 import VueSelect from "vue3-select-component";
+const { t } = useI18n();
 
 const props = defineProps({
   data: Array,
@@ -61,19 +61,19 @@ const emitFilterSelection = () => {
       {{ $t("filterDataByColumn") }}: <strong>{{ filterColumn }}</strong>
     </h4>
     <VueSelect
+      :key="getUniqueFilterValues"
+      v-model="selectedFilterValue"
       :is-multi="true"
       :options="getUniqueFilterValues"
       @option-selected="emitFilterSelection()"
       @option-deselected="emitFilterSelection()"
-      v-model="selectedFilterValue"
-      :key="getUniqueFilterValues"
     >
       <!-- This is what shows in the listbox when selected -->
       <template #tag="{ option, removeOption }">
         <div class="option-box">
           <span
-            class="colored-dot"
             v-if="showColoredDot"
+            class="colored-dot"
             :style="{ backgroundColor: option.color }"
           ></span>
           <span class="selected-label">
@@ -85,8 +85,8 @@ const emitFilterSelection = () => {
       <!-- These are the options in the dropdown -->
       <template #option="{ option }">
         <span
-          class="colored-dot dot-dropdown"
           v-if="showColoredDot"
+          class="colored-dot dot-dropdown"
           :style="{ backgroundColor: option.color }"
         ></span>
         {{ option.label }}

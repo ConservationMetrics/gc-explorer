@@ -118,7 +118,7 @@ const handleSubmit = () => {
     <div v-if="!isMinimized" class="card-body">
       <form @submit.prevent="handleSubmit">
         <ConfigViews
-          :tableName="tableName"
+          :table-name="tableName"
           :config="localConfig"
           :views="views"
           :keys="viewsKeys"
@@ -126,43 +126,43 @@ const handleSubmit = () => {
         />
         <ConfigMap
           v-if="shouldShowConfigMap"
-          :tableName="tableName"
+          :table-name="tableName"
           :views="views"
           :config="localConfig"
           :keys="mapConfigKeys"
-          @updateConfig="handleConfigUpdate"
+          @update-config="handleConfigUpdate"
         />
         <ConfigMedia
           v-if="shouldShowConfigMedia"
-          :tableName="tableName"
+          :table-name="tableName"
           :views="views"
           :config="localConfig"
           :keys="mediaKeys"
-          @updateConfig="handleConfigUpdate"
+          @update-config="handleConfigUpdate"
         />
         <ConfigAlerts
           v-if="shouldShowConfigAlerts"
-          :tableName="tableName"
+          :table-name="tableName"
           :views="views"
           :config="localConfig"
           :keys="alertKeys"
-          @updateConfig="handleConfigUpdate"
+          @update-config="handleConfigUpdate"
         />
         <ConfigFilters
           v-if="shouldShowConfigFilters"
-          :tableName="tableName"
+          :table-name="tableName"
           :views="views"
           :config="localConfig"
           :keys="filterKeys"
-          @updateConfig="handleConfigUpdate"
+          @update-config="handleConfigUpdate"
         />
         <ConfigOther
           v-if="shouldShowConfigOther"
-          :tableName="tableName"
+          :table-name="tableName"
           :views="views"
           :config="localConfig"
           :keys="otherKeys"
-          @updateConfig="handleConfigUpdate"
+          @update-config="handleConfigUpdate"
         />
         <button
           type="submit"

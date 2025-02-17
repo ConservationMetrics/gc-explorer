@@ -59,7 +59,7 @@ watch(
 
 <template>
   <div v-if="showSidebar" class="sidebar" @scroll="handleScroll">
-    <div class="scroll-indicator" v-if="!scrolled">&#x2193;</div>
+    <div v-if="!scrolled" class="scroll-indicator">&#x2193;</div>
     <button class="close-btn" @click="$emit('close')">X</button>
     <AlertsIntroPanel
       v-if="showIntroPanel"

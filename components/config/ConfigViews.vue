@@ -38,27 +38,27 @@ function updateViews() {
         <div class="views-checkboxes">
           <label>
             <input
+              v-model="localViews"
               type="checkbox"
               value="map"
-              v-model="localViews"
               @change="updateViews"
             />
             {{ $t("map") }}
           </label>
           <label>
             <input
+              v-model="localViews"
               type="checkbox"
               value="gallery"
-              v-model="localViews"
               @change="updateViews"
             />
             {{ $t("gallery") }}
           </label>
           <label>
             <input
+              v-model="localViews"
               type="checkbox"
               value="alerts"
-              v-model="localViews"
               @change="updateViews"
             />
             {{ $t("alerts") }}

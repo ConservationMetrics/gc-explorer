@@ -1,14 +1,14 @@
-import {
-  type AlertsMetadata,
-  type AlertsPerMonth,
-  type AlertsStatistics,
-  type DataEntry,
-  type Coordinate,
-  type LineString,
-  type Polygon,
-  type MultiPolygon,
-  type GeoJSON,
-  type GeoJSONFeature,
+import type {
+  AlertsMetadata,
+  AlertsPerMonth,
+  AlertsStatistics,
+  DataEntry,
+  Coordinate,
+  LineString,
+  Polygon,
+  MultiPolygon,
+  GeoJSON,
+  GeoJSONFeature,
 } from "../types";
 import {
   calculateCentroid,

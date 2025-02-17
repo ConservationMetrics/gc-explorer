@@ -9,7 +9,6 @@ export const getConfig = () => {
     dbSsl,
     isSQLite,
     sqliteDbPath,
-    // eslint-disable-next-line no-undef
   } = useRuntimeConfig() as unknown as {
     configDatabase: string;
     database: string;

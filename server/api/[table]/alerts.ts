@@ -1,4 +1,5 @@
-import { defineEventHandler, sendError, H3Event } from "h3";
+import type { H3Event } from "h3";
+import { defineEventHandler, sendError } from "h3";
 import { getDatabaseConnection } from "@/server/database/dbConnection";
 import { fetchConfig, fetchData } from "../../database/dbOperations";
 import {
@@ -12,10 +13,10 @@ import {
   filterUnwantedKeys,
   filterGeoData,
 } from "../../dataProcessing/filterData";
-import {
-  type AllowedFileExtensions,
-  type DataEntry,
-  type AlertsMetadata,
+import type {
+  AllowedFileExtensions,
+  DataEntry,
+  AlertsMetadata,
 } from "../../types";
 
 export default defineEventHandler(async (event: H3Event) => {
@@ -24,7 +25,6 @@ export default defineEventHandler(async (event: H3Event) => {
   const {
     public: { allowedFileExtensions },
     isSqlite,
-    // eslint-disable-next-line no-undef
   } = useRuntimeConfig() as unknown as {
     public: { allowedFileExtensions: AllowedFileExtensions };
     isSqlite: boolean;

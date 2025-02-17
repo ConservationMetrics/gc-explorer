@@ -6,7 +6,7 @@ This tool, designed for GuardianConnector and built using [Nuxt](https://nuxt.co
 
 To get started, copy `.env.example` to `.env` and add your database and table information, authentication, and a Mapbox access token.
 
-**Database:** Provide your database information in the relevant variables. To use SQLite instead of Postgres, set `SQLITE` to `YES` and provide a path value for `SQLITE_DB_PATH` (you can ignore `DATABASE` and the `DB_` ones).
+**Database:** Provide your database information in the relevant variables.
 
 **Authentication strategy:** GuardianConnector Explorer supports three different authentication strategies: auth0, password (from an environmental var) with JWT key, or none. Set your authentication strategy in `NUXT_PUBLIC_AUTH_STRATEGY`.
 

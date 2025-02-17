@@ -111,7 +111,7 @@ const minimizedCards = ref(initializeMinimizedCards());
 
 const toggleMinimize = ({ tableName }) => {
   const isCurrentlyMinimized = minimizedCards.value[tableName];
-  for (let key in minimizedCards.value) {
+  for (const key in minimizedCards.value) {
     minimizedCards.value[key] = true;
   }
   minimizedCards.value[tableName] = !isCurrentlyMinimized;
@@ -133,17 +133,17 @@ watch(tableNameToAdd, (newVal) => {
       <ConfigCard
         v-for="(config, tableName) in sortedViewsConfig"
         :key="tableName"
-        :tableName="tableName"
+        :table-name="tableName"
         :config="config"
-        :isMinimized="minimizedCards[tableName]"
-        @toggleMinimize="toggleMinimize"
-        @submitConfig="handleSubmit"
-        @removeTableFromConfig="handleRemoveTableFromConfig"
+        :is-minimized="minimizedCards[tableName]"
+        @toggle-minimize="toggleMinimize"
+        @submit-config="handleSubmit"
+        @remove-table-from-config="handleRemoveTableFromConfig"
       />
     </div>
     <button
-      @click="handleAddNewTable"
       class="text-white font-bold bg-blue-500 hover:bg-blue-700 py-2 px-4 rounded transition-colors duration-200 mb-6"
+      @click="handleAddNewTable"
     >
       + {{ $t("addNewTable") }}
     </button>
@@ -162,7 +162,6 @@ watch(tableNameToAdd, (newVal) => {
       </div>
       <div v-if="showModalButtons" class="mt-4">
         <button
-          @click="handleConfirmButton"
           :disabled="confirmButtonDisabled"
           :class="[
             'submit-button',
@@ -175,12 +174,13 @@ watch(tableNameToAdd, (newVal) => {
             },
           ]"
           class="text-white font-bold mb-2 mr-2 py-2 px-4 rounded transition-colors duration-200"
+          @click="handleConfirmButton"
         >
           {{ $t("confirm") }}
         </button>
         <button
-          @click="handleCancelButton"
           class="text-white font-bold bg-blue-500 hover:bg-blue-700 mb-2 py-2 px-4 rounded transition-colors duration-200"
+          @click="handleCancelButton"
         >
           {{ $t("cancel") }}
         </button>

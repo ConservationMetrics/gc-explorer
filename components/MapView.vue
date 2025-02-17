@@ -207,7 +207,7 @@ const addDataToMap = () => {
       "click",
       layerId,
       (e) => {
-        let featureObject = JSON.parse(e.features[0].properties.feature);
+        const featureObject = JSON.parse(e.features[0].properties.feature);
         delete featureObject["filter-color"];
 
         // Rewrite coordinates string from [long, lat] to lat, long, removing brackets
@@ -307,7 +307,7 @@ onBeforeUnmount(() => {
     v-if="showBasemapSelector"
     :mapbox-style="mapboxStyle"
     :planet-api-key="planetApiKey"
-    @basemapSelected="handleBasemapChange"
+    @basemap-selected="handleBasemapChange"
   />
 </template>
 

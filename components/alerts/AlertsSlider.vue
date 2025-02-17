@@ -35,15 +35,15 @@ watch(selectedRange, (newRange) => {
     </h3>
     <div class="mb-6">
       <VueSlider
-        class="date-slider"
         v-model="selectedRange"
+        class="date-slider"
         :contained="true"
         :data="dateOptions"
         :height="8"
         :hide-label="true"
         :marks="true"
         :tooltip="'always'"
-        :tooltipPlacement="'bottom'"
+        :tooltip-placement="'bottom'"
         @drag-start="userInteracted = true"
       />
     </div>

@@ -44,13 +44,13 @@ const setMediaBasePath = () => {
     <div v-if="setMediaBasePath()" :class="{ 'flex-container': isAlert }">
       <MediaFile
         v-for="filePath in filePaths"
+        :key="filePath"
         :allowed-file-extensions="allowedFileExtensions"
         :file-path="filePath"
-        :key="filePath"
         :media-base-path="setMediaBasePath()"
       />
     </div>
-    <div class="mt-4" v-for="(value, key) in sortedFeature" :key="key">
+    <div v-for="(value, key) in sortedFeature" :key="key" class="mt-4">
       <div
         v-if="
           value !== null &&

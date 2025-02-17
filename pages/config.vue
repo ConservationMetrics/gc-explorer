@@ -30,7 +30,6 @@ if (data.value && !error.value) {
 // POST request to submit the updated config
 const submitConfig = async ({ config, tableName }) => {
   try {
-    // eslint-disable-next-line no-undef
     await $fetch(`/api/config/update_config/${tableName}`, {
       method: "POST",
       headers,
@@ -44,7 +43,6 @@ const submitConfig = async ({ config, tableName }) => {
 // POST request to remove a table from the config
 const removeTableFromConfig = async (tableName) => {
   try {
-    // eslint-disable-next-line no-undef
     await $fetch(`/api/config/delete_table/${tableName}`, {
       method: "POST",
       headers,
@@ -57,7 +55,6 @@ const removeTableFromConfig = async (tableName) => {
 // POST request to add a table to the config
 const addTableToConfig = async (tableName) => {
   try {
-    // eslint-disable-next-line no-undef
     await $fetch(`/api/config/new_table/${tableName}`, {
       method: "POST",
       headers,
@@ -80,9 +77,9 @@ useHead({
         v-if="dataFetched"
         :views-config="viewsConfig"
         :table-names="tableNames"
-        @submitConfig="submitConfig"
-        @removeTableFromConfig="removeTableFromConfig"
-        @addTableToConfig="addTableToConfig"
+        @submit-config="submitConfig"
+        @remove-table-from-config="removeTableFromConfig"
+        @add-table-to-config="addTableToConfig"
     /></ClientOnly>
   </div>
 </template>

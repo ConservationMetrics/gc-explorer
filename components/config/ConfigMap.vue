@@ -132,9 +132,9 @@ watch(
         <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
         <label :for="`${tableName}-${key}`" class="checkbox-label">
           <input
-            type="checkbox"
             :id="`${tableName}-${key}`"
             v-model="localConfig[key]"
+            type="checkbox"
           />
           {{ $t("enable") }}
         </label>

@@ -35,21 +35,21 @@ const props = defineProps({
           >.
         </p>
         <div
-          class="mb-2"
           v-if="
             props.alertsStatistics.typeOfAlerts &&
             props.alertsStatistics.typeOfAlerts.length
           "
+          class="mb-2"
         >
           <span class="font-bold">{{ $t("typeOfAlerts") }}:</span>
           {{ props.alertsStatistics.typeOfAlerts.join(", ") }}
         </div>
         <div
-          class="mb-2"
           v-if="
             props.alertsStatistics.dataProviders &&
             props.alertsStatistics.dataProviders.length
           "
+          class="mb-2"
         >
           <span class="font-bold">{{ $t("dataProviders") }}:</span>
           {{ props.alertsStatistics.dataProviders.join(", ") }}

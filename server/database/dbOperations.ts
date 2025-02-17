@@ -1,11 +1,11 @@
-import { Client } from "pg";
-import { Database as SqliteDatabase } from "sqlite3";
-import {
-  type Views,
-  type DatabaseConnection,
-  type ConfigRow,
-  type DataEntry,
-  type ColumnEntry,
+import type { Client } from "pg";
+import type { Database as SqliteDatabase } from "sqlite3";
+import type {
+  Views,
+  DatabaseConnection,
+  ConfigRow,
+  DataEntry,
+  ColumnEntry,
 } from "../types";
 
 const checkTableExists = (

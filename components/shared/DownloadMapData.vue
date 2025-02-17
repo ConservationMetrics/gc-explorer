@@ -12,7 +12,7 @@ const downloadAlertCSV = () => {
 
   // Flatten the object
   const { geometry, properties } = props.geojson;
-  let flattened = { ...properties }; // Start with properties
+  const flattened = { ...properties }; // Start with properties
 
   // Ensure that all coordinate properties render well in CSV
   flattened["geographicCentroid"] = `[${properties["geographicCentroid"]}]`;
@@ -161,7 +161,7 @@ const downloadCSVSelection = () => {
     const { geometry, properties } = feature;
 
     // Flatten the object
-    let flattened = { ...properties };
+    const flattened = { ...properties };
     delete flattened["image_url"];
     delete flattened["image_caption"];
     delete flattened["preview_link"];

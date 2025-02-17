@@ -1,14 +1,12 @@
-import { defineEventHandler, sendError, H3Event } from "h3";
+import type { H3Event } from "h3";
+import { defineEventHandler, sendError } from "h3";
 import { getDatabaseConnection } from "@/server/database/dbConnection";
 import { fetchData } from "../../database/dbOperations";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
 
-  const {
-    isSqlite,
-    // eslint-disable-next-line no-undef
-  } = useRuntimeConfig() as unknown as {
+  const { isSqlite } = useRuntimeConfig() as unknown as {
     isSqlite: boolean;
   };
 
