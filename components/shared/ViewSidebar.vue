@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
@@ -38,6 +38,8 @@ const filteredFeature = computed(() => {
   return rest;
 });
 
+const emit = defineEmits(["close", "date-range-changed"]);
+
 // Watchers
 watch(
   () => props.feature,
@@ -60,7 +62,7 @@ watch(
 <template>
   <div v-if="showSidebar" class="sidebar" @scroll="handleScroll">
     <div v-if="!scrolled" class="scroll-indicator">&#x2193;</div>
-    <button class="close-btn" @click="$emit('close')">X</button>
+    <button class="close-btn" @click="emit('close')">X</button>
     <AlertsIntroPanel
       v-if="showIntroPanel"
       :calculate-hectares="calculateHectares"
@@ -69,7 +71,7 @@ watch(
       :logo-url="logoUrl"
       :show-slider="showSlider"
       :alerts-statistics="alertsStatistics"
-      @date-range-changed="$emit('date-range-changed', $event)"
+      @date-range-changed="emit('date-range-changed', $event)"
     />
     <DataFeature
       v-if="feature"

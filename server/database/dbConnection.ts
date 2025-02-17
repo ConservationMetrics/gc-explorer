@@ -1,6 +1,6 @@
 import pg from "pg";
 import sqlite3 from "sqlite3";
-import type { DatabaseConnection } from "../types";
+import type { DatabaseConnection } from "@/types/types";
 import { getConfig } from "./dbConfig";
 
 let configDb: DatabaseConnection | null = null;

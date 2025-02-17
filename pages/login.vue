@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useHead, useUserSession } from "#imports";
 import { useI18n } from "vue-i18n";

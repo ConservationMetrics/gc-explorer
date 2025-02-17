@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { useHead, useFetch, useRuntimeConfig } from "#app";
 import { useRoute } from "vue-router";

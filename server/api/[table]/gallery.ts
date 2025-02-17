@@ -12,7 +12,7 @@ import type {
   AllowedFileExtensions,
   ColumnEntry,
   DataEntry,
-} from "../../types";
+} from "@/types/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };

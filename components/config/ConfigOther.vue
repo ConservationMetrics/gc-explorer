@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { watch, reactive } from "vue";
 
 import { toCamelCase } from "@/utils";

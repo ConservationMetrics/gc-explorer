@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { getFilePathsWithExtension } from "@/utils";
 import { prepareCoordinatesForSelectedFeature } from "@/utils/mapFunctions.ts";

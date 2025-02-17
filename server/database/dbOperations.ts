@@ -6,7 +6,7 @@ import type {
   ConfigRow,
   DataEntry,
   ColumnEntry,
-} from "../types";
+} from "@/types/types";
 
 const checkTableExists = (
   db: DatabaseConnection,

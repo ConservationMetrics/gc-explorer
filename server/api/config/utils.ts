@@ -1,5 +1,5 @@
 import { fetchTableNames } from "../../database/dbOperations";
-import type { DatabaseConnection } from "../../types";
+import type { DatabaseConnection } from "@/types/types";
 
 export const getFilteredTableNames = async (
   database: DatabaseConnection,

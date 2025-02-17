@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import AlertsChart from "~/components/alerts/AlertsChart.vue";
 import AlertsSlider from "~/components/alerts/AlertsSlider.vue";
 import DownloadMapData from "~/components/shared/DownloadMapData.vue";
@@ -11,6 +11,8 @@ const props = defineProps({
   logoUrl: String,
   showSlider: Boolean,
 });
+
+const emit = defineEmits(["dateRangeChanged"]);
 </script>
 
 <template>
@@ -80,7 +82,7 @@ const props = defineProps({
     <div v-if="props.showSlider" class="feature p-4 rounded-lg shadow-lg">
       <AlertsSlider
         :date-options="props.dateOptions"
-        @date-range-changed="$emit('date-range-changed', $event)"
+        @date-range-changed="emit('dateRangeChanged', $event)"
       />
       <div v-if="props.geojsonSelection">
         <!-- Download -->

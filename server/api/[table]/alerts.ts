@@ -17,7 +17,7 @@ import type {
   AllowedFileExtensions,
   DataEntry,
   AlertsMetadata,
-} from "../../types";
+} from "@/types/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };

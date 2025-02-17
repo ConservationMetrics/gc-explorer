@@ -1,4 +1,5 @@
-<script setup>
+<script setup lang="ts">
+// @ts-expect-error - tokml does not have types
 import tokml from "tokml";
 
 const props = defineProps(["geojson", "typeOfData"]);

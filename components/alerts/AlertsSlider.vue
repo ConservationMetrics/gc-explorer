@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch, onMounted } from "vue";
 import VueSlider from "vue-3-slider-component";
 

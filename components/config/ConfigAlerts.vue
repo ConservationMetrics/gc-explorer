@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { reactive, watch } from "vue";
 
 import { VueTagsInput } from "@vojtechlanka/vue-tags-input";

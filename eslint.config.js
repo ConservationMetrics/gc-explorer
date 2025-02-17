@@ -18,6 +18,7 @@ export default withNuxt(
         { ignoreRestSiblings: true, argsIgnorePattern: "^_" },
       ],
       "no-undef": "warn",
+      "vue/require-default-prop": "off",
       "vue/html-self-closing": [
         "error",
         {
