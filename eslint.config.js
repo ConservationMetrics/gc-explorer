@@ -1,39 +1,36 @@
 import globals from "globals";
-import pluginJs from "@eslint/js";
-import tseslint from "typescript-eslint";
-import pluginVue from "eslint-plugin-vue";
+import js from "@eslint/js";
+import tsParser from "@typescript-eslint/parser";
 import gitignore from "eslint-config-flat-gitignore";
+import withNuxt from "./.nuxt/eslint.config.mjs";
 
-export default [
+export default withNuxt(
   gitignore(),
   { files: ["**/*.{js,ts,vue}"] },
   { languageOptions: { globals: globals.browser } },
-  pluginJs.configs.recommended,
-  ...tseslint.configs.recommended,
-  ...pluginVue.configs["flat/essential"],
+  js.configs.recommended,
   {
     files: ["**/*.{js,ts,vue}"],
-    languageOptions: { parserOptions: { parser: tseslint.parser } },
+    languageOptions: { parserOptions: { parser: tsParser } },
     rules: {
       "no-unused-vars": [
         "warn",
         { ignoreRestSiblings: true, argsIgnorePattern: "^_" },
       ],
       "no-undef": "warn",
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        { ignoreRestSiblings: true, argsIgnorePattern: "^_" },
+      "vue/html-self-closing": [
+        "error",
+        {
+          html: {
+            void: "always",
+            normal: "never",
+            component: "always",
+          },
+        },
       ],
-      "@typescript-eslint/no-explicit-any": "warn",
-    },
-  },
-  {
-    files: ["pages/**/*.vue"],
-    rules: {
-      "vue/multi-word-component-names": "off",
     },
   },
   {
     ignores: ["public/"],
   },
-];
+);

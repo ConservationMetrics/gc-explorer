@@ -1,33 +1,4 @@
 {
   // https://nuxt.com/docs/guide/concepts/typescript
-  "extends": "./.nuxt/tsconfig.json",
-  "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "Node",
-    "strict": true,
-    "jsx": "preserve",
-    "importHelpers": true,
-    "lib": ["ESNext", "ESNext.AsyncIterable", "DOM"],
-    "allowJs": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
-    "paths": {
-      "#app": ["./.nuxt/types/app"],
-      "#build": ["./.nuxt/types/build"],
-      "#imports": ["./.nuxt/types/imports"],
-      "#nitro": ["./.nuxt/types/nitro"],
-      "#components": ["./.nuxt/types/components"],
-      "#head": ["./.nuxt/types/head"],
-      "~~": ["."],
-      "@@": ["."],
-      "~": ["./"],
-      "@": ["./"],
-      "~/*": ["./*"],
-      "@/*": ["./*"]
-    },
-    "types": ["@types/node", "@nuxtjs/i18n", "vitest/globals"]
-  }
+  "extends": "./.nuxt/tsconfig.json"
 }
