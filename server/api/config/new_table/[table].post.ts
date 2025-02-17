@@ -4,15 +4,11 @@ import { getDatabaseConnection } from "@/server/database/dbConnection";
 import { addNewTableToConfig } from "../../../database/dbOperations";
 
 export default defineEventHandler(async (event: H3Event) => {
-  const { isSqlite } = useRuntimeConfig() as unknown as {
-    isSqlite: boolean;
-  };
-
   const table = event.context?.params?.table as string;
   try {
     const configDb = await getDatabaseConnection(true);
 
-    await addNewTableToConfig(configDb, table, isSqlite);
+    await addNewTableToConfig(configDb, table);
     return { message: "New table added successfully" };
   } catch (error) {
     if (error instanceof Error) {

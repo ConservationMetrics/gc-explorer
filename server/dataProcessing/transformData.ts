@@ -9,7 +9,7 @@ import type {
   MultiPolygon,
   GeoJSON,
   GeoJSONFeature,
-} from "../types";
+} from "@/types/types";
 import {
   calculateCentroid,
   capitalizeFirstLetter,

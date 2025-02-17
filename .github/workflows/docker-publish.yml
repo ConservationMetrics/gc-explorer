@@ -63,7 +63,6 @@ jobs:
     #         -e NUXT_DB_PASSWORD="your_db_password"
     #         -e NUXT_DB_PORT="5432"
     #         -e NUXT_DB_SSL="true"
-    #         -e NUXT_SQLITE_DB_PATH="./sql.db"
     #         -e NUXT_PORT="8080"
     #         -e NUXT_ENV_AUTH_STRATEGY="none" 
     #         -e NUXT_OAUTH_AUTH0_DOMAIN="domain.us.auth0.com"

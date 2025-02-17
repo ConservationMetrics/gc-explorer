@@ -65,8 +65,6 @@ export default defineNuxtConfig({
     dbPort: "5432",
     dbSsl: true,
     dbTable: "",
-    isSqlite: false,
-    sqliteDbPath: "",
     port: "8080",
     public: {
       allowedFileExtensions: {

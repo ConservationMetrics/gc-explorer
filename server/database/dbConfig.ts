@@ -7,8 +7,6 @@ export const getConfig = () => {
     dbPassword,
     dbPort,
     dbSsl,
-    isSQLite,
-    sqliteDbPath,
   } = useRuntimeConfig() as unknown as {
     configDatabase: string;
     database: string;
@@ -17,8 +15,6 @@ export const getConfig = () => {
     dbPassword: string;
     dbPort: string;
     dbSsl: boolean;
-    isSQLite: boolean;
-    sqliteDbPath: string;
   };
 
   return {
@@ -29,7 +25,5 @@ export const getConfig = () => {
     dbPassword,
     dbPort,
     dbSsl,
-    isSQLite,
-    sqliteDbPath,
   };
 };

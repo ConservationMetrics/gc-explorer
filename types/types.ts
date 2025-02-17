@@ -1,20 +1,8 @@
 import type pg from "pg";
-import type sqlite3 from "sqlite3";
 
-export type DatabaseConnection = pg.Client | sqlite3.Database | null;
+export type DatabaseConnection = pg.Client | null;
 
 export interface Database {
-  // SQLite methods
-  all: <T = unknown>(
-    _sql: string,
-    _callback: (_err: Error, _rows: T[]) => void,
-  ) => void;
-  run: (
-    _sql: string,
-    _values?: unknown[],
-    _callback?: (_err: Error) => void,
-  ) => void;
-  // Method for other databases to execute a query
   query: <T = unknown>(
     _sql: string,
     _values?: unknown[],

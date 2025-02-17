@@ -24,18 +24,16 @@ export default defineEventHandler(async (event: H3Event) => {
 
   const {
     public: { allowedFileExtensions },
-    isSqlite,
   } = useRuntimeConfig() as unknown as {
     public: { allowedFileExtensions: AllowedFileExtensions };
-    isSqlite: boolean;
   };
 
   try {
     const configDb = await getDatabaseConnection(true);
     const db = await getDatabaseConnection(false);
 
-    const viewsConfig = await fetchConfig(configDb, isSqlite);
-    const { mainData, metadata } = (await fetchData(db, table, isSqlite)) as {
+    const viewsConfig = await fetchConfig(configDb);
+    const { mainData, metadata } = (await fetchData(db, table)) as {
       mainData: DataEntry[];
       metadata: AlertsMetadata[];
     };
@@ -57,7 +55,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     if (mapeoTable && mapeoCategoryIds) {
       // Fetch Mapeo data
-      const rawMapeoData = await fetchData(db, mapeoTable, isSqlite);
+      const rawMapeoData = await fetchData(db, mapeoTable);
 
       // Filter data to remove unwanted columns and substrings
       const filteredMapeoData = filterUnwantedKeys(

@@ -1,6 +1,6 @@
 # GuardianConnector Explorer
 
-This tool, designed for GuardianConnector and built using [Nuxt](https://nuxt.com/), offers an API compatible with SQLite or PostgreSQL databases, and renders tabular data from one or more tables on different views including a map and a media gallery.
+This tool, designed for GuardianConnector and built using [Nuxt](https://nuxt.com/), offers an API compatible with a PostgreSQL databases, and renders tabular data from one or more tables on different views including a map and a media gallery.
 
 ## Configure
 

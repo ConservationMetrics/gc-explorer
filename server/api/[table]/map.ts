@@ -22,18 +22,16 @@ export default defineEventHandler(async (event: H3Event) => {
 
   const {
     public: { allowedFileExtensions },
-    isSqlite,
   } = useRuntimeConfig() as unknown as {
     public: { allowedFileExtensions: AllowedFileExtensions };
-    isSqlite: boolean;
   };
 
   try {
     const configDb = await getDatabaseConnection(true);
     const db = await getDatabaseConnection(false);
 
-    const viewsConfig = await fetchConfig(configDb, isSqlite);
-    const { mainData, columnsData } = await fetchData(db, table, isSqlite);
+    const viewsConfig = await fetchConfig(configDb);
+    const { mainData, columnsData } = await fetchData(db, table);
 
     // Filter data to remove unwanted columns and substrings
     const filteredData = filterUnwantedKeys(

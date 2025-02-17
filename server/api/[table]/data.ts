@@ -6,14 +6,10 @@ import { fetchData } from "../../database/dbOperations";
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
 
-  const { isSqlite } = useRuntimeConfig() as unknown as {
-    isSqlite: boolean;
-  };
-
   try {
     const db = await getDatabaseConnection(false);
 
-    const { mainData, columnsData } = await fetchData(db, table, isSqlite);
+    const { mainData, columnsData } = await fetchData(db, table);
     return { data: mainData, columns: columnsData };
   } catch (error) {
     if (error instanceof Error) {

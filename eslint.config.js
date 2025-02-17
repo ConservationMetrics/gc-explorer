@@ -1,6 +1,5 @@
 import globals from "globals";
 import js from "@eslint/js";
-import tsParser from "@typescript-eslint/parser";
 import gitignore from "eslint-config-flat-gitignore";
 import withNuxt from "./.nuxt/eslint.config.mjs";
 
@@ -11,7 +10,6 @@ export default withNuxt(
   js.configs.recommended,
   {
     files: ["**/*.{js,ts,vue}"],
-    languageOptions: { parserOptions: { parser: tsParser } },
     rules: {
       "no-unused-vars": [
         "warn",

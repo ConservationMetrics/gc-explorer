@@ -1,4 +1,9 @@
-import type { Coordinate, LineString, Polygon, MultiPolygon } from "../types";
+import type {
+  Coordinate,
+  LineString,
+  Polygon,
+  MultiPolygon,
+} from "@/types/types";
 
 export const getRandomColor = () => {
   const letters = "0123456789ABCDEF";

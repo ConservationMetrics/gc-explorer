@@ -4,17 +4,13 @@ import { getDatabaseConnection } from "@/server/database/dbConnection";
 import { updateConfig } from "../../../database/dbOperations";
 
 export default defineEventHandler(async (event: H3Event) => {
-  const { isSqlite } = useRuntimeConfig() as unknown as {
-    isSqlite: boolean;
-  };
-
   const table = event.context?.params?.table as string;
   const config = await readBody(event);
 
   try {
     const configDb = await getDatabaseConnection(true);
 
-    await updateConfig(configDb, table, config, isSqlite);
+    await updateConfig(configDb, table, config);
     return { message: "Configuration updated successfully" };
   } catch (error) {
     if (error instanceof Error) {
