@@ -3,13 +3,15 @@ import { useI18n } from "vue-i18n";
 
 import VueSelect from "vue3-select-component";
 
+import type { Dataset } from "@/types/types";
+
 const { t } = useI18n();
 
-const props = defineProps({
-  data: Array,
-  filterColumn: String,
-  showColoredDot: Boolean,
-});
+const props = defineProps<{
+  data: Dataset;
+  filterColumn: string;
+  showColoredDot?: boolean;
+}>();
 
 const emit = defineEmits(["filter"]);
 
@@ -61,7 +63,7 @@ const emitFilterSelection = () => {
       {{ $t("filterDataByColumn") }}: <strong>{{ filterColumn }}</strong>
     </h4>
     <VueSelect
-      :key="getUniqueFilterValues"
+      :key="getUniqueFilterValues.map((item) => item.value).join(',')"
       v-model="selectedFilterValue"
       :is-multi="true"
       :options="getUniqueFilterValues"

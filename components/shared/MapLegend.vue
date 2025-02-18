@@ -1,11 +1,13 @@
 <script setup lang="ts">
-const props = defineProps({
-  mapLegendContent: Array,
-});
+import type { MapLegendItem } from "@/types/types";
+
+const props = defineProps<{
+  mapLegendContent: MapLegendItem[];
+}>();
 
 const emit = defineEmits(["toggle-layer-visibility"]);
 
-const localMapLegendContent = ref([]);
+const localMapLegendContent = ref();
 
 onMounted(() => {
   // Ensure all items are visible initially
@@ -16,12 +18,12 @@ onMounted(() => {
 });
 
 // Layer visibility toggles
-const toggleLayerVisibility = (item) => {
+const toggleLayerVisibility = (item: MapLegendItem) => {
   emit("toggle-layer-visibility", item);
 };
 
 // Get the class for the geometry type
-const getTypeClass = (item) => {
+const getTypeClass = (item: MapLegendItem) => {
   return `${item.type}-box`;
 };
 

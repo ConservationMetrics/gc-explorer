@@ -3,36 +3,42 @@ import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
 import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
 
-const props = defineProps({
-  alertsStatistics: Object,
-  allowedFileExtensions: Object,
-  calculateHectares: Boolean,
-  dateOptions: Array,
-  downloadAlert: Boolean,
-  feature: Object,
-  featureGeojson: Object,
-  filePaths: Array,
-  geojsonSelection: Object,
-  isAlert: Boolean,
-  logoUrl: String,
-  mediaBasePath: String,
-  mediaBasePathAlerts: String,
-  showIntroPanel: Boolean,
-  showSidebar: Boolean,
-  showSlider: Boolean,
-});
+import type { AllowedFileExtensions, DataEntry, GeoJSON } from "@/types/types";
+
+const props = defineProps<{
+  alertsStatistics?: Record<string, unknown>;
+  allowedFileExtensions?: AllowedFileExtensions;
+  calculateHectares?: boolean;
+  dateOptions?: Array<unknown>;
+  downloadAlert?: boolean;
+  feature?: DataEntry;
+  featureGeojson?: GeoJSON;
+  filePaths?: Array<string>;
+  geojsonSelection?: GeoJSON;
+  isAlert?: boolean;
+  logoUrl?: string;
+  mediaBasePath?: string;
+  mediaBasePathAlerts?: string;
+  showIntroPanel?: boolean;
+  showSidebar?: boolean;
+  showSlider?: boolean;
+}>();
 
 const scrolled = ref(false);
 
 // To hide the scroll indicator when the user scrolls
-const handleScroll = (event) => {
-  if (!scrolled.value && event.target.scrollTop > 0) {
+const handleScroll = (event: Event) => {
+  const target = event.target as HTMLElement;
+  if (!scrolled.value && target.scrollTop > 0) {
     scrolled.value = true;
   }
 };
 
 // Filter out latitude and longitude from feature object
-const filteredFeature = computed(() => {
+const filteredFeature = computed<DataEntry>(() => {
+  if (!props.feature) {
+    return {};
+  }
   const { latitude, longitude, ...rest } = props.feature;
   return rest;
 });

@@ -265,7 +265,7 @@ const handleBasemapChange = (newBasemap: Basemap) => {
 };
 
 // Map legend methods
-const mapLegendContent = ref(null);
+const mapLegendContent = ref();
 const prepareMapLegendContent = () => {
   if (!props.mapLegendLayerIds) {
     return;
@@ -273,7 +273,7 @@ const prepareMapLegendContent = () => {
   map.value.once("idle", () => {
     mapLegendContent.value = prepareMapLegendLayers(
       map.value,
-      props.mapLegendLayerIds,
+      props.mapLegendLayerIds ?? null,
     );
   });
 };

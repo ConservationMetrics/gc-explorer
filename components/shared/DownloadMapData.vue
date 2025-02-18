@@ -2,7 +2,12 @@
 // @ts-expect-error - tokml does not have types
 import tokml from "tokml";
 
-const props = defineProps(["geojson", "typeOfData"]);
+import type { GeoJSON } from "@/types/types";
+
+const props = defineProps<{
+  geojson?: GeoJSON;
+  typeOfData: string;
+}>();
 
 const downloadAlertCSV = () => {
   // Convert featureObject to CSV and download
