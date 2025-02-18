@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import DownloadMapData from "~/components/shared/DownloadMapData.vue";
 
-const props = defineProps({
-  alertsStatistics: Object,
-  calculateHectares: Boolean,
-  dateOptions: Array,
-  geojsonSelection: Object,
-  logoUrl: String,
-  showSlider: Boolean,
-});
+import type { AlertsData, AlertsStatistics } from "@/types/types";
+
+const props = defineProps<{
+  alertsStatistics: AlertsStatistics;
+  calculateHectares?: boolean;
+  dateOptions?: Array<string>;
+  geojsonSelection?: AlertsData;
+  logoUrl?: string;
+  showSlider?: boolean;
+}>();
 
 const emit = defineEmits(["dateRangeChanged"]);
 </script>

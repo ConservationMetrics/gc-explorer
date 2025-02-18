@@ -3,18 +3,25 @@ import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
 import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
 
-import type { AllowedFileExtensions, DataEntry, GeoJSON } from "@/types/types";
+import type {
+  AlertsData,
+  AlertsStatistics,
+  AllowedFileExtensions,
+  DataEntry,
+} from "@/types/types";
+
+import type { Feature } from "geojson";
 
 const props = defineProps<{
-  alertsStatistics?: Record<string, unknown>;
+  alertsStatistics?: AlertsStatistics;
   allowedFileExtensions?: AllowedFileExtensions;
   calculateHectares?: boolean;
-  dateOptions?: Array<unknown>;
+  dateOptions?: Array<string>;
   downloadAlert?: boolean;
   feature?: DataEntry;
-  featureGeojson?: GeoJSON;
+  featureData?: Feature;
   filePaths?: Array<string>;
-  geojsonSelection?: GeoJSON;
+  geojsonSelection?: Feature | AlertsData;
   isAlert?: boolean;
   logoUrl?: string;
   mediaBasePath?: string;
@@ -43,6 +50,13 @@ const filteredFeature = computed<DataEntry>(() => {
   return rest;
 });
 
+const dataForAlertsIntroPanel = computed(() => {
+  if (props.geojsonSelection) {
+    return props.geojsonSelection as AlertsData;
+  }
+  return undefined;
+});
+
 const emit = defineEmits(["close", "date-range-changed"]);
 
 // Watchers
@@ -69,10 +83,10 @@ watch(
     <div v-if="!scrolled" class="scroll-indicator">&#x2193;</div>
     <button class="close-btn" @click="emit('close')">X</button>
     <AlertsIntroPanel
-      v-if="showIntroPanel"
+      v-if="showIntroPanel && alertsStatistics"
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
-      :geojson-selection="geojsonSelection"
+      :geojson-selection="dataForAlertsIntroPanel"
       :logo-url="logoUrl"
       :show-slider="showSlider"
       :alerts-statistics="alertsStatistics"
@@ -89,7 +103,7 @@ watch(
     />
     <DownloadMapData
       v-if="downloadAlert"
-      :geojson="featureGeojson"
+      :feature-data="featureData"
       :type-of-data="'alert'"
     />
   </div>
@@ -139,7 +153,7 @@ watch(
     transform: translateX(-50%) scale(1);
   }
   50% {
-    transform: translateX(-50%) scale(1.2); /* Slightly larger */
+    transform: translateX(-50%) scale(1.2);
   }
   100% {
     transform: translateX(-50%) scale(1);

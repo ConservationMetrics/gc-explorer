@@ -13,6 +13,8 @@ import {
   LinearScale,
 } from "chart.js";
 
+import type { AlertsStatistics } from "@/types/types";
+
 Chart.register(
   Title,
   Tooltip,
@@ -25,10 +27,10 @@ Chart.register(
 
 const { t } = useI18n();
 
-const props = defineProps({
-  alertsStatistics: Object,
-  calculateHectares: Boolean,
-});
+const props = defineProps<{
+  alertsStatistics: AlertsStatistics;
+  calculateHectares: boolean;
+}>();
 
 // Populate chart data
 const chartData = computed(() => {

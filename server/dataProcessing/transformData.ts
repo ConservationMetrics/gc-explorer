@@ -6,9 +6,9 @@ import {
 } from "./helpers";
 
 import type {
-  Geometry,
   Feature,
   FeatureCollection,
+  Geometry,
   LineString,
   Polygon,
   Position,

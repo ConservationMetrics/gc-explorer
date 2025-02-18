@@ -9,7 +9,7 @@ const route = useRoute();
 const table = route.params.tablename;
 
 const alertsData = ref();
-const alertsStatistics = ref({});
+const alertsStatistics = ref();
 const dataFetched = ref(false);
 const allowedFileExtensions = ref();
 const logoUrl = ref();

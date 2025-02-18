@@ -70,11 +70,9 @@ const getMapboxLayersForLegend = (
   layerIds.forEach((layerId) => {
     layerId = layerId.trim();
 
-    // Check if the map has this layer
     const layer = map.getLayer(layerId);
 
     if (layer && layer.type !== "custom") {
-      // Get the layer object and add it to the matchingLayers array
       matchingLayers.push(layer);
     }
   });
@@ -172,7 +170,6 @@ export const toggleLayerVisibility = (
 
   map.setLayoutProperty(layerId, "visibility", visibility);
 
-  // Toggle visibility for the stroke layer if it exists
   const strokeLayerId = `${layerId}-stroke`;
   if (map.getLayer(strokeLayerId)) {
     map.setLayoutProperty(strokeLayerId, "visibility", visibility);

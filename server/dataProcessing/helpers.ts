@@ -1,10 +1,3 @@
-import type {
-  Coordinate,
-  LineString,
-  Polygon,
-  MultiPolygon,
-} from "@/types/types";
-
 export const getRandomColor = () => {
   const letters = "0123456789ABCDEF";
   let color = "#";
@@ -82,6 +75,11 @@ export const hasValidCoordinates = (
 };
 
 export const calculateCentroid = (coords: string): string => {
+  type Coordinate = [number, number];
+  type LineString = Coordinate[];
+  type Polygon = LineString[];
+  type MultiPolygon = Polygon[];
+
   let totalLat = 0;
   let totalLng = 0;
   let numCoords = 0;

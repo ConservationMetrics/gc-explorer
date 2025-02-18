@@ -2,33 +2,46 @@
 // @ts-expect-error - tokml does not have types
 import tokml from "tokml";
 
-import type { GeoJSON } from "@/types/types";
+import type { Feature } from "geojson";
+import type { AlertsData } from "~/types/types";
 
 const props = defineProps<{
-  geojson?: GeoJSON;
+  featureData?: Feature | AlertsData;
   typeOfData: string;
 }>();
 
+// Incoming feature data can be either a single Feature or an AlertsData object
+const isAlertsData = (
+  featureData: Feature | AlertsData,
+): featureData is AlertsData => {
+  return (
+    (featureData as AlertsData).mostRecentAlerts !== undefined &&
+    (featureData as AlertsData).previousAlerts !== undefined
+  );
+};
+
 const downloadAlertCSV = () => {
-  // Convert featureObject to CSV and download
-  if (!props.geojson) {
-    console.error("No GeoJSON data available to download and convert to CSV.");
+  if (!props.featureData || isAlertsData(props.featureData)) {
+    console.error("No valid GeoJSON Feature data available to convert to CSV.");
     return;
   }
 
-  // Flatten the object
-  const { geometry, properties } = props.geojson;
-  const flattened = { ...properties }; // Start with properties
+  const { geometry, properties } = props.featureData;
 
-  // Ensure that all coordinate properties render well in CSV
-  flattened["geographicCentroid"] = `[${properties["geographicCentroid"]}]`;
-  const coordinates = JSON.stringify(geometry.coordinates);
-  delete flattened["coordinates"];
-  delete flattened["YYYYMM"];
+  if (!properties) {
+    console.error("No properties found in GeoJSON data.");
+    return;
+  }
 
-  // Generate CSV data
-  const csvColumns = Object.keys(flattened);
-  const csvData = Object.values(flattened).map((value) =>
+  const flattenedProperties = { ...properties };
+
+  flattenedProperties["geographicCentroid"] =
+    `[${properties["geographicCentroid"]}]`;
+  delete flattenedProperties["coordinates"];
+  delete flattenedProperties["YYYYMM"];
+
+  const csvColumns = Object.keys(flattenedProperties);
+  const csvData = Object.values(flattenedProperties).map((value) =>
     typeof value === "string" && value.includes(",")
       ? `"${value.replace(/"/g, '""')}"`
       : value,
@@ -41,24 +54,27 @@ const downloadAlertCSV = () => {
     csvData.splice(typeIndex, 1);
   }
 
-  // Append geometry type and coordinates at the end
   csvColumns.push("type");
   csvData.push(`"${geometry.type}"`);
+
+  const coordinates = JSON.stringify(
+    (geometry as GeoJSON.Point | GeoJSON.LineString | GeoJSON.Polygon)
+      .coordinates,
+  );
   csvColumns.push("coordinates");
   csvData.push(`"${coordinates}"`);
 
   const csvString = [csvColumns.join(","), csvData.join(",")].join("\n");
 
-  // Set filename
   let filename;
-  if (props.geojson.properties["alertID"]) {
-    filename = `${props.geojson.properties["alertID"]}.csv`;
-  } else if (props.geojson.properties["ID"]) {
-    filename = `${props.geojson.properties["ID"]}.csv`;
+  if (properties["alertID"]) {
+    filename = `${properties["alertID"]}.csv`;
+  } else if (properties["ID"]) {
+    filename = `${properties["ID"]}.csv`;
   } else {
     filename = "data.csv";
   }
-  // Download CSV
+
   const blob = new Blob([csvString], { type: "text/csv" });
 
   const link = document.createElement("a");
@@ -68,24 +84,25 @@ const downloadAlertCSV = () => {
 
   link.click();
 
-  // Clean up and free memory
   document.body.removeChild(link);
   URL.revokeObjectURL(link.href);
 };
 
 const downloadAlertGeoJSON = () => {
-  // Convert featureObject to GeoJSON and download
-  if (!props.geojson) {
-    console.error("No GeoJSON data available to download.");
+  if (!props.featureData || isAlertsData(props.featureData)) {
+    console.error("No valid GeoJSON Feature data available to convert to CSV.");
     return;
   }
 
-  const geojsonCopy = { ...props.geojson };
+  const geojsonCopy = { ...props.featureData };
 
-  // Delete the property from the copy
+  if (!geojsonCopy.properties) {
+    console.error("No properties found in GeoJSON data.");
+    return;
+  }
+
   delete geojsonCopy.properties["YYYYMM"];
 
-  // Set filename
   let filename;
   if (geojsonCopy.properties["alertID"]) {
     filename = `${geojsonCopy.properties["alertID"]}.geojson`;
@@ -105,25 +122,30 @@ const downloadAlertGeoJSON = () => {
 
   link.click();
 
-  // Clean up and free memory
   document.body.removeChild(link);
   URL.revokeObjectURL(link.href);
 };
 
 const downloadAlertKML = () => {
-  if (!props.geojson) {
-    console.error("No GeoJSON data available to download as KML.");
+  if (!props.featureData || isAlertsData(props.featureData)) {
+    console.error("No valid GeoJSON Feature data available to convert to CSV.");
     return;
   }
 
-  const kmlString = tokml(props.geojson);
+  const kmlString = tokml(props.featureData);
 
-  // Set filename
+  const { properties } = props.featureData;
+
+  if (!properties) {
+    console.error("No properties found in GeoJSON data.");
+    return;
+  }
+
   let filename;
-  if (props.geojson.properties["alertID"]) {
-    filename = `${props.geojson.properties["alertID"]}.kml`;
-  } else if (props.geojson.properties["ID"]) {
-    filename = `${props.geojson.properties["ID"]}.kml`;
+  if (properties["alertID"]) {
+    filename = `${properties["alertID"]}.kml`;
+  } else if (properties["ID"]) {
+    filename = `${properties["ID"]}.kml`;
   } else {
     filename = "data.kml";
   }
@@ -144,63 +166,57 @@ const downloadAlertKML = () => {
 };
 
 const downloadCSVSelection = () => {
-  if (
-    !props.geojson ||
-    (props.geojson.mostRecentAlerts.features.length <= 0 &&
-      props.geojson.previousAlerts.features.length <= 0)
-  ) {
-    console.warn("No complete GeoJSON data available to download as CSV.");
+  if (!props.featureData || !isAlertsData(props.featureData)) {
+    console.warn("No valid AlertsData available to download as CSV.");
     return;
   }
 
-  // Combine features from mostRecentAlerts and previousAlerts
   const combinedFeatures = [
-    ...props.geojson.previousAlerts.features,
-    ...props.geojson.mostRecentAlerts.features,
+    ...props.featureData.previousAlerts.features,
+    ...props.featureData.mostRecentAlerts.features,
   ];
 
-  // Prepare CSV data
   let csvString = "";
   let headerWritten = false;
 
   combinedFeatures.forEach((feature) => {
     const { geometry, properties } = feature;
 
-    // Flatten the object
-    const flattened = { ...properties };
-    delete flattened["image_url"];
-    delete flattened["image_caption"];
-    delete flattened["preview_link"];
-    delete flattened["YYYYMM"];
+    const flattenedProperties = { ...properties };
+    delete flattenedProperties["image_url"];
+    delete flattenedProperties["image_caption"];
+    delete flattenedProperties["preview_link"];
+    delete flattenedProperties["YYYYMM"];
 
-    // Handle coordinates and other properties that need special formatting
-    const coordinates = JSON.stringify(geometry.coordinates);
-    flattened["coordinates"] = coordinates;
+    const coordinates = JSON.stringify(
+      (geometry as GeoJSON.Point | GeoJSON.LineString | GeoJSON.Polygon)
+        .coordinates,
+    );
+    flattenedProperties["coordinates"] = coordinates;
 
-    // Generate CSV columns and data
-    const csvColumns = Object.keys(flattened);
-    const csvData = Object.values(flattened).map((value) =>
+    const csvColumns = Object.keys(flattenedProperties);
+    const csvData = Object.values(flattenedProperties).map((value) =>
       typeof value === "string" && value.includes(",")
         ? `"${value.replace(/"/g, '""')}"`
         : value,
     );
 
-    // Append geometry type at the end
     csvColumns.push("geometry type");
     csvData.push(`"${geometry.type}"`);
 
-    // Write header only once
     if (!headerWritten) {
       csvString += csvColumns.join(",") + "\n";
       headerWritten = true;
     }
 
-    // Append the data row
     csvString += csvData.join(",") + "\n";
   });
 
-  // Download CSV
-  const filename = `${combinedFeatures[0].properties["territory"]}_alerts.csv`;
+  const filename =
+    combinedFeatures[0].properties &&
+    combinedFeatures[0].properties["territory"]
+      ? `${combinedFeatures[0].properties["territory"]}_alerts.csv`
+      : "alerts.csv";
   const blob = new Blob([csvString], { type: "text/csv" });
 
   const link = document.createElement("a");
@@ -210,46 +226,44 @@ const downloadCSVSelection = () => {
 
   link.click();
 
-  // Clean up and free memory
   document.body.removeChild(link);
   URL.revokeObjectURL(link.href);
 };
 
 const downloadGeoJSONSelection = () => {
-  if (
-    !props.geojson ||
-    (props.geojson.mostRecentAlerts.features.length <= 0 &&
-      props.geojson.previousAlerts.features.length <= 0)
-  ) {
-    console.warn("No complete GeoJSON data available to download.");
+  if (!props.featureData || !isAlertsData(props.featureData)) {
+    console.warn("No valid AlertsData available to download as CSV.");
     return;
   }
 
   // Combine features from mostRecentAlerts and previousAlerts
   const combinedFeatures = [
-    ...props.geojson.previousAlerts.features,
-    ...props.geojson.mostRecentAlerts.features,
+    ...props.featureData.previousAlerts.features,
+    ...props.featureData.mostRecentAlerts.features,
   ];
 
   combinedFeatures.forEach((feature) => {
-    delete feature.properties["image_url"];
-    delete feature.properties["image_caption"];
-    delete feature.properties["preview_link"];
-    delete feature.properties["YYYYMM"];
+    if (feature.properties) {
+      delete feature.properties["image_url"];
+      delete feature.properties["image_caption"];
+      delete feature.properties["preview_link"];
+      delete feature.properties["YYYYMM"];
+    }
   });
 
-  // Create a new FeatureCollection GeoJSON object
   const combinedGeoJSON = {
     type: "FeatureCollection",
     features: combinedFeatures,
   };
 
-  // Convert to string for download
-  const filename = `${combinedGeoJSON.features[0].properties["territory"]}_alerts.geojson`;
+  const filename =
+    combinedFeatures[0].properties &&
+    combinedFeatures[0].properties["territory"]
+      ? `${combinedFeatures[0].properties["territory"]}_alerts.geojson`
+      : "alerts.geojson";
   const jsonStr = JSON.stringify(combinedGeoJSON, null, 2);
   const blob = new Blob([jsonStr], { type: "application/json" });
 
-  // Create a link and trigger download
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = filename;
@@ -257,24 +271,19 @@ const downloadGeoJSONSelection = () => {
 
   link.click();
 
-  // Clean up and free memory
   document.body.removeChild(link);
   URL.revokeObjectURL(link.href);
 };
 
 const downloadKMLSelection = () => {
-  if (
-    !props.geojson ||
-    (props.geojson.mostRecentAlerts.features.length <= 0 &&
-      props.geojson.previousAlerts.features.length <= 0)
-  ) {
-    console.warn("No complete GeoJSON data available to download as KML.");
+  if (!props.featureData || !isAlertsData(props.featureData)) {
+    console.warn("No valid AlertsData available to download as CSV.");
     return;
   }
 
   const combinedFeatures = [
-    ...props.geojson.previousAlerts.features,
-    ...props.geojson.mostRecentAlerts.features,
+    ...props.featureData.previousAlerts.features,
+    ...props.featureData.mostRecentAlerts.features,
   ];
 
   const combinedGeoJSON = {
@@ -284,7 +293,11 @@ const downloadKMLSelection = () => {
 
   const kmlString = tokml(combinedGeoJSON);
 
-  const filename = `${combinedFeatures[0].properties["territory"]}_alerts.kml`;
+  const filename =
+    combinedFeatures[0].properties &&
+    combinedFeatures[0].properties["territory"]
+      ? `${combinedFeatures[0].properties["territory"]}_alerts.kml`
+      : "alerts.kml";
 
   const blob = new Blob([kmlString], {
     type: "application/vnd.google-earth.kml+xml",

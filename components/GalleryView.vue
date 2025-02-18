@@ -45,7 +45,6 @@ onBeforeUnmount(() => {
 
 // Filter data based on selected values from DataFilter component
 const filterValues = (values: FilterValues) => {
-  console.log(values);
   if (values.includes("null")) {
     filteredData.value = props.galleryData;
   } else {

@@ -1,5 +1,7 @@
 import type pg from "pg";
 
+import type { FeatureCollection } from "geojson";
+
 export type DatabaseConnection = pg.Client | null;
 
 export interface Database {
@@ -105,6 +107,11 @@ export type AlertsMetadata = {
   total_alerts: string;
   description_alerts: string;
   territory: string;
+};
+
+export type AlertsData = {
+  mostRecentAlerts: FeatureCollection;
+  previousAlerts: FeatureCollection;
 };
 
 export type AlertsPerMonth = Record<string, number>;

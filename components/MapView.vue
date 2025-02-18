@@ -278,7 +278,6 @@ const prepareMapLegendContent = () => {
   });
 };
 const toggleLayerVisibility = (item: MapLegendItem) => {
-  console.log(item);
   utilsToggleLayerVisibility(map.value, item);
 };
 

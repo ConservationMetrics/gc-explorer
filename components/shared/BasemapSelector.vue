@@ -2,6 +2,8 @@
 import Datepicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
 
+import type { Basemap } from "~/types/types";
+
 const props = defineProps({
   hasRulerControl: Boolean,
   mapboxStyle: String,
@@ -13,10 +15,9 @@ const emit = defineEmits(["basemapSelected"]);
 const topPosition = computed(() => (props.hasRulerControl ? "187px" : "147px"));
 
 const showBasemapWindow = ref(false);
-const selectedBasemap = ref({
+const selectedBasemap = ref<Basemap>({
   id: "custom",
   style: props.mapboxStyle,
-  monthYear: "",
 });
 
 const toggleBasemapWindow = () => {
