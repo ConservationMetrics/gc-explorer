@@ -72,24 +72,6 @@ export type DataEntry = Record<string, string>;
 export type Dataset = Array<DataEntry>;
 
 export type FilterValues = Array<string>;
-
-export type Coordinate = [number, number];
-export type LineString = Coordinate[];
-export type Polygon = LineString[];
-export type MultiPolygon = Polygon[];
-
-export type GeoJSONFeature = {
-  type: "Feature";
-  id?: string;
-  properties: { [key: string]: unknown };
-  geometry?: { [key: string]: unknown };
-};
-
-export type GeoJSON = {
-  type: "FeatureCollection";
-  features: GeoJSONFeature[];
-};
-
 export interface Basemap {
   id: string;
   style?: string;
