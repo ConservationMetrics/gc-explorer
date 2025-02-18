@@ -1,6 +1,5 @@
 import pg from "pg";
-import sqlite3 from "sqlite3";
-import { type DatabaseConnection } from "../types";
+import type { DatabaseConnection } from "@/types/types";
 import { getConfig } from "./dbConfig";
 
 let configDb: DatabaseConnection | null = null;
@@ -17,107 +16,82 @@ export const setupDatabaseConnection = async (
     dbPassword,
     dbPort,
     dbSsl,
-    isSQLite,
-    sqliteDbPath,
   } = getConfig();
 
   const localDatabase = isConfigDb ? configDatabase : database;
   console.log(`Setting up database connection to ${localDatabase}...`);
 
-  if (isSQLite) {
-    if (sqliteDbPath === undefined) {
-      throw new Error("sqliteDbPath is undefined");
-    }
-    const sqlite = sqlite3.verbose();
-    const sqliteDb = new sqlite.Database(
-      sqliteDbPath,
-      sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
-      (err: Error | null) => {
-        if (err) {
-          console.error("Error connecting to SQLite database:", err.message);
-        } else {
-          console.log("Connected to the SQLite database");
-        }
-      },
-    );
-    return sqliteDb;
-  } else {
-    const dbConnection = {
-      database: localDatabase,
-      user: dbUser,
-      host: dbHost,
-      password: dbPassword,
-      port: parseInt(dbPort, 10),
-      ssl: dbSsl === true ? { rejectUnauthorized: false } : false,
-    };
-    let client = new pg.Client(dbConnection);
+  const dbConnection = {
+    database: localDatabase,
+    user: dbUser,
+    host: dbHost,
+    password: dbPassword,
+    port: parseInt(dbPort, 10),
+    ssl: dbSsl === true ? { rejectUnauthorized: false } : false,
+  };
+  let client = new pg.Client(dbConnection);
 
-    try {
-      await client.connect();
-      console.log(`Connected to the PostgreSQL database: "${localDatabase}"`);
-      return client;
-    } catch (error: unknown) {
-      if (
-        error instanceof Error &&
-        error.message.includes("self signed certificate")
-      ) {
-        console.error(
-          "Error connecting to the PostgreSQL database: Self-signed certificate issue.",
+  try {
+    await client.connect();
+    console.log(`Connected to the PostgreSQL database: "${localDatabase}"`);
+    return client;
+  } catch (error: unknown) {
+    if (
+      error instanceof Error &&
+      error.message.includes("self signed certificate")
+    ) {
+      console.error(
+        "Error connecting to the PostgreSQL database: Self-signed certificate issue.",
+      );
+    } else if (
+      error instanceof Error &&
+      error.message.includes("azure replication users")
+    ) {
+      console.error(
+        "Error connecting to the PostgreSQL database: remaining connection slots are reserved for azure replication users.",
+      );
+    } else {
+      // Attempt to create the database if connection fails
+      if (isConfigDb) {
+        console.log("Config database does not exist. Attemping to create...");
+        const created = await createDatabaseIfNotExists(
+          localDatabase as string,
+          database as string,
+          dbHost,
+          dbUser,
+          dbPassword,
+          dbPort,
+          dbSsl,
         );
-      } else if (
-        error instanceof Error &&
-        error.message.includes("azure replication users")
-      ) {
-        console.error(
-          "Error connecting to the PostgreSQL database: remaining connection slots are reserved for azure replication users.",
-        );
-      } else {
-        // Attempt to create the database if connection fails
-        if (isConfigDb) {
-          console.log("Config database does not exist. Attemping to create...");
-          const created = await createDatabaseIfNotExists(
-            localDatabase as string,
-            database as string,
-            dbHost,
-            dbUser,
-            dbPassword,
-            dbPort,
-            dbSsl,
-          );
-          if (created) {
-            // Retry connection after creating the database
-            client = new pg.Client(dbConnection);
-            try {
-              await client.connect();
-              console.log(
-                `Connected to the PostgreSQL database: "${database}"`,
-              );
-              return client;
-            } catch (retryError) {
-              console.error("Retry failed:", retryError);
-            } finally {
-              await client.end();
-            }
+        if (created) {
+          // Retry connection after creating the database
+          client = new pg.Client(dbConnection);
+          try {
+            await client.connect();
+            console.log(`Connected to the PostgreSQL database: "${database}"`);
+            return client;
+          } catch (retryError) {
+            console.error("Retry failed:", retryError);
+          } finally {
+            await client.end();
           }
-        } else {
-          console.error(
-            `Error connecting to the PostgreSQL database ${database}:`,
-            error,
-          );
         }
+      } else {
+        console.error(
+          `Error connecting to the PostgreSQL database ${database}:`,
+          error,
+        );
       }
-      return null;
     }
+    return null;
   }
 };
 
 export const getDatabaseConnection = async (
   isConfigDb: boolean,
 ): Promise<DatabaseConnection> => {
-  const isSQLite = getConfig().isSQLite;
-  if (!isSQLite) {
-    await ensurePostgresConnection(db, isConfigDb);
-  }
+  await ensurePostgresConnection(db, isConfigDb);
+
   if (isConfigDb) {
     if (!configDb) {
       configDb = await setupDatabaseConnection(true);

@@ -1,8 +1,8 @@
-<script setup>
-import { ref, computed, watch } from "vue";
-
+<script setup lang="ts">
 import Datepicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
+
+import type { Basemap } from "~/types/types";
 
 const props = defineProps({
   hasRulerControl: Boolean,
@@ -15,7 +15,10 @@ const emit = defineEmits(["basemapSelected"]);
 const topPosition = computed(() => (props.hasRulerControl ? "187px" : "147px"));
 
 const showBasemapWindow = ref(false);
-const selectedBasemap = ref({ id: "custom", style: props.mapboxStyle });
+const selectedBasemap = ref<Basemap>({
+  id: "custom",
+  style: props.mapboxStyle,
+});
 
 const toggleBasemapWindow = () => {
   showBasemapWindow.value = !showBasemapWindow.value;
@@ -34,16 +37,16 @@ const maxMonth = computed(() => {
     date.setMonth(date.getMonth() - 1);
   }
   const year = date.getFullYear();
-  let month = date.getMonth() + 1;
-  month = month < 10 ? `0${month}` : month;
-  return `${year}-${month}`;
+  const monthNumber = date.getMonth() + 1;
+  const formattedMonth = monthNumber < 10 ? `0${monthNumber}` : monthNumber;
+  return `${year}-${formattedMonth}`;
 });
 const monthYear = ref(maxMonth.value);
-const setPlanetDateRange = (date) => {
+const setPlanetDateRange = (date: Date) => {
   // minMonth and maxMonth are in format YYYY-MM, but date is a Date object
   // so we need to convert it to a string in the same format
-  date = date.toISOString().slice(0, 7);
-  return date < minMonth || date > maxMonth.value;
+  const formattedDate = date.toISOString().slice(0, 7);
+  return formattedDate < minMonth || formattedDate > maxMonth.value;
 };
 
 // Update the monthYear when the Planet basemap is selected
@@ -92,46 +95,46 @@ const emitBasemapChange = () => {
         <h3 class="font-semibold mb-2">{{ $t("selectBasemap") }}</h3>
         <label>
           <input
+            v-model="selectedBasemap"
             type="radio"
             :value="{ id: 'custom', style: mapboxStyle }"
             name="basemap"
-            v-model="selectedBasemap"
             @change="emitBasemapChange"
           />
           {{ $t("yourMapboxStyleDefault") }}
         </label>
         <label>
           <input
+            v-model="selectedBasemap"
             type="radio"
             :value="{
               id: 'satellite-streets',
               style: 'mapbox://styles/mapbox/satellite-streets-v12',
             }"
             name="basemap"
-            v-model="selectedBasemap"
             @change="emitBasemapChange"
           />
           {{ $t("mapboxSatelliteUpTo2019") }}
         </label>
         <label>
           <input
+            v-model="selectedBasemap"
             type="radio"
             :value="{
               id: 'streets',
               style: 'mapbox://styles/mapbox/streets-v12',
             }"
             name="basemap"
-            v-model="selectedBasemap"
             @change="emitBasemapChange"
           />
           {{ $t("mapboxStreets") }}
         </label>
         <label v-if="planetApiKey">
           <input
+            v-model="selectedBasemap"
             type="radio"
             :value="{ id: 'planet', monthYear: monthYear }"
             name="basemap"
-            v-model="selectedBasemap"
             @change="emitBasemapChange"
           />
           {{ $t("planetMonthlyVisualBasemap") }}
@@ -146,7 +149,7 @@ const emitBasemapChange = () => {
             :disabled-date="setPlanetDateRange"
             :clearable="false"
             @selected="updatePlanetBasemap"
-          ></Datepicker>
+          />
         </label>
       </div>
     </div>

@@ -1,21 +1,24 @@
 import {
-  type AlertsMetadata,
-  type AlertsPerMonth,
-  type AlertsStatistics,
-  type DataEntry,
-  type Coordinate,
-  type LineString,
-  type Polygon,
-  type MultiPolygon,
-  type GeoJSON,
-  type GeoJSONFeature,
-} from "../types";
-import {
   calculateCentroid,
   capitalizeFirstLetter,
   formatDate,
   getRandomColor,
 } from "./helpers";
+
+import type {
+  Feature,
+  FeatureCollection,
+  Geometry,
+  LineString,
+  Polygon,
+  Position,
+} from "geojson";
+import type {
+  AlertsMetadata,
+  AlertsPerMonth,
+  AlertsStatistics,
+  DataEntry,
+} from "@/types/types";
 
 // Transform survey data keys and values
 const transformSurveyData = (data: DataEntry[]): DataEntry[] => {
@@ -101,7 +104,7 @@ const prepareMapData = (
     }
     try {
       const geometryType = obj.geotype;
-      let coordinates: Coordinate | LineString | Polygon = [];
+      let coordinates: Position | LineString | Polygon = [];
 
       // Convert string to array
       if (!Array.isArray(obj.geocoordinates)) {
@@ -495,30 +498,33 @@ const prepareAlertsStatistics = (
 };
 
 // Transform data to GeoJSON format
-const transformToGeojson = (data: DataEntry[]): GeoJSON => {
+const transformToGeojson = (data: DataEntry[]): FeatureCollection => {
   const features = data.map((input) => {
-    const feature: GeoJSONFeature = {
+    const feature: Feature = {
       type: "Feature",
       id: undefined,
-      properties: {},
-      geometry: {},
+      properties: {}, // Ensure properties is always an object
+      geometry: {
+        type: input.g__type as "Point" | "LineString" | "Polygon",
+        coordinates: [],
+      },
     };
 
     Object.entries(input).forEach(([key, value]) => {
       if (key === "alertID") {
         feature.id = value.substring(4);
-        feature.properties[key] = value;
+        feature.properties![key] = value; // Use non-null assertion
       } else if (key.startsWith("g__")) {
         const geometryKey = key.substring(3); // Removes 'g__' prefix
         if (feature.geometry) {
           if (geometryKey === "coordinates") {
-            feature.geometry[geometryKey] = JSON.parse(value);
-          } else {
-            feature.geometry[geometryKey] = value;
+            feature.geometry[geometryKey as keyof Geometry] = JSON.parse(value);
+          } else if (geometryKey === "type") {
+            feature.geometry.type = value as "Point" | "LineString" | "Polygon";
           }
         }
       } else {
-        feature.properties[key] = value;
+        feature.properties![key] = value; // Use non-null assertion
       }
     });
 
@@ -543,7 +549,7 @@ const isValidGeolocation = (item: DataEntry): boolean => {
 
   const isValidCoordinates = (
     type: string,
-    coordinates: MultiPolygon | Polygon | LineString | Coordinate | string,
+    coordinates: Geometry | string,
   ): boolean => {
     if (typeof coordinates === "string") {
       try {

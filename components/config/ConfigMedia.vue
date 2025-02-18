@@ -1,14 +1,14 @@
-<script setup>
-import { reactive, watch } from "vue";
-
+<script setup lang="ts">
 import { toCamelCase } from "@/utils";
 
-const props = defineProps({
-  tableName: String,
-  config: Object,
-  views: Array,
-  keys: Array,
-});
+import type { ViewConfig } from "@/types/types";
+
+const props = defineProps<{
+  tableName: string;
+  config: ViewConfig;
+  views: Array<string>;
+  keys: Array<string>;
+}>();
 
 const localConfig = reactive({ ...props.config });
 

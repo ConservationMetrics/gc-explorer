@@ -1,15 +1,17 @@
-<script setup>
-import { ref, computed } from "vue";
+<script setup lang="ts">
 import { useI18n } from "vue-i18n";
-const { t } = useI18n();
 
 import VueSelect from "vue3-select-component";
 
-const props = defineProps({
-  data: Array,
-  filterColumn: String,
-  showColoredDot: Boolean,
-});
+import type { Dataset } from "@/types/types";
+
+const { t } = useI18n();
+
+const props = defineProps<{
+  data: Dataset;
+  filterColumn: string;
+  showColoredDot?: boolean;
+}>();
 
 const emit = defineEmits(["filter"]);
 
@@ -61,19 +63,19 @@ const emitFilterSelection = () => {
       {{ $t("filterDataByColumn") }}: <strong>{{ filterColumn }}</strong>
     </h4>
     <VueSelect
+      :key="getUniqueFilterValues.map((item) => item.value).join(',')"
+      v-model="selectedFilterValue"
       :is-multi="true"
       :options="getUniqueFilterValues"
       @option-selected="emitFilterSelection()"
       @option-deselected="emitFilterSelection()"
-      v-model="selectedFilterValue"
-      :key="getUniqueFilterValues"
     >
       <!-- This is what shows in the listbox when selected -->
       <template #tag="{ option, removeOption }">
         <div class="option-box">
           <span
-            class="colored-dot"
             v-if="showColoredDot"
+            class="colored-dot"
             :style="{ backgroundColor: option.color }"
           ></span>
           <span class="selected-label">
@@ -85,8 +87,8 @@ const emitFilterSelection = () => {
       <!-- These are the options in the dropdown -->
       <template #option="{ option }">
         <span
-          class="colored-dot dot-dropdown"
           v-if="showColoredDot"
+          class="colored-dot dot-dropdown"
           :style="{ backgroundColor: option.color }"
         ></span>
         {{ option.label }}

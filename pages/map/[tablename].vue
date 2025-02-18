@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { useHead, useFetch, useRuntimeConfig } from "#app";
 import { useRoute } from "vue-router";
@@ -8,25 +8,23 @@ import { useI18n } from "vue-i18n";
 const route = useRoute();
 const table = route.params.tablename;
 
-// Refs to store the fetched data
-const allowedFileExtensions = ref({});
+const allowedFileExtensions = ref();
 const dataFetched = ref(false);
-const filterColumn = ref("");
-const mapLegendLayerIds = ref([]);
-const mapboxAccessToken = ref("");
+const filterColumn = ref();
+const mapLegendLayerIds = ref();
+const mapboxAccessToken = ref();
 const mapboxBearing = ref(0);
 const mapboxLatitude = ref(0);
 const mapboxLongitude = ref(0);
 const mapboxPitch = ref(0);
-const mapboxProjection = ref("");
-const mapboxStyle = ref("");
+const mapboxProjection = ref();
+const mapboxStyle = ref();
 const mapboxZoom = ref(0);
 const mapbox3d = ref(false);
-const mapData = ref([]);
-const mediaBasePath = ref("");
-const planetApiKey = ref("");
+const mapData = ref();
+const mediaBasePath = ref();
+const planetApiKey = ref();
 
-// API request to fetch the data
 const {
   public: { appApiKey },
 } = useRuntimeConfig();

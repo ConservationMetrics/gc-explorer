@@ -1,16 +1,18 @@
-<script setup>
-import AlertsChart from "~/components/alerts/AlertsChart.vue";
-import AlertsSlider from "~/components/alerts/AlertsSlider.vue";
+<script setup lang="ts">
 import DownloadMapData from "~/components/shared/DownloadMapData.vue";
 
-const props = defineProps({
-  alertsStatistics: Object,
-  calculateHectares: Boolean,
-  dateOptions: Array,
-  geojsonSelection: Object,
-  logoUrl: String,
-  showSlider: Boolean,
-});
+import type { AlertsData, AlertsStatistics } from "@/types/types";
+
+const props = defineProps<{
+  alertsStatistics: AlertsStatistics;
+  calculateHectares?: boolean;
+  dateOptions?: Array<string>;
+  geojsonSelection?: AlertsData;
+  logoUrl?: string;
+  showSlider?: boolean;
+}>();
+
+const emit = defineEmits(["dateRangeChanged"]);
 </script>
 
 <template>
@@ -35,21 +37,21 @@ const props = defineProps({
           >.
         </p>
         <div
-          class="mb-2"
           v-if="
             props.alertsStatistics.typeOfAlerts &&
             props.alertsStatistics.typeOfAlerts.length
           "
+          class="mb-2"
         >
           <span class="font-bold">{{ $t("typeOfAlerts") }}:</span>
           {{ props.alertsStatistics.typeOfAlerts.join(", ") }}
         </div>
         <div
-          class="mb-2"
           v-if="
             props.alertsStatistics.dataProviders &&
             props.alertsStatistics.dataProviders.length
           "
+          class="mb-2"
         >
           <span class="font-bold">{{ $t("dataProviders") }}:</span>
           {{ props.alertsStatistics.dataProviders.join(", ") }}
@@ -80,7 +82,7 @@ const props = defineProps({
     <div v-if="props.showSlider" class="feature p-4 rounded-lg shadow-lg">
       <AlertsSlider
         :date-options="props.dateOptions"
-        @date-range-changed="$emit('date-range-changed', $event)"
+        @date-range-changed="emit('dateRangeChanged', $event)"
       />
       <div v-if="props.geojsonSelection">
         <!-- Download -->

@@ -1,21 +1,6 @@
-import mapboxgl from "mapbox-gl";
+import type mapboxgl from "mapbox-gl";
 
-interface Basemap {
-  id: string;
-  style?: string;
-  url?: string;
-  monthYear?: string;
-}
-
-interface MapStyle {
-  name: string;
-  style?: {
-    version: number;
-    sources: unknown;
-    layers: unknown[];
-  };
-  url?: string;
-}
+import type { Basemap, MapStyle } from "@/types/types";
 
 export const mapStyles: Record<string, MapStyle> = {
   planet: {
@@ -53,11 +38,15 @@ export const mapStyles: Record<string, MapStyle> = {
 export const changeMapStyle = (
   map: mapboxgl.Map,
   basemap: Basemap,
-  planetApiKey: string,
+  planetApiKey?: string,
 ) => {
   if (basemap.style) {
     map.setStyle(basemap.style);
-  } else if (basemap.id === "planet" && mapStyles.planet.style) {
+  } else if (
+    basemap.id === "planet" &&
+    mapStyles.planet.style &&
+    planetApiKey
+  ) {
     const planetStyle = JSON.parse(JSON.stringify(mapStyles.planet.style));
     planetStyle.sources.planet.tiles[0] =
       planetStyle.sources.planet.tiles[0].replace(
@@ -67,7 +56,7 @@ export const changeMapStyle = (
     planetStyle.sources.planet.tiles[0] += planetApiKey;
     map.setStyle(planetStyle);
   } else {
-    console.warn("Basemap style not found");
+    console.warn("Basemap style not found, or API key not provided");
   }
 };
 
@@ -81,11 +70,9 @@ const getMapboxLayersForLegend = (
   layerIds.forEach((layerId) => {
     layerId = layerId.trim();
 
-    // Check if the map has this layer
     const layer = map.getLayer(layerId);
 
     if (layer && layer.type !== "custom") {
-      // Get the layer object and add it to the matchingLayers array
       matchingLayers.push(layer);
     }
   });
@@ -96,7 +83,7 @@ const getMapboxLayersForLegend = (
 export const prepareMapLegendLayers = (
   map: mapboxgl.Map,
   mapLegendLayerIds: string | null,
-  mapeoLegendColor: string | null,
+  mapeoLegendColor?: string | null,
 ): unknown[] | undefined => {
   if (!mapLegendLayerIds || !map.isStyleLoaded()) {
     return;
@@ -183,7 +170,6 @@ export const toggleLayerVisibility = (
 
   map.setLayoutProperty(layerId, "visibility", visibility);
 
-  // Toggle visibility for the stroke layer if it exists
   const strokeLayerId = `${layerId}-stroke`;
   if (map.getLayer(strokeLayerId)) {
     map.setLayoutProperty(strokeLayerId, "visibility", visibility);

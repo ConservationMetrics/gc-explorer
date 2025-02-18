@@ -1,11 +1,11 @@
-<script setup>
-import { ref, computed, onMounted } from "vue";
+<script setup lang="ts">
+import type { ViewConfig } from "@/types/types";
 
-const props = defineProps({
-  tableName: String,
-  config: Object,
-  isMinimized: Boolean,
-});
+const props = defineProps<{
+  tableName: string;
+  viewConfig: ViewConfig;
+  isMinimized: boolean;
+}>();
 
 const emit = defineEmits([
   "submitConfig",
@@ -14,7 +14,7 @@ const emit = defineEmits([
 ]);
 
 // Set keys for the different sections of the config
-const views = ref([]);
+const availableViews = ref();
 const viewsKeys = computed(() => ["VIEWS"]);
 const mapConfigKeys = computed(() => [
   "MAPBOX_STYLE",
@@ -40,14 +40,14 @@ const filterKeys = computed(() => [
 const otherKeys = computed(() => ["LOGO_URL"]);
 
 // On mounted, set localConfig to props.config
-const originalConfig = ref(null);
-const localConfig = ref({});
+const originalConfig = ref<ViewConfig>({});
+const localConfig = ref<ViewConfig>({});
 onMounted(() => {
-  if (props.config) {
-    localConfig.value = JSON.parse(JSON.stringify(props.config));
+  if (props.viewConfig) {
+    localConfig.value = JSON.parse(JSON.stringify(props.viewConfig));
   }
   originalConfig.value = JSON.parse(JSON.stringify(localConfig.value));
-  views.value = localConfig.value?.VIEWS
+  availableViews.value = localConfig.value?.VIEWS
     ? localConfig.value.VIEWS.split(",")
     : [];
 });
@@ -85,17 +85,17 @@ const shouldShowConfigOther = computed(() =>
   hasView(["map", "gallery", "alerts"]),
 );
 
-const hasView = (viewsArray) => {
-  return viewsArray.some((view) => views.value.includes(view));
+const hasView = (viewsArray: Array<string>) => {
+  return viewsArray.some((view) => availableViews.value.includes(view));
 };
 
 // Handlers for updating config and form submission
-const handleViewUpdate = (newViews) => {
-  views.value = newViews;
+const handleViewUpdate = (newViews: Array<string>) => {
+  availableViews.value = newViews;
   localConfig.value.VIEWS = newViews.join(",");
 };
 
-const handleConfigUpdate = (newConfig) => {
+const handleConfigUpdate = (newConfig: ViewConfig) => {
   localConfig.value = newConfig;
 };
 
@@ -118,51 +118,51 @@ const handleSubmit = () => {
     <div v-if="!isMinimized" class="card-body">
       <form @submit.prevent="handleSubmit">
         <ConfigViews
-          :tableName="tableName"
+          :table-name="tableName"
           :config="localConfig"
-          :views="views"
+          :views="availableViews"
           :keys="viewsKeys"
           @update:views="handleViewUpdate"
         />
         <ConfigMap
           v-if="shouldShowConfigMap"
-          :tableName="tableName"
-          :views="views"
+          :table-name="tableName"
+          :views="availableViews"
           :config="localConfig"
           :keys="mapConfigKeys"
-          @updateConfig="handleConfigUpdate"
+          @update-config="handleConfigUpdate"
         />
         <ConfigMedia
           v-if="shouldShowConfigMedia"
-          :tableName="tableName"
-          :views="views"
+          :table-name="tableName"
+          :views="availableViews"
           :config="localConfig"
           :keys="mediaKeys"
-          @updateConfig="handleConfigUpdate"
+          @update-config="handleConfigUpdate"
         />
         <ConfigAlerts
           v-if="shouldShowConfigAlerts"
-          :tableName="tableName"
-          :views="views"
+          :table-name="tableName"
+          :views="availableViews"
           :config="localConfig"
           :keys="alertKeys"
-          @updateConfig="handleConfigUpdate"
+          @update-config="handleConfigUpdate"
         />
         <ConfigFilters
           v-if="shouldShowConfigFilters"
-          :tableName="tableName"
-          :views="views"
+          :table-name="tableName"
+          :views="availableViews"
           :config="localConfig"
           :keys="filterKeys"
-          @updateConfig="handleConfigUpdate"
+          @update-config="handleConfigUpdate"
         />
         <ConfigOther
           v-if="shouldShowConfigOther"
-          :tableName="tableName"
-          :views="views"
+          :table-name="tableName"
+          :views="availableViews"
           :config="localConfig"
           :keys="otherKeys"
-          @updateConfig="handleConfigUpdate"
+          @update-config="handleConfigUpdate"
         />
         <button
           type="submit"

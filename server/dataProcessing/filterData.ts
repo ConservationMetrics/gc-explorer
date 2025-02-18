@@ -1,8 +1,8 @@
-import {
-  type ColumnEntry,
-  type DataEntry,
-  type AllowedFileExtensions,
-} from "../types";
+import type {
+  ColumnEntry,
+  DataEntry,
+  AllowedFileExtensions,
+} from "@/types/types";
 import { hasValidCoordinates } from "./helpers";
 
 // Filter out unwanted columns and substrings

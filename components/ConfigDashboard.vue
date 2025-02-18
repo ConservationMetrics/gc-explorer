@@ -1,11 +1,12 @@
-<script setup>
-import { ref, computed, watch } from "vue";
+<script setup lang="ts">
 import { useI18n } from "vue-i18n";
 
-const props = defineProps({
-  viewsConfig: Object,
-  tableNames: Array,
-});
+import type { Views, ViewConfig } from "@/types/types";
+
+const props = defineProps<{
+  viewsConfig: Views;
+  tableNames: Array<string>;
+}>();
 
 const { t } = useI18n();
 
@@ -15,24 +16,26 @@ const emit = defineEmits([
   "submitConfig",
 ]);
 
-// Sort viewsConfig by table name
 const sortedViewsConfig = computed(() => {
   return Object.keys(props.viewsConfig)
     .sort()
-    .reduce((acc, key) => {
-      acc[key] = props.viewsConfig[key];
-      return acc;
-    }, {});
+    .reduce(
+      (accumulator, key) => {
+        accumulator[key] = props.viewsConfig[key];
+        return accumulator;
+      },
+      {} as Record<string, ViewConfig>,
+    );
 });
 
 const modalMessage = ref("");
-const currentModalAction = ref(null);
+const currentModalAction = ref();
 const showModal = ref(false);
 const showModalButtons = ref(false);
 const showModalDropdown = ref(false);
 const confirmButtonDisabled = ref(false);
-const tableNameToRemove = ref("");
-const tableNameToAdd = ref(null);
+const tableNameToRemove = ref();
+const tableNameToAdd = ref();
 
 // Handlers
 const handleAddNewTable = () => {
@@ -44,7 +47,7 @@ const handleAddNewTable = () => {
   showModalDropdown.value = true;
 };
 
-const handleRemoveTableFromConfig = (tableName) => {
+const handleRemoveTableFromConfig = (tableName: string) => {
   currentModalAction.value = "removeTable";
   modalMessage.value =
     t("removeTableAreYouSure") +
@@ -89,7 +92,13 @@ const handleCancelButton = () => {
   currentModalAction.value = null;
 };
 
-const handleSubmit = async ({ tableName, config }) => {
+const handleSubmit = async ({
+  tableName,
+  config,
+}: {
+  tableName: string;
+  config: ViewConfig;
+}) => {
   emit("submitConfig", { tableName, config });
   modalMessage.value = t("configUpdated") + "!";
   showModal.value = true;
@@ -101,7 +110,7 @@ const handleSubmit = async ({ tableName, config }) => {
 
 // Helpers for minimizing cards
 const initializeMinimizedCards = () => {
-  const minimized = {};
+  const minimized: Record<string, boolean> = {};
   for (const tableName in props.viewsConfig) {
     minimized[tableName] = true;
   }
@@ -109,9 +118,9 @@ const initializeMinimizedCards = () => {
 };
 const minimizedCards = ref(initializeMinimizedCards());
 
-const toggleMinimize = ({ tableName }) => {
+const toggleMinimize = ({ tableName }: { tableName: string }) => {
   const isCurrentlyMinimized = minimizedCards.value[tableName];
-  for (let key in minimizedCards.value) {
+  for (const key in minimizedCards.value) {
     minimizedCards.value[key] = true;
   }
   minimizedCards.value[tableName] = !isCurrentlyMinimized;
@@ -133,23 +142,25 @@ watch(tableNameToAdd, (newVal) => {
       <ConfigCard
         v-for="(config, tableName) in sortedViewsConfig"
         :key="tableName"
-        :tableName="tableName"
-        :config="config"
-        :isMinimized="minimizedCards[tableName]"
-        @toggleMinimize="toggleMinimize"
-        @submitConfig="handleSubmit"
-        @removeTableFromConfig="handleRemoveTableFromConfig"
+        :table-name="tableName"
+        :view-config="config"
+        :is-minimized="minimizedCards[tableName]"
+        @toggle-minimize="toggleMinimize"
+        @submit-config="handleSubmit"
+        @remove-table-from-config="handleRemoveTableFromConfig"
       />
     </div>
     <button
-      @click="handleAddNewTable"
       class="text-white font-bold bg-blue-500 hover:bg-blue-700 py-2 px-4 rounded transition-colors duration-200 mb-6"
+      @click="handleAddNewTable"
     >
       + {{ $t("addNewTable") }}
     </button>
     <div v-if="showModal" class="overlay"></div>
     <div v-if="showModal" class="modal">
+      <!-- eslint-disable vue/no-v-html -->
       <p v-html="modalMessage"></p>
+      <!-- eslint-enable vue/no-v-html -->
       <div v-if="showModalDropdown">
         <select
           v-model="tableNameToAdd"
@@ -162,7 +173,6 @@ watch(tableNameToAdd, (newVal) => {
       </div>
       <div v-if="showModalButtons" class="mt-4">
         <button
-          @click="handleConfirmButton"
           :disabled="confirmButtonDisabled"
           :class="[
             'submit-button',
@@ -175,12 +185,13 @@ watch(tableNameToAdd, (newVal) => {
             },
           ]"
           class="text-white font-bold mb-2 mr-2 py-2 px-4 rounded transition-colors duration-200"
+          @click="handleConfirmButton"
         >
           {{ $t("confirm") }}
         </button>
         <button
-          @click="handleCancelButton"
           class="text-white font-bold bg-blue-500 hover:bg-blue-700 mb-2 py-2 px-4 rounded transition-colors duration-200"
+          @click="handleCancelButton"
         >
           {{ $t("cancel") }}
         </button>

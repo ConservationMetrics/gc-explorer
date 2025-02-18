@@ -1,25 +1,30 @@
-<script setup>
-import { computed } from "vue";
-
+<script setup lang="ts">
 import MediaFile from "@/components/shared/MediaFile.vue";
 
-const props = defineProps({
-  allowedFileExtensions: Object,
-  feature: Object,
-  filePaths: Array,
-  isAlert: Boolean,
-  mediaBasePath: String,
-  mediaBasePathAlerts: String,
-});
+import type { AllowedFileExtensions, DataEntry } from "@/types/types";
+
+const props = defineProps<{
+  allowedFileExtensions?: AllowedFileExtensions;
+  feature: DataEntry;
+  filePaths?: Array<string>;
+  isAlert?: boolean;
+  mediaBasePath?: string;
+  mediaBasePathAlerts?: string;
+}>();
 
 // Sort feature object by key
 const sortedFeature = computed(() => {
-  return Object.keys(props.feature)
+  return Object.keys(props.feature as Record<string, string>)
     .sort()
-    .reduce((obj, key) => {
-      obj[key] = props.feature[key];
-      return obj;
-    }, {});
+    .reduce(
+      (accumulator, key: string) => {
+        if (props.feature) {
+          accumulator[key] = props.feature[key];
+        }
+        return accumulator;
+      },
+      {} as Record<string, string>,
+    );
 });
 
 // Set media base path based on whether it's an alert or not
@@ -29,7 +34,7 @@ const setMediaBasePath = () => {
   } else if (!props.isAlert && props.mediaBasePath) {
     return props.mediaBasePath;
   } else {
-    return false;
+    return "";
   }
 };
 </script>
@@ -41,16 +46,19 @@ const setMediaBasePath = () => {
         <h1 class="text-2xl font-bold">{{ value }} data</h1>
       </div>
     </div>
-    <div v-if="setMediaBasePath()" :class="{ 'flex-container': isAlert }">
+    <div
+      v-if="allowedFileExtensions && setMediaBasePath()"
+      :class="{ 'flex-container': isAlert }"
+    >
       <MediaFile
         v-for="filePath in filePaths"
+        :key="filePath"
         :allowed-file-extensions="allowedFileExtensions"
         :file-path="filePath"
-        :key="filePath"
         :media-base-path="setMediaBasePath()"
       />
     </div>
-    <div class="mt-4" v-for="(value, key) in sortedFeature" :key="key">
+    <div v-for="(value, key) in sortedFeature" :key="key" class="mt-4">
       <div
         v-if="
           value !== null &&

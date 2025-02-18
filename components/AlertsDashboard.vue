@@ -1,15 +1,12 @@
-<script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
+<script setup lang="ts">
 import { useI18n } from "vue-i18n";
-const { t } = useI18n();
 
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import bbox from "@turf/bbox";
-import { lineString } from "@turf/helpers";
-import length from "@turf/length";
-import along from "@turf/along";
+import { along, bbox, length, lineString } from "@turf/turf";
+
+// @ts-expect-error - mapbox-gl-ruler-control does not have types
 import rulerControl from "mapbox-gl-ruler-control";
 
 import {
@@ -17,37 +14,50 @@ import {
   prepareMapLegendLayers,
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
-} from "@/utils/mapFunctions.ts";
+} from "@/utils/mapFunctions";
 
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
 import MapLegend from "@/components/shared/MapLegend.vue";
 
-const props = defineProps({
-  alertsData: Object,
-  alertsStatistics: Object,
-  allowedFileExtensions: Object,
-  logoUrl: String,
-  mapLegendLayerIds: String,
-  mapboxAccessToken: String,
-  mapboxBearing: Number,
-  mapboxLatitude: Number,
-  mapboxLongitude: Number,
-  mapboxPitch: Number,
-  mapboxProjection: String,
-  mapboxStyle: String,
-  mapboxZoom: Number,
-  mapbox3d: Boolean,
-  mapeoData: Object,
-  mediaBasePath: String,
-  mediaBasePathAlerts: String,
-  planetApiKey: String,
-});
+import type { Layer, MapMouseEvent } from "mapbox-gl";
+import type {
+  AlertsData,
+  AlertsStatistics,
+  AllowedFileExtensions,
+  Basemap,
+  Dataset,
+  MapLegendItem,
+} from "@/types/types";
+import type { Feature } from "geojson";
+
+const { t } = useI18n();
+
+const props = defineProps<{
+  alertsData: AlertsData;
+  alertsStatistics: AlertsStatistics;
+  allowedFileExtensions: AllowedFileExtensions;
+  logoUrl: string;
+  mapLegendLayerIds: string;
+  mapboxAccessToken: string;
+  mapboxBearing: number;
+  mapboxLatitude: number;
+  mapboxLongitude: number;
+  mapboxPitch: number;
+  mapboxProjection: string;
+  mapboxStyle: string;
+  mapboxZoom: number;
+  mapbox3d: boolean;
+  mapeoData: Dataset | null;
+  mediaBasePath: string;
+  mediaBasePathAlerts: string;
+  planetApiKey: string;
+}>();
 
 const calculateHectares = ref(false);
-const dateOptions = ref([]);
+const dateOptions = ref();
 const hasRulerControl = ref(false);
-const map = ref(null);
+const map = ref();
 const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showSidebar = ref(true);
@@ -118,7 +128,7 @@ const emit = defineEmits(["reset-legend-visibility"]);
 // Add data to the map and set up event listeners
 const featuresUnderCursor = ref(0);
 const hasLineStrings = ref(false);
-const mapeoDataColor = ref(null);
+const mapeoDataColor = ref();
 const addAlertsData = () => {
   const geoJsonSource = props.alertsData;
 
@@ -332,7 +342,7 @@ const addAlertsData = () => {
   }
 
   // Add event listeners for layers that start with 'most-recent-alerts' and 'alerts'
-  map.value.getStyle().layers.forEach((layer) => {
+  map.value.getStyle().layers.forEach((layer: Layer) => {
     if (
       (layer.id.startsWith("most-recent-alerts") &&
         !layer.id.includes("stroke")) ||
@@ -361,8 +371,10 @@ const addAlertsData = () => {
       map.value.on(
         "click",
         layer.id,
-        (e) => {
-          selectFeature(e.features[0], layer.id);
+        (e: MapMouseEvent) => {
+          if (e.features && e.features.length > 0) {
+            selectFeature(e.features[0], layer.id);
+          }
         },
         { passive: true },
       );
@@ -381,6 +393,9 @@ const addAlertsData = () => {
     );
 };
 const addMapeoData = () => {
+  if (!props.mapeoData) {
+    return;
+  }
   // Create a GeoJSON source with all the features
   const geoJsonSource = {
     type: "FeatureCollection",
@@ -455,8 +470,10 @@ const addMapeoData = () => {
     map.value.on(
       "click",
       layerId,
-      (e) => {
-        selectFeature(e.features[0], layerId);
+      (e: MapMouseEvent) => {
+        if (e.features && e.features.length > 0) {
+          selectFeature(e.features[0], layerId);
+        }
       },
       { passive: true },
     );
@@ -487,7 +504,7 @@ const isOnlyLineStringData = () => {
   ];
   return allFeatures.every((feature) => feature.geometry.type === "LineString");
 };
-const handleBufferClick = (e) => {
+const handleBufferClick = (e: MapMouseEvent) => {
   const pixelBuffer = 10;
   const bbox = [
     [e.point.x - pixelBuffer, e.point.y - pixelBuffer],
@@ -504,7 +521,7 @@ const handleBufferClick = (e) => {
     selectFeature(firstFeature, layerId);
   }
 };
-const handleBufferMouseEvent = (e) => {
+const handleBufferMouseEvent = (e: MapMouseEvent) => {
   const pixelBuffer = 10;
   const bbox = [
     [e.point.x - pixelBuffer, e.point.y - pixelBuffer],
@@ -530,7 +547,7 @@ const handleBufferMouseEvent = (e) => {
 };
 
 // Add pulsing circles around the most recent alerts
-const pulsingCirclesAdded = ref(null);
+const pulsingCirclesAdded = ref();
 const addPulsingCircles = () => {
   if (pulsingCirclesAdded.value) {
     return;
@@ -586,7 +603,7 @@ const addPulsingCircles = () => {
     .join("");
   document.head.appendChild(styleSheet);
 
-  const addPulsingMarker = (feature) => {
+  const addPulsingMarker = (feature: Feature) => {
     let lng, lat;
 
     if (
@@ -612,16 +629,14 @@ const addPulsingCircles = () => {
 
     // Determine the opacity  based on confidenceLevel
     let confidenceInterval = "1";
-    if (feature.properties.confidenceLevel === "0") {
+    if (feature.properties && feature.properties.confidenceLevel === "0") {
       confidenceInterval = "0";
     }
 
     // Create a new marker and add it to the map
-    const pulsingMarker = pulsingDot.cloneNode();
+    const pulsingMarker = pulsingDot.cloneNode() as HTMLElement;
     pulsingMarker.classList.add(`pulsing-dot-${confidenceInterval}`);
-    new mapboxgl.Marker(pulsingMarker)
-      .setLngLat([parseFloat(lng), parseFloat(lat)])
-      .addTo(map.value);
+    new mapboxgl.Marker(pulsingMarker).setLngLat([lng, lat]).addTo(map.value);
   };
 
   // Add pulsing markers for most recent alerts
@@ -634,8 +649,8 @@ const removePulsingCircles = () => {
 };
 
 // Basemap selector methods
-const currentBasemap = ref(props.mapboxStyle);
-const handleBasemapChange = (newBasemap) => {
+const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
+const handleBasemapChange = (newBasemap: Basemap) => {
   removePulsingCircles();
   changeMapStyle(map.value, newBasemap, props.planetApiKey);
 
@@ -648,7 +663,7 @@ const handleBasemapChange = (newBasemap) => {
 };
 
 // Map legend methods
-const mapLegendContent = ref(null);
+const mapLegendContent = ref();
 const prepareMapLegendContent = () => {
   map.value.once("idle", () => {
     let mapLegendLayerIds = props.mapLegendLayerIds;
@@ -687,16 +702,16 @@ const prepareMapLegendContent = () => {
     );
   });
 };
-const toggleLayerVisibility = (item) => {
+const toggleLayerVisibility = (item: MapLegendItem) => {
   utilsToggleLayerVisibility(map.value, item);
 };
 
 // Sidebar content
 // Methods for date range selection and filtering
-const selectedDateRange = ref(null);
-const convertDates = (start, end) => {
+const selectedDateRange = ref();
+const convertDates = (start: string, end: string) => {
   // Convert "MM-YYYY" to "YYYYMM" for comparison
-  const convertToDate = (dateStr) => {
+  const convertToDate = (dateStr: string) => {
     const [month, year] = dateStr.split("-").map(Number);
     return (year * 100 + month).toString();
     // Converts to YYYYMM format
@@ -728,7 +743,7 @@ const getDateOptions = () => {
 
   return dates;
 };
-const handleDateRangeChanged = (newRange) => {
+const handleDateRangeChanged = (newRange: [string, string]) => {
   // Extract start and end dates from newRange
   let [start, end] = newRange;
 
@@ -744,7 +759,7 @@ const handleDateRangeChanged = (newRange) => {
 
   // Update the layers to only show features within the selected date range
   nextTick(() => {
-    map.value.getStyle().layers.forEach((layer) => {
+    map.value.getStyle().layers.forEach((layer: Layer) => {
       if (
         layer.id.startsWith("most-recent-alerts") ||
         layer.id.startsWith("previous-alerts")
@@ -760,9 +775,11 @@ const handleDateRangeChanged = (newRange) => {
     // If 'most-recent-alerts' layers are empty, remove the pulsing circles. If not, add them.
     const recentAlertsLayers = map.value
       .getStyle()
-      .layers.filter((layer) => layer.id.startsWith("most-recent-alerts"));
-    let recentAlertsFeatures = [];
-    recentAlertsLayers.forEach((layer) => {
+      .layers.filter((layer: Layer) =>
+        layer.id.startsWith("most-recent-alerts"),
+      );
+    const recentAlertsFeatures = [];
+    recentAlertsLayers.forEach((layer: Layer) => {
       recentAlertsFeatures.push(
         ...map.value.querySourceFeatures(layer.source, {
           sourceLayer: layer["source-layer"],
@@ -803,9 +820,11 @@ const filteredData = computed(() => {
 
   const [startDate, endDate] = convertDates(start, end);
 
-  const filterFeatures = (features) => {
+  const filterFeatures = (features: Feature[]) => {
     return features.filter((feature) => {
-      const monthDetected = feature.properties["YYYYMM"];
+      const monthDetected = feature.properties
+        ? feature.properties["YYYYMM"]
+        : null;
       return monthDetected >= startDate && monthDetected <= endDate;
     });
   };
@@ -824,15 +843,18 @@ const filteredData = computed(() => {
 
 // Methods for selecting and resetting
 const downloadAlert = ref(false);
-const imageCaption = ref(null);
-const imageUrl = ref([]);
+const imageCaption = ref();
+const imageUrl = ref();
 const isAlert = ref(false);
-const selectedFeature = ref(null);
-const selectedFeatureGeojson = ref(null);
-const selectedFeatureId = ref(null);
-const selectedFeatureSource = ref(null);
-const selectFeature = (feature, layerId) => {
-  let featureObject = feature.properties;
+const selectedFeature = ref();
+const selectedFeatureGeojson = ref();
+const selectedFeatureId = ref();
+const selectedFeatureSource = ref();
+const selectFeature = (feature: Feature, layerId: string) => {
+  if (!feature.properties) {
+    return;
+  }
+  const featureObject = feature.properties;
 
   const featureGeojson = {
     type: feature.type,
@@ -885,7 +907,7 @@ const selectFeature = (feature, layerId) => {
   }
   if (featureObject["photos"]) {
     const photos = featureObject["photos"].split(",");
-    photos.forEach((photo) => imageUrl.value.push(photo.trim()));
+    photos.forEach((photo: string) => imageUrl.value.push(photo.trim()));
   }
 
   delete featureObject["t0_url"];
@@ -924,7 +946,7 @@ const resetToInitialState = () => {
   selectedDateRange.value = null;
 
   // Reset the filters for layers that start with 'most-recent-alerts' and 'alerts'
-  map.value.getStyle().layers.forEach((layer) => {
+  map.value.getStyle().layers.forEach((layer: Layer) => {
     if (
       layer.id.startsWith("most-recent-alerts") ||
       layer.id.startsWith("alerts")
@@ -933,11 +955,13 @@ const resetToInitialState = () => {
     }
   });
 
-  mapLegendContent.value = mapLegendContent.value.map((item) => ({
-    ...item,
-    visible: true,
-  }));
-  mapLegendContent.value.forEach((item) => {
+  mapLegendContent.value = mapLegendContent.value.map(
+    (item: MapLegendItem) => ({
+      ...item,
+      visible: true,
+    }),
+  );
+  mapLegendContent.value.forEach((item: MapLegendItem) => {
     map.value.setLayoutProperty(item.id, "visibility", "visible");
   });
   emit("reset-legend-visibility");
@@ -971,8 +995,8 @@ onBeforeUnmount(() => {
     <div id="map"></div>
     <button
       v-if="!showSidebar"
-      @click="resetToInitialState"
       class="reset-button bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
+      @click="resetToInitialState"
     >
       {{ $t("resetDashboard") }}
     </button>
@@ -982,7 +1006,7 @@ onBeforeUnmount(() => {
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
       :download-alert="downloadAlert"
-      :feature-geojson="selectedFeatureGeojson"
+      :feature-data="selectedFeatureGeojson"
       :feature="selectedFeature"
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
@@ -1006,7 +1030,7 @@ onBeforeUnmount(() => {
       :has-ruler-control="hasRulerControl"
       :mapbox-style="mapboxStyle"
       :planet-api-key="planetApiKey"
-      @basemapSelected="handleBasemapChange"
+      @basemap-selected="handleBasemapChange"
     />
   </div>
 </template>

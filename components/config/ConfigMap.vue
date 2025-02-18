@@ -1,17 +1,18 @@
-<script setup>
-import { reactive, watch } from "vue";
-
+<script setup lang="ts">
+// @ts-expect-error - vue-tags-input does not have types
 import { VueTagsInput } from "@vojtechlanka/vue-tags-input";
 
 import { toCamelCase } from "@/utils";
 import { updateTags } from "@/composables/useTags";
 
-const props = defineProps({
-  tableName: String,
-  config: Object,
-  views: Array,
-  keys: Array,
-});
+import type { ViewConfig } from "@/types/types";
+
+const props = defineProps<{
+  tableName: string;
+  config: ViewConfig;
+  views: Array<string>;
+  keys: Array<string>;
+}>();
 
 const localConfig = reactive({ ...props.config });
 
@@ -132,9 +133,9 @@ watch(
         <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
         <label :for="`${tableName}-${key}`" class="checkbox-label">
           <input
-            type="checkbox"
             :id="`${tableName}-${key}`"
             v-model="localConfig[key]"
+            type="checkbox"
           />
           {{ $t("enable") }}
         </label>

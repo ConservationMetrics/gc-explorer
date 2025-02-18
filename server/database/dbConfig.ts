@@ -7,9 +7,6 @@ export const getConfig = () => {
     dbPassword,
     dbPort,
     dbSsl,
-    isSQLite,
-    sqliteDbPath,
-    // eslint-disable-next-line no-undef
   } = useRuntimeConfig() as unknown as {
     configDatabase: string;
     database: string;
@@ -18,8 +15,6 @@ export const getConfig = () => {
     dbPassword: string;
     dbPort: string;
     dbSsl: boolean;
-    isSQLite: boolean;
-    sqliteDbPath: string;
   };
 
   return {
@@ -30,7 +25,5 @@ export const getConfig = () => {
     dbPassword,
     dbPort,
     dbSsl,
-    isSQLite,
-    sqliteDbPath,
   };
 };

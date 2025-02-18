@@ -1,28 +1,28 @@
-<script setup>
-import { computed } from "vue";
+<script setup lang="ts">
+import type { AllowedFileExtensions } from "@/types/types";
 
-const props = defineProps({
-  allowedFileExtensions: Object,
-  filePath: String,
-  mediaBasePath: String,
-});
+const props = defineProps<{
+  allowedFileExtensions: AllowedFileExtensions;
+  filePath: string;
+  mediaBasePath: string;
+}>();
 
 // Conditional rendering based on file extension
 const isAudio = computed(() =>
-  checkExtension(props.allowedFileExtensions.audio),
+  checkExtensions(props.allowedFileExtensions.audio),
 );
 const isImage = computed(() =>
-  checkExtension(props.allowedFileExtensions.image),
+  checkExtensions(props.allowedFileExtensions.image),
 );
 const isVideo = computed(() =>
-  checkExtension(props.allowedFileExtensions.video),
+  checkExtensions(props.allowedFileExtensions.video),
 );
 
-const getExtension = (filePath) => {
-  return filePath.split(".").pop().toLowerCase();
+const getExtension = (filePath: string) => {
+  return (filePath.split(".").pop() || "").toLowerCase();
 };
 
-const checkExtension = (extensions) => {
+const checkExtensions = (extensions: string[]) => {
   if (!extensions) return false;
   const extension = getExtension(props.filePath);
   return extensions.includes(extension);

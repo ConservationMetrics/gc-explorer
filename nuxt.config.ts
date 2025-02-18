@@ -29,6 +29,7 @@ export default defineNuxtConfig({
   modules: [
     "gc-shared-resources",
     "nuxt-auth-utils",
+    "@nuxt/eslint",
     "@nuxtjs/i18n",
     "@nuxt/test-utils/module",
     "nuxt-windicss",
@@ -64,8 +65,6 @@ export default defineNuxtConfig({
     dbPort: "5432",
     dbSsl: true,
     dbTable: "",
-    isSqlite: false,
-    sqliteDbPath: "",
     port: "8080",
     public: {
       allowedFileExtensions: {

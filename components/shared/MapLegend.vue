@@ -1,13 +1,13 @@
-<script setup>
-import { ref, watch, onMounted } from "vue";
+<script setup lang="ts">
+import type { MapLegendItem } from "@/types/types";
 
-const props = defineProps({
-  mapLegendContent: Array,
-});
+const props = defineProps<{
+  mapLegendContent: MapLegendItem[];
+}>();
 
 const emit = defineEmits(["toggle-layer-visibility"]);
 
-const localMapLegendContent = ref([]);
+const localMapLegendContent = ref();
 
 onMounted(() => {
   // Ensure all items are visible initially
@@ -18,12 +18,12 @@ onMounted(() => {
 });
 
 // Layer visibility toggles
-const toggleLayerVisibility = (item) => {
+const toggleLayerVisibility = (item: MapLegendItem) => {
   emit("toggle-layer-visibility", item);
 };
 
 // Get the class for the geometry type
-const getTypeClass = (item) => {
+const getTypeClass = (item: MapLegendItem) => {
   return `${item.type}-box`;
 };
 
@@ -48,12 +48,12 @@ watch(
       class="legend-item"
     >
       <input
-        class="mr-2"
-        type="checkbox"
         :id="item.id"
         v-model="item.visible"
-        @change="toggleLayerVisibility(item)"
+        class="mr-2"
+        type="checkbox"
         :checked="item.visible"
+        @change="toggleLayerVisibility(item)"
       />
       <label :for="item.id">
         <div

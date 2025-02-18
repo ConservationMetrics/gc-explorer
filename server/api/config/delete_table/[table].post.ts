@@ -1,21 +1,15 @@
-import { defineEventHandler, sendError, H3Event } from "h3";
+import type { H3Event } from "h3";
+import { defineEventHandler, sendError } from "h3";
 import { getDatabaseConnection } from "@/server/database/dbConnection";
 import { removeTableFromConfig } from "../../../database/dbOperations";
 
 export default defineEventHandler(async (event: H3Event) => {
-  const {
-    isSqlite,
-    // eslint-disable-next-line no-undef
-  } = useRuntimeConfig() as unknown as {
-    isSqlite: boolean;
-  };
-
   const table = event.context?.params?.table as string;
 
   try {
     const configDb = await getDatabaseConnection(true);
 
-    await removeTableFromConfig(configDb, table, isSqlite);
+    await removeTableFromConfig(configDb, table);
     return { message: "Table removed from views configuration." };
   } catch (error) {
     if (error instanceof Error) {

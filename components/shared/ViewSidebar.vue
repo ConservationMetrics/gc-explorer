@@ -1,42 +1,63 @@
-<script setup>
-import { ref, computed, watch } from "vue";
+<script setup lang="ts">
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
 import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
 
-const props = defineProps({
-  alertsStatistics: Object,
-  allowedFileExtensions: Object,
-  calculateHectares: Boolean,
-  dateOptions: Array,
-  downloadAlert: Boolean,
-  feature: Object,
-  featureGeojson: Object,
-  filePaths: Array,
-  geojsonSelection: Object,
-  isAlert: Boolean,
-  logoUrl: String,
-  mediaBasePath: String,
-  mediaBasePathAlerts: String,
-  showIntroPanel: Boolean,
-  showSidebar: Boolean,
-  showSlider: Boolean,
-});
+import type {
+  AlertsData,
+  AlertsStatistics,
+  AllowedFileExtensions,
+  DataEntry,
+} from "@/types/types";
+
+import type { Feature } from "geojson";
+
+const props = defineProps<{
+  alertsStatistics?: AlertsStatistics;
+  allowedFileExtensions?: AllowedFileExtensions;
+  calculateHectares?: boolean;
+  dateOptions?: Array<string>;
+  downloadAlert?: boolean;
+  feature?: DataEntry;
+  featureData?: Feature;
+  filePaths?: Array<string>;
+  geojsonSelection?: Feature | AlertsData;
+  isAlert?: boolean;
+  logoUrl?: string;
+  mediaBasePath?: string;
+  mediaBasePathAlerts?: string;
+  showIntroPanel?: boolean;
+  showSidebar?: boolean;
+  showSlider?: boolean;
+}>();
 
 const scrolled = ref(false);
 
 // To hide the scroll indicator when the user scrolls
-const handleScroll = (event) => {
-  if (!scrolled.value && event.target.scrollTop > 0) {
+const handleScroll = (event: Event) => {
+  const target = event.target as HTMLElement;
+  if (!scrolled.value && target.scrollTop > 0) {
     scrolled.value = true;
   }
 };
 
 // Filter out latitude and longitude from feature object
-const filteredFeature = computed(() => {
+const filteredFeature = computed<DataEntry>(() => {
+  if (!props.feature) {
+    return {};
+  }
   const { latitude, longitude, ...rest } = props.feature;
   return rest;
 });
+
+const dataForAlertsIntroPanel = computed(() => {
+  if (props.geojsonSelection) {
+    return props.geojsonSelection as AlertsData;
+  }
+  return undefined;
+});
+
+const emit = defineEmits(["close", "date-range-changed"]);
 
 // Watchers
 watch(
@@ -59,17 +80,17 @@ watch(
 
 <template>
   <div v-if="showSidebar" class="sidebar" @scroll="handleScroll">
-    <div class="scroll-indicator" v-if="!scrolled">&#x2193;</div>
-    <button class="close-btn" @click="$emit('close')">X</button>
+    <div v-if="!scrolled" class="scroll-indicator">&#x2193;</div>
+    <button class="close-btn" @click="emit('close')">X</button>
     <AlertsIntroPanel
-      v-if="showIntroPanel"
+      v-if="showIntroPanel && alertsStatistics"
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
-      :geojson-selection="geojsonSelection"
+      :geojson-selection="dataForAlertsIntroPanel"
       :logo-url="logoUrl"
       :show-slider="showSlider"
       :alerts-statistics="alertsStatistics"
-      @date-range-changed="$emit('date-range-changed', $event)"
+      @date-range-changed="emit('date-range-changed', $event)"
     />
     <DataFeature
       v-if="feature"
@@ -82,7 +103,7 @@ watch(
     />
     <DownloadMapData
       v-if="downloadAlert"
-      :geojson="featureGeojson"
+      :feature-data="featureData"
       :type-of-data="'alert'"
     />
   </div>
@@ -132,7 +153,7 @@ watch(
     transform: translateX(-50%) scale(1);
   }
   50% {
-    transform: translateX(-50%) scale(1.2); /* Slightly larger */
+    transform: translateX(-50%) scale(1.2);
   }
   100% {
     transform: translateX(-50%) scale(1);

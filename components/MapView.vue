@@ -1,6 +1,4 @@
-<script setup>
-import { ref, onMounted, onBeforeUnmount } from "vue";
-
+<script setup lang="ts">
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -10,34 +8,43 @@ import {
   prepareMapLegendLayers,
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
-} from "@/utils/mapFunctions.ts";
+} from "@/utils/mapFunctions";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
 import MapLegend from "@/components/shared/MapLegend.vue";
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 
-const props = defineProps({
-  allowedFileExtensions: Object,
-  filterColumn: String,
-  mapLegendLayerIds: String,
-  mapboxAccessToken: String,
-  mapboxBearing: Number,
-  mapboxLatitude: Number,
-  mapboxLongitude: Number,
-  mapboxPitch: Number,
-  mapboxProjection: String,
-  mapboxStyle: String,
-  mapboxZoom: Number,
-  mapbox3d: Boolean,
-  mapData: Array,
-  mediaBasePath: String,
-  planetApiKey: String,
-});
+import type { Layer, MapMouseEvent } from "mapbox-gl";
+import type {
+  AllowedFileExtensions,
+  Basemap,
+  Dataset,
+  FilterValues,
+  MapLegendItem,
+} from "@/types/types";
+
+const props = defineProps<{
+  allowedFileExtensions: AllowedFileExtensions;
+  filterColumn: string;
+  mapLegendLayerIds?: string;
+  mapboxAccessToken: string;
+  mapboxBearing: number;
+  mapboxLatitude: number;
+  mapboxLongitude: number;
+  mapboxPitch: number;
+  mapboxProjection: string;
+  mapboxStyle: string;
+  mapboxZoom: number;
+  mapbox3d: boolean;
+  mapData: Dataset;
+  mediaBasePath?: string;
+  planetApiKey?: string;
+}>();
 
 const filteredData = ref([...props.mapData]);
-const map = ref(null);
-const selectedFeature = ref(null);
+const map = ref();
+const selectedFeature = ref();
 const showSidebar = ref(false);
 const showBasemapSelector = ref(false);
 
@@ -90,7 +97,7 @@ onMounted(() => {
 const addDataToMap = () => {
   // Remove existing data layers from the map
   if (map.value) {
-    map.value.getStyle().layers.forEach((layer) => {
+    map.value.getStyle().layers.forEach((layer: Layer) => {
       if (layer.id.startsWith("data-layer")) {
         if (map.value.getLayer(layer.id)) {
           map.value.removeLayer(layer.id);
@@ -206,19 +213,21 @@ const addDataToMap = () => {
     map.value.on(
       "click",
       layerId,
-      (e) => {
-        let featureObject = JSON.parse(e.features[0].properties.feature);
-        delete featureObject["filter-color"];
+      (e: MapMouseEvent) => {
+        if (e.features && e.features.length > 0 && e.features[0].properties) {
+          const featureObject = JSON.parse(e.features[0].properties.feature);
+          delete featureObject["filter-color"];
 
-        // Rewrite coordinates string from [long, lat] to lat, long, removing brackets
-        if (featureObject.geocoordinates) {
-          featureObject.geocoordinates = prepareCoordinatesForSelectedFeature(
-            featureObject.geocoordinates,
-          );
+          // Rewrite coordinates string from [long, lat] to lat, long, removing brackets
+          if (featureObject.geocoordinates) {
+            featureObject.geocoordinates = prepareCoordinatesForSelectedFeature(
+              featureObject.geocoordinates,
+            );
+          }
+
+          selectedFeature.value = featureObject;
+          showSidebar.value = true;
         }
-
-        selectedFeature.value = featureObject;
-        showSidebar.value = true;
       },
       { passive: true },
     );
@@ -231,7 +240,7 @@ const prepareMapCanvasContent = () => {
 
 // Filter data based on selected values from DataFilter component
 const processedData = ref([...props.mapData]);
-const filterValues = (values) => {
+const filterValues = (values: FilterValues) => {
   if (values.includes("null")) {
     filteredData.value = [...processedData.value];
   } else {
@@ -243,8 +252,8 @@ const filterValues = (values) => {
 };
 
 // Basemap selector methods
-const currentBasemap = ref(props.mapboxStyle);
-const handleBasemapChange = (newBasemap) => {
+const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
+const handleBasemapChange = (newBasemap: Basemap) => {
   changeMapStyle(map.value, newBasemap, props.planetApiKey);
 
   currentBasemap.value = newBasemap;
@@ -256,7 +265,7 @@ const handleBasemapChange = (newBasemap) => {
 };
 
 // Map legend methods
-const mapLegendContent = ref(null);
+const mapLegendContent = ref();
 const prepareMapLegendContent = () => {
   if (!props.mapLegendLayerIds) {
     return;
@@ -264,11 +273,11 @@ const prepareMapLegendContent = () => {
   map.value.once("idle", () => {
     mapLegendContent.value = prepareMapLegendLayers(
       map.value,
-      props.mapLegendLayerIds,
+      props.mapLegendLayerIds ?? null,
     );
   });
 };
-const toggleLayerVisibility = (item) => {
+const toggleLayerVisibility = (item: MapLegendItem) => {
   utilsToggleLayerVisibility(map.value, item);
 };
 
@@ -307,7 +316,7 @@ onBeforeUnmount(() => {
     v-if="showBasemapSelector"
     :mapbox-style="mapboxStyle"
     :planet-api-key="planetApiKey"
-    @basemapSelected="handleBasemapChange"
+    @basemap-selected="handleBasemapChange"
   />
 </template>
 
