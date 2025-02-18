@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
 import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";

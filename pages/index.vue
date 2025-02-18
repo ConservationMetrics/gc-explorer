@@ -2,10 +2,10 @@
 import { ref, computed } from "vue";
 import { useHead, useFetch, useRuntimeConfig } from "#app";
 
-// Refs to store the fetched data
-const viewsConfig = ref([]);
+import type { Views } from "@/types/types";
 
-// API request to fetch the data
+const viewsConfig = ref<Views>({});
+
 const {
   public: { appApiKey },
 } = useRuntimeConfig();
@@ -17,7 +17,8 @@ const { data, error } = await useFetch("/api/config", {
 });
 
 if (data.value && !error.value) {
-  viewsConfig.value = data.value[0];
+  const fetchedViewsData = data.value[0] as Views;
+  viewsConfig.value = fetchedViewsData;
 } else {
   console.error("Error fetching data:", error.value);
 }
@@ -27,9 +28,9 @@ const filteredSortedViewsConfig = computed(() => {
   return Object.keys(viewsConfig.value)
     .filter((key) => Object.keys(viewsConfig.value[key]).length > 0)
     .sort()
-    .reduce((acc, key) => {
-      acc[key] = viewsConfig.value[key];
-      return acc;
+    .reduce((accumulator: Views, key: string) => {
+      accumulator[key] = viewsConfig.value[key];
+      return accumulator;
     }, {});
 });
 
@@ -56,7 +57,11 @@ useHead({
           <strong>{{ $t("table") }}:</strong> {{ tableName }}
         </h2>
         <ul class="list-none p-0">
-          <li v-for="view in config.VIEWS.split(',')" :key="view" class="mb-2">
+          <li
+            v-for="view in config.VIEWS ? config.VIEWS.split(',') : []"
+            :key="view"
+            class="mb-2"
+          >
             <NuxtLink
               :to="`/${view}/${tableName}`"
               class="text-blue-500 no-underline hover:text-blue-700 hover:underline"

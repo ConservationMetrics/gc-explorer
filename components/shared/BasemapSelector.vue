@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
-
 import Datepicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
 
@@ -15,7 +13,11 @@ const emit = defineEmits(["basemapSelected"]);
 const topPosition = computed(() => (props.hasRulerControl ? "187px" : "147px"));
 
 const showBasemapWindow = ref(false);
-const selectedBasemap = ref({ id: "custom", style: props.mapboxStyle });
+const selectedBasemap = ref({
+  id: "custom",
+  style: props.mapboxStyle,
+  monthYear: "",
+});
 
 const toggleBasemapWindow = () => {
   showBasemapWindow.value = !showBasemapWindow.value;
@@ -34,16 +36,16 @@ const maxMonth = computed(() => {
     date.setMonth(date.getMonth() - 1);
   }
   const year = date.getFullYear();
-  let month = date.getMonth() + 1;
-  month = month < 10 ? `0${month}` : month;
-  return `${year}-${month}`;
+  const monthNumber = date.getMonth() + 1;
+  const formattedMonth = monthNumber < 10 ? `0${monthNumber}` : monthNumber;
+  return `${year}-${formattedMonth}`;
 });
 const monthYear = ref(maxMonth.value);
-const setPlanetDateRange = (date) => {
+const setPlanetDateRange = (date: Date) => {
   // minMonth and maxMonth are in format YYYY-MM, but date is a Date object
   // so we need to convert it to a string in the same format
-  date = date.toISOString().slice(0, 7);
-  return date < minMonth || date > maxMonth.value;
+  const formattedDate = date.toISOString().slice(0, 7);
+  return formattedDate < minMonth || formattedDate > maxMonth.value;
 };
 
 // Update the monthYear when the Planet basemap is selected

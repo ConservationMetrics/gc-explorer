@@ -3,9 +3,11 @@ import { ref } from "vue";
 import { useHead, useFetch, useRuntimeConfig } from "#app";
 import { useI18n } from "vue-i18n";
 
+import type { Views, ViewConfig } from "@/types/types";
+
 // Refs to store the fetched data
-const viewsConfig = ref([]);
-const tableNames = ref([]);
+const viewsConfig = ref<Views>({});
+const tableNames = ref();
 const dataFetched = ref(false);
 
 // API request to fetch the data
@@ -20,15 +22,24 @@ const { data, error } = await useFetch("/api/config", {
 });
 
 if (data.value && !error.value) {
-  viewsConfig.value = data.value[0];
-  tableNames.value = data.value[1];
+  const fetchedViewsData = data.value[0] as Views;
+  viewsConfig.value = fetchedViewsData;
+
+  const fetchedTableNames = data.value[1] as string[];
+  tableNames.value = fetchedTableNames;
   dataFetched.value = true;
 } else {
   console.error("Error fetching data:", error.value);
 }
 
 // POST request to submit the updated config
-const submitConfig = async ({ config, tableName }) => {
+const submitConfig = async ({
+  config,
+  tableName,
+}: {
+  config: ViewConfig;
+  tableName: string;
+}) => {
   try {
     await $fetch(`/api/config/update_config/${tableName}`, {
       method: "POST",
@@ -41,7 +52,7 @@ const submitConfig = async ({ config, tableName }) => {
 };
 
 // POST request to remove a table from the config
-const removeTableFromConfig = async (tableName) => {
+const removeTableFromConfig = async (tableName: string) => {
   try {
     await $fetch(`/api/config/delete_table/${tableName}`, {
       method: "POST",
@@ -53,7 +64,7 @@ const removeTableFromConfig = async (tableName) => {
 };
 
 // POST request to add a table to the config
-const addTableToConfig = async (tableName) => {
+const addTableToConfig = async (tableName: string) => {
   try {
     await $fetch(`/api/config/new_table/${tableName}`, {
       method: "POST",

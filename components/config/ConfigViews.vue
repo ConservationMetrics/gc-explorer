@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import type { ViewConfig } from "@/types/types";
 
-const props = defineProps({
-  tableName: String,
-  config: Object,
-  views: Array,
-  keys: Array,
-});
+const props = defineProps<{
+  tableName: string;
+  config: ViewConfig;
+  views: Array<string>;
+  keys: Array<string>;
+}>();
 
 const localViews = ref([...props.views]);
-
-// Set up composables
 
 // Watch for changes to views and emit updates
 const emit = defineEmits(["update:views"]);

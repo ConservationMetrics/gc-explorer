@@ -8,28 +8,26 @@ import { useI18n } from "vue-i18n";
 const route = useRoute();
 const table = route.params.tablename;
 
-// Refs to store the fetched data
-const alertsData = ref([]);
+const alertsData = ref();
 const alertsStatistics = ref({});
 const dataFetched = ref(false);
-const allowedFileExtensions = ref([]);
-const logoUrl = ref("");
-const mapLegendLayerIds = ref("");
-const mapboxAccessToken = ref("");
+const allowedFileExtensions = ref();
+const logoUrl = ref();
+const mapLegendLayerIds = ref();
+const mapboxAccessToken = ref();
 const mapboxBearing = ref(0);
 const mapboxLatitude = ref(0);
 const mapboxLongitude = ref(0);
 const mapboxPitch = ref(0);
-const mapboxProjection = ref("");
-const mapboxStyle = ref("");
+const mapboxProjection = ref();
+const mapboxStyle = ref();
 const mapboxZoom = ref(0);
 const mapbox3d = ref(false);
-const mapeoData = ref([]);
-const mediaBasePath = ref("");
-const mediaBasePathAlerts = ref("");
-const planetApiKey = ref("");
+const mapeoData = ref();
+const mediaBasePath = ref();
+const mediaBasePathAlerts = ref();
+const planetApiKey = ref();
 
-// API request to fetch the data
 const {
   public: { appApiKey },
 } = useRuntimeConfig();

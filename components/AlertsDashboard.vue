@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 
 import mapboxgl from "mapbox-gl";
@@ -9,45 +8,49 @@ import bbox from "@turf/bbox";
 import { lineString } from "@turf/helpers";
 import length from "@turf/length";
 import along from "@turf/along";
+
+// @ts-expect-error - mapbox-gl-ruler-control does not have types
 import rulerControl from "mapbox-gl-ruler-control";
+
+import type { AllowedFileExtensions } from "@/types/types";
 
 import {
   changeMapStyle,
   prepareMapLegendLayers,
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
-} from "@/utils/mapFunctions.ts";
+} from "@/utils/mapFunctions";
 
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
 import MapLegend from "@/components/shared/MapLegend.vue";
+
 const { t } = useI18n();
 
-const props = defineProps({
-  alertsData: Object,
-  alertsStatistics: Object,
-  allowedFileExtensions: Object,
-  logoUrl: String,
-  mapLegendLayerIds: String,
-  mapboxAccessToken: String,
-  mapboxBearing: Number,
-  mapboxLatitude: Number,
-  mapboxLongitude: Number,
-  mapboxPitch: Number,
-  mapboxProjection: String,
-  mapboxStyle: String,
-  mapboxZoom: Number,
-  mapbox3d: Boolean,
-  mapeoData: Object,
-  mediaBasePath: String,
-  mediaBasePathAlerts: String,
-  planetApiKey: String,
-});
+const props = defineProps<{
+  alertsData: object;
+  alertsStatistics: object;
+  allowedFileExtensions: AllowedFileExtensions;
+  mapLegendLayerIds: string;
+  mapboxAccessToken: string;
+  mapboxBearing: number;
+  mapboxLatitude: number;
+  mapboxLongitude: number;
+  mapboxPitch: number;
+  mapboxProjection: string;
+  mapboxStyle: string;
+  mapboxZoom: number;
+  mapbox3d: boolean;
+  mapeoData: object;
+  mediaBasePath: string;
+  mediaBasePathAlerts: string;
+  planetApiKey: string;
+}>();
 
 const calculateHectares = ref(false);
 const dateOptions = ref([]);
 const hasRulerControl = ref(false);
-const map = ref(null);
+const map = ref();
 const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showSidebar = ref(true);

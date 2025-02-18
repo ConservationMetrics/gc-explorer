@@ -1,27 +1,32 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from "vue";
 import { getFilePathsWithExtension } from "@/utils";
-import { prepareCoordinatesForSelectedFeature } from "@/utils/mapFunctions.ts";
+import { prepareCoordinatesForSelectedFeature } from "@/utils/mapFunctions";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
 
-const props = defineProps({
-  allowedFileExtensions: Object,
-  filterColumn: String,
-  galleryData: Object,
-  mediaBasePath: String,
-});
+import type {
+  AllowedFileExtensions,
+  Dataset,
+  DataEntry,
+  FilterValues,
+} from "@/types/types";
 
+const props = defineProps<{
+  allowedFileExtensions: AllowedFileExtensions;
+  filterColumn: string;
+  galleryData: Dataset;
+  mediaBasePath: string;
+}>();
 const filteredData = ref(props.galleryData);
 
 // Pagination per page
 const currentPage = ref(1);
 const itemsPerPage = 100;
-const paginatedData = computed(() => {
+const paginatedData = computed<Dataset>(() => {
   const start = 0;
   const end = currentPage.value * itemsPerPage;
-  return filteredData.value.slice(start, end);
+  return filteredData.value.slice(start, end) as Dataset;
 });
 
 const handleScroll = () => {
@@ -39,24 +44,23 @@ onBeforeUnmount(() => {
 });
 
 // Filter data based on selected values from DataFilter component
-const filterValues = (values) => {
+const filterValues = (values: FilterValues) => {
+  console.log(values);
   if (values.includes("null")) {
     filteredData.value = props.galleryData;
   } else {
     filteredData.value = props.galleryData.filter((item) =>
-      values.includes(item[props.filterColumn]),
+      values.includes(item[props.filterColumn].toString()),
     );
   }
 };
 
-const featureWithPreparedCoordinates = (feature) => ({
+const featureWithPreparedCoordinates = (feature: DataEntry) => ({
   ...feature,
   geocoordinates: feature.geocoordinates
     ? prepareCoordinatesForSelectedFeature(feature.geocoordinates)
     : feature.geocoordinates,
 });
-
-// Lifecycle hooks
 </script>
 
 <template>

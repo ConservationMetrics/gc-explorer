@@ -1,21 +1,6 @@
 import type mapboxgl from "mapbox-gl";
 
-interface Basemap {
-  id: string;
-  style?: string;
-  url?: string;
-  monthYear?: string;
-}
-
-interface MapStyle {
-  name: string;
-  style?: {
-    version: number;
-    sources: unknown;
-    layers: unknown[];
-  };
-  url?: string;
-}
+import type { Basemap, MapStyle } from "@/types/types";
 
 export const mapStyles: Record<string, MapStyle> = {
   planet: {
@@ -53,11 +38,15 @@ export const mapStyles: Record<string, MapStyle> = {
 export const changeMapStyle = (
   map: mapboxgl.Map,
   basemap: Basemap,
-  planetApiKey: string,
+  planetApiKey?: string,
 ) => {
   if (basemap.style) {
     map.setStyle(basemap.style);
-  } else if (basemap.id === "planet" && mapStyles.planet.style) {
+  } else if (
+    basemap.id === "planet" &&
+    mapStyles.planet.style &&
+    planetApiKey
+  ) {
     const planetStyle = JSON.parse(JSON.stringify(mapStyles.planet.style));
     planetStyle.sources.planet.tiles[0] =
       planetStyle.sources.planet.tiles[0].replace(
@@ -67,7 +56,7 @@ export const changeMapStyle = (
     planetStyle.sources.planet.tiles[0] += planetApiKey;
     map.setStyle(planetStyle);
   } else {
-    console.warn("Basemap style not found");
+    console.warn("Basemap style not found, or API key not provided");
   }
 };
 
@@ -96,7 +85,7 @@ const getMapboxLayersForLegend = (
 export const prepareMapLegendLayers = (
   map: mapboxgl.Map,
   mapLegendLayerIds: string | null,
-  mapeoLegendColor: string | null,
+  mapeoLegendColor?: string | null,
 ): unknown[] | undefined => {
   if (!mapLegendLayerIds || !map.isStyleLoaded()) {
     return;

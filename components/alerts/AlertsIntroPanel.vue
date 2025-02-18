@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import AlertsChart from "~/components/alerts/AlertsChart.vue";
-import AlertsSlider from "~/components/alerts/AlertsSlider.vue";
 import DownloadMapData from "~/components/shared/DownloadMapData.vue";
 
 const props = defineProps({

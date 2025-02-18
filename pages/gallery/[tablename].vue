@@ -8,14 +8,12 @@ import { useI18n } from "vue-i18n";
 const route = useRoute();
 const table = route.params.tablename;
 
-// Refs to store the fetched data
-const allowedFileExtensions = ref({});
+const allowedFileExtensions = ref();
 const dataFetched = ref(false);
-const filterColumn = ref("");
-const galleryData = ref([]);
-const mediaBasePath = ref("");
+const filterColumn = ref();
+const galleryData = ref();
+const mediaBasePath = ref();
 
-// API request to fetch the data
 const {
   public: { appApiKey },
 } = useRuntimeConfig();

@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { reactive, watch } from "vue";
 
+// @ts-expect-error - vue-tags-input does not have types
 import { VueTagsInput } from "@vojtechlanka/vue-tags-input";
 
 import { toCamelCase } from "@/utils";
 import { updateTags } from "@/composables/useTags";
 
-const props = defineProps({
-  tableName: String,
-  config: Object,
-  views: Array,
-  keys: Array,
-});
+import type { ViewConfig } from "@/types/types";
+
+const props = defineProps<{
+  tableName: string;
+  config: ViewConfig;
+  views: Array<string>;
+  keys: Array<string>;
+}>();
 
 const localConfig = reactive({ ...props.config });
 const initialTags = {
