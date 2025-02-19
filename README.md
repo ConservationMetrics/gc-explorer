@@ -1,6 +1,6 @@
 # GuardianConnector Explorer
 
-This tool, designed for GuardianConnector and built using [Nuxt](https://nuxt.com/), offers an API compatible with a PostgreSQL databases, and renders tabular data from one or more tables on different views including a map and a media gallery.
+This tool, designed for [GuardianConnector](https://guardianconnector.net) and built using [Nuxt.js](https://nuxt.com/), offers an API compatible with a PostgreSQL databases, and renders tabular data from one or more tables on different views including a map and a media gallery.
 
 ## Configure
 
@@ -37,7 +37,7 @@ Add `--hostname 0.0.0.0` if you want the app to be accessible across your local 
 
 ## Deployment
 
-For deployment (e.g. on Azure), the following additional env vars are needed:
+For deployment, the following additional env vars are needed:
 
 ```
 HOST: 0.0.0.0
@@ -78,10 +78,9 @@ Currently, GuardianConnector expects these column headers, which follow the stru
 | id         | id            |
 | g\_\_type    | geometry.type |
 | g\_\_coordinates | geometry.coordinates |
-| p\_\_...     | properties... |
-| p\_\_\_...     | properties.$... |
+| ...     | properties... |
 
-If found, GuardianConnector Explorer will use a column mapping SQL table (with "__column" suffix), like the one created by the `warehouse` component of [Frizzle](https://github.com/ConservationMetrics/frizzle), to handle filtering and key/value rewrites.
+If found, GuardianConnector Explorer will use a column mapping SQL table (with "__column" suffix), like the one created by connector scripts of [GuardianConnector Script Hub](https://github.com/ConservationMetrics/gc-scripts-hub), to handle filtering and key/value rewrites.
 
  Any columns specified in the `.env` file will be filtered out (*see "Unwanted columns and substrings" above*).
 
@@ -91,8 +90,9 @@ At this time, media attachments in the popups are handled in a somewhat brittle 
 
 The GuardianConnector Explorer map will render the feature on a map in accordance to what kind of `type` it is (Point, LineString, Polygon). The properties are shown in a popup opened by clicking on the feature.
 
-The GuardianConnector Explorer map can work with any GeoJSON data stored in the expected tabular format, but the main purpose is to visualize field data collected using data collection applications such as Mapeo, OpenDataKit (ODK), and KoboToolbox. 
+The GuardianConnector Explorer map can work with any GeoJSON data stored in the expected tabular format, but the main purpose is to visualize field data collected using data collection applications such as (Co)Mapeo, ODK, and KoboToolbox. 
 
-* Mapeo data from Mapeo Desktop is already exported as GeoJSON file. The GuardianConnector Explorer map can work with both Observations and Territory data.
-* ODK / KoboToolbox API survey data with a geospatial column may be transformed into such a format (as CMI does using [Frizzle](https://github.com/ConservationMetrics/frizzle) components).
-* In the future, we can do a similar transformation for Mapeo Cloud API data, if needed.
+* Mapeo data from Mapeo Desktop is already exported as GeoJSON file, and a CoMapeo Archive Server returns data in a GeoJSON-compliant format.
+* ODK / KoboToolbox API survey data with a geospatial column may be transformed into such a format.
+
+In the future, this app can be expanded to also supporting loading from PostGIS, or directly from file.
