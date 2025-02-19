@@ -1,9 +1,10 @@
+import { hasValidCoordinates } from "./helpers";
+
 import type {
   ColumnEntry,
   DataEntry,
   AllowedFileExtensions,
 } from "@/types/types";
-import { hasValidCoordinates } from "./helpers";
 
 // Filter out unwanted columns and substrings
 // Use SQL column mapping if available

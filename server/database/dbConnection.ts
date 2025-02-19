@@ -1,6 +1,7 @@
 import pg from "pg";
-import type { DatabaseConnection } from "@/types/types";
 import { getConfig } from "./dbConfig";
+
+import type { DatabaseConnection } from "@/types/types";
 
 let configDb: DatabaseConnection | null = null;
 let db: DatabaseConnection | null = null;

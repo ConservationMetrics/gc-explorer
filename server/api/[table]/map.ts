@@ -1,16 +1,16 @@
-import type { H3Event } from "h3";
-import { defineEventHandler, sendError } from "h3";
 import { getDatabaseConnection } from "@/server/database/dbConnection";
-import { fetchConfig, fetchData } from "../../database/dbOperations";
+import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import {
   prepareMapData,
   transformSurveyData,
-} from "../../dataProcessing/transformData";
+} from "@/server/dataProcessing/transformData";
 import {
   filterUnwantedKeys,
   filterOutUnwantedValues,
   filterGeoData,
-} from "../../dataProcessing/filterData";
+} from "@/server/dataProcessing/filterData";
+
+import type { H3Event } from "h3";
 import type {
   AllowedFileExtensions,
   ColumnEntry,

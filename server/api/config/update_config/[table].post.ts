@@ -1,7 +1,7 @@
-import type { H3Event } from "h3";
-import { defineEventHandler, sendError, readBody } from "h3";
 import { getDatabaseConnection } from "@/server/database/dbConnection";
-import { updateConfig } from "../../../database/dbOperations";
+import { updateConfig } from "@/server/database/dbOperations";
+
+import type { H3Event } from "h3";
 
 export default defineEventHandler(async (event: H3Event) => {
   const table = event.context?.params?.table as string;

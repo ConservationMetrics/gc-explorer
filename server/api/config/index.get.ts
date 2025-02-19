@@ -1,8 +1,8 @@
-import type { H3Event } from "h3";
-import { defineEventHandler, sendError } from "h3";
 import { getDatabaseConnection } from "@/server/database/dbConnection";
 import { fetchConfig } from "@/server/database/dbOperations";
 import { getFilteredTableNames } from "./utils";
+
+import type { H3Event } from "h3";
 
 export default defineEventHandler(async (event: H3Event) => {
   try {

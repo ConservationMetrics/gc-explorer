@@ -1,9 +1,10 @@
-import { fetchTableNames } from "../../database/dbOperations";
+import { fetchTableNames } from "@/server/database/dbOperations";
+
 import type { DatabaseConnection } from "@/types/types";
 
+/** Retrieves table names from the database, excluding those with metadata, columns, and PostGIS-related entries. */
 export const getFilteredTableNames = async (database: DatabaseConnection) => {
   let tableNames = await fetchTableNames(database);
-  // Filter out anything with metadata, columns, and anything PostGIS related
   tableNames = tableNames.filter(
     (name) =>
       !name.includes("metadata") &&
