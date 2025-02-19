@@ -121,14 +121,21 @@ onMounted(() => {
   });
 });
 
-// Define emits
 const emit = defineEmits(["reset-legend-visibility"]);
 
-// Map content
+// ====================
+// === Map Content ====
+// ====================
+
 // Add data to the map and set up event listeners
 const featuresUnderCursor = ref(0);
 const hasLineStrings = ref(false);
 const mapeoDataColor = ref();
+/**
+ * Adds alert data to the map by creating GeoJSON sources and layers for recent and previous alerts.
+ * It checks for Polygon and LineString features and adds them to the map with appropriate styles.
+ * Event listeners are added for user interactions with the alert features.
+ */
 const addAlertsData = () => {
   const geoJsonSource = props.alertsData;
 
@@ -392,6 +399,11 @@ const addAlertsData = () => {
       (feature) => feature.geometry.type === "LineString",
     );
 };
+
+/**
+ * Adds (optional) Mapeo data to the map by creating a GeoJSON source and a layer for Point features.
+ * It also sets up event listeners for user interactions with the Mapeo data features.
+ */
 const addMapeoData = () => {
   if (!props.mapeoData) {
     return;
@@ -479,6 +491,11 @@ const addMapeoData = () => {
     );
   });
 };
+/**
+ * Prepares the map canvas content by adding alert and Mapeo data,
+ * pulsing circles, and the map legend. It also sets up event listeners
+ * for easier selection of LineString features.
+ */
 const prepareMapCanvasContent = () => {
   if (props.alertsData) {
     addAlertsData();
@@ -496,7 +513,11 @@ const prepareMapCanvasContent = () => {
   }
 };
 
-// Handlers for buffer around LineStrings
+/**
+ * Checks if all features in the alerts data are of type LineString.
+ *
+ * @returns {boolean} True if all features are LineStrings, otherwise false.
+ */
 const isOnlyLineStringData = () => {
   const allFeatures = [
     ...props.alertsData.mostRecentAlerts.features,
@@ -504,6 +525,13 @@ const isOnlyLineStringData = () => {
   ];
   return allFeatures.every((feature) => feature.geometry.type === "LineString");
 };
+
+/**
+ * Handles click events on the map to select features within a buffer
+ * around LineString features.
+ *
+ * @param {MapMouseEvent} e - The map mouse event.
+ */
 const handleBufferClick = (e: MapMouseEvent) => {
   const pixelBuffer = 10;
   const bbox = [
@@ -521,6 +549,13 @@ const handleBufferClick = (e: MapMouseEvent) => {
     selectFeature(firstFeature, layerId);
   }
 };
+
+/**
+ * Handles mouse movement events to change the cursor style when hovering
+ * over LineString features within a buffer.
+ *
+ * @param {MapMouseEvent} e - The map mouse event.
+ */
 const handleBufferMouseEvent = (e: MapMouseEvent) => {
   const pixelBuffer = 10;
   const bbox = [
@@ -546,8 +581,11 @@ const handleBufferMouseEvent = (e: MapMouseEvent) => {
   }
 };
 
-// Add pulsing circles around the most recent alerts
 const pulsingCirclesAdded = ref();
+/**
+ * Adds pulsing circles around the most recent alerts on the map.
+ * The pulsing effect is based on the confidence level of the alerts.
+ */
 const addPulsingCircles = () => {
   if (pulsingCirclesAdded.value) {
     return;
@@ -627,7 +665,7 @@ const addPulsingCircles = () => {
       return;
     }
 
-    // Determine the opacity  based on confidenceLevel
+    // Determine the opacity based on confidenceLevel
     let confidenceInterval = "1";
     if (feature.properties && feature.properties.confidenceLevel === "0") {
       confidenceInterval = "0";
@@ -642,13 +680,13 @@ const addPulsingCircles = () => {
   // Add pulsing markers for most recent alerts
   props.alertsData.mostRecentAlerts.features.forEach(addPulsingMarker);
 };
-// Method to remove pulsing circles
+/** Removes pulsing circles from the map */
 const removePulsingCircles = () => {
   document.querySelectorAll(".pulsing-dot").forEach((el) => el.remove());
   pulsingCirclesAdded.value = false;
 };
 
-// Basemap selector methods
+/** Handles the change of the basemap style */
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
 const handleBasemapChange = (newBasemap: Basemap) => {
   removePulsingCircles();
@@ -662,7 +700,7 @@ const handleBasemapChange = (newBasemap: Basemap) => {
   });
 };
 
-// Map legend methods
+/** Prepares the map legend content based on available layers */
 const mapLegendContent = ref();
 const prepareMapLegendContent = () => {
   map.value.once("idle", () => {
@@ -702,19 +740,28 @@ const prepareMapLegendContent = () => {
     );
   });
 };
+
+/** Toggles the visibility of a map layer */
 const toggleLayerVisibility = (item: MapLegendItem) => {
   utilsToggleLayerVisibility(map.value, item);
 };
 
-// Sidebar content
-// Methods for date range selection and filtering
+// ========================
+// === Sidebar Content ====
+// ========================
+
 const selectedDateRange = ref();
+/**
+ * Converts date strings from "MM-YYYY" format to "YYYYMM" format for comparison.
+ * If the start or end date is "earlier", it substitutes with the earliest or twelve months before date.
+ * @param {string} start - The start date in "MM-YYYY" format or "earlier".
+ * @param {string} end - The end date in "MM-YYYY" format or "earlier".
+ * @returns {[string, string]} - The converted start and end dates in "YYYYMM" format.
+ */
 const convertDates = (start: string, end: string) => {
-  // Convert "MM-YYYY" to "YYYYMM" for comparison
   const convertToDate = (dateStr: string) => {
     const [month, year] = dateStr.split("-").map(Number);
     return (year * 100 + month).toString();
-    // Converts to YYYYMM format
   };
 
   if (start === t("earlier")) {
@@ -730,19 +777,26 @@ const convertDates = (start: string, end: string) => {
 
   return [startDate, endDate];
 };
+
+/**
+ * Retrieves date options for selection, replacing earlier dates with "Earlier" if there are more than 12 dates.
+ * @returns {string[]} - An array of date options.
+ */
 const getDateOptions = () => {
   let dates = props.alertsStatistics.allDates;
 
-  // Check if there are more than 12 dates
-  // Replace any earlier dates with "Earlier"
   if (dates.length > 12) {
     const last12Dates = dates.slice(-12);
-
     dates = [t("earlier"), ...last12Dates];
   }
 
   return dates;
 };
+
+/**
+ * Handles changes in the selected date range, updating map layers to show features within the new range.
+ * @param {[string, string]} newRange - The new date range as an array of start and end dates.
+ */
 const handleDateRangeChanged = (newRange: [string, string]) => {
   // Extract start and end dates from newRange
   let [start, end] = newRange;
@@ -802,22 +856,26 @@ const handleDateRangeChanged = (newRange: [string, string]) => {
     selectedDateRange.value = newRange;
   });
 };
+
+/**
+ * Closes the sidebar and resets the selected feature.
+ */
 const handleSidebarClose = () => {
   showSidebar.value = false;
   resetSelectedFeature();
 };
-const filteredData = computed(() => {
-  // Function to filter features by date range.
-  // This is being passed to the Download component in
-  // AlertsIntroPanel.
 
-  // If no date range is selected, return the full data
+/**
+ * Computes filtered data based on the selected date range.
+ * If no date range is selected, returns the full alerts data.
+ * @returns {Object} - The filtered alerts data.
+ */
+const filteredData = computed(() => {
   if (!selectedDateRange.value) {
     return props.alertsData;
   }
 
   const [start, end] = selectedDateRange.value;
-
   const [startDate, endDate] = convertDates(start, end);
 
   const filterFeatures = (features: Feature[]) => {
@@ -841,7 +899,10 @@ const filteredData = computed(() => {
   };
 });
 
-// Methods for selecting and resetting
+// ===========================================
+// === Methods for selecting and resetting ===
+// ===========================================
+
 const downloadAlert = ref(false);
 const imageCaption = ref();
 const imageUrl = ref();
@@ -850,6 +911,14 @@ const selectedFeature = ref();
 const selectedFeatureGeojson = ref();
 const selectedFeatureId = ref();
 const selectedFeatureSource = ref();
+/**
+ * Selects a feature on the map, updating the component state and UI.
+ * Resets any previously selected feature and highlights the new one.
+ * Updates the sidebar with feature details and manages image URLs.
+ *
+ * @param {Feature} feature - The feature to be selected.
+ * @param {string} layerId - The ID of the layer containing the feature.
+ */
 const selectFeature = (feature: Feature, layerId: string) => {
   if (!feature.properties) {
     return;
@@ -923,6 +992,10 @@ const selectFeature = (feature: Feature, layerId: string) => {
 
   removePulsingCircles();
 };
+
+/**
+ * Resets the currently selected feature, clearing its state and UI highlights.
+ */
 const resetSelectedFeature = () => {
   if (selectedFeatureId.value === null || !selectedFeatureSource.value) {
     return;
@@ -936,6 +1009,11 @@ const resetSelectedFeature = () => {
   selectedFeatureId.value = null;
   selectedFeatureSource.value = null;
 };
+
+/**
+ * Resets the map and UI to their initial states, clearing selections and filters.
+ * Repositions the map to its initial view and re-adds pulsing circles.
+ */
 const resetToInitialState = () => {
   resetSelectedFeature();
   showSidebar.value = true;

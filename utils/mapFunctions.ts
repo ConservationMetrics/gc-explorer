@@ -2,6 +2,7 @@ import type mapboxgl from "mapbox-gl";
 
 import type { Basemap, MapStyle } from "@/types/types";
 
+/** Map styles configuration for different basemaps */
 export const mapStyles: Record<string, MapStyle> = {
   planet: {
     name: `Planet Monthly Visual Basemap`,
@@ -35,6 +36,7 @@ export const mapStyles: Record<string, MapStyle> = {
   },
 };
 
+/** Changes the map style based on the provided basemap and API key */
 export const changeMapStyle = (
   map: mapboxgl.Map,
   basemap: Basemap,
@@ -60,6 +62,7 @@ export const changeMapStyle = (
   }
 };
 
+/** Retrieves mapbox layers for the legend based on provided layer IDs */
 const getMapboxLayersForLegend = (
   map: mapboxgl.Map,
   mapLegendLayerIds: string,
@@ -80,6 +83,7 @@ const getMapboxLayersForLegend = (
   return matchingLayers;
 };
 
+/** Prepares map legend layers with type, id, and color information */
 export const prepareMapLegendLayers = (
   map: mapboxgl.Map,
   mapLegendLayerIds: string | null,
@@ -94,7 +98,6 @@ export const prepareMapLegendLayers = (
     mapLegendLayerIds,
   );
 
-  // Prepare object with type, id, and color for each layer in the map legend
   const mapLegendContent = mapboxLayersForLegend
     .map((layer) => {
       const layerId = layer.id;
@@ -126,7 +129,6 @@ export const prepareMapLegendLayers = (
         .replace(/-/g, " ")
         .replace(/^\w/, (m) => m.toUpperCase());
 
-      // if formattedId ends with polygon or linestring, remove it
       formattedId = formattedId.replace(/ polygon| linestring$/i, "");
 
       return {
@@ -145,7 +147,7 @@ export const prepareMapLegendLayers = (
   return mapLegendContent;
 };
 
-// Function to reverse [long, lat] coordinates and remove the brackets
+/** Reverses [long, lat] coordinates and removes brackets */
 export const prepareCoordinatesForSelectedFeature = (
   coordinates: string,
 ): string => {
@@ -161,6 +163,7 @@ export const prepareCoordinatesForSelectedFeature = (
     .join(",");
 };
 
+/** Toggles the visibility of a map layer */
 export const toggleLayerVisibility = (
   map: mapboxgl.Map,
   item: { id: string; visible: boolean },

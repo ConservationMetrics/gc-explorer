@@ -10,7 +10,7 @@ const props = defineProps<{
   typeOfData: string;
 }>();
 
-// Incoming feature data can be either a single Feature or an AlertsData object
+/** Incoming feature data can be either a single Feature or an AlertsData object */
 const isAlertsData = (
   featureData: Feature | AlertsData,
 ): featureData is AlertsData => {

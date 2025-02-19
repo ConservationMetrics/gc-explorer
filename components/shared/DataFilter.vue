@@ -18,6 +18,7 @@ const emit = defineEmits(["filter"]);
 const defaultColoredDotColor = "#808080";
 const selectedFilterValue = ref([]);
 
+/** Computes unique filter values with associated colors from dataset. */
 const getUniqueFilterValues = computed(() => {
   const allDataFilterValues = props.data.map((item) => {
     const value = item[props.filterColumn];

@@ -20,7 +20,22 @@ import type {
   DataEntry,
 } from "@/types/types";
 
-// Transform survey data keys and values
+/**
+ * Transforms survey data by modifying keys and values to a more readable format.
+ *
+ * This function processes an array of survey data entries, transforming both the keys
+ * and values of each entry to enhance readability and consistency. The transformation
+ * includes:
+ * - Modifying key names by removing prefixes, replacing underscores with spaces, and
+ *   standardizing certain key names (e.g., "today" becomes "dataCollectedOn").
+ * - Adjusting value formats by replacing underscores and semicolons with spaces and commas,
+ *   respectively, capitalizing the first letter, and formatting date-related values.
+ * - Handling lists enclosed in square brackets by removing brackets and quotes, and
+ *   joining items with commas.
+ *
+ * @param {DataEntry[]} data - An array of survey data entries to be transformed.
+ * @returns {DataEntry[]} - A new array of data entries with transformed keys and values.
+ */
 const transformSurveyData = (data: DataEntry[]): DataEntry[] => {
   const transformSurveyDataKey = (key: string): string => {
     let transformedKey = key
@@ -90,14 +105,33 @@ const transformSurveyData = (data: DataEntry[]): DataEntry[] => {
   return transformedData;
 };
 
-// Prepare data for the map view
+/**
+ * Prepares and processes geospatial data for visualization on a map view.
+ *
+ * This function takes an array of data entries and an optional filter column,
+ * and processes each entry to ensure it is ready for map visualization. It handles
+ * the following tasks:
+ *
+ * 1. Determines the geometry type (Point, LineString, or Polygon) for each entry
+ *    based on its coordinates and assigns it if not already specified.
+ * 2. Parses and formats geocoordinates from string to JSON format suitable for
+ *    map rendering.
+ * 3. Assigns a unique color to each entry based on the specified filter column,
+ *    ensuring consistent coloring for entries with the same filter value.
+ *
+ * @param {DataEntry[]} data - An array of data entries, where each entry is an object
+ *                             containing geospatial information and other attributes.
+ * @param {string | undefined} filterColumn - An optional column name used to filter
+ *                                            and assign colors to data entries.
+ * @returns {DataEntry[]} - An array of processed data entries, each with formatted
+ *                          geocoordinates and assigned colors for map visualization.
+ */
 const prepareMapData = (
   data: DataEntry[],
   filterColumn: string | undefined,
 ): DataEntry[] => {
   const colorMap = new Map<string, string>();
 
-  // Process different geometry types and extract coordinates
   const processGeolocation = (obj: { [key: string]: string }) => {
     if (!obj.geocoordinates || obj.geocoordinates.trim() === "") {
       return obj;
@@ -106,7 +140,6 @@ const prepareMapData = (
       const geometryType = obj.geotype;
       let coordinates: Position | LineString | Polygon = [];
 
-      // Convert string to array
       if (!Array.isArray(obj.geocoordinates)) {
         coordinates = JSON.parse(obj.geocoordinates);
       } else {
@@ -129,7 +162,6 @@ const prepareMapData = (
     return obj;
   };
 
-  // Add geometry type and process coordinates for each item
   const processedGeoData = data.map((item) => {
     if (!item.geotype) {
       const coordinateKey = Object.keys(item).find((key) =>
@@ -150,7 +182,6 @@ const prepareMapData = (
       }
     }
 
-    // Add random color to each item per the filter column
     const filterColumnValue =
       filterColumn !== undefined ? (item[filterColumn] ?? "") : "";
     if (filterColumnValue && !colorMap.has(filterColumnValue)) {
@@ -164,7 +195,26 @@ const prepareMapData = (
   return processedGeoData;
 };
 
-// Prepare data for the alerts view
+/**
+ * Prepares and transforms alert data for display in the alerts view.
+ *
+ * This function processes a list of alert data entries, transforming each entry
+ * to include only relevant information for display. It segregates the data into
+ * two categories: the most recent alerts and previous alerts, based on the latest
+ * detection date found in the data.
+ *
+ * The transformation includes:
+ * - Filtering and retaining columns that start with 'g__'.
+ * - Mapping satellite prefixes to their full names.
+ * - Formatting and capitalizing specific fields such as territory name and data provider.
+ * - Calculating geographic centroids for alert locations.
+ * - Constructing URLs for alert imagery.
+ *
+ * @param {DataEntry[]} data - An array of data entries representing alerts.
+ * @returns {Object} An object containing two arrays:
+ *   - `mostRecentAlerts`: Alerts detected in the most recent month.
+ *   - `previousAlerts`: Alerts detected in months prior to the most recent.
+ */
 const prepareAlertData = (
   data: DataEntry[],
 ): {
@@ -276,7 +326,25 @@ const prepareAlertData = (
   return { mostRecentAlerts, previousAlerts };
 };
 
-// Prepare statistics for the alerts view intro panel
+/**
+ * Prepares statistical data for the alerts view introduction panel.
+ *
+ * This function processes alert data and optional metadata to generate
+ * statistics for display. It calculates the range of alert detection dates,
+ * identifies unique alert types and data providers, and computes cumulative
+ * alert counts and areas over the last 12 months.
+ *
+ * The statistics include:
+ * - Territory name with proper capitalization.
+ * - Unique types of alerts and data providers.
+ * - Date range for alert detection.
+ * - Cumulative alerts and hectares per month for the last 12 months.
+ * - Total number of alerts and total area affected in hectares.
+ *
+ * @param {DataEntry[]} data - An array of data entries representing alerts.
+ * @param {AlertsMetadata[] | null} metadata - Optional metadata for additional context.
+ * @returns {AlertsStatistics} An object containing various statistics for the alerts view.
+ */
 const prepareAlertsStatistics = (
   data: DataEntry[],
   metadata: AlertsMetadata[] | null,
@@ -497,7 +565,12 @@ const prepareAlertsStatistics = (
   };
 };
 
-// Transform data to GeoJSON format
+/**
+ * Transforms data entries into a GeoJSON FeatureCollection.
+ *
+ * @param {DataEntry[]} data - An array of data entries to be transformed.
+ * @returns {FeatureCollection} A GeoJSON FeatureCollection object.
+ */
 const transformToGeojson = (data: DataEntry[]): FeatureCollection => {
   const features = data.map((input) => {
     const feature: Feature = {
@@ -537,7 +610,7 @@ const transformToGeojson = (data: DataEntry[]): FeatureCollection => {
   };
 };
 
-// Validate geolocation data
+/** Validates if a data entry has valid geolocation data. */
 const isValidGeolocation = (item: DataEntry): boolean => {
   const validGeoTypes = [
     "LineString",

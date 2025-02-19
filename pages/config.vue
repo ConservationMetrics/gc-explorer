@@ -32,7 +32,7 @@ if (data.value && !error.value) {
   console.error("Error fetching data:", error.value);
 }
 
-// POST request to submit the updated config
+/** POST request to submit the updated config */
 const submitConfig = async ({
   config,
   tableName,
@@ -51,7 +51,7 @@ const submitConfig = async ({
   }
 };
 
-// POST request to remove a table from the config
+/** POST request to remove a table from the config */
 const removeTableFromConfig = async (tableName: string) => {
   try {
     await $fetch(`/api/config/delete_table/${tableName}`, {
@@ -63,7 +63,7 @@ const removeTableFromConfig = async (tableName: string) => {
   }
 };
 
-// POST request to add a table to the config
+/** POST request to add a table to the config */
 const addTableToConfig = async (tableName: string) => {
   try {
     await $fetch(`/api/config/new_table/${tableName}`, {

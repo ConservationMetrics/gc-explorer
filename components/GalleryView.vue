@@ -43,7 +43,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("scroll", handleScroll);
 });
 
-// Filter data based on selected values from DataFilter component
+/** Filter data based on selected values from DataFilter component  */
 const filterValues = (values: FilterValues) => {
   if (values.includes("null")) {
     filteredData.value = props.galleryData;
@@ -54,6 +54,7 @@ const filterValues = (values: FilterValues) => {
   }
 };
 
+/** Prepare coordinates for selected feature */
 const featureWithPreparedCoordinates = (feature: DataEntry) => ({
   ...feature,
   geocoordinates: feature.geocoordinates

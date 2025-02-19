@@ -33,7 +33,7 @@ const props = defineProps<{
 
 const scrolled = ref(false);
 
-// To hide the scroll indicator when the user scrolls
+/** To hide the scroll indicator when the user scrolls */
 const handleScroll = (event: Event) => {
   const target = event.target as HTMLElement;
   if (!scrolled.value && target.scrollTop > 0) {
@@ -41,7 +41,7 @@ const handleScroll = (event: Event) => {
   }
 };
 
-// Filter out latitude and longitude from feature object
+/** Filter out latitude and longitude from feature object */
 const filteredFeature = computed<DataEntry>(() => {
   if (!props.feature) {
     return {};
@@ -50,6 +50,7 @@ const filteredFeature = computed<DataEntry>(() => {
   return rest;
 });
 
+/** Data for AlertsIntroPanel component */
 const dataForAlertsIntroPanel = computed(() => {
   if (props.geojsonSelection) {
     return props.geojsonSelection as AlertsData;

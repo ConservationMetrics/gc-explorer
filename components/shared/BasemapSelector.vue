@@ -49,20 +49,21 @@ const setPlanetDateRange = (date: Date) => {
   return formattedDate < minMonth || formattedDate > maxMonth.value;
 };
 
-// Update the monthYear when the Planet basemap is selected
+/** Update the monthYear when the Planet basemap is selected */
 watch(selectedBasemap, (newVal, oldVal) => {
   if (newVal.id === "planet" && newVal !== oldVal) {
     monthYear.value = maxMonth.value;
   }
 });
 
-// Update the Planet basemap when the monthYear changes
+/** Update the Planet basemap when the monthYear changes */
 watch(monthYear, (_newVal, _oldVal) => {
   if (selectedBasemap.value.id === "planet") {
     updatePlanetBasemap();
   }
 });
 
+/** Update the Planet basemap with the selected monthYear */
 const updatePlanetBasemap = () => {
   if (selectedBasemap.value.id === "planet") {
     selectedBasemap.value.monthYear = monthYear.value;
@@ -70,7 +71,6 @@ const updatePlanetBasemap = () => {
   }
 };
 
-// Emit the selected basemap
 const emitBasemapChange = () => {
   emit("basemapSelected", selectedBasemap.value);
 };

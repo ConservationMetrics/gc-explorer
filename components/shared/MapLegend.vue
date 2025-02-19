@@ -17,12 +17,12 @@ onMounted(() => {
   }));
 });
 
-// Layer visibility toggles
+/** Layer visibility toggles */
 const toggleLayerVisibility = (item: MapLegendItem) => {
   emit("toggle-layer-visibility", item);
 };
 
-// Get the class for the geometry type
+/** Get the class for the geometry type */
 const getTypeClass = (item: MapLegendItem) => {
   return `${item.type}-box`;
 };

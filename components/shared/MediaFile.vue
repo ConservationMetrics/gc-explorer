@@ -7,7 +7,7 @@ const props = defineProps<{
   mediaBasePath: string;
 }>();
 
-// Conditional rendering based on file extension
+/** Conditional rendering based on file extension */
 const isAudio = computed(() =>
   checkExtensions(props.allowedFileExtensions.audio),
 );

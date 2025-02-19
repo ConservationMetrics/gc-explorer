@@ -1,3 +1,4 @@
+/** Extracts file paths with valid extensions from a feature object. */
 export const getFilePathsWithExtension = (
   feature: { [key: string]: unknown },
   allExtensions: { [category: string]: string[] },
@@ -30,6 +31,7 @@ export const getFilePathsWithExtension = (
   return filePaths;
 };
 
+/** Converts a string to camelCase format. */
 export const toCamelCase = (key: string): string => {
   return key
     .toLowerCase()

@@ -93,7 +93,12 @@ onMounted(() => {
   });
 });
 
-// Add data to the map and set up event listeners
+/**
+ * Adds data to the map by creating and managing GeoJSON sources and layers.
+ * It removes existing data layers and sources, creates a new GeoJSON source
+ * from the filtered data, and adds appropriate layers for different feature types.
+ * Event listeners are also added for user interactions with the map features.
+ */
 const addDataToMap = () => {
   // Remove existing data layers from the map
   if (map.value) {
@@ -233,13 +238,16 @@ const addDataToMap = () => {
     );
   });
 };
+
+/** Prepare map canvas content by adding data and legend */
 const prepareMapCanvasContent = () => {
   addDataToMap();
   prepareMapLegendContent();
 };
 
-// Filter data based on selected values from DataFilter component
 const processedData = ref([...props.mapData]);
+
+/** Filter data based on selected values from DataFilter component */
 const filterValues = (values: FilterValues) => {
   if (values.includes("null")) {
     filteredData.value = [...processedData.value];
@@ -248,24 +256,25 @@ const filterValues = (values: FilterValues) => {
       values.includes(item[props.filterColumn]),
     );
   }
-  addDataToMap(); // Call this method to update the map data
+  addDataToMap(); // Update the map data
 };
 
-// Basemap selector methods
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
+
+/** Handle basemap change and update map style */
 const handleBasemapChange = (newBasemap: Basemap) => {
   changeMapStyle(map.value, newBasemap, props.planetApiKey);
 
   currentBasemap.value = newBasemap;
 
-  // Once map is idle, re-add sources, layers, and event listeners
   map.value.once("idle", () => {
     prepareMapCanvasContent();
   });
 };
 
-// Map legend methods
 const mapLegendContent = ref();
+
+/** Prepare map legend content based on layer IDs */
 const prepareMapLegendContent = () => {
   if (!props.mapLegendLayerIds) {
     return;
@@ -277,6 +286,8 @@ const prepareMapLegendContent = () => {
     );
   });
 };
+
+/** Toggle visibility of a map layer */
 const toggleLayerVisibility = (item: MapLegendItem) => {
   utilsToggleLayerVisibility(map.value, item);
 };

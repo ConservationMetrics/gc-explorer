@@ -12,7 +12,7 @@ const props = defineProps<{
   mediaBasePathAlerts?: string;
 }>();
 
-// Sort feature object by key
+/** Sort feature object by key */
 const sortedFeature = computed(() => {
   return Object.keys(props.feature as Record<string, string>)
     .sort()
@@ -27,7 +27,7 @@ const sortedFeature = computed(() => {
     );
 });
 
-// Set media base path based on whether it's an alert or not
+/** Set media base path based on whether it's an alert or not */
 const setMediaBasePath = () => {
   if (props.isAlert && props.mediaBasePathAlerts) {
     return props.mediaBasePathAlerts;

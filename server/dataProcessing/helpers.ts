@@ -1,3 +1,4 @@
+/** Generates a random hex color code. */
 export const getRandomColor = () => {
   const letters = "0123456789ABCDEF";
   let color = "#";
@@ -7,6 +8,7 @@ export const getRandomColor = () => {
   return color;
 };
 
+/** Capitalizes the first letter of each word in a string. */
 export const capitalizeFirstLetter = (string: string): string => {
   return string
     .split(" ")
@@ -14,10 +16,12 @@ export const capitalizeFirstLetter = (string: string): string => {
     .join(" ");
 };
 
+/** Checks if a number is a valid geographic coordinate. */
 export const isValidCoordinate = (coord: number): boolean => {
   return coord != null && !isNaN(coord) && coord >= -180 && coord <= 180;
 };
 
+/** Determines if an object contains valid coordinate data. */
 export const hasValidCoordinates = (
   obj: Record<string, string | number | null>,
 ): boolean => {
@@ -74,6 +78,7 @@ export const hasValidCoordinates = (
   });
 };
 
+/** Calculates the centroid of given coordinates, according to their type. */
 export const calculateCentroid = (coords: string): string => {
   type Coordinate = [number, number];
   type LineString = Coordinate[];
@@ -124,6 +129,7 @@ export const calculateCentroid = (coords: string): string => {
   return `${avgLat}, ${avgLng}`;
 };
 
+/** Formats a date string to a locale date string. */
 export const formatDate = (date: string): string => {
   // First let's ensure the date is in the correct format
   const dateRegex = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).*/;

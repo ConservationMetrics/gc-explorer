@@ -6,8 +6,27 @@ import type {
   AllowedFileExtensions,
 } from "@/types/types";
 
-// Filter out unwanted columns and substrings
-// Use SQL column mapping if available
+/**
+ * Filters out unwanted columns and substrings from the provided data entries.
+ *
+ * This function utilizes SQL column mapping if available to determine which columns
+ * should be excluded from the dataset. It processes the data based on a list of unwanted
+ * column names and substrings, which can be specified as comma-separated strings.
+ *
+ * @param {DataEntry[]} data - The dataset to be filtered, represented as an array of data entries.
+ * @param {ColumnEntry[] | null} columns - An optional array of column entries that provide
+ *                                         a mapping between original column names and their
+ *                                         corresponding SQL column names. If null, filtering
+ *                                         is based on the keys of the data entries.
+ * @param {string | undefined} unwantedColumnsList - A comma-separated string of column names
+ *                                                   that should be removed from the dataset.
+ * @param {string | undefined} unwantedSubstringsList - A comma-separated string of substrings.
+ *                                                      Any column name containing one of these
+ *                                                      substrings will be removed from the dataset.
+ *
+ * @returns {DataEntry[]} - A new array of data entries with the unwanted columns and substrings
+ *                          filtered out.
+ */
 export const filterUnwantedKeys = (
   data: DataEntry[],
   columns: ColumnEntry[] | null,
@@ -28,7 +47,6 @@ export const filterUnwantedKeys = (
     );
   };
 
-  // Split the unwantedColumns and unwantedSubstrings from .env
   const unwantedColumns = unwantedColumnsList
     ? unwantedColumnsList.split(",")
     : [];
@@ -38,9 +56,7 @@ export const filterUnwantedKeys = (
 
   let filteredSqlColumns: Set<string>;
 
-  // If there is a __columns table, use that for SQL column mapping and filtering
   if (columns) {
-    // Create an original-to-SQL column mapping for lookup
     const columnMapping: { [key: string]: string } = {};
     columns.forEach((column) => {
       columnMapping[column.original_column] = column.sql_column;
@@ -55,30 +71,25 @@ export const filterUnwantedKeys = (
       unwantedSubstrings,
     );
 
-    // Map the unwanted original_column entries to sql_column entries
     const unwantedSqlColumns = new Set(
       [...unwantedColumnsSet].map((column) => columnMapping[column]),
     );
 
-    // Filter out the unwanted sql_column entries
     filteredSqlColumns = new Set(
       Object.values(columnMapping).filter(
         (sqlColumn) => !unwantedSqlColumns.has(sqlColumn),
       ),
     );
   } else {
-    // If there is no __columns table, then filter based on Object keys of one data entry
     filteredSqlColumns = new Set(
-      Object.keys(data[0]) // assuming data has at least one item
-        .filter(
-          (key) =>
-            !unwantedColumns.includes(key) &&
-            !unwantedSubstrings.some((sub) => key.includes(sub)),
-        ),
+      Object.keys(data[0]).filter(
+        (key) =>
+          !unwantedColumns.includes(key) &&
+          !unwantedSubstrings.some((sub) => key.includes(sub)),
+      ),
     );
   }
 
-  // Create new filtered dataset
   const filteredData = data.map((item) =>
     Object.keys(item)
       .filter((key) => filteredSqlColumns.has(key))
@@ -91,7 +102,7 @@ export const filterUnwantedKeys = (
   return filteredData;
 };
 
-// Filter out data that matches a comma-separated list of values for a given column
+/** Filters out data that matches a comma-separated list of values for a given column. */
 export const filterOutUnwantedValues = (
   data: DataEntry[],
   filterByColumn: string | undefined,
@@ -110,7 +121,7 @@ export const filterOutUnwantedValues = (
   return filteredData;
 };
 
-// Filter out data without columns storing have valid coordinates
+/** Filters out data without columns storing valid coordinates. */
 export const filterGeoData = (
   data: DataEntry[] | null | undefined,
 ): DataEntry[] => {
@@ -125,7 +136,7 @@ export const filterGeoData = (
   return geoData;
 };
 
-// Filter out data without any columns storing file extensions
+/** Filters out data without any columns storing file extensions. */
 export const filterDataByExtension = (
   data: DataEntry[],
   extensions: AllowedFileExtensions,

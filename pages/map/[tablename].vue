@@ -56,7 +56,6 @@ if (data.value && !error.value) {
   console.error("Error fetching data:", error.value);
 }
 
-// Set up page metadata
 const { t } = useI18n();
 useHead({
   title: "GuardianConnector Explorer" + t("map"),

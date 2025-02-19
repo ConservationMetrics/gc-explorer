@@ -159,6 +159,7 @@ watch(tableNameToAdd, (newVal) => {
     <div v-if="showModal" class="overlay"></div>
     <div v-if="showModal" class="modal">
       <!-- eslint-disable vue/no-v-html -->
+      <!-- this is done intentionally to allow for HTML rendering in the modal message -->
       <p v-html="modalMessage"></p>
       <!-- eslint-enable vue/no-v-html -->
       <div v-if="showModalDropdown">
