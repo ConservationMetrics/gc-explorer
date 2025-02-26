@@ -40,10 +40,10 @@ const props = defineProps<{
   logoUrl: string;
   mapLegendLayerIds: string;
   mapboxAccessToken: string;
-  mapboxBearing: number;
+  mapboxBearing: number | null;
   mapboxLatitude: number;
   mapboxLongitude: number;
-  mapboxPitch: number;
+  mapboxPitch: number | null;
   mapboxProjection: string;
   mapboxStyle: string;
   mapboxZoom: number;
