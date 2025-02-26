@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { useHead, useFetch, useRuntimeConfig } from "#app";
-
 import type { Views } from "@/types/types";
 
 const viewsConfig = ref<Views>({});
