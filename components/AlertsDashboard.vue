@@ -412,6 +412,12 @@ const addAlertsData = async () => {
     geoJsonSource.previousAlerts.features.some(
       (feature) => feature.geometry.type === "LineString",
     );
+
+  // Add buffer for LineStrings to make them easier to select
+  if (hasLineStrings.value) {
+    map.value.on("mousemove", handleBufferMouseEvent);
+    map.value.on("click", handleBufferClick);
+  }
 };
 
 /**
@@ -507,24 +513,17 @@ const addMapeoData = () => {
 };
 /**
  * Prepares the map canvas content by adding alert and Mapeo data,
- * pulsing circles, and the map legend. It also sets up event listeners
- * for easier selection of LineString features.
+ * pulsing circles, and the map legend.
  */
-const prepareMapCanvasContent = () => {
+const prepareMapCanvasContent = async () => {
   if (props.alertsData) {
-    addAlertsData();
+    await addAlertsData();
   }
   if (props.mapeoData) {
     addMapeoData();
   }
   addPulsingCircles();
   prepareMapLegendContent();
-
-  // Add buffer for LineStrings to make them easier to select
-  if (hasLineStrings.value) {
-    map.value.on("mousemove", handleBufferMouseEvent);
-    map.value.on("click", handleBufferClick);
-  }
 };
 
 /**
