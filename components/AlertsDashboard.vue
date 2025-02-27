@@ -313,20 +313,6 @@ const addAlertsData = async () => {
 
   await Promise.all([
     addAlertLayer(
-      "most-recent-alerts-polygon",
-      geoJsonSource.mostRecentAlerts.features,
-      "Polygon",
-      "#FF0000",
-      "#FF0000",
-    ),
-    addAlertLayer(
-      "most-recent-alerts-linestring",
-      geoJsonSource.mostRecentAlerts.features,
-      "LineString",
-      null,
-      "#FF0000",
-    ),
-    addAlertLayer(
       "previous-alerts-polygon",
       geoJsonSource.previousAlerts.features,
       "Polygon",
@@ -345,6 +331,20 @@ const addAlertsData = async () => {
       geoJsonSource.previousAlerts.features,
       "warning-orange",
       orangeWarningIconUrl,
+    ),
+    addAlertLayer(
+      "most-recent-alerts-polygon",
+      geoJsonSource.mostRecentAlerts.features,
+      "Polygon",
+      "#FF0000",
+      "#FF0000",
+    ),
+    addAlertLayer(
+      "most-recent-alerts-linestring",
+      geoJsonSource.mostRecentAlerts.features,
+      "LineString",
+      null,
+      "#FF0000",
     ),
     addAlertPointsLayer(
       "most-recent-alerts-points",
@@ -386,7 +386,15 @@ const addAlertsData = async () => {
         layer.id,
         (e: MapMouseEvent) => {
           if (e.features && e.features.length > 0) {
-            selectFeature(e.features[0], layer.id);
+            const feature = e.features[0];
+            if (layer.id.endsWith("points")) {
+              if (feature.geometry.type === "Point") {
+                const [lng, lat] = feature.geometry.coordinates;
+                map.value.flyTo({ center: [lng, lat], zoom: 12 });
+              }
+            } else {
+              selectFeature(feature, layer.id);
+            }
           }
         },
         { passive: true },
