@@ -41,7 +41,6 @@ const emit = defineEmits(["dateRangeChanged"]);
         </p>
         <p class="text-l mb-2 italic">
           {{ $t("ifYouAreZoomedOutAlertsWillBeShownAsA") }}
-          <!-- triangle icon located at @/assets/icons/warning_red.png-->
           <img
             src="@/assets/icons/warning_red.png"
             alt="Warning icon"

@@ -760,9 +760,6 @@ const selectedDateRange = ref();
 /**
  * Converts date strings from "MM-YYYY" format to "YYYYMM" format for comparison.
  * If the start or end date is "earlier", it substitutes with the earliest or twelve months before date.
- * @param {string} start - The start date in "MM-YYYY" format or "earlier".
- * @param {string} end - The end date in "MM-YYYY" format or "earlier".
- * @returns {[string, string]} - The converted start and end dates in "YYYYMM" format.
  */
 const convertDates = (start: string, end: string) => {
   const convertToDate = (dateStr: string) => {
