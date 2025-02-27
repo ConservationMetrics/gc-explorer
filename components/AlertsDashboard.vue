@@ -88,27 +88,6 @@ onMounted(() => {
       map.value.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
     }
 
-    const loadMapImage = (iconName: string, iconUrl: string) => {
-      map.value.loadImage(iconUrl, (error: Error, image: HTMLImageElement) => {
-        if (error) throw error;
-
-        if (!map.value.hasImage(iconName)) {
-          map.value.addImage(iconName, image);
-        }
-      });
-    };
-
-    const orangeWarningIconUrl = new URL(
-      "@/assets/icons/warning_orange.png",
-      import.meta.url,
-    ).href;
-    const redWarningIconUrl = new URL(
-      "@/assets/icons/warning_red.png",
-      import.meta.url,
-    ).href;
-    loadMapImage("warning-orange", orangeWarningIconUrl);
-    loadMapImage("warning-red", redWarningIconUrl);
-
     prepareMapCanvasContent();
 
     // Navigation Control (zoom buttons and compass)
@@ -152,21 +131,25 @@ const emit = defineEmits(["reset-legend-visibility"]);
 const featuresUnderCursor = ref(0);
 const hasLineStrings = ref(false);
 const mapeoDataColor = ref();
+
 /**
  * Adds alert data to the map by creating GeoJSON sources and layers for recent and previous alerts.
  * It checks for Polygon and LineString features and adds them to the map with appropriate styles.
  * Event listeners are added for user interactions with the alert features.
  */
-const addAlertsData = () => {
+const addAlertsData = async () => {
   const geoJsonSource = props.alertsData;
-
-  const addAlertLayer = (
+  /**
+   * Adds a GeoJSON layer to the map for specified alert features and styles.
+   * Type can be "Polygon" or "LineString".
+   */
+  const addAlertLayer = async (
     layerId: string,
     features: Feature[],
     type: string,
     fillColor: string | null,
     strokeColor: string | null,
-  ) => {
+  ): Promise<void> => {
     if (!features.some((feature) => feature.geometry.type === type)) return;
 
     if (!map.value.getSource(layerId)) {
@@ -182,105 +165,104 @@ const addAlertsData = () => {
       });
     }
 
-    if (type === "Polygon" || type === "MultiPolygon") {
-      if (!map.value.getLayer(layerId)) {
-        map.value.addLayer({
-          id: layerId,
-          type: "fill",
-          source: layerId,
-          paint: {
-            "fill-color": [
-              "case",
-              ["boolean", ["feature-state", "selected"], false],
-              "#FFFF00",
-              fillColor,
-            ],
-            "fill-opacity": 0.5,
-          },
-        });
+    return new Promise((resolve) => {
+      if (type === "Polygon" || type === "MultiPolygon") {
+        if (!map.value.getLayer(layerId)) {
+          map.value.addLayer({
+            id: layerId,
+            type: "fill",
+            source: layerId,
+            paint: {
+              "fill-color": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                "#FFFF00",
+                fillColor,
+              ],
+              "fill-opacity": 0.5,
+            },
+          });
+        }
+
+        if (!map.value.getLayer(`${layerId}-stroke`)) {
+          map.value.addLayer({
+            id: `${layerId}-stroke`,
+            type: "line",
+            source: layerId,
+            paint: {
+              "line-color": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                "#FFFF00",
+                strokeColor,
+              ],
+              "line-width": 2,
+            },
+          });
+        }
       }
 
-      if (!map.value.getLayer(`${layerId}-stroke`)) {
-        map.value.addLayer({
-          id: `${layerId}-stroke`,
-          type: "line",
-          source: layerId,
-          paint: {
-            "line-color": [
-              "case",
-              ["boolean", ["feature-state", "selected"], false],
-              "#FFFF00",
-              strokeColor,
-            ],
-            "line-width": 2,
-          },
-        });
+      if (type === "LineString") {
+        if (!map.value.getLayer(layerId)) {
+          map.value.addLayer({
+            id: layerId,
+            type: "line",
+            source: layerId,
+            filter: ["==", "$type", "LineString"],
+            paint: {
+              "line-color": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                "#FFFF00",
+                strokeColor,
+              ],
+              "line-width": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                5,
+                3,
+              ],
+              "line-opacity": 0.8,
+            },
+          });
+        }
       }
-    }
-
-    if (type === "LineString") {
-      if (!map.value.getLayer(layerId)) {
-        map.value.addLayer({
-          id: layerId,
-          type: "line",
-          source: layerId,
-          filter: ["==", "$type", "LineString"],
-          paint: {
-            "line-color": [
-              "case",
-              ["boolean", ["feature-state", "selected"], false],
-              "#FFFF00",
-              strokeColor,
-            ],
-            "line-width": [
-              "case",
-              ["boolean", ["feature-state", "selected"], false],
-              5,
-              3,
-            ],
-            "line-opacity": 0.8,
-          },
-        });
-      }
-    }
+      resolve();
+    });
   };
 
-  addAlertLayer(
-    "most-recent-alerts-polygon",
-    geoJsonSource.mostRecentAlerts.features,
-    "Polygon",
-    "#FF0000",
-    "#FF0000",
-  );
-  addAlertLayer(
-    "most-recent-alerts-linestring",
-    geoJsonSource.mostRecentAlerts.features,
-    "LineString",
-    null,
-    "#FF0000",
-  );
+  /**
+   * Loads and adds an image to the style. Returns a promise that resolves
+   * when the image is successfully loaded and added to the map.
+   */
+  const loadMapImage = (iconName: string, iconUrl: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      map.value.loadImage(iconUrl, (error: Error, image: HTMLImageElement) => {
+        if (error) {
+          reject(error);
+          return;
+        }
 
-  addAlertLayer(
-    "previous-alerts-polygon",
-    geoJsonSource.previousAlerts.features,
-    "Polygon",
-    "#FD8D3C",
-    "#FD8D3C",
-  );
-  addAlertLayer(
-    "previous-alerts-linestring",
-    geoJsonSource.previousAlerts.features,
-    "LineString",
-    null,
-    "#FD8D3C",
-  );
+        if (!map.value.hasImage(iconName)) {
+          map.value.addImage(iconName, image);
+        }
+        resolve();
+      });
+    });
+  };
 
-  const addAlertPointsLayer = (
+  /**
+   * Adds a GeoJSON point layer to the map using the geographicCentroid property,
+   * with specified icon.
+   */
+  const addAlertPointsLayer = async (
     layerId: string,
     features: Feature[],
     iconName: string,
+    iconUrl: string,
   ) => {
-    console.log(features);
+    await loadMapImage(iconName, iconUrl);
+
     if (!map.value.getSource(layerId)) {
       map.value.addSource(layerId, {
         type: "geojson",
@@ -320,18 +302,59 @@ const addAlertsData = () => {
     }
   };
 
-  addAlertPointsLayer(
-    "previous-alerts-points",
-    geoJsonSource.previousAlerts.features,
-    "warning-orange",
-  );
-  addAlertPointsLayer(
-    "most-recent-alerts-points",
-    geoJsonSource.mostRecentAlerts.features,
-    "warning-red",
-  );
+  const orangeWarningIconUrl = new URL(
+    "@/assets/icons/warning_orange.png",
+    import.meta.url,
+  ).href;
+  const redWarningIconUrl = new URL(
+    "@/assets/icons/warning_red.png",
+    import.meta.url,
+  ).href;
 
-  // Add event listeners for layers that start with 'most-recent-alerts' and 'previous-alerts'
+  await Promise.all([
+    addAlertLayer(
+      "most-recent-alerts-polygon",
+      geoJsonSource.mostRecentAlerts.features,
+      "Polygon",
+      "#FF0000",
+      "#FF0000",
+    ),
+    addAlertLayer(
+      "most-recent-alerts-linestring",
+      geoJsonSource.mostRecentAlerts.features,
+      "LineString",
+      null,
+      "#FF0000",
+    ),
+    addAlertLayer(
+      "previous-alerts-polygon",
+      geoJsonSource.previousAlerts.features,
+      "Polygon",
+      "#FD8D3C",
+      "#FD8D3C",
+    ),
+    addAlertLayer(
+      "previous-alerts-linestring",
+      geoJsonSource.previousAlerts.features,
+      "LineString",
+      null,
+      "#FD8D3C",
+    ),
+    addAlertPointsLayer(
+      "previous-alerts-points",
+      geoJsonSource.previousAlerts.features,
+      "warning-orange",
+      orangeWarningIconUrl,
+    ),
+    addAlertPointsLayer(
+      "most-recent-alerts-points",
+      geoJsonSource.mostRecentAlerts.features,
+      "warning-red",
+      redWarningIconUrl,
+    ),
+  ]);
+
+  // Add event listeners only after all layers have loaded
   map.value.getStyle().layers.forEach((layer: Layer) => {
     if (
       (layer.id.startsWith("most-recent-alerts") &&
