@@ -526,11 +526,7 @@ const prepareMapCanvasContent = async () => {
   prepareMapLegendContent();
 };
 
-/**
- * Checks if all features in the alerts data are of type LineString.
- *
- * @returns {boolean} True if all features are LineStrings, otherwise false.
- */
+/* Checks if all features in the alerts data are of type LineString. */
 const isOnlyLineStringData = () => {
   const allFeatures = [
     ...props.alertsData.mostRecentAlerts.features,
@@ -542,8 +538,6 @@ const isOnlyLineStringData = () => {
 /**
  * Handles click events on the map to select features within a buffer
  * around LineString features.
- *
- * @param {MapMouseEvent} e - The map mouse event.
  */
 const handleBufferClick = (e: MapMouseEvent) => {
   const pixelBuffer = 10;
@@ -566,8 +560,6 @@ const handleBufferClick = (e: MapMouseEvent) => {
 /**
  * Handles mouse movement events to change the cursor style when hovering
  * over LineString features within a buffer.
- *
- * @param {MapMouseEvent} e - The map mouse event.
  */
 const handleBufferMouseEvent = (e: MapMouseEvent) => {
   const pixelBuffer = 10;
@@ -693,6 +685,7 @@ const addPulsingCircles = () => {
   // Add pulsing markers for most recent alerts
   props.alertsData.mostRecentAlerts.features.forEach(addPulsingMarker);
 };
+
 /** Removes pulsing circles from the map */
 const removePulsingCircles = () => {
   document.querySelectorAll(".pulsing-dot").forEach((el) => el.remove());
@@ -870,9 +863,7 @@ const handleDateRangeChanged = (newRange: [string, string]) => {
   });
 };
 
-/**
- * Closes the sidebar and resets the selected feature.
- */
+/* Closes the sidebar and resets the selected feature. */
 const handleSidebarClose = () => {
   showSidebar.value = false;
   resetSelectedFeature();
