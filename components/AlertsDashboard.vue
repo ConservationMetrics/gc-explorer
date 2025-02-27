@@ -161,7 +161,7 @@ const addAlertsData = async () => {
             (feature) => feature.geometry.type === type,
           ),
         },
-        minzoom: 9,
+        minzoom: 10,
       });
     }
 
@@ -297,7 +297,7 @@ const addAlertsData = async () => {
           "icon-size": 0.75,
           "icon-allow-overlap": true,
         },
-        maxzoom: 9,
+        maxzoom: 10,
       });
     }
   };
@@ -390,7 +390,7 @@ const addAlertsData = async () => {
             if (layer.id.endsWith("points")) {
               if (feature.geometry.type === "Point") {
                 const [lng, lat] = feature.geometry.coordinates;
-                map.value.flyTo({ center: [lng, lat], zoom: 12 });
+                map.value.flyTo({ center: [lng, lat], zoom: 13 });
               }
             } else {
               selectFeature(feature, layer.id);
