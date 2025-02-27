@@ -131,224 +131,230 @@ const emit = defineEmits(["reset-legend-visibility"]);
 const featuresUnderCursor = ref(0);
 const hasLineStrings = ref(false);
 const mapeoDataColor = ref();
+
 /**
  * Adds alert data to the map by creating GeoJSON sources and layers for recent and previous alerts.
  * It checks for Polygon and LineString features and adds them to the map with appropriate styles.
  * Event listeners are added for user interactions with the alert features.
  */
-const addAlertsData = () => {
+const addAlertsData = async () => {
   const geoJsonSource = props.alertsData;
+  /**
+   * Adds a GeoJSON layer to the map for specified alert features and styles.
+   * Type can be "Polygon" or "LineString".
+   */
+  const addAlertLayer = async (
+    layerId: string,
+    features: Feature[],
+    type: string,
+    fillColor: string | null,
+    strokeColor: string | null,
+  ): Promise<void> => {
+    if (!features.some((feature) => feature.geometry.type === type)) return;
 
-  // Check if the data contains Polygon features for recent alerts
-  if (
-    geoJsonSource.mostRecentAlerts.features.some(
-      (feature) =>
-        feature.geometry.type === "Polygon" ||
-        feature.geometry.type === "MultiPolygon",
-    )
-  ) {
-    // Add the most recent alerts source to the map as Polygons
-    if (!map.value.getSource("most-recent-alerts-polygon")) {
-      map.value.addSource("most-recent-alerts-polygon", {
+    if (!map.value.getSource(layerId)) {
+      map.value.addSource(layerId, {
         type: "geojson",
         data: {
-          ...geoJsonSource.mostRecentAlerts,
-          features: geoJsonSource.mostRecentAlerts.features.filter(
-            (feature) =>
-              feature.geometry.type === "Polygon" ||
-              feature.geometry.type === "MultiPolygon",
+          type: "FeatureCollection",
+          features: features.filter(
+            (feature) => feature.geometry.type === type,
           ),
         },
+        minzoom: 10,
       });
     }
 
-    // Add a layer for most recent alerts Polygons
-    if (!map.value.getLayer("most-recent-alerts-polygon")) {
-      map.value.addLayer({
-        id: "most-recent-alerts-polygon",
-        type: "fill",
-        source: "most-recent-alerts-polygon",
-        paint: {
-          "fill-color": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            "#FFFF00",
-            "#FF0000",
-          ],
-          "fill-opacity": 0.5,
-        },
-      });
-    }
+    return new Promise((resolve) => {
+      if (type === "Polygon" || type === "MultiPolygon") {
+        if (!map.value.getLayer(layerId)) {
+          map.value.addLayer({
+            id: layerId,
+            type: "fill",
+            source: layerId,
+            paint: {
+              "fill-color": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                "#FFFF00",
+                fillColor,
+              ],
+              "fill-opacity": 0.5,
+            },
+          });
+        }
 
-    // Add a stroke for most recent alerts Polygons
-    if (!map.value.getLayer("most-recent-alerts-polygon-stroke")) {
-      map.value.addLayer({
-        id: "most-recent-alerts-polygon-stroke",
-        type: "line",
-        source: "most-recent-alerts-polygon",
-        paint: {
-          "line-color": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            "#FFFF00",
-            "#FF0000",
-          ],
-          "line-width": 2,
-        },
-      });
-    }
-  }
+        if (!map.value.getLayer(`${layerId}-stroke`)) {
+          map.value.addLayer({
+            id: `${layerId}-stroke`,
+            type: "line",
+            source: layerId,
+            paint: {
+              "line-color": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                "#FFFF00",
+                strokeColor,
+              ],
+              "line-width": 2,
+            },
+          });
+        }
+      }
 
-  // Check if the data contains LineString features for recent alerts
-  if (
-    geoJsonSource.mostRecentAlerts.features.some(
-      (feature) => feature.geometry.type === "LineString",
-    )
-  ) {
-    // Add the most recent alerts source to the map as LineStrings
-    if (!map.value.getSource("most-recent-alerts-linestring")) {
-      map.value.addSource("most-recent-alerts-linestring", {
+      if (type === "LineString") {
+        if (!map.value.getLayer(layerId)) {
+          map.value.addLayer({
+            id: layerId,
+            type: "line",
+            source: layerId,
+            filter: ["==", "$type", "LineString"],
+            paint: {
+              "line-color": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                "#FFFF00",
+                strokeColor,
+              ],
+              "line-width": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                5,
+                3,
+              ],
+              "line-opacity": 0.8,
+            },
+          });
+        }
+      }
+      resolve();
+    });
+  };
+
+  /**
+   * Loads and adds an image to the style. Returns a promise that resolves
+   * when the image is successfully loaded and added to the map.
+   */
+  const loadMapImage = (iconName: string, iconUrl: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      map.value.loadImage(iconUrl, (error: Error, image: HTMLImageElement) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        if (!map.value.hasImage(iconName)) {
+          map.value.addImage(iconName, image);
+        }
+        resolve();
+      });
+    });
+  };
+
+  /**
+   * Adds a GeoJSON point layer to the map using the geographicCentroid property,
+   * with specified icon.
+   */
+  const addAlertPointsLayer = async (
+    layerId: string,
+    features: Feature[],
+    iconName: string,
+    iconUrl: string,
+  ) => {
+    await loadMapImage(iconName, iconUrl);
+
+    if (!map.value.getSource(layerId)) {
+      map.value.addSource(layerId, {
         type: "geojson",
         data: {
-          ...geoJsonSource.mostRecentAlerts,
-          features: geoJsonSource.mostRecentAlerts.features.filter(
-            (feature) => feature.geometry.type === "LineString",
-          ),
+          type: "FeatureCollection",
+          features: features
+            .filter((feature) => feature.properties?.geographicCentroid)
+            .map((feature) => ({
+              type: "Feature",
+              geometry: {
+                type: "Point",
+                coordinates: feature.properties?.geographicCentroid
+                  .split(",")
+                  .map(Number)
+                  .reverse(),
+              },
+              properties: {
+                ...feature.properties,
+              },
+            })),
         },
       });
     }
 
-    // Add a layer for most recent alerts LineStrings
-    if (!map.value.getLayer("most-recent-alerts-linestring")) {
+    if (!map.value.getLayer(layerId)) {
       map.value.addLayer({
-        id: "most-recent-alerts-linestring",
-        type: "line",
-        source: "most-recent-alerts-linestring",
-        paint: {
-          "line-color": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            "#FFFF00",
-            "#FF0000",
-          ],
-          "line-width": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            5,
-            3,
-          ],
-          "line-opacity": 0.8,
+        id: layerId,
+        type: "symbol",
+        source: layerId,
+        layout: {
+          "icon-image": iconName,
+          "icon-size": 0.75,
+          "icon-allow-overlap": true,
         },
+        maxzoom: 10,
       });
     }
-  }
+  };
 
-  // Check if the data contains Polygon features for previous alerts
-  if (
-    geoJsonSource.previousAlerts.features.some(
-      (feature) =>
-        feature.geometry.type === "Polygon" ||
-        feature.geometry.type === "MultiPolygon",
-    )
-  ) {
-    // Add the previous alerts source to the map as Polygons
-    if (!map.value.getSource("previous-alerts-polygon")) {
-      map.value.addSource("previous-alerts-polygon", {
-        type: "geojson",
-        data: {
-          ...geoJsonSource.previousAlerts,
-          features: geoJsonSource.previousAlerts.features.filter(
-            (feature) =>
-              feature.geometry.type === "Polygon" ||
-              feature.geometry.type === "MultiPolygon",
-          ),
-        },
-      });
-    }
+  const orangeWarningIconUrl = new URL(
+    "@/assets/icons/warning_orange.png",
+    import.meta.url,
+  ).href;
+  const redWarningIconUrl = new URL(
+    "@/assets/icons/warning_red.png",
+    import.meta.url,
+  ).href;
 
-    // Add a layer for previous alerts Polygons
-    if (!map.value.getLayer("previous-alerts-polygon")) {
-      map.value.addLayer({
-        id: "previous-alerts-polygon",
-        type: "fill",
-        source: "previous-alerts-polygon",
-        paint: {
-          "fill-color": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            "#FFFF00",
-            "#FD8D3C",
-          ],
-          "fill-opacity": 0.5,
-        },
-      });
-    }
+  await Promise.all([
+    addAlertLayer(
+      "previous-alerts-polygon",
+      geoJsonSource.previousAlerts.features,
+      "Polygon",
+      "#FD8D3C",
+      "#FD8D3C",
+    ),
+    addAlertLayer(
+      "previous-alerts-linestring",
+      geoJsonSource.previousAlerts.features,
+      "LineString",
+      null,
+      "#FD8D3C",
+    ),
+    addAlertPointsLayer(
+      "previous-alerts-points",
+      geoJsonSource.previousAlerts.features,
+      "warning-orange",
+      orangeWarningIconUrl,
+    ),
+    addAlertLayer(
+      "most-recent-alerts-polygon",
+      geoJsonSource.mostRecentAlerts.features,
+      "Polygon",
+      "#FF0000",
+      "#FF0000",
+    ),
+    addAlertLayer(
+      "most-recent-alerts-linestring",
+      geoJsonSource.mostRecentAlerts.features,
+      "LineString",
+      null,
+      "#FF0000",
+    ),
+    addAlertPointsLayer(
+      "most-recent-alerts-points",
+      geoJsonSource.mostRecentAlerts.features,
+      "warning-red",
+      redWarningIconUrl,
+    ),
+  ]);
 
-    // Add a stroke for previous alerts Polygons
-    if (!map.value.getLayer("previous-alerts-polygon-stroke")) {
-      map.value.addLayer({
-        id: "previous-alerts-polygon-stroke",
-        type: "line",
-        source: "previous-alerts-polygon",
-        paint: {
-          "line-color": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            "#FFFF00",
-            "#FD8D3C",
-          ],
-          "line-width": 2,
-        },
-      });
-    }
-  }
-
-  // Check if the data contains LineString features for previous alerts
-  if (
-    geoJsonSource.previousAlerts.features.some(
-      (feature) => feature.geometry.type === "LineString",
-    )
-  ) {
-    // Add the previous alerts source to the map as LineStrings
-    if (!map.value.getSource("previous-alerts-linestring")) {
-      map.value.addSource("previous-alerts-linestring", {
-        type: "geojson",
-        data: {
-          ...geoJsonSource.previousAlerts,
-          features: geoJsonSource.previousAlerts.features.filter(
-            (feature) => feature.geometry.type === "LineString",
-          ),
-        },
-      });
-    }
-
-    // Add a layer for previous alerts LineStrings
-    if (!map.value.getLayer("previous-alerts-linestring")) {
-      map.value.addLayer({
-        id: "previous-alerts-linestring",
-        type: "line",
-        source: "previous-alerts-linestring",
-        filter: ["==", "$type", "LineString"],
-        paint: {
-          "line-color": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            "#FFFF00",
-            "#FD8D3C",
-          ],
-          "line-width": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            5,
-            3,
-          ],
-          "line-opacity": 0.8,
-        },
-      });
-    }
-  }
-
-  // Add event listeners for layers that start with 'most-recent-alerts' and 'alerts'
+  // Add event listeners only after all layers have loaded
   map.value.getStyle().layers.forEach((layer: Layer) => {
     if (
       (layer.id.startsWith("most-recent-alerts") &&
@@ -380,7 +386,15 @@ const addAlertsData = () => {
         layer.id,
         (e: MapMouseEvent) => {
           if (e.features && e.features.length > 0) {
-            selectFeature(e.features[0], layer.id);
+            const feature = e.features[0];
+            if (layer.id.endsWith("points")) {
+              if (feature.geometry.type === "Point") {
+                const [lng, lat] = feature.geometry.coordinates;
+                map.value.flyTo({ center: [lng, lat], zoom: 13 });
+              }
+            } else {
+              selectFeature(feature, layer.id);
+            }
           }
         },
         { passive: true },
@@ -398,6 +412,12 @@ const addAlertsData = () => {
     geoJsonSource.previousAlerts.features.some(
       (feature) => feature.geometry.type === "LineString",
     );
+
+  // Add buffer for LineStrings to make them easier to select
+  if (hasLineStrings.value) {
+    map.value.on("mousemove", handleBufferMouseEvent);
+    map.value.on("click", handleBufferClick);
+  }
 };
 
 /**
@@ -493,31 +513,20 @@ const addMapeoData = () => {
 };
 /**
  * Prepares the map canvas content by adding alert and Mapeo data,
- * pulsing circles, and the map legend. It also sets up event listeners
- * for easier selection of LineString features.
+ * pulsing circles, and the map legend.
  */
-const prepareMapCanvasContent = () => {
+const prepareMapCanvasContent = async () => {
   if (props.alertsData) {
-    addAlertsData();
+    await addAlertsData();
   }
   if (props.mapeoData) {
     addMapeoData();
   }
   addPulsingCircles();
   prepareMapLegendContent();
-
-  // Add buffer for LineStrings to make them easier to select
-  if (hasLineStrings.value) {
-    map.value.on("mousemove", handleBufferMouseEvent);
-    map.value.on("click", handleBufferClick);
-  }
 };
 
-/**
- * Checks if all features in the alerts data are of type LineString.
- *
- * @returns {boolean} True if all features are LineStrings, otherwise false.
- */
+/* Checks if all features in the alerts data are of type LineString. */
 const isOnlyLineStringData = () => {
   const allFeatures = [
     ...props.alertsData.mostRecentAlerts.features,
@@ -529,8 +538,6 @@ const isOnlyLineStringData = () => {
 /**
  * Handles click events on the map to select features within a buffer
  * around LineString features.
- *
- * @param {MapMouseEvent} e - The map mouse event.
  */
 const handleBufferClick = (e: MapMouseEvent) => {
   const pixelBuffer = 10;
@@ -553,8 +560,6 @@ const handleBufferClick = (e: MapMouseEvent) => {
 /**
  * Handles mouse movement events to change the cursor style when hovering
  * over LineString features within a buffer.
- *
- * @param {MapMouseEvent} e - The map mouse event.
  */
 const handleBufferMouseEvent = (e: MapMouseEvent) => {
   const pixelBuffer = 10;
@@ -680,6 +685,7 @@ const addPulsingCircles = () => {
   // Add pulsing markers for most recent alerts
   props.alertsData.mostRecentAlerts.features.forEach(addPulsingMarker);
 };
+
 /** Removes pulsing circles from the map */
 const removePulsingCircles = () => {
   document.querySelectorAll(".pulsing-dot").forEach((el) => el.remove());
@@ -754,9 +760,6 @@ const selectedDateRange = ref();
 /**
  * Converts date strings from "MM-YYYY" format to "YYYYMM" format for comparison.
  * If the start or end date is "earlier", it substitutes with the earliest or twelve months before date.
- * @param {string} start - The start date in "MM-YYYY" format or "earlier".
- * @param {string} end - The end date in "MM-YYYY" format or "earlier".
- * @returns {[string, string]} - The converted start and end dates in "YYYYMM" format.
  */
 const convertDates = (start: string, end: string) => {
   const convertToDate = (dateStr: string) => {
@@ -857,9 +860,7 @@ const handleDateRangeChanged = (newRange: [string, string]) => {
   });
 };
 
-/**
- * Closes the sidebar and resets the selected feature.
- */
+/* Closes the sidebar and resets the selected feature. */
 const handleSidebarClose = () => {
   showSidebar.value = false;
   resetSelectedFeature();
