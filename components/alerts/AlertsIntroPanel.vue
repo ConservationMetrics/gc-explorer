@@ -30,12 +30,24 @@ const emit = defineEmits(["dateRangeChanged"]);
           {{ $t("changeDetectionAlerts") }}:
           {{ props.alertsStatistics.territory }}
         </h2>
-        <p class="text-l mb-2">
+        <p class="text-l mb-2 italic">
           {{ $t("mostRecentAlertsShownIn") }}
           <span style="color: #ff0000"
             ><strong>{{ $t("red") }}</strong></span
+          >, {{ $t("andPreviousAlertsShownIn") }}
+          <span style="color: #fd8d3c"
+            ><strong>{{ $t("orange") }}</strong></span
           >.
         </p>
+        <p class="text-l mb-2 italic">
+          {{ $t("ifYouAreZoomedOutAlertsWillBeShownAsA") }}
+          <img
+            src="@/assets/icons/warning_red.png"
+            alt="Warning icon"
+            class="w-4 h-4 inline-block"
+          />.
+        </p>
+        <p class="text-l mb-2 italic">{{ $t("clickOnAlertsForMoreInfo") }}.</p>
         <div
           v-if="
             props.alertsStatistics.typeOfAlerts &&
