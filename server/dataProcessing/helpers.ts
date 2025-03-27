@@ -85,11 +85,17 @@ export const calculateCentroid = (coords: string): string => {
   type Polygon = LineString[];
   type MultiPolygon = Polygon[];
 
+  const allCoords: MultiPolygon | Polygon | LineString | Coordinate =
+    JSON.parse(coords);
+
+  if (Array.isArray(allCoords) && allCoords.length === 2) {
+    // If it's a single set of coordinates (e.g. a point), return it as is
+    return coords;
+  }
+
   let totalLat = 0;
   let totalLng = 0;
   let numCoords = 0;
-
-  const allCoords: MultiPolygon | Polygon | LineString = JSON.parse(coords);
 
   const processCoord = (coord: Coordinate) => {
     totalLng += coord[0];
