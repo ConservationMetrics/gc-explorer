@@ -19,10 +19,9 @@ const props = defineProps<{
   dateOptions?: Array<string>;
   downloadAlert?: boolean;
   feature?: DataEntry;
-  featureData?: Feature;
   filePaths?: Array<string>;
-  geojsonSelection?: Feature | AlertsData;
   isAlert?: boolean;
+  localAlertsData?: Feature | AlertsData;
   logoUrl?: string;
   mediaBasePath?: string;
   mediaBasePathAlerts?: string;
@@ -52,8 +51,8 @@ const filteredFeature = computed<DataEntry>(() => {
 
 /** Data for AlertsIntroPanel component */
 const dataForAlertsIntroPanel = computed(() => {
-  if (props.geojsonSelection) {
-    return props.geojsonSelection as AlertsData;
+  if (props.localAlertsData) {
+    return props.localAlertsData as AlertsData;
   }
   return undefined;
 });
@@ -87,7 +86,7 @@ watch(
       v-if="showIntroPanel && alertsStatistics"
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
-      :geojson-selection="dataForAlertsIntroPanel"
+      :data-for-alerts-intro-panel="dataForAlertsIntroPanel"
       :logo-url="logoUrl"
       :show-slider="showSlider"
       :alerts-statistics="alertsStatistics"
@@ -104,8 +103,7 @@ watch(
     />
     <DownloadMapData
       v-if="downloadAlert"
-      :feature-data="featureData"
-      :type-of-data="'alert'"
+      :data-for-download="localAlertsData"
     />
   </div>
 </template>

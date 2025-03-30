@@ -54,6 +54,7 @@ const props = defineProps<{
   planetApiKey: string;
 }>();
 
+const localAlertsData = ref<Feature | AlertsData>(props.alertsData);
 const calculateHectares = ref(false);
 const dateOptions = ref();
 const hasRulerControl = ref(false);
@@ -909,7 +910,6 @@ const imageCaption = ref();
 const imageUrl = ref();
 const isAlert = ref(false);
 const selectedFeature = ref();
-const selectedFeatureGeojson = ref();
 const selectedFeatureId = ref();
 const selectedFeatureSource = ref();
 /**
@@ -953,8 +953,8 @@ const selectFeature = (feature: Feature, layerId: string) => {
   delete featureObject["YYYYMM"];
 
   // Update component state
+  localAlertsData.value = featureGeojson;
   selectedFeature.value = featureObject;
-  selectedFeatureGeojson.value = featureGeojson;
   selectedFeatureId.value = featureId;
   selectedFeatureSource.value = layerId;
   showSidebar.value = true;
@@ -1005,8 +1005,8 @@ const resetSelectedFeature = () => {
     { source: selectedFeatureSource.value, id: selectedFeatureId.value },
     { selected: false },
   );
+  localAlertsData.value = props.alertsData;
   selectedFeature.value = null;
-  selectedFeatureGeojson.value = null;
   selectedFeatureId.value = null;
   selectedFeatureSource.value = null;
 };
@@ -1017,6 +1017,7 @@ const resetSelectedFeature = () => {
  */
 const resetToInitialState = () => {
   resetSelectedFeature();
+  localAlertsData.value = props.alertsData;
   showSidebar.value = true;
   showIntroPanel.value = true;
   downloadAlert.value = false;
@@ -1085,11 +1086,11 @@ onBeforeUnmount(() => {
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
       :download-alert="downloadAlert"
-      :feature-data="selectedFeatureGeojson"
       :feature="selectedFeature"
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
       :is-alert="isAlert"
+      :local-alerts-data="localAlertsData"
       :logo-url="logoUrl"
       :media-base-path="mediaBasePath"
       :media-base-path-alerts="mediaBasePathAlerts"

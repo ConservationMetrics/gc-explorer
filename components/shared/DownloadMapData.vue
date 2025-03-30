@@ -6,27 +6,26 @@ import type { Feature } from "geojson";
 import type { AlertsData } from "~/types/types";
 
 const props = defineProps<{
-  featureData?: Feature | AlertsData;
-  typeOfData: string;
+  dataForDownload?: Feature | AlertsData;
 }>();
 
 /** Incoming feature data can be either a single Feature or an AlertsData object */
 const isAlertsData = (
-  featureData: Feature | AlertsData,
-): featureData is AlertsData => {
+  data: Feature | AlertsData | undefined,
+): data is AlertsData => {
   return (
-    (featureData as AlertsData).mostRecentAlerts !== undefined &&
-    (featureData as AlertsData).previousAlerts !== undefined
+    (data as AlertsData).mostRecentAlerts !== undefined &&
+    (data as AlertsData).previousAlerts !== undefined
   );
 };
 
 const downloadAlertCSV = () => {
-  if (!props.featureData || isAlertsData(props.featureData)) {
+  if (!props.dataForDownload || isAlertsData(props.dataForDownload)) {
     console.error("No valid GeoJSON Feature data available to convert to CSV.");
     return;
   }
 
-  const { geometry, properties } = props.featureData;
+  const { geometry, properties } = props.dataForDownload;
 
   if (!properties) {
     console.error("No properties found in GeoJSON data.");
@@ -89,12 +88,12 @@ const downloadAlertCSV = () => {
 };
 
 const downloadAlertGeoJSON = () => {
-  if (!props.featureData || isAlertsData(props.featureData)) {
+  if (!props.dataForDownload || isAlertsData(props.dataForDownload)) {
     console.error("No valid GeoJSON Feature data available to convert to CSV.");
     return;
   }
 
-  const geojsonCopy = { ...props.featureData };
+  const geojsonCopy = { ...props.dataForDownload };
 
   if (!geojsonCopy.properties) {
     console.error("No properties found in GeoJSON data.");
@@ -127,14 +126,14 @@ const downloadAlertGeoJSON = () => {
 };
 
 const downloadAlertKML = () => {
-  if (!props.featureData || isAlertsData(props.featureData)) {
+  if (!props.dataForDownload || isAlertsData(props.dataForDownload)) {
     console.error("No valid GeoJSON Feature data available to convert to CSV.");
     return;
   }
 
-  const kmlString = tokml(props.featureData);
+  const kmlString = tokml(props.dataForDownload);
 
-  const { properties } = props.featureData;
+  const { properties } = props.dataForDownload;
 
   if (!properties) {
     console.error("No properties found in GeoJSON data.");
@@ -166,14 +165,14 @@ const downloadAlertKML = () => {
 };
 
 const downloadCSVSelection = () => {
-  if (!props.featureData || !isAlertsData(props.featureData)) {
+  if (!props.dataForDownload || !isAlertsData(props.dataForDownload)) {
     console.warn("No valid AlertsData available to download as CSV.");
     return;
   }
 
   const combinedFeatures = [
-    ...props.featureData.previousAlerts.features,
-    ...props.featureData.mostRecentAlerts.features,
+    ...props.dataForDownload.previousAlerts.features,
+    ...props.dataForDownload.mostRecentAlerts.features,
   ];
 
   let csvString = "";
@@ -231,15 +230,15 @@ const downloadCSVSelection = () => {
 };
 
 const downloadGeoJSONSelection = () => {
-  if (!props.featureData || !isAlertsData(props.featureData)) {
+  if (!props.dataForDownload || !isAlertsData(props.dataForDownload)) {
     console.warn("No valid AlertsData available to download as CSV.");
     return;
   }
 
   // Combine features from mostRecentAlerts and previousAlerts
   const combinedFeatures = [
-    ...props.featureData.previousAlerts.features,
-    ...props.featureData.mostRecentAlerts.features,
+    ...props.dataForDownload.previousAlerts.features,
+    ...props.dataForDownload.mostRecentAlerts.features,
   ];
 
   combinedFeatures.forEach((feature) => {
@@ -276,14 +275,14 @@ const downloadGeoJSONSelection = () => {
 };
 
 const downloadKMLSelection = () => {
-  if (!props.featureData || !isAlertsData(props.featureData)) {
+  if (!props.dataForDownload || !isAlertsData(props.dataForDownload)) {
     console.warn("No valid AlertsData available to download as CSV.");
     return;
   }
 
   const combinedFeatures = [
-    ...props.featureData.previousAlerts.features,
-    ...props.featureData.mostRecentAlerts.features,
+    ...props.dataForDownload.previousAlerts.features,
+    ...props.dataForDownload.mostRecentAlerts.features,
   ];
 
   const combinedGeoJSON = {
@@ -320,7 +319,9 @@ const downloadKMLSelection = () => {
     <button
       class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
       @click="
-        typeOfData === 'alert' ? downloadAlertCSV() : downloadCSVSelection()
+        !isAlertsData(props.dataForDownload)
+          ? downloadAlertCSV()
+          : downloadCSVSelection()
       "
     >
       {{ $t("downloadCSV") }}
@@ -328,7 +329,7 @@ const downloadKMLSelection = () => {
     <button
       class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
       @click="
-        typeOfData === 'alert'
+        !isAlertsData(props.dataForDownload)
           ? downloadAlertGeoJSON()
           : downloadGeoJSONSelection()
       "
@@ -338,7 +339,9 @@ const downloadKMLSelection = () => {
     <button
       class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
       @click="
-        typeOfData === 'alert' ? downloadAlertKML() : downloadKMLSelection()
+        !isAlertsData(props.dataForDownload)
+          ? downloadAlertKML()
+          : downloadKMLSelection()
       "
     >
       {{ $t("downloadKML") }}

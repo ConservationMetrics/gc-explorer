@@ -7,7 +7,7 @@ const props = defineProps<{
   alertsStatistics: AlertsStatistics;
   calculateHectares?: boolean;
   dateOptions?: Array<string>;
-  geojsonSelection?: AlertsData;
+  dataForAlertsIntroPanel?: AlertsData;
   logoUrl?: string;
   showSlider?: boolean;
 }>();
@@ -17,7 +17,6 @@ const emit = defineEmits(["dateRangeChanged"]);
 
 <template>
   <div>
-    <!-- Header and stats -->
     <div class="feature p-4 rounded-lg shadow-lg">
       <div>
         <img
@@ -90,18 +89,13 @@ const emit = defineEmits(["dateRangeChanged"]);
         </div>
       </div>
     </div>
-    <!-- Slider -->
     <div v-if="props.showSlider" class="feature p-4 rounded-lg shadow-lg">
       <AlertsSlider
         :date-options="props.dateOptions"
         @date-range-changed="emit('dateRangeChanged', $event)"
       />
-      <div v-if="props.geojsonSelection">
-        <!-- Download -->
-        <DownloadMapData
-          :geojson="props.geojsonSelection"
-          :type-of-data="'multiple-alerts'"
-        />
+      <div v-if="props.dataForAlertsIntroPanel">
+        <DownloadMapData :data-for-download="props.dataForAlertsIntroPanel" />
       </div>
     </div>
     <!-- Chart -->
