@@ -25,7 +25,7 @@
     "lodash": "^4.17.21",
     "mapbox-gl": "^3.4.0",
     "mapbox-gl-ruler-control": "^0.0.2",
-    "nuxt": "^3.13.0",
+    "nuxt": "3.15.4",
     "nuxt-auth-utils": "^0.3.6",
     "pg": "^8.12.0",
     "tokml": "^0.4.0",
