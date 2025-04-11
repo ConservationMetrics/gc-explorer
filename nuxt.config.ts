@@ -69,7 +69,7 @@ export default defineNuxtConfig({
     public: {
       allowedFileExtensions: {
         image: ["jpg", "jpeg", "png", "webp"],
-        audio: ["mp3", "ogg", "wav"],
+        audio: ["mp3", "ogg", "wav", "m4a"],
         video: ["mov", "mp4", "avi", "mkv"],
       },
       appApiKey: "",

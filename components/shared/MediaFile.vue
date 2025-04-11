@@ -58,7 +58,11 @@ const checkExtensions = (extensions: string[]) => {
       <audio controls class="w-full" preload="none">
         <source
           :src="mediaBasePath + '/' + filePath"
-          :type="'audio/' + getExtension(filePath)"
+          :type="
+            getExtension(filePath) === 'm4a'
+              ? 'audio/x-m4a'
+              : 'audio/' + getExtension(filePath)
+          "
         />
         {{ $t("browserDoesntSupportAudio") }}.
       </audio>
