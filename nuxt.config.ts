@@ -51,7 +51,6 @@ export default defineNuxtConfig({
       alwaysRedirect: true,
       redirectOn: "all",
     },
-    langDir: "lang/",
     strategy: "no_prefix",
     skipSettingLocaleOnNavigate: true, // persists locale when route changes
   },
