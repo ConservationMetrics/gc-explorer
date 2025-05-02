@@ -24,12 +24,13 @@ const toggleBasemapWindow = () => {
   showBasemapWindow.value = !showBasemapWindow.value;
 };
 
-// Planet NICFI monthly basemaps
-const minMonth = "2020-09"; // The first month we have Planet NICFI monthly basemaps
+// PlanetScope Monthly Select Basemaps
+// Reference: https://docs.planet.com/develop/apis/tiles/
+const minMonth = "2020_01"; // The first month we have PlanetScope Monthly Select Basemaps
 const maxMonth = computed(() => {
   // If the current day is less than or equal to 15, maxMonth is two months ago.
   // Otherwise, maxMonth is the previous month.
-  // This is because Planet NICFI monthly basemaps for the previous month are published on the 15th of each month.
+  // This is because PlanetScope Monthly Select Basemaps for the previous month are published on the 15th of each month.
   const date = new Date();
   if (date.getDate() <= 15) {
     date.setMonth(date.getMonth() - 2);
@@ -39,14 +40,16 @@ const maxMonth = computed(() => {
   const year = date.getFullYear();
   const monthNumber = date.getMonth() + 1;
   const formattedMonth = monthNumber < 10 ? `0${monthNumber}` : monthNumber;
-  return `${year}-${formattedMonth}`;
+  return `${year}_${formattedMonth}`;
 });
-const monthYear = ref(maxMonth.value);
+const monthYear = ref<string>(maxMonth.value);
 const setPlanetDateRange = (date: Date) => {
-  // minMonth and maxMonth are in format YYYY-MM, but date is a Date object
+  // minMonth and maxMonth are in format YYYY_MM, but date is a Date object
   // so we need to convert it to a string in the same format
-  const formattedDate = date.toISOString().slice(0, 7);
-  return formattedDate < minMonth || formattedDate > maxMonth.value;
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const formatted = `${year}_${month < 10 ? "0" + month : month}`;
+  return formatted < minMonth || formatted > maxMonth.value;
 };
 
 /** Update the monthYear when the Planet basemap is selected */
@@ -137,13 +140,13 @@ const emitBasemapChange = () => {
             name="basemap"
             @change="emitBasemapChange"
           />
-          {{ $t("planetMonthlyVisualBasemap") }}
+          PlanetScope Monthly Select Basemaps
         </label>
         <label v-if="selectedBasemap.id === 'planet'">
           <Datepicker
             v-model:value="monthYear"
-            format="YYYY-MM"
-            value-type="YYYY-MM"
+            format="YYYY_MM"
+            value-type="YYYY_MM"
             type="month"
             :default-value="maxMonth"
             :disabled-date="setPlanetDateRange"

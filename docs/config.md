@@ -78,7 +78,7 @@ A comma-separated list of Mapbox layer ids to be rendered in an optional map leg
 
 #### `PLANET_API_KEY` (optional)
 
-Provide a Planet NICFI Monthly Basemaps API key to enable the option to use the monthly basemaps as a style option in the basemap selector menu.
+Provide a Planet API key to enable the option to use Planet basemaps as a style option in the basemap selector menu.
 
 #### `UNWANTED_COLUMNS` (optional) and `UNWANTED_SUBSTRINGS` (optional)
 
