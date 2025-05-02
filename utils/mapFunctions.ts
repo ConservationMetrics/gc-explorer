@@ -12,7 +12,7 @@ export const mapStyles: Record<string, MapStyle> = {
         planet: {
           type: "raster",
           tiles: [
-            `https://tiles.planet.com/basemaps/v1/planet-tiles/planet_medres_visual_monthYear_mosaic/gmap/{z}/{x}/{y}?api_key=`,
+            `https://tiles.planet.com/basemaps/v1/planet-tiles/global_monthly_monthYear_mosaic/gmap/{z}/{x}/{y}?api_key=`,
           ],
           tileSize: 256,
         },
