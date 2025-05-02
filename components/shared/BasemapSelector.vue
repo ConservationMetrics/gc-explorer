@@ -25,6 +25,7 @@ const toggleBasemapWindow = () => {
 };
 
 // PlanetScope Monthly Select Basemaps
+// Reference: https://docs.planet.com/develop/apis/tiles/
 const minMonth = "2020_01"; // The first month we have PlanetScope Monthly Select Basemaps
 const maxMonth = computed(() => {
   // If the current day is less than or equal to 15, maxMonth is two months ago.
