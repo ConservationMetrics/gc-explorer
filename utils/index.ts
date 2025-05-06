@@ -38,3 +38,8 @@ export const toCamelCase = (key: string): string => {
     .replace(/_([a-z0-9])/g, (_, p1) => p1.toUpperCase())
     .replace(/(^\w)/, (match) => match.toLowerCase());
 };
+
+/** Converts a string to snake_case format. */
+export const replaceUnderscoreWithSpace = (str: string): string => {
+  return str.replace(/_/g, " ");
+};

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 
+import { replaceUnderscoreWithSpace } from "@/utils/index";
+
 // Extract the tablename from the route parameters
 const route = useRoute();
-const table = route.params.tablename;
+const tableRaw = route.params.tablename;
+const table = Array.isArray(tableRaw) ? tableRaw.join("/") : tableRaw;
 
 const allowedFileExtensions = ref();
 const dataFetched = ref(false);
@@ -55,7 +58,11 @@ if (data.value && !error.value) {
 
 const { t } = useI18n();
 useHead({
-  title: "GuardianConnector Explorer" + t("map"),
+  title:
+    "GuardianConnector Explorer " +
+    t("map") +
+    " - " +
+    replaceUnderscoreWithSpace(table),
 });
 </script>
 
