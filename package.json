@@ -21,7 +21,7 @@
     "@turf/turf": "^7.2.0",
     "@vojtechlanka/vue-tags-input": "^3.1.1",
     "chart.js": "^4.4.7",
-    "gc-shared-resources": "^1.1.6",
+    "gc-shared-resources": "^1.1.7",
     "lodash": "^4.17.21",
     "mapbox-gl": "^3.9.4",
     "mapbox-gl-ruler-control": "^0.0.2",

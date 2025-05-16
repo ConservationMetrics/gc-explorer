@@ -108,5 +108,6 @@
   "version": "Versie",
   "views": "Weergaven",
   "viewOnGoogleMaps": "bekijk op Google Maps",
+  "yourAccessIsPending": "Uw toegang is in behandeling. Neem contact op met een Guardian Connector-beheerder voor goedkeuring van je account.",
   "yourMapboxStyleDefault": "Mapbox - uw stijl (standaard)"
 }
