@@ -88,11 +88,6 @@ export const calculateCentroid = (coords: string): string => {
   const allCoords: MultiPolygon | Polygon | LineString | Coordinate =
     JSON.parse(coords);
 
-  if (Array.isArray(allCoords) && allCoords.length === 2) {
-    // If it's a single set of coordinates (e.g. a point), return it as is
-    return coords;
-  }
-
   let totalLat = 0;
   let totalLng = 0;
   let numCoords = 0;
@@ -124,6 +119,13 @@ export const calculateCentroid = (coords: string): string => {
   } else if (Array.isArray(allCoords[0])) {
     // It's a LineString
     processLineString(allCoords as LineString);
+  } else if (
+    Array.isArray(allCoords) &&
+    typeof allCoords[0] === "number" &&
+    typeof allCoords[1] === "number"
+  ) {
+    // It's a Point
+    processCoord(allCoords as Coordinate);
   } else {
     console.error("Invalid input format");
     return "";
