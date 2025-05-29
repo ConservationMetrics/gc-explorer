@@ -127,7 +127,7 @@ export type AlertsStatistics = {
   recentAlertsNumber: number;
   alertsTotal: number;
   alertsPerMonth: AlertsPerMonth;
-  hectaresTotal: string;
-  hectaresPerMonth: AlertsPerMonth;
+  hectaresTotal: string | null;
+  hectaresPerMonth: AlertsPerMonth | null;
   twelveMonthsBefore: string;
 };

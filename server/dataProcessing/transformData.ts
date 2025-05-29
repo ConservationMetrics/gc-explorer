@@ -223,7 +223,7 @@ const prepareAlertData = (
 } => {
   const transformChangeDetectionItem = (
     item: DataEntry,
-    formattedMonth: string,
+    formattedMonth?: string,
   ): DataEntry => {
     const transformedItem: DataEntry = {};
 
@@ -233,6 +233,20 @@ const prepareAlertData = (
         transformedItem[key] = item[key];
       }
     });
+
+    if (item.data_source === "Global Forest Watch") {
+      transformedItem["alertID"] = item.alert_id;
+      transformedItem["confidenceLevel"] = item.confidence;
+      transformedItem["alertType"] = item.alert_type?.replace(/_/g, " ") ?? "";
+      transformedItem["dataProvider"] = capitalizeFirstLetter(item.data_source);
+      transformedItem["geographicCentroid"] = calculateCentroid(
+        item.g__coordinates,
+      );
+      transformedItem["YYYYMM"] = item.date?.slice(0, 7).replace("-", "");
+      transformedItem["monthDetected"] = item.date?.slice(0, 7);
+      transformedItem["alertDetectionRange"] = item.date;
+      return transformedItem;
+    }
 
     // To rewrite the satellite prefix column
     const satelliteLookup: { [key: string]: string } = {
@@ -282,13 +296,19 @@ const prepareAlertData = (
     return transformedItem;
   };
 
-  let latestDate = new Date(0);
-  let latestMonthStr = "";
+  let latestProprietaryDate = new Date(0);
+  let latestProprietaryMonthStr = "";
 
   const validGeoData = data.filter(isValidGeolocation);
+  const proprietaryAlertData = validGeoData.filter(
+    (d) => d.data_source !== "Global Forest Watch",
+  );
+  const gfwData = validGeoData.filter(
+    (d) => d.data_source === "Global Forest Watch",
+  );
 
   // First pass to find the latest date
-  validGeoData.forEach((item) => {
+  proprietaryAlertData.forEach((item) => {
     const formattedMonth =
       item.month_detec.length === 1 ? `0${item.month_detec}` : item.month_detec;
     const monthYearStr = `${formattedMonth}-${item.year_detec}`;
@@ -297,32 +317,46 @@ const prepareAlertData = (
       parseInt(formattedMonth) - 1,
     );
 
-    if (date > latestDate) {
-      latestDate = date;
-      latestMonthStr = monthYearStr;
+    if (date > latestProprietaryDate) {
+      latestProprietaryDate = date;
+      latestProprietaryMonthStr = monthYearStr;
     }
+  });
+
+  let latestGfwDate = new Date(0);
+  gfwData.forEach((item) => {
+    const date = new Date(item.date);
+    if (date > latestGfwDate) latestGfwDate = date;
   });
 
   const mostRecentAlerts: DataEntry[] = [];
   const previousAlerts: DataEntry[] = [];
 
   // Second pass to segregate the data
-  validGeoData.forEach((item) => {
-    // Prepend 0 to single-digit months, if found
+  proprietaryAlertData.forEach((item) => {
     const formattedMonth =
       item.month_detec.length === 1 ? `0${item.month_detec}` : item.month_detec;
-
     const monthYearStr = `${formattedMonth}-${item.year_detec}`;
-
     const transformedItem = transformChangeDetectionItem(item, formattedMonth);
 
     // Segregate data based on the latest month detected
-    if (monthYearStr === latestMonthStr) {
+    if (monthYearStr === latestProprietaryMonthStr) {
       mostRecentAlerts.push(transformedItem);
     } else {
       previousAlerts.push(transformedItem);
     }
   });
+
+  gfwData.forEach((item) => {
+    const date = new Date(item.date);
+    const transformedItem = transformChangeDetectionItem(item);
+    if (date.getTime() === latestGfwDate.getTime()) {
+      mostRecentAlerts.push(transformedItem);
+    } else {
+      previousAlerts.push(transformedItem);
+    }
+  });
+
   return { mostRecentAlerts, previousAlerts };
 };
 
@@ -349,27 +383,46 @@ const prepareAlertsStatistics = (
   data: DataEntry[],
   metadata: AlertsMetadata[] | null,
 ): AlertsStatistics => {
-  let dataProviders: string[] = [];
+  const isGFW = data.some((item) => item.data_source === "Global Forest Watch");
 
-  const territory: string =
-    data[0].territory_name.charAt(0).toUpperCase() +
-    data[0].territory_name.slice(1);
+  const territory = isGFW
+    ? ""
+    : data[0].territory_name.charAt(0).toUpperCase() +
+      data[0].territory_name.slice(1);
 
   const typeOfAlerts = Array.from(
     new Set(
       data
-        .map((item) => item.alert_type.replace(/_/g, " "))
+        .map((item) => item.alert_type?.replace(/_/g, " "))
         .filter((alertType): alertType is string => alertType !== null),
     ),
   );
 
+  const dataProviders = isGFW
+    ? Array.from(new Set(data.map((item) => item.data_source)))
+    : metadata
+      ? Array.from(new Set(metadata.map((item) => item.data_source)))
+      : [];
+
   // Create Date objects for sorting and comparisons
-  const formattedDates = data.map((item) => ({
-    date: new Date(
-      `${item.year_detec}-${item.month_detec.padStart(2, "0")}-15`,
-    ),
-    dateString: `${item.month_detec.padStart(2, "0")}-${item.year_detec}`,
-  }));
+  const formattedDates = data.map((item) => {
+    if (isGFW) {
+      const d = new Date(item.date);
+      const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+      const year = d.getUTCFullYear();
+      return {
+        date: new Date(Date.UTC(year, d.getUTCMonth(), 15)),
+        dateString: `${month}-${year}`,
+      };
+    } else {
+      return {
+        date: new Date(
+          `${item.year_detec}-${item.month_detec.padStart(2, "0")}-15`,
+        ),
+        dateString: `${item.month_detec.padStart(2, "0")}-${item.year_detec}`,
+      };
+    }
+  });
 
   // Sort dates to find the earliest and latest
   formattedDates.sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -377,7 +430,7 @@ const prepareAlertsStatistics = (
   let earliestDateStr, latestDateStr;
   let earliestDate: Date, latestDate: Date;
 
-  if (metadata && metadata.length > 0) {
+  if (!isGFW && metadata && metadata.length > 0) {
     // Find earliest and latest dates from metadata
     metadata.sort((a, b) =>
       a.year === b.year ? a.month - b.month : a.year - b.year,
@@ -394,22 +447,8 @@ const prepareAlertsStatistics = (
 
     earliestDateStr = `${String(earliestMetadata.month).padStart(2, "0")}-${earliestMetadata.year}`;
     latestDateStr = `${String(latestMetadata.month).padStart(2, "0")}-${latestMetadata.year}`;
-
-    // Set alert_source
-    dataProviders = Array.from(
-      new Set(metadata.map((item) => item.data_source)),
-    );
   } else {
     // If metadata is null, calculate earliest and latest dates from data
-    const formattedDates = data.map((item) => ({
-      date: new Date(
-        `${item.year_detec}-${item.month_detec.padStart(2, "0")}-15`,
-      ),
-      dateString: `${item.month_detec.padStart(2, "0")}-${item.year_detec}`,
-    }));
-
-    formattedDates.sort((a, b) => a.date.getTime() - b.date.getTime());
-
     earliestDate = formattedDates[0].date;
     earliestDate.setDate(1);
     earliestDateStr = formattedDates[0].dateString;
@@ -431,18 +470,20 @@ const prepareAlertsStatistics = (
   // Filter and sort the data for the last 12 months
   const last12MonthsData = data
     .filter((item) => {
-      const itemDate = new Date(
-        `${item.year_detec}-${item.month_detec.padStart(2, "0")}-01`,
-      );
+      const itemDate = isGFW
+        ? new Date(item.date)
+        : new Date(
+            `${item.year_detec}-${item.month_detec.padStart(2, "0")}-01`,
+          );
       return itemDate >= twelveMonthsBefore && itemDate <= latestDate;
     })
     .sort((a, b) => {
-      const aDate = new Date(
-        `${a.year_detec}-${a.month_detec.padStart(2, "0")}`,
-      );
-      const bDate = new Date(
-        `${b.year_detec}-${b.month_detec.padStart(2, "0")}`,
-      );
+      const aDate = isGFW
+        ? new Date(a.date)
+        : new Date(`${a.year_detec}-${a.month_detec.padStart(2, "0")}`);
+      const bDate = isGFW
+        ? new Date(b.date)
+        : new Date(`${b.year_detec}-${b.month_detec.padStart(2, "0")}`);
       return aDate.getTime() - bDate.getTime();
     });
 
@@ -496,13 +537,17 @@ const prepareAlertsStatistics = (
 
     months.forEach((monthYear) => {
       if (property === "alerts") {
-        const monthData = dataCollection.filter(
-          (item) =>
-            `${item.month_detec.padStart(2, "0")}-${item.year_detec}` ===
-            monthYear,
-        );
+        const monthData = dataCollection.filter((item) => {
+          const itemMonthYear = isGFW
+            ? (() => {
+                const d = new Date(item.date);
+                return `${String(d.getUTCMonth() + 1).padStart(2, "0")}-${d.getUTCFullYear()}`;
+              })()
+            : `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
+          return itemMonthYear === monthYear;
+        });
         cumulativeValue += monthData.length;
-      } else if (property === "hectares") {
+      } else if (property === "hectares" && !isGFW) {
         dataCollection.forEach((item) => {
           const monthYearItem = `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
           if (monthYearItem === monthYear) {
@@ -532,21 +577,37 @@ const prepareAlertsStatistics = (
   // Count the number of alerts for the most recent date
   const recentAlertDate =
     last12MonthsData.length > 0
-      ? `${last12MonthsData[last12MonthsData.length - 1].month_detec.padStart(2, "0")}-${last12MonthsData[last12MonthsData.length - 1].year_detec}`
+      ? isGFW
+        ? (() => {
+            const d = new Date(
+              last12MonthsData[last12MonthsData.length - 1].date,
+            );
+            return `${String(d.getUTCMonth() + 1).padStart(2, "0")}-${d.getUTCFullYear()}`;
+          })()
+        : `${last12MonthsData[last12MonthsData.length - 1].month_detec.padStart(2, "0")}-${last12MonthsData[last12MonthsData.length - 1].year_detec}`
       : "N/A";
-  const recentAlertsNumber = data.filter(
-    (item) =>
-      `${item.month_detec.padStart(2, "0")}-${item.year_detec}` ===
-      recentAlertDate,
-  ).length;
+  const recentAlertsNumber = data.filter((item) => {
+    const itemDateStr = isGFW
+      ? (() => {
+          const d = new Date(item.date);
+          return `${String(d.getUTCMonth() + 1).padStart(2, "0")}-${d.getUTCFullYear()}`;
+        })()
+      : `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
+    return itemDateStr === recentAlertDate;
+  }).length;
 
   // Calculate total number of alerts
   const alertsTotal = data.length;
 
   // Calculate total hectares
-  const hectaresTotal = data
-    .reduce((total, item) => total + parseFloat(item.area_alert_ha || "0"), 0)
-    .toFixed(2);
+  const hectaresTotal = isGFW
+    ? null
+    : data
+        .reduce(
+          (total, item) => total + parseFloat(item.area_alert_ha || "0"),
+          0,
+        )
+        .toFixed(2);
 
   return {
     territory,
@@ -560,7 +621,7 @@ const prepareAlertsStatistics = (
     alertsTotal,
     alertsPerMonth,
     hectaresTotal,
-    hectaresPerMonth,
+    hectaresPerMonth: isGFW ? null : hectaresPerMonth,
     twelveMonthsBefore: twelveMonthsBeforeStr,
   };
 };

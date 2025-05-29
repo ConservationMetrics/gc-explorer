@@ -26,8 +26,10 @@ const emit = defineEmits(["dateRangeChanged"]);
           alt="Logo"
         />
         <h2 class="text-2xl font-semibold mb-2">
-          {{ $t("changeDetectionAlerts") }}:
-          {{ props.alertsStatistics.territory }}
+          {{ $t("changeDetectionAlerts")
+          }}<span v-if="props.alertsStatistics.territory"
+            >: {{ props.alertsStatistics.territory }}</span
+          >
         </h2>
         <p class="text-l mb-2 italic">
           {{ $t("mostRecentAlertsShownIn") }}
@@ -83,7 +85,10 @@ const emit = defineEmits(["dateRangeChanged"]);
           <span class="font-bold">{{ $t("alertsTotal") }}:</span>
           {{ props.alertsStatistics.alertsTotal }}
         </div>
-        <div v-if="props.calculateHectares" class="mb-2">
+        <div
+          v-if="props.calculateHectares && props.alertsStatistics.hectaresTotal"
+          class="mb-2"
+        >
           <span class="font-bold">{{ $t("hectaresTotal") }}:</span>
           {{ props.alertsStatistics.hectaresTotal }}
         </div>

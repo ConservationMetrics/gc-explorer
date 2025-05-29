@@ -34,22 +34,28 @@ const props = defineProps<{
 
 // Populate chart data
 const chartData = computed(() => {
-  const dataKey = props.calculateHectares
-    ? "hectaresPerMonth"
-    : "alertsPerMonth";
-  const label = props.calculateHectares
-    ? t("hectaresPerMonth")
-    : t("numberOfAlerts");
+  const prefersHectares = props.calculateHectares;
+  const hasHectares = props.alertsStatistics.hectaresPerMonth !== null;
+
+  const stats =
+    prefersHectares && hasHectares
+      ? props.alertsStatistics.hectaresPerMonth!
+      : props.alertsStatistics.alertsPerMonth;
+
+  const label =
+    prefersHectares && hasHectares
+      ? t("hectaresPerMonth")
+      : t("numberOfAlerts");
 
   return {
-    labels: Object.keys(props.alertsStatistics[dataKey]),
+    labels: Object.keys(stats),
     datasets: [
       {
         backgroundColor: "rgba(0, 0, 0, 0)",
         borderColor: "#f87979",
-        data: Object.values(props.alertsStatistics[dataKey]),
+        data: Object.values(stats),
         fill: false,
-        label: label,
+        label,
         pointBackgroundColor: "#f87979",
       },
     ],
