@@ -129,7 +129,7 @@ export const prepareMapLegendLayers = (
         .replace(/-/g, " ")
         .replace(/^\w/, (m) => m.toUpperCase());
 
-      formattedId = formattedId.replace(/ polygon| linestring$/i, "");
+      formattedId = formattedId.replace(/ polygon| linestring| point$/i, "");
 
       return {
         id: layerId,
