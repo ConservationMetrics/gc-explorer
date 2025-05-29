@@ -228,6 +228,31 @@ const addAlertsData = async () => {
           });
         }
       }
+
+      if (type === "Point") {
+        if (!map.value.getLayer(layerId)) {
+          map.value.addLayer({
+            id: layerId,
+            type: "circle",
+            source: layerId,
+            paint: {
+              "circle-color": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                "#FFFF00",
+                fillColor,
+              ],
+              "circle-radius": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                10,
+                5,
+              ],
+              "circle-opacity": 0.8,
+            },
+          });
+        }
+      }
       resolve();
     });
   };
@@ -256,7 +281,7 @@ const addAlertsData = async () => {
    * Adds a GeoJSON point layer to the map using the geographicCentroid property,
    * with specified icon.
    */
-  const addAlertPointsLayer = async (
+  const addAlertSymbolLayer = async (
     layerId: string,
     features: Feature[],
     iconName: string,
@@ -327,8 +352,15 @@ const addAlertsData = async () => {
       null,
       "#FD8D3C",
     ),
-    addAlertPointsLayer(
+    addAlertLayer(
       "previous-alerts-points",
+      geoJsonSource.previousAlerts.features,
+      "Point",
+      "#FD8D3C",
+      "#FD8D3C",
+    ),
+    addAlertSymbolLayer(
+      "previous-alerts-symbol",
       geoJsonSource.previousAlerts.features,
       "warning-orange",
       orangeWarningIconUrl,
@@ -347,8 +379,15 @@ const addAlertsData = async () => {
       null,
       "#FF0000",
     ),
-    addAlertPointsLayer(
+    addAlertLayer(
       "most-recent-alerts-points",
+      geoJsonSource.mostRecentAlerts.features,
+      "Point",
+      "#FF0000",
+      "#FF0000",
+    ),
+    addAlertSymbolLayer(
+      "most-recent-alerts-symbol",
       geoJsonSource.mostRecentAlerts.features,
       "warning-red",
       redWarningIconUrl,
@@ -388,7 +427,7 @@ const addAlertsData = async () => {
         (e: MapMouseEvent) => {
           if (e.features && e.features.length > 0) {
             const feature = e.features[0];
-            if (layer.id.endsWith("points")) {
+            if (layer.id.endsWith("symbol")) {
               if (feature.geometry.type === "Point") {
                 const [lng, lat] = feature.geometry.coordinates;
                 map.value.flyTo({ center: [lng, lat], zoom: 13 });
