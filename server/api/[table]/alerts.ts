@@ -90,7 +90,8 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     // Prepare statistics data for the alerts view
-    const alertsStatistics = prepareAlertsStatistics(mainData, metadata);
+    let alertsStatistics = null;
+    alertsStatistics = prepareAlertsStatistics(mainData, metadata);
 
     const response = {
       alertsData: alertsGeojsonData,
@@ -113,6 +114,8 @@ export default defineEventHandler(async (event: H3Event) => {
       planetApiKey: viewsConfig[table].PLANET_API_KEY,
       table: table,
     };
+
+    console.log("response", response);
 
     return response;
   } catch (error) {
