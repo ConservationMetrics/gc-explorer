@@ -37,8 +37,8 @@ const props = defineProps<{
   alertsData: AlertsData;
   alertsStatistics: AlertsStatistics;
   allowedFileExtensions: AllowedFileExtensions;
-  logoUrl: string;
-  mapLegendLayerIds: string;
+  logoUrl: string | undefined;
+  mapLegendLayerIds: string | undefined;
   mapboxAccessToken: string;
   mapboxBearing: number | null;
   mapboxLatitude: number;
@@ -49,9 +49,9 @@ const props = defineProps<{
   mapboxZoom: number;
   mapbox3d: boolean;
   mapeoData: Dataset | null;
-  mediaBasePath: string;
-  mediaBasePathAlerts: string;
-  planetApiKey: string;
+  mediaBasePath: string | undefined;
+  mediaBasePathAlerts: string | undefined;
+  planetApiKey: string | undefined;
 }>();
 
 const localAlertsData = ref<Feature | AlertsData>(props.alertsData);
