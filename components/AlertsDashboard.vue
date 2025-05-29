@@ -131,6 +131,7 @@ const emit = defineEmits(["reset-legend-visibility"]);
 // Add data to the map and set up event listeners
 const featuresUnderCursor = ref(0);
 const hasLineStrings = ref(false);
+const hasPoints = ref(false);
 const mapeoDataColor = ref();
 
 /**
@@ -353,7 +354,7 @@ const addAlertsData = async () => {
       "#FD8D3C",
     ),
     addAlertLayer(
-      "previous-alerts-points",
+      "previous-alerts-point",
       geoJsonSource.previousAlerts.features,
       "Point",
       "#FD8D3C",
@@ -380,7 +381,7 @@ const addAlertsData = async () => {
       "#FF0000",
     ),
     addAlertLayer(
-      "most-recent-alerts-points",
+      "most-recent-alerts-point",
       geoJsonSource.mostRecentAlerts.features,
       "Point",
       "#FF0000",
@@ -458,6 +459,17 @@ const addAlertsData = async () => {
     map.value.on("mousemove", handleBufferMouseEvent);
     map.value.on("click", handleBufferClick);
   }
+
+  // Check mostRecentAlerts and previousAlerts for Point features
+  // If found, set hasPoints state to true to activate methods
+  // relevant to points
+  hasPoints.value =
+    geoJsonSource.mostRecentAlerts.features.some(
+      (feature) => feature.geometry.type === "Point",
+    ) ||
+    geoJsonSource.previousAlerts.features.some(
+      (feature) => feature.geometry.type === "Point",
+    );
 };
 
 /**
@@ -758,6 +770,13 @@ const prepareMapLegendContent = () => {
         "most-recent-alerts-linestring," +
         (props.alertsData.previousAlerts.features.length
           ? "previous-alerts-linestring,"
+          : "") +
+        mapLegendLayerIds;
+    } else if (hasPoints.value) {
+      mapLegendLayerIds =
+        "most-recent-alerts-point," +
+        (props.alertsData.previousAlerts.features.length
+          ? "previous-alerts-point,"
           : "") +
         mapLegendLayerIds;
     } else {
