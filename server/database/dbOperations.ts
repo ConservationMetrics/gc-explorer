@@ -13,7 +13,7 @@ const checkTableExists = (
 ): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     const pgClient = db as Client;
-    const query = `SELECT to_regclass('${table}')`;
+    const query = `SELECT to_regclass('"${table}"')`;
     pgClient.query<{ to_regclass: string | null }>(
       query,
       [],
@@ -30,7 +30,7 @@ const fetchDataFromTable = async (
   table: string | undefined,
 ): Promise<unknown[]> => {
   const pgClient = db as Client;
-  const query = `SELECT * FROM ${table}`;
+  const query = `SELECT * FROM "${table}"`;
   return new Promise((resolve, reject) => {
     pgClient.query(query, [], (err: Error, result: { rows: unknown[] }) => {
       if (err) reject(err);
@@ -57,7 +57,7 @@ export const fetchData = async (
   }
 
   // Fetch mapping columns
-  const columnsTable = `${table}__columns`;
+  const columnsTable = `"${table}__columns"`;
   const columnsTableExists = await checkTableExists(db, columnsTable);
   let columnsData = null;
   if (columnsTableExists) {
@@ -65,7 +65,7 @@ export const fetchData = async (
   }
 
   // Fetch metadata
-  const metadataTable = `${table}__metadata`;
+  const metadataTable = `"${table}__metadata"`;
   const metadataTableExists = await checkTableExists(db, metadataTable);
   let metadata = null;
   if (metadataTableExists) {
