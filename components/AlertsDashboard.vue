@@ -916,6 +916,9 @@ const handleDateRangeChanged = (newRange: [string, string]) => {
 
     // Update the selected date range
     selectedDateRange.value = newRange;
+
+    // Update localAlertsData to match the data with the selected date range
+    localAlertsData.value = filteredData.value;
   });
 };
 
