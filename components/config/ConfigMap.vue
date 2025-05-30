@@ -127,6 +127,7 @@ const configData = props.config as Record<string, string | number | boolean>;
             (e) =>
               handleInput(key, parseFloat((e.target as HTMLInputElement).value))
           "
+          @wheel="(e) => e.target && (e.target as HTMLInputElement).blur()"
         />
       </template>
 
