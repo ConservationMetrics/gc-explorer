@@ -1,26 +1,21 @@
 <script setup lang="ts">
 import { toCamelCase } from "@/utils";
-
 import type { ViewConfig } from "@/types/types";
 
-const props = defineProps<{
+defineProps<{
   tableName: string;
   config: ViewConfig;
-  views: Array<string>;
-  keys: Array<string>;
+  views: string[];
+  keys: string[];
 }>();
 
-const localConfig = reactive({ ...props.config });
+const emit = defineEmits<{
+  (e: "updateConfig", payload: Partial<ViewConfig>): void;
+}>();
 
-// Watch for changes in localConfig and emit updates
-const emit = defineEmits(["updateConfig"]);
-watch(
-  localConfig,
-  (newValue) => {
-    emit("updateConfig", newValue);
-  },
-  { deep: true },
-);
+const handleInput = (key: string, value: string) => {
+  emit("updateConfig", { [key]: value });
+};
 </script>
 
 <template>
@@ -35,20 +30,22 @@ watch(
         <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
         <input
           :id="`${tableName}-${key}`"
-          v-model="localConfig[key]"
+          :value="config[key]"
           class="input-field"
           placeholder="https://…"
           type="url"
+          @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
         />
       </template>
       <template v-else-if="key === 'MEDIA_BASE_PATH'">
         <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
         <input
           :id="`${tableName}-${key}`"
-          v-model="localConfig[key]"
+          :value="config[key]"
           class="input-field"
           placeholder="https://…"
           type="url"
+          @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
         />
       </template>
     </div>

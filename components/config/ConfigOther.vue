@@ -3,24 +3,14 @@ import { toCamelCase } from "@/utils";
 
 import type { ViewConfig } from "@/types/types";
 
-const props = defineProps<{
+defineProps<{
   tableName: string;
   config: ViewConfig;
   views: Array<string>;
   keys: Array<string>;
 }>();
 
-const localConfig = reactive({ ...props.config });
-
-// Watch for changes in localConfig and emit updates
 const emit = defineEmits(["updateConfig"]);
-watch(
-  localConfig,
-  (newValue) => {
-    emit("updateConfig", newValue);
-  },
-  { deep: true },
-);
 </script>
 
 <template>
@@ -33,10 +23,16 @@ watch(
         <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
         <input
           :id="`${tableName}-${key}`"
-          v-model="localConfig[key]"
           class="input-field"
           placeholder="https://…"
           type="url"
+          :value="config[key]"
+          @input="
+            (e) =>
+              emit('updateConfig', {
+                [key]: (e.target as HTMLInputElement).value,
+              })
+          "
         />
       </template>
     </div>

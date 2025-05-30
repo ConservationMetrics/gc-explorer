@@ -95,8 +95,8 @@ const handleViewUpdate = (newViews: Array<string>) => {
   localConfig.value.VIEWS = newViews.join(",");
 };
 
-const handleConfigUpdate = (newConfig: ViewConfig) => {
-  localConfig.value = newConfig;
+const handleConfigUpdate = (partialUpdate: Partial<ViewConfig>) => {
+  Object.assign(localConfig.value, partialUpdate);
 };
 
 const handleSubmit = () => {

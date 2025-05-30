@@ -14,23 +14,29 @@ const props = defineProps<{
   keys: Array<string>;
 }>();
 
-const localConfig = reactive({ ...props.config });
-const initialTags = {
+const emit = defineEmits<{
+  (e: "updateConfig", payload: Partial<ViewConfig>): void;
+}>();
+
+type Tag = { text: string };
+
+const initialTags: Record<string, Tag[]> = {
   MAPEO_CATEGORY_IDS: props.config.MAPEO_CATEGORY_IDS
     ? props.config.MAPEO_CATEGORY_IDS.split(",").map((tag) => ({ text: tag }))
     : [],
 };
-const { tags, handleTagsChanged } = updateTags(initialTags, localConfig);
 
-// Watch for changes in localConfig and emit updates
-const emit = defineEmits(["updateConfig"]);
-watch(
-  localConfig,
-  (newValue) => {
-    emit("updateConfig", newValue);
-  },
-  { deep: true },
+const { tags, handleTagsChanged: rawHandleTagsChanged } = updateTags(
+  initialTags,
+  {},
 );
+
+// Strongly typed handler
+const handleTagsChanged = (key: string, newTags: Tag[]): void => {
+  rawHandleTagsChanged(key, newTags);
+  const values = newTags.map((tag) => tag.text).join(",");
+  emit("updateConfig", { [key]: values });
+};
 </script>
 
 <template>
@@ -43,15 +49,22 @@ watch(
       <template v-if="key === 'MAPEO_TABLE'">
         <input
           :id="`${tableName}-${key}`"
-          v-model="localConfig[key]"
           class="input-field"
+          type="text"
+          :value="config[key]"
+          @input="
+            (e) =>
+              emit('updateConfig', {
+                [key]: (e.target as HTMLInputElement).value,
+              })
+          "
         />
       </template>
       <template v-else-if="key === 'MAPEO_CATEGORY_IDS'">
         <VueTagsInput
           class="tag-field"
           :tags="tags[key]"
-          @tags-changed="handleTagsChanged(key, $event)"
+          @tags-changed="(newTags: Tag[]) => handleTagsChanged(key, newTags)"
         />
       </template>
     </div>
