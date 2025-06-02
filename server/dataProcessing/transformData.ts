@@ -242,9 +242,11 @@ const prepareAlertData = (
       transformedItem["geographicCentroid"] = calculateCentroid(
         item.g__coordinates,
       );
-      transformedItem["YYYYMM"] = item.date?.slice(0, 7).replace("-", "");
-      transformedItem["monthDetected"] = item.date?.slice(0, 7);
-      transformedItem["alertDetectionRange"] = item.date;
+      transformedItem["YYYYMM"] = item.year_detec + item.month_detec;
+      transformedItem["monthDetected"] =
+        `${item.month_detec}-${item.year_detec}`;
+      transformedItem["alertDetectionRange"] =
+        `${item.date_start_t1} to ${item.date_end_t1}`;
       return transformedItem;
     }
 
@@ -325,7 +327,7 @@ const prepareAlertData = (
 
   let latestGfwDate = new Date(0);
   gfwData.forEach((item) => {
-    const date = new Date(item.date);
+    const date = new Date(item.date_end_t1);
     if (date > latestGfwDate) latestGfwDate = date;
   });
 
@@ -348,7 +350,7 @@ const prepareAlertData = (
   });
 
   gfwData.forEach((item) => {
-    const date = new Date(item.date);
+    const date = new Date(item.date_end_t1);
     const transformedItem = transformChangeDetectionItem(item);
     if (date.getTime() === latestGfwDate.getTime()) {
       mostRecentAlerts.push(transformedItem);
@@ -406,22 +408,12 @@ const prepareAlertsStatistics = (
 
   // Create Date objects for sorting and comparisons
   const formattedDates = data.map((item) => {
-    if (isGFW) {
-      const d = new Date(item.date);
-      const month = String(d.getUTCMonth() + 1).padStart(2, "0");
-      const year = d.getUTCFullYear();
-      return {
-        date: new Date(Date.UTC(year, d.getUTCMonth(), 15)),
-        dateString: `${month}-${year}`,
-      };
-    } else {
-      return {
-        date: new Date(
-          `${item.year_detec}-${item.month_detec.padStart(2, "0")}-15`,
-        ),
-        dateString: `${item.month_detec.padStart(2, "0")}-${item.year_detec}`,
-      };
-    }
+    return {
+      date: new Date(
+        `${item.year_detec}-${item.month_detec.padStart(2, "0")}-15`,
+      ),
+      dateString: `${item.month_detec.padStart(2, "0")}-${item.year_detec}`,
+    };
   });
 
   // Sort dates to find the earliest and latest
@@ -470,20 +462,18 @@ const prepareAlertsStatistics = (
   // Filter and sort the data for the last 12 months
   const last12MonthsData = data
     .filter((item) => {
-      const itemDate = isGFW
-        ? new Date(item.date)
-        : new Date(
-            `${item.year_detec}-${item.month_detec.padStart(2, "0")}-01`,
-          );
+      const itemDate = new Date(
+        `${item.year_detec}-${item.month_detec.padStart(2, "0")}-01`,
+      );
       return itemDate >= twelveMonthsBefore && itemDate <= latestDate;
     })
     .sort((a, b) => {
-      const aDate = isGFW
-        ? new Date(a.date)
-        : new Date(`${a.year_detec}-${a.month_detec.padStart(2, "0")}`);
-      const bDate = isGFW
-        ? new Date(b.date)
-        : new Date(`${b.year_detec}-${b.month_detec.padStart(2, "0")}`);
+      const aDate = new Date(
+        `${a.year_detec}-${a.month_detec.padStart(2, "0")}`,
+      );
+      const bDate = new Date(
+        `${b.year_detec}-${b.month_detec.padStart(2, "0")}`,
+      );
       return aDate.getTime() - bDate.getTime();
     });
 
@@ -538,12 +528,7 @@ const prepareAlertsStatistics = (
     months.forEach((monthYear) => {
       if (property === "alerts") {
         const monthData = dataCollection.filter((item) => {
-          const itemMonthYear = isGFW
-            ? (() => {
-                const d = new Date(item.date);
-                return `${String(d.getUTCMonth() + 1).padStart(2, "0")}-${d.getUTCFullYear()}`;
-              })()
-            : `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
+          const itemMonthYear = `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
           return itemMonthYear === monthYear;
         });
         cumulativeValue += monthData.length;
@@ -577,22 +562,10 @@ const prepareAlertsStatistics = (
   // Count the number of alerts for the most recent date
   const recentAlertDate =
     last12MonthsData.length > 0
-      ? isGFW
-        ? (() => {
-            const d = new Date(
-              last12MonthsData[last12MonthsData.length - 1].date,
-            );
-            return `${String(d.getUTCMonth() + 1).padStart(2, "0")}-${d.getUTCFullYear()}`;
-          })()
-        : `${last12MonthsData[last12MonthsData.length - 1].month_detec.padStart(2, "0")}-${last12MonthsData[last12MonthsData.length - 1].year_detec}`
+      ? `${last12MonthsData[last12MonthsData.length - 1].month_detec.padStart(2, "0")}-${last12MonthsData[last12MonthsData.length - 1].year_detec}`
       : "N/A";
   const recentAlertsNumber = data.filter((item) => {
-    const itemDateStr = isGFW
-      ? (() => {
-          const d = new Date(item.date);
-          return `${String(d.getUTCMonth() + 1).padStart(2, "0")}-${d.getUTCFullYear()}`;
-        })()
-      : `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
+    const itemDateStr = `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
     return itemDateStr === recentAlertDate;
   }).length;
 
