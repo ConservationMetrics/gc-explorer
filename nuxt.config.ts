@@ -33,6 +33,7 @@ export default defineNuxtConfig({
     "@nuxtjs/i18n",
     "@nuxt/test-utils/module",
     "nuxt-windicss",
+    "reka-ui/nuxt",
   ],
 
   css: ["public/vendor/lightbox/lightbox.min.css"],

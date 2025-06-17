@@ -16,99 +16,132 @@ const emit = defineEmits(["dateRangeChanged"]);
 </script>
 
 <template>
-  <div>
-    <div class="feature p-4 rounded-lg shadow-lg">
-      <div>
+  <div class="space-y-4">
+    <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+      <div class="p-6 space-y-4">
         <img
           v-if="props.logoUrl"
           :src="props.logoUrl"
           class="w-auto mx-auto mb-4 max-h-25"
           alt="Logo"
         />
-        <h2 class="text-2xl font-semibold mb-2">
+        <h2 class="text-2xl font-semibold tracking-tight">
           {{ $t("changeDetectionAlerts")
-          }}<span v-if="props.alertsStatistics.territory"
+          }}<span
+            v-if="props.alertsStatistics.territory"
+            class="text-muted-foreground"
             >: {{ props.alertsStatistics.territory }}</span
           >
         </h2>
-        <p class="text-l mb-2 italic">
-          {{ $t("mostRecentAlertsShownIn") }}
-          <span style="color: #ff0000"
-            ><strong>{{ $t("red") }}</strong></span
-          >, {{ $t("andPreviousAlertsShownIn") }}
-          <span style="color: #fd8d3c"
-            ><strong>{{ $t("orange") }}</strong></span
-          >.
-        </p>
-        <p class="text-l mb-2 italic">
-          {{ $t("ifYouAreZoomedOutAlertsWillBeShownAsA") }}
-          <img
-            src="@/assets/icons/warning_red.png"
-            alt="Warning icon"
-            class="w-4 h-4 inline-block"
-          />.
-        </p>
-        <p class="text-l mb-2 italic">{{ $t("clickOnAlertsForMoreInfo") }}.</p>
-        <div
-          v-if="
-            props.alertsStatistics.typeOfAlerts &&
-            props.alertsStatistics.typeOfAlerts.length
-          "
-          class="mb-2"
-        >
-          <span class="font-bold">{{ $t("typeOfAlerts") }}:</span>
-          {{ props.alertsStatistics.typeOfAlerts.join(", ") }}
+        <div class="space-y-2 text-sm text-muted-foreground">
+          <p class="italic">
+            {{ $t("mostRecentAlertsShownIn") }}
+            <span class="text-red-500 font-medium">{{ $t("red") }}</span
+            >,
+            {{ $t("andPreviousAlertsShownIn") }}
+            <span class="text-orange-500 font-medium">{{ $t("orange") }}</span
+            >.
+          </p>
+          <p class="italic inline-flex items-center whitespace-nowrap">
+            {{ $t("ifYouAreZoomedOutAlertsWillBeShownAsA") }}&nbsp;
+            <img
+              src="@/assets/icons/warning_red.png"
+              alt="Warning icon"
+              class="w-4 h-4 inline-block -mt-0.5 ml-0.5"
+            />.
+          </p>
+          <p class="italic">{{ $t("clickOnAlertsForMoreInfo") }}.</p>
         </div>
-        <div
-          v-if="
-            props.alertsStatistics.dataProviders &&
-            props.alertsStatistics.dataProviders.length
-          "
-          class="mb-2"
-        >
-          <span class="font-bold">{{ $t("dataProviders") }}:</span>
-          {{ props.alertsStatistics.dataProviders.join(", ") }}
-        </div>
-        <div class="mb-2">
-          <span class="font-bold">{{ $t("alertDetectionRange") }}:</span>
-          {{ props.alertsStatistics.alertDetectionRange }}
-        </div>
-        <div class="mb-2">
-          <span class="font-bold">{{ $t("recentAlertsDate") }}:</span>
-          {{ props.alertsStatistics.recentAlertsDate }}
-        </div>
-        <div class="mb-2">
-          <span class="font-bold">{{ $t("recentAlertsNumber") }}:</span>
-          {{ props.alertsStatistics.recentAlertsNumber }}
-        </div>
-        <div class="mb-2">
-          <span class="font-bold">{{ $t("alertsTotal") }}:</span>
-          {{ props.alertsStatistics.alertsTotal }}
-        </div>
-        <div
-          v-if="props.calculateHectares && props.alertsStatistics.hectaresTotal"
-          class="mb-2"
-        >
-          <span class="font-bold">{{ $t("hectaresTotal") }}:</span>
-          {{ props.alertsStatistics.hectaresTotal }}
+
+        <div class="space-y-2">
+          <div
+            v-if="props.alertsStatistics.typeOfAlerts?.length"
+            class="flex items-center gap-2"
+          >
+            <span class="font-medium text-sm">{{ $t("typeOfAlerts") }}:</span>
+            <span class="text-sm text-muted-foreground">{{
+              props.alertsStatistics.typeOfAlerts.join(", ")
+            }}</span>
+          </div>
+          <div
+            v-if="props.alertsStatistics.dataProviders?.length"
+            class="flex items-center gap-2"
+          >
+            <span class="font-medium text-sm">{{ $t("dataProviders") }}:</span>
+            <span class="text-sm text-muted-foreground">{{
+              props.alertsStatistics.dataProviders.join(", ")
+            }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-sm"
+              >{{ $t("alertDetectionRange") }}:</span
+            >
+            <span class="text-sm text-muted-foreground">{{
+              props.alertsStatistics.alertDetectionRange
+            }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-sm"
+              >{{ $t("recentAlertsDate") }}:</span
+            >
+            <span class="text-sm text-muted-foreground">{{
+              props.alertsStatistics.recentAlertsDate
+            }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-sm"
+              >{{ $t("recentAlertsNumber") }}:</span
+            >
+            <span class="text-sm text-muted-foreground">{{
+              props.alertsStatistics.recentAlertsNumber
+            }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-sm">{{ $t("alertsTotal") }}:</span>
+            <span class="text-sm text-muted-foreground">{{
+              props.alertsStatistics.alertsTotal
+            }}</span>
+          </div>
+          <div
+            v-if="
+              props.calculateHectares && props.alertsStatistics.hectaresTotal
+            "
+            class="flex items-center gap-2"
+          >
+            <span class="font-medium text-sm">{{ $t("hectaresTotal") }}:</span>
+            <span class="text-sm text-muted-foreground">{{
+              props.alertsStatistics.hectaresTotal
+            }}</span>
+          </div>
         </div>
       </div>
     </div>
-    <div v-if="props.showSlider" class="feature p-4 rounded-lg shadow-lg">
-      <AlertsSlider
-        :date-options="props.dateOptions"
-        @date-range-changed="emit('dateRangeChanged', $event)"
-      />
-      <div v-if="props.dataForAlertsIntroPanel">
-        <DownloadMapData :data-for-download="props.dataForAlertsIntroPanel" />
+
+    <div
+      v-if="props.showSlider"
+      class="rounded-lg border bg-card text-card-foreground shadow-sm"
+    >
+      <div class="p-6">
+        <AlertsSlider
+          :date-options="props.dateOptions"
+          @date-range-changed="emit('dateRangeChanged', $event)"
+        />
+        <div v-if="props.dataForAlertsIntroPanel" class="mt-4">
+          <DownloadMapData :data-for-download="props.dataForAlertsIntroPanel" />
+        </div>
       </div>
     </div>
-    <!-- Chart -->
-    <div v-if="props.alertsStatistics" class="feature p-4 rounded-lg shadow-lg">
-      <AlertsChart
-        :alerts-statistics="props.alertsStatistics"
-        :calculate-hectares="props.calculateHectares"
-      />
+
+    <div
+      v-if="props.alertsStatistics"
+      class="rounded-lg border bg-card text-card-foreground shadow-sm"
+    >
+      <div class="p-6">
+        <AlertsChart
+          :alerts-statistics="props.alertsStatistics"
+          :calculate-hectares="props.calculateHectares"
+        />
+      </div>
     </div>
   </div>
 </template>

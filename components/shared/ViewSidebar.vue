@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { X, ChevronDown } from "lucide-vue-next";
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
 import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
@@ -32,14 +33,6 @@ const props = defineProps<{
 
 const scrolled = ref(false);
 
-/** To hide the scroll indicator when the user scrolls */
-const handleScroll = (event: Event) => {
-  const target = event.target as HTMLElement;
-  if (!scrolled.value && target.scrollTop > 0) {
-    scrolled.value = true;
-  }
-};
-
 /** Filter out latitude and longitude from feature object */
 const filteredFeature = computed<DataEntry>(() => {
   if (!props.feature) {
@@ -49,15 +42,18 @@ const filteredFeature = computed<DataEntry>(() => {
   return rest;
 });
 
-/** Data for AlertsIntroPanel component */
-const dataForAlertsIntroPanel = computed(() => {
-  if (props.localAlertsData) {
+const dataForAlertsIntroPanel = computed<AlertsData | undefined>(() => {
+  if (props.localAlertsData && "mostRecentAlerts" in props.localAlertsData) {
     return props.localAlertsData as AlertsData;
   }
   return undefined;
 });
 
-const emit = defineEmits(["close", "date-range-changed"]);
+const emit = defineEmits<{
+  close: [];
+  "date-range-changed": [[string, string]];
+  "update:showSidebar": [boolean];
+}>();
 
 // Watchers
 watch(
@@ -79,92 +75,65 @@ watch(
 </script>
 
 <template>
-  <div v-if="showSidebar" class="sidebar" @scroll="handleScroll">
-    <div v-if="!scrolled" class="scroll-indicator">&#x2193;</div>
-    <button class="close-btn" @click="emit('close')">X</button>
-    <AlertsIntroPanel
-      v-if="showIntroPanel && alertsStatistics"
-      :calculate-hectares="calculateHectares"
-      :date-options="dateOptions"
-      :data-for-alerts-intro-panel="dataForAlertsIntroPanel"
-      :logo-url="logoUrl"
-      :show-slider="showSlider"
-      :alerts-statistics="alertsStatistics"
-      @date-range-changed="emit('date-range-changed', $event)"
-    />
-    <DataFeature
-      v-if="feature"
-      :allowed-file-extensions="allowedFileExtensions"
-      :feature="filteredFeature"
-      :file-paths="filePaths"
-      :is-alert="isAlert"
-      :media-base-path="mediaBasePath"
-      :media-base-path-alerts="mediaBasePathAlerts"
-    />
-    <DownloadMapData
-      v-if="downloadAlert"
-      :data-for-download="localAlertsData"
-    />
+  <div
+    class="fixed top-0 left-0 h-full w-[400px] bg-white shadow-lg transform transition-transform duration-300 ease-in-out overflow-y-auto z-50"
+    :class="{ 'translate-x-0': showSidebar, '-translate-x-full': !showSidebar }"
+  >
+    <div class="relative h-full">
+      <div v-if="!scrolled" class="scroll-indicator">
+        <ChevronDown class="w-6 h-6 text-gray-600 animate-bounce" />
+      </div>
+      <button
+        class="absolute top-4 right-4 p-2.5 bg-white/80 backdrop-blur-sm hover:bg-gray-100 rounded-full transition-all duration-200 ease-in-out shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2"
+        @click="emit('close')"
+      >
+        <span class="sr-only">Close</span>
+        <X class="w-5 h-5 text-gray-600" />
+      </button>
+
+      <div class="p-4">
+        <AlertsIntroPanel
+          v-if="showIntroPanel && alertsStatistics"
+          :calculate-hectares="calculateHectares"
+          :date-options="dateOptions"
+          :data-for-alerts-intro-panel="dataForAlertsIntroPanel"
+          :logo-url="logoUrl"
+          :show-slider="showSlider"
+          :alerts-statistics="alertsStatistics"
+          @date-range-changed="emit('date-range-changed', $event)"
+        />
+        <DataFeature
+          v-if="feature"
+          :allowed-file-extensions="allowedFileExtensions"
+          :feature="filteredFeature"
+          :file-paths="filePaths"
+          :is-alert="isAlert"
+          :media-base-path="mediaBasePath"
+          :media-base-path-alerts="mediaBasePathAlerts"
+        />
+        <DownloadMapData
+          v-if="downloadAlert"
+          :data-for-download="localAlertsData"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 400px;
-  background: white;
-  padding: 20px;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  overflow-y: auto;
-  z-index: 1000;
-}
-
-@media (max-width: 768px) {
-  .sidebar {
-    height: 50%;
-    width: 100%;
-    bottom: 0;
-    top: auto;
-  }
-
-  .scroll-indicator {
-    display: block !important;
-  }
-}
-
 .scroll-indicator {
   position: absolute;
-  bottom: 20px;
+  top: 1rem;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 46px;
-  font-weight: bold;
-  color: #333;
-  animation: pulse 1s infinite;
-  display: none;
-}
-
-@keyframes pulse {
-  0% {
-    transform: translateX(-50%) scale(1);
-  }
-  50% {
-    transform: translateX(-50%) scale(1.2);
-  }
-  100% {
-    transform: translateX(-50%) scale(1);
-  }
-}
-
-.close-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 20px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  padding: 0.5rem;
+  border-radius: 9999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 </style>

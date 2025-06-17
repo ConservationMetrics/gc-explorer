@@ -315,9 +315,9 @@ const downloadKMLSelection = () => {
 </script>
 
 <template>
-  <div class="button-container">
+  <div class="flex flex-wrap gap-2 justify-center mt-6">
     <button
-      class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
+      class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
       @click="
         !isAlertsData(props.dataForDownload)
           ? downloadAlertCSV()
@@ -327,7 +327,7 @@ const downloadKMLSelection = () => {
       {{ $t("downloadCSV") }}
     </button>
     <button
-      class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
+      class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
       @click="
         !isAlertsData(props.dataForDownload)
           ? downloadAlertGeoJSON()
@@ -337,7 +337,7 @@ const downloadKMLSelection = () => {
       {{ $t("downloadGeoJSON") }}
     </button>
     <button
-      class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
+      class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
       @click="
         !isAlertsData(props.dataForDownload)
           ? downloadAlertKML()
@@ -350,9 +350,5 @@ const downloadKMLSelection = () => {
 </template>
 
 <style scoped>
-.button-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
+/* Remove the old button-container styles as we're using Tailwind now */
 </style>
