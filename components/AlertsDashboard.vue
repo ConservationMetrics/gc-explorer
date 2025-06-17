@@ -135,10 +135,11 @@ onMounted(() => {
         (f) => f.properties?.alertID === alertId,
       );
       if (feature) {
-        // Find the appropriate layer ID for this feature
-        const layerId = feature.properties?.isRecent
+        const isRecent = route.query.isRecent === "true";
+        const layerId = isRecent
           ? `most-recent-alerts-${feature.geometry.type.toLowerCase()}`
           : `previous-alerts-${feature.geometry.type.toLowerCase()}`;
+        // Find the appropriate layer ID for this feature
 
         selectFeature(feature, layerId);
 
@@ -295,6 +296,7 @@ const addAlertsData = async () => {
           });
         }
       }
+
       resolve();
     });
   };
@@ -1031,12 +1033,13 @@ const selectFeature = (feature: Feature, layerId: string) => {
   };
   const featureId = feature.id;
 
-  // Update URL with alertId if it exists
+  // Update URL with alertId and isRecent
+  const query = { ...route.query };
   if (featureObject.alertID) {
-    router.replace({
-      query: { ...route.query, alertId: featureObject.alertID },
-    });
+    query.alertId = featureObject.alertID;
   }
+  query.isRecent = layerId.startsWith("most-recent-alerts") ? "true" : "false";
+  router.replace({ query });
 
   // Reset the previously selected feature
   if (selectedFeatureId.value !== null && selectedFeatureSource.value) {
@@ -1115,9 +1118,10 @@ const resetSelectedFeature = () => {
   selectedFeatureId.value = null;
   selectedFeatureSource.value = null;
 
-  // Remove alertId from URL when resetting
+  // Remove alertId and isRecent from URL when resetting
   const query = { ...route.query };
   delete query.alertId;
+  delete query.isRecent;
   router.replace({ query });
 };
 
