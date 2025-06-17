@@ -45,7 +45,7 @@ const checkExtensions = (extensions: string[]) => {
           loading="lazy"
         />
       </a>
-      <div v-if="filePath" class="text-center">
+      <div v-if="filePath" class="text-center flex items-center justify-center">
         <span v-if="filePath.includes('t0.jpg')" class="italic">{{
           $t("before")
         }}</span>

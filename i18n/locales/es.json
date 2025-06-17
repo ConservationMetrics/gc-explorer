@@ -23,6 +23,8 @@
   "configuration": "Configuración",
   "configUpdated": "Configuración actualizada",
   "confirm": "Confirmar",
+  "copied": "¡Copiado!",
+  "copyLink": "Copiar enlace de alerta",
   "created": "Creado",
   "dataCollectedOn": "Datos recopilados el",
   "dataProvider": "Proveedor de datos",

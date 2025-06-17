@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -64,6 +65,9 @@ const showIntroPanel = ref(true);
 const showSidebar = ref(true);
 const showSlider = ref(false);
 
+const route = useRoute();
+const router = useRouter();
+
 onMounted(() => {
   mapboxgl.accessToken = props.mapboxAccessToken;
 
@@ -119,6 +123,50 @@ onMounted(() => {
       calculateHectares.value = true;
     }
     showSlider.value = true;
+
+    // Check for alertId in URL and select the corresponding alert
+    const alertId = route.query.alertId as string;
+    if (alertId) {
+      const allFeatures = [
+        ...props.alertsData.mostRecentAlerts.features,
+        ...props.alertsData.previousAlerts.features,
+      ];
+      const feature = allFeatures.find(
+        (f) => f.properties?.alertID === alertId,
+      );
+      if (feature && feature.properties) {
+        // Find the appropriate layer ID for this feature by checking both recent and previous layers
+        const geometryType = feature.geometry.type.toLowerCase();
+        const recentLayerId = `most-recent-alerts-${geometryType}`;
+        const previousLayerId = `previous-alerts-${geometryType}`;
+
+        // Check if feature exists in recent layer
+        const isInRecentLayer = props.alertsData.mostRecentAlerts.features.some(
+          (f) => f.properties?.alertID === feature.properties?.alertID,
+        );
+
+        // Select feature in the correct layer
+        const layerId = isInRecentLayer ? recentLayerId : previousLayerId;
+        selectFeature(feature, layerId);
+
+        // Zoom to the feature
+        if (feature.geometry.type === "Point") {
+          const [lng, lat] = feature.geometry.coordinates;
+          map.value.flyTo({ center: [lng, lat], zoom: 13 });
+        } else if (
+          feature.geometry.type === "Polygon" ||
+          feature.geometry.type === "MultiPolygon"
+        ) {
+          const bounds = bbox(feature);
+          map.value.fitBounds(bounds, { padding: 50 });
+        } else if (feature.geometry.type === "LineString") {
+          const [lng, lat] = calculateLineStringCentroid(
+            feature.geometry.coordinates,
+          );
+          map.value.flyTo({ center: [lng, lat], zoom: 13 });
+        }
+      }
+    }
   });
 });
 
@@ -254,6 +302,7 @@ const addAlertsData = async () => {
           });
         }
       }
+
       resolve();
     });
   };
@@ -711,11 +760,7 @@ const addPulsingCircles = () => {
       lat = (bounds[1] + bounds[3]) / 2;
     } else if (feature.geometry.type === "LineString") {
       // Use Turf to find the midpoint of the LineString
-      const line = lineString(feature.geometry.coordinates);
-      const lineLength = length(line, { units: "kilometers" });
-      const midpoint = along(line, lineLength / 2, { units: "kilometers" });
-      lng = midpoint.geometry.coordinates[0];
-      lat = midpoint.geometry.coordinates[1];
+      [lng, lat] = calculateLineStringCentroid(feature.geometry.coordinates);
     } else if (feature.geometry.type === "Point") {
       [lng, lat] = feature.geometry.coordinates;
     } else {
@@ -994,6 +1039,13 @@ const selectFeature = (feature: Feature, layerId: string) => {
   };
   const featureId = feature.id;
 
+  // Update URL with alertId
+  const query = { ...route.query };
+  if (featureObject.alertID) {
+    query.alertId = featureObject.alertID;
+  }
+  router.replace({ query });
+
   // Reset the previously selected feature
   if (selectedFeatureId.value !== null && selectedFeatureSource.value) {
     map.value.setFeatureState(
@@ -1070,6 +1122,12 @@ const resetSelectedFeature = () => {
   selectedFeature.value = null;
   selectedFeatureId.value = null;
   selectedFeatureSource.value = null;
+
+  // Remove alertId and isRecent from URL when resetting
+  const query = { ...route.query };
+  delete query.alertId;
+  delete query.isRecent;
+  router.replace({ query });
 };
 
 /**
@@ -1122,6 +1180,13 @@ const resetToInitialState = () => {
   map.value.once("idle", () => {
     addPulsingCircles();
   });
+};
+
+const calculateLineStringCentroid = (coordinates: number[][]) => {
+  const line = lineString(coordinates);
+  const lineLength = length(line, { units: "kilometers" });
+  const midpoint = along(line, lineLength / 2, { units: "kilometers" });
+  return midpoint.geometry.coordinates;
 };
 
 onBeforeUnmount(() => {
