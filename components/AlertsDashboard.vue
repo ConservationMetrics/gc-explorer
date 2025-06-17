@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -64,6 +65,9 @@ const showIntroPanel = ref(true);
 const showSidebar = ref(true);
 const showSlider = ref(false);
 
+const route = useRoute();
+const router = useRouter();
+
 onMounted(() => {
   mapboxgl.accessToken = props.mapboxAccessToken;
 
@@ -119,6 +123,43 @@ onMounted(() => {
       calculateHectares.value = true;
     }
     showSlider.value = true;
+
+    // Check for alertId in URL and select the corresponding alert
+    const alertId = route.query.alertId as string;
+    if (alertId) {
+      const allFeatures = [
+        ...props.alertsData.mostRecentAlerts.features,
+        ...props.alertsData.previousAlerts.features,
+      ];
+      const feature = allFeatures.find(
+        (f) => f.properties?.alertID === alertId,
+      );
+      if (feature) {
+        // Find the appropriate layer ID for this feature
+        const layerId = feature.properties?.isRecent
+          ? "most-recent-alerts-polygon"
+          : "previous-alerts-polygon";
+        selectFeature(feature, layerId);
+
+        // Zoom to the feature
+        if (feature.geometry.type === "Point") {
+          const [lng, lat] = feature.geometry.coordinates;
+          map.value.flyTo({ center: [lng, lat], zoom: 13 });
+        } else if (
+          feature.geometry.type === "Polygon" ||
+          feature.geometry.type === "MultiPolygon"
+        ) {
+          const bounds = bbox(feature);
+          map.value.fitBounds(bounds, { padding: 50 });
+        } else if (feature.geometry.type === "LineString") {
+          const line = lineString(feature.geometry.coordinates);
+          const lineLength = length(line, { units: "kilometers" });
+          const midpoint = along(line, lineLength / 2, { units: "kilometers" });
+          const [lng, lat] = midpoint.geometry.coordinates;
+          map.value.flyTo({ center: [lng, lat], zoom: 13 });
+        }
+      }
+    }
   });
 });
 
@@ -994,6 +1035,13 @@ const selectFeature = (feature: Feature, layerId: string) => {
   };
   const featureId = feature.id;
 
+  // Update URL with alertId if it exists
+  if (featureObject.alertID) {
+    router.replace({
+      query: { ...route.query, alertId: featureObject.alertID },
+    });
+  }
+
   // Reset the previously selected feature
   if (selectedFeatureId.value !== null && selectedFeatureSource.value) {
     map.value.setFeatureState(
@@ -1070,6 +1118,11 @@ const resetSelectedFeature = () => {
   selectedFeature.value = null;
   selectedFeatureId.value = null;
   selectedFeatureSource.value = null;
+
+  // Remove alertId from URL when resetting
+  const query = { ...route.query };
+  delete query.alertId;
+  router.replace({ query });
 };
 
 /**
