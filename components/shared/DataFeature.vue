@@ -52,8 +52,7 @@ const setMediaBasePath = () => {
 
       <div
         v-if="allowedFileExtensions && setMediaBasePath()"
-        :class="{ 'flex-container': isAlert }"
-        class="space-y-4"
+        :class="{ 'grid grid-cols-2 gap-6': isAlert }"
       >
         <MediaFile
           v-for="filePath in filePaths"
@@ -114,13 +113,5 @@ const setMediaBasePath = () => {
 </template>
 
 <style scoped>
-.flex-container {
-  display: flex;
-  justify-content: space-between;
-  gap: 1.5rem;
-}
-.flex-container > img {
-  flex: 1 0 45%;
-  max-width: calc(50% - 0.75rem);
-}
+/* Remove all custom CSS */
 </style>
