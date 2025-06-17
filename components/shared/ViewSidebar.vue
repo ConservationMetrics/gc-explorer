@@ -31,7 +31,7 @@ const props = defineProps<{
   showSlider?: boolean;
 }>();
 
-const scrolled = ref(false);
+const isScrollable = ref(false);
 
 /** Filter out latitude and longitude from feature object */
 const filteredFeature = computed<DataEntry>(() => {
@@ -55,32 +55,51 @@ const emit = defineEmits<{
   "update:showSidebar": [boolean];
 }>();
 
-// Watchers
+const checkIfScrollable = () => {
+  const sidebar = document.querySelector(".sidebar") as HTMLElement;
+  if (sidebar) {
+    isScrollable.value = sidebar.scrollHeight > sidebar.offsetHeight;
+  }
+};
+
+// Check scrollability when content changes or sidebar becomes visible
 watch(
   () => props.feature,
-  (newValue) => {
-    if (newValue) {
-      scrolled.value = false;
-    }
+  () => {
+    nextTick(() => {
+      checkIfScrollable();
+    });
   },
 );
+
 watch(
   () => props.showSidebar,
   (newValue) => {
     if (newValue) {
-      scrolled.value = false;
+      nextTick(() => {
+        checkIfScrollable();
+      });
     }
   },
 );
+
+onMounted(() => {
+  checkIfScrollable();
+  window.addEventListener("resize", checkIfScrollable);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", checkIfScrollable);
+});
 </script>
 
 <template>
   <div
-    class="fixed top-0 left-0 h-full w-[400px] bg-white shadow-lg transform transition-transform duration-300 ease-in-out overflow-y-auto z-50"
+    class="fixed top-0 left-0 h-full w-[400px] bg-white shadow-lg transform transition-transform duration-300 ease-in-out overflow-y-auto z-50 sidebar"
     :class="{ 'translate-x-0': showSidebar, '-translate-x-full': !showSidebar }"
   >
     <div class="relative h-full">
-      <div v-if="!scrolled" class="scroll-indicator">
+      <div v-if="isScrollable" class="scroll-indicator">
         <ChevronDown class="w-6 h-6 text-gray-600 animate-bounce" />
       </div>
       <button
@@ -91,7 +110,7 @@ watch(
         <X class="w-5 h-5 text-gray-600" />
       </button>
 
-      <div class="p-4">
+      <div class="p-4 sidebar-content">
         <AlertsIntroPanel
           v-if="showIntroPanel && alertsStatistics"
           :calculate-hectares="calculateHectares"

@@ -77,6 +77,7 @@ const setMediaBasePath = () => {
             "
             class="flex flex-col gap-1"
           >
+            <!-- Translate keys only when it's an alert to avoid performance issues with translating all keys -->
             <span class="text-sm font-medium">
               {{
                 isAlert
@@ -94,6 +95,7 @@ const setMediaBasePath = () => {
               >
               <span v-else class="flex items-center gap-2">
                 {{ value }}
+                <!-- guide on Google search URL construction here: https://developers.google.com/maps/documentation/urls/get-started-->
                 <a
                   :href="
                     'https://www.google.com/maps/search/?api=1&query=' + value

@@ -348,7 +348,3 @@ const downloadKMLSelection = () => {
     </button>
   </div>
 </template>
-
-<style scoped>
-/* Remove the old button-container styles as we're using Tailwind now */
-</style>
