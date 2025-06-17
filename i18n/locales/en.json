@@ -108,5 +108,7 @@
   "views": "Views",
   "viewOnGoogleMaps": "view on Google Maps",
   "yourAccessIsPending": "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
-  "yourMapboxStyleDefault": "Mapbox - your style (default)"
+  "yourMapboxStyleDefault": "Mapbox - your style (default)",
+  "copyLink": "Copy link to alert",
+  "copied": "Copied!"
 }

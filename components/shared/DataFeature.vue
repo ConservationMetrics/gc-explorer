@@ -117,7 +117,7 @@ const setMediaBasePath = () => {
           class="w-4 h-4"
           :class="{ 'text-green-500': showCopied }"
         />
-        <span>{{ showCopied ? $t("copied") : $t("Copy link to alert") }}</span>
+        <span>{{ showCopied ? $t("copied") : $t("copyLink") }}</span>
       </button>
     </div>
   </div>
