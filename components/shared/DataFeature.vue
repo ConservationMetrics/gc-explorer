@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import MediaFile from "@/components/shared/MediaFile.vue";
+import { Copy, Check } from "lucide-vue-next";
 
 import type { AllowedFileExtensions, DataEntry } from "@/types/types";
 
@@ -11,6 +12,16 @@ const props = defineProps<{
   mediaBasePath?: string;
   mediaBasePathAlerts?: string;
 }>();
+
+const showCopied = ref(false);
+
+const copyLink = () => {
+  navigator.clipboard.writeText(window.location.href);
+  showCopied.value = true;
+  setTimeout(() => {
+    showCopied.value = false;
+  }, 2000);
+};
 
 /** Sort feature object by key */
 const sortedFeature = computed(() => {
@@ -95,6 +106,19 @@ const setMediaBasePath = () => {
           >
         </span>
       </div>
+    </div>
+    <div class="mt-6 pt-4 border-t border-gray-200">
+      <button
+        class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
+        @click="copyLink"
+      >
+        <component
+          :is="showCopied ? Check : Copy"
+          class="w-4 h-4"
+          :class="{ 'text-green-500': showCopied }"
+        />
+        <span>{{ showCopied ? $t("copied") : $t("Copy link to alert") }}</span>
+      </button>
     </div>
   </div>
 </template>
