@@ -23,6 +23,8 @@
   "configuration": "Configuración",
   "configUpdated": "Configuración actualizada",
   "confirm": "Confirmar",
+  "copied": "¡Copiado!",
+  "copyLink": "Copiar enlace de alerta",
   "created": "Creado",
   "dataCollectedOn": "Datos recopilados el",
   "dataProvider": "Proveedor de datos",
@@ -108,7 +110,5 @@
   "views": "Vistas",
   "viewOnGoogleMaps": "ver en Google Maps",
   "yourAccessIsPending": "Su acceso está pendiente. Ponte en contacto con un administrador de Guardian Connector para la aprobación de su cuenta.",
-  "yourMapboxStyleDefault": "Mapbox - su estilo (predeterminado)",
-  "copyLink": "Copiar enlace de alerta",
-  "copied": "¡Copiado!"
+  "yourMapboxStyleDefault": "Mapbox - su estilo (predeterminado)"
 }

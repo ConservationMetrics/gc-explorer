@@ -23,6 +23,8 @@
   "configuration": "Configuration",
   "configUpdated": "Configuration updated",
   "confirm": "Confirm",
+  "copied": "Copied!",
+  "copyLink": "Copy link to alert",
   "created": "Created",
   "dataCollectedOn": "Data collected on",
   "dataProvider": "Data provider",
@@ -108,7 +110,5 @@
   "views": "Views",
   "viewOnGoogleMaps": "view on Google Maps",
   "yourAccessIsPending": "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
-  "yourMapboxStyleDefault": "Mapbox - your style (default)",
-  "copyLink": "Copy link to alert",
-  "copied": "Copied!"
+  "yourMapboxStyleDefault": "Mapbox - your style (default)"
 }

@@ -22,8 +22,10 @@
   "confidenceLevel": "Betrouwbaarheidsniveau",
   "configuration": "Instellingen",
   "configDeleted": "Instellingen verwijderd",
-  "configUpdated": "Instellingen bijgewerkt",
+  "configUpdated": "Configuratie bijgewerkt",
   "confirm": "Bevestigen",
+  "copied": "Gekopieerd!",
+  "copyLink": "Kopieer alertlink",
   "created": "Gemaakt",
   "dataCollectedOn": "Data verzameld op",
   "dataProvider": "Data provider",
@@ -109,7 +111,5 @@
   "views": "Weergaven",
   "viewOnGoogleMaps": "bekijk op Google Maps",
   "yourAccessIsPending": "Uw toegang is in behandeling. Neem contact op met een Guardian Connector-beheerder voor goedkeuring van je account.",
-  "yourMapboxStyleDefault": "Mapbox - uw stijl (standaard)",
-  "copyLink": "Kopieer alertlink",
-  "copied": "Gekopieerd!"
+  "yourMapboxStyleDefault": "Mapbox - uw stijl (standaard)"
 }
