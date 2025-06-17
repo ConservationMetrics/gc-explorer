@@ -134,13 +134,19 @@ onMounted(() => {
       const feature = allFeatures.find(
         (f) => f.properties?.alertID === alertId,
       );
-      if (feature) {
-        const isRecent = route.query.isRecent === "true";
-        const layerId = isRecent
-          ? `most-recent-alerts-${feature.geometry.type.toLowerCase()}`
-          : `previous-alerts-${feature.geometry.type.toLowerCase()}`;
-        // Find the appropriate layer ID for this feature
+      if (feature && feature.properties) {
+        // Find the appropriate layer ID for this feature by checking both recent and previous layers
+        const geometryType = feature.geometry.type.toLowerCase();
+        const recentLayerId = `most-recent-alerts-${geometryType}`;
+        const previousLayerId = `previous-alerts-${geometryType}`;
 
+        // Check if feature exists in recent layer
+        const isInRecentLayer = props.alertsData.mostRecentAlerts.features.some(
+          (f) => f.properties?.alertID === feature.properties?.alertID,
+        );
+
+        // Select feature in the correct layer
+        const layerId = isInRecentLayer ? recentLayerId : previousLayerId;
         selectFeature(feature, layerId);
 
         // Zoom to the feature
@@ -1033,12 +1039,11 @@ const selectFeature = (feature: Feature, layerId: string) => {
   };
   const featureId = feature.id;
 
-  // Update URL with alertId and isRecent
+  // Update URL with alertId
   const query = { ...route.query };
   if (featureObject.alertID) {
     query.alertId = featureObject.alertID;
   }
-  query.isRecent = layerId.startsWith("most-recent-alerts") ? "true" : "false";
   router.replace({ query });
 
   // Reset the previously selected feature
