@@ -137,8 +137,9 @@ onMounted(() => {
       if (feature) {
         // Find the appropriate layer ID for this feature
         const layerId = feature.properties?.isRecent
-          ? "most-recent-alerts-polygon"
-          : "previous-alerts-polygon";
+          ? `most-recent-alerts-${feature.geometry.type.toLowerCase()}`
+          : `previous-alerts-${feature.geometry.type.toLowerCase()}`;
+
         selectFeature(feature, layerId);
 
         // Zoom to the feature
@@ -152,10 +153,9 @@ onMounted(() => {
           const bounds = bbox(feature);
           map.value.fitBounds(bounds, { padding: 50 });
         } else if (feature.geometry.type === "LineString") {
-          const line = lineString(feature.geometry.coordinates);
-          const lineLength = length(line, { units: "kilometers" });
-          const midpoint = along(line, lineLength / 2, { units: "kilometers" });
-          const [lng, lat] = midpoint.geometry.coordinates;
+          const [lng, lat] = calculateLineStringCentroid(
+            feature.geometry.coordinates,
+          );
           map.value.flyTo({ center: [lng, lat], zoom: 13 });
         }
       }
@@ -752,11 +752,7 @@ const addPulsingCircles = () => {
       lat = (bounds[1] + bounds[3]) / 2;
     } else if (feature.geometry.type === "LineString") {
       // Use Turf to find the midpoint of the LineString
-      const line = lineString(feature.geometry.coordinates);
-      const lineLength = length(line, { units: "kilometers" });
-      const midpoint = along(line, lineLength / 2, { units: "kilometers" });
-      lng = midpoint.geometry.coordinates[0];
-      lat = midpoint.geometry.coordinates[1];
+      [lng, lat] = calculateLineStringCentroid(feature.geometry.coordinates);
     } else if (feature.geometry.type === "Point") {
       [lng, lat] = feature.geometry.coordinates;
     } else {
@@ -1175,6 +1171,13 @@ const resetToInitialState = () => {
   map.value.once("idle", () => {
     addPulsingCircles();
   });
+};
+
+const calculateLineStringCentroid = (coordinates: number[][]) => {
+  const line = lineString(coordinates);
+  const lineLength = length(line, { units: "kilometers" });
+  const midpoint = along(line, lineLength / 2, { units: "kilometers" });
+  return midpoint.geometry.coordinates;
 };
 
 onBeforeUnmount(() => {
