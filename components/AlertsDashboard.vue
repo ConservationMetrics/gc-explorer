@@ -70,6 +70,98 @@ const router = useRouter();
 
 const isMapeo = ref(false);
 
+/**
+ * Selects and zooms to an alert feature based on its ID
+ */
+const selectInitialAlertFeature = (alertId: string) => {
+  const allFeatures = [
+    ...props.alertsData.mostRecentAlerts.features,
+    ...props.alertsData.previousAlerts.features,
+  ];
+  const feature = allFeatures.find((f) => f.properties?.alertID === alertId);
+  if (feature && feature.properties) {
+    // Find the appropriate layer ID for this feature by checking both recent and previous layers
+    const geometryType = feature.geometry.type.toLowerCase();
+    const recentLayerId = `most-recent-alerts-${geometryType}`;
+    const previousLayerId = `previous-alerts-${geometryType}`;
+
+    // Check if feature exists in recent layer
+    const isInRecentLayer = props.alertsData.mostRecentAlerts.features.some(
+      (f) => f.properties?.alertID === feature.properties?.alertID,
+    );
+
+    // Select feature in the correct layer
+    const layerId = isInRecentLayer ? recentLayerId : previousLayerId;
+    selectFeature(feature, layerId);
+
+    // Zoom to the feature
+    if (feature.geometry.type === "Point") {
+      const [lng, lat] = feature.geometry.coordinates;
+      map.value.flyTo({ center: [lng, lat], zoom: 13 });
+    } else if (
+      feature.geometry.type === "Polygon" ||
+      feature.geometry.type === "MultiPolygon"
+    ) {
+      const bounds = bbox(feature);
+      map.value.fitBounds(bounds, { padding: 50 });
+    } else if (feature.geometry.type === "LineString") {
+      const [lng, lat] = calculateLineStringCentroid(
+        feature.geometry.coordinates,
+      );
+      map.value.flyTo({ center: [lng, lat], zoom: 13 });
+    }
+    isMapeo.value = false;
+  }
+};
+
+/**
+ * Selects and zooms to a Mapeo feature based on its document ID
+ */
+const selectInitialMapeoFeature = (mapeoDocId: string) => {
+  const mapeoFeature = props.mapeoData?.find((f) => f.ID === mapeoDocId);
+
+  if (mapeoFeature) {
+    const geometryType = mapeoFeature.geotype as
+      | "Polygon"
+      | "LineString"
+      | "Point"
+      | "MultiPoint"
+      | "MultiLineString"
+      | "MultiPolygon"
+      | "GeometryCollection";
+    const feature: Feature = {
+      type: "Feature",
+      geometry: {
+        type: geometryType,
+        coordinates: JSON.parse(mapeoFeature.geocoordinates),
+      } as Geometry,
+      properties: {
+        ...mapeoFeature,
+      },
+    };
+
+    selectFeature(feature, "mapeo-data");
+    isMapeo.value = true;
+
+    // Zoom to the feature
+    if (feature.geometry.type === "Point") {
+      const [lng, lat] = feature.geometry.coordinates;
+      map.value.flyTo({ center: [lng, lat], zoom: 13 });
+    } else if (
+      feature.geometry.type === "Polygon" ||
+      feature.geometry.type === "MultiPolygon"
+    ) {
+      const bounds = bbox(feature);
+      map.value.fitBounds(bounds, { padding: 50 });
+    } else if (feature.geometry.type === "LineString") {
+      const [lng, lat] = calculateLineStringCentroid(
+        feature.geometry.coordinates,
+      );
+      map.value.flyTo({ center: [lng, lat], zoom: 13 });
+    }
+  }
+};
+
 onMounted(() => {
   mapboxgl.accessToken = props.mapboxAccessToken;
 
@@ -83,7 +175,7 @@ onMounted(() => {
     bearing: props.mapboxBearing || 0,
   });
 
-  map.value.on("load", () => {
+  map.value.on("load", async () => {
     // Add 3D Terrain if set in env var
     if (props.mapbox3d) {
       map.value.addSource("mapbox-dem", {
@@ -95,7 +187,7 @@ onMounted(() => {
       map.value.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
     }
 
-    prepareMapCanvasContent();
+    await prepareMapCanvasContent();
 
     // Navigation Control (zoom buttons and compass)
     const nav = new mapboxgl.NavigationControl();
@@ -131,99 +223,9 @@ onMounted(() => {
     const mapeoDocId = route.query.mapeoDocId as string;
 
     if (alertId) {
-      const allFeatures = [
-        ...props.alertsData.mostRecentAlerts.features,
-        ...props.alertsData.previousAlerts.features,
-      ];
-      const feature = allFeatures.find(
-        (f) => f.properties?.alertID === alertId,
-      );
-      if (feature && feature.properties) {
-        // Find the appropriate layer ID for this feature by checking both recent and previous layers
-        const geometryType = feature.geometry.type.toLowerCase();
-        const recentLayerId = `most-recent-alerts-${geometryType}`;
-        const previousLayerId = `previous-alerts-${geometryType}`;
-
-        // Check if feature exists in recent layer
-        const isInRecentLayer = props.alertsData.mostRecentAlerts.features.some(
-          (f) => f.properties?.alertID === feature.properties?.alertID,
-        );
-
-        // Select feature in the correct layer
-        const layerId = isInRecentLayer ? recentLayerId : previousLayerId;
-        selectFeature(feature, layerId);
-
-        // Zoom to the feature
-        if (feature.geometry.type === "Point") {
-          const [lng, lat] = feature.geometry.coordinates;
-          map.value.flyTo({ center: [lng, lat], zoom: 13 });
-        } else if (
-          feature.geometry.type === "Polygon" ||
-          feature.geometry.type === "MultiPolygon"
-        ) {
-          const bounds = bbox(feature);
-          map.value.fitBounds(bounds, { padding: 50 });
-        } else if (feature.geometry.type === "LineString") {
-          const [lng, lat] = calculateLineStringCentroid(
-            feature.geometry.coordinates,
-          );
-          map.value.flyTo({ center: [lng, lat], zoom: 13 });
-        }
-        isMapeo.value = false;
-      }
+      selectInitialAlertFeature(alertId);
     } else if (mapeoDocId && props.mapeoData) {
-      // Wait for the next tick to ensure mapeo-data layer is added
-      nextTick(() => {
-        if (!props.mapeoData) {
-          return;
-        }
-
-        const mapeoFeature = props.mapeoData.find((f) => f.ID === mapeoDocId);
-
-        if (mapeoFeature) {
-          const geometryType = mapeoFeature.geotype as
-            | "Polygon"
-            | "LineString"
-            | "Point"
-            | "MultiPoint"
-            | "MultiLineString"
-            | "MultiPolygon"
-            | "GeometryCollection";
-          const feature: Feature = {
-            type: "Feature",
-            geometry: {
-              type: geometryType,
-              coordinates: JSON.parse(mapeoFeature.geocoordinates),
-            } as Geometry,
-            properties: {
-              ...mapeoFeature,
-            },
-          };
-
-          selectFeature(feature, "mapeo-data");
-          isMapeo.value = true;
-
-          // Zoom to the feature
-          if (feature.geometry.type === "Point") {
-            const [lng, lat] = feature.geometry.coordinates;
-
-            map.value.flyTo({ center: [lng, lat], zoom: 13 });
-          } else if (
-            feature.geometry.type === "Polygon" ||
-            feature.geometry.type === "MultiPolygon"
-          ) {
-            const bounds = bbox(feature);
-
-            map.value.fitBounds(bounds, { padding: 50 });
-          } else if (feature.geometry.type === "LineString") {
-            const [lng, lat] = calculateLineStringCentroid(
-              feature.geometry.coordinates,
-            );
-
-            map.value.flyTo({ center: [lng, lat], zoom: 13 });
-          }
-        }
-      });
+      selectInitialMapeoFeature(mapeoDocId);
     }
   });
 });
@@ -675,12 +677,14 @@ const addMapeoData = () => {
  * pulsing circles, and the map legend.
  */
 const prepareMapCanvasContent = async () => {
+  const promises = [];
   if (props.alertsData) {
-    await addAlertsData();
+    promises.push(addAlertsData());
   }
   if (props.mapeoData) {
-    addMapeoData();
+    promises.push(addMapeoData());
   }
+  await Promise.all(promises);
   addPulsingCircles();
   prepareMapLegendContent();
 };
