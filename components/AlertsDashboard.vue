@@ -172,29 +172,58 @@ onMounted(() => {
         isMapeo.value = false;
       }
     } else if (mapeoDocId && props.mapeoData) {
-      const mapeoFeature = props.mapeoData.find((f) => f.Id === mapeoDocId);
-      if (mapeoFeature) {
-        const geometryType = mapeoFeature.geotype as
-          | "Polygon"
-          | "LineString"
-          | "Point"
-          | "MultiPoint"
-          | "MultiLineString"
-          | "MultiPolygon"
-          | "GeometryCollection";
-        const feature: Feature = {
-          type: "Feature",
-          geometry: {
-            type: geometryType,
-            coordinates: JSON.parse(mapeoFeature.geocoordinates),
-          } as Geometry,
-          properties: {
-            ...mapeoFeature,
-          },
-        };
-        selectFeature(feature, "mapeo-data");
-        isMapeo.value = true;
-      }
+      // Wait for the next tick to ensure mapeo-data layer is added
+      nextTick(() => {
+        if (!props.mapeoData) {
+          return;
+        }
+
+        const mapeoFeature = props.mapeoData.find((f) => f.ID === mapeoDocId);
+
+        if (mapeoFeature) {
+          const geometryType = mapeoFeature.geotype as
+            | "Polygon"
+            | "LineString"
+            | "Point"
+            | "MultiPoint"
+            | "MultiLineString"
+            | "MultiPolygon"
+            | "GeometryCollection";
+          const feature: Feature = {
+            type: "Feature",
+            geometry: {
+              type: geometryType,
+              coordinates: JSON.parse(mapeoFeature.geocoordinates),
+            } as Geometry,
+            properties: {
+              ...mapeoFeature,
+            },
+          };
+
+          selectFeature(feature, "mapeo-data");
+          isMapeo.value = true;
+
+          // Zoom to the feature
+          if (feature.geometry.type === "Point") {
+            const [lng, lat] = feature.geometry.coordinates;
+
+            map.value.flyTo({ center: [lng, lat], zoom: 13 });
+          } else if (
+            feature.geometry.type === "Polygon" ||
+            feature.geometry.type === "MultiPolygon"
+          ) {
+            const bounds = bbox(feature);
+
+            map.value.fitBounds(bounds, { padding: 50 });
+          } else if (feature.geometry.type === "LineString") {
+            const [lng, lat] = calculateLineStringCentroid(
+              feature.geometry.coordinates,
+            );
+
+            map.value.flyTo({ center: [lng, lat], zoom: 13 });
+          }
+        }
+      });
     }
   });
 });
@@ -1079,6 +1108,7 @@ const selectFeature = (feature: Feature, layerId: string) => {
     delete query.alertId;
     isMapeo.value = true;
   }
+
   router.replace({ query });
 
   // Reset the previously selected feature
@@ -1093,6 +1123,7 @@ const selectFeature = (feature: Feature, layerId: string) => {
   }
 
   // Set new feature state
+
   map.value.setFeatureState(
     { source: layerId, id: featureId },
     { selected: true },
@@ -1101,6 +1132,7 @@ const selectFeature = (feature: Feature, layerId: string) => {
   delete featureObject["YYYYMM"];
 
   // Update component state
+
   localAlertsData.value = featureGeojson;
   selectedFeature.value = featureObject;
   selectedFeatureId.value = featureId;
