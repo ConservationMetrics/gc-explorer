@@ -1103,13 +1103,16 @@ const selectFeature = (feature: Feature, layerId: string) => {
 
   // Update URL with alertId or mapeoDocId
   const query = { ...route.query };
+  // Remove any existing feature IDs first
+  delete query.alertId;
+  delete query.mapeoDocId;
+
+  // Add the new feature ID
   if (featureObject.alertID) {
     query.alertId = featureObject.alertID;
-    delete query.mapeoDocId;
     isMapeo.value = false;
   } else if (featureObject.id) {
     query.mapeoDocId = featureObject.id;
-    delete query.alertId;
     isMapeo.value = true;
   }
 
