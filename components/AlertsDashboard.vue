@@ -30,7 +30,7 @@ import type {
   Dataset,
   MapLegendItem,
 } from "@/types/types";
-import type { Feature } from "geojson";
+import type { Feature, Geometry } from "geojson";
 
 const { t } = useI18n();
 
@@ -67,6 +67,8 @@ const showSlider = ref(false);
 
 const route = useRoute();
 const router = useRouter();
+
+const isMapeo = ref(false);
 
 onMounted(() => {
   mapboxgl.accessToken = props.mapboxAccessToken;
@@ -124,8 +126,10 @@ onMounted(() => {
     }
     showSlider.value = true;
 
-    // Check for alertId in URL and select the corresponding alert
+    // Check for alertId or mapeoDocId in URL and select the corresponding feature
     const alertId = route.query.alertId as string;
+    const mapeoDocId = route.query.mapeoDocId as string;
+
     if (alertId) {
       const allFeatures = [
         ...props.alertsData.mostRecentAlerts.features,
@@ -165,6 +169,31 @@ onMounted(() => {
           );
           map.value.flyTo({ center: [lng, lat], zoom: 13 });
         }
+        isMapeo.value = false;
+      }
+    } else if (mapeoDocId && props.mapeoData) {
+      const mapeoFeature = props.mapeoData.find((f) => f.Id === mapeoDocId);
+      if (mapeoFeature) {
+        const geometryType = mapeoFeature.geotype as
+          | "Polygon"
+          | "LineString"
+          | "Point"
+          | "MultiPoint"
+          | "MultiLineString"
+          | "MultiPolygon"
+          | "GeometryCollection";
+        const feature: Feature = {
+          type: "Feature",
+          geometry: {
+            type: geometryType,
+            coordinates: JSON.parse(mapeoFeature.geocoordinates),
+          } as Geometry,
+          properties: {
+            ...mapeoFeature,
+          },
+        };
+        selectFeature(feature, "mapeo-data");
+        isMapeo.value = true;
       }
     }
   });
@@ -1039,10 +1068,16 @@ const selectFeature = (feature: Feature, layerId: string) => {
   };
   const featureId = feature.id;
 
-  // Update URL with alertId
+  // Update URL with alertId or mapeoDocId
   const query = { ...route.query };
   if (featureObject.alertID) {
     query.alertId = featureObject.alertID;
+    delete query.mapeoDocId;
+    isMapeo.value = false;
+  } else if (featureObject.id) {
+    query.mapeoDocId = featureObject.id;
+    delete query.alertId;
+    isMapeo.value = true;
   }
   router.replace({ query });
 
@@ -1216,6 +1251,8 @@ onBeforeUnmount(() => {
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
       :is-alert="isAlert"
+      :is-mapeo="isMapeo"
+      :is-alerts-dashboard="true"
       :local-alerts-data="localAlertsData"
       :logo-url="logoUrl"
       :media-base-path="mediaBasePath"

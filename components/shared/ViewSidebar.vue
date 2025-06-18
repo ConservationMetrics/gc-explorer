@@ -22,6 +22,8 @@ const props = defineProps<{
   feature?: DataEntry;
   filePaths?: Array<string>;
   isAlert?: boolean;
+  isMapeo?: boolean;
+  isAlertsDashboard?: boolean;
   localAlertsData?: Feature | AlertsData;
   logoUrl?: string;
   mediaBasePath?: string;
@@ -127,6 +129,8 @@ onBeforeUnmount(() => {
           :feature="filteredFeature"
           :file-paths="filePaths"
           :is-alert="isAlert"
+          :is-mapeo="isMapeo"
+          :is-alerts-dashboard="isAlertsDashboard"
           :media-base-path="mediaBasePath"
           :media-base-path-alerts="mediaBasePathAlerts"
         />
