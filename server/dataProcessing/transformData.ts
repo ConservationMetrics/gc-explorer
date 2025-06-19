@@ -1,3 +1,5 @@
+import murmurhash from "murmurhash";
+
 import {
   calculateCentroid,
   capitalizeFirstLetter,
@@ -619,7 +621,11 @@ const transformToGeojson = (data: DataEntry[]): FeatureCollection => {
 
     Object.entries(input).forEach(([key, value]) => {
       if (key === "alertID") {
-        feature.id = String(value).substring(4);
+        // Mapbox requires `feature.id` to be a 32-bit integer or a small string.
+        // Some `alertID` values (e.g. "20240910100161660491") are too large to safely cast to Number,
+        // which causes "given varint doesn't fit into 10 bytes" errors when rendering vector tiles.
+        // We hash the `alertID` with MurmurHash to ensure a safe, deterministic 32-bit integer ID.
+        feature.id = murmurhash.v3(String(value));
         feature.properties![key] = value; // Use non-null assertion
       } else if (key.startsWith("g__")) {
         const geometryKey = key.substring(3); // Removes 'g__' prefix
