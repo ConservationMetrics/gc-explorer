@@ -1,3 +1,5 @@
+import murmurhash from "murmurhash";
+
 import { describe, it, expect } from "vitest";
 
 import {
@@ -104,18 +106,24 @@ describe("prepareAlertsStatistics", () => {
 
 describe("transformToGeojson", () => {
   it("should transform data to GeoJSON", () => {
-    const result = transformToGeojson(alertsData);
+    const result = transformToGeojson(
+      prepareAlertData(alertsData).mostRecentAlerts,
+    );
 
     expect(result).toHaveProperty("type");
     expect(result.type).toBe("FeatureCollection");
     expect(result).toHaveProperty("features");
     expect(result.features).toBeInstanceOf(Array);
-    result.features.forEach((feature) => {
+    result.features.forEach((feature, index) => {
       expect(feature).toHaveProperty("type");
       expect(feature.type).toBe("Feature");
       expect(feature).toHaveProperty("properties");
       expect(feature).toHaveProperty("geometry");
+      expect(feature).toHaveProperty("id");
+      // Check if the alert._id is properly transformed to feature.id using murmurhash
+      const expectedId = murmurhash.v3(String(alertsData[index].alert_id));
+      expect(feature.id).toBe(expectedId);
     });
-    expect(result.features).toHaveLength(alertsData.length);
+    expect(result.features).toHaveLength(2);
   });
 });
