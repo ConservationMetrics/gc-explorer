@@ -21,7 +21,7 @@ describe("transformSurveyData", () => {
       expect(item.category[0]).toBe(item.category[0].toUpperCase());
       expect(item.created).toMatch(/^\d{1,2}\/\d{1,2}\/\d{4}$/);
       expect(item.photos).toMatch(/^(\w+\.jpg(, )?)*\w+\.jpg$|^$/);
-      expect(item).toHaveProperty("ID");
+      expect(item).toHaveProperty("id");
     });
   });
 });
