@@ -1,3 +1,5 @@
+import murmurhash from "murmurhash";
+
 import { getDatabaseConnection } from "@/server/database/dbConnection";
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import {
@@ -20,18 +22,18 @@ import type {
 } from "@/types/types";
 
 /**
- * Converts a Mapeo document ID (64-bit hex string) to a 53-bit safe integer
- * for Mapbox feature state management. This is a lossy, non-reversible operation.
+ * Converts a Mapeo document ID (64-bit hex string) to a 32-bit integer
+ * using MurmurHash for Mapbox feature state management. This is a lossy, non-reversible operation.
  *
  * Mapbox requires feature IDs to be either a Number or a string that can be safely
  * cast to a Number, but Mapeo IDs are 64-bit hex strings that exceed JavaScript's
- * safe integer range. This function reduces the 64-bit value to a 53-bit one using
- * a bitwise AND operation with a 53-bit mask.
+ * safe integer range. This function uses MurmurHash to generate a 32-bit integer
+ * from the 64-bit hex string, ensuring compatibility with Mapbox.
  *
  * Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
  *
  * @param {string} mapeoId - The Mapeo document ID as a 16-character hex string (e.g., "0084cdc57c0b0280")
- * @returns {number} - A 53-bit safe integer for use with Mapbox feature state management
+ * @returns {number} - A 32-bit integer for use with Mapbox feature state management
  * @throws {Error} - If the input is not a valid 16-character hex string
  */
 const generateMapboxIdFromMapeoFeatureId = (mapeoId: string): number => {
@@ -46,9 +48,7 @@ const generateMapboxIdFromMapeoFeatureId = (mapeoId: string): number => {
     );
   }
 
-  const bigIntId = BigInt("0x" + mapeoId.toLowerCase());
-  const safeMask = BigInt("0x1FFFFFFFFFFFFF"); // 53-bit mask (2^53 - 1)
-  return Number(bigIntId & safeMask);
+  return murmurhash.v3(mapeoId);
 };
 
 export default defineEventHandler(async (event: H3Event) => {
@@ -122,11 +122,11 @@ export default defineEventHandler(async (event: H3Event) => {
       // This is done here because we know we're dealing with Mapeo data specifically
       const mapeoDataWithNormalizedIds = processedMapeoData.map((item) => {
         if (
-          item.ID &&
-          typeof item.ID === "string" &&
-          item.ID.match(/^[0-9a-fA-F]{16}$/)
+          item.id &&
+          typeof item.id === "string" &&
+          item.id.match(/^[0-9a-fA-F]{16}$/)
         ) {
-          item.normalizedId = generateMapboxIdFromMapeoFeatureId(item.ID);
+          item.normalizedId = generateMapboxIdFromMapeoFeatureId(item.id);
         }
         return item;
       });

@@ -118,7 +118,7 @@ const selectInitialAlertFeature = (alertId: string) => {
  * Selects and zooms to a Mapeo feature based on its document ID
  */
 const selectInitialMapeoFeature = (mapeoDocId: string) => {
-  const mapeoFeature = props.mapeoData?.find((f) => f.ID === mapeoDocId);
+  const mapeoFeature = props.mapeoData?.find((f) => f.id === mapeoDocId);
 
   if (mapeoFeature) {
     const geometryType = mapeoFeature.geotype as
@@ -153,7 +153,7 @@ const selectInitialMapeoFeature = (mapeoDocId: string) => {
     // Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
     const feature: Feature = {
       type: "Feature",
-      id: mapeoFeature.normalizedId || mapeoFeature.Id, // Use normalized ID if available
+      id: mapeoFeature.normalizedId || mapeoFeature.id, // Use normalized ID if available
       geometry: {
         type: geometryType,
         coordinates: JSON.parse(mapeoFeature.geocoordinates),
@@ -616,7 +616,7 @@ const addMapeoData = () => {
   const geoJsonSource = {
     type: "FeatureCollection",
     features: props.mapeoData.map((feature) => ({
-      id: feature.normalizedId || feature.Id, // Use normalized ID if available, fallback to original ID
+      id: feature.normalizedId || feature.id, // Use normalized ID if available, fallback to original ID
       type: "Feature",
       geometry: {
         type: feature.geotype,
@@ -1152,7 +1152,6 @@ const selectFeature = (feature: Feature, layerId: string) => {
   }
 
   // Set new feature state
-
   map.value.setFeatureState(
     { source: layerId, id: featureId },
     { selected: true },
@@ -1161,7 +1160,6 @@ const selectFeature = (feature: Feature, layerId: string) => {
   delete featureObject["YYYYMM"];
 
   // Update component state
-
   localAlertsData.value = featureGeojson;
   selectedFeature.value = featureObject;
   selectedFeatureId.value = featureId;
@@ -1175,6 +1173,9 @@ const selectFeature = (feature: Feature, layerId: string) => {
   } else {
     isAlert.value = false;
   }
+
+  // The following code handles deletions or rewrites of certain properties
+  // for the selected feature to prepare it for display in the sidebar.
 
   // Columns that may or may not exist, depending on views config
   imageUrl.value = [];
@@ -1192,6 +1193,7 @@ const selectFeature = (feature: Feature, layerId: string) => {
   delete featureObject["t0_url"];
   delete featureObject["t1_url"];
   delete featureObject["filter-color"];
+  delete featureObject["normalizedId"];
 
   // Rewrite coordinates string from [long, lat] to lat, long, removing brackets
   if (featureObject.geocoordinates) {
