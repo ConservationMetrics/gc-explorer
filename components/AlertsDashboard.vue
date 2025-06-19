@@ -1152,7 +1152,6 @@ const selectFeature = (feature: Feature, layerId: string) => {
   }
 
   // Set new feature state
-
   map.value.setFeatureState(
     { source: layerId, id: featureId },
     { selected: true },
@@ -1161,7 +1160,6 @@ const selectFeature = (feature: Feature, layerId: string) => {
   delete featureObject["YYYYMM"];
 
   // Update component state
-
   localAlertsData.value = featureGeojson;
   selectedFeature.value = featureObject;
   selectedFeatureId.value = featureId;
