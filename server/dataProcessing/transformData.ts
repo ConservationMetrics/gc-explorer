@@ -3,6 +3,7 @@ import {
   capitalizeFirstLetter,
   formatDate,
   getRandomColor,
+  normalizeMapeoId,
 } from "./helpers";
 
 import type {
@@ -180,6 +181,16 @@ const prepareMapData = (
           item.geotype = "Polygon";
         }
       }
+    }
+
+    // Add normalized ID for Mapeo features to ensure Mapbox compatibility
+    // Mapeo document IDs are 64-bit hex strings that need to be normalized to 53-bit integers
+    if (
+      item.ID &&
+      typeof item.ID === "string" &&
+      item.ID.match(/^[0-9a-fA-F]{16}$/)
+    ) {
+      item.normalizedId = normalizeMapeoId(item.ID);
     }
 
     const filterColumnValue =

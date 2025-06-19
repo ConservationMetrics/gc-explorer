@@ -131,6 +131,7 @@ const selectInitialMapeoFeature = (mapeoDocId: string) => {
       | "GeometryCollection";
     const feature: Feature = {
       type: "Feature",
+      id: mapeoFeature.normalizedId || mapeoFeature.Id, // Use normalized ID if available
       geometry: {
         type: geometryType,
         coordinates: JSON.parse(mapeoFeature.geocoordinates),
@@ -593,7 +594,7 @@ const addMapeoData = () => {
   const geoJsonSource = {
     type: "FeatureCollection",
     features: props.mapeoData.map((feature) => ({
-      id: feature.Id,
+      id: feature.normalizedId || feature.Id, // Use normalized ID if available, fallback to original ID
       type: "Feature",
       geometry: {
         type: feature.geotype,
@@ -612,7 +613,6 @@ const addMapeoData = () => {
     map.value.addSource("mapeo-data", {
       type: "geojson",
       data: geoJsonSource,
-      generateId: true,
     });
   }
 
