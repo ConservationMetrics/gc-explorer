@@ -1176,6 +1176,9 @@ const selectFeature = (feature: Feature, layerId: string) => {
     isAlert.value = false;
   }
 
+  // The following code handles deletions or rewrites of certain properties
+  // for the selected feature to prepare it for display in the sidebar.
+
   // Columns that may or may not exist, depending on views config
   imageUrl.value = [];
   if (featureObject.t0_url) {
@@ -1192,6 +1195,7 @@ const selectFeature = (feature: Feature, layerId: string) => {
   delete featureObject["t0_url"];
   delete featureObject["t1_url"];
   delete featureObject["filter-color"];
+  delete featureObject["normalizedId"];
 
   // Rewrite coordinates string from [long, lat] to lat, long, removing brackets
   if (featureObject.geocoordinates) {
