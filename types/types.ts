@@ -69,7 +69,9 @@ export type ColumnEntry = {
   sql_column: string;
 };
 
-export type DataEntry = Record<string, string>;
+export type DataEntry = Record<string, string> & {
+  normalizedId?: number;
+};
 
 export type Dataset = Array<DataEntry>;
 

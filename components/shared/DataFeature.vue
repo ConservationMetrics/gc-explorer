@@ -9,6 +9,8 @@ const props = defineProps<{
   feature: DataEntry;
   filePaths?: Array<string>;
   isAlert?: boolean;
+  isMapeo?: boolean;
+  isAlertsDashboard?: boolean;
   mediaBasePath?: string;
   mediaBasePathAlerts?: string;
 }>();
@@ -120,7 +122,7 @@ const setMediaBasePath = () => {
         </div>
       </div>
     </div>
-    <div class="mt-6 pt-4 border-t border-gray-200">
+    <div v-if="isAlertsDashboard" class="mt-6 pt-4 border-t border-gray-200">
       <button
         class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
         @click="copyLink"
@@ -130,7 +132,13 @@ const setMediaBasePath = () => {
           class="w-4 h-4"
           :class="{ 'text-green-500': showCopied }"
         />
-        <span>{{ showCopied ? $t("copied") : $t("copyLink") }}</span>
+        <span>{{
+          showCopied
+            ? $t("copied")
+            : isMapeo
+              ? $t("copyMapeoLink")
+              : $t("copyLink")
+        }}</span>
       </button>
     </div>
   </div>

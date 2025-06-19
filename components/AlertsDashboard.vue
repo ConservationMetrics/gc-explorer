@@ -30,7 +30,7 @@ import type {
   Dataset,
   MapLegendItem,
 } from "@/types/types";
-import type { Feature } from "geojson";
+import type { Feature, Geometry } from "geojson";
 
 const { t } = useI18n();
 
@@ -68,6 +68,123 @@ const showSlider = ref(false);
 const route = useRoute();
 const router = useRouter();
 
+const isMapeo = ref(false);
+
+/**
+ * Selects and zooms to an alert feature based on its ID
+ */
+const selectInitialAlertFeature = (alertId: string) => {
+  const allFeatures = [
+    ...props.alertsData.mostRecentAlerts.features,
+    ...props.alertsData.previousAlerts.features,
+  ];
+  const feature = allFeatures.find((f) => f.properties?.alertID === alertId);
+  if (feature && feature.properties) {
+    // Find the appropriate layer ID for this feature by checking both recent and previous layers
+    const geometryType = feature.geometry.type.toLowerCase();
+    const recentLayerId = `most-recent-alerts-${geometryType}`;
+    const previousLayerId = `previous-alerts-${geometryType}`;
+
+    // Check if feature exists in recent layer
+    const isInRecentLayer = props.alertsData.mostRecentAlerts.features.some(
+      (f) => f.properties?.alertID === feature.properties?.alertID,
+    );
+
+    // Select feature in the correct layer
+    const layerId = isInRecentLayer ? recentLayerId : previousLayerId;
+    selectFeature(feature, layerId);
+
+    // Zoom to the feature
+    if (feature.geometry.type === "Point") {
+      const [lng, lat] = feature.geometry.coordinates;
+      map.value.flyTo({ center: [lng, lat], zoom: 13 });
+    } else if (
+      feature.geometry.type === "Polygon" ||
+      feature.geometry.type === "MultiPolygon"
+    ) {
+      const bounds = bbox(feature);
+      map.value.fitBounds(bounds, { padding: 50 });
+    } else if (feature.geometry.type === "LineString") {
+      const [lng, lat] = calculateLineStringCentroid(
+        feature.geometry.coordinates,
+      );
+      map.value.flyTo({ center: [lng, lat], zoom: 13 });
+    }
+    isMapeo.value = false;
+  }
+};
+
+/**
+ * Selects and zooms to a Mapeo feature based on its document ID
+ */
+const selectInitialMapeoFeature = (mapeoDocId: string) => {
+  const mapeoFeature = props.mapeoData?.find((f) => f.ID === mapeoDocId);
+
+  if (mapeoFeature) {
+    const geometryType = mapeoFeature.geotype as
+      | "Polygon"
+      | "LineString"
+      | "Point"
+      | "MultiPoint"
+      | "MultiLineString"
+      | "MultiPolygon"
+      | "GeometryCollection";
+
+    // Create a new GeoJSON Feature object instead of using mapeoFeature directly for several critical reasons:
+    //
+    // 1. DATA FORMAT MISMATCH: Mapeo data comes as raw DataEntry objects, but Mapbox expects proper
+    //    GeoJSON Feature objects with specific structure (type, geometry, properties, id).
+    //
+    // 2. ID NORMALIZATION REQUIREMENT: Mapeo document IDs are 64-bit hex strings (e.g., "0084cdc57c0b0280")
+    //    that exceed JavaScript's safe integer range (2^53 - 1). Mapbox requires feature IDs to be either
+    //    Numbers or strings that can be safely cast to Numbers. Without normalization, Mapbox falls back to
+    //    undefined IDs, causing setFeatureState() to fail with "The feature id parameter must be provided."
+    //    We use the normalized 53-bit safe integer (mapeoFeature.normalizedId) for Mapbox compatibility.
+    //
+    // 3. COORDINATE PARSING: The geometry coordinates are stored as JSON strings in the raw data but need
+    //    to be parsed into array format for GeoJSON compliance.
+    //
+    // 4. FEATURE STATE MANAGEMENT: Mapbox's setFeatureState() requires matching IDs between the GeoJSON
+    //    source and the feature selection. Without this transformation, feature highlighting and selection
+    //    would fail completely.
+    //
+    // For detailed technical explanation of this problem and solution, see:
+    // https://github.com/ConservationMetrics/gc-explorer/pull/109#issuecomment-2985123992
+    // Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
+    const feature: Feature = {
+      type: "Feature",
+      id: mapeoFeature.normalizedId || mapeoFeature.Id, // Use normalized ID if available
+      geometry: {
+        type: geometryType,
+        coordinates: JSON.parse(mapeoFeature.geocoordinates),
+      } as Geometry,
+      properties: {
+        ...mapeoFeature,
+      },
+    };
+
+    selectFeature(feature, "mapeo-data");
+    isMapeo.value = true;
+
+    // Zoom to the feature
+    if (feature.geometry.type === "Point") {
+      const [lng, lat] = feature.geometry.coordinates;
+      map.value.flyTo({ center: [lng, lat], zoom: 13 });
+    } else if (
+      feature.geometry.type === "Polygon" ||
+      feature.geometry.type === "MultiPolygon"
+    ) {
+      const bounds = bbox(feature);
+      map.value.fitBounds(bounds, { padding: 50 });
+    } else if (feature.geometry.type === "LineString") {
+      const [lng, lat] = calculateLineStringCentroid(
+        feature.geometry.coordinates,
+      );
+      map.value.flyTo({ center: [lng, lat], zoom: 13 });
+    }
+  }
+};
+
 onMounted(() => {
   mapboxgl.accessToken = props.mapboxAccessToken;
 
@@ -81,7 +198,7 @@ onMounted(() => {
     bearing: props.mapboxBearing || 0,
   });
 
-  map.value.on("load", () => {
+  map.value.on("load", async () => {
     // Add 3D Terrain if set in env var
     if (props.mapbox3d) {
       map.value.addSource("mapbox-dem", {
@@ -93,7 +210,7 @@ onMounted(() => {
       map.value.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
     }
 
-    prepareMapCanvasContent();
+    await prepareMapCanvasContent();
 
     // Navigation Control (zoom buttons and compass)
     const nav = new mapboxgl.NavigationControl();
@@ -124,48 +241,14 @@ onMounted(() => {
     }
     showSlider.value = true;
 
-    // Check for alertId in URL and select the corresponding alert
+    // Check for alertId or mapeoDocId in URL and select the corresponding feature
     const alertId = route.query.alertId as string;
+    const mapeoDocId = route.query.mapeoDocId as string;
+
     if (alertId) {
-      const allFeatures = [
-        ...props.alertsData.mostRecentAlerts.features,
-        ...props.alertsData.previousAlerts.features,
-      ];
-      const feature = allFeatures.find(
-        (f) => f.properties?.alertID === alertId,
-      );
-      if (feature && feature.properties) {
-        // Find the appropriate layer ID for this feature by checking both recent and previous layers
-        const geometryType = feature.geometry.type.toLowerCase();
-        const recentLayerId = `most-recent-alerts-${geometryType}`;
-        const previousLayerId = `previous-alerts-${geometryType}`;
-
-        // Check if feature exists in recent layer
-        const isInRecentLayer = props.alertsData.mostRecentAlerts.features.some(
-          (f) => f.properties?.alertID === feature.properties?.alertID,
-        );
-
-        // Select feature in the correct layer
-        const layerId = isInRecentLayer ? recentLayerId : previousLayerId;
-        selectFeature(feature, layerId);
-
-        // Zoom to the feature
-        if (feature.geometry.type === "Point") {
-          const [lng, lat] = feature.geometry.coordinates;
-          map.value.flyTo({ center: [lng, lat], zoom: 13 });
-        } else if (
-          feature.geometry.type === "Polygon" ||
-          feature.geometry.type === "MultiPolygon"
-        ) {
-          const bounds = bbox(feature);
-          map.value.fitBounds(bounds, { padding: 50 });
-        } else if (feature.geometry.type === "LineString") {
-          const [lng, lat] = calculateLineStringCentroid(
-            feature.geometry.coordinates,
-          );
-          map.value.flyTo({ center: [lng, lat], zoom: 13 });
-        }
-      }
+      selectInitialAlertFeature(alertId);
+    } else if (mapeoDocId && props.mapeoData) {
+      selectInitialMapeoFeature(mapeoDocId);
     }
   });
 });
@@ -533,7 +616,7 @@ const addMapeoData = () => {
   const geoJsonSource = {
     type: "FeatureCollection",
     features: props.mapeoData.map((feature) => ({
-      id: feature.Id,
+      id: feature.normalizedId || feature.Id, // Use normalized ID if available, fallback to original ID
       type: "Feature",
       geometry: {
         type: feature.geotype,
@@ -552,7 +635,6 @@ const addMapeoData = () => {
     map.value.addSource("mapeo-data", {
       type: "geojson",
       data: geoJsonSource,
-      generateId: true,
     });
   }
 
@@ -617,12 +699,14 @@ const addMapeoData = () => {
  * pulsing circles, and the map legend.
  */
 const prepareMapCanvasContent = async () => {
+  const promises = [];
   if (props.alertsData) {
-    await addAlertsData();
+    promises.push(addAlertsData());
   }
   if (props.mapeoData) {
-    addMapeoData();
+    promises.push(addMapeoData());
   }
+  await Promise.all(promises);
   addPulsingCircles();
   prepareMapLegendContent();
 };
@@ -1039,11 +1123,21 @@ const selectFeature = (feature: Feature, layerId: string) => {
   };
   const featureId = feature.id;
 
-  // Update URL with alertId
+  // Update URL with alertId or mapeoDocId
   const query = { ...route.query };
+  // Remove any existing feature IDs first
+  delete query.alertId;
+  delete query.mapeoDocId;
+
+  // Add the new feature ID
   if (featureObject.alertID) {
     query.alertId = featureObject.alertID;
+    isMapeo.value = false;
+  } else if (featureObject.id) {
+    query.mapeoDocId = featureObject.id;
+    isMapeo.value = true;
   }
+
   router.replace({ query });
 
   // Reset the previously selected feature
@@ -1058,6 +1152,7 @@ const selectFeature = (feature: Feature, layerId: string) => {
   }
 
   // Set new feature state
+
   map.value.setFeatureState(
     { source: layerId, id: featureId },
     { selected: true },
@@ -1066,6 +1161,7 @@ const selectFeature = (feature: Feature, layerId: string) => {
   delete featureObject["YYYYMM"];
 
   // Update component state
+
   localAlertsData.value = featureGeojson;
   selectedFeature.value = featureObject;
   selectedFeatureId.value = featureId;
@@ -1216,6 +1312,8 @@ onBeforeUnmount(() => {
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
       :is-alert="isAlert"
+      :is-mapeo="isMapeo"
+      :is-alerts-dashboard="true"
       :local-alerts-data="localAlertsData"
       :logo-url="logoUrl"
       :media-base-path="mediaBasePath"

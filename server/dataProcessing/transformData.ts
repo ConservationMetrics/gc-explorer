@@ -619,15 +619,20 @@ const transformToGeojson = (data: DataEntry[]): FeatureCollection => {
 
     Object.entries(input).forEach(([key, value]) => {
       if (key === "alertID") {
-        feature.id = value.substring(4);
+        feature.id = String(value).substring(4);
         feature.properties![key] = value; // Use non-null assertion
       } else if (key.startsWith("g__")) {
         const geometryKey = key.substring(3); // Removes 'g__' prefix
         if (feature.geometry) {
           if (geometryKey === "coordinates") {
-            feature.geometry[geometryKey as keyof Geometry] = JSON.parse(value);
+            feature.geometry[geometryKey as keyof Geometry] = JSON.parse(
+              String(value),
+            );
           } else if (geometryKey === "type") {
-            feature.geometry.type = value as "Point" | "LineString" | "Polygon";
+            feature.geometry.type = String(value) as
+              | "Point"
+              | "LineString"
+              | "Polygon";
           }
         }
       } else {
