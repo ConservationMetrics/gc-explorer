@@ -47,7 +47,7 @@ const transformSurveyData = (data: DataEntry[]): DataEntry[] => {
     } else if (transformedKey.toLowerCase().includes("categoryid")) {
       transformedKey = "category";
     } else if (transformedKey.toLowerCase() === "id") {
-      transformedKey = "ID";
+      transformedKey = "id";
     }
     return transformedKey.trimStart();
   };

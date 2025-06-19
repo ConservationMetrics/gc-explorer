@@ -118,7 +118,7 @@ const selectInitialAlertFeature = (alertId: string) => {
  * Selects and zooms to a Mapeo feature based on its document ID
  */
 const selectInitialMapeoFeature = (mapeoDocId: string) => {
-  const mapeoFeature = props.mapeoData?.find((f) => f.ID === mapeoDocId);
+  const mapeoFeature = props.mapeoData?.find((f) => f.id === mapeoDocId);
 
   if (mapeoFeature) {
     const geometryType = mapeoFeature.geotype as
@@ -153,7 +153,7 @@ const selectInitialMapeoFeature = (mapeoDocId: string) => {
     // Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
     const feature: Feature = {
       type: "Feature",
-      id: mapeoFeature.normalizedId || mapeoFeature.Id, // Use normalized ID if available
+      id: mapeoFeature.normalizedId || mapeoFeature.id, // Use normalized ID if available
       geometry: {
         type: geometryType,
         coordinates: JSON.parse(mapeoFeature.geocoordinates),
@@ -616,7 +616,7 @@ const addMapeoData = () => {
   const geoJsonSource = {
     type: "FeatureCollection",
     features: props.mapeoData.map((feature) => ({
-      id: feature.normalizedId || feature.Id, // Use normalized ID if available, fallback to original ID
+      id: feature.normalizedId || feature.id, // Use normalized ID if available, fallback to original ID
       type: "Feature",
       geometry: {
         type: feature.geotype,

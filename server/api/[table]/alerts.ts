@@ -122,11 +122,11 @@ export default defineEventHandler(async (event: H3Event) => {
       // This is done here because we know we're dealing with Mapeo data specifically
       const mapeoDataWithNormalizedIds = processedMapeoData.map((item) => {
         if (
-          item.ID &&
-          typeof item.ID === "string" &&
-          item.ID.match(/^[0-9a-fA-F]{16}$/)
+          item.id &&
+          typeof item.id === "string" &&
+          item.id.match(/^[0-9a-fA-F]{16}$/)
         ) {
-          item.normalizedId = generateMapboxIdFromMapeoFeatureId(item.ID);
+          item.normalizedId = generateMapboxIdFromMapeoFeatureId(item.id);
         }
         return item;
       });
