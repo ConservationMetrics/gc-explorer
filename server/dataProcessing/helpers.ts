@@ -149,24 +149,3 @@ export const formatDate = (date: string): string => {
   }
   return date;
 };
-
-/**
- * Normalizes a Mapeo document ID (64-bit hex string) to a 53-bit safe integer
- * for Mapbox compatibility. Mapbox requires feature IDs to be either a Number
- * or a string that can be safely cast to a Number, but Mapeo IDs are 64-bit
- * hex strings that exceed JavaScript's safe integer range.
- *
- * This function reduces the 64-bit value to a 53-bit one using a bitwise AND
- * operation with a 53-bit mask to ensure compatibility with Mapbox's feature
- * state management.
- *
- * Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
- *
- * @param {string} id - The Mapeo document ID as a hex string (e.g., "0084cdc57c0b0280")
- * @returns {number} - A 53-bit safe integer for use with Mapbox
- */
-export const normalizeMapeoId = (id: string): number => {
-  const bigIntId = BigInt("0x" + id.toLowerCase());
-  const safeMask = BigInt("0x1FFFFFFFFFFFFF"); // 53-bit mask (2^53 - 1)
-  return Number(bigIntId & safeMask);
-};

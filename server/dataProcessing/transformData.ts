@@ -3,7 +3,6 @@ import {
   capitalizeFirstLetter,
   formatDate,
   getRandomColor,
-  normalizeMapeoId,
 } from "./helpers";
 
 import type {
@@ -181,16 +180,6 @@ const prepareMapData = (
           item.geotype = "Polygon";
         }
       }
-    }
-
-    // Add normalized ID for Mapeo features to ensure Mapbox compatibility
-    // Mapeo document IDs are 64-bit hex strings that need to be normalized to 53-bit integers
-    if (
-      item.ID &&
-      typeof item.ID === "string" &&
-      item.ID.match(/^[0-9a-fA-F]{16}$/)
-    ) {
-      item.normalizedId = normalizeMapeoId(item.ID);
     }
 
     const filterColumnValue =
@@ -630,15 +619,20 @@ const transformToGeojson = (data: DataEntry[]): FeatureCollection => {
 
     Object.entries(input).forEach(([key, value]) => {
       if (key === "alertID") {
-        feature.id = value.substring(4);
+        feature.id = String(value).substring(4);
         feature.properties![key] = value; // Use non-null assertion
       } else if (key.startsWith("g__")) {
         const geometryKey = key.substring(3); // Removes 'g__' prefix
         if (feature.geometry) {
           if (geometryKey === "coordinates") {
-            feature.geometry[geometryKey as keyof Geometry] = JSON.parse(value);
+            feature.geometry[geometryKey as keyof Geometry] = JSON.parse(
+              String(value),
+            );
           } else if (geometryKey === "type") {
-            feature.geometry.type = value as "Point" | "LineString" | "Polygon";
+            feature.geometry.type = String(value) as
+              | "Point"
+              | "LineString"
+              | "Polygon";
           }
         }
       } else {

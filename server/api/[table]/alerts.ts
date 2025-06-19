@@ -19,6 +19,38 @@ import type {
   AlertsMetadata,
 } from "@/types/types";
 
+/**
+ * Converts a Mapeo document ID (64-bit hex string) to a 53-bit safe integer
+ * for Mapbox feature state management. This is a lossy, non-reversible operation.
+ *
+ * Mapbox requires feature IDs to be either a Number or a string that can be safely
+ * cast to a Number, but Mapeo IDs are 64-bit hex strings that exceed JavaScript's
+ * safe integer range. This function reduces the 64-bit value to a 53-bit one using
+ * a bitwise AND operation with a 53-bit mask.
+ *
+ * Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
+ *
+ * @param {string} mapeoId - The Mapeo document ID as a 16-character hex string (e.g., "0084cdc57c0b0280")
+ * @returns {number} - A 53-bit safe integer for use with Mapbox feature state management
+ * @throws {Error} - If the input is not a valid 16-character hex string
+ */
+const generateMapboxIdFromMapeoFeatureId = (mapeoId: string): number => {
+  // Validate that this is actually a Mapeo ID format
+  if (
+    !mapeoId ||
+    typeof mapeoId !== "string" ||
+    !mapeoId.match(/^[0-9a-fA-F]{16}$/)
+  ) {
+    throw new Error(
+      `Invalid Mapeo ID format: ${mapeoId}. Expected 16-character hex string.`,
+    );
+  }
+
+  const bigIntId = BigInt("0x" + mapeoId.toLowerCase());
+  const safeMask = BigInt("0x1FFFFFFFFFFFFF"); // 53-bit mask (2^53 - 1)
+  return Number(bigIntId & safeMask);
+};
+
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
 
@@ -86,7 +118,20 @@ export default defineEventHandler(async (event: H3Event) => {
         viewsConfig[table].FRONT_END_FILTER_COLUMN,
       );
 
-      mapeoData = processedMapeoData;
+      // Add normalized IDs for Mapeo features to ensure Mapbox compatibility
+      // This is done here because we know we're dealing with Mapeo data specifically
+      const mapeoDataWithNormalizedIds = processedMapeoData.map((item) => {
+        if (
+          item.ID &&
+          typeof item.ID === "string" &&
+          item.ID.match(/^[0-9a-fA-F]{16}$/)
+        ) {
+          item.normalizedId = generateMapboxIdFromMapeoFeatureId(item.ID);
+        }
+        return item;
+      });
+
+      mapeoData = mapeoDataWithNormalizedIds;
     }
 
     // Prepare statistics data for the alerts view

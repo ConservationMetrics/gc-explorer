@@ -129,6 +129,28 @@ const selectInitialMapeoFeature = (mapeoDocId: string) => {
       | "MultiLineString"
       | "MultiPolygon"
       | "GeometryCollection";
+
+    // Create a new GeoJSON Feature object instead of using mapeoFeature directly for several critical reasons:
+    //
+    // 1. DATA FORMAT MISMATCH: Mapeo data comes as raw DataEntry objects, but Mapbox expects proper
+    //    GeoJSON Feature objects with specific structure (type, geometry, properties, id).
+    //
+    // 2. ID NORMALIZATION REQUIREMENT: Mapeo document IDs are 64-bit hex strings (e.g., "0084cdc57c0b0280")
+    //    that exceed JavaScript's safe integer range (2^53 - 1). Mapbox requires feature IDs to be either
+    //    Numbers or strings that can be safely cast to Numbers. Without normalization, Mapbox falls back to
+    //    undefined IDs, causing setFeatureState() to fail with "The feature id parameter must be provided."
+    //    We use the normalized 53-bit safe integer (mapeoFeature.normalizedId) for Mapbox compatibility.
+    //
+    // 3. COORDINATE PARSING: The geometry coordinates are stored as JSON strings in the raw data but need
+    //    to be parsed into array format for GeoJSON compliance.
+    //
+    // 4. FEATURE STATE MANAGEMENT: Mapbox's setFeatureState() requires matching IDs between the GeoJSON
+    //    source and the feature selection. Without this transformation, feature highlighting and selection
+    //    would fail completely.
+    //
+    // For detailed technical explanation of this problem and solution, see:
+    // https://github.com/ConservationMetrics/gc-explorer/pull/109#issuecomment-2985123992
+    // Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
     const feature: Feature = {
       type: "Feature",
       id: mapeoFeature.normalizedId || mapeoFeature.Id, // Use normalized ID if available
