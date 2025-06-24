@@ -41,6 +41,11 @@ useHead({
     <div class="absolute top-0 right-0 flex justify-end space-x-4 mb-4">
       <LanguagePicker />
     </div>
+    <img
+      src="/gcexplorer.png"
+      alt="Guardian Connector Explorer Logo"
+      class="w-48 h-auto mb-4 mx-auto"
+    />
     <h1 class="text-4xl font-black text-gray-800 mb-4">
       {{ $t("availableViews") }}
     </h1>

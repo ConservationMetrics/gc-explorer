@@ -1,5 +1,9 @@
 # GuardianConnector Explorer
 
+<p align="center">
+  <img src="docs/gcexplorer.png" alt="GC Explorer" width="150"/>
+</p>
+
 This tool, designed for [GuardianConnector](https://guardianconnector.net) and built using [Nuxt.js](https://nuxt.com/), offers an API compatible with a PostgreSQL databases, and renders tabular data from one or more tables on different views including a map and a media gallery.
 
 ## Configure
