@@ -78,7 +78,7 @@ code. [Configuration](https://prettier.io/docs/en/configuration.html) lives in [
 > or in a pre-commit hook [according to these docs](https://prettier.io/docs/en/precommit.html).
 
 ESLint helps identify problematic patterns found in JavaScript code. The
-[configuration](https://eslint.org/docs/user-guide/configuring) lives in [`eslint.config.js`](admin_ui/eslint.config.js)
+[configuration](https://eslint.org/docs/user-guide/configuring) lives in [`eslint.config.js`](eslint.config.js)
 
 > Follow [ESLint Getting Started](https://eslint.org/docs/user-guide/getting-started).
 > To configure ESLint in VS Code, create a `.vscode/settings.json` in the project's root and add
