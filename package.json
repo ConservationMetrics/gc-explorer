@@ -27,7 +27,7 @@
     "mapbox-gl": "^3.9.4",
     "mapbox-gl-ruler-control": "^0.0.2",
     "murmurhash": "^2.0.1",
-    "nuxt": "3.15.4",
+    "nuxt": "^3.17.5",
     "nuxt-auth-utils": "^0.3.6",
     "pg": "^8.13.1",
     "reka-ui": "^2.3.1",
@@ -45,9 +45,9 @@
     ]
   },
   "devDependencies": {
-    "@nuxt/eslint": "^1.0.1",
-    "@nuxt/test-utils": "^3.15.4",
-    "@nuxtjs/i18n": "^9.1.5",
+    "@nuxt/eslint": "^1.4.1",
+    "@nuxt/test-utils": "^3.17.5",
+    "@nuxtjs/i18n": "^9.5.5",
     "@types/geojson": "^7946.0.16",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^22.13.1",
