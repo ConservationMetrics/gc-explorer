@@ -55,6 +55,7 @@
     "@typescript-eslint/parser": "^8.24.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/test-utils": "^2.4.6",
+    "@windicss/plugin-utils": "^1.9.4",
     "eslint": "^9.11.1",
     "husky": "^9.1.7",
     "jsdom": "^26.0.0",
