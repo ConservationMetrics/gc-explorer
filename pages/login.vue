@@ -2,7 +2,7 @@
 import { useI18n } from "vue-i18n";
 
 const { loggedIn } = useUserSession();
-const errorMessage = ref();
+const errorMessage = ref("");
 
 onMounted(() => {
   errorMessage.value = useAuth(loggedIn);
