@@ -103,9 +103,6 @@ export default defineNuxtConfig({
     },
     strategy: "no_prefix",
     skipSettingLocaleOnNavigate: true, // persists locale when route changes
-    bundle: {
-      optimizeTranslationDirective: false,
-    },
   },
 
   runtimeConfig: {
