@@ -13,6 +13,12 @@ export default withNuxt().override("nuxt/vue/rules", {
      - Structure: vue/block-order (enforced as error vs Nuxt's warn)
      This gives us the full recommended ruleset rather than Nuxt's curated subset,
      ensuring we catch potential issues that Nuxt's config might miss.
+     
+     We keep @nuxt/eslint because it provides:
+     - Nuxt-specific optimizations and integrations
+     - Proper TypeScript + Vue parsing configuration
+     - Auto-import globals for Nuxt composables
+     - Stylistic rules tailored for Nuxt projects
     */
     ...pluginVue.configs["flat/recommended"][0].rules,
 
