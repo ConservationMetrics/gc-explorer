@@ -87,7 +87,24 @@ const emitBasemapChange = () => {
       :style="{ top: topPosition }"
       @click="toggleBasemapWindow"
     >
-      <img src="/map.svg" alt="Map Icon" />
+      <NuxtImg
+        src="/map.svg"
+        alt="Map Icon"
+        preset="icon"
+        loading="eager"
+        :custom="true"
+        v-slot="{ src, isLoaded, imgAttrs }"
+      >
+        <!-- Show the actual icon when loaded -->
+        <img v-if="isLoaded" v-bind="imgAttrs" :src="src" />
+
+        <!-- Show a placeholder while loading -->
+        <img
+          v-else
+          src="https://placehold.co/30x30/cccccc/666666?text=🗺️"
+          alt="Map icon placeholder"
+        />
+      </NuxtImg>
     </div>
     <div
       v-if="showBasemapWindow"

@@ -19,12 +19,30 @@ const emit = defineEmits(["dateRangeChanged"]);
   <div class="space-y-4">
     <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
       <div class="p-6 space-y-4">
-        <img
+        <NuxtImg
           v-if="props.logoUrl"
           :src="props.logoUrl"
           class="w-auto mx-auto mb-4 max-h-25"
           alt="Logo"
-        />
+          preset="logo"
+          loading="eager"
+          :custom="true"
+          v-slot="{ src, isLoaded, imgAttrs }"
+        >
+          <img
+            v-if="isLoaded"
+            v-bind="imgAttrs"
+            :src="src"
+            class="w-auto mx-auto mb-4 max-h-25"
+          />
+
+          <img
+            v-else
+            src="https://placehold.co/200x100/cccccc/666666?text=Logo"
+            alt="Logo placeholder"
+            class="w-auto mx-auto mb-4 max-h-25"
+          />
+        </NuxtImg>
         <h2 class="text-2xl font-semibold tracking-tight">
           {{ $t("changeDetectionAlerts")
           }}<span
@@ -44,11 +62,29 @@ const emit = defineEmits(["dateRangeChanged"]);
           </p>
           <p class="italic inline-flex items-center whitespace-nowrap">
             {{ $t("ifYouAreZoomedOutAlertsWillBeShownAsA") }}&nbsp;
-            <img
+            <NuxtImg
               src="@/assets/icons/warning_red.png"
               alt="Warning icon"
               class="w-4 h-4 inline-block -mt-0.5 ml-0.5"
-            />.
+              preset="icon"
+              loading="eager"
+              :custom="true"
+              v-slot="{ src, isLoaded, imgAttrs }"
+            >
+              <img
+                v-if="isLoaded"
+                v-bind="imgAttrs"
+                :src="src"
+                class="w-4 h-4 inline-block -mt-0.5 ml-0.5"
+              />
+
+              <img
+                v-else
+                src="https://placehold.co/16x16/ff0000/ffffff?text=!"
+                alt="Warning icon placeholder"
+                class="w-4 h-4 inline-block -mt-0.5 ml-0.5"
+              /> </NuxtImg
+            >.
           </p>
           <p class="italic">{{ $t("clickOnAlertsForMoreInfo") }}.</p>
         </div>
