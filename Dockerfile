@@ -9,7 +9,7 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 # Copy package.json and package-lock.json into the container
-COPY package*.json  /app/
+COPY package*.json pnpm-lock.yaml  /app/
 
 # Install dependencies
 RUN pnpm install
