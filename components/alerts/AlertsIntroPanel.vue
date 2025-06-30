@@ -24,7 +24,6 @@ const emit = defineEmits(["dateRangeChanged"]);
           :src="props.logoUrl"
           class="w-auto mx-auto mb-4 max-h-25"
           alt="Logo"
-          preset="logo"
           loading="eager"
           :custom="true"
           v-slot="{ src, isLoaded, imgAttrs }"
