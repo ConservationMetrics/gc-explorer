@@ -42,7 +42,7 @@ useHead({
       <LanguagePicker />
     </div>
     <img
-      src="/gcexplorer.webp"
+      src="/gcexplorer.png"
       alt="Guardian Connector Explorer Logo"
       class="w-48 h-auto mb-4 mx-auto"
       loading="eager"
