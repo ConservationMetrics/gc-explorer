@@ -10,8 +10,8 @@ Briefly describe the page, component, or API handler.
 
 Example:  
 - Alerts page: clicking an alert opens the sidebar  
-- MapCard.vue: emits event on click  
-- `api/alerts/index.get.ts`: returns filtered alerts
+- DataFeature.vue: emits event on click  
+- `api/[table]/alerts.ts`: returns filtered alerts
 
 ---
 
