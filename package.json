@@ -11,7 +11,9 @@
     "link-module": "pnpm link ../gc-shared-components",
     "lint:prettier": "prettier ./ --check --ignore-path .prettierignore",
     "lint:eslint": "eslint . --cache",
+    "lint:eslint:fix": "eslint . --cache --fix",
     "lint": "pnpm run lint:prettier && pnpm run lint:eslint",
+    "lint:fix": "pnpm run lint:eslint:fix && pnpm run format",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "test": "vitest run",
@@ -40,7 +42,11 @@
     "vue3-select-component": "^0.9.0"
   },
   "lint-staged": {
-    "./**/*.{js,jsx,ts,tsx,json,css,vue}": [
+    "./**/*.{js,jsx,ts,tsx,vue}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "./**/*.{json,css}": [
       "prettier --write"
     ]
   },
@@ -56,7 +62,9 @@
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/test-utils": "^2.4.6",
     "@windicss/plugin-utils": "^1.9.4",
-    "eslint": "^9.11.1",
+    "eslint": "^9.29.0",
+    "eslint-plugin-vue": "^10.2.0",
+    "globals": "^16.2.0",
     "husky": "^9.1.7",
     "jsdom": "^26.0.0",
     "lint-staged": "^15.4.3",
@@ -64,6 +72,7 @@
     "prettier": "^3.4.2",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5",
+    "vue-eslint-parser": "^10.1.4",
     "vue-tsc": "^2.2.2"
   },
   "engines": {
