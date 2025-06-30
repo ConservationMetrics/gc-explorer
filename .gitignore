@@ -97,5 +97,3 @@ sw.*
 !.env.example
 .env.docker
 *.db
-
-INVESTIGATION.md
