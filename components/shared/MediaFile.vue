@@ -27,23 +27,55 @@ const checkExtensions = (extensions: string[]) => {
   const extension = getExtension(props.filePath);
   return extensions.includes(extension);
 };
+
+// Generate the full image URL for NuxtImg
+const imageUrl = computed(() => {
+  return props.mediaBasePath + "/" + props.filePath;
+});
+
+// Generate placeholder URL
+const placeholderUrl = computed(() => {
+  // Create a simple placeholder based on the image dimensions
+  // You can replace this with a proper placeholder service
+  return `https://placehold.co/400x300/cccccc/666666?text=Loading...`;
+});
 </script>
 
 <template>
   <div>
     <div v-if="isImage" class="mb-4">
       <a
-        :href="mediaBasePath + '/' + filePath"
+        :href="imageUrl"
         target="_blank"
         :data-lightbox="filePath"
         :data-title="filePath"
       >
-        <img
-          :src="mediaBasePath + '/' + filePath"
+        <NuxtImg
+          :src="imageUrl"
           alt="Image"
           class="w-full h-auto rounded-lg"
           loading="lazy"
-        />
+          preset="gallery"
+          sizes="sm:100vw md:50vw lg:33vw xl:25vw"
+          :custom="true"
+          v-slot="{ src, isLoaded, imgAttrs }"
+        >
+          <!-- Show the actual image when loaded -->
+          <img
+            v-if="isLoaded"
+            v-bind="imgAttrs"
+            :src="src"
+            class="w-full h-auto rounded-lg"
+          />
+
+          <!-- Show a placeholder while loading -->
+          <img
+            v-else
+            :src="placeholderUrl"
+            alt="Loading placeholder"
+            class="w-full h-auto rounded-lg blur-sm scale-105"
+          />
+        </NuxtImg>
       </a>
       <div v-if="filePath" class="text-center flex items-center justify-center">
         <span v-if="filePath.includes('t0.jpg')" class="italic">{{

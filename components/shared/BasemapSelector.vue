@@ -87,7 +87,7 @@ const emitBasemapChange = () => {
       :style="{ top: topPosition }"
       @click="toggleBasemapWindow"
     >
-      <img src="/map.svg" alt="Map Icon" />
+      <img src="/map.svg" alt="Map Icon" loading="eager" />
     </div>
     <div
       v-if="showBasemapWindow"

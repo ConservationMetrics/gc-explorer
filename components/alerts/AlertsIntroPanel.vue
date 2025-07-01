@@ -24,6 +24,7 @@ const emit = defineEmits(["dateRangeChanged"]);
           :src="props.logoUrl"
           class="w-auto mx-auto mb-4 max-h-25"
           alt="Logo"
+          loading="eager"
         />
         <h2 class="text-2xl font-semibold tracking-tight">
           {{ $t("changeDetectionAlerts")
@@ -48,7 +49,8 @@ const emit = defineEmits(["dateRangeChanged"]);
               src="@/assets/icons/warning_red.png"
               alt="Warning icon"
               class="w-4 h-4 inline-block -mt-0.5 ml-0.5"
-            />.
+              loading="eager"
+            />
           </p>
           <p class="italic">{{ $t("clickOnAlertsForMoreInfo") }}.</p>
         </div>

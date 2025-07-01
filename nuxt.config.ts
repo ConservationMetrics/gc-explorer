@@ -33,7 +33,57 @@ export default defineNuxtConfig({
     "@nuxt/test-utils/module",
     "nuxt-windicss",
     "reka-ui/nuxt",
+    "@nuxt/image",
   ],
+
+  image: {
+    // Image presets for common use cases
+    presets: {
+      // Gallery images - responsive with good quality
+      gallery: {
+        modifiers: {
+          format: "webp",
+          quality: 80,
+          fit: "cover",
+        },
+      },
+      // Logo images - high quality for branding
+      logo: {
+        modifiers: {
+          format: "webp",
+          quality: 85,
+          fit: "contain",
+        },
+      },
+      // Icon images - optimized for small sizes
+      icon: {
+        modifiers: {
+          format: "webp",
+          quality: 90,
+          fit: "contain",
+        },
+      },
+      // Thumbnail images - smaller size for previews
+      thumbnail: {
+        modifiers: {
+          format: "webp",
+          quality: 75,
+          width: 300,
+          height: 200,
+          fit: "cover",
+        },
+      },
+    },
+
+    // Domain whitelist for external images
+    domains: [],
+
+    // Format priority for modern browsers
+    format: ["webp", "avif", "jpeg"],
+
+    // Default quality
+    quality: 80,
+  },
 
   css: ["public/vendor/lightbox/lightbox.min.css"],
 
