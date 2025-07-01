@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("alerts dashboard - multiple dataset-marked pulsing dots open sidebars", async ({
+test("alerts dashboard - symbol click and polygon click open sidebar and update URL", async ({
   page,
 }) => {
   await page.goto("/");
@@ -99,6 +99,11 @@ test("alerts dashboard - multiple dataset-marked pulsing dots open sidebars", as
       await page.mouse.click(found.px, found.py);
       // 6. Assert sidebar
       await expect(page.getByText(/copy link to alert/i)).toBeVisible();
+      // 7 check url that it includes ?alertId=
+      await page.waitForTimeout(1000);
+      const url = page.url();
+      console.log(url);
+      expect(url).toContain(`?alertId`);
     }
   }
 });
