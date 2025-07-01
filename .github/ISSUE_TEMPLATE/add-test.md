@@ -1,7 +1,7 @@
+---
 name: Add Tests
 about: Add or improve tests for a page, component, or API endpoint
 labels: 'Type: Testing'
-
 ---
 
 ## What needs to be tested?
