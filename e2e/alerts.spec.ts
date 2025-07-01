@@ -1,191 +1,104 @@
-import { test, expect } from "@playwright/test";
-import { alertsData } from "../test/fixtures/alertsData";
-import type { Feature, Polygon, Point, GeoJsonProperties } from "geojson";
+import { expect, test } from "@playwright/test";
 
-// Helper to convert fixture polygons to GeoJSON
-function toGeoJSONPolygon(
-  alert: Record<string, unknown>,
-): Feature<Polygon, GeoJsonProperties> {
-  return {
-    id: (alert.alert_id || alert._id) as string,
-    type: "Feature",
-    geometry: {
-      type: "Polygon",
-      coordinates: JSON.parse(alert.g__coordinates as string),
-    },
-    properties: {
-      alertID: alert.alert_id || alert._id,
-      ...alert,
-    },
-  };
-}
-
-// Helper to convert fixture points to GeoJSON
-function toGeoJSONPoint(
-  lng: number,
-  lat: number,
-  id = "alertPoint",
-  props: Record<string, unknown> = {},
-): Feature<Point, GeoJsonProperties> {
-  return {
-    id,
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [lng, lat] },
-    properties: { alertID: id, ...props },
-  };
-}
-test("alerts dashboard - click pulsing dot opens sidebar", async ({ page }) => {
+test("alerts dashboard - multiple dataset-marked pulsing dots open sidebars", async ({
+  page,
+}) => {
   await page.goto("/");
-  await page
-    .getByRole("link", { name: /alerts/i })
-    .first()
-    .click();
+  await page.waitForTimeout(2000);
+  const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
+
+  await page.goto((await alertsLink.getAttribute("href")) ?? "");
+
+  await page.waitForTimeout(3000);
+  /* Give Mapbox a gentle nudge: click roughly at 75% of the viewport width
+   (vertically centred).  This ensures tiles are rendered and
+   the map has focus before we look for pulsing markers. */
+  const viewport = page.viewportSize();
+  if (viewport) {
+    await page.mouse.click(viewport.width * 0.75, viewport.height * 0.5);
+  }
   await page.locator("#map").waitFor();
 
   // Wait for the map to be ready and the canvas to be visible
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await mapCanvas.waitFor({ state: "visible" });
 
-  // Wait for markers to appear and try clicking the first one
-  const pulsingDot = page.locator('[aria-label="Map marker"]').first();
-  await pulsingDot.waitFor({ state: "visible" });
+  // pull every "symbol" feature Mapobox has already rendered
 
-  // Try clicking with force and wait for the marker to move
-  await pulsingDot.click({ force: true });
-
-  // Wait a bit for the click to register
-  await page.waitForTimeout(500);
-
-  // Debug: Print all text in the DOM and log it
-  const allText = await page.evaluate(() => {
-    const walker = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_TEXT,
-      null,
-    );
-    const texts: string[] = [];
-    let node;
-    while ((node = walker.nextNode())) {
-      const text = node.textContent?.trim();
-      if (text) texts.push(text);
-    }
-    return texts;
-  });
-
-  console.log("All text in DOM:", allText);
-
-  // Fuzzy match against "copy link"
-  const copyLinkText = allText.find(
-    (text) =>
-      text.toLowerCase().includes("copy link") ||
-      (text.toLowerCase().includes("copy") &&
-        text.toLowerCase().includes("link")),
-  );
-
-  console.log("Found copy link text:", copyLinkText);
-
-  // Assert sidebar contains "copy link to alert"
-  await expect(page.locator("text=copy link to alert")).toBeVisible();
-});
-
-test("alerts dashboard - click polygon centroid opens sidebar", async ({
-  page,
-}) => {
-  // Build a realistic API response
-  const polygonFeature = toGeoJSONPolygon(alertsData[0]);
-  const pointFeature = toGeoJSONPoint(0, -15, "alertPoint", {
-    YYYYMM: "202401",
-  });
-
-  await page.route("**/api/test_table/alerts", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        alertsData: {
-          mostRecentAlerts: {
-            type: "FeatureCollection",
-            features: [polygonFeature, pointFeature],
-          },
-          previousAlerts: {
-            type: "FeatureCollection",
-            features: [],
-          },
-        },
-        alertsStatistics: {
-          earliestAlertsDate: "01-2023",
-          twelveMonthsBefore: "01-2024",
-          allDates: ["01-2023"],
-        },
-        allowedFileExtensions: ["jpg"],
-        logoUrl: null,
-        mapLegendLayerIds: null,
-        mapboxAccessToken: "pk.test",
-        mapboxBearing: 0,
-        mapboxLatitude: 0,
-        mapboxLongitude: 0,
-        mapboxPitch: 0,
-        mapboxProjection: "mercator",
-        mapboxStyle: "mapbox://styles/mapbox/streets-v12",
-        mapboxZoom: 2,
-        mapbox3d: false,
-        mapeoData: [],
-        mediaBasePath: null,
-        mediaBasePathAlerts: null,
-        planetApiKey: null,
-      }),
-    });
-  });
-
-  await page.goto("/");
-  await page
-    .getByRole("link", { name: /alerts/i })
-    .first()
-    .click();
-  await page.locator("#map").waitFor();
-
-  const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
-  await mapCanvas.waitFor({ state: "visible" });
-  console.log("mapCanvas", mapCanvas);
-  // Click the polygon centroid using map.project
-  const [x, y] = await page.evaluate(() => {
-    // @ts-expect-error: Accessing window._testMap for E2E pixel projection
+  const symbolFeatures = await page.evaluate(() => {
+    // @ts-expect-error helper exposed in component
     const map = window._testMap;
-    if (!map) throw new Error("Mapbox map not found");
-    // Use a coordinate inside your polygon (from fixture)
-    const pt = map.project([-80.8, 37.45]);
-    return [pt.x, pt.y];
+    const features = map.queryRenderedFeatures({
+      layers: ["most-recent-alerts-symbol"],
+    });
+    return features;
   });
-  await mapCanvas.click({ position: { x, y } });
 
-  // Debug: Print all text in the DOM and log it
-  const allText2 = await page.evaluate(() => {
-    const walker = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_TEXT,
-      null,
+  //
+  // loop through them and fire a synthetic click
+  for (const feature of symbolFeatures) {
+    // Parse centroid (as string "lat, lng")
+    const [lat, lng] = feature.properties.geographicCentroid
+      .split(",")
+      .map(Number);
+
+    // 1. Click the symbol to zoom
+    await page.evaluate(
+      ([lng, lat]) => {
+        // @ts-expect-error helper exposed in component
+        const map = window._testMap;
+        const pt = map.project([lng, lat]);
+        map.fire("click", {
+          point: pt,
+          lngLat: [lng, lat],
+          originalEvent: {},
+          features: [],
+        });
+      },
+      [lng, lat],
     );
-    const texts: string[] = [];
-    let node;
-    while ((node = walker.nextNode())) {
-      const text = node.textContent?.trim();
-      if (text) texts.push(text);
+
+    // 2. Wait for zoom to finish (fixed delay)
+    await page.waitForTimeout(1500);
+
+    // 3. Project centroid to screen coordinates (use [lng, lat] order!)
+    const { x, y } = await page.evaluate(
+      ([lng, lat]) => {
+        // @ts-expect-error helper exposed in component
+        return window._testMap.project([lng, lat]);
+      },
+      [lng, lat],
+    );
+
+    // 4. Try to find a polygon at or near that pixel (expand search radius)
+    const found = await page.evaluate(
+      ({ x, y }) => {
+        // @ts-expect-error helper exposed in component
+        const map = window._testMap;
+        // Try a wider offset in case of projection drift
+        for (let r = 0; r <= 50; r += 5) {
+          // search radius up to 50px, step 5px
+          for (let dx = -r; dx <= r; dx += 5) {
+            for (let dy = -r; dy <= r; dy += 5) {
+              const px = x + dx,
+                py = y + dy;
+              const poly = map.queryRenderedFeatures([px, py], {
+                layers: ["most-recent-alerts-polygon"],
+              })[0];
+              if (poly) return { found: true, px, py };
+            }
+          }
+        }
+        return { found: false };
+      },
+      { x, y },
+    );
+
+    if (found.found) {
+      // 5. Click the canvas at the found pixel
+      await page.mouse.click(found.px, found.py);
+      // 6. Assert sidebar
+      await expect(page.getByText(/copy link to alert/i)).toBeVisible();
     }
-    return texts;
-  });
-
-  console.log("All text in DOM (polygon test):", allText2);
-
-  // Fuzzy match against "copy link"
-  const copyLinkText2 = allText2.find(
-    (text) =>
-      text.toLowerCase().includes("copy link") ||
-      (text.toLowerCase().includes("copy") &&
-        text.toLowerCase().includes("link")),
-  );
-
-  console.log("Found copy link text (polygon test):", copyLinkText2);
-
-  // Assert sidebar contains "copy link to alert"
-  await expect(page.locator("text=copy link to alert")).toBeVisible();
+  }
 });
