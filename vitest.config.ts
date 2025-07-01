@@ -4,11 +4,13 @@ import vue from "@vitejs/plugin-vue";
 export default defineConfig({
   test: {
     environment: "jsdom",
+    exclude: ["node_modules/**", "e2e/**"],
   },
   plugins: [vue()],
   resolve: {
     alias: {
       "@": "/",
+      "~": "/",
     },
   },
 });
