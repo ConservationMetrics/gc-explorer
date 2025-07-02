@@ -41,7 +41,7 @@ export function reset(): void {
   });
 }
 
-// mock map object --------------------------------------------------------
+// Mock map object --------------------------------------------------------
 const mockMap = {
   on: vi.fn((event: string, layerOrCb: unknown, cb?: unknown) => {
     if (event === "load") {
