@@ -42,7 +42,6 @@
     "vue-3-slider-component": "^1.0.1",
     "vue-chartjs": "^5.3.2",
     "vue-datepicker-next": "^1.0.3",
-    "vue-i18n": "^11.1.7",
     "vue-router": "latest",
     "vue3-select-component": "^0.9.0"
   },
@@ -59,6 +58,7 @@
     "@nuxt/eslint": "^1.4.1",
     "@nuxt/test-utils": "^3.17.5",
     "@nuxtjs/i18n": "^9.5.6",
+    "@playwright/test": "^1.44.0",
     "@types/geojson": "^7946.0.16",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^22.13.1",
@@ -80,8 +80,7 @@
     "typescript": "^5.7.3",
     "vitest": "^3.2.4",
     "vue-eslint-parser": "^10.1.4",
-    "vue-tsc": "^2.2.2",
-    "@playwright/test": "^1.44.0"
+    "vue-tsc": "^2.2.2"
   },
   "engines": {
     "node": "20.15.0"

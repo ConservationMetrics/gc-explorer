@@ -10,7 +10,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": "/",
-      "~": "/",
+      "vue-i18n": "/test/helpers/vueI18nMock.ts",
     },
   },
 });

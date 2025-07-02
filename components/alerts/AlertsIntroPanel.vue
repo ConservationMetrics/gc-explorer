@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import DownloadMapData from "~/components/shared/DownloadMapData.vue";
+import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 
 import type { AlertsData, AlertsStatistics } from "@/types/types";
 

@@ -1,4 +1,3 @@
-/* eslint-disable import/first */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import {
@@ -11,9 +10,8 @@ import {
   nextTick,
 } from "vue";
 
-vi.mock("vue-i18n", () => ({
-  useI18n: () => ({ t: (key: string) => key }),
-}));
+// Note: vue-i18n is mocked via module alias in vitest.config.ts
+// pointing to /test/helpers/vueI18nMock.ts
 
 import * as mapboxMock from "@/test/helpers/mapboxMock";
 
