@@ -23,7 +23,7 @@ test("alerts dashboard - symbol click and polygon click open sidebar and update 
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await mapCanvas.waitFor({ state: "visible" });
 
-  // pull every "symbol" feature Mapobox has already rendered
+  // pull every symbol feature Mapbox has already rendered
 
   const symbolFeatures = await page.evaluate(() => {
     // @ts-expect-error helper exposed in component
