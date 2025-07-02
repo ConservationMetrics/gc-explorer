@@ -11,7 +11,7 @@ test("alerts dashboard - symbol click and polygon click open sidebar and update 
 
   await page.waitForTimeout(3000);
   /* Give Mapbox a gentle nudge: click roughly at 75% of the viewport width
-   (vertically centred).  This ensures tiles are rendered and
+   (vertically centered).  This ensures tiles are rendered and
    the map has focus before we look for pulsing markers. */
   const viewport = page.viewportSize();
   if (viewport) {
