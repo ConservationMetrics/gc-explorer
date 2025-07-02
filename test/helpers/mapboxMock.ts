@@ -9,7 +9,7 @@ export const layers: Array<Record<string, unknown>> = [];
 let loadCallback: (() => void) | undefined;
 const clickCallbacks: Record<string, Array<(evt: unknown) => void>> = {};
 
-// spyable helpers --------------------------------------------------------
+// Spyable helpers --------------------------------------------------------
 export const Map = vi.fn(() => mockMap);
 export const NavigationControl = vi.fn();
 export const ScaleControl = vi.fn();
