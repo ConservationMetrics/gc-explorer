@@ -78,7 +78,7 @@ Run E2E tests that verify the full application in a real browser:
 $ pnpm test:e2e
 
 # Run all tests (unit + E2E)
-$ pnpm test:all
+$ pnpm test
 ```
 
 **Important:** For E2E tests to work properly, you must set up a test environment:
