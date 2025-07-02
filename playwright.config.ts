@@ -11,7 +11,7 @@ config({ path: resolve(__dirname, ".env.test") });
 export default defineConfig({
   testDir: "e2e",
   webServer: {
-    command: "NODE_ENV=test pnpm dev",
+    command: "pnpm dev",
     url: "http://localhost:8080",
     timeout: 200_000,
     reuseExistingServer: false,

@@ -9,7 +9,6 @@ import {
   onBeforeUnmount,
   nextTick,
 } from "vue";
-
 // Note: vue-i18n is mocked via module alias in vitest.config.ts
 // pointing to /test/helpers/vueI18nMock.ts
 
