@@ -4,7 +4,7 @@
 
 import { vi } from "vitest";
 
-// internal state ---------------------------------------------------------
+// Internal state ---------------------------------------------------------
 export const layers: Array<Record<string, unknown>> = [];
 let loadCallback: (() => void) | undefined;
 const clickCallbacks: Record<string, Array<(evt: unknown) => void>> = {};
