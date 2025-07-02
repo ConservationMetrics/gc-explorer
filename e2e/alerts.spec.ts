@@ -4,12 +4,19 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
   page,
 }) => {
   await page.goto("/");
-  await page.waitForTimeout(2000);
+  // Wait until the index page has rendered the list of available views
   const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
-  await page.waitForTimeout(2000);
-  await page.goto((await alertsLink.getAttribute("href")) ?? "");
+  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
-  await page.waitForTimeout(3000);
+  // Navigate to the alerts dashboard via client-side routing
+  await alertsLink.click();
+
+  // Ensure the route change completed
+  await page.waitForURL("**/alerts/**", { timeout: 10000 });
+
+  // Wait until the map container has been added to the DOM
+  await page.locator("#map").waitFor({ state: "attached", timeout: 10000 });
+
   /* Give Mapbox a gentle nudge: click roughly at 75% of the viewport width
    (vertically centered).  This ensures tiles are rendered and
    the map has focus before we look for pulsing markers. */
@@ -21,7 +28,13 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
 
   // Wait for the map to be ready and the canvas to be visible
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
-  await mapCanvas.waitFor({ state: "visible" });
+  await expect(mapCanvas).toBeVisible();
+
+  // Ensure the Mapbox instance has been attached to window
+  await page.waitForFunction(() => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    return !!window._testMap;
+  });
 
   // pull every symbol feature Mapbox has already rendered
 
@@ -58,8 +71,12 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
       [lng, lat],
     );
 
-    // 2. Wait for zoom to finish (fixed delay)
-    await page.waitForTimeout(1500);
+    // 2. Wait until the map has finished panning/zooming
+    await page.waitForFunction(() => {
+      // @ts-expect-error _testMap is exposed for E2E testing only
+      const m = window._testMap;
+      return m && !m.isMoving();
+    });
 
     // 3. Project centroid to screen coordinates (use [lng, lat] order!)
     const { x, y } = await page.evaluate(
@@ -99,10 +116,8 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
       await page.mouse.click(found.px, found.py);
       // 6. Assert sidebar
       await expect(page.getByText(/copy link to alert/i)).toBeVisible();
-      // 7 check url that it includes ?alertId=
-      await page.waitForTimeout(1000);
-      const url = page.url();
-      expect(url).toContain(`?alertId`);
+      // 7. Assert the URL contains the alertId query param
+      await expect(page).toHaveURL(/\?alertId=/);
     }
   }
 });
