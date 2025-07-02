@@ -18,7 +18,7 @@
     "postinstall": "nuxt prepare && pnpm exec playwright install --with-deps",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "test:all": "pnpm run test:unit && pnpm run test:e2e",
+    "test": "pnpm run test:unit && pnpm run test:e2e",
     "prepare": "husky"
   },
   "dependencies": {
