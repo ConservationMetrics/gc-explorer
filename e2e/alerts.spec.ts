@@ -6,7 +6,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
   await page.goto("/");
   await page.waitForTimeout(2000);
   const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
-
+  await page.waitForTimeout(2000);
   await page.goto((await alertsLink.getAttribute("href")) ?? "");
 
   await page.waitForTimeout(3000);
