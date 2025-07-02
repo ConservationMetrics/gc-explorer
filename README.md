@@ -54,6 +54,42 @@ Local deployment of Docker:
 docker run --env-file=.env -it -p 8080:8080 guardianconnector-explorer:latest
 ```
 
+## Testing
+
+GuardianConnector Explorer uses two testing frameworks:
+
+### Unit and Component Tests (Vitest)
+
+Run unit and component tests with Vitest:
+
+```bash
+# Run tests in watch mode
+$ pnpm test:unit
+```
+
+These tests use mocked dependencies and verify component logic in isolation.
+
+### End-to-End Tests (Playwright)
+
+Run E2E tests that verify the full application in a real browser:
+
+```bash
+# Run E2E tests
+$ pnpm test:e2e
+
+# Run all tests (unit + E2E)
+$ pnpm test
+```
+
+**Important:** For E2E tests to work properly, you must set up a test environment:
+
+1. Copy `.env.test.example` to `.env.test`
+2. Ensure `NUXT_PUBLIC_AUTH_STRATEGY="none"` in your `.env.test` file to bypass authentication
+3. Configure a test PostgreSQL database connection in `.env.test`
+4. Ensure your test database has the required tables and data for the tests
+
+The E2E tests run the real Nuxt application in a browser and connect to a real PostgreSQL database to verify user interactions and page rendering.
+
 ## Available Views
 
 ### **Map**

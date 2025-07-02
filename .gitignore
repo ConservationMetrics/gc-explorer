@@ -95,5 +95,7 @@ sw.*
 # GuardianConnector Views specific
 .env*
 !.env.example
+!.env.test.example
 .env.docker
 *.db
+test-results/

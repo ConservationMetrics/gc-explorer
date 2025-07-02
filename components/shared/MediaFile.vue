@@ -51,6 +51,7 @@ const placeholderUrl = computed(() => {
         :data-title="filePath"
       >
         <NuxtImg
+          v-slot="{ src, isLoaded, imgAttrs }"
           :src="imageUrl"
           alt="Image"
           class="w-full h-auto rounded-lg"
@@ -58,7 +59,6 @@ const placeholderUrl = computed(() => {
           preset="gallery"
           sizes="sm:100vw md:50vw lg:33vw xl:25vw"
           :custom="true"
-          v-slot="{ src, isLoaded, imgAttrs }"
         >
           <!-- Show the actual image when loaded -->
           <img

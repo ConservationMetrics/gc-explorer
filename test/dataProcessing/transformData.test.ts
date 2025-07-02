@@ -99,7 +99,7 @@ describe("prepareAlertsStatistics", () => {
     expect(result.alertsTotal).toBe(3);
     expect(result.alertsPerMonth["01-2024"]).toEqual(2);
     expect(result.hectaresTotal).toBe("6.96");
-    expect(result.hectaresPerMonth["01-2024"]).toEqual(3.59);
+    expect(result.hectaresPerMonth?.["01-2024"]).toEqual(3.59);
     expect(result.twelveMonthsBefore).toBe("1-2023");
   });
 });

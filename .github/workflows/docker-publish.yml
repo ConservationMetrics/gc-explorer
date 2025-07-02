@@ -34,7 +34,7 @@ jobs:
         run: |
           npm install -g pnpm
           pnpm install
-          pnpm run test
+          pnpm run test:unit
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
