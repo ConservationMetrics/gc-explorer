@@ -17,18 +17,32 @@ import * as mapboxMock from "@/test/helpers/mapboxMock";
 import AlertsDashboard from "@/components/AlertsDashboard.vue";
 
 // Re-usable minimal props object
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const baseProps: any = {
+
+const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
   alertsData: {
     mostRecentAlerts: { type: "FeatureCollection" as const, features: [] },
     previousAlerts: { type: "FeatureCollection" as const, features: [] },
   },
   alertsStatistics: {
+    territory: "",
+    typeOfAlerts: [],
+    dataProviders: [],
+    alertDetectionRange: "",
     allDates: [],
     earliestAlertsDate: "",
+    recentAlertsDate: "",
+    recentAlertsNumber: 0,
+    alertsTotal: 0,
+    alertsPerMonth: {},
+    hectaresTotal: null,
+    hectaresPerMonth: null,
     twelveMonthsBefore: "",
   },
-  allowedFileExtensions: ["jpg"],
+  allowedFileExtensions: {
+    audio: [],
+    image: ["jpg"],
+    video: [],
+  },
   logoUrl: "",
   mapLegendLayerIds: "",
   mapboxAccessToken: "pk.test",
