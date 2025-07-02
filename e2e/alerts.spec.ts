@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("alerts dashboard - symbol click and polygon click open sidebar and update URL", async ({
+test("alerts dashboard - opens sidebar and updates URL on symbol and polygon clicks", async ({
   page,
 }) => {
   await page.goto("/");
