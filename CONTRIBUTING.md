@@ -65,6 +65,11 @@ Keep the test suite
 For testing Nuxt.js and Vue, use `@nuxt/test-utils` + `@vue/test-utils` with `vitest`.
 See the [Nuxt documentation on testing](https://nuxt.com/docs/getting-started/testing).
 
+For end-to-end testing, we use Playwright to test the full application in a real browser.
+Playwright tests verify user interactions and page rendering with mocked API responses.
+
+Copy `.env.test.example` to `.env.test` to configure the test environment.
+
 # Coding & Documentation Style
 
 ## Prettier & ESLint for JavaScript, JSON, & SCSS

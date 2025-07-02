@@ -1,9 +1,17 @@
 import { defineConfig } from "@playwright/test";
+import { config } from "dotenv";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+
+// Load .env.test file for test environment
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+config({ path: resolve(__dirname, ".env.test") });
 
 export default defineConfig({
   testDir: "e2e",
   webServer: {
-    command: "pnpm dev",
+    command: "NODE_ENV=test pnpm dev",
     url: "http://localhost:8080",
     timeout: 200_000,
     reuseExistingServer: false,
