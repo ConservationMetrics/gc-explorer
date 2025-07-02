@@ -17,7 +17,7 @@ export const FullscreenControl = vi.fn();
 export const addControl = vi.fn();
 export const setFeatureState = vi.fn();
 
-// public helpers ---------------------------------------------------------
+// Public helpers ---------------------------------------------------------
 export function fireLoad(): void {
   loadCallback?.();
 }
