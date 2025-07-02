@@ -102,7 +102,6 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
       // 7 check url that it includes ?alertId=
       await page.waitForTimeout(1000);
       const url = page.url();
-      console.log(url);
       expect(url).toContain(`?alertId`);
     }
   }
