@@ -44,14 +44,12 @@ test("index page - language picker functionality", async ({ page }) => {
 
   // 5. Wait for dropdown menu to appear and check for language options
   const dropdownMenu = page.locator(
-    "div.origin-top-right.absolute.right-0.mt-2.w-56.rounded-md.shadow-lg.bg-white.ring-1.ring-black.ring-opacity-5.z-50",
+    "div[class*='absolute'][class*='right-0'][class*='bg-white']",
   );
   await dropdownMenu.waitFor({ state: "visible", timeout: 5000 });
 
   // 6. Check that multiple language options are available
-  const languageOptions = dropdownMenu.locator(
-    "a.block.px-4.py-2.text-sm.text-gray-700",
-  );
+  const languageOptions = dropdownMenu.locator("a[href='#']");
   const optionCount = await languageOptions.count();
   expect(optionCount).toBeGreaterThan(1);
 
