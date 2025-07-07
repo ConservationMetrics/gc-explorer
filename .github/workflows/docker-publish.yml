@@ -1,4 +1,4 @@
-name: Publish to DockerHub
+name: CI
 
 on:
   push:
@@ -11,7 +11,32 @@ on:
     types: [created]
 
 jobs:
-  docker:
+  unit-tests:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies and run unit tests
+        run: |
+          npm install -g pnpm
+          pnpm install
+          pnpm run test:unit
+
+  # playwright-tests:
+  #   name: Run Playwright Tests
+  #   runs-on: ubuntu-latest
+  #   needs: unit-tests
+  #   steps:
+  #     - name: Placeholder
+  #       run: echo "Playwright tests not yet implemented."
+
+  docker-build-and-publish:
+    name: Docker Build and Publish
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,11 +55,6 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: communityfirst/guardianconnector-explorer
-      - name: Run tests
-        run: |
-          npm install -g pnpm
-          pnpm install
-          pnpm run test:unit
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -54,20 +74,3 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: communityfirst/guardianconnector-explorer
           short-description: 'A Nuxt app to explore GuardianConnector data in different views'
-    #   - name: Test run of Docker image
-    #     run: |
-    #       docker run --rm \
-    #         -e NUXT_DATABASE="your_db_location"
-    #         -e NUXT_DB_HOST="localhost"
-    #         -e NUXT_DB_USER="your_db_user"
-    #         -e NUXT_DB_PASSWORD="your_db_password"
-    #         -e NUXT_DB_PORT="5432"
-    #         -e NUXT_DB_SSL="true"
-    #         -e NUXT_PORT="8080"
-    #         -e NUXT_ENV_AUTH_STRATEGY="none" 
-    #         -e NUXT_OAUTH_AUTH0_DOMAIN="domain.us.auth0.com"
-    #         -e NUXT_OAUTH_AUTH0_CLIENT_ID=""
-    #         -e NUXT_OAUTH_AUTH0_CLIENT_SECRET=""
-    #         -e NUXT_PUBLIC_BASE_URL='http://localhost:3000'
-    #         -e NUXT_PUBLIC_APP_API_KEY=""
-    #           ${{ steps.meta.outputs.tags }}
