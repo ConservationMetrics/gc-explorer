@@ -69,3 +69,41 @@ test("index page - language picker functionality", async ({ page }) => {
     expect(newButtonText?.trim()).toBe(firstOptionText?.trim());
   }
 });
+
+test("index page - language switching to Portuguese changes heading", async ({
+  page,
+}) => {
+  // 1. Navigate to the root of the application
+  await page.goto("/");
+
+  // 2. Wait for the language picker button to be visible
+  const languageButton = page
+    .locator("button")
+    .filter({ hasText: /English|Español|Nederlands|Português/i });
+  await languageButton.waitFor({ state: "visible", timeout: 10000 });
+
+  // 3. Click the button to open dropdown
+  await languageButton.click();
+
+  // 4. Wait for dropdown menu to appear
+  const dropdownMenu = page.locator(
+    "div[class*='absolute'][class*='right-0'][class*='bg-white']",
+  );
+  await dropdownMenu.waitFor({ state: "visible", timeout: 5000 });
+
+  // 5. Find and click the Portuguese option
+  const portugueseOption = dropdownMenu
+    .locator("a[href='#']")
+    .filter({ hasText: /Português/i });
+  await portugueseOption.click();
+
+  // 6. Wait for the page to update and verify the heading changed to Portuguese
+  await expect(
+    page.getByRole("heading", { name: /visualizações disponíveis/i }),
+  ).toBeVisible();
+
+  // 7. Verify the original English heading is no longer visible
+  await expect(
+    page.getByRole("heading", { name: /available views/i }),
+  ).not.toBeVisible();
+});
