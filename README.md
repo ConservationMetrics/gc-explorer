@@ -85,8 +85,7 @@ $ pnpm test
 
 1. Copy `.env.test.example` to `.env.test`
 2. Ensure `NUXT_PUBLIC_AUTH_STRATEGY="none"` in your `.env.test` file to bypass authentication
-3. Configure a test PostgreSQL database connection in `.env.test`
-4. Ensure your test database has the required tables and data for the tests
+3. Ensure your test database has the required tables, data and views config for the tests. This includes at least one alerts view.
 
 The E2E tests run the real Nuxt application in a browser and connect to a real PostgreSQL database to verify user interactions and page rendering.
 
