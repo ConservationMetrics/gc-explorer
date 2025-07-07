@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("index page - displays available views and view links", async ({
+test("index page - displays available views and alerts link", async ({
   page,
 }) => {
   // 1. Navigate to the root of the application
