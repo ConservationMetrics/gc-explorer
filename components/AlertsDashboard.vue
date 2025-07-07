@@ -187,7 +187,6 @@ const selectInitialMapeoFeature = (mapeoDocId: string) => {
 
 onMounted(() => {
   mapboxgl.accessToken = props.mapboxAccessToken;
-
   map.value = new mapboxgl.Map({
     container: "map",
     style: props.mapboxStyle || "mapbox://styles/mapbox/streets-v12",

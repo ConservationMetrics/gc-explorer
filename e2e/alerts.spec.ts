@@ -6,16 +6,16 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
   await page.goto("/");
   // Wait until the index page has rendered the list of available views
   const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
-  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
+  await alertsLink.waitFor({ state: "visible", timeout: 5000 });
 
   // Navigate to the alerts dashboard via client-side routing
   await alertsLink.click();
 
   // Ensure the route change completed
-  await page.waitForURL("**/alerts/**", { timeout: 10000 });
+  await page.waitForURL("**/alerts/**", { timeout: 5000 });
 
   // Wait until the map container has been added to the DOM
-  await page.locator("#map").waitFor({ state: "attached", timeout: 10000 });
+  await page.locator("#map").waitFor({ state: "attached", timeout: 5000 });
 
   /* Give Mapbox a gentle nudge: click roughly at 75% of the viewport width
    (vertically centered).  This ensures tiles are rendered and
@@ -36,6 +36,16 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     return !!window._testMap;
   });
 
+  // Wait for the map to be fully loaded and rendered
+  await page.waitForFunction(
+    () => {
+      // @ts-expect-error _testMap is exposed for E2E testing only
+      const map = window._testMap;
+      return map && map.isStyleLoaded() && map.loaded();
+    },
+    { timeout: 5000 },
+  );
+
   // pull every symbol feature Mapbox has already rendered
 
   const symbolFeatures = await page.evaluate(() => {
@@ -46,6 +56,20 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     });
     return features;
   });
+
+  // Wait for at least one symbol feature to be rendered
+  await page.waitForFunction(
+    () => {
+      // @ts-expect-error _testMap is exposed for E2E testing only
+      // We wait for symbol features to render because DOM or API readiness doesn't guarantee map rendering
+      const map = window._testMap;
+      const features = map.queryRenderedFeatures({
+        layers: ["most-recent-alerts-symbol"],
+      });
+      return features.length > 0;
+    },
+    { timeout: 5000 },
+  );
 
   //
   // loop through them and fire a synthetic click
