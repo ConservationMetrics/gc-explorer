@@ -37,7 +37,9 @@ test("index page - language picker functionality", async ({ page }) => {
 
   // 3. Verify the button shows current language
   const buttonText = await languageButton.textContent();
-  expect(buttonText).toMatch(/English|Español|Nederlands|Português/);
+  expect(["English", "Español", "Nederlands", "Português"]).toContain(
+    buttonText?.trim(),
+  );
 
   // 4. Click the button to open dropdown
   await languageButton.click();
