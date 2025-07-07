@@ -61,6 +61,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
   await page.waitForFunction(
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
+      // We wait for symbol features to render because DOM or API readiness doesn't guarantee map rendering
       const map = window._testMap;
       const features = map.queryRenderedFeatures({
         layers: ["most-recent-alerts-symbol"],
