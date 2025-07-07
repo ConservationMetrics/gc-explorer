@@ -11,7 +11,7 @@ test("index page - displays available views and alerts link", async ({
     page.getByRole("heading", { name: /available views/i }),
   ).toBeVisible();
 
-  // 3. Ensure at least one Alerts link is visible (guaranteed by other tests/config)
+  // 3. Ensure at least one Alerts link is visible (guaranteed through a database connection that has an alerts view)
   const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
   await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
