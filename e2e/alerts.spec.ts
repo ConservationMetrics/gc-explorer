@@ -36,6 +36,16 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     return !!window._testMap;
   });
 
+  // Wait for the map to be fully loaded and rendered
+  await page.waitForFunction(
+    () => {
+      // @ts-expect-error _testMap is exposed for E2E testing only
+      const map = window._testMap;
+      return map && map.isStyleLoaded() && map.loaded();
+    },
+    { timeout: 15000 },
+  );
+
   // pull every symbol feature Mapbox has already rendered
 
   const symbolFeatures = await page.evaluate(() => {
@@ -46,6 +56,19 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     });
     return features;
   });
+
+  // Wait for at least one symbol feature to be rendered
+  await page.waitForFunction(
+    () => {
+      // @ts-expect-error _testMap is exposed for E2E testing only
+      const map = window._testMap;
+      const features = map.queryRenderedFeatures({
+        layers: ["most-recent-alerts-symbol"],
+      });
+      return features.length > 0;
+    },
+    { timeout: 10000 },
+  );
 
   //
   // loop through them and fire a synthetic click
