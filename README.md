@@ -91,7 +91,7 @@ The E2E tests run the real Nuxt application in a browser and connect to a real P
 
 ### CI/CD Testing
 
-The GitHub Actions workflow automatically runs both unit and end-to-end (E2E) tests. For E2E tests to work in CI, we have configured the relevant GitHub secrets in the repository settings.
+The GitHub Actions workflow automatically runs both unit and end-to-end (E2E) tests. For E2E tests to work in CI, we have configured the relevant GitHub secrets in the repository settings based of the `.env.test.example` file.
 
 **How it works:**
 - The CI environment does **not** spin up a local database. Instead, it connects to the shared demo/test database using the secrets defined in `.env.test.example`. This ensures your CI and local test environments are consistent and eliminates drift.
