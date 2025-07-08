@@ -23,11 +23,32 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
 
   // Navigate to the alerts dashboard via client-side routing
   console.log("🖱️ Clicking alerts link...");
+
+  // Listen for console errors
+  page.on("console", (msg) => {
+    if (msg.type() === "error") {
+      console.log("🚨 Browser error:", msg.text());
+    }
+  });
+
   await alertsLink.click();
+
+  // Check current URL after click
+  await page.waitForTimeout(1000);
+  console.log("📍 Current URL after click:", page.url());
+
+  // Check for any API errors
+  const requests = await page.evaluate(() => {
+    return performance
+      .getEntriesByType("resource")
+      .filter((r) => r.name.includes("/api/"))
+      .map((r) => ({ url: r.name }));
+  });
+  console.log("🌐 API requests made:", requests);
 
   // Ensure the route change completed
   console.log("⏳ Waiting for URL to change to alerts route...");
-  await page.waitForURL("**/alerts/**", { timeout: 5000 });
+  await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
   console.log("✅ URL changed to alerts route");
 
   // Wait until the map container has been added to the DOM
