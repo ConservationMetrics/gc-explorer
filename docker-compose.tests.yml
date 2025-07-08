@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+
+  # Playwright test runner
+  playwright:
+    # Use a pre-built image tagged as $ImgTag if available.
+    # Otherwise use "latest" as image tag
+    image: communityfirst/guardianconnector-explorer:${ImgTag:-latest}
+    # or if that image does not exist, build one.
+    build: .
+    volumes:
+      - ./test:/app/test
+    depends_on:
+      - backend
+      - database
+    environment:
+      # Set the base URL for your web server
+      BASE_URL: http://backend:8080
+      NUXT_PUBLIC_AUTH_STRATEGY: "none"
+    # Mount volumes to persist test reports or artifacts (optional)
+    # volumes:
+    #   - ./playwright-report:/app/playwright-report
+
+  # Backend web server
+  backend:
+    # Use a pre-built image tagged as $ImgTag if available.
+    # Otherwise use "latest" as image tag
+    image: communityfirst/guardianconnector-explorer:${ImgTag:-latest}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - database
+    environment:
+      # All the NUXT_DB_* refer to  connection details from the 'database' service below
+      NUXT_DB_HOST: database
+      NUXT_DB_PORT: 5432
+      NUXT_DB_USER: testuser
+      NUXT_DB_PASSWORD: password
+      NUXT_DATABASE: test_warehouse
+
+  database:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=test_warehouse
+      - POSTGRES_USER=testuser
+      - POSTGRES_PASSWORD=testpassword
+    volumes:
+      # Initialize DB on first container startup
+      #   /docker-entrypoint-initdb.d is a special directory recognized by Postgres:
+      #   If the data directory is empty postgres will run these files.
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      # Persist database data after first container startup
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser -d test_warehouse"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db_data:
