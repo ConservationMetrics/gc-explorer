@@ -64,9 +64,6 @@ jobs:
           sed -E 's/(NUXT_DB_PASSWORD|NUXT_SESSION_SECRET|NUXT_PUBLIC_APP_API_KEY|NUXT_DB_USER|NUXT_DB_HOST|NUXT_DATABASE|NUXT_DB_PORT|NUXT_DB_SSL)=(.*)/\1=***/g' .env.test
       - name: Run Playwright tests
         run: |
-          set -a
-          source .env.test
-          set +a
           pnpm run test:e2e
       - name: Upload test results
         if: always()
