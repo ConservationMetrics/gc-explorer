@@ -21,6 +21,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
 
   // 6. Wait until the map container has been added to the DOM
   await page.locator("#map").waitFor({ state: "attached", timeout: 5000 });
+  console.log("✅ Map container is attached");
 
   // 7. Give Mapbox a gentle nudge: click roughly at 75% of the viewport width
   // (vertically centered). This ensures tiles are rendered and
@@ -37,12 +38,14 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
   // 8. Wait for the map to be ready and the canvas to be visible
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await expect(mapCanvas).toBeVisible();
+  console.log("✅ Map canvas is visible");
 
   // 9. Ensure the Mapbox instance has been attached to window
   await page.waitForFunction(() => {
     // @ts-expect-error _testMap is exposed for E2E testing only
     return !!window._testMap;
   });
+  console.log("✅ Mapbox instance is attached to window");
 
   // 10. Wait for the map to be fully loaded and rendered
   await page.waitForFunction(
@@ -53,6 +56,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     },
     { timeout: 5000 },
   );
+  console.log("✅ Map is fully loaded and rendered");
 
   // 11. Pull every symbol feature Mapbox has already rendered
   const symbolFeatures = await page.evaluate(() => {
@@ -63,6 +67,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     });
     return features;
   });
+  console.log(`🎯 Found ${symbolFeatures.length} symbol features`);
 
   // 12. Wait for at least one symbol feature to be rendered
   await page.waitForFunction(
@@ -89,6 +94,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     const [lat, lng] = feature.properties.geographicCentroid
       .split(",")
       .map(Number);
+    console.log(`📍 Feature centroid: ${lat}, ${lng}`);
 
     // 15. Click the symbol to zoom
     await page.evaluate(
@@ -112,6 +118,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
       const m = window._testMap;
       return m && !m.isMoving();
     });
+    console.log("✅ Map finished moving");
 
     // 17. Project centroid to screen coordinates (use [lng, lat] order!)
     const { x, y } = await page.evaluate(
@@ -121,6 +128,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
       },
       [lng, lat],
     );
+    console.log(`🖥️ Screen coordinates: (${x}, ${y})`);
 
     // 18. Try to find a polygon at or near that pixel (expand search radius)
     const found = await page.evaluate(
@@ -155,6 +163,11 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
 
       // 21. Assert the URL contains the alertId query param
       await expect(page).toHaveURL(/\?alertId=/);
+      console.log("✅ URL contains alertId parameter");
+    } else {
+      console.log("❌ No polygon found for this symbol");
     }
   }
+
+  console.log("🎉 Test completed successfully!");
 });
