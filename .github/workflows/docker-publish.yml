@@ -27,17 +27,52 @@ jobs:
           pnpm install
           pnpm run test:unit
 
-  # playwright-tests:
-  #   name: Run Playwright Tests
-  #   runs-on: ubuntu-latest
-  #   needs: unit-tests
-  #   steps:
-  #     - name: Placeholder
-  #       run: echo "Playwright tests not yet implemented."
+  playwright-tests:
+    name: Run Playwright Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps
+      - name: Create test environment file
+        run: |
+          cat > .env.test << EOF
+          NUXT_DATABASE=${{ secrets.DEMO_DB_NAME }}
+          NUXT_PUBLIC_APP_API_KEY=${{ secrets.APP_API_KEY }}
+          NUXT_DB_HOST=${{ secrets.DEMO_DB_HOST }}
+          NUXT_DB_USER=${{ secrets.DEMO_DB_USER }}
+          NUXT_DB_PASSWORD=${{ secrets.DEMO_DB_PASSWORD }}
+          NUXT_DB_PORT=${{ secrets.DEMO_DB_PORT }}
+          NUXT_DB_SSL=${{ secrets.DEMO_DB_SSL }}
+          NUXT_PUBLIC_AUTH_STRATEGY="none"
+          NUXT_SESSION_SECRET=${{ secrets.NUXT_SESSION_SECRET }}
+          NUXT_PORT=8080
+          NUXT_SESSION_SECRET=${{ secrets.NUXT_SESSION_SECRET }}
+          EOF
+      - name: Run Playwright tests
+        run: pnpm run test:e2e
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: test-results/
+          retention-days: 30
 
   docker-build-and-publish:
     name: Docker Build and Publish
     runs-on: ubuntu-latest
+    needs: [unit-tests, playwright-tests]
     steps:
       - name: Checkout
         uses: actions/checkout@v4

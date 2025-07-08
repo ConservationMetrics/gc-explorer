@@ -89,6 +89,15 @@ $ pnpm test
 
 The E2E tests run the real Nuxt application in a browser and connect to a real PostgreSQL database to verify user interactions and page rendering.
 
+### CI/CD Testing
+
+The GitHub Actions workflow automatically runs both unit and end-to-end (E2E) tests. For E2E tests to work in CI, we have configured the relevant GitHub secrets in the repository settings.
+
+**How it works:**
+- The CI environment does **not** spin up a local database. Instead, it connects to the shared demo/test database using the above secrets. This ensures your CI and local test environments are consistent and eliminates drift.
+- The workflow automatically generates a `.env.test` file with these secrets before running tests.
+- Playwright starts the Nuxt dev server using this environment and runs E2E tests against the real application and database.
+
 ## Available Views
 
 ### **Map**
