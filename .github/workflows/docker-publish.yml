@@ -31,6 +31,8 @@ jobs:
     name: Run Playwright Tests
     runs-on: ubuntu-latest
     needs: unit-tests
+    env:
+      CI: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,6 +49,7 @@ jobs:
       - name: Create test environment file
         run: |
           cat > .env.test << EOF
+          CI=true
           NUXT_DATABASE=${{ secrets.DEMO_DB_NAME }}
           NUXT_PUBLIC_APP_API_KEY=${{ secrets.APP_API_KEY }}
           NUXT_DB_HOST=${{ secrets.DEMO_DB_HOST }}
