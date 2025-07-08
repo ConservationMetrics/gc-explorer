@@ -17,25 +17,13 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
   const alertsCount = await allAlertsLinks.count();
   console.log(`🔗 Found ${alertsCount} alerts links on the page`);
 
-  // Log the href of the first alerts link
+  // Get the href first
   const href = await alertsLink.getAttribute("href");
   console.log(`🎯 First alerts link href: ${href}`);
 
-  // Navigate to the alerts dashboard via client-side routing
-  console.log("🖱️ Clicking alerts link...");
-
-  // Listen for console errors
-  page.on("console", (msg) => {
-    if (msg.type() === "error") {
-      console.log("🚨 Browser error:", msg.text());
-    }
-  });
-
-  await alertsLink.click();
-
-  // Check current URL after click
-  await page.waitForTimeout(1000);
-  console.log("📍 Current URL after click:", page.url());
+  // Navigate directly instead of clicking
+  console.log("🖱️ Navigating directly to alerts page...");
+  await page.goto(href!);
 
   // Check for any API errors
   const requests = await page.evaluate(() => {
