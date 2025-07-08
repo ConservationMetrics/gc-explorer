@@ -15,7 +15,7 @@ export default defineConfig({
     url: "http://localhost:8080",
     timeout: 200_000,
     reuseExistingServer: false,
-    stdout: "ignore",
+    stdout: "pipe",
     stderr: "pipe",
   },
   use: {
