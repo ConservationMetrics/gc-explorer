@@ -71,23 +71,31 @@ These tests use mocked dependencies and verify component logic in isolation.
 
 ### End-to-End Tests (Playwright)
 
-Run E2E tests that verify the full application in a real browser:
+Run E2E tests that verify the full application, from a real browser down to the
+backend API and database, and back up:
 
 ```bash
-# Run E2E tests
-$ pnpm test:e2e
+# Run E2E tests in an isolated Docker environment, using the :latest image
+$ docker compose -f docker-compose.tests.yml run playwright pnpm test:e2e
 
-# Run all tests (unit + E2E)
-$ pnpm test
+# Run E2E tests using a specific Docker image tag (say, one you just built)
+$ ImgTag=2025-01-01 docker compose -f docker-compose.tests.yml run playwright pnpm test:e2e
+
+# Or run ALL tests (unit + E2E)
+$ docker compose -f docker-compose.tests.yml run playwright pnpm test
 ```
 
-**Important:** For E2E tests to work properly, you must set up a test environment:
+**Important:** E2E tests require a fully functional test environment. The preferred setup uses
+docker-compose to spin up isolated containers for the backend, database, and test runner.
+This approach guarantees consistent test runs without relying on shared environments.
 
-1. Copy `.env.test.example` to `.env.test`
-2. Ensure `NUXT_PUBLIC_AUTH_STRATEGY="none"` in your `.env.test` file to bypass authentication
-3. Ensure your test database has the required tables, data and views config for the tests. This includes at least one alerts view.
+The `docker-compose.test.yml` takes care of:
+1. Populating the test database with known mock data, including survey and alerts views.
+2. Setting `NUXT_PUBLIC_AUTH_STRATEGY="none"` to bypass authentication.
 
-The E2E tests run the real Nuxt application in a browser and connect to a real PostgreSQL database to verify user interactions and page rendering.
+Note: the database is ephemeral. To reload seed data, remove the volume:
+
+    docker volume rm gc-explorer_db_data
 
 ### CI/CD Testing
 
@@ -138,7 +146,7 @@ At this time, media attachments in the popups are handled in a somewhat brittle 
 
 The GuardianConnector Explorer map will render the feature on a map in accordance to what kind of `type` it is (Point, LineString, Polygon). The properties are shown in a popup opened by clicking on the feature.
 
-The GuardianConnector Explorer map can work with any GeoJSON data stored in the expected tabular format, but the main purpose is to visualize field data collected using data collection applications such as (Co)Mapeo, ODK, and KoboToolbox. 
+The GuardianConnector Explorer map can work with any GeoJSON data stored in the expected tabular format, but the main purpose is to visualize field data collected using data collection applications such as (Co)Mapeo, ODK, and KoboToolbox.
 
 * Mapeo data from Mapeo Desktop is already exported as GeoJSON file, and a CoMapeo Archive Server returns data in a GeoJSON-compliant format.
 * ODK / KoboToolbox API survey data with a geospatial column may be transformed into such a format.
