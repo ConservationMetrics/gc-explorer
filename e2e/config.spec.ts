@@ -29,7 +29,7 @@ test("config page - displays configuration dashboard with table cards", async ({
     .waitFor({ state: "attached", timeout: 5000 });
 });
 
-test("config page - add new table functionality", async ({ page }) => {
+test("config page - add and remove table functionality", async ({ page }) => {
   // 1. Navigate to the config page
   await page.goto("/config");
 
