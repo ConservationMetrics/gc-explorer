@@ -227,17 +227,33 @@ test("config page - form validation and change detection", async ({ page }) => {
       .first();
 
     if ((await mapboxTokenInput.count()) > 0) {
-      // 14. Clear and enter a new value
+      // 14. Test invalid token format (should not start with pk.ey)
       await mapboxTokenInput.clear();
-      await mapboxTokenInput.fill("test_token_123");
+      await mapboxTokenInput.fill("invalid_token_123");
 
-      // 15. Verify submit button is now enabled
+      // 15. Verify submit button is disabled due to invalid format
+      await expect(submitButton).toBeDisabled();
+
+      // 16. Test valid token format (should start with pk.ey)
+      await mapboxTokenInput.clear();
+      await mapboxTokenInput.fill(
+        "pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjbGV4YW1wbGUifQ.example",
+      );
+
+      // 17. Verify submit button is now enabled with valid format
       await expect(submitButton).toBeEnabled();
 
-      // 16. Clear the field to make it invalid
+      // 18. Test partial valid format (pk.ey but incomplete)
+      await mapboxTokenInput.clear();
+      await mapboxTokenInput.fill("pk.ey");
+
+      // 19. Verify submit button is still enabled (pattern allows pk.ey.*)
+      await expect(submitButton).toBeEnabled();
+
+      // 20. Clear the field to make it invalid
       await mapboxTokenInput.clear();
 
-      // 17. Verify submit button is disabled again (invalid form)
+      // 21. Verify submit button is disabled again (invalid form)
       await expect(submitButton).toBeDisabled();
     }
 
@@ -319,9 +335,11 @@ test("config page - submit configuration changes", async ({ page }) => {
       .first();
 
     if ((await mapboxTokenInput.count()) > 0) {
-      // 13. Enter a valid token
+      // 13. Enter a valid token that matches the pattern
       await mapboxTokenInput.clear();
-      await mapboxTokenInput.fill("pk.test_token_123");
+      await mapboxTokenInput.fill(
+        "pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjbGV4YW1wbGUifQ.example",
+      );
 
       // 14. Submit the form
       const submitButton = targetCard.locator("button[type='submit']");
@@ -606,33 +624,52 @@ test("config page - error handling for invalid form submission", async ({
       .first();
 
     if ((await mapboxTokenInput.count()) > 0) {
-      // 13. Clear the field to make it invalid
-      await mapboxTokenInput.clear();
+      // 13. Verify the input has the correct pattern attribute
+      await expect(mapboxTokenInput).toHaveAttribute("pattern", "^pk\\.ey.*");
 
-      // 14. Try to submit the form
+      // 14. Verify the input has the correct placeholder
+      await expect(mapboxTokenInput).toHaveAttribute("placeholder", "pk.ey…");
+
+      // 15. Verify the input has the correct title attribute for tooltip
+      await expect(mapboxTokenInput).toHaveAttribute("title", /pk\.ey…/);
+
+      // 16. Test invalid token format that doesn't match pattern
+      await mapboxTokenInput.clear();
+      await mapboxTokenInput.fill("invalid_token_123");
+
+      // 17. Try to submit the form
       const submitButton = targetCard.locator("button[type='submit']");
 
-      // 15. Verify submit button is disabled due to invalid form
+      // 18. Verify submit button is disabled due to invalid format
       await expect(submitButton).toBeDisabled();
 
-      // 16. Verify the button has the disabled styling
+      // 19. Verify the button has the disabled styling
       await expect(submitButton).toHaveClass(/bg-gray-500/);
+
+      // 20. Test valid token format that matches pattern
+      await mapboxTokenInput.clear();
+      await mapboxTokenInput.fill(
+        "pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjbGV4YW1wbGUifQ.example",
+      );
+
+      // 21. Verify submit button is now enabled with valid format
+      await expect(submitButton).toBeEnabled();
     }
 
-    // 17. Clean up: remove the table we added
+    // 22. Clean up: remove the table we added
     const removeButton = targetCard.locator("button.remove-button");
     await removeButton.click();
 
-    // 18. Verify the confirmation modal appears
+    // 23. Verify the confirmation modal appears
     await expect(modal).toBeVisible();
 
-    // 19. Click confirm to remove
+    // 24. Click confirm to remove
     await confirmButton.click();
 
-    // 20. Verify success message appears
+    // 25. Verify success message appears
     await expect(page.getByText(/table removed from views!/i)).toBeVisible();
 
-    // 21. Verify modal closes after timeout
+    // 26. Verify modal closes after timeout
     await page.waitForTimeout(3500);
     await expect(modal).not.toBeVisible();
   }
