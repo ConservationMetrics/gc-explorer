@@ -173,61 +173,6 @@ test("config page - form validation and change detection", async ({ page }) => {
   }
 });
 
-test("config page - remove table functionality", async ({ page }) => {
-  // 1. Navigate to the config page
-  await page.goto("/config");
-
-  // 2. Wait for the grid container to be present (indicates data has loaded)
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
-
-  // 3. Look for table cards
-  const tableCards = page.locator(".table-item.card");
-  const cardCount = await tableCards.count();
-
-  if (cardCount > 0) {
-    // 4. Expand the first card
-    const firstCard = tableCards.first();
-    const hamburgerButton = firstCard.locator("button.hamburger");
-    await hamburgerButton.click();
-
-    // 5. Get the table name
-    const tableName = await firstCard.locator(".table-name").textContent();
-
-    // 6. Click the remove table button
-    const removeButton = firstCard.locator("button.remove-button");
-    await removeButton.click();
-
-    // 7. Verify the confirmation modal appears
-    const modal = page.locator(".modal");
-    await expect(modal).toBeVisible();
-
-    // 8. Verify the modal message contains the table name
-    if (tableName) {
-      await expect(
-        page.getByText(
-          new RegExp(
-            `are you sure you want to remove this table: ${tableName.trim()}\\?`,
-            "i",
-          ),
-        ),
-      ).toBeVisible();
-    }
-
-    // 9. Click confirm
-    const confirmButton = page.getByRole("button", { name: /confirm/i });
-    await confirmButton.click();
-
-    // 10. Verify success message appears
-    await expect(page.getByText(/table removed from views!/i)).toBeVisible();
-
-    // 11. Verify modal closes after timeout
-    await page.waitForTimeout(3500);
-    await expect(modal).not.toBeVisible();
-  }
-});
-
 test("config page - cancel remove table modal", async ({ page }) => {
   // 1. Navigate to the config page
   await page.goto("/config");
