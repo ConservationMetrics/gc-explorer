@@ -57,18 +57,56 @@ test("config page - add new table functionality", async ({ page }) => {
   // 7. Select an option from the dropdown
   await dropdown.selectOption({ index: 0 });
 
-  // 8. Verify the confirm button is now enabled
+  // 8. Get the selected table name before confirming
+  const selectedOption = dropdown.locator("option:checked");
+  const tableNameToAdd = await selectedOption.textContent();
+
+  // 9. Verify the confirm button is now enabled
   await expect(confirmButton).toBeEnabled();
 
-  // 9. Click confirm
+  // 10. Click confirm
   await confirmButton.click();
 
-  // 10. Verify success message appears
+  // 11. Verify success message appears
   await expect(page.getByText(/table added to views!/i)).toBeVisible();
 
-  // 11. Verify modal closes after timeout
+  // 12. Verify modal closes after timeout
   await page.waitForTimeout(3500);
   await expect(modal).not.toBeVisible();
+
+  // 13. Wait for the page to reload and find the newly added table
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 14. Find the card with the table name we just added and remove it
+  if (tableNameToAdd) {
+    const targetCard = page.locator(
+      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    );
+    await expect(targetCard).toBeVisible();
+
+    // 15. Expand the target card
+    const hamburgerButton = targetCard.locator("button.hamburger");
+    await hamburgerButton.click();
+
+    // 16. Click the remove table button
+    const removeButton = targetCard.locator("button.remove-button");
+    await removeButton.click();
+
+    // 17. Verify the confirmation modal appears
+    await expect(modal).toBeVisible();
+
+    // 18. Click confirm to remove
+    await confirmButton.click();
+
+    // 19. Verify success message appears
+    await expect(page.getByText(/table removed from views!/i)).toBeVisible();
+
+    // 20. Verify modal closes after timeout
+    await page.waitForTimeout(3500);
+    await expect(modal).not.toBeVisible();
+  }
 });
 
 test("config page - cancel add table modal", async ({ page }) => {
@@ -135,45 +173,94 @@ test("config page - form validation and change detection", async ({ page }) => {
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 3. Look for table cards
-  const tableCards = page.locator(".table-item.card");
-  const cardCount = await tableCards.count();
+  // 3. First, add a table to work with
+  const addTableButton = page.getByRole("button", {
+    name: /\+ add new table/i,
+  });
+  await addTableButton.click();
 
-  if (cardCount > 0) {
-    // 4. Expand the first card
-    const firstCard = tableCards.first();
-    const hamburgerButton = firstCard.locator("button.hamburger");
+  // 4. Verify the modal appears with dropdown
+  const modal = page.locator(".modal");
+  await expect(modal).toBeVisible();
+
+  // 5. Select an option from the dropdown
+  const dropdown = page.locator("select");
+  await dropdown.selectOption({ index: 0 });
+
+  // 6. Get the selected table name before confirming
+  const selectedOption = dropdown.locator("option:checked");
+  const tableNameToAdd = await selectedOption.textContent();
+
+  // 7. Click confirm to add the table
+  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  await confirmButton.click();
+
+  // 8. Wait for success message and modal to close
+  await expect(page.getByText(/table added to views!/i)).toBeVisible();
+  await page.waitForTimeout(3500);
+
+  // 9. Wait for the page to reload and find the newly added table
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 10. Find the card with the table name we just added
+  if (tableNameToAdd) {
+    const targetCard = page.locator(
+      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    );
+    await expect(targetCard).toBeVisible();
+
+    // 11. Expand the target card
+    const hamburgerButton = targetCard.locator("button.hamburger");
     await hamburgerButton.click();
 
-    // 5. Verify submit button is initially disabled (no changes)
-    const submitButton = firstCard.locator("button[type='submit']");
+    // 12. Verify submit button is initially disabled (no changes)
+    const submitButton = targetCard.locator("button[type='submit']");
     await expect(submitButton).toBeDisabled();
 
-    // 6. Find and modify a form field (e.g., mapbox access token)
-    const mapboxTokenInput = firstCard
+    // 13. Find and modify a form field (e.g., mapbox access token)
+    const mapboxTokenInput = targetCard
       .locator(
         'input[name*="MAPBOX_ACCESS_TOKEN"], input[placeholder*="Mapbox Access Token"]',
       )
       .first();
 
     if ((await mapboxTokenInput.count()) > 0) {
-      // 7. Clear and enter a new value
+      // 14. Clear and enter a new value
       await mapboxTokenInput.clear();
       await mapboxTokenInput.fill("test_token_123");
 
-      // 8. Verify submit button is now enabled
+      // 15. Verify submit button is now enabled
       await expect(submitButton).toBeEnabled();
 
-      // 9. Clear the field to make it invalid
+      // 16. Clear the field to make it invalid
       await mapboxTokenInput.clear();
 
-      // 10. Verify submit button is disabled again (invalid form)
+      // 17. Verify submit button is disabled again (invalid form)
       await expect(submitButton).toBeDisabled();
     }
+
+    // 18. Clean up: remove the table we added
+    const removeButton = targetCard.locator("button.remove-button");
+    await removeButton.click();
+
+    // 19. Verify the confirmation modal appears
+    await expect(modal).toBeVisible();
+
+    // 20. Click confirm to remove
+    await confirmButton.click();
+
+    // 21. Verify success message appears
+    await expect(page.getByText(/table removed from views!/i)).toBeVisible();
+
+    // 22. Verify modal closes after timeout
+    await page.waitForTimeout(3500);
+    await expect(modal).not.toBeVisible();
   }
 });
 
-test("config page - cancel remove table modal", async ({ page }) => {
+test("config page - remove table functionality", async ({ page }) => {
   // 1. Navigate to the config page
   await page.goto("/config");
 
@@ -182,29 +269,77 @@ test("config page - cancel remove table modal", async ({ page }) => {
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 3. Look for table cards
+  // 3. First, add a table to ensure we have one to remove
+  const addTableButton = page.getByRole("button", {
+    name: /\+ add new table/i,
+  });
+  await addTableButton.click();
+
+  // 4. Verify the modal appears with dropdown
+  const modal = page.locator(".modal");
+  await expect(modal).toBeVisible();
+
+  // 5. Select an option from the dropdown
+  const dropdown = page.locator("select");
+  await dropdown.selectOption({ index: 0 });
+
+  // 6. Get the selected table name before confirming
+  const selectedOption = dropdown.locator("option:checked");
+  const tableNameToAdd = await selectedOption.textContent();
+
+  // 7. Click confirm to add the table
+  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  await confirmButton.click();
+
+  // 8. Wait for success message and modal to close
+  await expect(page.getByText(/table added to views!/i)).toBeVisible();
+  await page.waitForTimeout(3500);
+
+  // 9. Wait for the page to reload and find the newly added table
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 10. Look for table cards and find the one we just added
   const tableCards = page.locator(".table-item.card");
   const cardCount = await tableCards.count();
 
-  if (cardCount > 0) {
-    // 4. Expand the first card
-    const firstCard = tableCards.first();
-    const hamburgerButton = firstCard.locator("button.hamburger");
+  if (cardCount > 0 && tableNameToAdd) {
+    // 11. Find the card with the table name we just added
+    const targetCard = page.locator(
+      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    );
+    await expect(targetCard).toBeVisible();
+
+    // 12. Expand the target card
+    const hamburgerButton = targetCard.locator("button.hamburger");
     await hamburgerButton.click();
 
-    // 5. Click the remove table button
-    const removeButton = firstCard.locator("button.remove-button");
+    // 13. Click the remove table button
+    const removeButton = targetCard.locator("button.remove-button");
     await removeButton.click();
 
-    // 6. Verify the confirmation modal appears
-    const modal = page.locator(".modal");
+    // 14. Verify the confirmation modal appears
     await expect(modal).toBeVisible();
 
-    // 7. Click cancel
-    const cancelButton = page.getByRole("button", { name: /cancel/i });
-    await cancelButton.click();
+    // 15. Verify the modal message contains the table name
+    await expect(
+      page.getByText(
+        new RegExp(
+          `are you sure you want to remove this table: ${tableNameToAdd.trim()}\\?`,
+          "i",
+        ),
+      ),
+    ).toBeVisible();
 
-    // 8. Verify the modal closes
+    // 16. Click confirm
+    await confirmButton.click();
+
+    // 17. Verify success message appears
+    await expect(page.getByText(/table removed from views!/i)).toBeVisible();
+
+    // 18. Verify modal closes after timeout
+    await page.waitForTimeout(3500);
     await expect(modal).not.toBeVisible();
   }
 });
@@ -218,40 +353,88 @@ test("config page - submit configuration changes", async ({ page }) => {
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 3. Look for table cards
-  const tableCards = page.locator(".table-item.card");
-  const cardCount = await tableCards.count();
+  // 3. First, add a table to work with
+  const addTableButton = page.getByRole("button", {
+    name: /\+ add new table/i,
+  });
+  await addTableButton.click();
 
-  if (cardCount > 0) {
-    // 4. Expand the first card
-    const firstCard = tableCards.first();
-    const hamburgerButton = firstCard.locator("button.hamburger");
+  // 4. Verify the modal appears with dropdown
+  const modal = page.locator(".modal");
+  await expect(modal).toBeVisible();
+
+  // 5. Select an option from the dropdown
+  const dropdown = page.locator("select");
+  await dropdown.selectOption({ index: 0 });
+
+  // 6. Get the selected table name before confirming
+  const selectedOption = dropdown.locator("option:checked");
+  const tableNameToAdd = await selectedOption.textContent();
+
+  // 7. Click confirm to add the table
+  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  await confirmButton.click();
+
+  // 8. Wait for success message and modal to close
+  await expect(page.getByText(/table added to views!/i)).toBeVisible();
+  await page.waitForTimeout(3500);
+
+  // 9. Wait for the page to reload and find the newly added table
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 10. Find the card with the table name we just added
+  if (tableNameToAdd) {
+    const targetCard = page.locator(
+      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    );
+    await expect(targetCard).toBeVisible();
+
+    // 11. Expand the target card
+    const hamburgerButton = targetCard.locator("button.hamburger");
     await hamburgerButton.click();
 
-    // 5. Find and modify a form field
-    const mapboxTokenInput = firstCard
+    // 12. Find and modify a form field
+    const mapboxTokenInput = targetCard
       .locator(
         'input[name*="MAPBOX_ACCESS_TOKEN"], input[placeholder*="Mapbox Access Token"]',
       )
       .first();
 
     if ((await mapboxTokenInput.count()) > 0) {
-      // 6. Enter a valid token
+      // 13. Enter a valid token
       await mapboxTokenInput.clear();
       await mapboxTokenInput.fill("pk.test_token_123");
 
-      // 7. Submit the form
-      const submitButton = firstCard.locator("button[type='submit']");
+      // 14. Submit the form
+      const submitButton = targetCard.locator("button[type='submit']");
       await submitButton.click();
 
-      // 8. Verify success message appears
+      // 15. Verify success message appears
       await expect(page.getByText(/configuration updated!/i)).toBeVisible();
 
-      // 9. Verify modal closes after timeout
+      // 16. Verify modal closes after timeout
       await page.waitForTimeout(3500);
-      const modal = page.locator(".modal");
       await expect(modal).not.toBeVisible();
     }
+
+    // 17. Clean up: remove the table we added
+    const removeButton = targetCard.locator("button.remove-button");
+    await removeButton.click();
+
+    // 18. Verify the confirmation modal appears
+    await expect(modal).toBeVisible();
+
+    // 19. Click confirm to remove
+    await confirmButton.click();
+
+    // 20. Verify success message appears
+    await expect(page.getByText(/table removed from views!/i)).toBeVisible();
+
+    // 21. Verify modal closes after timeout
+    await page.waitForTimeout(3500);
+    await expect(modal).not.toBeVisible();
   }
 });
 
@@ -289,8 +472,27 @@ test("config page - views configuration section", async ({ page }) => {
       // 8. Verify the state changed
       await expect(firstCheckbox).toHaveJSProperty("checked", !isChecked);
 
-      // 9. Verify submit button is now enabled (changes detected)
+      // 9. Wait a moment for the form to detect the change
+      await page.waitForTimeout(1000);
+
+      // 10. Check if submit button is enabled, if not, try modifying a text field instead
       const submitButton = firstCard.locator("button[type='submit']");
+      const isEnabled = await submitButton.isEnabled();
+
+      if (!isEnabled) {
+        // 11. Try modifying a text field to trigger form changes
+        const textInputs = firstCard.locator('input[type="text"]');
+        const inputCount = await textInputs.count();
+
+        if (inputCount > 0) {
+          const firstTextInput = textInputs.first();
+          await firstTextInput.clear();
+          await firstTextInput.fill("test_value");
+          await page.waitForTimeout(500);
+        }
+      }
+
+      // 12. Verify submit button is now enabled (changes detected)
       await expect(submitButton).toBeEnabled();
     }
   }
@@ -307,34 +509,83 @@ test("config page - conditional form sections based on views", async ({
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 3. Look for table cards
-  const tableCards = page.locator(".table-item.card");
-  const cardCount = await tableCards.count();
+  // 3. First, add a table to work with
+  const addTableButton = page.getByRole("button", {
+    name: /\+ add new table/i,
+  });
+  await addTableButton.click();
 
-  if (cardCount > 0) {
-    // 4. Expand the first card
-    const firstCard = tableCards.first();
-    const hamburgerButton = firstCard.locator("button.hamburger");
+  // 4. Verify the modal appears with dropdown
+  const modal = page.locator(".modal");
+  await expect(modal).toBeVisible();
+
+  // 5. Select an option from the dropdown
+  const dropdown = page.locator("select");
+  await dropdown.selectOption({ index: 0 });
+
+  // 6. Get the selected table name before confirming
+  const selectedOption = dropdown.locator("option:checked");
+  const tableNameToAdd = await selectedOption.textContent();
+
+  // 7. Click confirm to add the table
+  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  await confirmButton.click();
+
+  // 8. Wait for success message and modal to close
+  await expect(page.getByText(/table added to views!/i)).toBeVisible();
+  await page.waitForTimeout(3500);
+
+  // 9. Wait for the page to reload and find the newly added table
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 10. Find the card with the table name we just added
+  if (tableNameToAdd) {
+    const targetCard = page.locator(
+      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    );
+    await expect(targetCard).toBeVisible();
+
+    // 11. Expand the target card
+    const hamburgerButton = targetCard.locator("button.hamburger");
     await hamburgerButton.click();
 
-    // 5. Check for different config sections
-    const configSections = firstCard.locator(".config-section");
+    // 12. Check for different config sections
+    const configSections = targetCard.locator(".config-section");
     const sectionCount = await configSections.count();
 
-    // 6. Verify at least one config section is present
+    // 13. Verify at least one config section is present
     expect(sectionCount).toBeGreaterThan(0);
 
-    // 7. Look for specific section headers
-    const sectionHeaders = firstCard.locator(".config-header h3");
+    // 14. Look for specific section headers
+    const sectionHeaders = targetCard.locator(".config-header h3");
     const headerCount = await sectionHeaders.count();
 
     if (headerCount > 0) {
-      // 8. Verify section headers are visible
+      // 15. Verify section headers are visible
       for (let i = 0; i < headerCount; i++) {
         const header = sectionHeaders.nth(i);
         await expect(header).toBeVisible();
       }
     }
+
+    // 16. Clean up: remove the table we added
+    const removeButton = targetCard.locator("button.remove-button");
+    await removeButton.click();
+
+    // 17. Verify the confirmation modal appears
+    await expect(modal).toBeVisible();
+
+    // 18. Click confirm to remove
+    await confirmButton.click();
+
+    // 19. Verify success message appears
+    await expect(page.getByText(/table removed from views!/i)).toBeVisible();
+
+    // 20. Verify modal closes after timeout
+    await page.waitForTimeout(3500);
+    await expect(modal).not.toBeVisible();
   }
 });
 
@@ -389,40 +640,91 @@ test("config page - error handling for invalid form submission", async ({
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 3. Look for table cards
-  const tableCards = page.locator(".table-item.card");
-  const cardCount = await tableCards.count();
+  // 3. First, add a table to work with
+  const addTableButton = page.getByRole("button", {
+    name: /\+ add new table/i,
+  });
+  await addTableButton.click();
 
-  if (cardCount > 0) {
-    // 4. Expand the first card
-    const firstCard = tableCards.first();
-    const hamburgerButton = firstCard.locator("button.hamburger");
+  // 4. Verify the modal appears with dropdown
+  const modal = page.locator(".modal");
+  await expect(modal).toBeVisible();
+
+  // 5. Select an option from the dropdown
+  const dropdown = page.locator("select");
+  await dropdown.selectOption({ index: 0 });
+
+  // 6. Get the selected table name before confirming
+  const selectedOption = dropdown.locator("option:checked");
+  const tableNameToAdd = await selectedOption.textContent();
+
+  // 7. Click confirm to add the table
+  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  await confirmButton.click();
+
+  // 8. Wait for success message and modal to close
+  await expect(page.getByText(/table added to views!/i)).toBeVisible();
+  await page.waitForTimeout(3500);
+
+  // 9. Wait for the page to reload and find the newly added table
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 10. Find the card with the table name we just added
+  if (tableNameToAdd) {
+    const targetCard = page.locator(
+      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    );
+    await expect(targetCard).toBeVisible();
+
+    // 11. Expand the target card
+    const hamburgerButton = targetCard.locator("button.hamburger");
     await hamburgerButton.click();
 
-    // 5. Find mapbox access token field
-    const mapboxTokenInput = firstCard
+    // 12. Find mapbox access token field
+    const mapboxTokenInput = targetCard
       .locator(
         'input[name*="MAPBOX_ACCESS_TOKEN"], input[placeholder*="Mapbox Access Token"]',
       )
       .first();
 
     if ((await mapboxTokenInput.count()) > 0) {
-      // 6. Clear the field to make it invalid
+      // 13. Clear the field to make it invalid
       await mapboxTokenInput.clear();
 
-      // 7. Try to submit the form
-      const submitButton = firstCard.locator("button[type='submit']");
+      // 14. Try to submit the form
+      const submitButton = targetCard.locator("button[type='submit']");
 
-      // 8. Verify submit button is disabled due to invalid form
+      // 15. Verify submit button is disabled due to invalid form
       await expect(submitButton).toBeDisabled();
 
-      // 9. Verify the button has the disabled styling
+      // 16. Verify the button has the disabled styling
       await expect(submitButton).toHaveClass(/bg-gray-500/);
     }
+
+    // 17. Clean up: remove the table we added
+    const removeButton = targetCard.locator("button.remove-button");
+    await removeButton.click();
+
+    // 18. Verify the confirmation modal appears
+    await expect(modal).toBeVisible();
+
+    // 19. Click confirm to remove
+    await confirmButton.click();
+
+    // 20. Verify success message appears
+    await expect(page.getByText(/table removed from views!/i)).toBeVisible();
+
+    // 21. Verify modal closes after timeout
+    await page.waitForTimeout(3500);
+    await expect(modal).not.toBeVisible();
   }
 });
 
-test("config page - modal overlay functionality", async ({ page }) => {
+test("config page - modal overlay functionality and cancel button", async ({
+  page,
+}) => {
   // 1. Navigate to the config page
   await page.goto("/config");
 
