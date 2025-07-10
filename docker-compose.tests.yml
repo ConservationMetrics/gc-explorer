@@ -47,6 +47,24 @@ services:
       interval: 2s
       timeout: 5s
       retries: 10
+    # Add a script to log database state after initialization
+    command: >
+      sh -c "
+        # Start postgres normally
+        docker-entrypoint.sh postgres &
+        # Wait for postgres to be ready
+        until pg_isready -U testuser -d test_warehouse; do sleep 1; done
+        # Log the database state
+        echo '🔍 Database initialization complete'
+        echo '🔍 Available tables:'
+        psql -U testuser -d test_warehouse -c '\dt'
+        echo '🔍 Table row counts:'
+        psql -U testuser -d test_warehouse -c 'SELECT schemaname, tablename, n_tup_ins as rows FROM pg_stat_user_tables ORDER BY tablename;'
+        echo '🔍 Config table contents:'
+        psql -U testuser -d test_warehouse -c 'SELECT * FROM config;' || echo 'Config table does not exist yet'
+        # Keep the container running
+        wait
+      "
 
 volumes:
   db_data:
