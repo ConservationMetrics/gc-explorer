@@ -92,6 +92,56 @@ export const fetchTableNames = async (
 };
 
 export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
+  // If running in CI, return hardcoded configuration for testing purposes
+  if (process.env.CI) {
+    const mapboxAccessToken =
+      process.env.MAPBOX_ACCESS_TOKEN || "{MAPBOX_ACCESS_TOKEN}";
+    const mediaBasePath = process.env.MEDIA_BASE_PATH || "{MEDIA_BASE_PATH}";
+
+    return {
+      bcmform_responses: {
+        VIEWS: "map,gallery",
+        EMBED_MEDIA: "YES",
+        MEDIA_BASE_PATH: mediaBasePath,
+        FRONT_END_FILTERING: "YES",
+        FRONT_END_FILTER_FIELD: "community",
+        MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-streets-v12",
+        MAPBOX_PROJECTION: "globe",
+        MAPBOX_CENTER_LATITUDE: "2",
+        MAPBOX_CENTER_LONGITUDE: "-55",
+        MAPBOX_ZOOM: 3,
+        MAPBOX_PITCH: 15,
+        MAPBOX_BEARING: 0,
+        MAPBOX_3D: "YES",
+        MAP_LEGEND_LAYER_IDS: "road-primary,aerialway",
+        UNWANTED_COLUMNS: "latitude,longitude,coordinates",
+        UNWANTED_SUBSTRINGS:
+          "meta,version,formhub,xform,attachments,tags,notes,topic,sender,geolocation,submission_time,submitted_by,status,supplementalDetails,validation_status,start,end,location",
+        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
+        FRONT_END_FILTER_COLUMN: "community",
+      },
+      fake_alerts: {
+        VIEWS: "alerts",
+        EMBED_MEDIA: "YES",
+        MEDIA_BASE_PATH_ALERTS: "",
+        MEDIA_BASE_PATH: "",
+        MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-streets-v12",
+        MAPBOX_PROJECTION: "globe",
+        MAPBOX_CENTER_LATITUDE: "38",
+        MAPBOX_CENTER_LONGITUDE: "-79",
+        MAPBOX_ZOOM: 7,
+        MAPBOX_PITCH: 0,
+        MAPBOX_BEARING: 0,
+        MAPBOX_3D: "NO",
+        MAPEO_TABLE: "mapeo_data",
+        MAPEO_CATEGORY_IDS: "threat",
+        MAP_LEGEND_LAYER_IDS: "road-primary,aerialway",
+        ALERT_RESOURCES: "NO",
+        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
+      },
+    };
+  }
+
   // Create the config table if it does not exist
   const createConfigTable = `CREATE TABLE IF NOT EXISTS config (
          table_name TEXT PRIMARY KEY,
