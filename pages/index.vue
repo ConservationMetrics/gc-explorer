@@ -16,29 +16,19 @@ const { data, error } = await useFetch("/api/config", {
 if (data.value && !error.value) {
   const fetchedViewsData = data.value[0] as Views;
   viewsConfig.value = fetchedViewsData;
-  console.log("📄 Index page - fetched views config:", fetchedViewsData);
-  console.log(
-    "📄 Index page - available tables:",
-    Object.keys(fetchedViewsData),
-  );
 } else {
   console.error("Error fetching data:", error.value);
 }
 
 /** Filter and sort the views config */
 const filteredSortedViewsConfig = computed(() => {
-  const filtered = Object.keys(viewsConfig.value)
+  return Object.keys(viewsConfig.value)
     .filter((key) => Object.keys(viewsConfig.value[key]).length > 0)
     .sort()
     .reduce((accumulator: Views, key: string) => {
       accumulator[key] = viewsConfig.value[key];
       return accumulator;
     }, {});
-
-  console.log("📄 Index page - filtered config:", filtered);
-  console.log("📄 Index page - filtered tables:", Object.keys(filtered));
-
-  return filtered;
 });
 
 useHead({
@@ -83,12 +73,6 @@ useHead({
           </li>
         </ul>
       </div>
-    </div>
-    <div v-else class="w-1/2">
-      <p class="text-red-500">No views config available</p>
-      <p>Data: {{ JSON.stringify(data) }}</p>
-      <p>Error: {{ error }}</p>
-      <p>ViewsConfig: {{ JSON.stringify(viewsConfig) }}</p>
     </div>
   </div>
 </template>
