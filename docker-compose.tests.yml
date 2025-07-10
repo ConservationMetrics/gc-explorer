@@ -2,35 +2,6 @@ version: '3.8'
 
 services:
 
-  # Playwright test runner
-  playwright:
-    # Use a pre-built image tagged as $ImgTag if available.
-    # Otherwise use "latest" as image tag
-    image: communityfirst/guardianconnector-explorer:${ImgTag:-latest}
-    # or if that image does not exist, build one.
-    build: .
-    volumes:
-      - ./e2e:/app/e2e
-      - ./test-results:/app/test-results
-      - ./.env.test:/app/.env.test:ro
-      - ./playwright.config.ts:/app/playwright.config.ts:ro
-      - ./node_modules:/app/node_modules:ro
-    depends_on:
-      - backend
-      - database
-    environment:
-      # Set the base URL for your web server
-      BASE_URL: http://backend:8080
-      NUXT_PUBLIC_AUTH_STRATEGY: "none"
-      CI: true
-      # Add database connection for debugging
-      NUXT_DB_HOST: database
-      NUXT_DB_PORT: 5432
-      NUXT_DB_USER: testuser
-      NUXT_DB_PASSWORD: testpassword
-      NUXT_DATABASE: test_warehouse
-    command: ["pnpm", "run", "test:e2e"]
-
   # Backend web server
   backend:
     # Use a pre-built image tagged as $ImgTag if available.

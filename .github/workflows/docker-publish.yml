@@ -94,13 +94,9 @@ jobs:
           echo "Backend is ready!"
           # Check if services are running
           docker compose -f docker-compose.tests.yml ps
-          # Run the tests with verbose output
-          docker compose -f docker-compose.tests.yml run --rm \
-            -e NUXT_PUBLIC_APP_API_KEY="${{ secrets.APP_API_KEY }}" \
-            -e NUXT_SESSION_SECRET="${{ secrets.NUXT_SESSION_SECRET }}" \
-            -e MAPBOX_ACCESS_TOKEN="${{ secrets.MAPBOX_ACCESS_TOKEN }}" \
-            -e MEDIA_BASE_PATH="${{ secrets.MEDIA_BASE_PATH }}" \
-            playwright
+          # Run the tests directly in the workflow
+          echo "Running Playwright tests..."
+          pnpm run test:e2e
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
