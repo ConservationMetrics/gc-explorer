@@ -97,34 +97,29 @@ export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
     const mapboxAccessToken =
       process.env.MAPBOX_ACCESS_TOKEN || "{MAPBOX_ACCESS_TOKEN}";
     const mediaBasePath = process.env.MEDIA_BASE_PATH || "{MEDIA_BASE_PATH}";
+    const planetApiKey = process.env.PLANET_API_KEY || "{PLANET_API_KEY}";
 
     return {
       bcmform_responses: {
         VIEWS: "map,gallery",
-        EMBED_MEDIA: "YES",
-        MEDIA_BASE_PATH: mediaBasePath,
-        FRONT_END_FILTERING: "YES",
-        FRONT_END_FILTER_FIELD: "community",
-        MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-streets-v12",
-        MAPBOX_PROJECTION: "globe",
-        MAPBOX_CENTER_LATITUDE: "2",
-        MAPBOX_CENTER_LONGITUDE: "-55",
-        MAPBOX_ZOOM: 3,
-        MAPBOX_PITCH: 15,
-        MAPBOX_BEARING: 0,
-        MAPBOX_3D: "YES",
-        MAP_LEGEND_LAYER_IDS: "road-primary,aerialway",
-        UNWANTED_COLUMNS: "latitude,longitude,coordinates",
-        UNWANTED_SUBSTRINGS:
-          "meta,version,formhub,xform,attachments,tags,notes,topic,sender,geolocation,submission_time,submitted_by,status,supplementalDetails,validation_status,start,end,location",
+        MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
         MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
+        MAPBOX_ZOOM: 16,
+        MAPBOX_CENTER_LATITUDE: "3.44704",
+        MAPBOX_CENTER_LONGITUDE: "-76.53995",
+        MAPBOX_PROJECTION: "globe",
+        MAPBOX_BEARING: 0,
+        MAPBOX_PITCH: 0,
         FRONT_END_FILTER_COLUMN: "community",
+        MEDIA_BASE_PATH: mediaBasePath,
       },
       fake_alerts: {
         VIEWS: "alerts",
         EMBED_MEDIA: "YES",
         MEDIA_BASE_PATH_ALERTS: "",
         MEDIA_BASE_PATH: "",
+        LOGO_URL:
+          "https://conservationmetrics.com/wp-content/themes/conservation-metrics/images/logo-conservation-metrics.png",
         MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-streets-v12",
         MAPBOX_PROJECTION: "globe",
         MAPBOX_CENTER_LATITUDE: "38",
@@ -138,6 +133,7 @@ export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
         MAP_LEGEND_LAYER_IDS: "road-primary,aerialway",
         ALERT_RESOURCES: "NO",
         MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
+        PLANET_API_KEY: planetApiKey,
       },
     };
   }
