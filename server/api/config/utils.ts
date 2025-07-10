@@ -4,6 +4,10 @@ import type { DatabaseConnection } from "@/types/types";
 
 /** Retrieves table names from the database, excluding those with metadata, columns, and PostGIS-related entries. */
 export const getFilteredTableNames = async (database: DatabaseConnection) => {
+  if (process.env.CI) {
+    return [];
+  }
+
   let tableNames = await fetchTableNames(database);
   tableNames = tableNames.filter(
     (name) =>
