@@ -66,9 +66,14 @@ const featureWithPreparedCoordinates = (feature: DataEntry) => ({
 <template>
   <div
     id="galleryContainer"
+    data-testid="gallery-container"
     class="gallery p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
   >
-    <div v-if="filterColumn" class="sticky top-10 right-10 z-10">
+    <div
+      v-if="filterColumn"
+      class="sticky top-10 right-10 z-10"
+      data-testid="filter-container"
+    >
       <DataFilter
         :data="galleryData"
         :filter-column="filterColumn"
@@ -82,6 +87,7 @@ const featureWithPreparedCoordinates = (feature: DataEntry) => ({
       :feature="featureWithPreparedCoordinates(feature)"
       :file-paths="getFilePathsWithExtension(feature, allowedFileExtensions)"
       :media-base-path="mediaBasePath"
+      data-testid="gallery-item"
     />
   </div>
 </template>

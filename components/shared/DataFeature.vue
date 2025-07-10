@@ -53,11 +53,17 @@ const setMediaBasePath = () => {
 </script>
 
 <template>
-  <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+  <div
+    class="rounded-lg border bg-card text-card-foreground shadow-sm"
+    data-testid="data-feature"
+  >
     <div class="p-6 space-y-6">
       <div v-for="(value, key) in sortedFeature" :key="key">
         <div v-if="key.toLowerCase().includes('data source')" class="mb-4">
-          <h1 class="text-2xl font-semibold tracking-tight">
+          <h1
+            class="text-2xl font-semibold tracking-tight"
+            data-testid="data-source-heading"
+          >
             {{ value }} data
           </h1>
         </div>
@@ -66,6 +72,7 @@ const setMediaBasePath = () => {
       <div
         v-if="allowedFileExtensions && setMediaBasePath()"
         :class="{ 'grid grid-cols-2 gap-6': isAlert }"
+        data-testid="media-files-container"
       >
         <MediaFile
           v-for="filePath in filePaths"
@@ -76,7 +83,7 @@ const setMediaBasePath = () => {
         />
       </div>
 
-      <div class="space-y-3">
+      <div class="space-y-3" data-testid="feature-fields">
         <div v-for="(value, key) in sortedFeature" :key="key">
           <div
             v-if="
@@ -88,9 +95,10 @@ const setMediaBasePath = () => {
               !key.toLowerCase().includes('data source')
             "
             class="flex flex-col gap-1"
+            data-testid="feature-field"
           >
             <!-- Translate keys only when it's an alert to avoid performance issues with translating all keys -->
-            <span class="text-sm font-medium">
+            <span class="text-sm font-medium" data-testid="field-label">
               {{
                 isAlert
                   ? $t(key).charAt(0).toUpperCase() + $t(key).slice(1)
@@ -99,7 +107,10 @@ const setMediaBasePath = () => {
                     : key.charAt(0).toUpperCase() + key.slice(1)
               }}
             </span>
-            <div class="text-sm text-muted-foreground">
+            <div
+              class="text-sm text-muted-foreground"
+              data-testid="field-value"
+            >
               <span
                 v-if="key !== 'geographicCentroid' && key !== 'geocoordinates'"
                 class="break-words"
@@ -114,6 +125,7 @@ const setMediaBasePath = () => {
                   "
                   target="_blank"
                   class="text-primary hover:text-primary/90 underline-offset-4 hover:underline"
+                  data-testid="google-maps-link"
                   >({{ $t("viewOnGoogleMaps") }})</a
                 >
               </span>
@@ -122,9 +134,14 @@ const setMediaBasePath = () => {
         </div>
       </div>
     </div>
-    <div v-if="isAlertsDashboard" class="mt-6 pt-4 border-t border-gray-200">
+    <div
+      v-if="isAlertsDashboard"
+      class="mt-6 pt-4 border-t border-gray-200"
+      data-testid="copy-link-section"
+    >
       <button
         class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
+        data-testid="copy-link-button"
         @click="copyLink"
       >
         <component

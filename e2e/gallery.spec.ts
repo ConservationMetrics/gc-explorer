@@ -23,14 +23,14 @@ test("gallery page - displays gallery with media files", async ({ page }) => {
 
     // 6. Wait for the gallery container to be present
     await page
-      .locator("#galleryContainer")
+      .getByTestId("gallery-container")
       .waitFor({ state: "attached", timeout: 5000 });
 
     // 7. Verify gallery container is visible
-    await expect(page.locator("#galleryContainer")).toBeVisible();
+    await expect(page.getByTestId("gallery-container")).toBeVisible();
 
     // 8. Check for gallery items (DataFeature components)
-    const galleryItems = page.locator(".rounded-lg.border.bg-card");
+    const galleryItems = page.getByTestId("gallery-item");
     const itemCount = await galleryItems.count();
     expect(itemCount).toBeGreaterThan(0);
   }
@@ -61,7 +61,7 @@ test("gallery page - displays images with lightbox functionality", async ({
 
     // 6. Wait for the gallery container to be present
     await page
-      .locator("#galleryContainer")
+      .getByTestId("gallery-container")
       .waitFor({ state: "attached", timeout: 5000 });
 
     // 7. Look for image links (lightbox enabled)
@@ -117,7 +117,7 @@ test("gallery page - audio playback functionality", async ({ page }) => {
 
     // 6. Wait for the gallery container to be present
     await page
-      .locator("#galleryContainer")
+      .getByTestId("gallery-container")
       .waitFor({ state: "attached", timeout: 5000 });
 
     // 7. Look for audio elements and wait for them to be visible
@@ -211,16 +211,16 @@ test("gallery page - filter functionality", async ({ page }) => {
 
     // 6. Wait for the gallery container to be present
     await page
-      .locator("#galleryContainer")
+      .getByTestId("gallery-container")
       .waitFor({ state: "attached", timeout: 5000 });
 
-    // 7. Look for combobox role (filter selector)
-    const filterCombobox = page.getByRole("combobox");
-    const comboboxCount = await filterCombobox.count();
+    // 7. Look for filter container
+    const filterContainer = page.getByTestId("filter-container");
+    const filterCount = await filterContainer.count();
 
-    if (comboboxCount > 0) {
-      // 8. Click the combobox to open dropdown
-      await filterCombobox.first().click();
+    if (filterCount > 0) {
+      // 8. Click the filter select to open dropdown
+      await page.getByTestId("filter-select").click();
 
       // 9. Wait for dropdown options to appear
       const dropdownOptions = page.getByRole("option");
@@ -229,7 +229,7 @@ test("gallery page - filter functionality", async ({ page }) => {
         .waitFor({ state: "visible", timeout: 5000 });
 
       // 10. Get initial gallery item count
-      const initialItems = page.locator(".rounded-lg.border.bg-card");
+      const initialItems = page.getByTestId("gallery-item");
       const initialCount = await initialItems.count();
 
       // 11. Select first filter option
@@ -240,22 +240,22 @@ test("gallery page - filter functionality", async ({ page }) => {
       await page.waitForTimeout(1000);
 
       // 13. Get filtered gallery item count
-      const filteredItems = page.locator(".rounded-lg.border.bg-card");
+      const filteredItems = page.getByTestId("gallery-item");
       const filteredCount = await filteredItems.count();
 
       // 14. Verify filtering changed the number of items (or at least applied)
-      expect(filteredCount).toBeLessThanOrEqual(initialCount);
+      expect(filteredCount).toBeLessThan(initialCount);
 
       // 15. Clear filter by clicking the X button on selected tag
-      const selectedTag = page.locator(".option-box button");
-      if ((await selectedTag.count()) > 0) {
-        await selectedTag.click();
+      const removeFilterButton = page.getByTestId("remove-filter-button");
+      if ((await removeFilterButton.count()) > 0) {
+        await removeFilterButton.click();
 
         // 16. Wait for filter to clear
         await page.waitForTimeout(1000);
 
         // 17. Verify items are back to original count
-        const clearedItems = page.locator(".rounded-lg.border.bg-card");
+        const clearedItems = page.getByTestId("gallery-item");
         const clearedCount = await clearedItems.count();
         expect(clearedCount).toBe(initialCount);
       }
@@ -286,11 +286,11 @@ test("gallery page - pagination and infinite scroll", async ({ page }) => {
 
     // 6. Wait for the gallery container to be present
     await page
-      .locator("#galleryContainer")
+      .getByTestId("gallery-container")
       .waitFor({ state: "attached", timeout: 5000 });
 
     // 7. Get initial item count
-    const initialItems = page.locator(".rounded-lg.border.bg-card");
+    const initialItems = page.getByTestId("gallery-item");
     const initialCount = await initialItems.count();
 
     // 8. Scroll to bottom to trigger infinite scroll
@@ -302,7 +302,7 @@ test("gallery page - pagination and infinite scroll", async ({ page }) => {
     await page.waitForTimeout(2000);
 
     // 10. Get new item count
-    const newItems = page.locator(".rounded-lg.border.bg-card");
+    const newItems = page.getByTestId("gallery-item");
     const newCount = await newItems.count();
 
     // 11. Verify either more items loaded or we're at the end
@@ -333,26 +333,26 @@ test("gallery page - data feature information display", async ({ page }) => {
 
     // 6. Wait for the gallery container to be present
     await page
-      .locator("#galleryContainer")
+      .getByTestId("gallery-container")
       .waitFor({ state: "attached", timeout: 5000 });
 
     // 7. Get the first gallery item
-    const firstItem = page.locator(".rounded-lg.border.bg-card").first();
+    const firstItem = page.getByTestId("gallery-item").first();
     await expect(firstItem).toBeVisible();
 
     // 8. Check for data source heading
-    const dataSourceHeading = firstItem.locator("h1");
+    const dataSourceHeading = firstItem.getByTestId("data-source-heading");
     if ((await dataSourceHeading.count()) > 0) {
       await expect(dataSourceHeading).toBeVisible();
     }
 
     // 9. Check for feature information fields
-    const featureFields = firstItem.locator(".text-sm.font-medium");
+    const featureFields = firstItem.getByTestId("field-label");
     const fieldCount = await featureFields.count();
     expect(fieldCount).toBeGreaterThan(0);
 
     // 10. Check for Google Maps links (if coordinates are present)
-    const googleMapsLinks = firstItem.locator('a[href*="google.com/maps"]');
+    const googleMapsLinks = firstItem.getByTestId("google-maps-link");
     const mapsLinkCount = await googleMapsLinks.count();
 
     if (mapsLinkCount > 0) {
@@ -390,11 +390,11 @@ test("gallery page - responsive grid layout", async ({ page }) => {
 
     // 6. Wait for the gallery container to be present
     await page
-      .locator("#galleryContainer")
+      .getByTestId("gallery-container")
       .waitFor({ state: "attached", timeout: 5000 });
 
     // 7. Verify gallery container has responsive grid classes
-    const galleryContainer = page.locator("#galleryContainer");
+    const galleryContainer = page.getByTestId("gallery-container");
     await expect(galleryContainer).toHaveClass(/grid/);
     await expect(galleryContainer).toHaveClass(/grid-cols-1/);
     await expect(galleryContainer).toHaveClass(/md:grid-cols-2/);
@@ -406,7 +406,7 @@ test("gallery page - responsive grid layout", async ({ page }) => {
     await page.waitForTimeout(1000);
 
     // 9. Verify items are still visible
-    const items = page.locator(".rounded-lg.border.bg-card");
+    const items = page.getByTestId("gallery-item");
     await expect(items.first()).toBeVisible();
 
     // 10. Test mobile viewport
@@ -442,8 +442,8 @@ test("gallery page - error handling for unavailable gallery", async ({
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
 
     // 6. Check for either gallery content or error message
-    const galleryContainer = page.locator("#galleryContainer");
-    const errorMessage = page.locator("h3");
+    const galleryContainer = page.getByTestId("gallery-container");
+    const errorMessage = page.getByTestId("gallery-error-message");
 
     // 7. Wait for either to appear
     await Promise.race([

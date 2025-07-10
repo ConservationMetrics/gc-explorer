@@ -55,7 +55,10 @@ useHead({
         :filter-column="filterColumn"
         :media-base-path="mediaBasePath"
       />
-      <h3 v-if="!mediaBasePath && dataFetched">
+      <h3
+        v-if="!mediaBasePath && dataFetched"
+        data-testid="gallery-error-message"
+      >
         {{ $t("galleryNotAvailable") }}.
       </h3>
     </ClientOnly>
