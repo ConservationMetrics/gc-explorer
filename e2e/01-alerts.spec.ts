@@ -4,17 +4,24 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
   page,
 }) => {
   await page.goto("/");
+
   // Wait until the index page has rendered the list of available views
   const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
   await alertsLink.waitFor({ state: "visible", timeout: 5000 });
 
-  // Navigate to the alerts dashboard via client-side routing
-  await alertsLink.click();
+  // Get the href first
+  const href = await alertsLink.getAttribute("href");
+
+  // Navigate directly
+
+  await page.goto(href!);
 
   // Ensure the route change completed
-  await page.waitForURL("**/alerts/**", { timeout: 5000 });
+
+  await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
   // Wait until the map container has been added to the DOM
+
   await page.locator("#map").waitFor({ state: "attached", timeout: 5000 });
 
   /* Give Mapbox a gentle nudge: click roughly at 75% of the viewport width
@@ -22,21 +29,27 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
    the map has focus before we look for pulsing markers. */
   const viewport = page.viewportSize();
   if (viewport) {
+    console.log(
+      `🖱️ Clicking map at position (${viewport.width * 0.75}, ${viewport.height * 0.5})`,
+    );
     await page.mouse.click(viewport.width * 0.75, viewport.height * 0.5);
   }
   await page.locator("#map").waitFor();
 
   // Wait for the map to be ready and the canvas to be visible
+
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await expect(mapCanvas).toBeVisible();
 
   // Ensure the Mapbox instance has been attached to window
+
   await page.waitForFunction(() => {
     // @ts-expect-error _testMap is exposed for E2E testing only
     return !!window._testMap;
   });
 
   // Wait for the map to be fully loaded and rendered
+
   await page.waitForFunction(
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
@@ -58,6 +71,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
   });
 
   // Wait for at least one symbol feature to be rendered
+
   await page.waitForFunction(
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
@@ -73,13 +87,20 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
 
   //
   // loop through them and fire a synthetic click
-  for (const feature of symbolFeatures) {
+
+  for (let i = 0; i < symbolFeatures.length; i++) {
+    const feature = symbolFeatures[i];
+    console.log(
+      `🎯 Processing symbol feature ${i + 1}/${symbolFeatures.length}`,
+    );
+
     // Parse centroid (as string "lat, lng")
     const [lat, lng] = feature.properties.geographicCentroid
       .split(",")
       .map(Number);
 
     // 1. Click the symbol to zoom
+
     await page.evaluate(
       ([lng, lat]) => {
         // @ts-expect-error helper exposed in component
@@ -96,6 +117,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     );
 
     // 2. Wait until the map has finished panning/zooming
+
     await page.waitForFunction(() => {
       // @ts-expect-error _testMap is exposed for E2E testing only
       const m = window._testMap;
@@ -103,6 +125,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     });
 
     // 3. Project centroid to screen coordinates (use [lng, lat] order!)
+
     const { x, y } = await page.evaluate(
       ([lng, lat]) => {
         // @ts-expect-error helper exposed in component
@@ -112,6 +135,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     );
 
     // 4. Try to find a polygon at or near that pixel (expand search radius)
+
     const found = await page.evaluate(
       ({ x, y }) => {
         // @ts-expect-error helper exposed in component
@@ -137,10 +161,14 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
 
     if (found.found) {
       // 5. Click the canvas at the found pixel
+
       await page.mouse.click(found.px, found.py);
       // 6. Assert sidebar
+
       await expect(page.getByText(/copy link to alert/i)).toBeVisible();
+
       // 7. Assert the URL contains the alertId query param
+
       await expect(page).toHaveURL(/\?alertId=/);
     }
   }
