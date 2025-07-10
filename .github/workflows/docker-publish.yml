@@ -88,9 +88,13 @@ jobs:
           export MEDIA_BASE_PATH="${{ secrets.MEDIA_BASE_PATH }}"
           # Start the services with environment variables
           docker compose -f docker-compose.tests.yml up -d database backend
-          # Wait for the backend to be ready
-          sleep 10
-          # Run the tests
+          # Wait for the backend to be ready with proper health check
+          echo "Waiting for backend to be ready..."
+          timeout 60 bash -c 'until curl -f http://localhost:8080; do sleep 2; done'
+          echo "Backend is ready!"
+          # Check if services are running
+          docker compose -f docker-compose.tests.yml ps
+          # Run the tests with verbose output
           docker compose -f docker-compose.tests.yml run --rm \
             -e NUXT_PUBLIC_APP_API_KEY="${{ secrets.APP_API_KEY }}" \
             -e NUXT_SESSION_SECRET="${{ secrets.NUXT_SESSION_SECRET }}" \
