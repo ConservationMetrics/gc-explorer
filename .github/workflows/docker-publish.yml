@@ -79,11 +79,11 @@ jobs:
           export NUXT_PUBLIC_APP_API_KEY="${{ secrets.APP_API_KEY }}"
           export NUXT_SESSION_SECRET="${{ secrets.NUXT_SESSION_SECRET }}"
           # Start the services with environment variables
-          docker-compose -f docker-compose.tests.yml up -d database backend
+          docker compose -f docker-compose.tests.yml up -d database backend
           # Wait for the backend to be ready
           sleep 15
           # Run the tests
-          docker-compose -f docker-compose.tests.yml run --rm \
+          docker compose -f docker-compose.tests.yml run --rm \
             -e NUXT_PUBLIC_APP_API_KEY="${{ secrets.APP_API_KEY }}" \
             -e NUXT_SESSION_SECRET="${{ secrets.NUXT_SESSION_SECRET }}" \
             playwright
@@ -97,7 +97,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker-compose -f docker-compose.tests.yml down -v
+          docker compose -f docker-compose.tests.yml down -v
 
   docker-build-and-publish:
     name: Docker Build and Publish
