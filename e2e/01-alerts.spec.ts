@@ -3,40 +3,48 @@ import { expect, test } from "@playwright/test";
 test("alerts dashboard - opens sidebar and updates URL on symbol and polygon clicks", async ({
   page,
 }) => {
+  // 1. Navigate to the index page first to get available tables
   await page.goto("/");
-  // Wait until the index page has rendered the list of available views
+
+  // 2. Wait until the index page has rendered the list of available views
   const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
   await alertsLink.waitFor({ state: "visible", timeout: 5000 });
 
-  // Navigate to the alerts dashboard via client-side routing
-  await alertsLink.click();
+  // 3. Get the href first
+  const href = await alertsLink.getAttribute("href");
 
-  // Ensure the route change completed
-  await page.waitForURL("**/alerts/**", { timeout: 5000 });
+  // 4. Navigate directly to alerts page
+  await page.goto(href!);
 
-  // Wait until the map container has been added to the DOM
+  // 5. Ensure the route change completed
+  await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
+
+  // 6. Wait until the map container has been added to the DOM
   await page.locator("#map").waitFor({ state: "attached", timeout: 5000 });
 
-  /* Give Mapbox a gentle nudge: click roughly at 75% of the viewport width
-   (vertically centered).  This ensures tiles are rendered and
-   the map has focus before we look for pulsing markers. */
+  // 7. Give Mapbox a gentle nudge: click roughly at 75% of the viewport width
+  // (vertically centered). This ensures tiles are rendered and
+  // the map has focus before we look for pulsing markers.
   const viewport = page.viewportSize();
   if (viewport) {
+    console.log(
+      `🖱️ Clicking map at position (${viewport.width * 0.75}, ${viewport.height * 0.5})`,
+    );
     await page.mouse.click(viewport.width * 0.75, viewport.height * 0.5);
   }
   await page.locator("#map").waitFor();
 
-  // Wait for the map to be ready and the canvas to be visible
+  // 8. Wait for the map to be ready and the canvas to be visible
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await expect(mapCanvas).toBeVisible();
 
-  // Ensure the Mapbox instance has been attached to window
+  // 9. Ensure the Mapbox instance has been attached to window
   await page.waitForFunction(() => {
     // @ts-expect-error _testMap is exposed for E2E testing only
     return !!window._testMap;
   });
 
-  // Wait for the map to be fully loaded and rendered
+  // 10. Wait for the map to be fully loaded and rendered
   await page.waitForFunction(
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
@@ -46,8 +54,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     { timeout: 5000 },
   );
 
-  // pull every symbol feature Mapbox has already rendered
-
+  // 11. Pull every symbol feature Mapbox has already rendered
   const symbolFeatures = await page.evaluate(() => {
     // @ts-expect-error helper exposed in component
     const map = window._testMap;
@@ -57,7 +64,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     return features;
   });
 
-  // Wait for at least one symbol feature to be rendered
+  // 12. Wait for at least one symbol feature to be rendered
   await page.waitForFunction(
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
@@ -71,15 +78,19 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     { timeout: 5000 },
   );
 
-  //
-  // loop through them and fire a synthetic click
-  for (const feature of symbolFeatures) {
-    // Parse centroid (as string "lat, lng")
+  // 13. Loop through them and fire a synthetic click
+  for (let i = 0; i < symbolFeatures.length; i++) {
+    const feature = symbolFeatures[i];
+    console.log(
+      `🎯 Processing symbol feature ${i + 1}/${symbolFeatures.length}`,
+    );
+
+    // 14. Parse centroid (as string "lat, lng")
     const [lat, lng] = feature.properties.geographicCentroid
       .split(",")
       .map(Number);
 
-    // 1. Click the symbol to zoom
+    // 15. Click the symbol to zoom
     await page.evaluate(
       ([lng, lat]) => {
         // @ts-expect-error helper exposed in component
@@ -95,14 +106,14 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
       [lng, lat],
     );
 
-    // 2. Wait until the map has finished panning/zooming
+    // 16. Wait until the map has finished panning/zooming
     await page.waitForFunction(() => {
       // @ts-expect-error _testMap is exposed for E2E testing only
       const m = window._testMap;
       return m && !m.isMoving();
     });
 
-    // 3. Project centroid to screen coordinates (use [lng, lat] order!)
+    // 17. Project centroid to screen coordinates (use [lng, lat] order!)
     const { x, y } = await page.evaluate(
       ([lng, lat]) => {
         // @ts-expect-error helper exposed in component
@@ -111,7 +122,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
       [lng, lat],
     );
 
-    // 4. Try to find a polygon at or near that pixel (expand search radius)
+    // 18. Try to find a polygon at or near that pixel (expand search radius)
     const found = await page.evaluate(
       ({ x, y }) => {
         // @ts-expect-error helper exposed in component
@@ -136,11 +147,13 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     );
 
     if (found.found) {
-      // 5. Click the canvas at the found pixel
+      // 19. Click the canvas at the found pixel
       await page.mouse.click(found.px, found.py);
-      // 6. Assert sidebar
+
+      // 20. Assert sidebar is visible
       await expect(page.getByText(/copy link to alert/i)).toBeVisible();
-      // 7. Assert the URL contains the alertId query param
+
+      // 21. Assert the URL contains the alertId query param
       await expect(page).toHaveURL(/\?alertId=/);
     }
   }

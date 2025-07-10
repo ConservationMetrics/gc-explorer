@@ -59,8 +59,8 @@ const emitFilterSelection = () => {
 </script>
 
 <template>
-  <div class="filter-modal">
-    <h4>
+  <div class="filter-modal" data-testid="data-filter">
+    <h4 data-testid="filter-heading">
       {{ $t("filterDataByColumn") }}: <strong>{{ filterColumn }}</strong>
     </h4>
     <VueSelect
@@ -68,20 +68,28 @@ const emitFilterSelection = () => {
       v-model="selectedFilterValue"
       :is-multi="true"
       :options="getUniqueFilterValues"
+      data-testid="filter-select"
       @option-selected="emitFilterSelection()"
       @option-deselected="emitFilterSelection()"
     >
       <!-- This is what shows in the listbox when selected -->
       <template #tag="{ option, removeOption }">
-        <div class="option-box">
+        <div class="option-box" data-testid="selected-filter-tag">
           <span
             v-if="showColoredDot"
             class="colored-dot"
             :style="{ backgroundColor: option.color }"
+            data-testid="colored-dot"
           ></span>
           <span class="selected-label">
             {{ option.label }}
-            <button type="button" @click="removeOption">&times;</button>
+            <button
+              type="button"
+              data-testid="remove-filter-button"
+              @click="removeOption"
+            >
+              &times;
+            </button>
           </span>
         </div>
       </template>
@@ -91,6 +99,7 @@ const emitFilterSelection = () => {
           v-if="showColoredDot"
           class="colored-dot dot-dropdown"
           :style="{ backgroundColor: option.color }"
+          data-testid="dropdown-colored-dot"
         ></span>
         {{ option.label }}
       </template>
