@@ -26,5 +26,4 @@ export default defineConfig({
     baseURL: "http://localhost:8080",
     headless: true,
   },
-  workers: process.env.CI ? 1 : undefined,
 });
