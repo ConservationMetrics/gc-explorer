@@ -94,11 +94,12 @@ export const fetchTableNames = async (
 export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
   // If running in CI, return hardcoded configuration for testing purposes
   if (process.env.CI) {
+    console.log("CI mode detected, returning hardcoded config");
     const mapboxAccessToken =
       process.env.MAPBOX_ACCESS_TOKEN || "{MAPBOX_ACCESS_TOKEN}";
     const mediaBasePath = process.env.MEDIA_BASE_PATH || "{MEDIA_BASE_PATH}";
 
-    return {
+    const hardcodedConfig = {
       bcmform_responses: {
         VIEWS: "map,gallery",
         EMBED_MEDIA: "YES",
@@ -140,6 +141,9 @@ export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
         MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
       },
     };
+
+    console.log("Hardcoded config:", JSON.stringify(hardcodedConfig, null, 2));
+    return hardcodedConfig;
   }
 
   // Create the config table if it does not exist
