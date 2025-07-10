@@ -94,14 +94,6 @@ jobs:
           echo "Backend is ready!"
           # Check if services are running
           docker compose -f docker-compose.tests.yml ps
-          # Debug: Check what the config endpoint returns
-          echo "Testing config endpoint..."
-          curl -H "x-api-key: ${{ secrets.APP_API_KEY }}" http://localhost:8080/api/config
-          echo ""
-          # Debug: Check what the index page returns
-          echo "Testing index page..."
-          curl -H "x-api-key: ${{ secrets.APP_API_KEY }}" http://localhost:8080/ | head -20
-          echo ""
           # Run the tests directly in the workflow
           echo "Running Playwright tests..."
           pnpm run test:e2e
