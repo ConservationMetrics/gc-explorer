@@ -40,7 +40,6 @@ test("config page - displays configuration dashboard with table cards", async ({
     "🔍 Config page HTML (first 1000 chars):",
     pageContent.substring(0, 1000),
   );
-
   // 2. Wait for the page heading to become visible
   await expect(
     page.getByRole("heading", { name: /available views: configuration/i }),

@@ -34,7 +34,6 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     "🔍 Page HTML (first 1000 chars):",
     pageContent.substring(0, 1000),
   );
-
   // 2. Wait until the index page has rendered the list of available views
   const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
   await alertsLink.waitFor({ state: "visible", timeout: 5000 });

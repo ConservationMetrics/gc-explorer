@@ -5,7 +5,6 @@ test("index page - displays available views and alerts link", async ({
 }) => {
   // 1. Navigate to the root of the application
   await page.goto("/");
-
   // Debug: Log page content to understand what's rendered
   console.log("🔍 Page title:", await page.title());
   console.log("🔍 Page URL:", page.url());
