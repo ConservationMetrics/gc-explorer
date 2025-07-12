@@ -57,6 +57,7 @@ jobs:
           BASE_URL=http://localhost:8080
           MAPBOX_ACCESS_TOKEN=${{ secrets.MAPBOX_ACCESS_TOKEN }}
           MEDIA_BASE_PATH=${{ secrets.MEDIA_BASE_PATH }}
+          PLANET_API_KEY=${{ secrets.PLANET_API_KEY }}
           # Database connection details (matching docker-compose)
           NUXT_DB_HOST=database
           NUXT_DB_PORT=5432
@@ -88,7 +89,7 @@ jobs:
           export MEDIA_BASE_PATH="${{ secrets.MEDIA_BASE_PATH }}"
           export PLANET_API_KEY="${{ secrets.PLANET_API_KEY }}"
           # Start the services with environment variables
-          docker compose -f docker-compose.tests.yml up -d database backend
+          docker compose -f docker-compose.tests.yml up -d database backend --env-file .env.test
           # Wait for the backend to be ready with proper health check
           echo "Waiting for backend to be ready..."
           timeout 60 bash -c 'until curl -f http://localhost:8080; do sleep 2; done'
