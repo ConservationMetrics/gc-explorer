@@ -20,7 +20,10 @@ if [ ! -f ".env.local.docker-tests" ]; then
     echo "Please create this file with your environment variables first."
     exit 1
 fi
-
+# Load environment variables into the shell
+set -a
+source .env.local.docker-tests
+set +a
 # Check if required environment variables are set in the file
 echo "📋 Checking environment variables..."
 required_vars=("NUXT_PUBLIC_APP_API_KEY" "NUXT_SESSION_SECRET" "MAPBOX_ACCESS_TOKEN" "MEDIA_BASE_PATH" "PLANET_API_KEY")
@@ -34,15 +37,13 @@ for var in "${required_vars[@]}"; do
 done
 
 echo "✅ Environment variables look good"
+if [ -z "$ImgTag" ]; then
+     echo "❌ ImgTag is not set! Please set ImgTag in your .env.local.docker-tests file."
+     exit 1
+   fi
 
-# Build or pull the image depending on ImgTag
-if [ "$ImgTag" = "local" ]; then
-  echo "🔨 Building Docker image locally..."
+echo "🔨 Building Docker image locally..."
   docker build -t communityfirst/guardianconnector-explorer:local .
-else
-  echo "⬇️ Pulling Docker image from Docker Hub..."
-  docker pull communityfirst/guardianconnector-explorer:$ImgTag
-fi
 
 # Build and start the services
 echo "🐳 Starting Docker services..."
