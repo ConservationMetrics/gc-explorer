@@ -24,5 +24,7 @@ RUN pnpm run build
 EXPOSE 8080
 ENV NITRO_PORT=8080
 
-# Run the application
-ENTRYPOINT ["node", ".output/server/index.mjs"]
+# Reset entrypoint to allow running custom commands like `pnpm` using `docker run`
+ENTRYPOINT [  ]
+# Default to run the web application
+CMD ["node", ".output/server/index.mjs"]

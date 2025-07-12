@@ -16,6 +16,9 @@ export default defineEventHandler(async (event: H3Event) => {
     const filteredTableNames = tableNames.filter(
       (name) => !Object.keys(viewsConfig).includes(name),
     );
+    if (process.env.CI) {
+      filteredTableNames.push("comapeo_doc_16", "gfw_alerts");
+    }
 
     return [viewsConfig, filteredTableNames];
   } catch (error) {

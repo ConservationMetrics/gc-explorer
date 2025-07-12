@@ -10,14 +10,20 @@ config({ path: resolve(__dirname, ".env.test") });
 
 export default defineConfig({
   testDir: "e2e",
-  webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:8080",
-    timeout: 200_000,
-    reuseExistingServer: false,
-  },
+  ...(process.env.CI
+    ? {}
+    : {
+        webServer: {
+          command: "pnpm dev",
+          url: "http://localhost:8080",
+          timeout: 200_000,
+          reuseExistingServer: false,
+          stdout: "pipe",
+          stderr: "pipe",
+        },
+      }),
   use: {
     baseURL: "http://localhost:8080",
-    headless: false,
+    headless: true,
   },
 });

@@ -28,7 +28,8 @@ export const setupDatabaseConnection = async (
     host: dbHost,
     password: dbPassword,
     port: parseInt(dbPort, 10),
-    ssl: dbSsl === true ? { rejectUnauthorized: false } : false,
+    ssl:
+      dbSsl === true && !process.env.CI ? { rejectUnauthorized: false } : false,
   };
   let client = new pg.Client(dbConnection);
 
