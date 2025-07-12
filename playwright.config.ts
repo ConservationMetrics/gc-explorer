@@ -24,6 +24,6 @@ export default defineConfig({
       }),
   use: {
     baseURL: "http://localhost:8080",
-    headless: true,
+    headless: false,
   },
 });

@@ -1,11 +1,8 @@
-version: '3.8'
-
 services:
 
   # Backend web server
   backend:
-    # Use a pre-built image tagged as $ImgTag if available.
-    # Otherwise use "latest" as image tag
+    # Use image tag from the environment variable to allow for local testing or CI
     image: communityfirst/guardianconnector-explorer:${ImgTag:-latest}
     ports:
       - "127.0.0.1:8080:8080"
@@ -60,8 +57,13 @@ services:
         psql -U testuser -d test_warehouse -c '\dt'
         echo '🔍 Table row counts:'
         psql -U testuser -d test_warehouse -c 'SELECT schemaname, tablename, n_tup_ins as rows FROM pg_stat_user_tables ORDER BY tablename;'
-        echo '🔍 Config table contents:'
-        psql -U testuser -d test_warehouse -c 'SELECT * FROM config;' || echo 'Config table does not exist yet'
+        echo '🔍 Available tables and their contents:'
+        echo '🔍 bcmform_responses table (first 3 rows):'
+        psql -U testuser -d test_warehouse -c 'SELECT * FROM bcmform_responses LIMIT 3;' || echo 'bcmform_responses table does not exist'
+        echo '🔍 fake_alerts table (first 3 rows):'
+        psql -U testuser -d test_warehouse -c 'SELECT * FROM fake_alerts LIMIT 3;' || echo 'fake_alerts table does not exist'
+        echo '🔍 mapeo_data table (first 3 rows):'
+        psql -U testuser -d test_warehouse -c 'SELECT * FROM mapeo_data LIMIT 3;' || echo 'mapeo_data table does not exist'
         # Keep the container running
         wait
       "
