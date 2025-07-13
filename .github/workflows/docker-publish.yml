@@ -89,7 +89,7 @@ jobs:
           export MEDIA_BASE_PATH="${{ secrets.MEDIA_BASE_PATH }}"
           export PLANET_API_KEY="${{ secrets.PLANET_API_KEY }}"
           # Start the services with environment variables
-          docker compose -f docker-compose.tests.yml up -d database backend --env-file .env.test
+          docker compose -f docker-compose.tests.yml --env-file .env.test up -d database backend
           # Wait for the backend to be ready with proper health check
           echo "Waiting for backend to be ready..."
           timeout 60 bash -c 'until curl -f http://localhost:8080; do sleep 2; done'
