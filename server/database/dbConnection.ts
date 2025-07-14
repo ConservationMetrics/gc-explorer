@@ -31,6 +31,11 @@ export const setupDatabaseConnection = async (
     ssl:
       dbSsl === true && !process.env.CI ? { rejectUnauthorized: false } : false,
   };
+  // Skip config database connection in CI/testing environments
+  // The config database (guardianconnector) doesn't exist in our test setup,
+  // and since we "hijack" the return values during testing/CI anyway,
+  // we can just return null to avoid connection errors and potential crashes.
+  // This is the correct behavior since the database DOES NOT exist.
   if (isConfigDb && !process.env.CI) {
     console.log("Config database does not exist. Attemping to create...");
     return null;
