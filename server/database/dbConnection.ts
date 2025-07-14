@@ -31,6 +31,10 @@ export const setupDatabaseConnection = async (
     ssl:
       dbSsl === true && !process.env.CI ? { rejectUnauthorized: false } : false,
   };
+  if (isConfigDb && !process.env.CI) {
+    console.log("Config database does not exist. Attemping to create...");
+    return null;
+  }
   let client = new pg.Client(dbConnection);
 
   try {

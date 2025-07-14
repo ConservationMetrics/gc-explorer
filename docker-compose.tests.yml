@@ -7,7 +7,8 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     environment:
       # All the NUXT_DB_* refer to  connection details from the 'database' service below
       NUXT_DB_HOST: database

@@ -135,6 +135,28 @@ export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
         MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
         PLANET_API_KEY: planetApiKey,
       },
+      gfw_fake_alerts: {
+        VIEWS: "alerts",
+        EMBED_MEDIA: "YES",
+        MEDIA_BASE_PATH_ALERTS: "",
+        MEDIA_BASE_PATH: "",
+        LOGO_URL:
+          "https://conservationmetrics.com/wp-content/themes/conservation-metrics/images/logo-conservation-metrics.png",
+        MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-v11",
+        MAPBOX_PROJECTION: "mercator",
+        MAPBOX_CENTER_LATITUDE: "0",
+        MAPBOX_CENTER_LONGITUDE: "0",
+        MAPBOX_ZOOM: 3,
+        MAPBOX_PITCH: 0,
+        MAPBOX_BEARING: 0,
+        MAPBOX_3D: "NO",
+        MAPEO_TABLE: "mapeo_data",
+        MAPEO_CATEGORY_IDS: "threat,deforestation",
+        MAP_LEGEND_LAYER_IDS: "road-primary,aerialway,water",
+        ALERT_RESOURCES: "NO",
+        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
+        PLANET_API_KEY: planetApiKey,
+      },
     };
   }
 
