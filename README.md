@@ -75,19 +75,44 @@ Run E2E tests that verify the full application, from a real browser down to the
 backend API and database, and back up:
 
 ```bash
-# Run E2E tests in an isolated Docker environment, using the :latest image
-$ docker compose -f docker-compose.tests.yml run playwright pnpm test:e2e
+# Run E2E tests in an isolated Docker environment (starts backend + database)
+$ docker compose -f docker-compose.tests.yml up -d database backend
+$ pnpm test:e2e
 
-# Run E2E tests using a specific Docker image tag (say, one you just built)
-$ ImgTag=2025-01-01 docker compose -f docker-compose.tests.yml run playwright pnpm test:e2e
+# Run E2E tests using a specific Docker image tag
+$ ImgTag=2025-01-01 docker compose -f docker-compose.tests.yml up -d database backend
+$ pnpm test:e2e
 
-# Or run ALL tests (unit + E2E)
-$ docker compose -f docker-compose.tests.yml run playwright pnpm test
+# Or use the convenience script (requires .env.local.docker-tests file)
+$ ./run-local-docker-tests.sh
+$ pnpm test:e2e
+
+# For local development (without Docker), Playwright will start its own dev server
+$ pnpm test:e2e
 ```
 
 **Important:** E2E tests require a fully functional test environment. The preferred setup uses
-docker-compose to spin up isolated containers for the backend, database, and test runner.
+docker-compose to spin up isolated containers for the backend and database, then runs Playwright tests separately.
 This approach guarantees consistent test runs without relying on shared environments.
+
+**Test Modes:**
+- **Docker mode** (CI=true): Uses containerized backend and database, Playwright runs against these services
+- **Local mode** (CI not set): Playwright starts its own Nuxt dev server and runs tests against it
+
+**Environment Setup:**
+- For local Docker testing: Create a `.env.local.docker-tests` file with your API keys and secrets:
+  - `NUXT_PUBLIC_APP_API_KEY`
+  - `NUXT_SESSION_SECRET`
+  - `MAPBOX_ACCESS_TOKEN`
+  - `MEDIA_BASE_PATH`
+  - `PLANET_API_KEY`
+  - `ImgTag=local`
+- For local testing with `.env.test`: Copy `.env.test.example` and set:
+  - `CI=true` for Docker mode (uses containerized services)
+  - `CI=false` for local mode (Playwright starts its own dev server)
+  - All required API keys and secrets
+- For CI testing: The workflow uses `.env.test` with GitHub secrets
+- See `.env.test.example` for the required environment variables
 
 The `docker-compose.test.yml` takes care of:
 1. Populating the test database with known mock data, including survey and alerts views.
@@ -99,12 +124,14 @@ Note: the database is ephemeral. To reload seed data, remove the volume:
 
 ### CI/CD Testing
 
-The GitHub Actions workflow automatically runs both unit and end-to-end (E2E) tests. For E2E tests to work in CI, we have configured the relevant GitHub secrets in the repository settings based of the `.env.test.example` file.
+The GitHub Actions workflow automatically runs both unit and end-to-end (E2E) tests. For E2E tests to work in CI, we have configured the relevant GitHub secrets in the repository settings based on the `.env.test.example` file.
 
 **How it works:**
-- The CI environment does **not** spin up a local database. Instead, it connects to the shared demo/test database using the secrets defined in `.env.test.example`. This ensures your CI and local test environments are consistent and eliminates drift.
-- The workflow automatically generates a `.env.test` file with these secrets before running tests.
-- Playwright starts the Nuxt dev server using this environment and runs E2E tests against the real application and database.
+- The CI environment spins up isolated Docker containers for the backend and PostgreSQL database, just like local testing.
+- The workflow builds a Docker image tagged as `ci-test` and uses it for testing.
+- The database is initialized with the same seed data as local testing, ensuring consistent test environments.
+- The workflow automatically generates a `.env.test` file with the necessary secrets before running tests.
+- Playwright runs E2E tests against the containerized application and database.
 
 ## Available Views
 
