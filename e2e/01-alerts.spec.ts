@@ -6,6 +6,34 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
 
+  // Debug: Log page content to understand what's rendered
+  console.log("🔍 Page title:", await page.title());
+  console.log("🔍 Page URL:", page.url());
+
+  // Debug: Check if there are any links on the page
+  const allLinks = page.locator("a");
+  const linkCount = await allLinks.count();
+  console.log("🔍 Total links on page:", linkCount);
+
+  // Debug: Log all link texts
+  for (let i = 0; i < linkCount; i++) {
+    const link = allLinks.nth(i);
+    const text = await link.textContent();
+    const href = await link.getAttribute("href");
+    console.log(`🔍 Link ${i}: text="${text?.trim()}", href="${href}"`);
+  }
+
+  // Debug: Check if there are any elements with "alerts" text
+  const alertsElements = page.locator("*:has-text('alerts')");
+  const alertsCount = await alertsElements.count();
+  console.log("🔍 Elements containing 'alerts' text:", alertsCount);
+
+  // Debug: Log page HTML for debugging
+  const pageContent = await page.content();
+  console.log(
+    "🔍 Page HTML (first 1000 chars):",
+    pageContent.substring(0, 1000),
+  );
   // 2. Wait until the index page has rendered the list of available views
   const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
   await alertsLink.waitFor({ state: "visible", timeout: 5000 });

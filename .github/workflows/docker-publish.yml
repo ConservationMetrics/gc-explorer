@@ -27,13 +27,89 @@ jobs:
           pnpm install
           pnpm run test:unit
 
-  # playwright-tests:
-  #   name: Run Playwright Tests
-  #   runs-on: ubuntu-latest
-  #   needs: unit-tests
-  #   steps:
-  #     - name: Placeholder
-  #       run: echo "Playwright tests not yet implemented."
+  playwright-tests:
+    name: Run Playwright Tests
+    runs-on: ubuntu-latest
+    needs: [unit-tests, docker-build-and-publish]
+    env:
+      CI: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: |
+          npm install -g pnpm
+          pnpm install
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps
+      - name: Create test environment file
+        run: |
+          cat > .env.test << EOF
+          CI=true
+          NUXT_PUBLIC_APP_API_KEY="8b7c78b7-c800-4cca-bc1b-da080338ff79"
+          NUXT_PUBLIC_AUTH_STRATEGY="none"
+          NUXT_SESSION_SECRET="your_super_long_secret_for_session_encryption"
+          NUXT_PORT=8080
+          BASE_URL=http://localhost:8080
+          MAPBOX_ACCESS_TOKEN=${{ secrets.MAPBOX_ACCESS_TOKEN }}
+          MEDIA_BASE_PATH=${{ secrets.MEDIA_BASE_PATH }}
+          PLANET_API_KEY=${{ secrets.PLANET_API_KEY }}
+          # Database connection details (matching docker-compose)
+          NUXT_DB_HOST=database
+          NUXT_DB_PORT=5432
+          NUXT_DB_USER=testuser
+          NUXT_DB_PASSWORD=testpassword
+          NUXT_DATABASE=test_warehouse
+          EOF
+      - name: Show .env.test (with secrets masked)
+        run: |
+          sed -E 's/(NUXT_SESSION_SECRET|NUXT_PUBLIC_APP_API_KEY)=(.*)/\1=***/g' .env.test
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Pull the built image
+        run: |
+          docker pull communityfirst/guardianconnector-explorer:ci-test
+      - name: Run tests with docker-compose
+        run: |
+          # Set the image tag to use the ci-test built image
+          export ImgTag=ci-test
+          # Export environment variables for docker-compose
+          export NUXT_PUBLIC_APP_API_KEY="${{ secrets.APP_API_KEY }}"
+          export NUXT_SESSION_SECRET="${{ secrets.NUXT_SESSION_SECRET }}"
+          export MAPBOX_ACCESS_TOKEN="${{ secrets.MAPBOX_ACCESS_TOKEN }}"
+          export MEDIA_BASE_PATH="${{ secrets.MEDIA_BASE_PATH }}"
+          export PLANET_API_KEY="${{ secrets.PLANET_API_KEY }}"
+          # Start the services with environment variables
+          docker compose -f docker-compose.tests.yml --env-file .env.test up -d database backend
+          # Wait for the backend to be ready with proper health check
+          echo "Waiting for backend to be ready..."
+          timeout 60 bash -c 'until curl -f http://localhost:8080; do sleep 2; done'
+          echo "Backend is ready!"
+          # Check if services are running
+          docker compose -f docker-compose.tests.yml ps
+          # Run the tests directly in the workflow
+          echo "Running Playwright tests..."
+          pnpm run test:e2e
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: test-results/
+          retention-days: 30
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose -f docker-compose.tests.yml down -v
 
   docker-build-and-publish:
     name: Docker Build and Publish
@@ -65,6 +141,7 @@ jobs:
           tags: |
             ${{ steps.meta.outputs.tags }}
             ${{ github.ref == 'refs/heads/main' && 'communityfirst/guardianconnector-explorer:latest' || '' }}
+            communityfirst/guardianconnector-explorer:ci-test
           labels: ${{ steps.meta.outputs.labels }}
       - name: Docker Hub Description
         if: github.event_name == 'release'

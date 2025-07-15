@@ -6,6 +6,40 @@ test("config page - displays configuration dashboard with table cards", async ({
   // 1. Navigate to the config page
   await page.goto("/config");
 
+  // Debug: Log page content to understand what's rendered
+  console.log("🔍 Config page title:", await page.title());
+  console.log("🔍 Config page URL:", page.url());
+
+  // Debug: Check if there are any headings on the page
+  const allHeadings = page.locator("h1, h2, h3, h4, h5, h6");
+  const headingCount = await allHeadings.count();
+  console.log("🔍 Total headings on page:", headingCount);
+
+  // Debug: Log all heading texts
+  for (let i = 0; i < headingCount; i++) {
+    const heading = allHeadings.nth(i);
+    const text = await heading.textContent();
+    console.log(`🔍 Heading ${i}: text="${text?.trim()}"`);
+  }
+
+  // Debug: Check if there are any buttons on the page
+  const allButtons = page.locator("button");
+  const buttonCount = await allButtons.count();
+  console.log("🔍 Total buttons on page:", buttonCount);
+
+  // Debug: Log all button texts
+  for (let i = 0; i < buttonCount; i++) {
+    const button = allButtons.nth(i);
+    const text = await button.textContent();
+    console.log(`🔍 Button ${i}: text="${text?.trim()}"`);
+  }
+
+  // Debug: Log page HTML for debugging
+  const pageContent = await page.content();
+  console.log(
+    "🔍 Config page HTML (first 1000 chars):",
+    pageContent.substring(0, 1000),
+  );
   // 2. Wait for the page heading to become visible
   await expect(
     page.getByRole("heading", { name: /available views: configuration/i }),

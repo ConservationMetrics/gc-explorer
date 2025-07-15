@@ -71,23 +71,67 @@ These tests use mocked dependencies and verify component logic in isolation.
 
 ### End-to-End Tests (Playwright)
 
-Run E2E tests that verify the full application in a real browser:
+Run E2E tests that verify the full application, from a real browser down to the
+backend API and database, and back up:
 
 ```bash
-# Run E2E tests
+# Run E2E tests in an isolated Docker environment (starts backend + database)
+$ docker compose -f docker-compose.tests.yml up -d database backend
 $ pnpm test:e2e
 
-# Run all tests (unit + E2E)
-$ pnpm test
+# Run E2E tests using a specific Docker image tag
+$ ImgTag=2025-01-01 docker compose -f docker-compose.tests.yml up -d database backend
+$ pnpm test:e2e
+
+# Or use the convenience script (requires .env.local.docker-tests file)
+$ ./run-local-docker-tests.sh
+$ pnpm test:e2e
+
+# For local development (without Docker), Playwright will start its own dev server
+$ pnpm test:e2e
 ```
 
-**Important:** For E2E tests to work properly, you must set up a test environment:
+**Important:** E2E tests require a fully functional test environment. The preferred setup uses
+docker-compose to spin up isolated containers for the backend and database, then runs Playwright tests separately.
+This approach guarantees consistent test runs without relying on shared environments.
 
-1. Copy `.env.test.example` to `.env.test`
-2. Ensure `NUXT_PUBLIC_AUTH_STRATEGY="none"` in your `.env.test` file to bypass authentication
-3. Ensure your test database has the required tables, data and views config for the tests. This includes at least one alerts view.
+**Test Modes:**
+- **Docker mode** (CI=true): Uses containerized backend and database, Playwright runs against these services
+- **Local mode** (CI not set): Playwright starts its own Nuxt dev server and runs tests against it
 
-The E2E tests run the real Nuxt application in a browser and connect to a real PostgreSQL database to verify user interactions and page rendering.
+**Environment Setup:**
+- For local Docker testing: Create a `.env.local.docker-tests` file with your API keys and secrets:
+  - `NUXT_PUBLIC_APP_API_KEY`
+  - `NUXT_SESSION_SECRET`
+  - `MAPBOX_ACCESS_TOKEN`
+  - `MEDIA_BASE_PATH`
+  - `PLANET_API_KEY`
+  - `ImgTag=local`
+- For local testing with `.env.test`: Copy `.env.test.example` and set:
+  - `CI=true` for Docker mode (uses containerized services)
+  - `CI=false` for local mode (Playwright starts its own dev server)
+  - All required API keys and secrets
+- For CI testing: The workflow uses `.env.test` with GitHub secrets
+- See `.env.test.example` for the required environment variables
+
+The `docker-compose.test.yml` takes care of:
+1. Populating the test database with known mock data, including survey and alerts views.
+2. Setting `NUXT_PUBLIC_AUTH_STRATEGY="none"` to bypass authentication.
+
+Note: the database is ephemeral. To reload seed data, remove the volume:
+
+    docker volume rm gc-explorer_db_data
+
+### CI/CD Testing
+
+The GitHub Actions workflow automatically runs both unit and end-to-end (E2E) tests. For E2E tests to work in CI, we have configured the relevant GitHub secrets in the repository settings based on the `.env.test.example` file.
+
+**How it works:**
+- The CI environment spins up isolated Docker containers for the backend and PostgreSQL database, just like local testing.
+- The workflow builds a Docker image tagged as `ci-test` and uses it for testing.
+- The database is initialized with the same seed data as local testing, ensuring consistent test environments.
+- The workflow automatically generates a `.env.test` file with the necessary secrets before running tests.
+- Playwright runs E2E tests against the containerized application and database.
 
 ## Available Views
 
@@ -129,7 +173,7 @@ At this time, media attachments in the popups are handled in a somewhat brittle 
 
 The GuardianConnector Explorer map will render the feature on a map in accordance to what kind of `type` it is (Point, LineString, Polygon). The properties are shown in a popup opened by clicking on the feature.
 
-The GuardianConnector Explorer map can work with any GeoJSON data stored in the expected tabular format, but the main purpose is to visualize field data collected using data collection applications such as (Co)Mapeo, ODK, and KoboToolbox. 
+The GuardianConnector Explorer map can work with any GeoJSON data stored in the expected tabular format, but the main purpose is to visualize field data collected using data collection applications such as (Co)Mapeo, ODK, and KoboToolbox.
 
 * Mapeo data from Mapeo Desktop is already exported as GeoJSON file, and a CoMapeo Archive Server returns data in a GeoJSON-compliant format.
 * ODK / KoboToolbox API survey data with a geospatial column may be transformed into such a format.
