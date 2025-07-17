@@ -36,8 +36,10 @@ export const setupDatabaseConnection = async (
   // and since we "hijack" the return values during testing/CI anyway,
   // we can just return null to avoid connection errors and potential crashes.
   // This is the correct behavior since the database DOES NOT exist.
-  if (isConfigDb && !process.env.CI) {
-    console.log("Config database does not exist. Attemping to create...");
+  if (isConfigDb && process.env.CI) {
+    console.log(
+      "Skipping config database connection in CI/testing environment.",
+    );
     return null;
   }
   let client = new pg.Client(dbConnection);
