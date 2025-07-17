@@ -75,7 +75,7 @@ Copy `.env.test.example` to `.env.test` to configure the test environment.
 ## Prettier & ESLint for JavaScript, JSON, & SCSS
 
 All developers are expected to use [prettier](https://prettier.io/) to format their JavaScript, TypeScript, Vue, JSON and SCSS
-code. [Configuration](https://prettier.io/docs/en/configuration.html) lives in [`.prettierrc`](admin_ui/.prettierrc)
+code. Currently, we use the standard Prettier [configuration](https://prettier.io/docs/en/configuration.html).
 
 > To apply Prettier autoformatting you can configure your text editor to format on save [according
 > to these docs](https://prettier.io/docs/en/editors.html)
