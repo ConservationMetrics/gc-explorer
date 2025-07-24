@@ -1,0 +1,134 @@
+import { describe, it, expect, vi } from "vitest";
+import { mount } from "@vue/test-utils";
+import { createI18n } from "vue-i18n";
+
+import Auth0Login from "../../components/Auth0Login.vue";
+
+// Mock the composables
+vi.mock("#imports", async () => {
+  const actual = await vi.importActual("#imports");
+  return {
+    ...actual,
+    useUserSession: () => ({
+      loggedIn: { value: false },
+      session: { value: {} },
+      user: { value: null },
+      fetch: vi.fn(),
+    }),
+    useCustomAuth: () => ({
+      isAuthenticated: { value: false },
+      user: { value: null },
+      clearAuth: vi.fn(),
+      authData: { value: null },
+    }),
+    navigateTo: vi.fn(),
+  };
+});
+
+// Create the i18n instance
+const i18n = createI18n({
+  legacy: false, // Use Composition API mode
+  locale: "en",
+  messages: {
+    en: {
+      loginButton: "Login",
+      authMessage: "Please log in",
+      yourAccessIsPending: "Access pending",
+    },
+    es: {
+      loginButton: "Iniciar sesión",
+      authMessage: "Por favor inicie sesión",
+      yourAccessIsPending: "Acceso pendiente",
+    },
+    pt: {
+      loginButton: "Entrar",
+      authMessage: "Por favor faça login",
+      yourAccessIsPending: "Acesso pendente",
+    },
+    nl: {
+      loginButton: "Inloggen",
+      authMessage: "Log alstublieft in",
+      yourAccessIsPending: "Toegang in behandeling",
+    },
+  },
+});
+
+// Helper function to mount the Auth0Login component
+const mountAuth0Login = (
+  props: { errorMessage: string } = { errorMessage: "" },
+) => {
+  return mount(Auth0Login, {
+    global: {
+      plugins: [i18n],
+      mocks: {
+        $t: (key: string) => {
+          const messages = {
+            loginButton: "Login",
+            authMessage: "Please log in",
+            yourAccessIsPending: "Access pending",
+          };
+          return messages[key as keyof typeof messages] || key;
+        },
+      },
+      components: {
+        LanguagePicker: {
+          template: "<div></div>",
+        },
+      },
+    },
+    props,
+  });
+};
+
+describe("Auth0Login", () => {
+  it("renders login button", () => {
+    const wrapper = mountAuth0Login();
+    expect(wrapper.find("button").text()).toBe("Login");
+  });
+
+  it("displays error message when provided", () => {
+    const wrapper = mountAuth0Login({ errorMessage: "Access pending" });
+    expect(wrapper.find(".text-red-500").text()).toBe("Access pending");
+  });
+
+  it("changes window.location.href to /api/auth/auth0 on button click", async () => {
+    const wrapper = mountAuth0Login();
+
+    const originalLocation = window.location;
+
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      writable: true,
+      value: { href: "" } as Location,
+    });
+
+    await wrapper.find("button").trigger("click");
+
+    expect(window.location.href).toBe("/api/auth/auth0");
+
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      writable: true,
+      value: originalLocation,
+    });
+  });
+
+  it("displays error message with correct translation", () => {
+    const wrapper = mountAuth0Login({ errorMessage: "Access pending" });
+    expect(wrapper.find(".text-red-500").text()).toBe("Access pending");
+  });
+
+  it("renders LanguagePicker component", () => {
+    const wrapper = mountAuth0Login();
+    expect(wrapper.findComponent({ name: "LanguagePicker" })).toBeTruthy();
+  });
+
+  it("has correct button styling classes", () => {
+    const wrapper = mountAuth0Login();
+    const button = wrapper.find("button");
+    expect(button.classes()).toContain("bg-blue-500");
+    expect(button.classes()).toContain("text-white");
+    expect(button.classes()).toContain("rounded");
+    expect(button.classes()).toContain("hover:bg-blue-700");
+  });
+});

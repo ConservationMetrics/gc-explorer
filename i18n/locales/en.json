@@ -105,6 +105,7 @@
   "territory": "Territory",
   "type": "Type",
   "typeOfAlerts": "Type of alerts",
+  "redirectingTo": "Redirecting to",
   "unwantedColumns": "Unwanted columns",
   "unwantedSubstrings": "Unwanted substrings",
   "version": "Version",
