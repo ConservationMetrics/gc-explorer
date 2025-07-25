@@ -19,7 +19,6 @@ if (data.value && !error.value) {
 } else {
   console.error("Error fetching data:", error.value);
 }
-
 /** Filter and sort the views config */
 const filteredSortedViewsConfig = computed(() => {
   return Object.keys(viewsConfig.value)

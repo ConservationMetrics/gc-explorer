@@ -1,29 +1,28 @@
 import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createI18n } from "vue-i18n";
-
 import Auth0Login from "../../components/Auth0Login.vue";
 
-// Mock the composables
-vi.mock("#imports", async () => {
-  const actual = await vi.importActual("#imports");
-  return {
-    ...actual,
-    useUserSession: () => ({
-      loggedIn: { value: false },
-      session: { value: {} },
-      user: { value: null },
-      fetch: vi.fn(),
-    }),
-    useCustomAuth: () => ({
-      isAuthenticated: { value: false },
-      user: { value: null },
-      clearAuth: vi.fn(),
-      authData: { value: null },
-    }),
-    navigateTo: vi.fn(),
-  };
-});
+// Mock the composables at the top level
+vi.mock("#imports", () => ({
+  useUserSession: () => ({
+    loggedIn: { value: false },
+    session: { value: {} },
+    user: { value: null },
+    fetch: vi.fn(),
+  }),
+  useCustomAuth: () => ({
+    isAuthenticated: { value: false },
+    user: { value: null },
+    clearAuth: vi.fn(),
+    authData: { value: null },
+  }),
+  navigateTo: vi.fn(),
+  onMounted: vi.fn((callback) => {
+    // Execute the callback immediately for testing
+    callback();
+  }),
+}));
 
 // Create the i18n instance
 const i18n = createI18n({

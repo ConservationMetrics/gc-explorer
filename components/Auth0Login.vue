@@ -1,13 +1,21 @@
 <script lang="ts" setup>
+import { useUserSession, onMounted } from "#imports";
+
 interface Props {
   errorMessage: string;
 }
-
 const props = defineProps<Props>();
-
+const { loggedIn } = useUserSession();
 const loginWithAuth0 = () => {
   window.location.href = "/api/auth/auth0";
 };
+onMounted(() => {
+  const redirectUrl = sessionStorage.getItem("redirect_url");
+  if (redirectUrl && loggedIn.value) {
+    sessionStorage.removeItem("redirect_url");
+    window.location.href = redirectUrl;
+  }
+});
 </script>
 
 <template>

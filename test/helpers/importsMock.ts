@@ -17,6 +17,12 @@ export const useCustomAuth = vi.fn(() => ({
 
 export const navigateTo = vi.fn();
 
+// Mock Vue lifecycle hooks
+export const onMounted = vi.fn((callback) => {
+  // Execute the callback immediately for testing
+  callback();
+});
+
 // Export other common composables that might be needed
 export const useRuntimeConfig = vi.fn(() => ({
   public: {
