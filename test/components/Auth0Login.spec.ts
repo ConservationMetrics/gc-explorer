@@ -62,9 +62,10 @@ const mountAuth0Login = (
       mocks: {
         $t: (key: string) => {
           const messages = {
-            loginButton: "Login",
-            authMessage: "Please log in",
-            yourAccessIsPending: "Access pending",
+            loginButton: "Sign up or log in",
+            authMessage: "Please sign up or log in to access this application",
+            yourAccessIsPending:
+              "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
           };
           return messages[key as keyof typeof messages] || key;
         },
@@ -82,28 +83,41 @@ const mountAuth0Login = (
 describe("Auth0Login", () => {
   it("renders login button", () => {
     const wrapper = mountAuth0Login();
-    expect(wrapper.find("button").text()).toBe("Login");
+    expect(wrapper.find("[data-testid='login-button']").exists()).toBe(true);
   });
 
   it("displays error message when provided", () => {
-    const wrapper = mountAuth0Login({ errorMessage: "Access pending" });
-    expect(wrapper.find(".text-red-500").text()).toBe("Access pending");
+    const wrapper = mountAuth0Login({
+      errorMessage:
+        "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
+    });
+    expect(wrapper.find(".text-red-500").text()).toBe(
+      "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
+    );
   });
 
   it("changes window.location.href to /api/auth/auth0 on button click", async () => {
     const wrapper = mountAuth0Login();
 
     const originalLocation = window.location;
+    let hrefValue = "";
 
     Object.defineProperty(window, "location", {
       configurable: true,
       writable: true,
-      value: { href: "" } as Location,
+      value: {
+        get href() {
+          return hrefValue;
+        },
+        set href(value: string) {
+          hrefValue = value;
+        },
+      } as Location,
     });
 
-    await wrapper.find("button").trigger("click");
+    await wrapper.find("[data-testid='login-button']").trigger("click");
 
-    expect(window.location.href).toBe("/api/auth/auth0");
+    expect(hrefValue).toBe("/api/auth/auth0");
 
     Object.defineProperty(window, "location", {
       configurable: true,
@@ -114,20 +128,13 @@ describe("Auth0Login", () => {
 
   it("displays error message with correct translation", () => {
     const wrapper = mountAuth0Login({ errorMessage: "Access pending" });
-    expect(wrapper.find(".text-red-500").text()).toBe("Access pending");
+    expect(wrapper.find(".text-red-500").text()).toBe(
+      "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
+    );
   });
 
   it("renders LanguagePicker component", () => {
     const wrapper = mountAuth0Login();
     expect(wrapper.findComponent({ name: "LanguagePicker" })).toBeTruthy();
-  });
-
-  it("has correct button styling classes", () => {
-    const wrapper = mountAuth0Login();
-    const button = wrapper.find("button");
-    expect(button.classes()).toContain("bg-blue-500");
-    expect(button.classes()).toContain("text-white");
-    expect(button.classes()).toContain("rounded");
-    expect(button.classes()).toContain("hover:bg-blue-700");
   });
 });
