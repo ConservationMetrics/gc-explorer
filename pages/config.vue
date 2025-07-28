@@ -12,22 +12,14 @@ const dataFetched = ref(false);
 const {
   public: { appApiKey },
 } = useRuntimeConfig();
-console.log("🔍 Config Page: appApiKey", appApiKey);
 
 const headers = {
   "x-api-key": appApiKey,
 };
-console.log(
-  "🔍 Config Page: Making API call to /api/config with headers",
-  headers,
-);
 
 const { data, error } = await useFetch("/api/config", {
   headers,
 });
-
-console.log("🔍 Config Page: API response data", data.value);
-console.log("🔍 Config Page: API response error", error.value);
 
 if (data.value && !error.value) {
   const fetchedViewsData = data.value[0] as Views;
@@ -36,9 +28,8 @@ if (data.value && !error.value) {
   const fetchedTableNames = data.value[1] as string[];
   tableNames.value = fetchedTableNames;
   dataFetched.value = true;
-  console.log("🔍 Config Page: Data fetched successfully");
 } else {
-  console.error("🔍 Config Page: Error fetching data:", error.value);
+  console.error("Error fetching data:", error.value);
 }
 
 /** POST request to submit the updated config */

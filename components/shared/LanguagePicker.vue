@@ -6,7 +6,6 @@ const { locale, locales, setLocale } = useI18n();
 
 // Populate available locales from i18n plugin
 const availableLocales = computed(() => locales.value);
-console.log("🔍 LanguagePicker: availableLocales:", availableLocales.value);
 const currentLocaleName = computed(() => {
   const currentLocale = locales.value.find(
     (lang) => lang.code === locale.value,

@@ -5,8 +5,6 @@ interface Auth0User {
   email: string;
 }
 
-console.log("🔍 Auth0 Handler: Loading handler file");
-
 export default oauthAuth0EventHandler({
   config: {
     emailRequired: true,
@@ -16,14 +14,12 @@ export default oauthAuth0EventHandler({
   async onSuccess(event: H3Event, { user }: { user: Auth0User }) {
     console.log("🔍 Auth0 Success: Setting user session");
     try {
-      const session = await setUserSession(event, {
+      await setUserSession(event, {
         user: {
           auth0: user.email,
         },
         loggedInAt: Date.now(),
       });
-      console.log("🔍 Auth0 Success: Session set", session);
-      console.log("🔍 Auth0 Success: Custom auth cookie set");
     } catch (error) {
       console.error("🔍 Auth0 Success: Error setting user session", error);
     }

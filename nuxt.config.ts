@@ -119,6 +119,8 @@ export default defineNuxtConfig({
     dbSsl: true,
     dbTable: "",
     port: "8080",
+    // Session secret for nuxt-auth-utils
+    sessionSecret: "your-session-secret-key-change-in-production",
     // OAuth configuration for nuxt-auth-utils
     oauth: {
       auth0: {
