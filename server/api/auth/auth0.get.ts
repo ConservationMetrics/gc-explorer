@@ -12,7 +12,6 @@ export default oauthAuth0EventHandler({
   },
 
   async onSuccess(event: H3Event, { user }: { user: Auth0User }) {
-    console.log("🔍 Auth0 Success: Setting user session");
     try {
       await setUserSession(event, {
         user: {
@@ -21,7 +20,7 @@ export default oauthAuth0EventHandler({
         loggedInAt: Date.now(),
       });
     } catch (error) {
-      console.error("🔍 Auth0 Success: Error setting user session", error);
+      console.error("🔍 Auth0 Error: Error setting user session", error);
     }
     // Redirect directly to the target page instead of login
     return sendRedirect(event, "/login");
