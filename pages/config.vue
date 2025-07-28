@@ -12,9 +12,11 @@ const dataFetched = ref(false);
 const {
   public: { appApiKey },
 } = useRuntimeConfig();
+
 const headers = {
   "x-api-key": appApiKey,
 };
+
 const { data, error } = await useFetch("/api/config", {
   headers,
 });

@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
+import { useAuth } from "~/composables/useAuth";
 
+// const { isAuthenticated } = useCustomAuth();
+// console.log("🔍 Login Page: Is Authenticated", isAuthenticated.value);
 const { loggedIn } = useUserSession();
 const errorMessage = ref("");
 
 onMounted(() => {
-  errorMessage.value = useAuth(loggedIn);
+  const authError = useAuth(loggedIn);
+  errorMessage.value = authError || "";
 });
 
 const { t } = useI18n();
@@ -15,5 +19,5 @@ useHead({
 </script>
 
 <template>
-  <Auth0Login v-if="loggedIn === false" :error-message="errorMessage" />
+  <Auth0Login :error-message="errorMessage" />
 </template>

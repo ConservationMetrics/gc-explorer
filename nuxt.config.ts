@@ -22,11 +22,15 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   nitro: {
-    plugins: ["@/server/index.ts"],
+    plugins: ["@/server/index.ts", "@/server/plugins/apiAuth.ts"],
+    routeRules: {
+      "/api/**": {
+        cors: true,
+      },
+    },
   },
 
   modules: [
-    "gc-shared-resources",
     "nuxt-auth-utils",
     "@nuxt/eslint",
     "@nuxtjs/i18n",
@@ -85,7 +89,7 @@ export default defineNuxtConfig({
     quality: 80,
   },
 
-  css: ["public/vendor/lightbox/lightbox.min.css"],
+  css: ["public/vendor/lightbox/lightbox.min.css", "~/assets/overlay.css"],
 
   i18n: {
     locales: [
@@ -115,6 +119,16 @@ export default defineNuxtConfig({
     dbSsl: true,
     dbTable: "",
     port: "8080",
+    // Session secret for nuxt-auth-utils
+    sessionSecret: "your-session-secret-key-change-in-production",
+    // OAuth configuration for nuxt-auth-utils
+    oauth: {
+      auth0: {
+        clientId: "",
+        clientSecret: "",
+        domain: "",
+      },
+    },
     public: {
       allowedFileExtensions: {
         image: ["jpg", "jpeg", "png", "webp"],

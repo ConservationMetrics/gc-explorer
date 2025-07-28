@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Views } from "@/types/types";
-
+import LanguagePicker from "@/components/shared/LanguagePicker.vue";
 const viewsConfig = ref<Views>({});
 
 const {
@@ -19,7 +19,6 @@ if (data.value && !error.value) {
 } else {
   console.error("Error fetching data:", error.value);
 }
-
 /** Filter and sort the views config */
 const filteredSortedViewsConfig = computed(() => {
   return Object.keys(viewsConfig.value)
