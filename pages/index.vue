@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Views } from "@/types/types";
-
+import LanguagePicker from "@/components/shared/LanguagePicker.vue";
 const viewsConfig = ref<Views>({});
 
 const {

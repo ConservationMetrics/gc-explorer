@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useUserSession, onMounted } from "#imports";
+import LanguagePicker from "./shared/LanguagePicker.vue";
 
 interface Props {
   errorMessage: string;
