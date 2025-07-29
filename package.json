@@ -23,7 +23,6 @@
   },
   "dependencies": {
     "@nuxt/image": "1.10.0",
-    "@nuxt/kit": "^4.0.1",
     "@turf/turf": "^7.2.0",
     "@vojtechlanka/vue-tags-input": "^3.1.1",
     "chart.js": "^4.4.7",
