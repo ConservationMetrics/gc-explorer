@@ -2,8 +2,6 @@
 import { useI18n } from "vue-i18n";
 import { useAuth } from "~/composables/useAuth";
 
-// const { isAuthenticated } = useCustomAuth();
-// console.log("🔍 Login Page: Is Authenticated", isAuthenticated.value);
 const { loggedIn } = useUserSession();
 const errorMessage = ref("");
 
