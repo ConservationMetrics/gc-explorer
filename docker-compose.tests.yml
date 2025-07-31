@@ -55,7 +55,7 @@ services:
         # Log the database state
         echo '🔍 Database initialization complete'
         echo '🔍 Available tables:'
-        psql -U testuser -d test_warehouse -c '\dt'
+        psql -U testuser -d test_warehouse -c "\\dt"
         echo '🔍 Table row counts:'
         psql -U testuser -d test_warehouse -c 'SELECT schemaname, tablename, n_tup_ins as rows FROM pg_stat_user_tables ORDER BY tablename;'
         echo '🔍 Available tables and their contents:'

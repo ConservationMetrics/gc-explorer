@@ -100,6 +100,19 @@ export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
     const planetApiKey = process.env.PLANET_API_KEY || "{PLANET_API_KEY}";
 
     return {
+      seed_survey_data: {
+        VIEWS: "gallery",
+        MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
+        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
+        MAPBOX_ZOOM: 16,
+        MAPBOX_CENTER_LATITUDE: "3.44704",
+        MAPBOX_CENTER_LONGITUDE: "-76.53995",
+        MAPBOX_PROJECTION: "globe",
+        MAPBOX_BEARING: 0,
+        MAPBOX_PITCH: 0,
+        FRONT_END_FILTER_COLUMN: "community",
+        MEDIA_BASE_PATH: mediaBasePath,
+      },
       bcmform_responses: {
         VIEWS: "map,gallery",
         MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
@@ -131,28 +144,6 @@ export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
         MAPEO_TABLE: "mapeo_data",
         MAPEO_CATEGORY_IDS: "threat",
         MAP_LEGEND_LAYER_IDS: "road-primary,aerialway",
-        ALERT_RESOURCES: "NO",
-        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
-        PLANET_API_KEY: planetApiKey,
-      },
-      gfw_fake_alerts: {
-        VIEWS: "alerts",
-        EMBED_MEDIA: "YES",
-        MEDIA_BASE_PATH_ALERTS: "",
-        MEDIA_BASE_PATH: "",
-        LOGO_URL:
-          "https://conservationmetrics.com/wp-content/themes/conservation-metrics/images/logo-conservation-metrics.png",
-        MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-v11",
-        MAPBOX_PROJECTION: "mercator",
-        MAPBOX_CENTER_LATITUDE: "0",
-        MAPBOX_CENTER_LONGITUDE: "0",
-        MAPBOX_ZOOM: 3,
-        MAPBOX_PITCH: 0,
-        MAPBOX_BEARING: 0,
-        MAPBOX_3D: "NO",
-        MAPEO_TABLE: "mapeo_data",
-        MAPEO_CATEGORY_IDS: "threat,deforestation",
-        MAP_LEGEND_LAYER_IDS: "road-primary,aerialway,water",
         ALERT_RESOURCES: "NO",
         MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
         PLANET_API_KEY: planetApiKey,
