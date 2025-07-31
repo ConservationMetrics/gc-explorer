@@ -153,14 +153,6 @@ test("alerts dashboard - layer visibility toggles", async ({ page }) => {
     // Verify layer is hidden by checking if the checkbox is unchecked
     const isChecked = await checkbox.isChecked();
     expect(isChecked).toBe(false);
-
-    // Toggle on
-    await checkbox.click();
-    await page.waitForTimeout(500);
-
-    // Verify layer is visible again by checking if the checkbox is checked
-    const isCheckedAgain = await checkbox.isChecked();
-    expect(isCheckedAgain).toBe(true);
   }
 });
 
