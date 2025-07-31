@@ -17,9 +17,8 @@ export default defineEventHandler(async (event: H3Event) => {
       (name) => !Object.keys(viewsConfig).includes(name),
     );
     if (process.env.CI) {
-      filteredTableNames.push("gfw_fake_alerts");
+      filteredTableNames.push("seed_survey_data");
     }
-
     return [viewsConfig, filteredTableNames];
   } catch (error) {
     if (error instanceof Error) {
