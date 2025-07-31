@@ -82,11 +82,11 @@ test("alerts dashboard - layer visibility toggles", async ({ page }) => {
   );
 
   // 9. Wait for the map legend to be visible
-  const mapLegend = page.locator(".map-legend");
+  const mapLegend = page.getByTestId("map-legend");
   await expect(mapLegend).toBeVisible();
 
   // 10. Get all legend checkboxes
-  const legendCheckboxes = page.locator(".map-legend input[type='checkbox']");
+  const legendCheckboxes = page.getByTestId("map-legend-checkbox");
   const checkboxCount = await legendCheckboxes.count();
   expect(checkboxCount).toBeGreaterThan(0);
 
