@@ -81,8 +81,42 @@ test("alerts dashboard - layer visibility toggles", async ({ page }) => {
     { timeout: 5000 },
   );
 
-  // 9. Wait for the map legend to be visible
+  // 9. Wait for the map legend to be prepared and visible
+  // First wait for the map to be idle (which triggers legend preparation)
+  await page.waitForFunction(
+    () => {
+      // @ts-expect-error _testMap is exposed for E2E testing only
+      const map = window._testMap;
+      return map && !map.isMoving() && map.loaded();
+    },
+    { timeout: 10000 },
+  );
+
+  // Wait a bit more for the legend to be prepared
+  await page.waitForTimeout(2000);
+
   const mapLegend = page.getByTestId("map-legend");
+
+  // Debug: Check if map legend exists
+  const legendExists = await mapLegend.count();
+  console.log("🔍 Map legend exists:", legendExists > 0);
+
+  if (legendExists === 0) {
+    // Debug: Log the page content to see what's actually there
+    const alertsPageContent = await page.content();
+    console.log(
+      "🔍 Alerts page HTML (first 2000 chars):",
+      alertsPageContent.substring(0, 2000),
+    );
+
+    // Wait a bit more for the page to load
+    await page.waitForTimeout(3000);
+  }
+
+  // Wait for the map legend to be attached to DOM
+  await mapLegend.waitFor({ state: "attached", timeout: 10000 });
+
+  // Then wait for it to be visible
   await expect(mapLegend).toBeVisible();
 
   // 10. Get all legend checkboxes
