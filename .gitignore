@@ -92,7 +92,10 @@ sw.*
 # Eslint cache
 --debug
 
-# GuardianConnector Views specific
+# Nuxt output
+.output/
+
+# GuardianConnector Explorer specific
 .env*
 !.env.example
 !.env.test.example
