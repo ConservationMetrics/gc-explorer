@@ -40,7 +40,10 @@ watch(
 </script>
 
 <template>
-  <div class="map-legend feature p-4 rounded-lg shadow-lg">
+  <div
+    data-testid="map-legend"
+    class="map-legend feature p-4 rounded-lg shadow-lg"
+  >
     <h2 class="text-2xl font-semibold mb-2">{{ $t("mapLegend") }}</h2>
     <div
       v-for="item in localMapLegendContent"
@@ -50,6 +53,7 @@ watch(
       <input
         :id="item.id"
         v-model="item.visible"
+        data-testid="map-legend-checkbox"
         class="mr-2"
         type="checkbox"
         :checked="item.visible"

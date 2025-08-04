@@ -87,7 +87,16 @@ const featureWithPreparedCoordinates = (feature: DataEntry) => ({
       :feature="featureWithPreparedCoordinates(feature)"
       :file-paths="getFilePathsWithExtension(feature, allowedFileExtensions)"
       :media-base-path="mediaBasePath"
-      data-testid="gallery-item"
+      :data-testid="`gallery-item-${index}`"
     />
+    <!-- Hidden element to track pagination state for testing -->
+    <div
+      data-testid="pagination-info"
+      :data-current-page="currentPage"
+      :data-items-per-page="itemsPerPage"
+      :data-total-items="filteredData.length"
+      :data-paginated-count="paginatedData.length"
+      class="hidden"
+    ></div>
   </div>
 </template>
