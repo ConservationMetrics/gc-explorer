@@ -15,8 +15,8 @@ test("gallery page - displays gallery with media files", async ({ page }) => {
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const seedSurveyDataLink = galleryLinks.nth(1);
-    await seedSurveyDataLink.click();
+    const galleryLink = galleryLinks.nth(1);
+    await galleryLink.click();
 
     // 5. Wait for the gallery page to load
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
@@ -53,8 +53,8 @@ test("gallery page - displays images with lightbox functionality", async ({
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const seedSurveyDataLink = galleryLinks.nth(1);
-    await seedSurveyDataLink.click();
+    const galleryLink = galleryLinks.nth(1);
+    await galleryLink.click();
 
     // 5. Wait for the gallery page to load
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
@@ -109,8 +109,8 @@ test("gallery page - audio playback functionality", async ({ page }) => {
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const seedSurveyDataLink = galleryLinks.nth(1);
-    await seedSurveyDataLink.click();
+    const galleryLink = galleryLinks.nth(1);
+    await galleryLink.click();
 
     // 5. Wait for the gallery page to load
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
@@ -203,8 +203,8 @@ test("gallery page - filter functionality", async ({ page }) => {
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const seedSurveyDataLink = galleryLinks.nth(1);
-    await seedSurveyDataLink.click();
+    const galleryLink = galleryLinks.nth(1);
+    await galleryLink.click();
 
     // 5. Wait for the gallery page to load
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
@@ -278,8 +278,8 @@ test("gallery page - pagination and infinite scroll", async ({ page }) => {
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const seedSurveyDataLink = galleryLinks.nth(1);
-    await seedSurveyDataLink.click();
+    const galleryLink = galleryLinks.nth(1);
+    await galleryLink.click();
 
     // 5. Wait for the gallery page to load
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
@@ -325,8 +325,8 @@ test("gallery page - data feature information display", async ({ page }) => {
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const seedSurveyDataLink = galleryLinks.nth(1);
-    await seedSurveyDataLink.click();
+    const galleryLink = galleryLinks.nth(1);
+    await galleryLink.click();
 
     // 5. Wait for the gallery page to load
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
@@ -382,8 +382,8 @@ test("gallery page - responsive grid layout", async ({ page }) => {
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const seedSurveyDataLink = galleryLinks.nth(1);
-    await seedSurveyDataLink.click();
+    const galleryLink = galleryLinks.nth(1);
+    await galleryLink.click();
 
     // 5. Wait for the gallery page to load
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
@@ -435,8 +435,8 @@ test("gallery page - error handling for unavailable gallery", async ({
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const seedSurveyDataLink = galleryLinks.nth(1);
-    await seedSurveyDataLink.click();
+    const galleryLink = galleryLinks.nth(1);
+    await galleryLink.click();
 
     // 5. Wait for the gallery page to load
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
