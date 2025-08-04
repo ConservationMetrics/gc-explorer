@@ -17,7 +17,6 @@ const props = defineProps<{
   filterColumn: string;
   galleryData: Dataset;
   mediaBasePath: string;
-  isCI?: boolean;
 }>();
 const filteredData = ref(props.galleryData);
 
