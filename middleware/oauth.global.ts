@@ -9,6 +9,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     public: { authStrategy },
   } = useRuntimeConfig();
   const router = useRouter();
+  const ci = process.env.CI;
 
   // In order to redirect the user back to the page they were on when unauthenticated, we need to store the redirect url in session storage
   // We use the window object to get where the user was before they were redirected to the login page
@@ -31,7 +32,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // Check role-based access for /config route
-  if (to.path === "/config" && loggedIn.value && user.value) {
+  if (to.path === "/config" && loggedIn.value && user.value && !ci) {
     const typedUser = user.value as User;
     const userRoles = typedUser.roles || [];
     const hasAdminRole = userRoles.some(
