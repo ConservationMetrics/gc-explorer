@@ -133,3 +133,8 @@ export type AlertsStatistics = {
   hectaresPerMonth: AlertsPerMonth | null;
   twelveMonthsBefore: string;
 };
+
+export interface User {
+  auth0: string;
+  roles?: Array<{ id: string; name: string; description: string }>;
+}
