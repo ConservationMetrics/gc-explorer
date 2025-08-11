@@ -893,53 +893,91 @@ const handleBasemapChange = (newBasemap: Basemap) => {
 const mapLegendContent = ref();
 const prepareMapLegendContent = () => {
   map.value.once("idle", () => {
-    let mapLegendLayerIds = props.mapLegendLayerIds;
+    const legendItems: MapLegendItem[] = [];
 
-    // Add most-recent-alerts & previous-alerts layers to mapLegendContent
-    if (hasLineStrings.value) {
-      mapLegendLayerIds =
-        "most-recent-alerts-linestring," +
-        (props.alertsData.previousAlerts.features.length
-          ? "previous-alerts-linestring,"
-          : "") +
-        mapLegendLayerIds;
-    } else if (hasPoints.value) {
-      mapLegendLayerIds =
-        "most-recent-alerts-point," +
-        (props.alertsData.previousAlerts.features.length
-          ? "previous-alerts-point,"
-          : "") +
-        mapLegendLayerIds;
-    } else {
-      mapLegendLayerIds =
-        "most-recent-alerts-polygon," +
-        (props.alertsData.previousAlerts.features.length
-          ? "previous-alerts-polygon,"
-          : "") +
-        mapLegendLayerIds;
+    // Add most recent alerts as a single grouped entry
+    if (props.alertsData.mostRecentAlerts.features.length > 0) {
+      legendItems.push({
+        id: "most-recent-alerts",
+        name: "Most recent alerts",
+        type: "symbol", // Use symbol type to display warning icon
+        color: "#FF0000",
+        visible: true,
+        iconUrl: new URL("@/assets/icons/warning_red.png", import.meta.url)
+          .href,
+      });
+    }
+
+    // Add previous alerts as a single grouped entry
+    if (props.alertsData.previousAlerts.features.length > 0) {
+      legendItems.push({
+        id: "previous-alerts",
+        name: "Previous alerts",
+        type: "symbol", // Use symbol type to display warning icon
+        color: "#FD8D3C",
+        visible: true,
+        iconUrl: new URL("@/assets/icons/warning_orange.png", import.meta.url)
+          .href,
+      });
     }
 
     // Add mapeo-data layer to mapLegendContent
     if (props.mapeoData) {
-      mapLegendLayerIds = "mapeo-data," + mapLegendLayerIds;
+      legendItems.push({
+        id: "mapeo-data",
+        name: "Mapeo data",
+        type: "circle",
+        color: mapeoDataColor.value || "#000000",
+        visible: true,
+      });
     }
 
-    // if there are no layers to show in the legend, return
-    if (!mapLegendLayerIds) {
-      return;
+    // Add any additional layers from props.mapLegendLayerIds
+    if (props.mapLegendLayerIds) {
+      const additionalLayers = prepareMapLegendLayers(
+        map.value,
+        props.mapLegendLayerIds,
+        mapeoDataColor.value,
+      );
+      if (additionalLayers) {
+        legendItems.push(...(additionalLayers as MapLegendItem[]));
+      }
     }
 
-    mapLegendContent.value = prepareMapLegendLayers(
-      map.value,
-      mapLegendLayerIds,
-      mapeoDataColor.value,
-    );
+    mapLegendContent.value = legendItems;
   });
 };
 
-/** Toggles the visibility of a map layer */
+/**
+ * Toggles the visibility of a map layer or all related layers for alert groups.
+ * For alert layers, toggles all geometry types and symbol layers together.
+ */
 const toggleLayerVisibility = (item: MapLegendItem) => {
-  utilsToggleLayerVisibility(map.value, item);
+  const visibility = item.visible ? "visible" : "none";
+
+  // Handle alert group layers - toggle all related layers
+  if (item.id === "most-recent-alerts" || item.id === "previous-alerts") {
+    const layerPrefix = item.id;
+    const layerTypes = ["polygon", "linestring", "point", "symbol"];
+
+    layerTypes.forEach((type) => {
+      const layerId = `${layerPrefix}-${type}`;
+      if (map.value.getLayer(layerId)) {
+        map.value.setLayoutProperty(layerId, "visibility", visibility);
+      }
+
+      // Handle stroke layers for polygons
+      if (type === "polygon") {
+        const strokeLayerId = `${layerId}-stroke`;
+        if (map.value.getLayer(strokeLayerId)) {
+          map.value.setLayoutProperty(strokeLayerId, "visibility", visibility);
+        }
+      }
+    });
+  } else {
+    // Handle individual layers (mapeo-data, etc.)
+    utilsToggleLayerVisibility(map.value, item);
+  }
 };
 
 // ========================
@@ -1261,7 +1299,8 @@ const resetToInitialState = () => {
     }),
   );
   mapLegendContent.value.forEach((item: MapLegendItem) => {
-    map.value.setLayoutProperty(item.id, "visibility", "visible");
+    // Use our custom toggle function to ensure all related layers are made visible
+    toggleLayerVisibility({ ...item, visible: true });
   });
   emit("reset-legend-visibility");
 
