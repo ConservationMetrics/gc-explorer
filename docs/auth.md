@@ -63,15 +63,30 @@ Before implementing RBAC, ensure:
 
 ### Required Auth0 Setup
 
-1. **Enable RBAC for API**:
-   - Go to Applications → APIs → Your API
-   - Enable "Add Permissions in the Access Token"
-   - Enable "RBAC" and "Add Roles in the Access Token"
+1. **Register Your API** (if not already done):
+   - Go to **Dashboard > Applications > APIs**
+   - Click **"+ Create API"**
+   - Provide API details:
+     - **Name**: Your API name (e.g., "GuardianConnector Explorer")
+     - **Identifier**: `https://your-domain.com` (unique identifier)
+     - **Signing Algorithm**: HS256 (recommended)
+   - Click **"Create"**
 
-2. **Authorize Management API**:
-   - Go to Applications → APIs → Auth0 Management API
-   - Navigate to "Machine to Machine Applications"
-   - Authorize your application with scopes: `read:users`, `read:user_idp_tokens`
+2. **Enable RBAC for Your API**:
+   - Go to **Dashboard > Applications > APIs > Your API**
+   - In the **Settings** tab, enable:
+     - **"Add Permissions in the Access Token"**
+     - **"RBAC"** (Role-Based Access Control)
+     - **"Add Roles in the Access Token"**
+
+3. **Authorize Management API Access**:
+   - Go to **Dashboard > Applications > APIs > Auth0 Management API**
+   - Navigate to **"Machine to Machine Applications"** tab
+   - Find your application in the list
+   - **Authorize** your application
+   - Select the required scopes:
+     - `read:users` - to fetch user information
+     - `read:user_idp_tokens` - to read user roles
 
 ## Role Management
 
@@ -146,11 +161,12 @@ The implementation includes comprehensive error handling:
 
 ## API References
 
-### Auth0 Management API Documentation
+### Auth0 Documentation References
 
-- [Configure Core RBAC](https://auth0.com/docs/manage-users/access-control/configure-core-rbac)
-- [View User Roles](https://auth0.com/docs/manage-users/access-control/configure-core-rbac/rbac-users/view-user-roles)
-- [Get User Roles Endpoint](https://auth0.com/docs/api/management/v2#!/Users/get_user_roles)
+- [Configure Core RBAC](https://auth0.com/docs/manage-users/access-control/configure-core-rbac) - Core RBAC setup guide
+- [Register APIs](https://auth0.com/docs/get-started/auth0-overview/set-up-apis) - How to register and configure APIs
+- [View User Roles](https://auth0.com/docs/manage-users/access-control/configure-core-rbac/rbac-users/view-user-roles) - Managing user roles
+- [Get User Roles Endpoint](https://auth0.com/docs/api/management/v2#!/Users/get_user_roles) - Management API reference
 
 ### Management API Endpoints Used
 
