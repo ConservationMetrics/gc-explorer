@@ -14,6 +14,8 @@ The application uses Auth0's core RBAC functionality to control access to differ
 | **Member** | Restricted access | Unrestricted routes (cannot access `/config`) |
 | **Viewer** | Limited access | Unrestricted routes only |
 
+> **Note**: The "Viewer" role is equivalent to users who have no roles assigned in Auth0. Users without any assigned roles are treated as having Viewer-level access i.e. they can only access the unrestricted routes.
+
 ## Implementation Details
 
 ### 1. Role Fetching Process

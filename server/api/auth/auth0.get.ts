@@ -17,13 +17,6 @@ async function getManagementApiToken(): Promise<string | null> {
     const config = useRuntimeConfig();
     const { oauth } = config;
 
-    console.log("🔍 Auth0 config check:", {
-      hasClientId: !!oauth?.auth0?.clientId,
-      hasClientSecret: !!oauth?.auth0?.clientSecret,
-      hasDomain: !!oauth?.auth0?.domain,
-      domain: oauth?.auth0?.domain,
-    });
-
     if (
       !oauth?.auth0?.clientId ||
       !oauth?.auth0?.clientSecret ||
@@ -35,15 +28,8 @@ async function getManagementApiToken(): Promise<string | null> {
 
     // Check if we have a valid cached token
     if (managementTokenCache && managementTokenCache.expiresAt > Date.now()) {
-      console.log("🔍 Using cached Management API token");
       return managementTokenCache.token;
     }
-
-    console.log("🔍 Generating new Management API token...");
-    console.log(
-      "🔍 Token request URL:",
-      `https://${oauth.auth0.domain}/oauth/token`,
-    );
 
     // Generate new access token
     const tokenResponse = await fetch(
@@ -62,9 +48,6 @@ async function getManagementApiToken(): Promise<string | null> {
       },
     );
 
-    console.log("🔍 Token response status:", tokenResponse.status);
-    console.log("🔍 Token response ok:", tokenResponse.ok);
-
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error(
@@ -76,12 +59,6 @@ async function getManagementApiToken(): Promise<string | null> {
     }
 
     const tokenData = await tokenResponse.json();
-    console.log("🔍 Token response data:", {
-      hasAccessToken: !!tokenData.access_token,
-      expiresIn: tokenData.expires_in,
-      tokenType: tokenData.token_type,
-    });
-
     const accessToken = tokenData.access_token;
     const expiresIn = tokenData.expires_in || 86400; // Default to 24 hours
 
@@ -90,12 +67,6 @@ async function getManagementApiToken(): Promise<string | null> {
       token: accessToken,
       expiresAt: Date.now() + expiresIn * 1000 - 60000, // Expire 1 minute early for safety
     };
-
-    console.log(
-      "🔍 Generated new Management API token, expires in:",
-      expiresIn,
-      "seconds",
-    );
     return accessToken;
   } catch (error) {
     console.error("🔍 Error generating Management API token:", error);
@@ -109,8 +80,6 @@ async function fetchUserIdByEmail(email: string): Promise<string | null> {
     const config = useRuntimeConfig();
     const { oauth } = config;
 
-    console.log("🔍 Fetching user ID for email:", email);
-
     if (!oauth?.auth0?.domain) {
       console.error("🔍 Auth0 Management API configuration missing");
       return null;
@@ -121,12 +90,6 @@ async function fetchUserIdByEmail(email: string): Promise<string | null> {
       console.error("🔍 Failed to get Management API access token");
       return null;
     }
-
-    console.log("🔍 Got access token, fetching user by email...");
-    console.log(
-      "🔍 User API URL:",
-      `https://${oauth.auth0.domain}/api/v2/users-by-email?email=${encodeURIComponent(email)}`,
-    );
 
     // Fetch user by email
     const userResponse = await fetch(
@@ -139,9 +102,6 @@ async function fetchUserIdByEmail(email: string): Promise<string | null> {
       },
     );
 
-    console.log("🔍 User response status:", userResponse.status);
-    console.log("🔍 User response ok:", userResponse.ok);
-
     if (!userResponse.ok) {
       const errorText = await userResponse.text();
       console.error(
@@ -153,13 +113,6 @@ async function fetchUserIdByEmail(email: string): Promise<string | null> {
     }
 
     const usersData = await userResponse.json();
-    console.log("🔍 Users data received:", {
-      count: usersData.length,
-      users: usersData.map((u: { email: string; user_id: string }) => ({
-        email: u.email,
-        user_id: u.user_id,
-      })),
-    });
 
     if (usersData.length === 0) {
       console.error("🔍 No user found with email:", email);
@@ -167,7 +120,6 @@ async function fetchUserIdByEmail(email: string): Promise<string | null> {
     }
 
     const userId = usersData[0].user_id;
-    console.log("🔍 Found user ID:", userId, "for email:", email);
     return userId;
   } catch (error) {
     console.error("🔍 Error fetching user ID by email:", error);
@@ -232,39 +184,14 @@ export default oauthAuth0EventHandler({
 
   async onSuccess(event: H3Event, { user }: { user: Auth0User }) {
     try {
-      // Log the full user object to see what Auth0 provides
-      console.log("🔍 Auth0 User Object:", JSON.stringify(user, null, 2));
-      console.log("🔍 Auth0 User Keys:", Object.keys(user));
-
-      // Log specific fields that might contain roles
-      console.log("🔍 User email:", user.email);
-      console.log("🔍 User sub:", user.sub);
-      console.log("🔍 User name:", user.name);
-      console.log("🔍 User nickname:", user.nickname);
-      console.log("🔍 User picture:", user.picture);
-      console.log("🔍 User email_verified:", user.email_verified);
-      console.log("🔍 User updated_at:", user.updated_at);
-      console.log("🔍 Roles from roles field:", user.roles);
-      console.log("🔍 Permissions:", user.permissions);
-
-      // Log all custom fields that might contain role information
-      Object.keys(user).forEach((key) => {
-        if (
-          key.includes("role") ||
-          key.includes("permission") ||
-          key.includes("https://")
-        ) {
-          console.log(`🔍 Custom field ${key}:`, user[key]);
-        }
-      });
+      // Log user info for debugging
+      console.log("🔍 Auth0 User:", { email: user.email, sub: user.sub });
+      console.log("🔍 User roles from Auth0:", user.roles);
 
       // If roles aren't in the user object, fetch them from Management API
       let userRoles: Array<{ id: string; name: string; description: string }> =
         [];
       if (!user.roles || user.roles.length === 0) {
-        console.log(
-          "🔍 No roles found in user object, fetching from Management API...",
-        );
         if (user.email) {
           const userId = await fetchUserIdByEmail(user.email);
           if (userId) {
