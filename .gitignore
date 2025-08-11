@@ -98,7 +98,7 @@ sw.*
 # GuardianConnector Explorer specific
 .env*
 !.env.example
-!.env.test.example
-.env.docker
+!.env.test.playwright.example
+!.env.test.compose.example
 *.db
 test-results/

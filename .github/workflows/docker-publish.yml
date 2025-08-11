@@ -48,7 +48,7 @@ jobs:
         run: pnpm exec playwright install --with-deps
       - name: Create test environment file
         run: |
-          cat > .env.test << EOF
+          cat > .env.test.playwright << EOF
           CI=true
           NUXT_PUBLIC_APP_API_KEY="8b7c78b7-c800-4cca-bc1b-da080338ff79"
           NUXT_PUBLIC_AUTH_STRATEGY="none"
@@ -65,9 +65,9 @@ jobs:
           NUXT_DB_PASSWORD=testpassword
           NUXT_DATABASE=test_warehouse
           EOF
-      - name: Show .env.test (with secrets masked)
+      - name: Show .env.test.playwright (with secrets masked)
         run: |
-          sed -E 's/(NUXT_SESSION_SECRET|NUXT_PUBLIC_APP_API_KEY)=(.*)/\1=***/g' .env.test
+          sed -E 's/(NUXT_SESSION_SECRET|NUXT_PUBLIC_APP_API_KEY)=(.*)/\1=***/g' .env.test.playwright
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to Docker Hub
@@ -89,7 +89,7 @@ jobs:
           export MEDIA_BASE_PATH="${{ secrets.MEDIA_BASE_PATH }}"
           export PLANET_API_KEY="${{ secrets.PLANET_API_KEY }}"
           # Start the services with environment variables
-          docker compose -f docker-compose.tests.yml --env-file .env.test up -d database backend
+          docker compose -f docker-compose.tests.yml --env-file .env.test.playwright up -d database backend
           # Wait for the backend to be ready with proper health check
           echo "Waiting for backend to be ready..."
           timeout 60 bash -c 'until curl -f http://localhost:8080; do sleep 2; done'
