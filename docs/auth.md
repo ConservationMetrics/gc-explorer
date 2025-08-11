@@ -201,15 +201,6 @@ The implementation includes comprehensive error handling:
 3. **"Failed to fetch user roles"**: Check Management API authorization and scopes
 4. **"Access denied"**: Verify user has appropriate role assigned
 
-### Debug Logs
-
-The application provides detailed logging with "🔍" prefix for debugging:
-
-- Auth0 configuration status
-- Token generation process
-- User role fetching
-- Access control decisions
-
 ## UI Enhancements
 
 ### Conditional Config Link
