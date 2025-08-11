@@ -104,7 +104,7 @@ $ pnpm test:e2e
 
 > [!WARNING]
 >
-> **Dev mode** requires a database connection in `.env.test.playwright` and will write test data to that database. It is highly recommended to use **CI mode** with Docker containers for local testing to avoid affecting your development database.
+> **Dev mode** requires a database connection in `.env.test.playwright`, and for some of the e2e tests (e.g. config), it is required to write to the database. It is highly recommended to use **CI mode** with Docker containers for local testing to avoid affecting your development database, and furthermore, to NOT use production database credentials for dev mode.
 
 #### Environment Setup
 
