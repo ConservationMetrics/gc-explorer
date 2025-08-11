@@ -60,7 +60,11 @@ watch(
         @change="toggleLayerVisibility(item)"
       />
       <label :for="item.id">
+        <div v-if="item.iconUrl" class="icon-box">
+          <img :src="item.iconUrl" :alt="item.name" class="legend-icon" />
+        </div>
         <div
+          v-else
           :class="['color-box', getTypeClass(item)]"
           :style="{ backgroundColor: item.color }"
         ></div>
@@ -120,6 +124,21 @@ watch(
   height: 10px;
   margin: 5px;
   margin-right: 15px;
+}
+
+.icon-box {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin-right: 10px;
+  vertical-align: middle;
+  position: relative;
+}
+
+.legend-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .legend-item {
