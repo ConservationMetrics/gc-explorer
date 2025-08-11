@@ -159,13 +159,6 @@ curl --request GET \
    POST /oauth/token
    ```
 
-## Security Considerations
-
-- **Token caching**: Management API tokens are cached for 24 hours
-- **Role validation**: Server-side validation of all role-based decisions
-- **Session security**: Roles stored in secure server-side sessions
-- **Audit logging**: Comprehensive logging of access decisions
-
 ## Troubleshooting
 
 ### Common Issues
