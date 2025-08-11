@@ -1,5 +1,6 @@
 {
   "addNewTable": "Voeg nieuwe tabel toe",
+  "administration": "Beheer",
   "after": "Na",
   "alertAreaHectares": "Alert gebied in hectaren",
   "alertDetectionRange": "Alert detectie periode",
@@ -21,6 +22,7 @@
   "clickOnAlertsForMoreInfo": "Klik op alerts voor meer informatie",
   "confidenceLevel": "Betrouwbaarheidsniveau",
   "configuration": "Instellingen",
+  "config": "Configuratie",
   "configDeleted": "Instellingen verwijderd",
   "configUpdated": "Configuratie bijgewerkt",
   "confirm": "Bevestigen",

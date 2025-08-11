@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import type { Views } from "@/types/types";
+import type { Views, User } from "@/types/types";
 import LanguagePicker from "@/components/shared/LanguagePicker.vue";
+
 const viewsConfig = ref<Views>({});
 
 const {
-  public: { appApiKey },
+  public: { appApiKey, authStrategy },
 } = useRuntimeConfig();
+
+const { loggedIn, user } = useUserSession();
+
 const headers = {
   "x-api-key": appApiKey,
 };
@@ -19,6 +23,7 @@ if (data.value && !error.value) {
 } else {
   console.error("Error fetching data:", error.value);
 }
+
 /** Filter and sort the views config */
 const filteredSortedViewsConfig = computed(() => {
   return Object.keys(viewsConfig.value)
@@ -28,6 +33,21 @@ const filteredSortedViewsConfig = computed(() => {
       accumulator[key] = viewsConfig.value[key];
       return accumulator;
     }, {});
+});
+
+// Check if user should see config link
+const shouldShowConfigLink = computed(() => {
+  if (authStrategy === "none") {
+    return true;
+  }
+
+  if (authStrategy === "auth0" && loggedIn.value && user.value) {
+    const typedUser = user.value as User;
+    const userRoles = typedUser.roles || [];
+    return userRoles.some((role: { name: string }) => role.name === "Admin");
+  }
+
+  return false;
 });
 
 useHead({
@@ -69,6 +89,25 @@ useHead({
               class="text-blue-500 no-underline hover:text-blue-700 hover:underline"
               >{{ $t(view) }}</NuxtLink
             >
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Config Link for Admins or when auth is disabled -->
+    <div v-if="shouldShowConfigLink" class="w-1/2">
+      <div class="table-item bg-gray-100 rounded p-4 mb-4">
+        <h2 class="text-gray-800 mb-2">
+          <strong>{{ $t("administration") || "Administration" }}:</strong>
+        </h2>
+        <ul class="list-none p-0">
+          <li class="mb-2">
+            <NuxtLink
+              to="/config"
+              class="text-blue-500 no-underline hover:text-blue-700 hover:underline"
+            >
+              {{ $t("config") || "Configuration" }}
+            </NuxtLink>
           </li>
         </ul>
       </div>
