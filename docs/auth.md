@@ -201,28 +201,3 @@ The implementation includes comprehensive error handling:
 3. **"Failed to fetch user roles"**: Check Management API authorization and scopes
 4. **"Access denied"**: Verify user has appropriate role assigned
 
-## UI Enhancements
-
-### Conditional Config Link
-
-The application includes a conditional config link on the main index page that only appears for users with appropriate permissions:
-
-- **Admin users**: Config link is visible in the "Administration" section
-- **Member/Viewer users**: Config link is hidden
-- **Auth disabled**: Config link is always visible
-
-The config link appears as a new section called "Administration" with the same styling as the data view links, providing a seamless user experience.
-
-![Admin Index Page with Config Link](admin-index.png)
-
-*Screenshot showing the administration section with config link visible for admin users*
-
-## Future Enhancements
-
-Potential improvements for the RBAC system:
-
-- **Fine-grained permissions**: Permission-level access control
-- **Role inheritance**: Hierarchical role structure
-- **Dynamic role assignment**: API-based role management
-- **Audit trail**: Detailed access logging
-- **UI role management**: In-app role assignment interface
