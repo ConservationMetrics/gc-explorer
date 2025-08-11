@@ -32,7 +32,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // Check role-based access for /config route
-  if (to.path === "/config" && loggedIn.value && user.value && !ci) {
+  if (authStrategy === auth0 && to.path === "/config" && loggedIn.value && user.value) {
     const typedUser = user.value as User;
     const userRoles = typedUser.roles || [];
     const hasAdminRole = userRoles.some(
