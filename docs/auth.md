@@ -133,32 +133,6 @@ curl --request GET \
 
 ## Testing RBAC
 
-### Testing Unauthorized Access
-
-To test that unauthorized users are properly redirected:
-
-1. **Assign Member role only** to a test user
-2. **Attempt to access `/config`** route
-3. **Verify redirect** back to previous page
-
-### Testing Admin Access
-
-To test that Admin users can access protected routes:
-
-1. **Navigate to Admin roles page** in Auth0 dashboard
-2. **Assign Admin role** to your user
-3. **Access `/config`** route
-4. **Verify successful access**
-
-## Error Handling
-
-The implementation includes comprehensive error handling:
-
-- **No roles assigned**: User treated as having no permissions
-- **API failures**: Graceful degradation with empty role arrays
-- **Token expiration**: Automatic token regeneration
-- **Network issues**: Fallback to basic authentication
-
 ## API References
 
 ### Auth0 Documentation References
