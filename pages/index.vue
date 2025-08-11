@@ -95,13 +95,22 @@ useHead({
     </div>
 
     <!-- Config Link for Admins or when auth is disabled -->
-    <div v-if="shouldShowConfigLink" class="mt-8 text-center">
-      <NuxtLink
-        to="/config"
-        class="inline-block px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 no-underline"
-      >
-        {{ $t("config") || "Configuration" }}
-      </NuxtLink>
+    <div v-if="shouldShowConfigLink" class="w-1/2">
+      <div class="table-item bg-gray-100 rounded p-4 mb-4">
+        <h2 class="text-gray-800 mb-2">
+          <strong>{{ $t("administration") || "Administration" }}:</strong>
+        </h2>
+        <ul class="list-none p-0">
+          <li class="mb-2">
+            <NuxtLink
+              to="/config"
+              class="text-blue-500 no-underline hover:text-blue-700 hover:underline"
+            >
+              {{ $t("config") || "Configuration" }}
+            </NuxtLink>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 </template>

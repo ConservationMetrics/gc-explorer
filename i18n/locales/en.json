@@ -1,5 +1,6 @@
 {
   "addNewTable": "Add new table",
+  "administration": "Administration",
   "after": "After",
   "alertAreaHectares": "Alert area (hectares)",
   "alertDetectionRange": "Alert detection range",
@@ -21,6 +22,7 @@
   "clickOnAlertsForMoreInfo": "Click on alerts for more information",
   "confidenceLevel": "Confidence level",
   "configuration": "Configuration",
+  "config": "Configuration",
   "configUpdated": "Configuration updated",
   "confirm": "Confirm",
   "copied": "Copied!",

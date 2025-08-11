@@ -78,10 +78,19 @@ Before implementing RBAC, ensure:
 ### Creating Roles
 
 1. Navigate to **User Management > Roles** in the Auth0 dashboard
-2. Click **"+ Create Role"**
+2. Click **"+ Create Role"** (blue button in the top right)
 3. Enter role details:
    - **Name**: Admin, Member, or Viewer
    - **Description**: Brief description of permissions
+
+![Auth0 Roles Management](roles.png)
+
+*Screenshot showing the existing roles (Admin, Member, Viewer) and the "+ Create Role" button in the Auth0 dashboard*
+
+**Existing Roles in the System:**
+- **Admin**: "can access anything a member can, plus /config"
+- **Member**: "can access both unrestricted and restricted views routes"  
+- **Viewer**: "can access only unrestricted views routes"
 
 ### Assigning Roles to Users
 
@@ -184,6 +193,22 @@ The application provides detailed logging with "🔍" prefix for debugging:
 - Token generation process
 - User role fetching
 - Access control decisions
+
+## UI Enhancements
+
+### Conditional Config Link
+
+The application includes a conditional config link on the main index page that only appears for users with appropriate permissions:
+
+- **Admin users**: Config link is visible in the "Administration" section
+- **Member/Viewer users**: Config link is hidden
+- **Auth disabled**: Config link is always visible
+
+The config link appears as a new section called "Administration" with the same styling as the data view links, providing a seamless user experience.
+
+![Admin Index Page with Config Link](admin-index.png)
+
+*Screenshot showing the administration section with config link visible for admin users*
 
 ## Future Enhancements
 

@@ -1,5 +1,6 @@
 {
   "addNewTable": "Agregar nueva tabela",
+  "administration": "Administración",
   "after": "Después",
   "alertAreaHectares": "Área de alerta (hectáreas)",
   "alertDetectionRange": "Rango de detección de alertas",
@@ -21,6 +22,7 @@
   "clickOnAlertsForMoreInfo": "Haga clic en las alertas para obtener más información",
   "confidenceLevel": "Nivel de confianza",
   "configuration": "Configuración",
+  "config": "Configuración",
   "configUpdated": "Configuración actualizada",
   "confirm": "Confirmar",
   "copied": "¡Copiado!",
