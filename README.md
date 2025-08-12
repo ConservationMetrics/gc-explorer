@@ -58,7 +58,7 @@ docker run --env-file=.env -it -p 8080:8080 guardianconnector-explorer:latest
 
 GuardianConnector Explorer uses two testing frameworks:
 
-### Unit and Component Tests (Vitest)
+### 1. Unit and Component Tests (Vitest)
 
 Run unit and component tests with Vitest:
 
@@ -69,69 +69,95 @@ $ pnpm test:unit
 
 These tests use mocked dependencies and verify component logic in isolation.
 
-### End-to-End Tests (Playwright)
+### 2. End-to-End Tests (Playwright)
 
 Run E2E tests that verify the full application, from a real browser down to the
-backend API and database, and back up:
+backend API and database, and back up.
 
-```bash
-# Run E2E tests in an isolated Docker environment (starts backend + database)
-$ docker compose -f docker-compose.tests.yml up -d database backend
-$ pnpm test:e2e
-
-# Run E2E tests using a specific Docker image tag
-$ ImgTag=2025-01-01 docker compose -f docker-compose.tests.yml up -d database backend
-$ pnpm test:e2e
-
-# Or use the convenience script (requires .env.local.docker-tests file)
-$ ./run-local-docker-tests.sh
-$ pnpm test:e2e
-
-# For local development (without Docker), Playwright will start its own dev server
-$ pnpm test:e2e
-```
-
-**Important:** E2E tests require a fully functional test environment. The preferred setup uses
+E2E tests require a fully functional test environment. The preferred setup uses
 docker-compose to spin up isolated containers for the backend and database, then runs Playwright tests separately.
 This approach guarantees consistent test runs without relying on shared environments.
 
-**Test Modes:**
-- **Docker mode** (CI=true): Uses containerized backend and database, Playwright runs against these services
-- **Local mode** (CI not set): Playwright starts its own Nuxt dev server and runs tests against it
+#### Test Execution Modes
 
-**Environment Setup:**
-- For local Docker testing: Create a `.env.local.docker-tests` file with your API keys and secrets:
-  - `NUXT_PUBLIC_APP_API_KEY`
-  - `NUXT_SESSION_SECRET`
-  - `MAPBOX_ACCESS_TOKEN`
-  - `MEDIA_BASE_PATH`
-  - `PLANET_API_KEY`
-  - `ImgTag=local`
-- For local testing with `.env.test`: Copy `.env.test.example` and set:
-  - `CI=true` for Docker mode (uses containerized services)
-  - `CI=false` for local mode (Playwright starts its own dev server)
-  - All required API keys and secrets
-- For CI testing: The workflow uses `.env.test` with GitHub secrets
-- See `.env.test.example` for the required environment variables
+The test setup has two modes, controlled by the `CI` environment variable:
 
-The `docker-compose.test.yml` takes care of:
-1. Populating the test database with known mock data, including survey and alerts views.
-2. Setting `NUXT_PUBLIC_AUTH_STRATEGY="none"` to bypass authentication.
+- **CI Mode** (`CI=true`): Playwright connects to externally managed services (backend + database running in Docker containers)
+- **Dev Mode** (`CI=false` or unset): Playwright starts its own Nuxt dev server and connects to your configured database
 
-Note: the database is ephemeral. To reload seed data, remove the volume:
+```bash
+# Recommended: use the convenience script (requires .env.test.compose file)
+$ ./run-local-docker-tests.sh
+$ CI=true pnpm test:e2e
 
-    docker volume rm gc-explorer_db_data
+# Run E2E tests with isolated Docker services
+$ docker compose -f docker-compose.tests.yml up -d database backend
+$ CI=true pnpm test:e2e
+
+# Run E2E tests using a specific Docker image tag
+$ ImgTag=2025-01-01 docker compose -f docker-compose.tests.yml up -d database backend
+$ CI=true pnpm test:e2e
+
+# For quick development testing (starts own dev server)
+$ pnpm test:e2e
+```
+
+> [!WARNING]
+>
+> **Dev mode** requires a database connection in `.env.test.playwright`, and for some of the e2e tests (e.g. config), it is required to write to the database. It is highly recommended to use **CI mode** with Docker containers for local testing to avoid affecting your development database, and furthermore, to NOT use production database credentials for dev mode.
+
+#### Environment Setup
+
+##### CI Mode (Docker Services)
+
+**For local testing with Docker services:**
+- Copy `.env.test.compose.example` to `.env.test.compose` and set all required API keys and secrets
+- Use `./run-local-docker-tests.sh` script or manually start services with `docker compose -f docker-compose.tests.yml`
+- When using the script, make sure to stop the services with `docker compose -f docker-compose.tests.yml down` when you are done testing.
+
+The `docker-compose.tests.yml` takes care of:
+1. Populating the test database with known mock data (stored in `db/init/warehouse.sql`), including survey and alerts views
+2. Setting `NUXT_PUBLIC_AUTH_STRATEGY="none"` to bypass authentication
+3. Running isolated containers that don't affect your development environment
+
+Note: The database is ephemeral. To reload seed data, remove the volume:
+```bash
+docker volume rm gc-explorer_db_data
+```
+
+**For CI/GitHub Actions:**
+- The workflow automatically creates `.env.test.playwright` with GitHub secrets
+- Uses the same `docker-compose.tests.yml` file for consistency
+
+##### Dev Mode (Local Development)
+
+**For quick development testing:**
+- Copy `.env.test.playwright.example` to `.env.test.playwright` and set database connection + API keys
+- Playwright will start its own Nuxt dev server using `pnpm dev`
+- Tests will use your configured database connection
+
+
+#### Playwright Test Development
+
+It is recommended to run tests with headless mode disabled, so that you can see the browser as it runs the tests. While developing tests, you may also want to add timeouts to the tests, so that you can see the browser as it runs the tests. (Remember to remove these timeouts before committing your changes.)
+
+You can run specific Playwright tests by appending `.only` to the test name, or by running:
+
+```bash
+pnpm test:e2e --grep "layer visibility toggles" # change to the test you want to run
+```
 
 ### CI/CD Testing
 
-The GitHub Actions workflow automatically runs both unit and end-to-end (E2E) tests. For E2E tests to work in CI, we have configured the relevant GitHub secrets in the repository settings based on the `.env.test.example` file.
+The GitHub Actions workflow automatically runs both unit and E2E tests on every push and pull request.
 
-**How it works:**
-- The CI environment spins up isolated Docker containers for the backend and PostgreSQL database, just like local testing.
-- The workflow builds a Docker image tagged as `ci-test` and uses it for testing.
-- The database is initialized with the same seed data as local testing, ensuring consistent test environments.
-- The workflow automatically generates a `.env.test` file with the necessary secrets before running tests.
-- Playwright runs E2E tests against the containerized application and database.
+**Automated workflow:**
+- Builds a Docker image tagged as `ci-test` for testing
+- Creates `.env.test.playwright` with GitHub secrets and starts the same Docker services as local testing
+- Runs unit tests with `pnpm test:unit`
+- Runs E2E tests with `pnpm test:e2e` in CI mode
+
+GitHub secrets must be configured based on the `.env.test.playwright.example` file for the workflow to succeed.
 
 ## Available Views
 

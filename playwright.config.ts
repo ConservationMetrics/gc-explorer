@@ -3,10 +3,10 @@ import { config } from "dotenv";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
-// Load .env.test file for test environment
+// Load .env.test.playwright file for test environment
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-config({ path: resolve(__dirname, ".env.test") });
+config({ path: resolve(__dirname, ".env.test.playwright") });
 
 export default defineConfig({
   testDir: "e2e",

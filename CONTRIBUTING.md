@@ -68,7 +68,7 @@ See the [Nuxt documentation on testing](https://nuxt.com/docs/getting-started/te
 For end-to-end testing, we use Playwright to test the full application in a real browser.
 Playwright tests verify user interactions and page rendering with mocked API responses.
 
-Copy `.env.test.example` to `.env.test` to configure the test environment.
+See the [README](README.md#testing) for more details on testing.
 
 # Coding & Documentation Style
 
