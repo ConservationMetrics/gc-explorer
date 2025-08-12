@@ -99,6 +99,7 @@ export type MapLegendItem = {
   name: string;
   type: string;
   visible: boolean;
+  iconUrl?: string;
 };
 
 export type AlertsMetadata = {
