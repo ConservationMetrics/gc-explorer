@@ -33,6 +33,7 @@
   "dataCollectedOn": "Data verzameld op",
   "dataProvider": "Data provider",
   "dataProviders": "Data provider(s)",
+  "dataset": "Dataset",
   "downloadCSV": "Download CSV",
   "downloadGeoJSON": "Download GeoJSON",
   "downloadKML": "Download KML",
