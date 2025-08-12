@@ -11,10 +11,12 @@ The application uses Auth0's core RBAC functionality to control access to differ
 | Role | Access Level | Routes |
 |------|-------------|---------|
 | **Admin** | Full access | All routes including `/config` |
-| **Member** | Restricted access | Unrestricted routes (cannot access `/config`) |
+| **Member** | Restricted access | Restricted routes (cannot access `/config`) |
 | **Viewer** | Limited access | Unrestricted routes only |
 
-> **Note**: The "Viewer" role is equivalent to users who have no roles assigned in Auth0. Users without any assigned roles are treated as having Viewer-level access i.e. they can only access the unrestricted routes.
+> [!NOTE]
+> 
+> The "Viewer" role is nominal only — it is equivalent to users who have no roles assigned in Auth0. Users without any assigned roles are treated as having Viewer-level access i.e. they can only access the unrestricted routes.
 
 ## Implementation Details
 
@@ -81,6 +83,10 @@ Before implementing RBAC, ensure:
      - **"RBAC"** (Role-Based Access Control)
      - **"Add Roles in the Access Token"**
 
+> [!NOTE]
+>
+> For the Auth0 Management API that is added by default, it is not necessary to enable RBAC; the previous step can be skipped.
+
 3. **Authorize Management API Access**:
    - Go to **Dashboard > Applications > APIs > Auth0 Management API**
    - Navigate to **"Machine to Machine Applications"** tab
@@ -107,7 +113,6 @@ Before implementing RBAC, ensure:
 **Existing Roles in the System:**
 - **Admin**: "can access anything a member can, plus /config"
 - **Member**: "can access both unrestricted and restricted views routes"  
-- **Viewer**: "can access only unrestricted views routes"
 
 ### Assigning Roles to Users
 
@@ -132,8 +137,6 @@ curl --request GET \
   --url 'https://{yourDomain}/api/v2/users/USER_ID/roles' \
   --header 'authorization: Bearer MGMT_API_ACCESS_TOKEN'
 ```
-
-## Testing RBAC
 
 ## API References
 
@@ -170,3 +173,6 @@ curl --request GET \
 3. **"Failed to fetch user roles"**: Check Management API authorization and scopes
 4. **"Access denied"**: Verify user has appropriate role assigned
 
+### RBAC not working in a GC-Explorer instance despite correct Auth0 configuration
+
+We have seen cases that when setting up RBAC in a GC-Explorer instance, that it is not yet working despite correct Auth0 configuration. The workaround is to restart the GC-Explorer instance _after_ the RBAC configuration has been made.
