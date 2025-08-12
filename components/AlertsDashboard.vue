@@ -951,6 +951,7 @@ const prepareMapLegendContent = () => {
 /**
  * Toggles the visibility of a map layer or all related layers for alert groups.
  * For alert layers, toggles all geometry types and symbol layers together.
+ * For most-recent-alerts, also toggles pulsing circles.
  */
 const toggleLayerVisibility = (item: MapLegendItem) => {
   const visibility = item.visible ? "visible" : "none";
@@ -974,6 +975,17 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
         }
       }
     });
+
+    // Handle pulsing circles for most-recent-alerts
+    if (item.id === "most-recent-alerts") {
+      if (item.visible) {
+        // Layer is being made visible - add pulsing circles
+        addPulsingCircles();
+      } else {
+        // Layer is being hidden - remove pulsing circles
+        removePulsingCircles();
+      }
+    }
   } else {
     // Handle individual layers (mapeo-data, etc.)
     utilsToggleLayerVisibility(map.value, item);
