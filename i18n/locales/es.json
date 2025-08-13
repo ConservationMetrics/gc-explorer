@@ -32,6 +32,7 @@
   "dataCollectedOn": "Datos recopilados el",
   "dataProvider": "Proveedor de datos",
   "dataProviders": "Proveedor(es) de datos",
+  "dataset": "Conjunto de datos",
   "downloadCSV": "Descargar CSV",
   "downloadGeoJSON": "Descargar GeoJSON",
   "downloadKML": "Descargar KML",
