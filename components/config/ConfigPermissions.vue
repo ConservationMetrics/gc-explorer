@@ -35,7 +35,7 @@ const handleRestrictionChange = () => {
 <template>
   <div v-if="shouldShowPermissions" class="permissions-section">
     <h3 class="text-lg font-semibold mb-3 text-gray-800">
-      {{ $t("accessPermissions") || "Access Permissions" }}
+      {{ $t("accessPermissions") }}
     </h3>
     <div class="flex items-center space-x-3">
       <input
