@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import LanguagePicker from "./shared/LanguagePicker.vue";
-import type { Views, ViewConfig, User } from "@/types/types";
-import { Role } from "@/types/types";
+import type { Views, ViewConfig } from "@/types/types";
 
 const props = defineProps<{
   viewsConfig: Views;
@@ -10,7 +9,6 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { user } = useUserSession();
 
 const emit = defineEmits([
   "addTableToConfig",
@@ -18,33 +16,12 @@ const emit = defineEmits([
   "submitConfig",
 ]);
 
-// Filter configs based on user role - only show unrestricted cards to Viewers
-const filteredViewsConfig = computed(() => {
-  if (!user.value) return props.viewsConfig;
-
-  const typedUser = user.value as User;
-  const userRole = typedUser.userRole || Role.Viewer;
-
-  // Admins and Members can see all cards
-  if (userRole >= Role.Member) {
-    return props.viewsConfig;
-  }
-
-  // Viewers can only see unrestricted cards
-  return Object.keys(props.viewsConfig)
-    .filter((tableName) => !props.viewsConfig[tableName].isRestricted)
-    .reduce((acc, tableName) => {
-      acc[tableName] = props.viewsConfig[tableName];
-      return acc;
-    }, {} as Views);
-});
-
 const sortedViewsConfig = computed(() => {
-  return Object.keys(filteredViewsConfig.value)
+  return Object.keys(props.viewsConfig)
     .sort()
     .reduce(
       (accumulator, key) => {
-        accumulator[key] = filteredViewsConfig.value[key];
+        accumulator[key] = props.viewsConfig[key];
         return accumulator;
       },
       {} as Record<string, ViewConfig>,
