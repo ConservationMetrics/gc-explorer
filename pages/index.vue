@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Views, User } from "@/types/types";
+import { Role } from "@/types/types";
 import LanguagePicker from "@/components/shared/LanguagePicker.vue";
 
 const viewsConfig = ref<Views>({});
@@ -26,14 +27,33 @@ if (data.value && !error.value) {
 
 /** Filter and sort the views config */
 const filteredSortedViewsConfig = computed(() => {
+  const typedUser = user.value as User;
+  const userRole = typedUser?.userRole || Role.Viewer;
+
   return Object.keys(viewsConfig.value)
-    .filter((key) => Object.keys(viewsConfig.value[key]).length > 0)
+    .filter((key) => {
+      const config = viewsConfig.value[key];
+      // Filter out empty configs
+      if (Object.keys(config).length === 0) return false;
+
+      // Only Viewers should have restricted views filtered out
+      if (userRole < Role.Member && config.isRestricted) {
+        return false;
+      }
+
+      return true;
+    })
     .sort()
     .reduce((accumulator: Views, key: string) => {
       accumulator[key] = viewsConfig.value[key];
       return accumulator;
     }, {});
 });
+
+// Helper function to check if a view is restricted
+const isViewRestricted = (tableName: string) => {
+  return viewsConfig.value[tableName]?.isRestricted || false;
+};
 
 // Check if user should see config link
 const shouldShowConfigLink = computed(() => {
@@ -43,8 +63,8 @@ const shouldShowConfigLink = computed(() => {
 
   if (authStrategy === "auth0" && loggedIn.value && user.value) {
     const typedUser = user.value as User;
-    const userRoles = typedUser.roles || [];
-    return userRoles.some((role: { name: string }) => role.name === "Admin");
+    const userRole = typedUser.userRole || Role.Viewer;
+    return userRole >= Role.Admin;
   }
 
   return false;
@@ -87,8 +107,15 @@ useHead({
           :key="tableName"
           class="table-item bg-gray-100 rounded p-4 mb-4 w-full"
         >
-          <h2 class="text-gray-800 mb-2">
-            <strong>{{ $t("dataset") }}:</strong> {{ tableName }}
+          <h2 class="text-gray-800 mb-2 flex items-center gap-2">
+            {{ tableName }}
+            <span
+              v-if="isViewRestricted(String(tableName))"
+              class="text-gray-600"
+              title="Restricted view - requires Member+ access"
+            >
+              🔒
+            </span>
           </h2>
           <ul class="list-none p-0">
             <li
