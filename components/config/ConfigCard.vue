@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ViewConfig } from "@/types/types";
+import ConfigPermissions from "./ConfigPermissions.vue";
 
 const props = defineProps<{
   tableName: string;
@@ -162,6 +163,11 @@ const handleSubmit = () => {
           :views="availableViews"
           :config="localConfig"
           :keys="otherKeys"
+          @update-config="handleConfigUpdate"
+        />
+        <ConfigPermissions
+          :table-name="tableName"
+          :view-config="localConfig"
           @update-config="handleConfigUpdate"
         />
         <button

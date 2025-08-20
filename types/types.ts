@@ -47,6 +47,7 @@ export interface ViewConfig {
   UNWANTED_COLUMNS?: string;
   UNWANTED_SUBSTRINGS?: string;
   VIEWS?: string;
+  isRestricted?: boolean; // Whether this view requires Member+ access
 }
 
 export interface Views {
@@ -135,7 +136,16 @@ export type AlertsStatistics = {
   twelveMonthsBefore: string;
 };
 
+export const Role = {
+  Viewer: 0,
+  Member: 1,
+  Admin: 2,
+} as const;
+
+export type Role = (typeof Role)[keyof typeof Role];
+
 export interface User {
   auth0: string;
   roles?: Array<{ id: string; name: string; description: string }>;
+  userRole?: Role;
 }

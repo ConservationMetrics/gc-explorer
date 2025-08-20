@@ -1,5 +1,6 @@
 import type { H3Event } from "h3";
 import { useRuntimeConfig } from "#imports";
+import { Role } from "~/types/types";
 
 interface Auth0User {
   email: string;
@@ -210,10 +211,24 @@ export default oauthAuth0EventHandler({
         }));
       }
 
+      // Determine user role level
+      let userRole: Role = Role.Viewer; // Default to Viewer
+      if (userRoles.length > 0) {
+        const hasAdminRole = userRoles.some((role) => role.name === "Admin");
+        const hasMemberRole = userRoles.some((role) => role.name === "Member");
+
+        if (hasAdminRole) {
+          userRole = Role.Admin;
+        } else if (hasMemberRole) {
+          userRole = Role.Member;
+        }
+      }
+
       await setUserSession(event, {
         user: {
           auth0: user.email,
           roles: userRoles,
+          userRole,
         },
         loggedInAt: Date.now(),
       });
