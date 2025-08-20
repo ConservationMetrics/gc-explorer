@@ -42,9 +42,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
     // Check view-level restrictions for dataset routes
     if (
-      (to.path.includes("/map/") ||
-        to.path.includes("/gallery/") ||
-        to.path.includes("/alerts/")) &&
+      (!to.path.includes("/config") &&
+        !to.path.includes("/api") &&
+        !to.path.includes("/login") &&
       userRole < Role.Member
     ) {
       // Extract table name from path (e.g., "/map/tableName" -> "tableName")
