@@ -13,7 +13,7 @@ interface Auth0User {
 let managementTokenCache: { token: string; expiresAt: number } | null = null;
 
 // Function to get or generate Management API access token
-async function getManagementApiToken(): Promise<string | null> {
+const getManagementApiToken = async (): Promise<string | null> => {
   try {
     const config = useRuntimeConfig();
     const { oauth } = config;
@@ -73,10 +73,10 @@ async function getManagementApiToken(): Promise<string | null> {
     console.error("🔍 Error generating Management API token:", error);
     return null;
   }
-}
+};
 
 // Function to fetch user ID by email from Auth0 Management API
-async function fetchUserIdByEmail(email: string): Promise<string | null> {
+const fetchUserIdByEmail = async (email: string): Promise<string | null> => {
   try {
     const config = useRuntimeConfig();
     const { oauth } = config;
@@ -126,12 +126,12 @@ async function fetchUserIdByEmail(email: string): Promise<string | null> {
     console.error("🔍 Error fetching user ID by email:", error);
     return null;
   }
-}
+};
 
 // Function to fetch user roles from Auth0 Management API
-async function fetchUserRoles(
+const fetchUserRoles = async (
   userId: string,
-): Promise<Array<{ id: string; name: string; description: string }>> {
+): Promise<Array<{ id: string; name: string; description: string }>> => {
   try {
     const config = useRuntimeConfig();
     const { oauth } = config;
@@ -175,7 +175,7 @@ async function fetchUserRoles(
     console.error("🔍 Error fetching user roles:", error);
     return [];
   }
-}
+};
 
 export default oauthAuth0EventHandler({
   config: {

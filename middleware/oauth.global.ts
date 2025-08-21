@@ -25,7 +25,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
   }
 
-  // Check authentication
   if (authStrategy === "auth0" && !loggedIn.value && to.path !== "/login") {
     return router.push("/login");
   }
