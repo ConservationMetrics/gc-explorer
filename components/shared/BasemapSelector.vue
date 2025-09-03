@@ -166,7 +166,7 @@ const emitBasemapChange = () => {
   padding: 3px;
   width: 30px;
   background-color: #fff;
-  z-index: 1000;
+  z-index: 20;
 
   img {
     width: 100%;
