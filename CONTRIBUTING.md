@@ -80,7 +80,6 @@ code. Currently, we use the standard Prettier [configuration](https://prettier.i
 > To apply Prettier autoformatting you can configure your text editor to format on save [according
 > to these docs](https://prettier.io/docs/en/editors.html)
 > - For VS Code, set `editor.formatOnSave` to true in your editor config.
-> or in a pre-commit hook [according to these docs](https://prettier.io/docs/en/precommit.html).
 
 ESLint helps identify problematic patterns found in JavaScript code. The
 [configuration](https://eslint.org/docs/user-guide/configuring) lives in [`eslint.config.js`](eslint.config.js)

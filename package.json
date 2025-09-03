@@ -2,13 +2,12 @@
   "name": "guardianconnector-explorer",
   "version": "3.1.0",
   "type": "module",
-  "description": "A Nuxt app to explore GuardianConnector data in different views",
+  "description": "A Nuxt app to explore Guardian Connector data in different views",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
     "format": "prettier \"**/*.{js,ts,jsx,tsx,vue}\" --write",
     "generate": "nuxt generate",
-    "link-module": "pnpm link ../gc-shared-components",
     "lint:prettier": "prettier ./ --check --ignore-path .prettierignore",
     "lint:eslint": "eslint . --cache",
     "lint:eslint:fix": "eslint . --cache --fix",
@@ -18,8 +17,7 @@
     "postinstall": "nuxt prepare && pnpm exec playwright install --with-deps",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "test": "pnpm run test:unit && pnpm run test:e2e",
-    "prepare": "husky"
+    "test": "pnpm run test:unit && pnpm run test:e2e"
   },
   "dependencies": {
     "@nuxt/image": "1.10.0",
@@ -43,15 +41,6 @@
     "vue-router": "latest",
     "vue3-select-component": "^0.9.0"
   },
-  "lint-staged": {
-    "./**/*.{js,jsx,ts,tsx,vue}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "./**/*.{json,css}": [
-      "prettier --write"
-    ]
-  },
   "devDependencies": {
     "@nuxt/eslint": "^1.4.1",
     "@nuxt/test-utils": "^3.17.5",
@@ -72,9 +61,7 @@
     "eslint": "^9.29.0",
     "eslint-plugin-vue": "^10.2.0",
     "globals": "^16.2.0",
-    "husky": "^9.1.7",
     "jsdom": "^26.1.0",
-    "lint-staged": "^15.4.3",
     "nuxt-windicss": "^3.0.1",
     "prettier": "^3.4.2",
     "typescript": "^5.7.3",
