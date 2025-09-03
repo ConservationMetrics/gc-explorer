@@ -28,7 +28,7 @@ const copyLink = () => {
 
 /** Sort feature object by key */
 const sortedFeature = computed(() => {
-  return Object.keys(props.feature)
+  return Object.keys(props.feature as Record<string, string>)
     .sort()
     .reduce(
       (accumulator, key: string) => {
