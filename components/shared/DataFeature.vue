@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import MediaFile from "@/components/shared/MediaFile.vue";
 import { Copy, Check } from "lucide-vue-next";
+import AlertTooltip from "@/components/alerts/AlertTooltip.vue";
 
 import type { AllowedFileExtensions, DataEntry } from "@/types/types";
 
@@ -27,11 +28,11 @@ const copyLink = () => {
 
 /** Sort feature object by key */
 const sortedFeature = computed(() => {
-  return Object.keys(props.feature as Record<string, string>)
+  return Object.keys(props.feature)
     .sort()
     .reduce(
       (accumulator, key: string) => {
-        if (props.feature) {
+        if (props.feature && props.feature[key] !== undefined) {
           accumulator[key] = props.feature[key];
         }
         return accumulator;
@@ -98,15 +99,28 @@ const setMediaBasePath = () => {
             data-testid="feature-field"
           >
             <!-- Translate keys only when it's an alert to avoid performance issues with translating all keys -->
-            <span class="text-sm font-medium" data-testid="field-label">
-              {{
-                isAlert
-                  ? $t(key).charAt(0).toUpperCase() + $t(key).slice(1)
-                  : key === "dataCollectedOn"
-                    ? $t(key)
-                    : key.charAt(0).toUpperCase() + key.slice(1)
-              }}
-            </span>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-medium" data-testid="field-label">
+                {{
+                  isAlert
+                    ? $t(key).charAt(0).toUpperCase() + $t(key).slice(1)
+                    : key === "dataCollectedOn"
+                      ? $t(key)
+                      : key.charAt(0).toUpperCase() + key.slice(1)
+                }}
+              </span>
+              <!-- Tooltip for confidenceLevel field, for alerts only -->
+              <AlertTooltip
+                v-if="
+                  isAlert &&
+                  key.toLowerCase() === 'confidencelevel' &&
+                  sortedFeature.dataProvider &&
+                  sortedFeature.alertType
+                "
+                :data-provider="sortedFeature.dataProvider"
+                :alert-type="sortedFeature.alertType"
+              />
+            </div>
             <div
               class="text-sm text-muted-foreground"
               data-testid="field-value"
@@ -160,7 +174,3 @@ const setMediaBasePath = () => {
     </div>
   </div>
 </template>
-
-<style scoped>
-/* Remove all custom CSS */
-</style>
