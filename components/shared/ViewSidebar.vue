@@ -46,7 +46,7 @@ const filteredFeature = computed<DataEntry>(() => {
 
 const dataForAlertsIntroPanel = computed<AlertsData | undefined>(() => {
   if (props.localAlertsData && "mostRecentAlerts" in props.localAlertsData) {
-    return props.localAlertsData as AlertsData;
+    return props.localAlertsData;
   }
   return undefined;
 });

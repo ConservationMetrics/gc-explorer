@@ -79,7 +79,7 @@ const selectInitialAlertFeature = (alertId: string) => {
     ...props.alertsData.previousAlerts.features,
   ];
   const feature = allFeatures.find((f) => f.properties?.alertID === alertId);
-  if (feature && feature.properties) {
+  if (feature?.properties) {
     // Find the appropriate layer ID for this feature by checking both recent and previous layers
     const geometryType = feature.geometry.type.toLowerCase();
     const recentLayerId = `most-recent-alerts-${geometryType}`;

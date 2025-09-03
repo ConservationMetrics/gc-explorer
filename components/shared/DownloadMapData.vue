@@ -211,11 +211,9 @@ const downloadCSVSelection = () => {
     csvString += csvData.join(",") + "\n";
   });
 
-  const filename =
-    combinedFeatures[0].properties &&
-    combinedFeatures[0].properties["territory"]
-      ? `${combinedFeatures[0].properties["territory"]}_alerts.csv`
-      : "alerts.csv";
+  const filename = combinedFeatures[0].properties?.["territory"]
+    ? `${combinedFeatures[0].properties["territory"]}_alerts.csv`
+    : "alerts.csv";
   const blob = new Blob([csvString], { type: "text/csv" });
 
   const link = document.createElement("a");
@@ -255,11 +253,9 @@ const downloadGeoJSONSelection = () => {
     features: combinedFeatures,
   };
 
-  const filename =
-    combinedFeatures[0].properties &&
-    combinedFeatures[0].properties["territory"]
-      ? `${combinedFeatures[0].properties["territory"]}_alerts.geojson`
-      : "alerts.geojson";
+  const filename = combinedFeatures[0].properties?.["territory"]
+    ? `${combinedFeatures[0].properties["territory"]}_alerts.geojson`
+    : "alerts.geojson";
   const jsonStr = JSON.stringify(combinedGeoJSON, null, 2);
   const blob = new Blob([jsonStr], { type: "application/json" });
 
@@ -292,11 +288,9 @@ const downloadKMLSelection = () => {
 
   const kmlString = tokml(combinedGeoJSON);
 
-  const filename =
-    combinedFeatures[0].properties &&
-    combinedFeatures[0].properties["territory"]
-      ? `${combinedFeatures[0].properties["territory"]}_alerts.kml`
-      : "alerts.kml";
+  const filename = combinedFeatures[0].properties?.["territory"]
+    ? `${combinedFeatures[0].properties["territory"]}_alerts.kml`
+    : "alerts.kml";
 
   const blob = new Blob([kmlString], {
     type: "application/vnd.google-earth.kml+xml",

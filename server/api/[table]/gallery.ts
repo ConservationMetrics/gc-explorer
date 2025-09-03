@@ -8,11 +8,7 @@ import {
 } from "@/server/dataProcessing/filterData";
 
 import type { H3Event } from "h3";
-import type {
-  AllowedFileExtensions,
-  ColumnEntry,
-  DataEntry,
-} from "@/types/types";
+import type { AllowedFileExtensions, ColumnEntry } from "@/types/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -32,7 +28,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // Filter data to remove unwanted columns and substrings
     const filteredData = filterUnwantedKeys(
-      mainData as DataEntry[],
+      mainData,
       columnsData as ColumnEntry[],
       viewsConfig[table].UNWANTED_COLUMNS,
       viewsConfig[table].UNWANTED_SUBSTRINGS,
