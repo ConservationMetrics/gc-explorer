@@ -76,7 +76,7 @@ test("alerts dashboard - layer visibility toggles", async ({ page }) => {
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
       const map = window._testMap;
-      return map && map.isStyleLoaded() && map.loaded();
+      return map?.isStyleLoaded() && map.loaded();
     },
     { timeout: 5000 },
   );
@@ -353,7 +353,7 @@ test("alerts dashboard - LineString buffer click behavior", async ({
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
       const map = window._testMap;
-      return map && map.isStyleLoaded() && map.loaded();
+      return map?.isStyleLoaded() && map.loaded();
     },
     { timeout: 5000 },
   );
@@ -458,7 +458,7 @@ test("alerts dashboard - geometry type specific interactions", async ({
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
       const map = window._testMap;
-      return map && map.isStyleLoaded() && map.loaded();
+      return map?.isStyleLoaded() && map.loaded();
     },
     { timeout: 5000 },
   );
@@ -671,7 +671,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
       const map = window._testMap;
-      return map && map.isStyleLoaded() && map.loaded();
+      return map?.isStyleLoaded() && map.loaded();
     },
     { timeout: 5000 },
   );

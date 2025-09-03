@@ -59,7 +59,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
           { [key: string]: { isRestricted?: boolean } },
           string[],
         ];
-        if (data && data[0] && data[0][tableName]?.isRestricted) {
+        if (data?.[0]?.[tableName]?.isRestricted) {
           return router.push("/");
         }
       } catch (error) {
