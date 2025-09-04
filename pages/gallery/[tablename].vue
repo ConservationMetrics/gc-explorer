@@ -2,7 +2,6 @@
 import { useI18n } from "vue-i18n";
 
 import { replaceUnderscoreWithSpace } from "@/utils/index";
-import { Role, type User } from "~/types/types";
 
 // Extract the tablename from the route parameters
 const route = useRoute();
