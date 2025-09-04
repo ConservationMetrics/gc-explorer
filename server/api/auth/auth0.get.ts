@@ -212,15 +212,79 @@ export default oauthAuth0EventHandler({
       }
 
       // Determine user role level
-      let userRole: Role = Role.Viewer; // Default to Viewer
+      let userRole: Role = Role.Public; // Default to Public (not signed in)
       if (userRoles.length > 0) {
         const hasAdminRole = userRoles.some((role) => role.name === "Admin");
         const hasMemberRole = userRoles.some((role) => role.name === "Member");
+        const hasViewerRole = userRoles.some((role) => role.name === "Viewer");
 
         if (hasAdminRole) {
           userRole = Role.Admin;
         } else if (hasMemberRole) {
           userRole = Role.Member;
+        } else if (hasViewerRole) {
+          userRole = Role.Viewer;
+        } else {
+          // User has roles but none of the expected ones, treat as Viewer
+          userRole = Role.Viewer;
+        }
+      } else {
+        // If user has no roles, assign them the "Public" role via Management API
+        // This creates a "Public" role in Auth0 for users who are logged in but not approved
+        if (user.email) {
+          const userId = await fetchUserIdByEmail(user.email);
+          if (userId) {
+            try {
+              // Assign the Public role using Management API
+              const config = useRuntimeConfig();
+              const { oauth } = config;
+              const accessToken = await getManagementApiToken();
+
+              if (accessToken && oauth?.auth0?.domain) {
+                const assignRoleResponse = await fetch(
+                  `https://${oauth.auth0.domain}/api/v2/users/${userId}/roles`,
+                  {
+                    method: "POST",
+                    headers: {
+                      Authorization: `Bearer ${accessToken}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      roles: ["rol_ZPOcr12ORHZOF2Tk"] // Public role ID
+                    }),
+                  },
+                );
+
+                if (assignRoleResponse.ok) {
+                  console.log("🔍 Successfully assigned Public role to user:", user.email);
+                  userRoles = [{
+                    id: "rol_ZPOcr12ORHZOF2Tk",
+                    name: "Public",
+                    description: "User is logged in but not yet approved for higher access"
+                  }];
+                  userRole = Role.Public; // Internal role is Public for logged-in users with no permissions
+                } else {
+                  console.error("🔍 Failed to assign Public role to user:", user.email);
+                  // Fallback: create local role object
+                  userRoles = [{
+                    id: "public-role",
+                    name: "Public",
+                    description: "User is logged in but not yet approved for higher access"
+                  }];
+                  userRole = Role.Public;
+                }
+              }
+            } catch (error) {
+              console.error("🔍 Error assigning Public role:", error);
+              // Fallback: create local role object
+              userRoles = [{
+                id: "public-role",
+                name: "Public",
+                description: "User is logged in but not yet approved for higher access"
+              }];
+              userRole = Role.Public;
+            }
+          }
         }
       }
 

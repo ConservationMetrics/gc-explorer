@@ -11,7 +11,8 @@ import {
 } from "@/server/dataProcessing/filterData";
 
 import type { H3Event } from "h3";
-import type { AllowedFileExtensions, ColumnEntry } from "@/types/types";
+import type { AllowedFileExtensions, ColumnEntry, User } from "@/types/types";
+import { Role } from "@/types/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -27,6 +28,39 @@ export default defineEventHandler(async (event: H3Event) => {
     const db = await getDatabaseConnection(false);
 
     const viewsConfig = await fetchConfig(configDb);
+
+    // Check visibility permissions
+    const permission = viewsConfig[table]?.routeLevelPermission ?? 'member-and-above';
+
+    // For public access, no authentication required
+    if (permission === 'anyone') {
+      // Allow access without authentication
+    } else {
+      // Check if user is authenticated
+      const { user, loggedIn } = useUserSession();
+
+      if (!loggedIn.value) {
+        throw createError({
+          statusCode: 401,
+          statusMessage: 'Unauthorized - Authentication required'
+        });
+      }
+
+      // For member-and-above permission, check user role
+      if (permission === 'member-and-above') {
+        const typedUser = user.value as User;
+        const userRole = typedUser?.userRole || Role.Viewer;
+
+        if (userRole < Role.Member) {
+          throw createError({
+            statusCode: 403,
+            statusMessage: 'Forbidden - Insufficient permissions'
+          });
+        }
+      }
+      // For signed-in permission, any authenticated user can access
+    }
+
     const { mainData, columnsData } = await fetchData(db, table);
 
     // Filter data to remove unwanted columns and substrings
@@ -69,6 +103,7 @@ export default defineEventHandler(async (event: H3Event) => {
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
       planetApiKey: viewsConfig[table].PLANET_API_KEY,
       table: table,
+      routeLevelPermission: viewsConfig[table].routeLevelPermission,
     };
 
     return response;

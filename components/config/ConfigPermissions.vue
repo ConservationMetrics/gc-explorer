@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ViewConfig, User } from "@/types/types";
+import type { ViewConfig, User, RouteLevelPermission } from "@/types/types";
 import { Role } from "@/types/types";
 
 const props = defineProps<{
@@ -13,7 +13,8 @@ const emit = defineEmits<{
 
 const { user } = useUserSession();
 
-const isRestricted = ref(props.viewConfig.isRestricted || false);
+// Default to 'member-and-above' if no permission is set
+const routeLevelPermission = ref<RouteLevelPermission>(props.viewConfig.routeLevelPermission ?? 'member-and-above');
 
 // Only show permissions section for admins
 const shouldShowPermissions = computed(() => {
@@ -23,42 +24,63 @@ const shouldShowPermissions = computed(() => {
   return userRole >= Role.Admin;
 });
 
-const handleRestrictionChange = () => {
+// Watch for changes and emit updates
+watch(routeLevelPermission, (newPermission) => {
   const updatedConfig = {
     ...props.viewConfig,
-    isRestricted: isRestricted.value,
+    routeLevelPermission: newPermission,
   };
   emit("updateConfig", updatedConfig);
-};
+});
 </script>
 
 <template>
-  <div v-if="shouldShowPermissions" class="permissions-section">
-    <h3 class="text-lg font-semibold mb-3 text-gray-800">
-      {{ $t("accessPermissions") }}
-    </h3>
-    <div class="flex items-center space-x-3">
-      <input
-        id="restrict-view"
-        v-model="isRestricted"
-        type="checkbox"
-        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-        @change="handleRestrictionChange"
-      />
-      <label for="restrict-view" class="text-sm font-medium text-gray-700">
-        {{ $t("restrictView") }}
+  <div v-if="shouldShowPermissions" class="config-section">
+    <div class="config-header">
+      <h3>{{ $t("visibility") }}</h3>
+    </div>
+    <p class="text-gray-500 text-sm mb-4 leading-relaxed">{{ $t("visibilityHelpText") }}</p>
+    
+    <div class="flex flex-col gap-4">
+      <label class="flex items-start gap-3 cursor-pointer p-2 rounded-md transition-colors duration-200 hover:bg-gray-100">
+        <input
+          v-model="routeLevelPermission"
+          type="radio"
+          value="anyone"
+          class="mt-0.5 flex-shrink-0"
+        />
+        <div class="flex flex-col gap-1">
+          <span class="font-semibold text-gray-700">{{ $t("visibilityPublic") }}</span>
+          <span class="text-sm text-gray-500 leading-relaxed">{{ $t("visibilityPublicDescription") }}</span>
+        </div>
+      </label>
+      
+      <label class="flex items-start gap-3 cursor-pointer p-2 rounded-md transition-colors duration-200 hover:bg-gray-100">
+        <input
+          v-model="routeLevelPermission"
+          type="radio"
+          value="signed-in"
+          class="mt-0.5 flex-shrink-0"
+        />
+        <div class="flex flex-col gap-1">
+          <span class="font-semibold text-gray-700">{{ $t("visibilityViewer") }}</span>
+          <span class="text-sm text-gray-500 leading-relaxed">{{ $t("visibilityViewerDescription") }}</span>
+        </div>
+      </label>
+      
+      <label class="flex items-start gap-3 cursor-pointer p-2 rounded-md transition-colors duration-200 hover:bg-gray-100">
+        <input
+          v-model="routeLevelPermission"
+          type="radio"
+          value="member-and-above"
+          class="mt-0.5 flex-shrink-0"
+        />
+        <div class="flex flex-col gap-1">
+          <span class="font-semibold text-gray-700">{{ $t("visibilityMembers") }}</span>
+          <span class="text-sm text-gray-500 leading-relaxed">{{ $t("visibilityMembersDescription") }}</span>
+        </div>
       </label>
     </div>
-    <p class="text-xs text-gray-500 mt-2">
-      {{ $t("restrictViewDescription") }}
-    </p>
   </div>
 </template>
 
-<style scoped>
-.permissions-section {
-  border-top: 1px solid #e5e7eb;
-  padding-top: 1rem;
-  margin-top: 1rem;
-}
-</style>

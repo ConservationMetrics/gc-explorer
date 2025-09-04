@@ -1,5 +1,5 @@
 import { defineNuxtRouteMiddleware, useRuntimeConfig } from "#imports";
-import type { User } from "~/types/types";
+import type { User, RouteLevelPermission } from "~/types/types";
 import { Role } from "~/types/types";
 
 // Following example: https://github.com/atinux/atidone/blob/main/app/middleware/auth.ts
@@ -24,7 +24,72 @@ export default defineNuxtRouteMiddleware(async (to) => {
       }
     }
   }
+  console.log('to.path', to.path);
+  // Check if this is a dataset route that might have public access
+  // Check if this is a dataset route that might have public access
+  const isDatasetRoute = to.path.startsWith("/alerts/") ||
+    to.path.startsWith("/gallery/") ||
+    to.path.startsWith("/map/");
 
+  if (isDatasetRoute) {
+    console.log('isDatasetRoute', isDatasetRoute, 'for path:', to.path);
+    try {
+      const {
+        public: { appApiKey },
+      } = useRuntimeConfig();
+      const headers = { "x-api-key": appApiKey };
+
+      const data = (await $fetch("/api/config", { headers })) as unknown as [
+        { [key: string]: { routeLevelPermission?: RouteLevelPermission } },
+        string[],
+      ];
+
+      // Extract table name from path (e.g., "/alerts/tableName" -> "tableName")
+      const pathParts = to.path.split("/");
+      const tableName = pathParts[pathParts.length - 1];
+
+      const viewConfig = data?.[0]?.[tableName];
+      const permission: RouteLevelPermission = viewConfig?.routeLevelPermission ?? 'anyone'; // Default to anyone if not set
+
+      // If view is accessible to anyone, allow access without authentication
+      if (permission === 'anyone') {
+        return; // Allow access
+      }
+
+      // If view requires authentication but user is not logged in
+      if (!loggedIn.value) {
+        if (authStrategy === "auth0") {
+          return router.push("/login");
+        }
+        return; // For other auth strategies, allow access
+      }
+
+      // Check if user has sufficient role to access this view
+      if (loggedIn.value && user.value) {
+        const typedUser = user.value as User;
+        const userRole = typedUser.userRole || Role.Viewer;
+
+        // For 'member-and-above' permission, user must have Member or Admin role
+        if (permission === 'member-and-above' && userRole < Role.Member) {
+          return router.push("/");
+        }
+
+        // For 'signed-in' permission, any authenticated user can access
+        if (permission === 'signed-in') {
+          return; // Allow access
+        }
+      }
+
+    } catch (error) {
+      console.error("Error checking view permissions:", error);
+      // On error, fall back to requiring authentication
+      if (!loggedIn.value && authStrategy === "auth0") {
+        return router.push("/login");
+      }
+    }
+  }
+
+  // Handle authentication for non-dataset routes
   if (authStrategy === "auth0" && !loggedIn.value && to.path !== "/login") {
     return router.push("/login");
   }
@@ -34,37 +99,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const typedUser = user.value as User;
     const userRole = typedUser.userRole || Role.Viewer;
 
-    // Redirect Viewers from config route
+    // Redirect non-Admins from config route
     if (to.path === "/config" && userRole < Role.Admin) {
       return router.push("/");
-    }
-
-    // Check view-level restrictions for dataset routes
-    if (
-      !to.path.includes("/config") &&
-      !to.path.includes("/api") &&
-      !to.path.includes("/login") &&
-      userRole < Role.Member
-    ) {
-      // Extract table name from path (e.g., "/map/tableName" -> "tableName")
-      const pathParts = to.path.split("/");
-      const tableName = pathParts[pathParts.length - 1];
-      try {
-        const {
-          public: { appApiKey },
-        } = useRuntimeConfig();
-        const headers = { "x-api-key": appApiKey };
-
-        const data = (await $fetch("/api/config", { headers })) as unknown as [
-          { [key: string]: { isRestricted?: boolean } },
-          string[],
-        ];
-        if (data?.[0]?.[tableName]?.isRestricted) {
-          return router.push("/");
-        }
-      } catch (error) {
-        console.error("Error checking view restrictions:", error);
-      }
     }
   }
 });

@@ -703,3 +703,43 @@ test("config page - modal overlay functionality and cancel button", async ({
   await expect(overlay).not.toBeVisible();
   await expect(modal).not.toBeVisible();
 });
+
+test("config page - visibility permissions configuration", async ({ page }) => {
+  // 1. Navigate to the config page
+  await page.goto("/config");
+
+  // 2. Wait for the page to load
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 3. Find the first table card and expand it
+  const firstCard = page.locator(".table-item.card").first();
+  const hamburgerButton = firstCard.locator("button.hamburger");
+  await hamburgerButton.click();
+
+  // 4. Look for the visibility section (should be visible to admins)
+  const visibilitySection = firstCard.locator("text=Visibility");
+  
+  // If visibility section is visible (admin user), test the functionality
+  if (await visibilitySection.isVisible()) {
+    // 5. Verify the help text is present
+    await expect(firstCard.locator("text=Choose who can view this view.")).toBeVisible();
+    
+    // 6. Verify all three visibility options are present
+    await expect(firstCard.locator("text=Public — no sign-in required")).toBeVisible();
+    await expect(firstCard.locator("text=Signed-in (all roles)")).toBeVisible();
+    await expect(firstCard.locator("text=Members & Admins")).toBeVisible();
+    
+    // 7. Check that radio buttons are present
+    const radioButtons = firstCard.locator('input[type="radio"]');
+    await expect(radioButtons).toHaveCount(3);
+    
+    // 8. Verify the default selection is "Members & Admins"
+    const defaultSelected = firstCard.locator('input[type="radio"]:checked');
+    await expect(defaultSelected).toHaveValue("member-and-above");
+  } else {
+    // Non-admin user - should not see visibility section
+    await expect(visibilitySection).not.toBeVisible();
+  }
+});
