@@ -37,7 +37,6 @@ test("visibility system - public dataset accessible without authentication", asy
 test("visibility system - protected dataset redirects to login when not authenticated", async ({
   page,
 }) => {
-
   // 1. Navigate directly to the authenticated test dataset
   await page.goto("/map/seed_survey_data");
 
@@ -50,4 +49,3 @@ test("visibility system - protected dataset redirects to login when not authenti
     console.log("✅ Correctly redirected to login for protected dataset");
   }
 });
-
