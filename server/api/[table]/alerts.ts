@@ -69,10 +69,11 @@ export default defineEventHandler(async (event: H3Event) => {
     const viewsConfig = await fetchConfig(configDb);
 
     // Check visibility permissions
-    const permission = viewsConfig[table]?.routeLevelPermission ?? 'member-and-above';
+    const permission =
+      viewsConfig[table]?.routeLevelPermission ?? "member-and-above";
 
     // For public access, no authentication required
-    if (permission === 'anyone') {
+    if (permission === "anyone") {
       // Allow access without authentication
     } else {
       // Check if user is authenticated
@@ -81,19 +82,19 @@ export default defineEventHandler(async (event: H3Event) => {
       if (!loggedIn.value) {
         throw createError({
           statusCode: 401,
-          statusMessage: 'Unauthorized - Authentication required'
+          statusMessage: "Unauthorized - Authentication required",
         });
       }
 
       // For member-and-above permission, check user role
-      if (permission === 'member-and-above') {
+      if (permission === "member-and-above") {
         const typedUser = user.value as User;
         const userRole = typedUser?.userRole || Role.Viewer;
 
         if (userRole < Role.Member) {
           throw createError({
             statusCode: 403,
-            statusMessage: 'Forbidden - Insufficient permissions'
+            statusMessage: "Forbidden - Insufficient permissions",
           });
         }
       }

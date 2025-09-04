@@ -60,7 +60,7 @@ const { t } = useI18n();
 
 // Check if this view is publicly accessible
 const isPublic = computed(() => {
-  return data.value?.routeLevelPermission === 'anyone';
+  return data.value?.routeLevelPermission === "anyone";
 });
 
 useHead({
@@ -70,8 +70,10 @@ useHead({
     " - " +
     replaceUnderscoreWithSpace(table),
   meta: [
-    ...(isPublic.value ? [{ name: 'robots', content: 'noindex, nofollow' }] : [])
-  ]
+    ...(isPublic.value
+      ? [{ name: "robots", content: "noindex, nofollow" }]
+      : []),
+  ],
 });
 </script>
 

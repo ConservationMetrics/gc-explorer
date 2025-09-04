@@ -250,38 +250,53 @@ export default oauthAuth0EventHandler({
                       "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                      roles: ["rol_ZPOcr12ORHZOF2Tk"] // Public role ID
+                      roles: ["rol_ZPOcr12ORHZOF2Tk"], // Public role ID
                     }),
                   },
                 );
 
                 if (assignRoleResponse.ok) {
-                  console.log("🔍 Successfully assigned Public role to user:", user.email);
-                  userRoles = [{
-                    id: "rol_ZPOcr12ORHZOF2Tk",
-                    name: "Public",
-                    description: "User is logged in but not yet approved for higher access"
-                  }];
+                  console.log(
+                    "🔍 Successfully assigned Public role to user:",
+                    user.email,
+                  );
+                  userRoles = [
+                    {
+                      id: "rol_ZPOcr12ORHZOF2Tk",
+                      name: "Public",
+                      description:
+                        "User is logged in but not yet approved for higher access",
+                    },
+                  ];
                   userRole = Role.Public; // Internal role is Public for logged-in users with no permissions
                 } else {
-                  console.error("🔍 Failed to assign Public role to user:", user.email);
+                  console.error(
+                    "🔍 Failed to assign Public role to user:",
+                    user.email,
+                  );
                   // Fallback: create local role object
-                  userRoles = [{
-                    id: "public-role",
-                    name: "Public",
-                    description: "User is logged in but not yet approved for higher access"
-                  }];
+                  userRoles = [
+                    {
+                      id: "public-role",
+                      name: "Public",
+                      description:
+                        "User is logged in but not yet approved for higher access",
+                    },
+                  ];
                   userRole = Role.Public;
                 }
               }
             } catch (error) {
               console.error("🔍 Error assigning Public role:", error);
               // Fallback: create local role object
-              userRoles = [{
-                id: "public-role",
-                name: "Public",
-                description: "User is logged in but not yet approved for higher access"
-              }];
+              userRoles = [
+                {
+                  id: "public-role",
+                  name: "Public",
+                  description:
+                    "User is logged in but not yet approved for higher access",
+                },
+              ];
               userRole = Role.Public;
             }
           }

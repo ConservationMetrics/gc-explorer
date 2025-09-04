@@ -24,15 +24,16 @@ export default defineNuxtRouteMiddleware(async (to) => {
       }
     }
   }
-  console.log('to.path', to.path);
+  console.log("to.path", to.path);
   // Check if this is a dataset route that might have public access
   // Check if this is a dataset route that might have public access
-  const isDatasetRoute = to.path.startsWith("/alerts/") ||
+  const isDatasetRoute =
+    to.path.startsWith("/alerts/") ||
     to.path.startsWith("/gallery/") ||
     to.path.startsWith("/map/");
 
   if (isDatasetRoute) {
-    console.log('isDatasetRoute', isDatasetRoute, 'for path:', to.path);
+    console.log("isDatasetRoute", isDatasetRoute, "for path:", to.path);
     try {
       const {
         public: { appApiKey },
@@ -49,10 +50,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
       const tableName = pathParts[pathParts.length - 1];
 
       const viewConfig = data?.[0]?.[tableName];
-      const permission: RouteLevelPermission = viewConfig?.routeLevelPermission ?? 'anyone'; // Default to anyone if not set
+      const permission: RouteLevelPermission =
+        viewConfig?.routeLevelPermission ?? "anyone"; // Default to anyone if not set
 
       // If view is accessible to anyone, allow access without authentication
-      if (permission === 'anyone') {
+      if (permission === "anyone") {
         return; // Allow access
       }
 
@@ -70,16 +72,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
         const userRole = typedUser.userRole || Role.Viewer;
 
         // For 'member-and-above' permission, user must have Member or Admin role
-        if (permission === 'member-and-above' && userRole < Role.Member) {
+        if (permission === "member-and-above" && userRole < Role.Member) {
           return router.push("/");
         }
 
         // For 'signed-in' permission, any authenticated user can access
-        if (permission === 'signed-in') {
+        if (permission === "signed-in") {
           return; // Allow access
         }
       }
-
     } catch (error) {
       console.error("Error checking view permissions:", error);
       // On error, fall back to requiring authentication

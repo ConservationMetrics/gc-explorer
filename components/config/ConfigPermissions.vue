@@ -14,7 +14,9 @@ const emit = defineEmits<{
 const { user } = useUserSession();
 
 // Default to 'member-and-above' if no permission is set
-const routeLevelPermission = ref<RouteLevelPermission>(props.viewConfig.routeLevelPermission ?? 'member-and-above');
+const routeLevelPermission = ref<RouteLevelPermission>(
+  props.viewConfig.routeLevelPermission ?? "member-and-above",
+);
 
 // Only show permissions section for admins
 const shouldShowPermissions = computed(() => {
@@ -39,10 +41,14 @@ watch(routeLevelPermission, (newPermission) => {
     <div class="config-header">
       <h3>{{ $t("visibility") }}</h3>
     </div>
-    <p class="text-gray-500 text-sm mb-4 leading-relaxed">{{ $t("visibilityHelpText") }}</p>
-    
+    <p class="text-gray-500 text-sm mb-4 leading-relaxed">
+      {{ $t("visibilityHelpText") }}
+    </p>
+
     <div class="flex flex-col gap-4">
-      <label class="flex items-start gap-3 cursor-pointer p-2 rounded-md transition-colors duration-200 hover:bg-gray-100">
+      <label
+        class="flex items-start gap-3 cursor-pointer p-2 rounded-md transition-colors duration-200 hover:bg-gray-100"
+      >
         <input
           v-model="routeLevelPermission"
           type="radio"
@@ -50,12 +56,18 @@ watch(routeLevelPermission, (newPermission) => {
           class="mt-0.5 flex-shrink-0"
         />
         <div class="flex flex-col gap-1">
-          <span class="font-semibold text-gray-700">{{ $t("visibilityPublic") }}</span>
-          <span class="text-sm text-gray-500 leading-relaxed">{{ $t("visibilityPublicDescription") }}</span>
+          <span class="font-semibold text-gray-700">{{
+            $t("visibilityPublic")
+          }}</span>
+          <span class="text-sm text-gray-500 leading-relaxed">{{
+            $t("visibilityPublicDescription")
+          }}</span>
         </div>
       </label>
-      
-      <label class="flex items-start gap-3 cursor-pointer p-2 rounded-md transition-colors duration-200 hover:bg-gray-100">
+
+      <label
+        class="flex items-start gap-3 cursor-pointer p-2 rounded-md transition-colors duration-200 hover:bg-gray-100"
+      >
         <input
           v-model="routeLevelPermission"
           type="radio"
@@ -63,12 +75,18 @@ watch(routeLevelPermission, (newPermission) => {
           class="mt-0.5 flex-shrink-0"
         />
         <div class="flex flex-col gap-1">
-          <span class="font-semibold text-gray-700">{{ $t("visibilityViewer") }}</span>
-          <span class="text-sm text-gray-500 leading-relaxed">{{ $t("visibilityViewerDescription") }}</span>
+          <span class="font-semibold text-gray-700">{{
+            $t("visibilityViewer")
+          }}</span>
+          <span class="text-sm text-gray-500 leading-relaxed">{{
+            $t("visibilityViewerDescription")
+          }}</span>
         </div>
       </label>
-      
-      <label class="flex items-start gap-3 cursor-pointer p-2 rounded-md transition-colors duration-200 hover:bg-gray-100">
+
+      <label
+        class="flex items-start gap-3 cursor-pointer p-2 rounded-md transition-colors duration-200 hover:bg-gray-100"
+      >
         <input
           v-model="routeLevelPermission"
           type="radio"
@@ -76,11 +94,14 @@ watch(routeLevelPermission, (newPermission) => {
           class="mt-0.5 flex-shrink-0"
         />
         <div class="flex flex-col gap-1">
-          <span class="font-semibold text-gray-700">{{ $t("visibilityMembers") }}</span>
-          <span class="text-sm text-gray-500 leading-relaxed">{{ $t("visibilityMembersDescription") }}</span>
+          <span class="font-semibold text-gray-700">{{
+            $t("visibilityMembers")
+          }}</span>
+          <span class="text-sm text-gray-500 leading-relaxed">{{
+            $t("visibilityMembersDescription")
+          }}</span>
         </div>
       </label>
     </div>
   </div>
 </template>
-
