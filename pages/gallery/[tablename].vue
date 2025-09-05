@@ -36,12 +36,23 @@ if (data.value && !error.value) {
 }
 
 const { t } = useI18n();
+
+// Check if this view is publicly accessible
+const isPublic = computed(() => {
+  return data.value?.routeLevelPermission === "anyone";
+});
+
 useHead({
   title:
     "GuardianConnector Explorer " +
     t("gallery") +
     " - " +
     replaceUnderscoreWithSpace(table),
+  meta: [
+    ...(isPublic.value
+      ? [{ name: "robots", content: "noindex, nofollow" }]
+      : []),
+  ],
 });
 </script>
 
