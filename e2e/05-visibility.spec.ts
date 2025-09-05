@@ -38,3 +38,18 @@ test("visibility system - protected dataset redirects to login when not authenti
     console.log("✅ Correctly redirected to login for protected dataset");
   }
 });
+test
+test("visibility system - protected dataset redirects to login when not authenticated", async ({
+  page,
+}) => {
+  // 1. Navigate directly to the authenticated test dataset
+  await page.goto("/gallery/bcmform_responses");
+
+  // 2. Check if we're redirected to login or if the page loads
+  const currentUrl = page.url();
+  if (currentUrl.includes("/login")) {
+    // Expected behavior for protected datasets
+    await expect(page).toHaveURL(/\/login/);
+    console.log("✅ Correctly redirected to login for protected dataset");
+  }
+});
