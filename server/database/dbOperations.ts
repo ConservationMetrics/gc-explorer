@@ -100,20 +100,6 @@ export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
     const planetApiKey = process.env.PLANET_API_KEY || "{PLANET_API_KEY}";
 
     return {
-      seed_survey_data: {
-        VIEWS: "gallery",
-        MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
-        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
-        MAPBOX_ZOOM: 16,
-        MAPBOX_CENTER_LATITUDE: "3.44704",
-        MAPBOX_CENTER_LONGITUDE: "-76.53995",
-        MAPBOX_PROJECTION: "globe",
-        MAPBOX_BEARING: 0,
-        MAPBOX_PITCH: 0,
-        FRONT_END_FILTER_COLUMN: "community",
-        MEDIA_BASE_PATH: mediaBasePath,
-        routeLevelPermission: "member-and-above",
-      },
       bcmform_responses: {
         VIEWS: "map,gallery",
         MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
@@ -128,6 +114,21 @@ export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
         MEDIA_BASE_PATH: mediaBasePath,
         routeLevelPermission: "anyone",
       },
+      seed_survey_data: {
+        VIEWS: "gallery",
+        MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
+        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
+        MAPBOX_ZOOM: 16,
+        MAPBOX_CENTER_LATITUDE: "3.44704",
+        MAPBOX_CENTER_LONGITUDE: "-76.53995",
+        MAPBOX_PROJECTION: "globe",
+        MAPBOX_BEARING: 0,
+        MAPBOX_PITCH: 0,
+        FRONT_END_FILTER_COLUMN: "community",
+        MEDIA_BASE_PATH: mediaBasePath,
+        routeLevelPermission: "member-and-above",
+      },
+
       fake_alerts: {
         VIEWS: "alerts",
         EMBED_MEDIA: "YES",
