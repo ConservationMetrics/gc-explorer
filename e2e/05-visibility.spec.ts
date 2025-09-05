@@ -4,23 +4,19 @@ test("visibility system - public dataset accessible without authentication", asy
   page,
 }) => {
   // 1. Navigate directly to the test dataset that we'll make public
-  await page.goto("/alerts/fake_alerts");
+  await page.goto("/gallery/seed_survey_data");
 
   // 2. Wait for the page to load
-  await page.waitForLoadState("networkidle");
+  await page.waitForURL("**/gallery/**", { timeout: 5000 });
 
-  // 3. Check that we're still on the alerts page (not redirected to login)
-  await expect(page).toHaveURL(/\/alerts\/fake_alerts/);
+  // 3. Wait for the gallery container to be present
+  await page
+    .getByTestId("gallery-container")
+    .waitFor({ state: "attached", timeout: 5000 });
 
-  // 4. Verify the page content is visible (not a login form)
-  await expect(page.locator("body")).not.toContainText("log in");
-
-  // 5. Check that we can see some content from the alerts page
-  const legendCheckboxes = page.getByTestId("map-legend-checkbox");
-  const checkboxCount = await legendCheckboxes.count();
-  expect(checkboxCount).toBeGreaterThan(0);
-
-  // 6. Check that the page has the robots meta tag for public views
+  // 4. Verify gallery container is visible
+  await expect(page.getByTestId("gallery-container")).toBeVisible();
+  // 5. Check that the page has the robots meta tag for public views
   const robotsMeta = page.locator('meta[name="robots"]');
   await expect(robotsMeta).toHaveAttribute("content", "noindex, nofollow");
 
