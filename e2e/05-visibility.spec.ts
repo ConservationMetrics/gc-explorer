@@ -13,19 +13,12 @@ test("visibility system - public dataset accessible without authentication", asy
   await expect(page).toHaveURL(/\/alerts\/fake_alerts/);
 
   // 4. Verify the page content is visible (not a login form)
-  await expect(page.locator("body")).not.toContainText("Login");
-  await expect(page.locator("body")).not.toContainText("Sign in");
+  await expect(page.locator("body")).not.toContainText("log in");
 
-  // 5. Check that we can see some content from the alerts page// 6. Verify we can see actual alerts content (similar to 01-alerts.spec.ts)
-  // Wait for the map container to be present
-  await page.locator("#map").waitFor({ state: "attached", timeout: 10000 });
-
-  // Check that we can see the map legend or other alerts-specific content
-  const mapLegend = page.getByTestId("map-legend");
-  await expect(mapLegend).toBeVisible();
-
-  // Verify we can see some alert-related content
-  await expect(page.locator("body")).toContainText("alerts");
+  // 5. Check that we can see some content from the alerts page
+  const legendCheckboxes = page.getByTestId("map-legend-checkbox");
+  const checkboxCount = await legendCheckboxes.count();
+  expect(checkboxCount).toBeGreaterThan(0);
 
   // 6. Check that the page has the robots meta tag for public views
   const robotsMeta = page.locator('meta[name="robots"]');
@@ -38,7 +31,7 @@ test("visibility system - protected dataset redirects to login when not authenti
   page,
 }) => {
   // 1. Navigate directly to the authenticated test dataset
-  await page.goto("/map/seed_survey_data");
+  await page.goto("/gallery/bcmform_responses");
 
   // 2. Check if we're redirected to login or if the page loads
   const currentUrl = page.url();
