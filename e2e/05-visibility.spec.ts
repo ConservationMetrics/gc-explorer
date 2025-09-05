@@ -38,5 +38,3 @@ test("visibility system - protected dataset redirects to login when not authenti
     console.log("✅ Correctly redirected to login for protected dataset");
   }
 });
-
-
