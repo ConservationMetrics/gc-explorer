@@ -728,20 +728,21 @@ test("config page - visibility permissions configuration", async ({ page }) => {
       firstCard.locator("text=Choose who can view this view."),
     ).toBeVisible();
 
-    // 6. Verify all three visibility options are present
+    // 6. Verify all four visibility options are present
     await expect(
       firstCard.locator("text=Public — no sign-in required"),
     ).toBeVisible();
     await expect(firstCard.locator("text=Signed-in (all roles)")).toBeVisible();
-    await expect(firstCard.locator("text=Members & Admins")).toBeVisible();
+    await expect(firstCard.locator("text=Members")).toBeVisible();
+    await expect(firstCard.locator("text=Admins")).toBeVisible();
 
     // 7. Check that radio buttons are present
     const radioButtons = firstCard.locator('input[type="radio"]');
-    await expect(radioButtons).toHaveCount(3);
+    await expect(radioButtons).toHaveCount(4);
 
-    // 8. Verify the default selection is "Members & Admins"
+    // 8. Verify the default selection is "Members"
     const defaultSelected = firstCard.locator('input[type="radio"]:checked');
-    await expect(defaultSelected).toHaveValue("member-and-above");
+    await expect(defaultSelected).toHaveValue("member");
   } else {
     // Non-admin user - should not see visibility section
     await expect(visibilitySection).not.toBeVisible();

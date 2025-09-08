@@ -35,7 +35,8 @@ Each dataset view can be configured with one of three visibility levels:
 |------------------|-------------|-------------------|
 | **`anyone`** | Public access | No authentication required - anyone with the link can view |
 | **`signed-in`** | Authenticated users | Requires login - any authenticated user (Viewer, Member, or Admin) can view |
-| **`member-and-above`** | Restricted access | Requires Member or Admin role (default behavior) |
+| **`member`** | Member access | Requires Member or Admin role |
+| **`admin`** | Admin access | Requires Admin role only |
 
 ### Configuration
 
@@ -52,14 +53,14 @@ The visibility system works as follows:
 
 1. **Middleware Check**: The global middleware (`middleware/oauth.global.ts`) checks `routeLevelPermission` for all dataset routes
 2. **Public Access**: Views with `anyone` permission bypass authentication completely
-3. **Protected Access**: Views with `signed-in` or `member-and-above` require appropriate authentication/authorization
+3. **Protected Access**: Views with `signed-in`, `member`, or `admin` require appropriate authentication/authorization
 4. **Meta Tags**: Public views automatically get `<meta name="robots" content="noindex, nofollow">` to prevent search engine indexing
 
 ### Example Use Cases
 
 - **Public Datasets**: Set to `anyone` for datasets that should be accessible without login (e.g., public alerts, open data)
 - **Internal Datasets**: Set to `signed-in` for datasets that require authentication but are accessible to all staff
-- **Restricted Datasets**: Set to `member-and-above` for sensitive data that requires specific role permissions
+- **Restricted Datasets**: Set to `member` for data that requires Member+ role, or `admin` for Admin-only data
 
 ## Implementation Details
 
@@ -88,7 +89,7 @@ Route protection is implemented in the global middleware (`middleware/oauth.glob
 ```typescript
 // Check route-level permissions for dataset routes
 if (isDatasetRoute) {
-  const permission = viewConfig?.routeLevelPermission ?? 'member-and-above';
+  const permission = viewConfig?.routeLevelPermission ?? 'member';
   
   // If view is accessible to anyone, allow access without authentication
   if (permission === 'anyone') {
@@ -101,7 +102,7 @@ if (isDatasetRoute) {
   }
   
   // Verify user has sufficient permissions
-  if (permission === 'member-and-above' && userRole < Role.Member) {
+  if (permission === 'member' && userRole < Role.Member) {
     return router.push("/");
   }
 }
@@ -121,17 +122,18 @@ All dataset API endpoints (`/api/[table]/alerts`, `/api/[table]/gallery`, `/api/
 
 - **Public Access** (`anyone`): No authentication required, data served without restrictions
 - **Signed-in Access** (`signed-in`): Requires any authenticated user
-- **Member-and-above Access** (`member-and-above`): Requires Member or Admin role
+- **Member Access** (`member`): Requires Member or Admin role
+- **Admin Access** (`admin`): Requires Admin role only
 
 **HTTP Status Codes:**
 - **`401 Unauthorized`**: Returned when unauthenticated users try to access protected routes
-- **`403 Forbidden`**: Returned when users with insufficient roles try to access member-and-above routes
+- **`403 Forbidden`**: Returned when users with insufficient roles try to access member or admin routes
 - **`200 OK`**: Successful access for public or authorized users
 
 **Implementation Example:**
 ```typescript
 // Check visibility permissions
-const permission = viewsConfig[table]?.routeLevelPermission ?? 'member-and-above';
+const permission = viewsConfig[table]?.routeLevelPermission ?? 'member';
 
 // For public access, no authentication required
 if (permission === 'anyone') {
@@ -147,8 +149,8 @@ if (permission === 'anyone') {
     });
   }
   
-  // For member-and-above permission, check user role
-  if (permission === 'member-and-above') {
+  // For member permission, check user role
+  if (permission === 'member') {
     const typedUser = user.value as User;
     const userRole = typedUser?.userRole || Role.Viewer;
     

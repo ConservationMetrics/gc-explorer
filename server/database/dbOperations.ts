@@ -126,7 +126,7 @@ export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
         MAPBOX_PITCH: 0,
         FRONT_END_FILTER_COLUMN: "community",
         MEDIA_BASE_PATH: mediaBasePath,
-        routeLevelPermission: "member-and-above",
+        routeLevelPermission: "member",
       },
       fake_alerts: {
         VIEWS: "alerts",

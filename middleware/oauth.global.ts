@@ -71,8 +71,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
         const typedUser = user.value as User;
         const userRole = typedUser.userRole || Role.Viewer;
 
-        // For 'member-and-above' permission, user must have Member or Admin role
-        if (permission === "member-and-above" && userRole < Role.Member) {
+        // For 'member' permission, user must have Member or Admin role
+        if (permission === "member" && userRole < Role.Member) {
+          return router.push("/");
+        }
+
+        // For 'admin' permission, user must have Admin role
+        if (permission === "admin" && userRole < Role.Admin) {
           return router.push("/");
         }
 

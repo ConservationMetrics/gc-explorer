@@ -20,7 +20,7 @@ export interface Database {
   close?: () => Promise<void>;
 }
 
-export type RouteLevelPermission = "anyone" | "signed-in" | "member-and-above";
+export type RouteLevelPermission = "anyone" | "signed-in" | "member" | "admin";
 
 export interface ViewConfig {
   ALERT_RESOURCES?: string;
@@ -49,7 +49,7 @@ export interface ViewConfig {
   UNWANTED_COLUMNS?: string;
   UNWANTED_SUBSTRINGS?: string;
   VIEWS?: string;
-  routeLevelPermission?: RouteLevelPermission; // Who can access this view: anyone, signed-in, or member-and-above
+  routeLevelPermission?: RouteLevelPermission; // Who can access this view: anyone, signed-in, member, or admin
 }
 
 export interface Views {

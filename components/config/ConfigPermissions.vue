@@ -13,9 +13,9 @@ const emit = defineEmits<{
 
 const { user } = useUserSession();
 
-// Default to 'member-and-above' if no permission is set
+// Default to 'member' if no permission is set
 const routeLevelPermission = ref<RouteLevelPermission>(
-  props.viewConfig.routeLevelPermission ?? "member-and-above",
+  props.viewConfig.routeLevelPermission ?? "member",
 );
 
 // Only show permissions section for admins
@@ -90,7 +90,7 @@ watch(routeLevelPermission, (newPermission) => {
         <input
           v-model="routeLevelPermission"
           type="radio"
-          value="member-and-above"
+          value="member"
           class="mt-0.5 flex-shrink-0"
         />
         <div class="flex flex-col gap-1">
@@ -99,6 +99,25 @@ watch(routeLevelPermission, (newPermission) => {
           }}</span>
           <span class="text-sm text-gray-500 leading-relaxed">{{
             $t("visibilityMembersDescription")
+          }}</span>
+        </div>
+      </label>
+
+      <label
+        class="flex items-start gap-3 cursor-pointer p-2 rounded-md transition-colors duration-200 hover:bg-gray-100"
+      >
+        <input
+          v-model="routeLevelPermission"
+          type="radio"
+          value="admin"
+          class="mt-0.5 flex-shrink-0"
+        />
+        <div class="flex flex-col gap-1">
+          <span class="font-semibold text-gray-700">{{
+            $t("visibilityAdmins")
+          }}</span>
+          <span class="text-sm text-gray-500 leading-relaxed">{{
+            $t("visibilityAdminsDescription")
           }}</span>
         </div>
       </label>

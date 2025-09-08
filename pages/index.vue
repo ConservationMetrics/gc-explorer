@@ -36,8 +36,11 @@ const filteredSortedViewsConfig = computed(() => {
       // Filter out empty configs
       if (Object.keys(config).length === 0) return false;
 
-      // Only Viewers should have restricted views filtered out
-      if (userRole < Role.Member && config.isRestricted) {
+      // Filter views based on user role and permission level
+      if (config.routeLevelPermission === "member" && userRole < Role.Member) {
+        return false;
+      }
+      if (config.routeLevelPermission === "admin" && userRole < Role.Admin) {
         return false;
       }
 
@@ -50,9 +53,12 @@ const filteredSortedViewsConfig = computed(() => {
     }, {});
 });
 
-// Helper function to check if a view is restricted
+// Helper function to check if a view is restricted and apply the icon
 const isViewRestricted = (tableName: string) => {
-  return viewsConfig.value[tableName]?.isRestricted || false;
+  const permission = viewsConfig.value[tableName]?.routeLevelPermission;
+  const typedUser = user.value as User;
+  const userRole = typedUser.userRole || Role.Viewer;
+  return userRole === Role.Member &&  (permission === "member" || permission === "admin");
 };
 
 // Check if user should see config link
@@ -112,7 +118,7 @@ useHead({
             <span
               v-if="isViewRestricted(String(tableName))"
               class="text-gray-600"
-              title="Restricted view - requires Member+ access"
+              title="Restricted view - requires Member or Admin access"
             >
               🔒
             </span>
