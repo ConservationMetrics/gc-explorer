@@ -10,7 +10,7 @@ test("gallery page - displays gallery with media files", async ({ page }) => {
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
@@ -48,7 +48,7 @@ test("gallery page - displays images with lightbox functionality", async ({
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
@@ -104,7 +104,7 @@ test("gallery page - audio playback functionality", async ({ page }) => {
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
@@ -198,7 +198,7 @@ test("gallery page - filter functionality", async ({ page }) => {
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
@@ -273,7 +273,7 @@ test("gallery page - pagination and infinite scroll", async ({ page }) => {
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
@@ -320,7 +320,7 @@ test("gallery page - data feature information display", async ({ page }) => {
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
@@ -377,7 +377,7 @@ test("gallery page - responsive grid layout", async ({ page }) => {
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
@@ -430,7 +430,7 @@ test("gallery page - error handling for unavailable gallery", async ({
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
