@@ -73,12 +73,12 @@ const filteredSortedViewsConfig = computed(() => {
 const isViewRestricted = (tableName: string) => {
   // No restrictions in CI environment
   if (process.env.CI) return false;
-  
+
   if (!user.value) return false;
   const permission = viewsConfig.value[tableName]?.routeLevelPermission;
   const typedUser = user.value as User | null;
   const userRole = typedUser?.userRole || Role.Viewer;
-  
+
   return (
     userRole === Role.Member &&
     (permission === "member" || permission === "admin")
@@ -91,7 +91,7 @@ const shouldShowConfigLink = computed(() => {
   if (process.env.CI) {
     return true;
   }
-  
+
   if (authStrategy === "none") {
     return true;
   }
