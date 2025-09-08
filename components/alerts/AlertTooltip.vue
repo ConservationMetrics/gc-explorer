@@ -9,32 +9,38 @@ const props = defineProps<{
 const showTooltip = ref(false);
 const tooltipPosition = ref({ x: 0, y: 0 });
 
-/** Confidence level tooltip definitions by data provider and alert type */
-const confidenceLevelTooltips = {
-  "Global Forest Watch": {
-    "nasa viirs fire alerts":
-      'This value is based on a collection of intermediate algorithm quantities used in the detection process. It is intended to help users gauge the quality of individual hotspot/fire pixels. Confidence values are set to low, nominal and high. "Low" confidence daytime fire pixels are typically associated with areas of sun glint and lower relative temperature anomaly (<15K) in the mid-infrared channel I4. "Nominal" confidence pixels are those free of potential sun glint contamination during the day and marked by strong (>15K) temperature anomaly in either day or nighttime data. "High" confidence fire pixels are associated with day or nighttime saturated pixels.',
-    "gfw integrated alerts":
-      'Confidence levels help forest monitors prioritize alerts for follow up since satellite-derived data is subject to errors including false alerts. If two or more alert systems detect a change in the same location, we are more confident ("highest confidence") that these alerts indicate real disturbance. For individual systems, there is a delay before a first detection can be verified by additional satellite passes and thus reach "high confidence." The integrated layer displays where multiple systems overlap, in some cases providing increased confidence faster than waiting for individual systems to reach high confidence through additional satellite images, which can take weeks or months. False positives are effectively eliminated in the highest confidence class as it\'s uncommon for two systems to commit the same error since they use different data streams and algorithms.',
-    gfw_glad_alerts:
-      "Probable loss is defined as a single observation to date flagged as loss. If there are repeat loss observations within 4 observations or 180 days it becomes confirmed loss, otherwise, it reverts back to no loss.",
-  },
-  // Add more providers here as needed:
-  // "Other Provider": {
-  //   "alert type 1": "Description for alert type 1...",
-  //   "alert type 2": "Description for alert type 2...",
-  // },
+type TooltipEntry = {
+  provider: string;
+  alertType: string;
+  text: string;
 };
+
+/** Confidence level tooltip definitions */
+const confidenceLevelTooltips: TooltipEntry[] = [
+  {
+    provider: "Global Forest Watch",
+    alertType: "nasa viirs fire alerts",
+    text: 'This value is based on a collection of intermediate algorithm quantities used in the detection process. It is intended to help users gauge the quality of individual hotspot/fire pixels. Confidence values are set to low, nominal and high. "Low" confidence daytime fire pixels are typically associated with areas of sun glint and lower relative temperature anomaly (<15K) in the mid-infrared channel I4. "Nominal" confidence pixels are those free of potential sun glint contamination during the day and marked by strong (>15K) temperature anomaly in either day or nighttime data. "High" confidence fire pixels are associated with day or nighttime saturated pixels.',
+  },
+  {
+    provider: "Global Forest Watch",
+    alertType: "gfw integrated alerts",
+    text: 'Confidence levels help forest monitors prioritize alerts for follow up since satellite-derived data is subject to errors including false alerts. If two or more alert systems detect a change in the same location, we are more confident ("highest confidence") that these alerts indicate real disturbance. For individual systems, there is a delay before a first detection can be verified by additional satellite passes and thus reach "high confidence." The integrated layer displays where multiple systems overlap, in some cases providing increased confidence faster than waiting for individual systems to reach high confidence through additional satellite images, which can take weeks or months. False positives are effectively eliminated in the highest confidence class as it\'s uncommon for two systems to commit the same error since they use different data streams and algorithms.',
+  },
+  {
+    provider: "Global Forest Watch",
+    alertType: "gfw_glad_alerts",
+    text: "Probable loss is defined as a single observation to date flagged as loss. If there are repeat loss observations within 4 observations or 180 days it becomes confirmed loss, otherwise, it reverts back to no loss.",
+  },
+];
 
 /** Get tooltip content for confidence level based on data provider and alert type */
 const getConfidenceLevelTooltip = (dataProvider: string, alertType: string) => {
-  const provider =
-    confidenceLevelTooltips[
-      dataProvider as keyof typeof confidenceLevelTooltips
-    ];
-  if (!provider) return "";
-
-  return provider[alertType as keyof typeof provider] || "";
+  const entry = confidenceLevelTooltips.find(
+    (tooltip) =>
+      tooltip.provider === dataProvider && tooltip.alertType === alertType,
+  );
+  return entry?.text || "";
 };
 
 /** Check if data provider and alert type combination has confidence level tooltip */
@@ -44,13 +50,10 @@ const hasConfidenceLevelTooltip = (
 ) => {
   if (!dataProvider || !alertType) return false;
 
-  const provider =
-    confidenceLevelTooltips[
-      dataProvider as keyof typeof confidenceLevelTooltips
-    ];
-  if (!provider) return false;
-
-  return alertType in provider;
+  return confidenceLevelTooltips.some(
+    (tooltip) =>
+      tooltip.provider === dataProvider && tooltip.alertType === alertType,
+  );
 };
 
 /** Handle tooltip show with position calculation */
