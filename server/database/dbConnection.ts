@@ -68,8 +68,8 @@ export const setupDatabaseConnection = async (
       if (isConfigDb) {
         console.log("Config database does not exist. Attemping to create...");
         const created = await createDatabaseIfNotExists(
-          localDatabase as string,
-          database as string,
+          localDatabase,
+          database,
           dbHost,
           dbUser,
           dbPassword,

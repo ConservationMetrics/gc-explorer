@@ -1,5 +1,4 @@
 services:
-
   # Backend web server
   backend:
     # Use image tag from the environment variable to allow for local testing or CI

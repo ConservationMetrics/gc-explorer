@@ -55,12 +55,15 @@ const filterValues = (values: FilterValues) => {
 };
 
 /** Prepare coordinates for selected feature */
-const featureWithPreparedCoordinates = (feature: DataEntry) => ({
-  ...feature,
-  geocoordinates: feature.geocoordinates
-    ? prepareCoordinatesForSelectedFeature(feature.geocoordinates)
-    : feature.geocoordinates,
-});
+const featureWithPreparedCoordinates = (feature: DataEntry): DataEntry => {
+  const result = {
+    ...feature,
+    geocoordinates: feature.geocoordinates
+      ? prepareCoordinatesForSelectedFeature(feature.geocoordinates)
+      : feature.geocoordinates,
+  };
+  return result as unknown as DataEntry;
+};
 </script>
 
 <template>

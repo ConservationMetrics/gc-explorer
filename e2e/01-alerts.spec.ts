@@ -76,7 +76,7 @@ test("alerts dashboard - layer visibility toggles", async ({ page }) => {
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
       const map = window._testMap;
-      return map && map.isStyleLoaded() && map.loaded();
+      return map?.isStyleLoaded() && map.loaded();
     },
     { timeout: 5000 },
   );
@@ -217,7 +217,9 @@ test("alerts dashboard - legend can control all alert layer types", async ({
       }));
     }, alertLayers);
 
-    const initiallyVisible = initialVisibility.filter((layer) => layer.visible);
+    const initiallyVisible = initialVisibility.filter(
+      (layer: { visible: boolean }) => layer.visible,
+    );
     expect(initiallyVisible.length).toBeGreaterThan(0);
     console.log(`✅ ${initiallyVisible.length} layers initially visible`);
 
@@ -247,7 +249,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
       }));
     }, alertLayers);
 
-    hiddenVisibility.forEach((layer) => {
+    hiddenVisibility.forEach((layer: { visible: boolean; id: string }) => {
       expect(layer.visible).toBe(false);
       console.log(`✓ ${layer.id} is hidden`);
     });
@@ -276,7 +278,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
       }));
     }, alertLayers);
 
-    visibleAgain.forEach((layer) => {
+    visibleAgain.forEach((layer: { visible: boolean; id: string }) => {
       expect(layer.visible).toBe(true);
       console.log(`✓ ${layer.id} is visible again`);
     });
@@ -353,7 +355,7 @@ test("alerts dashboard - LineString buffer click behavior", async ({
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
       const map = window._testMap;
-      return map && map.isStyleLoaded() && map.loaded();
+      return map?.isStyleLoaded() && map.loaded();
     },
     { timeout: 5000 },
   );
@@ -458,7 +460,7 @@ test("alerts dashboard - geometry type specific interactions", async ({
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
       const map = window._testMap;
-      return map && map.isStyleLoaded() && map.loaded();
+      return map?.isStyleLoaded() && map.loaded();
     },
     { timeout: 5000 },
   );
@@ -671,7 +673,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
       const map = window._testMap;
-      return map && map.isStyleLoaded() && map.loaded();
+      return map?.isStyleLoaded() && map.loaded();
     },
     { timeout: 5000 },
   );
