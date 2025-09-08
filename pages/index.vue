@@ -27,7 +27,7 @@ if (data.value && !error.value) {
 
 /** Filter and sort the views config */
 const filteredSortedViewsConfig = computed(() => {
-  const typedUser = user.value as User;
+  const typedUser = user.value as User | null;
   const userRole = typedUser?.userRole || Role.Viewer;
 
   return Object.keys(viewsConfig.value)
@@ -55,9 +55,10 @@ const filteredSortedViewsConfig = computed(() => {
 
 // Helper function to check if a view is restricted and apply the icon
 const isViewRestricted = (tableName: string) => {
+  if (!user.value) return false;
   const permission = viewsConfig.value[tableName]?.routeLevelPermission;
-  const typedUser = user.value as User;
-  const userRole = typedUser.userRole || Role.Viewer;
+  const typedUser = user.value as User | null;
+  const userRole = typedUser?.userRole || Role.Viewer;
   return (
     userRole === Role.Member &&
     (permission === "member" || permission === "admin")
@@ -71,8 +72,8 @@ const shouldShowConfigLink = computed(() => {
   }
 
   if (authStrategy === "auth0" && loggedIn.value && user.value) {
-    const typedUser = user.value as User;
-    const userRole = typedUser.userRole || Role.Viewer;
+    const typedUser = user.value as User | null;
+    const userRole = typedUser?.userRole || Role.Viewer;
     return userRole >= Role.Admin;
   }
 
