@@ -58,7 +58,10 @@ const isViewRestricted = (tableName: string) => {
   const permission = viewsConfig.value[tableName]?.routeLevelPermission;
   const typedUser = user.value as User;
   const userRole = typedUser.userRole || Role.Viewer;
-  return userRole === Role.Member &&  (permission === "member" || permission === "admin");
+  return (
+    userRole === Role.Member &&
+    (permission === "member" || permission === "admin")
+  );
 };
 
 // Check if user should see config link

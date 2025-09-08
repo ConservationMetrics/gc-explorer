@@ -27,8 +27,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const viewsConfig = await fetchConfig(configDb);
 
     // Check visibility permissions
-    const permission =
-      viewsConfig[table]?.routeLevelPermission ?? "member";
+    const permission = viewsConfig[table]?.routeLevelPermission ?? "member";
 
     // For public access, no authentication required
     if (permission === "anyone") {
