@@ -53,7 +53,10 @@ const filteredSortedViewsConfig = computed(() => {
 
       // Filter views based on user role and permission level
       // Hide view if user role is lower than what's required
-      if (config.ROUTE_LEVEL_PERMISSION === "member" && userRole < Role.Member) {
+      if (
+        config.ROUTE_LEVEL_PERMISSION === "member" &&
+        userRole < Role.Member
+      ) {
         return false;
       }
       if (config.ROUTE_LEVEL_PERMISSION === "admin" && userRole < Role.Admin) {

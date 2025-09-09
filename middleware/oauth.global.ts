@@ -39,10 +39,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
       } = useRuntimeConfig();
       const headers = { "x-api-key": appApiKey };
 
-      const [tableConfig] = (await $fetch("/api/config", { headers })) as [
-        Record<string, { routeLevelPermission?: RouteLevelPermission }>,
-        string[],
-      ];
+      const response = await $fetch<[Record<string, { routeLevelPermission?: RouteLevelPermission }>, string[]]>("/api/config", { headers });
+      const [tableConfig] = response;
 
       // Extract the table name from the last part of the path
       const tableName = to.path.split("/").pop()!;
