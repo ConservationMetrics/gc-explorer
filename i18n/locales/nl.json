@@ -126,6 +126,7 @@
   "visibilityPublicDescription": "Iedereen met de link kan bekijken.",
   "visibilityViewer": "Aangemeld (alle rollen)",
   "visibilityViewerDescription": "Elke aangemelde gebruiker (Kijker, Lid of Beheerder) kan bekijken.",
+  "visibilityRequired": "Selecteer een zichtbaarheidsniveau voor deze dataset.",
   "yourAccessIsPending": "Uw toegang is in behandeling. Neem contact op met een Guardian Connector-beheerder voor goedkeuring van je account.",
   "yourMapboxStyleDefault": "Mapbox - uw stijl (standaard)"
 }

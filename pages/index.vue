@@ -83,7 +83,7 @@ const isViewRestricted = (tableName: string) => {
   const userRole = typedUser?.userRole || Role.Viewer;
 
   return (
-    userRole === Role.Member &&
+    userRole >= Role.Member &&
     (permission === "member" || permission === "admin")
   );
 };

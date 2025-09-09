@@ -9,13 +9,14 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   updateConfig: [config: ViewConfig];
+  updateValidation: [isValid: boolean];
 }>();
 
 const { user } = useUserSession();
 
-// Default to 'member' if no permission is set
-const routeLevelPermission = ref<RouteLevelPermission>(
-  props.viewConfig.routeLevelPermission ?? "member",
+// Allow undefined state - no default value
+const routeLevelPermission = ref<RouteLevelPermission | undefined>(
+  props.viewConfig.ROUTE_LEVEL_PERMISSION,
 );
 
 // Only show permissions section for admins
@@ -26,14 +27,28 @@ const shouldShowPermissions = computed(() => {
   return userRole >= Role.Admin;
 });
 
+// Computed property to check if permission is selected
+const isPermissionSelected = computed(() => {
+  return routeLevelPermission.value !== undefined;
+});
+
 // Watch for changes and emit updates
 watch(routeLevelPermission, (newPermission) => {
   const updatedConfig = {
     ...props.viewConfig,
-    routeLevelPermission: newPermission,
+    ROUTE_LEVEL_PERMISSION: newPermission,
   };
   emit("updateConfig", updatedConfig);
 });
+
+// Watch for validation changes and emit to parent
+watch(
+  isPermissionSelected,
+  (isValid) => {
+    emit("updateValidation", isValid);
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -44,6 +59,20 @@ watch(routeLevelPermission, (newPermission) => {
     <p class="text-gray-500 text-sm mb-4 leading-relaxed">
       {{ $t("visibilityHelpText") }}
     </p>
+
+    <!-- Warning when no permission is selected -->
+    <div
+      v-if="!isPermissionSelected"
+      class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4"
+    >
+      <p class="text-sm font-medium">
+        ⚠️
+        {{
+          $t("visibilityRequired") ||
+          "Please select a visibility level for this dataset."
+        }}
+      </p>
+    </div>
 
     <div class="flex flex-col gap-4">
       <label

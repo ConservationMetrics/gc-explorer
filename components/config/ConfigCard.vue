@@ -67,13 +67,16 @@ const isChanged = computed(() => {
   );
 });
 
+// Track permission validation state
+const isPermissionValid = ref(true);
+
 const isFormValid = computed(() => {
   const isMapConfigValid = shouldShowConfigMap.value
     ? localConfig.value.MAPBOX_ACCESS_TOKEN?.trim() !== "" &&
       localConfig.value.MAPBOX_ACCESS_TOKEN != null
     : true;
 
-  return isMapConfigValid;
+  return isMapConfigValid && isPermissionValid.value;
 });
 
 const shouldShowConfigMap = computed(() => hasView(["alerts", "map"]));
@@ -98,6 +101,10 @@ const handleViewUpdate = (newViews: Array<string>) => {
 
 const handleConfigUpdate = (partialUpdate: Partial<ViewConfig>) => {
   Object.assign(localConfig.value, partialUpdate);
+};
+
+const handlePermissionValidation = (isValid: boolean) => {
+  isPermissionValid.value = isValid;
 };
 
 const handleSubmit = () => {
@@ -169,6 +176,7 @@ const handleSubmit = () => {
           :table-name="tableName"
           :view-config="localConfig"
           @update-config="handleConfigUpdate"
+          @update-validation="handlePermissionValidation"
         />
         <button
           type="submit"

@@ -126,6 +126,7 @@
   "visibilityPublicDescription": "Cualquiera con el enlace puede ver.",
   "visibilityViewer": "Con inicio de sesión (todos los roles)",
   "visibilityViewerDescription": "Cualquier usuario con inicio de sesión (Visualizador, Miembro o Administrador) puede ver.",
+  "visibilityRequired": "Por favor, seleccione un nivel de visibilidad para este conjunto de datos.",
   "yourAccessIsPending": "Su acceso está pendiente. Ponte en contacto con un administrador de Guardian Connector para la aprobación de su cuenta.",
   "yourMapboxStyleDefault": "Mapbox - su estilo (predeterminado)"
 }

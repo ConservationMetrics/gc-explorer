@@ -126,6 +126,7 @@
   "visibilityPublicDescription": "Anyone with the link can view.",
   "visibilityViewer": "Signed-in (all roles)",
   "visibilityViewerDescription": "Any signed-in user (Viewer, Member, or Admin) can view.",
+  "visibilityRequired": "Please select a visibility level for this dataset.",
   "yourAccessIsPending": "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
   "yourMapboxStyleDefault": "Mapbox - your style (default)"
 }
