@@ -172,7 +172,7 @@ const fetchRoles = async (
     return rolesData.map(
       (role: { id: string; name: string; description: string }) => ({
         id: role.id,
-        name: role.name,
+        name: role.name.toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()),
         description: role.description,
       }),
     );
