@@ -128,7 +128,9 @@ const fetchUserIdByEmail = async (email: string): Promise<string | null> => {
 };
 
 // Function to fetch roles from Auth0 Management API
-const fetchRoles = async (userId?: string): Promise<Array<{ id: string; name: string; description: string }>> => {
+const fetchRoles = async (
+  userId?: string,
+): Promise<Array<{ id: string; name: string; description: string }>> => {
   try {
     const config = useRuntimeConfig();
     const { oauth } = config;
@@ -167,11 +169,13 @@ const fetchRoles = async (userId?: string): Promise<Array<{ id: string; name: st
     }
 
     const rolesData = await rolesResponse.json();
-    return rolesData.map((role: { id: string; name: string; description: string }) => ({
-      id: role.id,
-      name: role.name,
-      description: role.description,
-    }));
+    return rolesData.map(
+      (role: { id: string; name: string; description: string }) => ({
+        id: role.id,
+        name: role.name,
+        description: role.description,
+      }),
+    );
   } catch (error) {
     console.error("🔍 Error fetching roles:", error);
     return [];
@@ -276,10 +280,14 @@ export default oauthAuth0EventHandler({
             try {
               // Fetch all available roles to find the Public role
               const allRoles = await fetchRoles();
-              const publicRole = allRoles.find(role => role.name === "Public");
+              const publicRole = allRoles.find(
+                (role) => role.name === "Public",
+              );
 
               if (publicRole) {
-                const assignSuccess = await assignUserRoles(userId, [publicRole.id]);
+                const assignSuccess = await assignUserRoles(userId, [
+                  publicRole.id,
+                ]);
 
                 if (assignSuccess) {
                   console.log(
@@ -305,7 +313,9 @@ export default oauthAuth0EventHandler({
                   userRole = Role.Public;
                 }
               } else {
-                console.warn("🔍 No Public role found in Auth0, creating fallback role");
+                console.warn(
+                  "🔍 No Public role found in Auth0, creating fallback role",
+                );
                 // Fallback: create local role object
                 userRoles = [
                   {
