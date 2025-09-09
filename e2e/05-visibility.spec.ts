@@ -18,6 +18,7 @@ test("visibility system - public dataset accessible without authentication", asy
   await expect(page.getByTestId("gallery-container")).toBeVisible();
   // 5. Check that the page has the robots meta tag for public views
   const robotsMeta = page.locator('meta[name="robots"]');
+  await robotsMeta.waitFor({ state: "attached", timeout: 10000 });
   await expect(robotsMeta).toHaveAttribute("content", "noindex, nofollow");
 
   console.log("✅ Public dataset accessible without authentication");
