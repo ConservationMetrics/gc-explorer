@@ -9,7 +9,7 @@ GuardianConnector Explorer uses Auth0 for authentication with role-based access 
 | **Admin** | Full access including configuration |
 | **Member** | Access to restricted datasets |
 | **Viewer** | Access to unrestricted datasets only |
-| **Public** | Basic access (auto-assigned to new users) |
+| **Public** | Basic logged in access to public views (auto-assigned to new users) |
 
 ## Dataset Visibility
 
