@@ -26,7 +26,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
   console.log("to.path", to.path);
   // Check if this is a dataset route that might have public access
-  // Check if this is a dataset route that might have public access
   const isDatasetRoute =
     to.path.startsWith("/alerts/") ||
     to.path.startsWith("/gallery/") ||
