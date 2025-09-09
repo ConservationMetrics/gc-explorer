@@ -39,18 +39,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
       } = useRuntimeConfig();
       const headers = { "x-api-key": appApiKey };
 
-      const data = (await $fetch("/api/config", { headers })) as unknown as [
-        { [key: string]: { routeLevelPermission?: RouteLevelPermission } },
-        string[],
-      ];
+    const [tableConfig] = (await $fetch("/api/config", { headers })) as [
+      Record<string, { routeLevelPermission?: RouteLevelPermission }>,
+      string[],
+    ];
 
-      // Extract table name from path (e.g., "/alerts/tableName" -> "tableName")
-      const pathParts = to.path.split("/");
-      const tableName = pathParts[pathParts.length - 1];
-
-      const viewConfig = data?.[0]?.[tableName];
-      const permission: RouteLevelPermission =
-        viewConfig?.routeLevelPermission ?? "anyone"; // Default to anyone if not set
+    // Extract the table name from the last part of the path
+    const tableName = to.path.split("/").pop()!;
+    const permission: RouteLevelPermission =
+      tableConfig?.[tableName]?.routeLevelPermission ?? "member";
 
       // Public access: no login needed
       if (permission === "anyone") return;
