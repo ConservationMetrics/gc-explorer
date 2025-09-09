@@ -52,38 +52,29 @@ export default defineNuxtRouteMiddleware(async (to) => {
       const permission: RouteLevelPermission =
         viewConfig?.routeLevelPermission ?? "anyone"; // Default to anyone if not set
 
-      // If view is accessible to anyone, allow access without authentication
-      if (permission === "anyone") {
-        return; // Allow access
-      }
-
-      // If view requires authentication but user is not logged in
+      // Public access: no login needed
+      if (permission === "anyone") return;
+      
+      // Require authentication
       if (!loggedIn.value) {
-        if (authStrategy === "auth0") {
-          return router.push("/login");
-        }
-        return; // For other auth strategies, allow access
+        if (authStrategy === "auth0") return router.push("/login");
+        return; // allow for other auth strategies
       }
-
-      // Check if user has sufficient role to access this view
-      if (loggedIn.value && user.value) {
-        const typedUser = user.value as User;
-        const userRole = typedUser.userRole || Role.Viewer;
-
-        // For 'member' permission, user must have Member or Admin role
-        if (permission === "member" && userRole < Role.Member) {
-          return router.push("/");
-        }
-
-        // For 'admin' permission, user must have Admin role
-        if (permission === "admin" && userRole < Role.Admin) {
-          return router.push("/");
-        }
-
-        // For 'signed-in' permission, any authenticated user can access
-        if (permission === "signed-in") {
-          return; // Allow access
-        }
+      
+      // Authenticated from here on
+      const typedUser = user.value as User;
+      const userRole = typedUser?.userRole ?? Role.Viewer;
+      
+      // Role-based access control
+      switch (permission) {
+        case "member":
+          if (userRole < Role.Member) return router.push("/");
+          break;
+        case "admin":
+          if (userRole < Role.Admin) return router.push("/");
+          break;
+        case "signed-in":
+          return; // any signed-in user is fine
       }
     } catch (error) {
       console.error("Error checking view permissions:", error);
