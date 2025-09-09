@@ -59,8 +59,8 @@ The visibility system works as follows:
 ### Example Use Cases
 
 - **Public Datasets**: Set to `anyone` for datasets that should be accessible without login (e.g., public alerts, open data)
-- **Internal Datasets**: Set to `signed-in` for datasets that require authentication but are accessible to all staff
-- **Restricted Datasets**: Set to `member` for data that requires Member+ role, or `admin` for Admin-only data
+- **Internal Datasets**: Set to `signed-in` for datasets that require authentication but are accessible to all community members and their guests
+- **Restricted Datasets**: For datasets that require an elevated level of access, set to `member` for data that requires Member+ role, or `admin` for Admin-only data
 
 ## Implementation Details
 
