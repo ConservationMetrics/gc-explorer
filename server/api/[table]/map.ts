@@ -9,10 +9,10 @@ import {
   filterOutUnwantedValues,
   filterGeoData,
 } from "@/server/dataProcessing/filterData";
+import { validatePermissions } from "@/utils/auth";
 
 import type { H3Event } from "h3";
-import type { AllowedFileExtensions, ColumnEntry, User } from "@/types/types";
-import { Role } from "@/types/types";
+import type { AllowedFileExtensions, ColumnEntry } from "@/types/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -32,50 +32,8 @@ export default defineEventHandler(async (event: H3Event) => {
     // Check visibility permissions
     const permission = viewsConfig[table]?.routeLevelPermission ?? "member";
 
-    // Skip authentication checks in CI environment
-    if (!process.env.CI) {
-      // For public access, no authentication required
-      if (permission === "anyone") {
-        // Allow access without authentication
-      } else {
-        // Check if user is authenticated
-        const session = await getUserSession(event);
-
-        if (!session.user) {
-          throw createError({
-            statusCode: 401,
-            statusMessage: "Unauthorized - Authentication required",
-          });
-        }
-
-        // For member permission, check user role
-        if (permission === "member") {
-          const typedUser = session.user as User;
-          const userRole = typedUser?.userRole || Role.Viewer;
-
-          if (userRole < Role.Member) {
-            throw createError({
-              statusCode: 403,
-              statusMessage: "Forbidden - Insufficient permissions",
-            });
-          }
-        }
-
-        // For admin permission, check user role
-        if (permission === "admin") {
-          const typedUser = session.user as User;
-          const userRole = typedUser?.userRole || Role.Viewer;
-
-          if (userRole < Role.Admin) {
-            throw createError({
-              statusCode: 403,
-              statusMessage: "Forbidden - Insufficient permissions",
-            });
-          }
-        }
-        // For signed-in permission, any authenticated user can access
-      }
-    }
+    // Validate user authentication and permissions
+    await validatePermissions(event, permission);
 
     const { mainData, columnsData } = await fetchData(db, table);
 

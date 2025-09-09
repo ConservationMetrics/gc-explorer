@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 
-import { replaceUnderscoreWithSpace } from "@/utils/index";
+import { replaceUnderscoreWithSpace, isPublicView } from "@/utils/index";
 
 // Extract the tablename from the route parameters
 const route = useRoute();
@@ -39,7 +39,7 @@ const { t } = useI18n();
 
 // Check if this view is publicly accessible
 const isPublic = computed(() => {
-  return data.value?.routeLevelPermission === "anyone";
+  return isPublicView(data.value?.routeLevelPermission);
 });
 
 useHead({
