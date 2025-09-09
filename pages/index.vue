@@ -53,10 +53,10 @@ const filteredSortedViewsConfig = computed(() => {
 
       // Filter views based on user role and permission level
       // Hide view if user role is lower than what's required
-      if (config.routeLevelPermission === "member" && userRole < Role.Member) {
+      if (config.ROUTE_LEVEL_PERMISSION === "member" && userRole < Role.Member) {
         return false;
       }
-      if (config.routeLevelPermission === "admin" && userRole < Role.Admin) {
+      if (config.ROUTE_LEVEL_PERMISSION === "admin" && userRole < Role.Admin) {
         return false;
       }
 
@@ -75,7 +75,7 @@ const isViewRestricted = (tableName: string) => {
   if (process.env.CI) return false;
 
   if (!user.value) return false;
-  const permission = viewsConfig.value[tableName]?.routeLevelPermission;
+  const permission = viewsConfig.value[tableName]?.ROUTE_LEVEL_PERMISSION;
   const typedUser = user.value as User | null;
   const userRole = typedUser?.userRole || Role.Viewer;
 

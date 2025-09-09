@@ -39,29 +39,29 @@ export default defineNuxtRouteMiddleware(async (to) => {
       } = useRuntimeConfig();
       const headers = { "x-api-key": appApiKey };
 
-    const [tableConfig] = (await $fetch("/api/config", { headers })) as [
-      Record<string, { routeLevelPermission?: RouteLevelPermission }>,
-      string[],
-    ];
+      const [tableConfig] = (await $fetch("/api/config", { headers })) as [
+        Record<string, { routeLevelPermission?: RouteLevelPermission }>,
+        string[],
+      ];
 
-    // Extract the table name from the last part of the path
-    const tableName = to.path.split("/").pop()!;
-    const permission: RouteLevelPermission =
-      tableConfig?.[tableName]?.routeLevelPermission ?? "member";
+      // Extract the table name from the last part of the path
+      const tableName = to.path.split("/").pop()!;
+      const permission: RouteLevelPermission =
+        tableConfig?.[tableName]?.routeLevelPermission ?? "member";
 
       // Public access: no login needed
       if (permission === "anyone") return;
-      
+
       // Require authentication
       if (!loggedIn.value) {
         if (authStrategy === "auth0") return router.push("/login");
         return; // allow for other auth strategies
       }
-      
+
       // Authenticated from here on
       const typedUser = user.value as User;
       const userRole = typedUser?.userRole ?? Role.Viewer;
-      
+
       // Role-based access control
       switch (permission) {
         case "member":
