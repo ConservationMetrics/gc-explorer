@@ -49,7 +49,7 @@ export interface ViewConfig {
   UNWANTED_COLUMNS?: string;
   UNWANTED_SUBSTRINGS?: string;
   VIEWS?: string;
-  routeLevelPermission?: RouteLevelPermission; // Who can access this view: anyone, signed-in, member, or admin
+  ROUTE_LEVEL_PERMISSION?: RouteLevelPermission; // Who can access this view: anyone, signed-in, member, or admin
 }
 
 export interface Views {

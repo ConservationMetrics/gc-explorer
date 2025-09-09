@@ -68,7 +68,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const viewsConfig = await fetchConfig(configDb);
 
     // Check visibility permissions
-    const permission = viewsConfig[table]?.routeLevelPermission ?? "member";
+    const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "member";
 
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
@@ -165,7 +165,7 @@ export default defineEventHandler(async (event: H3Event) => {
       mediaBasePathAlerts: viewsConfig[table].MEDIA_BASE_PATH_ALERTS,
       planetApiKey: viewsConfig[table].PLANET_API_KEY,
       table: table,
-      routeLevelPermission: viewsConfig[table].routeLevelPermission,
+      routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
     };
 
     return response;
