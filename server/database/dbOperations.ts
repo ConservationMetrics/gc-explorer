@@ -112,7 +112,7 @@ export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
         MAPBOX_PITCH: 0,
         FRONT_END_FILTER_COLUMN: "community",
         MEDIA_BASE_PATH: mediaBasePath,
-        routeLevelPermission: "anyone",
+        ROUTE_LEVEL_PERMISSION: "anyone",
       },
       bcmform_responses: {
         VIEWS: "map,gallery",
@@ -126,7 +126,7 @@ export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
         MAPBOX_PITCH: 0,
         FRONT_END_FILTER_COLUMN: "community",
         MEDIA_BASE_PATH: mediaBasePath,
-        routeLevelPermission: "member",
+        ROUTE_LEVEL_PERMISSION: "member",
       },
       fake_alerts: {
         VIEWS: "alerts",
@@ -149,7 +149,7 @@ export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
         ALERT_RESOURCES: "NO",
         MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
         PLANET_API_KEY: planetApiKey,
-        routeLevelPermission: "anyone",
+        ROUTE_LEVEL_PERMISSION: "anyone",
       },
     };
   }
