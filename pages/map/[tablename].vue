@@ -2,6 +2,7 @@
 import { useI18n } from "vue-i18n";
 
 import { replaceUnderscoreWithSpace } from "@/utils/index";
+import { useIsPublic } from "@/utils/permissions";
 
 // Extract the tablename from the route parameters
 const route = useRoute();
@@ -57,12 +58,21 @@ if (data.value && !error.value) {
 }
 
 const { t } = useI18n();
+
+// Check if this view is publicly accessible
+const isPublic = useIsPublic(data);
+
 useHead({
   title:
     "GuardianConnector Explorer " +
     t("map") +
     " - " +
     replaceUnderscoreWithSpace(table),
+  meta: [
+    ...(isPublic.value
+      ? [{ name: "robots", content: "noindex, nofollow" }]
+      : []),
+  ],
 });
 </script>
 

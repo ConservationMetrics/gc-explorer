@@ -20,6 +20,8 @@ export interface Database {
   close?: () => Promise<void>;
 }
 
+export type RouteLevelPermission = "anyone" | "signed-in" | "member" | "admin";
+
 export interface ViewConfig {
   ALERT_RESOURCES?: string;
   EMBED_MEDIA?: string;
@@ -47,7 +49,7 @@ export interface ViewConfig {
   UNWANTED_COLUMNS?: string;
   UNWANTED_SUBSTRINGS?: string;
   VIEWS?: string;
-  isRestricted?: boolean; // Whether this view requires Member+ access
+  ROUTE_LEVEL_PERMISSION?: RouteLevelPermission; // Who can access this view: anyone, signed-in, member, or admin
 }
 
 export interface Views {
@@ -137,9 +139,10 @@ export type AlertsStatistics = {
 };
 
 export const Role = {
-  Viewer: 0,
-  Member: 1,
-  Admin: 2,
+  Public: 0, // Not signed in, no permissions
+  Viewer: 1, // Signed in but no special permissions
+  Member: 2, // Signed in with member permissions
+  Admin: 3, // Signed in with admin permissions
 } as const;
 
 export type Role = (typeof Role)[keyof typeof Role];

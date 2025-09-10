@@ -40,7 +40,7 @@ test("index page - displays available views and alerts link", async ({
   ).toBeVisible();
 
   // 3. Ensure at least one Alerts link is visible (guaranteed through a database connection that has an alerts view)
-  const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
+  const alertsLink = page.locator('a[href^="/alerts/"]').first();
   await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
   // 4. (Optional) Verify the link's href leads to an alerts route pattern

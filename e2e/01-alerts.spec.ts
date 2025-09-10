@@ -34,7 +34,8 @@ test("alerts dashboard - layer visibility toggles", async ({ page }) => {
   );
 
   // 2. Wait until the index page has rendered the list of available views
-  const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
+  // Find the first link that has an href starting with /alerts/
+  const alertsLink = page.locator('a[href^="/alerts/"]').first();
   await alertsLink.waitFor({ state: "visible", timeout: 5000 });
 
   // 3. Get the href first
@@ -331,7 +332,7 @@ test("alerts dashboard - LineString buffer click behavior", async ({
   await page.goto("/");
 
   // 2. Wait until the index page has rendered the list of available views
-  const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
+  const alertsLink = page.locator('a[href^="/alerts/"]').first();
   await alertsLink.waitFor({ state: "visible", timeout: 5000 });
 
   // 3. Get the href first
@@ -436,7 +437,7 @@ test("alerts dashboard - geometry type specific interactions", async ({
   await page.goto("/");
 
   // 2. Wait until the index page has rendered the list of available views
-  const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
+  const alertsLink = page.locator('a[href^="/alerts/"]').first();
   await alertsLink.waitFor({ state: "visible", timeout: 5000 });
 
   // 3. Get the href first
@@ -631,7 +632,7 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     pageContent.substring(0, 1000),
   );
   // 2. Wait until the index page has rendered the list of available views
-  const alertsLink = page.getByRole("link", { name: /alerts/i }).first();
+  const alertsLink = page.locator('a[href^="/alerts/"]').first();
   await alertsLink.waitFor({ state: "visible", timeout: 5000 });
 
   // 3. Get the href first

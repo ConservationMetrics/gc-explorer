@@ -74,7 +74,6 @@ const getManagementApiToken = async (): Promise<string | null> => {
     return null;
   }
 };
-
 // Function to fetch user ID by email from Auth0 Management API
 const fetchUserIdByEmail = async (email: string): Promise<string | null> => {
   try {
@@ -128,9 +127,9 @@ const fetchUserIdByEmail = async (email: string): Promise<string | null> => {
   }
 };
 
-// Function to fetch user roles from Auth0 Management API
-const fetchUserRoles = async (
-  userId: string,
+// Function to fetch roles from Auth0 Management API
+const fetchRoles = async (
+  userId?: string,
 ): Promise<Array<{ id: string; name: string; description: string }>> => {
   try {
     const config = useRuntimeConfig();
@@ -147,19 +146,25 @@ const fetchUserRoles = async (
       return [];
     }
 
-    // Fetch user roles using the provided Management API token
-    const rolesResponse = await fetch(
-      `https://${oauth.auth0.domain}/api/v2/users/${userId}/roles`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
+    // Build URL - either user-specific roles or all roles
+    const url = userId
+      ? `https://${oauth.auth0.domain}/api/v2/users/${userId}/roles`
+      : `https://${oauth.auth0.domain}/api/v2/roles`;
+
+    const rolesResponse = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
-    );
+    });
 
     if (!rolesResponse.ok) {
-      console.error("🔍 Failed to fetch user roles from Management API");
+      const errorText = await rolesResponse.text();
+      console.error(
+        "🔍 Failed to fetch roles from Management API. Status:",
+        rolesResponse.status,
+      );
+      console.error("🔍 Error response:", errorText);
       return [];
     }
 
@@ -167,13 +172,51 @@ const fetchUserRoles = async (
     return rolesData.map(
       (role: { id: string; name: string; description: string }) => ({
         id: role.id,
-        name: role.name,
+        name: role.name.toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()),
         description: role.description,
       }),
     );
   } catch (error) {
-    console.error("🔍 Error fetching user roles:", error);
+    console.error("🔍 Error fetching roles:", error);
     return [];
+  }
+};
+
+// Function to assign roles to user
+const assignUserRoles = async (
+  userId: string,
+  roleIds: string[],
+): Promise<boolean> => {
+  try {
+    const config = useRuntimeConfig();
+    const { oauth } = config;
+
+    if (!oauth?.auth0?.domain || roleIds.length === 0) return true;
+
+    const accessToken = await getManagementApiToken();
+    if (!accessToken) {
+      console.error("🔍 Failed to get Management API access token");
+      return false;
+    }
+
+    const response = await fetch(
+      `https://${oauth.auth0.domain}/api/v2/users/${userId}/roles`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          roles: roleIds,
+        }),
+      },
+    );
+
+    return response.ok;
+  } catch (error) {
+    console.error("🔍 Error assigning user roles:", error);
+    return false;
   }
 };
 
@@ -196,7 +239,7 @@ export default oauthAuth0EventHandler({
         if (user.email) {
           const userId = await fetchUserIdByEmail(user.email);
           if (userId) {
-            userRoles = await fetchUserRoles(userId);
+            userRoles = await fetchRoles(userId);
             console.log("🔍 Fetched roles from Management API:", userRoles);
           } else {
             console.log("🔍 Could not find user ID for email:", user.email);
@@ -212,15 +255,92 @@ export default oauthAuth0EventHandler({
       }
 
       // Determine user role level
-      let userRole: Role = Role.Viewer; // Default to Viewer
+      let userRole: Role = Role.Public; // Default to Public (not signed in)
       if (userRoles.length > 0) {
         const hasAdminRole = userRoles.some((role) => role.name === "Admin");
         const hasMemberRole = userRoles.some((role) => role.name === "Member");
+        const hasViewerRole = userRoles.some((role) => role.name === "Viewer");
 
         if (hasAdminRole) {
           userRole = Role.Admin;
         } else if (hasMemberRole) {
           userRole = Role.Member;
+        } else if (hasViewerRole) {
+          userRole = Role.Viewer;
+        } else {
+          // User has roles but none of the expected ones, treat as Viewer
+          userRole = Role.Viewer;
+        }
+      } else {
+        // If user has no roles, assign them the "Public" role via Management API
+        // This creates a "Public" role in Auth0 for users who are logged in but not approved
+        if (user.email) {
+          const userId = await fetchUserIdByEmail(user.email);
+          if (userId) {
+            try {
+              // Fetch all available roles to find the Public role
+              const allRoles = await fetchRoles();
+              const publicRole = allRoles.find(
+                (role) => role.name === "Public",
+              );
+
+              if (publicRole) {
+                const assignSuccess = await assignUserRoles(userId, [
+                  publicRole.id,
+                ]);
+
+                if (assignSuccess) {
+                  console.log(
+                    "🔍 Successfully assigned Public role to user:",
+                    user.email,
+                  );
+                  userRoles = [publicRole];
+                  userRole = Role.Public; // Internal role is Public for logged-in users with no permissions
+                } else {
+                  console.error(
+                    "🔍 Failed to assign Public role to user:",
+                    user.email,
+                  );
+                  // Fallback: create local role object
+                  userRoles = [
+                    {
+                      id: "public-role",
+                      name: "Public",
+                      description:
+                        "User is logged in but not yet approved for higher access",
+                    },
+                  ];
+                  userRole = Role.Public;
+                }
+              } else {
+                console.warn(
+                  "🔍 No Public role found in Auth0, creating fallback role",
+                );
+                // Fallback: create local role object
+                userRoles = [
+                  {
+                    id: "public-role",
+                    name: "Public",
+                    description:
+                      "User is logged in but not yet approved for higher access",
+                  },
+                ];
+                userRole = Role.Public;
+              }
+            } catch (error) {
+              console.error("🔍 Error assigning Public role:", error);
+              // Fallback: create local role object
+              userRoles = [
+                {
+                  id: "public-role",
+                  name: "Public",
+                  description:
+                    "User is logged in but not yet approved for higher access",
+                },
+              ];
+              userRole = Role.Public;
+            }
+          }
         }
       }
 

@@ -1,5 +1,5 @@
 import { defineNuxtRouteMiddleware, useRuntimeConfig } from "#imports";
-import type { User } from "~/types/types";
+import type { User, RouteLevelPermission } from "~/types/types";
 import { Role } from "~/types/types";
 
 // Following example: https://github.com/atinux/atidone/blob/main/app/middleware/auth.ts
@@ -24,7 +24,66 @@ export default defineNuxtRouteMiddleware(async (to) => {
       }
     }
   }
+  // Check if this is a dataset route that might have public access
+  const isDatasetRoute =
+    to.path.startsWith("/alerts/") ||
+    to.path.startsWith("/gallery/") ||
+    to.path.startsWith("/map/");
 
+  if (isDatasetRoute) {
+    try {
+      const {
+        public: { appApiKey },
+      } = useRuntimeConfig();
+      const headers = { "x-api-key": appApiKey };
+
+      const response = await $fetch<
+        [
+          Record<string, { routeLevelPermission?: RouteLevelPermission }>,
+          string[],
+        ]
+      >("/api/config", { headers });
+      const [tableConfig] = response;
+
+      // Extract the table name from the last part of the path
+      const tableName = to.path.split("/").pop()!;
+      const permission: RouteLevelPermission =
+        tableConfig?.[tableName]?.routeLevelPermission ?? "member";
+
+      // Public access: no login needed
+      if (permission === "anyone") return;
+
+      // Require authentication
+      if (!loggedIn.value) {
+        if (authStrategy === "auth0") return router.push("/login");
+        return; // allow for other auth strategies
+      }
+
+      // Authenticated from here on
+      const typedUser = user.value as User;
+      const userRole = typedUser?.userRole ?? Role.Viewer;
+
+      // Role-based access control
+      switch (permission) {
+        case "member":
+          if (userRole < Role.Member) return router.push("/");
+          break;
+        case "admin":
+          if (userRole < Role.Admin) return router.push("/");
+          break;
+        case "signed-in":
+          return; // any signed-in user is fine
+      }
+    } catch (error) {
+      console.error("Error checking view permissions:", error);
+      // On error, fall back to requiring authentication
+      if (!loggedIn.value && authStrategy === "auth0") {
+        return router.push("/login");
+      }
+    }
+  }
+
+  // Handle authentication for non-dataset routes
   if (authStrategy === "auth0" && !loggedIn.value && to.path !== "/login") {
     return router.push("/login");
   }
@@ -34,37 +93,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const typedUser = user.value as User;
     const userRole = typedUser.userRole || Role.Viewer;
 
-    // Redirect Viewers from config route
+    // Redirect non-Admins from config route
     if (to.path === "/config" && userRole < Role.Admin) {
       return router.push("/");
-    }
-
-    // Check view-level restrictions for dataset routes
-    if (
-      !to.path.includes("/config") &&
-      !to.path.includes("/api") &&
-      !to.path.includes("/login") &&
-      userRole < Role.Member
-    ) {
-      // Extract table name from path (e.g., "/map/tableName" -> "tableName")
-      const pathParts = to.path.split("/");
-      const tableName = pathParts[pathParts.length - 1];
-      try {
-        const {
-          public: { appApiKey },
-        } = useRuntimeConfig();
-        const headers = { "x-api-key": appApiKey };
-
-        const data = (await $fetch("/api/config", { headers })) as unknown as [
-          { [key: string]: { isRestricted?: boolean } },
-          string[],
-        ];
-        if (data?.[0]?.[tableName]?.isRestricted) {
-          return router.push("/");
-        }
-      } catch (error) {
-        console.error("Error checking view restrictions:", error);
-      }
     }
   }
 });

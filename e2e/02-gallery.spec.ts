@@ -10,12 +10,12 @@ test("gallery page - displays gallery with media files", async ({ page }) => {
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const galleryLink = galleryLinks.nth(1);
+    const galleryLink = galleryLinks.nth(0);
     await galleryLink.click();
 
     // 5. Wait for the gallery page to load
@@ -48,12 +48,12 @@ test("gallery page - displays images with lightbox functionality", async ({
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const galleryLink = galleryLinks.nth(1);
+    const galleryLink = galleryLinks.nth(0);
     await galleryLink.click();
 
     // 5. Wait for the gallery page to load
@@ -104,12 +104,12 @@ test("gallery page - audio playback functionality", async ({ page }) => {
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const galleryLink = galleryLinks.nth(1);
+    const galleryLink = galleryLinks.nth(0);
     await galleryLink.click();
 
     // 5. Wait for the gallery page to load
@@ -198,12 +198,12 @@ test("gallery page - filter functionality", async ({ page }) => {
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const galleryLink = galleryLinks.nth(1);
+    const galleryLink = galleryLinks.nth(0);
     await galleryLink.click();
 
     // 5. Wait for the gallery page to load
@@ -273,12 +273,12 @@ test("gallery page - pagination and infinite scroll", async ({ page }) => {
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const galleryLink = galleryLinks.nth(1);
+    const galleryLink = galleryLinks.nth(0);
     await galleryLink.click();
 
     // 5. Wait for the gallery page to load
@@ -320,12 +320,12 @@ test("gallery page - data feature information display", async ({ page }) => {
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const galleryLink = galleryLinks.nth(1);
+    const galleryLink = galleryLinks.nth(0);
     await galleryLink.click();
 
     // 5. Wait for the gallery page to load
@@ -377,12 +377,12 @@ test("gallery page - responsive grid layout", async ({ page }) => {
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const galleryLink = galleryLinks.nth(1);
+    const galleryLink = galleryLinks.nth(0);
     await galleryLink.click();
 
     // 5. Wait for the gallery page to load
@@ -430,12 +430,12 @@ test("gallery page - error handling for unavailable gallery", async ({
   ).toBeVisible();
 
   // 3. Find gallery links
-  const galleryLinks = page.getByRole("link", { name: /gallery/i });
+  const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
     // 4. Click the first gallery link
-    const galleryLink = galleryLinks.nth(1);
+    const galleryLink = galleryLinks.nth(0);
     await galleryLink.click();
 
     // 5. Wait for the gallery page to load

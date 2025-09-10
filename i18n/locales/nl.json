@@ -117,6 +117,17 @@
   "version": "Versie",
   "views": "Weergaven",
   "viewOnGoogleMaps": "bekijk op Google Maps",
+  "visibility": "Zichtbaarheid",
+  "visibilityHelpText": "Kies wie deze weergave kan bekijken.",
+  "visibilityMembers": "Leden",
+  "visibilityMembersDescription": "Alleen aangemelde gebruikers met de rol Lid of Beheerder kunnen bekijken.",
+  "visibilityAdmins": "Beheerders",
+  "visibilityAdminsDescription": "Alleen aangemelde gebruikers met de rol Beheerder kunnen bekijken.",
+  "visibilityPublic": "Openbaar — geen aanmelding vereist",
+  "visibilityPublicDescription": "Iedereen met de link kan bekijken.",
+  "visibilityViewer": "Aangemeld (alle rollen)",
+  "visibilityViewerDescription": "Elke aangemelde gebruiker (Kijker, Lid of Beheerder) kan bekijken.",
+  "visibilityRequired": "Selecteer een zichtbaarheidsniveau voor deze dataset.",
   "yourAccessIsPending": "Uw toegang is in behandeling. Neem contact op met een Guardian Connector-beheerder voor goedkeuring van je account.",
   "yourMapboxStyleDefault": "Mapbox - uw stijl (standaard)"
 }

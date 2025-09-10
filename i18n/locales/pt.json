@@ -113,6 +113,17 @@
   "version": "Versão",
   "views": "Visualizações",
   "viewOnGoogleMaps": "ver no Google Maps",
+  "visibility": "Visibilidade",
+  "visibilityHelpText": "Escolha quem pode ver esta visualização.",
+  "visibilityMembers": "Membros",
+  "visibilityMembersDescription": "Apenas usuários logados com papel de Membro ou Administrador podem ver.",
+  "visibilityAdmins": "Administradores",
+  "visibilityAdminsDescription": "Apenas usuários logados com papel de Administrador podem ver.",
+  "visibilityPublic": "Público — sem login necessário",
+  "visibilityPublicDescription": "Qualquer pessoa com o link pode ver.",
+  "visibilityViewer": "Logado (todos os papéis)",
+  "visibilityViewerDescription": "Qualquer usuário logado (Visualizador, Membro ou Administrador) pode ver.",
+  "visibilityRequired": "Por favor, selecione um nível de visibilidade para este conjunto de dados.",
   "yourAccessIsPending": "Seu acesso está pendente. Entre em contato com um administrador do Guardian Connector para aprovação da conta.",
   "yourMapboxStyleDefault": "Mapbox - seu estilo (padrão)"
 }
