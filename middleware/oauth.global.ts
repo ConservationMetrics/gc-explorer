@@ -24,7 +24,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
       }
     }
   }
-  console.log("to.path", to.path);
   // Check if this is a dataset route that might have public access
   const isDatasetRoute =
     to.path.startsWith("/alerts/") ||
@@ -32,7 +31,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
     to.path.startsWith("/map/");
 
   if (isDatasetRoute) {
-    console.log("isDatasetRoute", isDatasetRoute, "for path:", to.path);
     try {
       const {
         public: { appApiKey },
