@@ -43,12 +43,3 @@ export const toCamelCase = (key: string): string => {
 export const replaceUnderscoreWithSpace = (str: string): string => {
   return str.replace(/_/g, " ");
 };
-
-/**
- * Checks if a view is publicly accessible based on route level permission
- * @param routeLevelPermission - The permission level from the API response
- * @returns boolean indicating if the view is publicly accessible
- */
-export const isPublicView = (routeLevelPermission?: string): boolean => {
-  return routeLevelPermission === "anyone";
-};
