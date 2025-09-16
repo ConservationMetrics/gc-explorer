@@ -13,7 +13,8 @@ const checkTableExists = (
 ): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     const pgClient = db as Client;
-    const query = `SELECT to_regclass('"${table}"')`;
+    const cleanTableName = table?.replace(/"/g, "") || "";
+    const query = `SELECT to_regclass('"${cleanTableName}"')`;
     pgClient.query<{ to_regclass: string | null }>(
       query,
       [],
@@ -30,7 +31,8 @@ const fetchDataFromTable = async (
   table: string | undefined,
 ): Promise<unknown[]> => {
   const pgClient = db as Client;
-  const query = `SELECT * FROM "${table}"`;
+  const cleanTableName = table?.replace(/"/g, "") || "";
+  const query = `SELECT * FROM "${cleanTableName}"`;
   return new Promise((resolve, reject) => {
     pgClient.query(query, [], (err: Error, result: { rows: unknown[] }) => {
       if (err) reject(err);
