@@ -6,6 +6,6 @@ import ToastContainer from "@/components/shared/ToastContainer.vue";
   <div>
     <!-- Toast Container for global notifications -->
     <ToastContainer />
-    <slot ></slot>
+    <slot></slot>
   </div>
 </template>
