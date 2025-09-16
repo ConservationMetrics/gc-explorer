@@ -1,3 +1,143 @@
+<script setup lang="ts">
+interface ToastProps {
+  type?: "success" | "error" | "warning" | "info";
+  title: string;
+  message?: string;
+  duration?: number;
+  visible?: boolean;
+  position?:
+    | "top-left"
+    | "top-center"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-center"
+    | "bottom-right";
+}
+
+interface ToastEmits {
+  (e: "close"): void;
+}
+
+const props = withDefaults(defineProps<ToastProps>(), {
+  type: "info",
+  duration: 5000,
+  visible: false,
+  position: "top-right",
+});
+
+const emit = defineEmits<ToastEmits>();
+
+const isVisible = ref(props.visible);
+
+// Auto-close after duration
+let timeoutId: NodeJS.Timeout | null = null;
+
+const close = () => {
+  isVisible.value = false;
+  emit("close");
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+    timeoutId = null;
+  }
+};
+
+const startAutoClose = () => {
+  if (props.duration > 0) {
+    timeoutId = setTimeout(() => {
+      close();
+    }, props.duration);
+  }
+};
+
+// Watch for visibility changes
+watch(
+  () => props.visible,
+  (newVisible) => {
+    isVisible.value = newVisible;
+    if (newVisible) {
+      startAutoClose();
+    } else if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  },
+  { immediate: true },
+);
+
+// Cleanup on unmount
+onUnmounted(() => {
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+  }
+});
+
+// Toast styling based on type
+const toastClasses = computed(() => {
+  switch (props.type) {
+    case "success":
+      return "border-l-4 border-green-400";
+    case "error":
+      return "border-l-4 border-red-400";
+    case "warning":
+      return "border-l-4 border-yellow-400";
+    case "info":
+    default:
+      return "border-l-4 border-blue-400";
+  }
+});
+
+// Position classes based on position prop
+const positionClasses = computed(() => {
+  switch (props.position) {
+    case "top-left":
+      return "top-4 left-4";
+    case "top-center":
+      return "top-4 left-1/2 transform -translate-x-1/2";
+    case "top-right":
+      return "top-4 right-4";
+    case "bottom-left":
+      return "bottom-4 left-4";
+    case "bottom-center":
+      return "bottom-4 left-1/2 transform -translate-x-1/2";
+    case "bottom-right":
+      return "bottom-4 right-4";
+    default:
+      return "top-4 right-4";
+  }
+});
+
+// Animation based on position
+const initialAnimation = computed(() => {
+  switch (props.position) {
+    case "top-left":
+    case "top-center":
+    case "top-right":
+      return { opacity: 0, y: -20, scale: 0.95 };
+    case "bottom-left":
+    case "bottom-center":
+    case "bottom-right":
+      return { opacity: 0, y: 20, scale: 0.95 };
+    default:
+      return { opacity: 0, y: -20, x: 20, scale: 0.95 };
+  }
+});
+
+const exitAnimation = computed(() => {
+  switch (props.position) {
+    case "top-left":
+    case "top-center":
+    case "top-right":
+      return { opacity: 0, y: -20, scale: 0.95 };
+    case "bottom-left":
+    case "bottom-center":
+    case "bottom-right":
+      return { opacity: 0, y: 20, scale: 0.95 };
+    default:
+      return { opacity: 0, y: -20, x: 20, scale: 0.95 };
+  }
+});
+</script>
+
 <template>
   <Teleport to="body">
     <motion.div
@@ -5,11 +145,11 @@
       :initial="initialAnimation"
       :animate="{ opacity: 1, y: 0, x: 0, scale: 1 }"
       :exit="exitAnimation"
-      :transition="{ 
-        type: 'spring', 
-        stiffness: 400, 
+      :transition="{
+        type: 'spring',
+        stiffness: 400,
         damping: 25,
-        mass: 0.8
+        mass: 0.8,
       }"
       class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 fixed z-50"
       :class="[toastClasses, positionClasses]"
@@ -93,8 +233,8 @@
           <div class="ml-4 flex flex-shrink-0">
             <motion.button
               type="button"
-              :whileHover="{ scale: 1.1 }"
-              :whileTap="{ scale: 0.95 }"
+              :while-hover="{ scale: 1.1 }"
+              :while-tap="{ scale: 0.95 }"
               class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
               @click="close"
             >
@@ -116,133 +256,3 @@
     </motion.div>
   </Teleport>
 </template>
-
-<script setup lang="ts">
-interface ToastProps {
-  type?: 'success' | 'error' | 'warning' | 'info'
-  title: string
-  message?: string
-  duration?: number
-  visible?: boolean
-  position?: 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'
-}
-
-interface ToastEmits {
-  (e: 'close'): void
-}
-
-const props = withDefaults(defineProps<ToastProps>(), {
-  type: 'info',
-  duration: 5000,
-  visible: false,
-  position: 'top-right'
-})
-
-const emit = defineEmits<ToastEmits>()
-
-const isVisible = ref(props.visible)
-
-// Auto-close after duration
-let timeoutId: NodeJS.Timeout | null = null
-
-const close = () => {
-  isVisible.value = false
-  emit('close')
-  if (timeoutId) {
-    clearTimeout(timeoutId)
-    timeoutId = null
-  }
-}
-
-const startAutoClose = () => {
-  if (props.duration > 0) {
-    timeoutId = setTimeout(() => {
-      close()
-    }, props.duration)
-  }
-}
-
-// Watch for visibility changes
-watch(() => props.visible, (newVisible) => {
-  isVisible.value = newVisible
-  if (newVisible) {
-    startAutoClose()
-  } else if (timeoutId) {
-    clearTimeout(timeoutId)
-    timeoutId = null
-  }
-}, { immediate: true })
-
-// Cleanup on unmount
-onUnmounted(() => {
-  if (timeoutId) {
-    clearTimeout(timeoutId)
-  }
-})
-
-// Toast styling based on type
-const toastClasses = computed(() => {
-  switch (props.type) {
-    case 'success':
-      return 'border-l-4 border-green-400'
-    case 'error':
-      return 'border-l-4 border-red-400'
-    case 'warning':
-      return 'border-l-4 border-yellow-400'
-    case 'info':
-    default:
-      return 'border-l-4 border-blue-400'
-  }
-})
-
-// Position classes based on position prop
-const positionClasses = computed(() => {
-  switch (props.position) {
-    case 'top-left':
-      return 'top-4 left-4'
-    case 'top-center':
-      return 'top-4 left-1/2 transform -translate-x-1/2'
-    case 'top-right':
-      return 'top-4 right-4'
-    case 'bottom-left':
-      return 'bottom-4 left-4'
-    case 'bottom-center':
-      return 'bottom-4 left-1/2 transform -translate-x-1/2'
-    case 'bottom-right':
-      return 'bottom-4 right-4'
-    default:
-      return 'top-4 right-4'
-  }
-})
-
-// Animation based on position
-const initialAnimation = computed(() => {
-  switch (props.position) {
-    case 'top-left':
-    case 'top-center':
-    case 'top-right':
-      return { opacity: 0, y: -20, scale: 0.95 }
-    case 'bottom-left':
-    case 'bottom-center':
-    case 'bottom-right':
-      return { opacity: 0, y: 20, scale: 0.95 }
-    default:
-      return { opacity: 0, y: -20, x: 20, scale: 0.95 }
-  }
-})
-
-const exitAnimation = computed(() => {
-  switch (props.position) {
-    case 'top-left':
-    case 'top-center':
-    case 'top-right':
-      return { opacity: 0, y: -20, scale: 0.95 }
-    case 'bottom-left':
-    case 'bottom-center':
-    case 'bottom-right':
-      return { opacity: 0, y: 20, scale: 0.95 }
-    default:
-      return { opacity: 0, y: -20, x: 20, scale: 0.95 }
-  }
-})
-</script>

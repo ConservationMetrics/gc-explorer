@@ -66,10 +66,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
       // Role-based access control
       switch (permission) {
         case "member":
-          if (userRole < Role.Member) return router.push("/?reason=unauthorized");
+          if (userRole < Role.Member)
+            return router.push("/?reason=unauthorized");
           break;
         case "admin":
-          if (userRole < Role.Admin) return router.push("/?reason=unauthorized");
+          if (userRole < Role.Admin)
+            return router.push("/?reason=unauthorized");
           break;
         case "signed-in":
           return; // any signed-in user is fine
