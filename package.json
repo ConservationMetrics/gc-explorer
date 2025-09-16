@@ -28,6 +28,7 @@
     "lucide-vue-next": "^0.516.0",
     "mapbox-gl": "^3.9.4",
     "mapbox-gl-ruler-control": "^0.0.2",
+    "motion-v": "^1.7.1",
     "murmurhash": "^2.0.1",
     "nuxt": "^3.17.5",
     "nuxt-auth-utils": "^0.3.6",
@@ -51,7 +52,6 @@
     "@types/node": "^22.13.1",
     "@types/pg": "^8.11.11",
     "@typescript-eslint/parser": "^8.24.0",
-    "typescript-eslint": "^8.24.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitest/coverage-v8": "^3.2.4",
     "@vue/compiler-sfc": "^3.5.17",
@@ -65,6 +65,7 @@
     "nuxt-windicss": "^3.0.1",
     "prettier": "^3.4.2",
     "typescript": "^5.7.3",
+    "typescript-eslint": "^8.24.0",
     "vitest": "^3.2.4",
     "vue-eslint-parser": "^10.1.4",
     "vue-tsc": "^2.2.2"

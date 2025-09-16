@@ -38,6 +38,7 @@ export default defineNuxtConfig({
     "nuxt-windicss",
     "reka-ui/nuxt",
     "@nuxt/image",
+    "motion-v/nuxt",
   ],
 
   image: {
