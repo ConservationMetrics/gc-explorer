@@ -403,9 +403,11 @@ const prepareAlertsStatistics = (
   );
 
   const dataProviders = isGFW
-    ? Array.from(new Set(data.map((item) => item.data_source)))
+    ? Array.from(new Set(data.map((item) => item.data_source).filter(Boolean)))
     : metadata
-      ? Array.from(new Set(metadata.map((item) => item.data_source)))
+      ? Array.from(
+          new Set(metadata.map((item) => item.data_source).filter(Boolean)),
+        )
       : [];
 
   // Create Date objects for sorting and comparisons
