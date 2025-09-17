@@ -117,7 +117,7 @@ onMounted(async () => {
     showErrorToast(
       "Access Denied",
       "You are not authorized to view the page you were trying to access. Please contact a Guardian Connector administrator to change your role in order to view this page.",
-      8000, 
+      8000,
       "top-center",
     );
     router.replace({ path: route.path, query: {} });
