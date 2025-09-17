@@ -29,24 +29,13 @@ const emit = defineEmits<ToastEmits>();
 
 const isVisible = ref(props.visible);
 
-// Auto-close after duration
-let timeoutId: NodeJS.Timeout | null = null;
-
 const close = () => {
-  isVisible.value = false;
-  emit("close");
-  if (timeoutId) {
-    clearTimeout(timeoutId);
-    timeoutId = null;
-  }
-};
-
-const startAutoClose = () => {
-  if (props.duration > 0) {
-    timeoutId = setTimeout(() => {
-      close();
-    }, props.duration);
-  }
+  isExiting.value = true;
+  // Wait for exit animation to complete before actually closing
+  setTimeout(() => {
+    isVisible.value = false;
+    emit("close");
+  }, 300); // Match the transition duration
 };
 
 // Watch for visibility changes
@@ -54,22 +43,9 @@ watch(
   () => props.visible,
   (newVisible) => {
     isVisible.value = newVisible;
-    if (newVisible) {
-      startAutoClose();
-    } else if (timeoutId) {
-      clearTimeout(timeoutId);
-      timeoutId = null;
-    }
   },
   { immediate: true },
 );
-
-// Cleanup on unmount
-onUnmounted(() => {
-  if (timeoutId) {
-    clearTimeout(timeoutId);
-  }
-});
 
 // Toast styling based on type
 const toastClasses = computed(() => {
@@ -106,54 +82,20 @@ const positionClasses = computed(() => {
   }
 });
 
-// Animation based on position
-const initialAnimation = computed(() => {
-  switch (props.position) {
-    case "top-left":
-    case "top-center":
-    case "top-right":
-      return { opacity: 0, y: -20, scale: 0.95 };
-    case "bottom-left":
-    case "bottom-center":
-    case "bottom-right":
-      return { opacity: 0, y: 20, scale: 0.95 };
-    default:
-      return { opacity: 0, y: -20, x: 20, scale: 0.95 };
-  }
-});
-
-const exitAnimation = computed(() => {
-  switch (props.position) {
-    case "top-left":
-    case "top-center":
-    case "top-right":
-      return { opacity: 0, y: -20, scale: 0.95 };
-    case "bottom-left":
-    case "bottom-center":
-    case "bottom-right":
-      return { opacity: 0, y: 20, scale: 0.95 };
-    default:
-      return { opacity: 0, y: -20, x: 20, scale: 0.95 };
-  }
-});
+// Animation states for entry/exit
+const isExiting = ref(false);
 </script>
 
 <template>
-  <Teleport to="body">
-    <motion.div
-      v-if="isVisible"
-      :initial="initialAnimation"
-      :animate="{ opacity: 1, y: 0, x: 0, scale: 1 }"
-      :exit="exitAnimation"
-      :transition="{
-        type: 'spring',
-        stiffness: 400,
-        damping: 25,
-        mass: 0.8,
-      }"
-      class="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 fixed z-50"
-      :class="[toastClasses, positionClasses]"
-    >
+  <div
+    v-if="isVisible"
+    class="pointer-events-auto w-full max-w-md overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 fixed z-50 transition-all duration-300 ease-out"
+    :class="[
+      toastClasses, 
+      positionClasses,
+      isExiting ? 'opacity-0 scale-95 translate-y-2' : 'opacity-100 scale-100 translate-y-0'
+    ]"
+  >
       <div class="p-4">
         <div class="flex items-start">
           <div class="flex-shrink-0">
@@ -231,11 +173,9 @@ const exitAnimation = computed(() => {
             </p>
           </div>
           <div class="ml-4 flex flex-shrink-0">
-            <motion.button
+            <button
               type="button"
-              :while-hover="{ scale: 1.1 }"
-              :while-tap="{ scale: 0.95 }"
-              class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-transform duration-150 hover:scale-110 active:scale-95"
               @click="close"
             >
               <span class="sr-only">Close</span>
@@ -249,10 +189,9 @@ const exitAnimation = computed(() => {
                   d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"
                 />
               </svg>
-            </motion.button>
+            </button>
           </div>
         </div>
       </div>
-    </motion.div>
-  </Teleport>
+  </div>
 </template>

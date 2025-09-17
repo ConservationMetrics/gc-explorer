@@ -49,7 +49,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
       const tableName = to.path.split("/").pop()!;
       const permission: RouteLevelPermission =
         tableConfig?.[tableName]?.routeLevelPermission ?? "member";
-
       // Public access: no login needed
       if (permission === "anyone") return;
 
@@ -62,7 +61,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
       // Authenticated from here on
       const typedUser = user.value as User;
       const userRole = typedUser?.userRole ?? Role.Viewer;
-
       // Role-based access control
       switch (permission) {
         case "member":

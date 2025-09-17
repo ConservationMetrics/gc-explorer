@@ -112,16 +112,14 @@ const shouldShowConfigLink = computed(() => {
 });
 
 // Handle unauthorized access toast
-onMounted(() => {
+onMounted(async () => {
   if (route.query.reason === "unauthorized") {
     showErrorToast(
       "Access Denied",
       "You are not authorized to view the page you were trying to access. Please contact a Guardian Connector administrator to change your role in order to view this page.",
-      8000, // Show for 8 seconds to give user time to read
-      "top-center", // Position at top center for better visibility
+      8000, 
+      "top-center",
     );
-
-    // Clean up the URL by removing the query parameter
     router.replace({ path: route.path, query: {} });
   }
 });

@@ -28,7 +28,6 @@
     "lucide-vue-next": "^0.516.0",
     "mapbox-gl": "^3.9.4",
     "mapbox-gl-ruler-control": "^0.0.2",
-    "motion-v": "^1.7.1",
     "murmurhash": "^2.0.1",
     "nuxt": "^3.17.5",
     "nuxt-auth-utils": "^0.3.6",
