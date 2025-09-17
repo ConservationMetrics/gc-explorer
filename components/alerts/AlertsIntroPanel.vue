@@ -60,7 +60,7 @@ const emit = defineEmits(["dateRangeChanged"]);
             v-if="props.alertsStatistics.typeOfAlerts?.length"
             class="flex items-center gap-2"
           >
-            <span class="font-medium text-sm">{{ $t("typeOfAlerts") }}:</span>
+            <span class="font-bold text-sm">{{ $t("typeOfAlerts") }}:</span>
             <span class="text-sm text-muted-foreground">{{
               props.alertsStatistics.typeOfAlerts.join(", ")
             }}</span>
@@ -69,13 +69,13 @@ const emit = defineEmits(["dateRangeChanged"]);
             v-if="props.alertsStatistics.dataProviders?.length"
             class="flex items-center gap-2"
           >
-            <span class="font-medium text-sm">{{ $t("dataProviders") }}:</span>
+            <span class="font-bold text-sm">{{ $t("dataProviders") }}:</span>
             <span class="text-sm text-muted-foreground">{{
               props.alertsStatistics.dataProviders.join(", ")
             }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="font-medium text-sm"
+            <span class="font-bold text-sm"
               >{{ $t("alertDetectionRange") }}:</span
             >
             <span class="text-sm text-muted-foreground">{{
@@ -83,15 +83,13 @@ const emit = defineEmits(["dateRangeChanged"]);
             }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="font-medium text-sm"
-              >{{ $t("recentAlertsDate") }}:</span
-            >
+            <span class="font-bold text-sm">{{ $t("recentAlertsDate") }}:</span>
             <span class="text-sm text-muted-foreground">{{
               props.alertsStatistics.recentAlertsDate
             }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="font-medium text-sm"
+            <span class="font-bold text-sm"
               >{{ $t("recentAlertsNumber") }}:</span
             >
             <span class="text-sm text-muted-foreground">{{
@@ -99,7 +97,7 @@ const emit = defineEmits(["dateRangeChanged"]);
             }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="font-medium text-sm">{{ $t("alertsTotal") }}:</span>
+            <span class="font-bold text-sm">{{ $t("alertsTotal") }}:</span>
             <span class="text-sm text-muted-foreground">{{
               props.alertsStatistics.alertsTotal
             }}</span>
@@ -110,7 +108,7 @@ const emit = defineEmits(["dateRangeChanged"]);
             "
             class="flex items-center gap-2"
           >
-            <span class="font-medium text-sm">{{ $t("hectaresTotal") }}:</span>
+            <span class="font-bold text-sm">{{ $t("hectaresTotal") }}:</span>
             <span class="text-sm text-muted-foreground">{{
               props.alertsStatistics.hectaresTotal
             }}</span>

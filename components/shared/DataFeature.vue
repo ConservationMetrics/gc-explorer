@@ -100,7 +100,7 @@ const setMediaBasePath = () => {
           >
             <!-- Translate keys only when it's an alert to avoid performance issues with translating all keys -->
             <div class="flex items-center gap-2">
-              <span class="text-sm font-medium" data-testid="field-label">
+              <span class="text-sm font-bold" data-testid="field-label">
                 {{
                   isAlert
                     ? $t(key).charAt(0).toUpperCase() + $t(key).slice(1)
