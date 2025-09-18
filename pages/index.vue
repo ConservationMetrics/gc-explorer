@@ -10,6 +10,10 @@ const {
 } = useRuntimeConfig();
 
 const { loggedIn, user } = useUserSession();
+const { error: showErrorToast } = useToast();
+const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 
 const headers = {
   "x-api-key": appApiKey,
@@ -106,6 +110,19 @@ const shouldShowConfigLink = computed(() => {
   }
 
   return false;
+});
+
+// Handle unauthorized access toast
+onMounted(async () => {
+  if (route.query.reason === "unauthorized") {
+    showErrorToast(
+      t("accessDenied"),
+      t("accessDeniedMessage"),
+      8000,
+      "top-center",
+    );
+    router.replace({ path: route.path, query: {} });
+  }
 });
 
 useHead({
