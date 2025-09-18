@@ -115,12 +115,15 @@ const shouldShowConfigLink = computed(() => {
 // Handle unauthorized access toast
 onMounted(async () => {
   if (route.query.reason === "unauthorized") {
-    showErrorToast(
-      t("accessDenied"),
-      t("accessDeniedMessage"),
-      8000,
-      "top-center",
-    );
+    // Small delay to ensure locale is loaded from session storage
+    setTimeout(() => {
+      showErrorToast(
+        t("accessDenied"),
+        t("accessDeniedMessage"),
+        8000,
+        "top-center",
+      );
+    }, 200);
     router.replace({ path: route.path, query: {} });
   }
 });

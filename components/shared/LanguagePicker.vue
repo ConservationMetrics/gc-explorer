@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import type { SupportedLocale } from "@/types/types";
 
 const { locale, locales, setLocale } = useI18n();
 
@@ -15,8 +16,17 @@ const currentLocaleName = computed(() => {
 
 const dropdownOpen = ref(false);
 
+// Load locale from session storage on mount
+onMounted(() => {
+  const savedLocale = sessionStorage.getItem("locale");
+  if (savedLocale && locales.value.some((lang) => lang.code === savedLocale)) {
+    setLocale(savedLocale as SupportedLocale);
+  }
+});
+
 const changeLocale = (locale: { code: string }): void => {
-  setLocale(locale.code as "en" | "es" | "pt" | "nl");
+  setLocale(locale.code as SupportedLocale);
+  sessionStorage.setItem("locale", locale.code);
   dropdownOpen.value = false;
 };
 </script>
