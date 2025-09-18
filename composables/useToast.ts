@@ -1,17 +1,4 @@
-export interface ToastOptions {
-  type?: "success" | "error" | "warning" | "info";
-  title: string;
-  message?: string;
-  duration?: number;
-  position?:
-    | "top-left"
-    | "top-center"
-    | "top-right"
-    | "bottom-left"
-    | "bottom-center"
-    | "bottom-right";
-}
-
+import type { ToastOptions } from "@/types/types";
 export interface Toast extends ToastOptions {
   id: string;
 }

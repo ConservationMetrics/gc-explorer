@@ -98,6 +98,8 @@
   "resetDashboard": "Restablecer el tablero",
   "restrictView": "¿Desea restringir esta vista?",
   "restrictViewDescription": "Cuando está restringida, solo los usuarios Miembro y Administrador pueden acceder a esta vista. Los usuarios Visor serán redirigidos a la página principal.",
+  "accessDenied": "Acceso Denegado",
+  "accessDeniedMessage": "No está autorizado para ver la página a la que intentaba acceder. Por favor, contacte a un administrador de Guardian Connector para cambiar su rol y poder ver esta página.",
   "accessPermissions": "Permisos de Acceso",
   "satelliteUsedForDetection": "Satélite utilizado para la detección",
   "selectAlertDateRange": "Seleccione un rango de fechas de alerta",

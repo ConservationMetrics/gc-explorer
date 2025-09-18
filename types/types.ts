@@ -152,3 +152,20 @@ export interface User {
   roles?: Array<{ id: string; name: string; description: string }>;
   userRole?: Role;
 }
+export interface ToastEmits {
+  (e: "close"): void;
+}
+export interface ToastOptions {
+  type?: "success" | "error" | "warning" | "info";
+  title: string;
+  message?: string;
+  duration?: number;
+  visible?: boolean;
+  position?:
+    | "top-left"
+    | "top-center"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-center"
+    | "bottom-right";
+}

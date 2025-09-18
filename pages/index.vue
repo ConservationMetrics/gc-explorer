@@ -11,6 +11,7 @@ const {
 
 const { loggedIn, user } = useUserSession();
 const { error: showErrorToast } = useToast();
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
@@ -115,8 +116,8 @@ const shouldShowConfigLink = computed(() => {
 onMounted(async () => {
   if (route.query.reason === "unauthorized") {
     showErrorToast(
-      "Access Denied",
-      "You are not authorized to view the page you were trying to access. Please contact a Guardian Connector administrator to change your role in order to view this page.",
+      t("accessDenied"),
+      t("accessDeniedMessage"),
       8000,
       "top-center",
     );

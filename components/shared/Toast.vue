@@ -1,24 +1,6 @@
 <script setup lang="ts">
-interface ToastProps {
-  type?: "success" | "error" | "warning" | "info";
-  title: string;
-  message?: string;
-  duration?: number;
-  visible?: boolean;
-  position?:
-    | "top-left"
-    | "top-center"
-    | "top-right"
-    | "bottom-left"
-    | "bottom-center"
-    | "bottom-right";
-}
-
-interface ToastEmits {
-  (e: "close"): void;
-}
-
-const props = withDefaults(defineProps<ToastProps>(), {
+import type { ToastEmits, ToastOptions } from "@/types/types";
+const props = withDefaults(defineProps<ToastOptions>(), {
   type: "info",
   duration: 5000,
   visible: false,
