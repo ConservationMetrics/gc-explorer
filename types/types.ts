@@ -147,6 +147,8 @@ export const Role = {
 
 export type Role = (typeof Role)[keyof typeof Role];
 
+export type SupportedLocale = "en" | "es" | "pt" | "nl";
+
 export interface User {
   auth0: string;
   roles?: Array<{ id: string; name: string; description: string }>;
