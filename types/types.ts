@@ -171,3 +171,62 @@ export interface ToastOptions {
     | "bottom-center"
     | "bottom-right";
 }
+
+// Annotated Collections Types
+export interface AnnotatedCollection {
+  id: string;
+  name: string;
+  description?: string;
+  collection_type: 'incident' | 'wildlife_sighting' | 'research_plot';
+  status: 'active' | 'archived' | 'draft';
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  is_active: boolean;
+  metadata: Record<string, string | number | boolean>;
+}
+
+export interface Incident {
+  collection_id: string;
+  incident_type?: string;
+  responsible_party?: string;
+  impact_description?: string;
+  supporting_evidence?: {
+    photos?: string[];
+    documents?: string[];
+    testimonies?: string[];
+  };
+}
+
+export interface WildlifeSighting {
+  collection_id: string;
+  species?: string;
+  observation_type?: 'camera_trap' | 'direct_observation' | 'track' | 'scat' | 'call';
+  behavior_notes?: string;
+  habitat_type?: string;
+  weather_conditions?: string;
+  observer_confidence?: 'high' | 'medium' | 'low';
+}
+
+export interface CollectionEntry {
+  id: string;
+  collection_id: string;
+  source_table: string;
+  source_id: string;
+  source_data: Record<string, string | number | boolean>;
+  added_by: string;
+  added_at: string;
+  notes?: string;
+}
+
+export interface CollectionStatistics {
+  total_entries: number;
+  source_tables: string[];
+  date_range: {
+    start: string;
+    end: string;
+  };
+  spatial_extent?: {
+    bounds: [number, number, number, number]; // [minLng, minLat, maxLng, maxLat]
+  };
+}
