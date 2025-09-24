@@ -26,7 +26,9 @@ import type {
   AlertsData,
   AlertsStatistics,
   AllowedFileExtensions,
+  AnnotatedCollection,
   Basemap,
+  CollectionEntry,
   Dataset,
   MapLegendItem,
 } from "@/types/types";
@@ -65,10 +67,491 @@ const showIntroPanel = ref(true);
 const showSidebar = ref(true);
 const showSlider = ref(false);
 
+// Incidents state
+const incidents = ref<AnnotatedCollection[]>([]);
+const showIncidents = ref(false);
+const showIncidentsSidebar = ref(false);
+const selectedIncident = ref<AnnotatedCollection | null>(null);
+const selectedIncidentSources = ref<CollectionEntry[]>([]);
+const highlightedSourceIds = ref<Set<string>>(new Set());
+const selectedSources = ref<Set<string>>(new Set());
+const isMultiSelectMode = ref(false);
+const _boundingBox = ref<mapboxgl.LngLatBounds | null>(null);
+const isCreatingIncident = ref(false);
+const newIncident = ref({
+  name: '',
+  description: '',
+  incident_type: '',
+  responsible_party: '',
+  impact_description: '',
+  supporting_evidence: {}
+});
+
 const route = useRoute();
 const router = useRouter();
 
 const isMapeo = ref(false);
+
+// ========================
+// === Incidents API ====
+// ========================
+
+/**
+ * Fetches all incidents from the API and updates the incidents state
+ * @async
+ * @function fetchIncidents
+ * @returns {Promise<void>} Promise that resolves when incidents are fetched
+ */
+const fetchIncidents = async () => {
+  try {
+    const response = await $fetch('/api/incidents') as { incidents: AnnotatedCollection[] };
+    incidents.value = response.incidents || [];
+  } catch (error) {
+    console.error('Error fetching incidents:', error);
+  }
+};
+
+/**
+ * Fetches detailed incident data including sources and updates component state
+ * @async
+ * @function fetchIncidentDetails
+ * @param {string} incidentId - The unique identifier of the incident
+ * @returns {Promise<{collection: AnnotatedCollection, entries: CollectionEntry[]} | null>} Promise that resolves with incident details or null if error
+ */
+const fetchIncidentDetails = async (incidentId: string) => {
+  try {
+    const response = await $fetch(`/api/collections/${incidentId}`) as {
+      collection: AnnotatedCollection;
+      entries: CollectionEntry[];
+    };
+    selectedIncident.value = response.collection;
+    selectedIncidentSources.value = response.entries || [];
+    return response;
+  } catch (error) {
+    console.error('Error fetching incident details:', error);
+    return null;
+  }
+};
+
+/**
+ * Creates a new incident with selected sources and refreshes the incidents list
+ * @async
+ * @function createIncident
+ * @param {Object} incidentData - The incident data to create
+ * @param {string} incidentData.name - The name of the incident
+ * @param {string} [incidentData.description] - Optional description of the incident
+ * @param {string} [incidentData.incident_type] - Optional type of incident (deforestation, mining, etc.)
+ * @param {string} [incidentData.responsible_party] - Optional responsible party
+ * @param {string} [incidentData.impact_description] - Optional impact description
+ * @param {Record<string, unknown>} [incidentData.supporting_evidence] - Optional supporting evidence
+ * @returns {Promise<any>} Promise that resolves with the created incident response
+ * @throws {Error} Throws error if incident creation fails
+ */
+const createIncident = async (incidentData: {
+  name: string;
+  description?: string;
+  incident_type?: string;
+  responsible_party?: string;
+  impact_description?: string;
+  supporting_evidence?: Record<string, unknown>;
+}) => {
+  try {
+    const sources = Array.from(selectedSources.value).map(sourceId => ({
+      source_table: 'fake_alerts', // TODO: Determine table dynamically
+      source_id: sourceId,
+      notes: 'Selected from map'
+    }));
+
+    const response = await $fetch('/api/incidents', {
+      method: 'POST',
+      body: {
+        ...incidentData,
+        entries: sources
+      }
+    });
+
+    // Refresh incidents list
+    await fetchIncidents();
+    
+    // Clear selected sources
+    selectedSources.value.clear();
+    isCreatingIncident.value = false;
+    
+    return response;
+  } catch (error) {
+    console.error('Error creating incident:', error);
+    throw error;
+  }
+};
+
+// ========================
+// === Incidents UI ====
+// ========================
+
+/**
+ * Toggles the incidents view and highlights incident sources on the map
+ * @async
+ * @function toggleIncidentsView
+ * @returns {Promise<void>} Promise that resolves when incidents view is toggled
+ */
+const toggleIncidentsView = async () => {
+  showIncidents.value = !showIncidents.value;
+  
+  if (showIncidents.value) {
+    // Show incidents sidebar
+    showIncidentsSidebar.value = true;
+    
+    // Highlight all incident sources
+    await highlightAllIncidentSources();
+  } else {
+    // Hide incidents sidebar
+    showIncidentsSidebar.value = false;
+    selectedIncident.value = null;
+    selectedIncidentSources.value = [];
+    
+    // Clear all highlighting
+    clearAllHighlighting();
+  }
+};
+
+/**
+ * Highlights all sources from all incidents on the map
+ * @async
+ * @function highlightAllIncidentSources
+ * @returns {Promise<void>} Promise that resolves when all incident sources are highlighted
+ */
+const highlightAllIncidentSources = async () => {
+  highlightedSourceIds.value.clear();
+  
+  // Collect all source IDs from all incidents
+  for (const incident of incidents.value) {
+    const details = await fetchIncidentDetails(incident.id);
+    if (details?.entries) {
+      details.entries.forEach((entry: CollectionEntry) => {
+        highlightedSourceIds.value.add(entry.source_id);
+      });
+    }
+  }
+  
+  // Apply highlighting to map
+  applySourceHighlighting();
+};
+
+/**
+ * Highlights sources for a specific incident and updates the selected incident state
+ * @async
+ * @function highlightIncidentSources
+ * @param {AnnotatedCollection} incident - The incident to highlight sources for
+ * @returns {Promise<void>} Promise that resolves when incident sources are highlighted
+ */
+const highlightIncidentSources = async (incident: AnnotatedCollection) => {
+  selectedIncident.value = incident;
+  const details = await fetchIncidentDetails(incident.id);
+  
+  if (details?.entries) {
+    selectedIncidentSources.value = details.entries;
+    highlightedSourceIds.value.clear();
+    
+    details.entries.forEach((entry: CollectionEntry) => {
+      highlightedSourceIds.value.add(entry.source_id);
+    });
+    
+    applySourceHighlighting();
+  }
+};
+
+/**
+ * Applies yellow highlighting to sources on the map using Mapbox filters
+ * @function applySourceHighlighting
+ * @returns {void}
+ */
+const applySourceHighlighting = () => {
+  if (!map.value) return;
+  
+  // Update all alert layers to highlight selected sources
+  const layers = [
+    'most-recent-alerts-polygon',
+    'most-recent-alerts-linestring', 
+    'most-recent-alerts-point',
+    'previous-alerts-polygon',
+    'previous-alerts-linestring',
+    'previous-alerts-point'
+  ];
+  
+  layers.forEach(layerId => {
+    if (map.value.getLayer(layerId)) {
+      // Set filter to highlight only selected sources
+      const sourceIds = Array.from(highlightedSourceIds.value);
+      if (sourceIds.length > 0) {
+        map.value.setFilter(layerId, [
+          'in',
+          ['get', '_id'],
+          ['literal', sourceIds]
+        ]);
+      } else {
+        map.value.setFilter(layerId, null);
+      }
+    }
+  });
+};
+
+/**
+ * Clears all source highlighting and resets map layer filters
+ * @function clearAllHighlighting
+ * @returns {void}
+ */
+const clearAllHighlighting = () => {
+  highlightedSourceIds.value.clear();
+  selectedSources.value.clear();
+  
+  if (!map.value) return;
+  
+  // Reset all layer filters
+  const layers = [
+    'most-recent-alerts-polygon',
+    'most-recent-alerts-linestring', 
+    'most-recent-alerts-point',
+    'previous-alerts-polygon',
+    'previous-alerts-linestring',
+    'previous-alerts-point'
+  ];
+  
+  layers.forEach(layerId => {
+    if (map.value.getLayer(layerId)) {
+      map.value.setFilter(layerId, null);
+    }
+  });
+};
+
+// ========================
+// === Multi-Select ====
+// ========================
+
+/**
+ * Starts creating a new incident with multi-select mode enabled
+ * @function startCreatingIncident
+ * @returns {void}
+ */
+const startCreatingIncident = () => {
+  isCreatingIncident.value = true;
+  isMultiSelectMode.value = true;
+  selectedSources.value.clear();
+  
+  // Add event listeners for multi-select
+  setupMultiSelectListeners();
+  
+  // Show instructions
+  console.log('Multi-select mode enabled. Hold Ctrl and click features to select them, or drag to create a bounding box.');
+};
+
+/**
+ * Sets up event listeners for multi-select functionality (Ctrl+click and bounding box)
+ * @function setupMultiSelectListeners
+ * @returns {void}
+ */
+const setupMultiSelectListeners = () => {
+  if (!map.value) return;
+  
+  // Enable box selection
+  map.value.boxZoom.enable();
+  
+  // Add Ctrl+click handler
+  map.value.on('click', handleMultiSelectClick);
+  
+  // Add box selection handler
+  map.value.on('boxzoomend', handleBoxSelection);
+};
+
+/**
+ * Handles Ctrl+click events for multi-select functionality
+ * @function handleMultiSelectClick
+ * @param {MapMouseEvent} e - The map mouse event
+ * @returns {void}
+ */
+const handleMultiSelectClick = (e: MapMouseEvent) => {
+  if (!isMultiSelectMode.value || !e.originalEvent.ctrlKey) return;
+  
+  e.preventDefault();
+  
+  // Query features at click point
+  const features = map.value.queryRenderedFeatures(e.point, {
+    layers: [
+      'most-recent-alerts-polygon',
+      'most-recent-alerts-linestring', 
+      'most-recent-alerts-point',
+      'previous-alerts-polygon',
+      'previous-alerts-linestring',
+      'previous-alerts-point'
+    ]
+  });
+  
+  if (features.length > 0) {
+    const feature = features[0];
+    const sourceId = feature.properties?._id || feature.properties?.id;
+    
+    if (sourceId) {
+      if (selectedSources.value.has(sourceId)) {
+        selectedSources.value.delete(sourceId);
+      } else {
+        selectedSources.value.add(sourceId);
+      }
+      
+      // Update visual feedback
+      updateSelectedSourcesHighlighting();
+    }
+  }
+};
+
+/**
+ * Handles bounding box selection for multi-select functionality
+ * @function handleBoxSelection
+ * @param {{ boxZoomBounds: mapboxgl.LngLatBounds }} e - Event object containing bounding box bounds
+ * @returns {void}
+ */
+const handleBoxSelection = (e: { boxZoomBounds: mapboxgl.LngLatBounds }) => {
+  if (!isMultiSelectMode.value) return;
+  
+  const bbox = e.boxZoomBounds;
+  
+  // Query features within bounding box
+  const features = map.value.queryRenderedFeatures([
+    [bbox.getWest(), bbox.getSouth()],
+    [bbox.getEast(), bbox.getNorth()]
+  ], {
+    layers: [
+      'most-recent-alerts-polygon',
+      'most-recent-alerts-linestring', 
+      'most-recent-alerts-point',
+      'previous-alerts-polygon',
+      'previous-alerts-linestring',
+      'previous-alerts-point'
+    ]
+  });
+  
+  // Add all features to selection
+  features.forEach((feature: { properties?: { _id?: string; id?: string } }) => {
+    const sourceId = feature.properties?._id || feature.properties?.id;
+    if (sourceId) {
+      selectedSources.value.add(sourceId);
+    }
+  });
+  
+  // Update visual feedback
+  updateSelectedSourcesHighlighting();
+  
+  // Disable box zoom after selection
+  map.value.boxZoom.disable();
+};
+
+/**
+ * Updates highlighting for selected sources on the map
+ * @function updateSelectedSourcesHighlighting
+ * @returns {void}
+ */
+const updateSelectedSourcesHighlighting = () => {
+  if (!map.value) return;
+  
+  const sourceIds = Array.from(selectedSources.value);
+  
+  // Update all alert layers to highlight selected sources
+  const layers = [
+    'most-recent-alerts-polygon',
+    'most-recent-alerts-linestring', 
+    'most-recent-alerts-point',
+    'previous-alerts-polygon',
+    'previous-alerts-linestring',
+    'previous-alerts-point'
+  ];
+  
+  layers.forEach(layerId => {
+    if (map.value.getLayer(layerId)) {
+      if (sourceIds.length > 0) {
+        map.value.setFilter(layerId, [
+          'in',
+          ['get', '_id'],
+          ['literal', sourceIds]
+        ]);
+      } else {
+        map.value.setFilter(layerId, null);
+      }
+    }
+  });
+};
+
+/**
+ * Cleans up multi-select event listeners and disables box zoom
+ * @function cleanupMultiSelectListeners
+ * @returns {void}
+ */
+const cleanupMultiSelectListeners = () => {
+  if (!map.value) return;
+  
+  map.value.off('click', handleMultiSelectClick);
+  map.value.off('boxzoomend', handleBoxSelection);
+  map.value.boxZoom.disable();
+};
+
+// ========================
+// === Incident Creation ====
+// ========================
+
+/**
+ * Submits the incident creation form and handles the creation process
+ * @async
+ * @function submitIncident
+ * @returns {Promise<void>} Promise that resolves when incident is created
+ * @throws {Error} Throws error if incident creation fails
+ */
+const submitIncident = async () => {
+  try {
+    await createIncident(newIncident.value);
+    
+    // Reset form
+    resetIncidentForm();
+    
+    // Clean up multi-select
+    cleanupMultiSelectListeners();
+    isMultiSelectMode.value = false;
+    
+    // Show success message
+    console.log('Incident created successfully!');
+    
+  } catch (error) {
+    console.error('Error creating incident:', error);
+    // TODO: Show error message to user
+  }
+};
+
+/**
+ * Cancels incident creation and resets all related state
+ * @function cancelIncidentCreation
+ * @returns {void}
+ */
+const cancelIncidentCreation = () => {
+  resetIncidentForm();
+  cleanupMultiSelectListeners();
+  isMultiSelectMode.value = false;
+  isCreatingIncident.value = false;
+  clearAllHighlighting();
+};
+
+/**
+ * Resets the incident creation form and clears selected sources
+ * @function resetIncidentForm
+ * @returns {void}
+ */
+const resetIncidentForm = () => {
+  newIncident.value = {
+    name: '',
+    description: '',
+    incident_type: '',
+    responsible_party: '',
+    impact_description: '',
+    supporting_evidence: {}
+  };
+  selectedSources.value.clear();
+  isCreatingIncident.value = false;
+};
 
 /**
  * Selects and zooms to an alert feature based on its ID
@@ -185,7 +668,10 @@ const selectInitialMapeoFeature = (mapeoDocId: string) => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
+  // Fetch incidents on load
+  await fetchIncidents();
+  
   mapboxgl.accessToken = props.mapboxAccessToken;
   map.value = new mapboxgl.Map({
     container: "map",
@@ -1341,6 +1827,9 @@ const calculateLineStringCentroid = (coordinates: number[][]) => {
 };
 
 onBeforeUnmount(() => {
+  // Clean up multi-select listeners
+  cleanupMultiSelectListeners();
+  
   if (map.value) {
     map.value.remove();
   }
@@ -1356,6 +1845,13 @@ onBeforeUnmount(() => {
       @click="resetToInitialState"
     >
       {{ $t("resetDashboard") }}
+    </button>
+    <button
+      class="incidents-button bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+      :class="{ 'bg-green-700': showIncidents }"
+      @click="toggleIncidentsView"
+    >
+      {{ showIncidents ? 'Hide Incidents' : 'View Incidents' }}
     </button>
     <ViewSidebar
       :alerts-statistics="alertsStatistics"
@@ -1391,6 +1887,163 @@ onBeforeUnmount(() => {
       :planet-api-key="planetApiKey"
       @basemap-selected="handleBasemapChange"
     />
+    
+    <!-- Incidents Right Sidebar -->
+    <div
+      v-if="showIncidentsSidebar"
+      class="incidents-sidebar"
+    >
+      <div class="incidents-header">
+        <h3>Incidents</h3>
+        <button
+          class="close-button"
+          @click="showIncidentsSidebar = false; showIncidents = false; clearAllHighlighting()"
+        >
+          ×
+        </button>
+      </div>
+      
+      <div class="incidents-content">
+        <!-- Create New Incident Button -->
+        <button
+          v-if="!isCreatingIncident"
+          class="create-incident-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 w-full"
+          @click="startCreatingIncident"
+        >
+          Create New Incident
+        </button>
+        
+        <!-- Incident Creation Form -->
+        <div
+          v-if="isCreatingIncident"
+          class="incident-creation-form"
+        >
+          <h4>Create New Incident</h4>
+          <p class="selection-info">
+            Selected Sources: {{ selectedSources.size }}
+            <br />
+            <small>Hold Ctrl and click features to select them, or drag to create a bounding box.</small>
+          </p>
+          
+          <form @submit.prevent="submitIncident">
+            <div class="form-group">
+              <label for="incident-name">Incident Name *</label>
+              <input
+                id="incident-name"
+                v-model="newIncident.name"
+                type="text"
+                required
+                class="form-input"
+                placeholder="Enter incident name"
+              />
+            </div>
+            
+            <div class="form-group">
+              <label for="incident-description">Description</label>
+              <textarea
+                id="incident-description"
+                v-model="newIncident.description"
+                class="form-textarea"
+                placeholder="Enter incident description"
+                rows="3"
+              ></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label for="incident-type">Incident Type</label>
+              <select
+                id="incident-type"
+                v-model="newIncident.incident_type"
+                class="form-select"
+              >
+                <option value="">Select type</option>
+                <option value="deforestation">Deforestation</option>
+                <option value="mining">Mining</option>
+                <option value="illegal_activity">Illegal Activity</option>
+                <option value="fire">Fire</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="responsible-party">Responsible Party</label>
+              <input
+                id="responsible-party"
+                v-model="newIncident.responsible_party"
+                type="text"
+                class="form-input"
+                placeholder="Enter responsible party"
+              />
+            </div>
+            
+            <div class="form-group">
+              <label for="impact-description">Impact Description</label>
+              <textarea
+                id="impact-description"
+                v-model="newIncident.impact_description"
+                class="form-textarea"
+                placeholder="Describe the impact"
+                rows="3"
+              ></textarea>
+            </div>
+            
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn-cancel"
+                @click="cancelIncidentCreation"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="btn-save"
+                :disabled="selectedSources.size === 0 || !newIncident.name"
+              >
+                Save Incident
+              </button>
+            </div>
+          </form>
+        </div>
+        
+        <!-- Incidents List -->
+        <div class="incidents-list">
+          <div
+            v-for="incident in incidents"
+            :key="incident.id"
+            class="incident-item"
+            :class="{ 'selected': selectedIncident?.id === incident.id }"
+            @click="highlightIncidentSources(incident)"
+          >
+            <h4>{{ incident.name }}</h4>
+            <p class="incident-description">{{ incident.description }}</p>
+            <div class="incident-meta">
+              <span class="incident-type">{{ incident.metadata?.incident_type || 'Unknown' }}</span>
+              <span class="incident-date">{{ new Date(incident.created_at).toLocaleDateString() }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Selected Incident Details -->
+        <div
+          v-if="selectedIncident"
+          class="selected-incident-details"
+        >
+          <h4>Sources ({{ selectedIncidentSources.length }})</h4>
+          <div class="sources-list">
+            <div
+              v-for="source in selectedIncidentSources"
+              :key="source.id"
+              class="source-item"
+            >
+              <span class="source-id">{{ source.source_id }}</span>
+              <span class="source-table">{{ source.source_table }}</span>
+              <p v-if="source.notes" class="source-notes">{{ source.notes }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -1432,5 +2085,258 @@ body {
   top: 10px;
   left: 10px;
   z-index: 10;
+}
+
+.incidents-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+}
+
+.incidents-sidebar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 350px;
+  height: 100vh;
+  background: white;
+  border-left: 1px solid #ddd;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow-y: auto;
+  transform: translateX(0);
+  transition: transform 0.3s ease-in-out;
+}
+
+.incidents-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+  background: #f8f9fa;
+}
+
+.incidents-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+.incidents-content {
+  padding: 20px;
+}
+
+.incidents-list {
+  margin-bottom: 20px;
+}
+
+.incident-item {
+  padding: 15px;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.incident-item:hover {
+  border-color: #007bff;
+  background: #f8f9fa;
+}
+
+.incident-item.selected {
+  border-color: #007bff;
+  background: #e3f2fd;
+}
+
+.incident-item h4 {
+  margin: 0 0 8px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.incident-description {
+  margin: 0 0 10px 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.incident-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #888;
+}
+
+.incident-type {
+  background: #e9ecef;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.selected-incident-details {
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.selected-incident-details h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+}
+
+.sources-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.source-item {
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.source-id {
+  font-weight: bold;
+  color: #007bff;
+  display: block;
+}
+
+.source-table {
+  color: #666;
+  font-size: 12px;
+}
+
+.source-notes {
+  margin: 5px 0 0 0;
+  color: #666;
+  font-style: italic;
+  font-size: 12px;
+}
+
+.incident-creation-form {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.incident-creation-form h4 {
+  margin: 0 0 15px 0;
+  color: #333;
+}
+
+.selection-info {
+  background: #e3f2fd;
+  border: 1px solid #bbdefb;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #1976d2;
+}
+
+.selection-info small {
+  color: #666;
+  font-size: 12px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.btn-cancel,
+.btn-save {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-cancel {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background: #5a6268;
+}
+
+.btn-save {
+  background: #28a745;
+  color: white;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: #218838;
+}
+
+.btn-save:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
 }
 </style>
