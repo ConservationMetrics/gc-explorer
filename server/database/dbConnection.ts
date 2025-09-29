@@ -40,7 +40,7 @@ export const setupDatabaseConnection = async (
   if (localDatabase === "test_warehouse") {
     // Use localhost when running locally, database when running in Docker
     dbConnection.host = process.env.CI ? "database" : "localhost";
-    dbConnection.port = process.env.CI ? 5432 : 5433; // Use 5433 for local development
+    dbConnection.port = 5432;
     dbConnection.user = "testuser";
     dbConnection.password = "testpassword";
     dbConnection.database = "test_warehouse";
