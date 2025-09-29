@@ -18,10 +18,15 @@ export const setupDatabaseConnection = async (
     dbPort,
     dbSsl,
   } = getConfig();
-
+  console.log("configDatabase", configDatabase);
+  console.log("database", database);
+  console.log("dbHost", dbHost);
+  console.log("dbUser", dbUser);
+  console.log("dbPassword", dbPassword);
+  console.log("dbPort", dbPort);
+  console.log("dbSsl", dbSsl);
   const localDatabase = isConfigDb ? configDatabase : database;
   console.log(`Setting up database connection to ${localDatabase}...`);
-
   const dbConnection = {
     database: localDatabase,
     user: dbUser,
@@ -31,6 +36,25 @@ export const setupDatabaseConnection = async (
     ssl:
       dbSsl === true && !process.env.CI ? { rejectUnauthorized: false } : false,
   };
+
+  if (localDatabase === "test_warehouse") {
+    // Use localhost when running locally, database when running in Docker
+    dbConnection.host = process.env.CI ? "database" : "localhost";
+    dbConnection.port = process.env.CI ? 5432 : 5433; // Use 5433 for local development
+    dbConnection.user = "testuser";
+    dbConnection.password = "testpassword";
+    dbConnection.database = "test_warehouse";
+    dbConnection.ssl = false;
+  }
+
+  console.log(`Database connection: ${dbConnection.host}`);
+  console.log(`Database connection: ${dbConnection.port}`);
+  console.log(`Database connection: ${dbConnection.user}`);
+  console.log(`Database connection: ${dbConnection.password}`);
+  console.log(`Database connection: ${dbConnection.database}`);
+  console.log(`Database connection: ${dbConnection.ssl}`);
+  console.log(`Database connection: ${dbConnection.ssl}`);
+  console.log(`Database connection: ${dbConnection.ssl}`);
   // Skip config database connection in CI/testing environments
   // The config database (guardianconnector) doesn't exist in our test setup,
   // and since we "hijack" the return values during testing/CI anyway,

@@ -56,7 +56,9 @@ const props = defineProps<{
   mediaBasePathAlerts: string | undefined;
   planetApiKey: string | undefined;
 }>();
-
+const {
+  public: { appApiKey },
+} = useRuntimeConfig();
 const localAlertsData = ref<Feature | AlertsData>(props.alertsData);
 const calculateHectares = ref(false);
 const dateOptions = ref();
@@ -78,10 +80,12 @@ const selectedSources = ref<Set<string>>(new Set());
 const isMultiSelectMode = ref(false);
 const _boundingBox = ref<mapboxgl.LngLatBounds | null>(null);
 const isCreatingIncident = ref(false);
+const isSavingIncident = ref(false);
 const newIncident = ref({
   name: '',
   description: '',
   incident_type: '',
+  custom_incident_type: '',
   responsible_party: '',
   impact_description: '',
   supporting_evidence: {}
@@ -104,7 +108,10 @@ const isMapeo = ref(false);
  */
 const fetchIncidents = async () => {
   try {
-    const response = await $fetch('/api/incidents') as { incidents: AnnotatedCollection[] };
+    const headers = {
+      "x-api-key": appApiKey,
+    };
+    const response = await $fetch('/api/incidents', { headers }) as { incidents: AnnotatedCollection[] };
     incidents.value = response.incidents || [];
   } catch (error) {
     console.error('Error fetching incidents:', error);
@@ -120,7 +127,10 @@ const fetchIncidents = async () => {
  */
 const fetchIncidentDetails = async (incidentId: string) => {
   try {
-    const response = await $fetch(`/api/collections/${incidentId}`) as {
+    const headers = {
+      "x-api-key": appApiKey,
+    };
+    const response = await $fetch(`/api/collections/${incidentId}`, { headers }) as {
       collection: AnnotatedCollection;
       entries: CollectionEntry[];
     };
@@ -151,35 +161,67 @@ const createIncident = async (incidentData: {
   name: string;
   description?: string;
   incident_type?: string;
+  custom_incident_type?: string;
   responsible_party?: string;
   impact_description?: string;
   supporting_evidence?: Record<string, unknown>;
 }) => {
   try {
+    console.log('createIncident called with:', incidentData);
+    
     const sources = Array.from(selectedSources.value).map(sourceId => ({
       source_table: 'fake_alerts', // TODO: Determine table dynamically
       source_id: sourceId,
       notes: 'Selected from map'
     }));
 
+    console.log('Sources to add:', sources);
+
+    // Use custom incident type if "other" is selected
+    const finalIncidentData = {
+      ...incidentData,
+      incident_type: incidentData.incident_type === 'other' && incidentData.custom_incident_type 
+        ? incidentData.custom_incident_type 
+        : incidentData.incident_type
+    };
+    
+    // Remove custom_incident_type from the data sent to API
+    delete finalIncidentData.custom_incident_type;
+    
+    console.log('Final incident data:', finalIncidentData);
+    
+    const headers = {
+      "x-api-key": appApiKey,
+    };
+    
+    console.log('Making API request to /api/incidents with headers:', headers);
+    
     const response = await $fetch('/api/incidents', {
       method: 'POST',
+      headers,
       body: {
-        ...incidentData,
+        ...finalIncidentData,
         entries: sources
       }
     });
 
+    console.log('API response:', response);
+
     // Refresh incidents list
+    console.log('Refreshing incidents list...');
     await fetchIncidents();
     
     // Clear selected sources
     selectedSources.value.clear();
     isCreatingIncident.value = false;
     
+    console.log('Incident creation completed successfully');
     return response;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error creating incident:', error);
+    if (error instanceof Error) {
+      console.error('Error stack:', error.stack);
+    }
     throw error;
   }
 };
@@ -306,21 +348,72 @@ const clearAllHighlighting = () => {
   
   if (!map.value) return;
   
-  // Reset all layer filters
-  const layers = [
+  // Reset all layer filters and visual properties
+  const alertLayers = [
     'most-recent-alerts-polygon',
     'most-recent-alerts-linestring', 
     'most-recent-alerts-point',
+    'most-recent-alerts-symbol',
     'previous-alerts-polygon',
     'previous-alerts-linestring',
-    'previous-alerts-point'
+    'previous-alerts-point',
+    'previous-alerts-symbol'
   ];
   
-  layers.forEach(layerId => {
+  const mapeoLayers = ['mapeo-data'];
+  
+  // Reset alert layers
+  alertLayers.forEach(layerId => {
     if (map.value.getLayer(layerId)) {
       map.value.setFilter(layerId, null);
+      
+      // Reset visual properties to original state
+      if (layerId.includes('polygon')) {
+        const strokeLayerId = `${layerId}-stroke`;
+        if (map.value.getLayer(strokeLayerId)) {
+          map.value.setFilter(strokeLayerId, null);
+          // Reset stroke properties to original
+          map.value.setPaintProperty(strokeLayerId, 'line-color', layerId.includes('most-recent') ? '#FF0000' : '#FD8D3C');
+          map.value.setPaintProperty(strokeLayerId, 'line-width', 2);
+          map.value.setPaintProperty(strokeLayerId, 'line-dasharray', null);
+        }
+      } else if (layerId.includes('linestring')) {
+        // Reset line properties to original
+        map.value.setPaintProperty(layerId, 'line-color', layerId.includes('most-recent') ? '#FF0000' : '#FD8D3C');
+        map.value.setPaintProperty(layerId, 'line-width', 3);
+        map.value.setPaintProperty(layerId, 'line-dasharray', null);
+      } else if (layerId.includes('point')) {
+        // Reset point properties to original
+        map.value.setPaintProperty(layerId, 'circle-color', layerId.includes('most-recent') ? '#FF0000' : '#FD8D3C');
+        map.value.setPaintProperty(layerId, 'circle-radius', 5);
+        map.value.setPaintProperty(layerId, 'circle-stroke-color', null);
+        map.value.setPaintProperty(layerId, 'circle-stroke-width', null);
+      } else if (layerId.includes('symbol')) {
+        // Reset symbol properties to original
+        map.value.setLayoutProperty(layerId, 'icon-size', 0.75); // Reset to original size
+      }
     }
   });
+  
+  // Reset mapeo layers
+  mapeoLayers.forEach(layerId => {
+    if (map.value.getLayer(layerId)) {
+      map.value.setFilter(layerId, null);
+      // Reset mapeo properties to original
+      map.value.setPaintProperty(layerId, 'circle-color', ['get', 'filter-color']);
+      map.value.setPaintProperty(layerId, 'circle-radius', 6);
+      map.value.setPaintProperty(layerId, 'circle-stroke-color', '#fff');
+      map.value.setPaintProperty(layerId, 'circle-stroke-width', 2);
+    }
+  });
+  
+  // Remove warning icon highlight layer
+  if (map.value.getLayer('warning-icon-highlights')) {
+    map.value.removeLayer('warning-icon-highlights');
+  }
+  if (map.value.getSource('warning-icon-highlights')) {
+    map.value.removeSource('warning-icon-highlights');
+  }
 };
 
 // ========================
@@ -334,14 +427,266 @@ const clearAllHighlighting = () => {
  */
 const startCreatingIncident = () => {
   isCreatingIncident.value = true;
-  isMultiSelectMode.value = true;
+  isMultiSelectMode.value = false; // Start with multi-select disabled
   selectedSources.value.clear();
   
-  // Add event listeners for multi-select
-  setupMultiSelectListeners();
-  
   // Show instructions
-  console.log('Multi-select mode enabled. Hold Ctrl and click features to select them, or drag to create a bounding box.');
+  console.log('Incident creation mode enabled. Use the multi-select buttons to select features.');
+};
+
+/**
+ * Toggles multi-select mode on/off
+ * @function toggleMultiSelectMode
+ * @returns {void}
+ */
+const toggleMultiSelectMode = () => {
+  isMultiSelectMode.value = !isMultiSelectMode.value;
+  
+  if (isMultiSelectMode.value) {
+    // Wait for map to be fully loaded before setting up listeners
+    if (map.value && map.value.isStyleLoaded()) {
+      setupMultiSelectListeners();
+      console.log('Multi-select mode enabled. Hold Ctrl and click features to select them.');
+    } else {
+      console.log('Map not ready, waiting for style to load...');
+      // Wait for style to load
+      map.value.once('styledata', () => {
+        setupMultiSelectListeners();
+        console.log('Multi-select mode enabled. Hold Ctrl and click features to select them.');
+      });
+    }
+  } else {
+    cleanupMultiSelectListeners();
+    console.log('Multi-select mode disabled.');
+  }
+};
+
+/**
+ * Enables bounding box selection mode
+ * @function enableBoundingBoxMode
+ * @returns {void}
+ */
+const enableBoundingBoxMode = () => {
+  if (!map.value) return;
+  
+  console.log('Enabling custom bounding box mode...');
+  
+  // Disable default box zoom
+  map.value.boxZoom.disable();
+  
+  // Set up custom bounding box selection
+  setupCustomBoundingBox();
+  
+  console.log('Custom bounding box mode enabled. Hold Ctrl/Cmd and drag to create selection box.');
+};
+
+/**
+ * Sets up custom bounding box selection (Ctrl/Cmd + drag)
+ * @function setupCustomBoundingBox
+ * @returns {void}
+ */
+const setupCustomBoundingBox = () => {
+  if (!map.value) return;
+  
+  const canvas = map.value.getCanvasContainer();
+  let start: mapboxgl.Point | null = null;
+  let current: mapboxgl.Point | null = null;
+  let box: HTMLElement | null = null;
+  
+  // Add CSS for the selection box
+  if (!document.getElementById('bounding-box-styles')) {
+    const style = document.createElement('style');
+    style.id = 'bounding-box-styles';
+    style.textContent = `
+      .boxdraw {
+        background: rgba(56, 135, 190, 0.1);
+        border: 2px solid #3887be;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+        z-index: 1000;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  // Return the xy coordinates of the mouse position
+  const mousePos = (e: MouseEvent) => {
+    const rect = canvas.getBoundingClientRect();
+    return new mapboxgl.Point(
+      e.clientX - rect.left - canvas.clientLeft,
+      e.clientY - rect.top - canvas.clientTop
+    );
+  };
+  
+  const mouseDown = (e: MouseEvent) => {
+    // Continue only if Ctrl/Cmd key is pressed and left mouse button
+    if (!((e.ctrlKey || e.metaKey) && e.button === 0)) return;
+    
+    // Disable default drag panning
+    map.value.dragPan.disable();
+    
+    // Add event listeners
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('keydown', onKeyDown);
+    
+    // Capture the first xy coordinates
+    start = mousePos(e);
+  };
+  
+  const onMouseMove = (e: MouseEvent) => {
+    if (!start) return;
+    
+    // Capture the ongoing xy coordinates
+    current = mousePos(e);
+    
+    // Create the box element if it doesn't exist
+    if (!box) {
+      box = document.createElement('div');
+      box.classList.add('boxdraw');
+      canvas.appendChild(box);
+    }
+    
+    const minX = Math.min(start.x, current.x);
+    const maxX = Math.max(start.x, current.x);
+    const minY = Math.min(start.y, current.y);
+    const maxY = Math.max(start.y, current.y);
+    
+    // Adjust width and xy position of the box element
+    const pos = `translate(${minX}px, ${minY}px)`;
+    box.style.transform = pos;
+    box.style.width = maxX - minX + 'px';
+    box.style.height = maxY - minY + 'px';
+  };
+  
+  const onMouseUp = (e: MouseEvent) => {
+    if (!start) return;
+    
+    // Capture xy coordinates
+    finish([start, mousePos(e)]);
+  };
+  
+  const onKeyDown = (e: KeyboardEvent) => {
+    // If the ESC key is pressed
+    if (e.keyCode === 27) finish();
+  };
+  
+  const finish = (bbox?: [mapboxgl.Point, mapboxgl.Point]) => {
+    // Remove event listeners
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('keydown', onKeyDown);
+    document.removeEventListener('mouseup', onMouseUp);
+    
+    // Remove the box element
+    if (box) {
+      box.parentNode?.removeChild(box);
+      box = null;
+    }
+    
+    // If bbox exists, query features within it
+    if (bbox && map.value) {
+      // Use the same robust layer checking as multi-select
+      const alertLayers = [
+        'most-recent-alerts-polygon',
+        'most-recent-alerts-linestring', 
+        'most-recent-alerts-point',
+        'most-recent-alerts-symbol',
+        'previous-alerts-polygon',
+        'previous-alerts-linestring',
+        'previous-alerts-point',
+        'previous-alerts-symbol'
+      ];
+      
+      const mapeoLayers = ['mapeo-data'];
+      
+      // Query each layer individually with existence checks
+      const allFeatures: { properties?: { alertID?: string; id?: string } }[] = [];
+      
+      // Query alert layers
+      alertLayers.forEach(layerId => {
+        try {
+          if (map.value.getLayer(layerId)) {
+            const features = map.value.queryRenderedFeatures(bbox, {
+              layers: [layerId]
+            });
+            allFeatures.push(...features);
+          }
+        } catch (error) {
+          console.warn(`Error querying layer ${layerId}:`, error);
+        }
+      });
+      
+      // Query mapeo layers
+      mapeoLayers.forEach(layerId => {
+        try {
+          if (map.value.getLayer(layerId)) {
+            const features = map.value.queryRenderedFeatures(bbox, {
+              layers: [layerId]
+            });
+            allFeatures.push(...features);
+          }
+        } catch (error) {
+          console.warn(`Error querying layer ${layerId}:`, error);
+        }
+      });
+      
+      console.log('Features found in bounding box:', allFeatures.length);
+      
+      // Add all features to selection using the same logic as multi-select
+      allFeatures.forEach((feature: { properties?: { alertID?: string; id?: string } }) => {
+        const featureObject = feature.properties;
+        
+        // Use the same logic as other selection methods
+        let sourceId = null;
+        if (featureObject?.alertID) {
+          sourceId = featureObject.alertID;
+        } else if (featureObject?.id) {
+          sourceId = featureObject.id;
+        }
+        
+        if (sourceId) {
+          selectedSources.value.add(sourceId);
+          console.log(`Selected source: ${sourceId}`);
+        }
+      });
+      
+      // Update visual feedback
+      updateSelectedSourcesHighlighting();
+      
+      // Automatically open the incidents sidebar if we have selections
+      if (selectedSources.value.size > 0) {
+        showIncidentsSidebar.value = true;
+        showIncidents.value = true;
+      }
+    }
+    
+    // Re-enable drag panning
+    map.value.dragPan.enable();
+    
+    // Reset variables
+    start = null;
+    current = null;
+  };
+  
+  // Add mousedown event listener to canvas
+  canvas.addEventListener('mousedown', mouseDown, true);
+  
+  // Store cleanup function
+  (map.value as mapboxgl.Map & { _boundingBoxCleanup?: () => void })._boundingBoxCleanup = () => {
+    canvas.removeEventListener('mousedown', mouseDown, true);
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('keydown', onKeyDown);
+    document.removeEventListener('mouseup', onMouseUp);
+    if (box) {
+      box.parentNode?.removeChild(box);
+      box = null;
+    }
+    map.value.dragPan.enable();
+  };
 };
 
 /**
@@ -350,57 +695,42 @@ const startCreatingIncident = () => {
  * @returns {void}
  */
 const setupMultiSelectListeners = () => {
-  if (!map.value) return;
+  if (!map.value || !map.value.isStyleLoaded()) {
+    console.log('Map not ready for multi-select setup');
+    return;
+  }
   
-  // Enable box selection
+  // Check if any alert layers exist before setting up listeners
+  const hasAlertLayers = [
+    'most-recent-alerts-polygon',
+    'most-recent-alerts-linestring', 
+    'most-recent-alerts-point',
+    'previous-alerts-polygon',
+    'previous-alerts-linestring',
+    'previous-alerts-point',
+    'mapeo-data'
+  ].some(layerName => {
+    try {
+      return map.value.getLayer(layerName) !== undefined;
+    } catch {
+      return false;
+    }
+  });
+  
+  if (!hasAlertLayers) {
+    console.log('No alert layers found, multi-select not available');
+    return;
+  }
+  
+  // Enable box selection for bounding box mode
   map.value.boxZoom.enable();
-  
-  // Add Ctrl+click handler
-  map.value.on('click', handleMultiSelectClick);
   
   // Add box selection handler
   map.value.on('boxzoomend', handleBoxSelection);
+  
+  console.log('Multi-select listeners set up - use Ctrl+click or Cmd+click to select features');
 };
 
-/**
- * Handles Ctrl+click events for multi-select functionality
- * @function handleMultiSelectClick
- * @param {MapMouseEvent} e - The map mouse event
- * @returns {void}
- */
-const handleMultiSelectClick = (e: MapMouseEvent) => {
-  if (!isMultiSelectMode.value || !e.originalEvent.ctrlKey) return;
-  
-  e.preventDefault();
-  
-  // Query features at click point
-  const features = map.value.queryRenderedFeatures(e.point, {
-    layers: [
-      'most-recent-alerts-polygon',
-      'most-recent-alerts-linestring', 
-      'most-recent-alerts-point',
-      'previous-alerts-polygon',
-      'previous-alerts-linestring',
-      'previous-alerts-point'
-    ]
-  });
-  
-  if (features.length > 0) {
-    const feature = features[0];
-    const sourceId = feature.properties?._id || feature.properties?.id;
-    
-    if (sourceId) {
-      if (selectedSources.value.has(sourceId)) {
-        selectedSources.value.delete(sourceId);
-      } else {
-        selectedSources.value.add(sourceId);
-      }
-      
-      // Update visual feedback
-      updateSelectedSourcesHighlighting();
-    }
-  }
-};
 
 /**
  * Handles bounding box selection for multi-select functionality
@@ -424,23 +754,119 @@ const handleBoxSelection = (e: { boxZoomBounds: mapboxgl.LngLatBounds }) => {
       'most-recent-alerts-point',
       'previous-alerts-polygon',
       'previous-alerts-linestring',
-      'previous-alerts-point'
+      'previous-alerts-point',
+      'mapeo-data'
     ]
   });
   
   // Add all features to selection
-  features.forEach((feature: { properties?: { _id?: string; id?: string } }) => {
-    const sourceId = feature.properties?._id || feature.properties?.id;
+  features.forEach((feature: { properties?: { alertID?: string; id?: string } }) => {
+    const featureObject = feature.properties;
+    
+    // Use the same logic as selectFeature to get the correct source ID
+    let sourceId = null;
+    if (featureObject?.alertID) {
+      sourceId = featureObject.alertID;
+    } else if (featureObject?.id) {
+      sourceId = featureObject.id;
+    }
+    
     if (sourceId) {
       selectedSources.value.add(sourceId);
+      console.log(`Selected source: ${sourceId}`);
     }
   });
   
   // Update visual feedback
   updateSelectedSourcesHighlighting();
   
+  // Automatically open the incidents sidebar if we have selections
+  if (selectedSources.value.size > 0) {
+    showIncidentsSidebar.value = true;
+    showIncidents.value = true;
+  }
+  
   // Disable box zoom after selection
   map.value.boxZoom.disable();
+  
+  // Reset cursor
+  map.value.getCanvas().style.cursor = '';
+};
+
+/**
+ * Creates or updates highlight circles around selected warning icons
+ * @function updateWarningIconHighlights
+ * @param {string[]} sourceIds - Array of selected source IDs
+ * @returns {void}
+ */
+const updateWarningIconHighlights = (sourceIds: string[]) => {
+  if (!map.value) return;
+  
+  // Remove existing highlight layer if it exists
+  if (map.value.getLayer('warning-icon-highlights')) {
+    map.value.removeLayer('warning-icon-highlights');
+  }
+  if (map.value.getSource('warning-icon-highlights')) {
+    map.value.removeSource('warning-icon-highlights');
+  }
+  
+  if (sourceIds.length === 0) return;
+  
+  // Get all features from symbol layers that match selected source IDs
+  const highlightFeatures = [];
+  
+  // Check most-recent-alerts-symbol layer
+  if (map.value.getLayer('most-recent-alerts-symbol')) {
+    const features = map.value.querySourceFeatures('most-recent-alerts-symbol', {
+      filter: ['in', ['get', 'alertID'], ['literal', sourceIds]]
+    });
+    highlightFeatures.push(...features);
+  }
+  
+  // Check previous-alerts-symbol layer
+  if (map.value.getLayer('previous-alerts-symbol')) {
+    const features = map.value.querySourceFeatures('previous-alerts-symbol', {
+      filter: ['in', ['get', 'alertID'], ['literal', sourceIds]]
+    });
+    highlightFeatures.push(...features);
+  }
+  
+  if (highlightFeatures.length === 0) return;
+  
+  // Create GeoJSON for highlight circles
+  const highlightGeoJSON = {
+    type: 'FeatureCollection',
+    features: highlightFeatures.map(feature => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: feature.geometry.coordinates
+      },
+      properties: {
+        id: feature.properties?.alertID || feature.id
+      }
+    }))
+  };
+  
+  // Add source for highlight circles
+  map.value.addSource('warning-icon-highlights', {
+    type: 'geojson',
+    data: highlightGeoJSON
+  });
+  
+  // Add highlight circle layer
+  map.value.addLayer({
+    id: 'warning-icon-highlights',
+    type: 'circle',
+    source: 'warning-icon-highlights',
+    paint: {
+      'circle-radius': 20, // Large enough to surround the warning icon
+      'circle-color': 'transparent',
+      'circle-stroke-color': '#FF0000', // Red border
+      'circle-stroke-width': 3,
+      'circle-stroke-dasharray': [2, 2] // Dotted border
+    }
+  });
 };
 
 /**
@@ -454,25 +880,91 @@ const updateSelectedSourcesHighlighting = () => {
   const sourceIds = Array.from(selectedSources.value);
   
   // Update all alert layers to highlight selected sources
-  const layers = [
+  const alertLayers = [
     'most-recent-alerts-polygon',
     'most-recent-alerts-linestring', 
     'most-recent-alerts-point',
+    'most-recent-alerts-symbol',
     'previous-alerts-polygon',
     'previous-alerts-linestring',
-    'previous-alerts-point'
+    'previous-alerts-point',
+    'previous-alerts-symbol'
   ];
   
-  layers.forEach(layerId => {
+  const mapeoLayers = ['mapeo-data'];
+  
+  // Create or update highlight circles for selected warning icons
+  updateWarningIconHighlights(sourceIds);
+  
+  // Update alert layers using alertID - DON'T filter, just add highlighting
+  alertLayers.forEach(layerId => {
     if (map.value.getLayer(layerId)) {
+      // Always keep all features visible - don't filter
+      map.value.setFilter(layerId, null);
+      
       if (sourceIds.length > 0) {
-        map.value.setFilter(layerId, [
-          'in',
-          ['get', '_id'],
-          ['literal', sourceIds]
-        ]);
+        // Add border effect for selected features only
+        if (layerId.includes('polygon')) {
+          // For polygon layers, add a stroke layer with dashed border
+          const strokeLayerId = `${layerId}-stroke`;
+          if (map.value.getLayer(strokeLayerId)) {
+            map.value.setPaintProperty(strokeLayerId, 'line-color', '#FFD700'); // Gold color
+            map.value.setPaintProperty(strokeLayerId, 'line-width', 4);
+            map.value.setPaintProperty(strokeLayerId, 'line-dasharray', [2, 2]); // Dashed line
+            map.value.setFilter(strokeLayerId, [
+              'in',
+              ['get', 'alertID'],
+              ['literal', sourceIds]
+            ]);
+          }
+        } else if (layerId.includes('linestring')) {
+          // For line layers, make them thicker and dashed
+          map.value.setPaintProperty(layerId, 'line-color', '#FFD700');
+          map.value.setPaintProperty(layerId, 'line-width', 6);
+          map.value.setPaintProperty(layerId, 'line-dasharray', [2, 2]);
+        } else if (layerId.includes('point')) {
+          // For point layers, add a larger circle with dashed border
+          map.value.setPaintProperty(layerId, 'circle-color', '#FFD700');
+          map.value.setPaintProperty(layerId, 'circle-radius', 8);
+          map.value.setPaintProperty(layerId, 'circle-stroke-color', '#FFD700');
+          map.value.setPaintProperty(layerId, 'circle-stroke-width', 3);
+        } else if (layerId.includes('symbol')) {
+          // For symbol layers (warning icons), we can't add borders directly
+          // But we can make them slightly larger to indicate selection
+          map.value.setLayoutProperty(layerId, 'icon-size', 1.1); // Slightly larger
+          map.value.setLayoutProperty(layerId, 'icon-allow-overlap', true); // Ensure they're visible
+        }
       } else {
-        map.value.setFilter(layerId, null);
+        // Reset visual properties when no features selected
+        if (layerId.includes('polygon')) {
+          const strokeLayerId = `${layerId}-stroke`;
+          if (map.value.getLayer(strokeLayerId)) {
+            map.value.setFilter(strokeLayerId, null);
+            // Reset to original colors (will be handled by layer creation)
+          }
+        } else if (layerId.includes('linestring')) {
+          // Reset line properties (will be handled by layer creation)
+        } else if (layerId.includes('point')) {
+          // Reset point properties (will be handled by layer creation)
+        }
+      }
+    }
+  });
+  
+  // Update mapeo layers using id - DON'T filter, just add highlighting
+  mapeoLayers.forEach(layerId => {
+    if (map.value.getLayer(layerId)) {
+      // Always keep all features visible - don't filter
+      map.value.setFilter(layerId, null);
+      
+      if (sourceIds.length > 0) {
+        // Add border effect for selected mapeo features
+        map.value.setPaintProperty(layerId, 'circle-color', '#FFD700');
+        map.value.setPaintProperty(layerId, 'circle-radius', 10);
+        map.value.setPaintProperty(layerId, 'circle-stroke-color', '#FFD700');
+        map.value.setPaintProperty(layerId, 'circle-stroke-width', 4);
+      } else {
+        // Reset mapeo properties (will be handled by layer creation)
       }
     }
   });
@@ -486,9 +978,19 @@ const updateSelectedSourcesHighlighting = () => {
 const cleanupMultiSelectListeners = () => {
   if (!map.value) return;
   
-  map.value.off('click', handleMultiSelectClick);
+  // Clean up old box zoom listeners
   map.value.off('boxzoomend', handleBoxSelection);
   map.value.boxZoom.disable();
+  
+  // Clean up custom bounding box
+  const mapWithCleanup = map.value as mapboxgl.Map & { _boundingBoxCleanup?: () => void };
+  if (mapWithCleanup._boundingBoxCleanup) {
+    mapWithCleanup._boundingBoxCleanup();
+    delete mapWithCleanup._boundingBoxCleanup;
+  }
+  
+  // Reset cursor
+  map.value.getCanvas().style.cursor = '';
 };
 
 // ========================
@@ -503,8 +1005,17 @@ const cleanupMultiSelectListeners = () => {
  * @throws {Error} Throws error if incident creation fails
  */
 const submitIncident = async () => {
+  if (isSavingIncident.value) return; // Prevent double submission
+  
   try {
-    await createIncident(newIncident.value);
+    isSavingIncident.value = true;
+    console.log('Starting incident creation...', {
+      incidentData: newIncident.value,
+      selectedSources: Array.from(selectedSources.value)
+    });
+    
+    const result = await createIncident(newIncident.value);
+    console.log('Incident created successfully!', result);
     
     // Reset form
     resetIncidentForm();
@@ -513,12 +1024,27 @@ const submitIncident = async () => {
     cleanupMultiSelectListeners();
     isMultiSelectMode.value = false;
     
-    // Show success message
-    console.log('Incident created successfully!');
+    // Close the incidents sidebar
+    showIncidentsSidebar.value = false;
+    showIncidents.value = false;
     
-  } catch (error) {
+    // Show success message
+    console.log('Incident creation completed and form reset!');
+    
+  } catch (error: unknown) {
     console.error('Error creating incident:', error);
+    if (error && typeof error === 'object') {
+      const err = error as Record<string, unknown>;
+      console.error('Error details:', {
+        message: err.message,
+        status: err.status,
+        statusText: err.statusText,
+        data: err.data
+      });
+    }
     // TODO: Show error message to user
+  } finally {
+    isSavingIncident.value = false;
   }
 };
 
@@ -533,6 +1059,7 @@ const cancelIncidentCreation = () => {
   isMultiSelectMode.value = false;
   isCreatingIncident.value = false;
   clearAllHighlighting();
+  console.log('Incident creation cancelled.');
 };
 
 /**
@@ -545,12 +1072,14 @@ const resetIncidentForm = () => {
     name: '',
     description: '',
     incident_type: '',
+    custom_incident_type: '',
     responsible_party: '',
     impact_description: '',
     supporting_evidence: {}
   };
   selectedSources.value.clear();
   isCreatingIncident.value = false;
+  isSavingIncident.value = false;
 };
 
 /**
@@ -1048,6 +1577,38 @@ const addAlertsData = async () => {
         (e: MapMouseEvent) => {
           if (e.features && e.features.length > 0) {
             const feature = e.features[0];
+            
+            // Check if we're in multi-select mode and modifier key is pressed
+            if (isMultiSelectMode.value && (e.originalEvent.ctrlKey || e.originalEvent.metaKey)) {
+              // Handle multi-select
+              const featureObject = feature.properties;
+              let sourceId = null;
+              if (featureObject?.alertID) {
+                sourceId = featureObject.alertID;
+              } else if (featureObject?.id) {
+                sourceId = featureObject.id;
+              }
+              
+              if (sourceId) {
+                if (selectedSources.value.has(sourceId)) {
+                  selectedSources.value.delete(sourceId);
+                  console.log(`Deselected source: ${sourceId}`);
+                } else {
+                  selectedSources.value.add(sourceId);
+                  console.log(`Selected source: ${sourceId}`);
+                }
+                updateSelectedSourcesHighlighting();
+                
+                // Automatically open the incidents sidebar if we have selections
+                if (selectedSources.value.size > 0) {
+                  showIncidentsSidebar.value = true;
+                  showIncidents.value = true;
+                }
+              }
+              return; // Don't proceed with normal selection
+            }
+            
+            // Normal feature selection
             if (layer.id.endsWith("symbol")) {
               if (feature.geometry.type === "Point") {
                 const [lng, lat] = feature.geometry.coordinates;
@@ -1058,7 +1619,7 @@ const addAlertsData = async () => {
             }
           }
         },
-        { passive: true },
+        { passive: false }, // Changed to false to allow preventDefault
       );
     }
   });
@@ -1175,10 +1736,43 @@ const addMapeoData = () => {
       layerId,
       (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
-          selectFeature(e.features[0], layerId);
+          const feature = e.features[0];
+          
+          // Check if we're in multi-select mode and modifier key is pressed
+          if (isMultiSelectMode.value && (e.originalEvent.ctrlKey || e.originalEvent.metaKey)) {
+            // Handle multi-select
+            const featureObject = feature.properties;
+            let sourceId = null;
+            if (featureObject?.alertID) {
+              sourceId = featureObject.alertID;
+            } else if (featureObject?.id) {
+              sourceId = featureObject.id;
+            }
+            
+            if (sourceId) {
+              if (selectedSources.value.has(sourceId)) {
+                selectedSources.value.delete(sourceId);
+                console.log(`Deselected source: ${sourceId}`);
+              } else {
+                selectedSources.value.add(sourceId);
+                console.log(`Selected source: ${sourceId}`);
+              }
+              updateSelectedSourcesHighlighting();
+              
+              // Automatically open the incidents sidebar if we have selections
+              if (selectedSources.value.size > 0) {
+                showIncidentsSidebar.value = true;
+                showIncidents.value = true;
+              }
+            }
+            return; // Don't proceed with normal selection
+          }
+          
+          // Normal feature selection
+          selectFeature(feature, layerId);
         }
       },
-      { passive: true },
+      { passive: false }, // Changed to false to allow preventDefault
     );
   });
 };
@@ -1846,13 +2440,6 @@ onBeforeUnmount(() => {
     >
       {{ $t("resetDashboard") }}
     </button>
-    <button
-      class="incidents-button bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-      :class="{ 'bg-green-700': showIncidents }"
-      @click="toggleIncidentsView"
-    >
-      {{ showIncidents ? 'Hide Incidents' : 'View Incidents' }}
-    </button>
     <ViewSidebar
       :alerts-statistics="alertsStatistics"
       :allowed-file-extensions="allowedFileExtensions"
@@ -1888,6 +2475,71 @@ onBeforeUnmount(() => {
       @basemap-selected="handleBasemapChange"
     />
     
+    <!-- Incidents Controls - Positioned like map controls -->
+    <div class="incidents-controls">
+      <button
+        class="incidents-button"
+        :class="{ active: showIncidents }"
+        title="View saved incidents"
+        @click="toggleIncidentsView"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+      </button>
+      
+      <button
+        v-if="!isCreatingIncident"
+        class="create-incident-button"
+        title="Create new incident - Select features on map to add to incident"
+        @click="startCreatingIncident"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+        </svg>
+      </button>
+      
+      <button
+        v-if="isCreatingIncident"
+        class="cancel-incident-button"
+        title="Cancel incident creation"
+        @click="cancelIncidentCreation"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+      
+      <div v-if="isCreatingIncident" class="multi-select-controls">
+        <button
+          class="multi-select-button"
+          :class="{ active: isMultiSelectMode }"
+          title="Multi-select mode - Hold Ctrl+click to select multiple features"
+          @click="toggleMultiSelectMode"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M9 9H15V15H9V9ZM11 11V13H13V11H11ZM3 3H5V5H3V3ZM7 3H9V5H7V3ZM11 3H13V5H11V3ZM15 3H17V5H15V3ZM19 3H21V5H19V3ZM3 7H5V9H3V7ZM19 7H21V9H19V7ZM3 11H5V13H3V11ZM19 11H21V13H19V11ZM3 15H5V17H3V15ZM19 15H21V17H19V15ZM3 19H5V21H3V19ZM7 19H9V21H7V19ZM11 19H13V21H11V19ZM15 19H17V21H15V19ZM19 19H21V21H19V19Z"/>
+          </svg>
+          <span>Multi-Select</span>
+        </button>
+        
+        <button
+          class="bounding-box-button"
+          title="Bounding box selection - Hold Ctrl/Cmd and drag to create selection box around features"
+          @click="enableBoundingBoxMode"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3 3H21V21H3V3ZM5 5V19H19V5H5ZM7 7H17V9H7V7ZM7 11H17V13H7V11ZM7 15H17V17H7V15Z"/>
+          </svg>
+          <span>Bounding Box</span>
+        </button>
+        
+        <div class="selection-info">
+          {{ selectedSources.size }} selected
+        </div>
+      </div>
+    </div>
+    
     <!-- Incidents Right Sidebar -->
     <div
       v-if="showIncidentsSidebar"
@@ -1904,25 +2556,25 @@ onBeforeUnmount(() => {
       </div>
       
       <div class="incidents-content">
-        <!-- Create New Incident Button -->
-        <button
-          v-if="!isCreatingIncident"
-          class="create-incident-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 w-full"
-          @click="startCreatingIncident"
-        >
-          Create New Incident
-        </button>
-        
         <!-- Incident Creation Form -->
         <div
           v-if="isCreatingIncident"
           class="incident-creation-form"
         >
-          <h4>Create New Incident</h4>
+          <div class="form-header">
+            <h4>Create New Incident</h4>
+            <button
+              class="close-form-button"
+              title="Cancel incident creation"
+              @click="cancelIncidentCreation"
+            >
+              ×
+            </button>
+          </div>
           <p class="selection-info">
             Selected Sources: {{ selectedSources.size }}
             <br />
-            <small>Hold Ctrl and click features to select them, or drag to create a bounding box.</small>
+            <small>Use the "Multi-Select Mode" or "Bounding Box" buttons above to select features.</small>
           </p>
           
           <form @submit.prevent="submitIncident">
@@ -1965,6 +2617,17 @@ onBeforeUnmount(() => {
               </select>
             </div>
             
+            <div v-if="newIncident.incident_type === 'other'" class="form-group">
+              <label for="custom-incident-type">Custom Incident Type</label>
+              <input
+                id="custom-incident-type"
+                v-model="newIncident.custom_incident_type"
+                type="text"
+                class="form-input"
+                placeholder="Enter custom incident type"
+              />
+            </div>
+            
             <div class="form-group">
               <label for="responsible-party">Responsible Party</label>
               <input
@@ -1998,9 +2661,9 @@ onBeforeUnmount(() => {
               <button
                 type="submit"
                 class="btn-save"
-                :disabled="selectedSources.size === 0 || !newIncident.name"
+                :disabled="selectedSources.size === 0 || !newIncident.name || isSavingIncident"
               >
-                Save Incident
+                {{ isSavingIncident ? 'Saving...' : 'Save Incident' }}
               </button>
             </div>
           </form>
@@ -2087,11 +2750,126 @@ body {
   z-index: 10;
 }
 
-.incidents-button {
+.incidents-controls {
   position: absolute;
-  top: 10px;
+  top: 250px; /* Move down a bit more to avoid overlapping with map controls */
   right: 10px;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.incidents-button,
+.create-incident-button,
+.cancel-incident-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: white;
+  border: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.incidents-button:hover {
+  background: #45a049;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.create-incident-button:hover {
+  background: #1976D2;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.cancel-incident-button:hover {
+  background: #d32f2f;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.incidents-button.active {
+  background: #4CAF50;
+  color: white;
+  border-color: #4CAF50;
+}
+
+.create-incident-button {
+  background: #2196F3;
+  color: white;
+  border-color: #2196F3;
+}
+
+.cancel-incident-button {
+  background: #f44336;
+  color: white;
+  border-color: #f44336;
+}
+
+.multi-select-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.multi-select-button,
+.bounding-box-button {
+  min-width: 120px;
+  height: 40px;
+  border-radius: 10px;
+  background: white;
+  border: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.multi-select-button:hover {
+  background: #F57C00;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.bounding-box-button:hover {
+  background: #7B1FA2;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.multi-select-button.active {
+  background: #FF9800;
+  color: white;
+  border-color: #FF9800;
+}
+
+.bounding-box-button {
+  background: #9C27B0;
+  color: white;
+  border-color: #9C27B0;
+}
+
+.selection-info {
+  font-size: 12px;
+  color: #666;
+  background: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  text-align: center;
+  min-width: 80px;
 }
 
 .incidents-sidebar {
@@ -2243,8 +3021,36 @@ body {
   margin-bottom: 20px;
 }
 
-.incident-creation-form h4 {
-  margin: 0 0 15px 0;
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.form-header h4 {
+  margin: 0;
+  color: #333;
+}
+
+.close-form-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.close-form-button:hover {
+  background: #f0f0f0;
   color: #333;
 }
 
