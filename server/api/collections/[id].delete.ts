@@ -3,8 +3,8 @@ import { deleteAnnotatedCollection } from "@/server/database/dbOperations";
 
 export default defineEventHandler(async (event) => {
   try {
-    const collectionId = getRouterParam(event, 'id');
-    
+    const collectionId = getRouterParam(event, "id");
+
     if (!collectionId) {
       throw createError({
         statusCode: 400,
@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
     }
 
     await deleteAnnotatedCollection(configDb, collectionId);
-    
+
     return {
       success: true,
       message: "Collection deleted successfully",

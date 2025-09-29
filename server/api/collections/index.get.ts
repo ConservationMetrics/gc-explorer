@@ -4,7 +4,7 @@ import { listAnnotatedCollections } from "@/server/database/dbOperations";
 export default defineEventHandler(async (event) => {
   try {
     const query = getQuery(event);
-    
+
     // Parse query parameters
     const filters = Object.fromEntries(
       Object.entries({
@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
         created_by: query.created_by as string,
         limit: query.limit ? parseInt(query.limit as string) : 20,
         offset: query.offset ? parseInt(query.offset as string) : 0,
-      }).filter(([_, value]) => value !== undefined)
+      }).filter(([_, value]) => value !== undefined),
     );
 
     const configDb = await getDatabaseConnection(true);
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const result = await listAnnotatedCollections(configDb, filters);
-    
+
     return {
       collections: result.collections,
       total: result.total,

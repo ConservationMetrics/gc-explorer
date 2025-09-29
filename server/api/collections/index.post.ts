@@ -5,7 +5,7 @@ import type { AnnotatedCollection, Incident } from "@/types/types";
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event);
-    
+
     // Validate required fields
     if (!body.name || !body.collection_type) {
       throw createError({
@@ -21,20 +21,23 @@ export default defineEventHandler(async (event) => {
         statusMessage: "Unauthorized - Authentication required",
       });
     }
-    const createdBy = session.user as {email: string};
+    const createdBy = session.user as { email: string };
 
-    const collectionData: Omit<AnnotatedCollection, 'id' | 'created_at' | 'updated_at'> = {
+    const collectionData: Omit<
+      AnnotatedCollection,
+      "id" | "created_at" | "updated_at"
+    > = {
       name: body.name,
       description: body.description,
       collection_type: body.collection_type,
-      status: body.status || 'active',
+      status: body.status || "active",
       created_by: createdBy.email,
       is_active: body.is_active || false,
       metadata: body.metadata || {},
     };
 
-    let incidentData: Omit<Incident, 'collection_id'> | undefined;
-    if (body.collection_type === 'incident' && body.incident_data) {
+    let incidentData: Omit<Incident, "collection_id"> | undefined;
+    if (body.collection_type === "incident" && body.incident_data) {
       incidentData = {
         incident_type: body.incident_data.incident_type,
         responsible_party: body.incident_data.responsible_party,
@@ -55,9 +58,9 @@ export default defineEventHandler(async (event) => {
       configDb,
       collectionData,
       incidentData,
-      body.entries
+      body.entries,
     );
-    
+
     return {
       collection: newCollection,
     };
