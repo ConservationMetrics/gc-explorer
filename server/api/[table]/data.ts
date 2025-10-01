@@ -1,4 +1,3 @@
-import { getDatabaseConnection } from "@/server/database/dbConnection";
 import { fetchData } from "@/server/database/dbOperations";
 
 import type { H3Event } from "h3";
@@ -7,9 +6,8 @@ export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
 
   try {
-    const db = await getDatabaseConnection(false);
 
-    const { mainData, columnsData } = await fetchData(db, table);
+    const { mainData, columnsData } = await fetchData(table);
     return { data: mainData, columns: columnsData };
   } catch (error) {
     if (error instanceof Error) {

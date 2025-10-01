@@ -1,4 +1,3 @@
-import { getDatabaseConnection } from "@/server/database/dbConnection";
 import { addNewTableToConfig } from "@/server/database/dbOperations";
 
 import type { H3Event } from "h3";
@@ -6,9 +5,7 @@ import type { H3Event } from "h3";
 export default defineEventHandler(async (event: H3Event) => {
   const table = event.context?.params?.table as string;
   try {
-    const configDb = await getDatabaseConnection(true);
-
-    await addNewTableToConfig(configDb, table);
+    await addNewTableToConfig(table);
     return { message: "New table added successfully" };
   } catch (error) {
     if (error instanceof Error) {

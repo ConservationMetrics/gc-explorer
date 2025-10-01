@@ -1,4 +1,3 @@
-import { getDatabaseConnection } from "@/server/database/dbConnection";
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import {
   prepareMapData,
@@ -24,10 +23,7 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   try {
-    const configDb = await getDatabaseConnection(true);
-    const db = await getDatabaseConnection(false);
-
-    const viewsConfig = await fetchConfig(configDb);
+    const viewsConfig = await fetchConfig();
 
     // Check visibility permissions
     const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "member";
@@ -35,7 +31,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData, columnsData } = await fetchData(db, table);
+    const { mainData, columnsData } = await fetchData(table);
 
     // Filter data to remove unwanted columns and substrings
     const filteredData = filterUnwantedKeys(

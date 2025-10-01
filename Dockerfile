@@ -17,6 +17,9 @@ RUN pnpm install
 # Copy the application files into the container
 COPY . /app
 
+# Make the migration script executable
+RUN chmod +x /app/migrate-and-start.sh
+
 # Build the application
 RUN pnpm run build
 
@@ -24,7 +27,5 @@ RUN pnpm run build
 EXPOSE 8080
 ENV NITRO_PORT=8080
 
-# Reset entrypoint to allow running custom commands like `pnpm` using `docker run`
-ENTRYPOINT [  ]
-# Default to run the web application
-CMD ["node", ".output/server/index.mjs"]
+# Use the migration script as the default command
+CMD ["/app/migrate-and-start.sh"]
