@@ -1,17 +1,13 @@
-import { sql, eq } from 'drizzle-orm'
-import { configDb, warehouseDb } from '../utils/db'
-import { viewConfig } from '../db/schema'
-import type {
-  Views,
-  DataEntry,
-  ColumnEntry,
-} from "@/types/types";
+import { sql, eq } from "drizzle-orm";
+import { configDb, warehouseDb } from "../utils/db";
+import { viewConfig } from "../db/schema";
+import type { Views, DataEntry, ColumnEntry } from "@/types/types";
 
 const checkTableExists = async (
   table: string | undefined,
 ): Promise<boolean> => {
   if (!table) return false;
-  
+
   try {
     const cleanTableName = table.replace(/"/g, "");
     const result = await warehouseDb.execute(sql`
@@ -19,7 +15,7 @@ const checkTableExists = async (
     `);
     return (result[0] as { to_regclass: string | null })?.to_regclass !== null;
   } catch (error) {
-    console.error('Error checking table existence:', error);
+    console.error("Error checking table existence:", error);
     return false;
   }
 };
@@ -28,7 +24,7 @@ const fetchDataFromTable = async (
   table: string | undefined,
 ): Promise<unknown[]> => {
   if (!table) return [];
-  
+
   try {
     const cleanTableName = table.replace(/"/g, "");
     const result = await warehouseDb.execute(sql`
@@ -36,7 +32,7 @@ const fetchDataFromTable = async (
     `);
     return result || [];
   } catch (error) {
-    console.error('Error fetching data from table:', error);
+    console.error("Error fetching data from table:", error);
     return [];
   }
 };
@@ -78,18 +74,19 @@ export const fetchData = async (
   return { mainData, columnsData, metadata };
 };
 
-export const fetchTableNames = async (
-): Promise<string[]> => {
+export const fetchTableNames = async (): Promise<string[]> => {
   try {
     const result = await warehouseDb.execute(sql`
       SELECT table_name 
       FROM information_schema.tables 
       WHERE table_schema = 'public'
     `);
-    
-    return result.map((row: unknown) => (row as Record<string, unknown>).table_name as string);
+
+    return result.map(
+      (row: unknown) => (row as Record<string, unknown>).table_name as string,
+    );
   } catch (error) {
-    console.error('Error fetching table names:', error);
+    console.error("Error fetching table names:", error);
     return [];
   }
 };
@@ -167,7 +164,7 @@ export const fetchConfig = async (): Promise<Views> => {
     `);
 
     const result = await configDb.select().from(viewConfig);
-    
+
     const viewsConfig: Views = {};
     result.forEach((row) => {
       viewsConfig[row.tableName] = JSON.parse(row.viewsConfig);
@@ -175,22 +172,21 @@ export const fetchConfig = async (): Promise<Views> => {
 
     return viewsConfig;
   } catch (error) {
-    console.error('Error fetching config:', error);
+    console.error("Error fetching config:", error);
     return {};
   }
 };
 
 export const updateConfig = async (
-
   tableName: string,
   config: unknown,
 ): Promise<void> => {
   try {
     const configString = JSON.stringify(config);
-    
+
     await configDb
       .update(viewConfig)
-      .set({ 
+      .set({
         viewsConfig: configString,
       })
       .where(eq(viewConfig.tableName, tableName));
@@ -200,16 +196,12 @@ export const updateConfig = async (
   }
 };
 
-export const addNewTableToConfig = async (
-  tableName: string,
-): Promise<void> => {
+export const addNewTableToConfig = async (tableName: string): Promise<void> => {
   try {
-    await configDb
-      .insert(viewConfig)
-      .values({
-        tableName,
-        viewsConfig: "{}",
-      });
+    await configDb.insert(viewConfig).values({
+      tableName,
+      viewsConfig: "{}",
+    });
   } catch (error) {
     console.error("Error adding new table to config:", error);
     throw error;

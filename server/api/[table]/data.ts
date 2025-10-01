@@ -6,7 +6,6 @@ export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
 
   try {
-
     const { mainData, columnsData } = await fetchData(table);
     return { data: mainData, columns: columnsData };
   } catch (error) {
