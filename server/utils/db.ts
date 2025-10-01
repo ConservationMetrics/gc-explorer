@@ -28,14 +28,18 @@ const createConfigConnection = () => {
   // Encoding is used to handle special characters in the database credentials and is necessary for the connection to work
   let connectionString = `postgresql://${encodeURIComponent(dbUser)}:${encodeURIComponent(dbPassword)}@${dbHost}:${dbPort}/${encodeURIComponent(configDatabase)}`;
 
+  // In CI, disable SSL for local database connections
+  const isCI = process.env.CI === "true";
+  const useSSL = dbSsl && !isCI;
+
   // Add SSL parameters to connection string if SSL is enabled
-  if (dbSsl) {
+  if (useSSL) {
     connectionString += "?sslmode=require";
   }
 
   const queryClient = postgres(connectionString, {
     prepare: false,
-    ssl: dbSsl ? { rejectUnauthorized: false } : false,
+    ssl: useSSL ? { rejectUnauthorized: false } : false,
   });
 
   return drizzle(queryClient, { schema });
@@ -59,14 +63,18 @@ const createWarehouseConnection = () => {
   // Encoding is used to handle special characters in the database credentials and is necessary for the connection to work
   let connectionString = `postgresql://${encodeURIComponent(dbUser)}:${encodeURIComponent(dbPassword)}@${dbHost}:${dbPort}/${encodeURIComponent(database)}`;
 
+  // In CI, disable SSL for local database connections
+  const isCI = process.env.CI === "true";
+  const useSSL = dbSsl && !isCI;
+
   // Add SSL parameters to connection string if SSL is enabled
-  if (dbSsl) {
+  if (useSSL) {
     connectionString += "?sslmode=require";
   }
 
   const queryClient = postgres(connectionString, {
     prepare: false,
-    ssl: dbSsl ? { rejectUnauthorized: false } : false,
+    ssl: useSSL ? { rejectUnauthorized: false } : false,
   });
 
   return drizzle(queryClient, { schema });
