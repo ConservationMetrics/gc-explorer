@@ -5,13 +5,6 @@ set -e
 
 echo "Starting migration and application startup..."
 
-# Debug: Show what environment variables we have
-echo "Debug - Environment variables:"
-echo "NUXT_DB_HOST: ${NUXT_DB_HOST:-'NOT SET'}"
-echo "NUXT_DB_USER: ${NUXT_DB_USER:-'NOT SET'}"
-echo "NUXT_DB_PASSWORD: ${NUXT_DB_PASSWORD:-'NOT SET'}"
-echo "NUXT_DATABASE: ${NUXT_DATABASE:-'NOT SET'}"
-
 # Check if we have the required environment variables
 if [ -z "$NUXT_DB_HOST" ] || [ -z "$NUXT_DB_USER" ] || [ -z "$NUXT_DB_PASSWORD" ]; then
     echo "Missing required database environment variables"

@@ -155,13 +155,22 @@ export const fetchConfig = async (): Promise<Views> => {
   }
 
   try {
-    // Create the view_config table if it does not exist using Drizzle
-    await configDb.execute(sql`
-      CREATE TABLE IF NOT EXISTS view_config (
-        table_name TEXT PRIMARY KEY,
-        views_config TEXT
-      )
+    // Check if view_config table exists in config database, create if it doesn't
+    const tableExistsResult = await configDb.execute(sql`
+      SELECT to_regclass('view_config')
     `);
+    const tableExists =
+      (tableExistsResult[0] as { to_regclass: string | null })?.to_regclass !==
+      null;
+
+    if (!tableExists) {
+      await configDb.execute(sql`
+        CREATE TABLE view_config (
+          table_name TEXT PRIMARY KEY,
+          views_config TEXT
+        )
+      `);
+    }
 
     const result = await configDb.select().from(viewConfig);
 

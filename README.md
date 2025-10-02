@@ -14,7 +14,7 @@ To get started, copy `.env.example` to `.env` and add your database and table in
 
 **Authentication strategy:** GuardianConnector Explorer supports three different authentication strategies: auth0, password (from an environmental var) with JWT key, or none. Set your authentication strategy in `NUXT_PUBLIC_AUTH_STRATEGY`.
 
-* If you are using an auth0 strategy, then you need to provide a domain, client ID, client secret, audience, and base URL.
+- If you are using an auth0 strategy, then you need to provide a domain, client ID, client secret, audience, and base URL.
 
 **Nuxt App API key:** Generate an API key to add to request headers made by the Nuxt front end. You can generate one by running `openssl rand -base64 42`.
 
@@ -38,6 +38,33 @@ $ pnpm generate
 ```
 
 Add `--hostname 0.0.0.0` if you want the app to be accessible across your local network.
+
+## Database
+
+This application uses [Drizzle ORM](https://orm.drizzle.team/) for database operations and migrations.
+
+### Migrations
+
+Database migrations can be run in several ways:
+
+**Development:**
+
+```bash
+# Generate new migration files
+$ pnpm db:generate
+
+# Apply migrations to database
+$ pnpm db:migrate
+
+# Open Drizzle Studio (database GUI)
+$ pnpm db:studio
+```
+
+**Production (Docker):**
+Migrations run automatically when the container starts using the `migrate-and-start.sh` script.
+
+**CI/Testing:**
+Migrations are skipped automatically when `CI=true` is set.
 
 ## Deployment
 
@@ -111,31 +138,35 @@ $ pnpm test:e2e
 ##### CI Mode (Docker Services)
 
 **For local testing with Docker services:**
+
 - Copy `.env.test.compose.example` to `.env.test.compose` and set all required API keys and secrets
 - Use `./run-local-docker-tests.sh` script or manually start services with `docker compose -f docker-compose.tests.yml`
 - When using the script, make sure to stop the services with `docker compose -f docker-compose.tests.yml down` when you are done testing.
 
 The `docker-compose.tests.yml` takes care of:
+
 1. Populating the test database with known mock data (stored in `db/init/warehouse.sql`), including survey and alerts views
 2. Setting `NUXT_PUBLIC_AUTH_STRATEGY="none"` to bypass authentication
 3. Running isolated containers that don't affect your development environment
 
 Note: The database is ephemeral. To reload seed data, remove the volume:
+
 ```bash
 docker volume rm gc-explorer_db_data
 ```
 
 **For CI/GitHub Actions:**
+
 - The workflow automatically creates `.env.test.playwright` with GitHub secrets
 - Uses the same `docker-compose.tests.yml` file for consistency
 
 ##### Dev Mode (Local Development)
 
 **For quick development testing:**
+
 - Copy `.env.test.playwright.example` to `.env.test.playwright` and set database connection + API keys
 - Playwright will start its own Nuxt dev server using `pnpm dev`
 - Tests will use your configured database connection
-
 
 #### Playwright Test Development
 
@@ -152,6 +183,7 @@ pnpm test:e2e --grep "layer visibility toggles" # change to the test you want to
 The GitHub Actions workflow automatically runs both unit and E2E tests on every push and pull request.
 
 **Automated workflow:**
+
 - Builds a Docker image tagged as `ci-test` for testing
 - Creates `.env.test.playwright` with GitHub secrets and starts the same Docker services as local testing
 - Runs unit tests with `pnpm test:unit`
@@ -178,30 +210,30 @@ _Alerts dashboard view with fake alerts data._
 
 ## How it works
 
-### Column headers ###
+### Column headers
 
 Currently, GuardianConnector expects these column headers, which follow the structure of a GeoJSON feature. You can use these [GeoJSON to SQL conversion scripts](https://github.com/rudokemper/geojson-csv-sql-conversion-tools) to transform your GeoJSON file into the expected format if needed.
 
-| SQL Column | GeoJSON Field |
-|------------|---------------|
-| id         | id            |
-| g\_\_type    | geometry.type |
+| SQL Column       | GeoJSON Field        |
+| ---------------- | -------------------- |
+| id               | id                   |
+| g\_\_type        | geometry.type        |
 | g\_\_coordinates | geometry.coordinates |
-| ...     | properties... |
+| ...              | properties...        |
 
-If found, GuardianConnector Explorer will use a column mapping SQL table (with "__column" suffix), like the one created by connector scripts of [GuardianConnector Script Hub](https://github.com/ConservationMetrics/gc-scripts-hub), to handle filtering and key/value rewrites.
+If found, GuardianConnector Explorer will use a column mapping SQL table (with "\_\_column" suffix), like the one created by connector scripts of [GuardianConnector Script Hub](https://github.com/ConservationMetrics/gc-scripts-hub), to handle filtering and key/value rewrites.
 
- Any columns specified in the `.env` file will be filtered out (*see "Unwanted columns and substrings" above*).
+Any columns specified in the `.env` file will be filtered out (_see "Unwanted columns and substrings" above_).
 
 At this time, media attachments in the popups are handled in a somewhat brittle way by embedding any strings that end in the expected photo, audio, or video file ending (such as `.jpg`, `.mp3`, or `.mp4`). We can improve on this later when we know more about how media attachments will be stored in the SQL database, and what kind of metadata we have access to.
 
-### GeoJSON export formats for map view ###
+### GeoJSON export formats for map view
 
 The GuardianConnector Explorer map will render the feature on a map in accordance to what kind of `type` it is (Point, LineString, Polygon). The properties are shown in a popup opened by clicking on the feature.
 
 The GuardianConnector Explorer map can work with any GeoJSON data stored in the expected tabular format, but the main purpose is to visualize field data collected using data collection applications such as (Co)Mapeo, ODK, and KoboToolbox.
 
-* Mapeo data from Mapeo Desktop is already exported as GeoJSON file, and a CoMapeo Archive Server returns data in a GeoJSON-compliant format.
-* ODK / KoboToolbox API survey data with a geospatial column may be transformed into such a format.
+- Mapeo data from Mapeo Desktop is already exported as GeoJSON file, and a CoMapeo Archive Server returns data in a GeoJSON-compliant format.
+- ODK / KoboToolbox API survey data with a geospatial column may be transformed into such a format.
 
 In the future, this app can be expanded to also supporting loading from PostGIS, or directly from file.
