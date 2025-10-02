@@ -1,48 +1,43 @@
-import type { Client } from "pg";
-import type {
-  Views,
-  DatabaseConnection,
-  ConfigRow,
-  DataEntry,
-  ColumnEntry,
-} from "@/types/types";
+import { sql, eq } from "drizzle-orm";
+import { configDb, warehouseDb } from "../utils/db";
+import { viewConfig } from "../db/schema";
+import type { Views, DataEntry, ColumnEntry } from "@/types/types";
 
-const checkTableExists = (
-  db: DatabaseConnection,
+const checkTableExists = async (
   table: string | undefined,
 ): Promise<boolean> => {
-  return new Promise((resolve, reject) => {
-    const pgClient = db as Client;
-    const cleanTableName = table?.replace(/"/g, "") || "";
-    const query = `SELECT to_regclass('"${cleanTableName}"')`;
-    pgClient.query<{ to_regclass: string | null }>(
-      query,
-      [],
-      (err: Error, result) => {
-        if (err) reject(err);
-        resolve(result.rows[0].to_regclass !== null);
-      },
-    );
-  });
+  if (!table) return false;
+
+  try {
+    const cleanTableName = table.replace(/"/g, "");
+    const result = await warehouseDb.execute(sql`
+      SELECT to_regclass(${cleanTableName})
+    `);
+    return (result[0] as { to_regclass: string | null })?.to_regclass !== null;
+  } catch (error) {
+    console.error("Error checking table existence:", error);
+    return false;
+  }
 };
 
 const fetchDataFromTable = async (
-  db: DatabaseConnection,
   table: string | undefined,
 ): Promise<unknown[]> => {
-  const pgClient = db as Client;
-  const cleanTableName = table?.replace(/"/g, "") || "";
-  const query = `SELECT * FROM "${cleanTableName}"`;
-  return new Promise((resolve, reject) => {
-    pgClient.query(query, [], (err: Error, result: { rows: unknown[] }) => {
-      if (err) reject(err);
-      resolve(result.rows);
-    });
-  });
+  if (!table) return [];
+
+  try {
+    const cleanTableName = table.replace(/"/g, "");
+    const result = await warehouseDb.execute(sql`
+      SELECT * FROM ${sql.identifier(cleanTableName)}
+    `);
+    return result || [];
+  } catch (error) {
+    console.error("Error fetching data from table:", error);
+    return [];
+  }
 };
 
 export const fetchData = async (
-  db: DatabaseConnection,
   table: string | undefined,
 ): Promise<{
   mainData: DataEntry[];
@@ -50,28 +45,28 @@ export const fetchData = async (
   metadata: unknown[] | null;
 }> => {
   console.log("Fetching data from", table, "...");
-  const mainDataExists = await checkTableExists(db, table);
+  const mainDataExists = await checkTableExists(table);
   let mainData: DataEntry[] = [];
   if (mainDataExists) {
-    mainData = (await fetchDataFromTable(db, table)) as DataEntry[];
+    mainData = (await fetchDataFromTable(table)) as DataEntry[];
   } else {
     throw new Error("Main table does not exist");
   }
 
   // Fetch mapping columns
   const columnsTable = `"${table}__columns"`;
-  const columnsTableExists = await checkTableExists(db, columnsTable);
+  const columnsTableExists = await checkTableExists(columnsTable);
   let columnsData = null;
   if (columnsTableExists) {
-    columnsData = (await fetchDataFromTable(db, columnsTable)) as ColumnEntry[];
+    columnsData = (await fetchDataFromTable(columnsTable)) as ColumnEntry[];
   }
 
   // Fetch metadata
   const metadataTable = `"${table}__metadata"`;
-  const metadataTableExists = await checkTableExists(db, metadataTable);
+  const metadataTableExists = await checkTableExists(metadataTable);
   let metadata = null;
   if (metadataTableExists) {
-    metadata = await fetchDataFromTable(db, metadataTable);
+    metadata = await fetchDataFromTable(metadataTable);
   }
 
   console.log("Successfully fetched data from", table, "!");
@@ -79,21 +74,24 @@ export const fetchData = async (
   return { mainData, columnsData, metadata };
 };
 
-export const fetchTableNames = async (
-  db: DatabaseConnection,
-): Promise<string[]> => {
-  const query = `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'`;
+export const fetchTableNames = async (): Promise<string[]> => {
+  try {
+    const result = await warehouseDb.execute(sql`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+    `);
 
-  return new Promise((resolve, reject) => {
-    const pgClient = db as Client;
-    pgClient.query<{ table_name: string }>(query, [], (err: Error, result) => {
-      if (err) reject(err);
-      resolve(result.rows.map((row) => row.table_name));
-    });
-  });
+    return result.map(
+      (row: unknown) => (row as Record<string, unknown>).table_name as string,
+    );
+  } catch (error) {
+    console.error("Error fetching table names:", error);
+    return [];
+  }
 };
 
-export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
+export const fetchConfig = async (): Promise<Views> => {
   // If running in CI, return hardcoded configuration for testing purposes
   if (process.env.CI) {
     const mapboxAccessToken =
@@ -156,95 +154,78 @@ export const fetchConfig = async (db: DatabaseConnection): Promise<Views> => {
     };
   }
 
-  // Create the config table if it does not exist
-  const createConfigTable = `CREATE TABLE IF NOT EXISTS config (
-         table_name TEXT PRIMARY KEY,
-         views_config TEXT
-       )`;
+  try {
+    // Check if view_config table exists in config database, create if it doesn't
+    const tableExistsResult = await configDb.execute(sql`
+      SELECT to_regclass('view_config')
+    `);
+    const tableExists =
+      (tableExistsResult[0] as { to_regclass: string | null })?.to_regclass !==
+      null;
 
-  await new Promise<void>((resolve, reject) => {
-    const pgClient = db as Client;
-    pgClient.query(createConfigTable, [], (err: Error) => {
-      if (err) reject(err);
-      else resolve();
+    if (!tableExists) {
+      await configDb.execute(sql`
+        CREATE TABLE view_config (
+          table_name TEXT PRIMARY KEY,
+          views_config TEXT
+        )
+      `);
+    }
+
+    const result = await configDb.select().from(viewConfig);
+
+    const viewsConfig: Views = {};
+    result.forEach((row) => {
+      viewsConfig[row.tableName] = JSON.parse(row.viewsConfig);
     });
-  });
 
-  // Fetch the config data
-  const query = `SELECT * FROM config`;
-
-  const result = await new Promise<ConfigRow[]>((resolve, reject) => {
-    const pgClient = db as Client;
-    pgClient.query(query, [], (err: Error, result: { rows: unknown[] }) => {
-      if (err) reject(err);
-      resolve(result.rows as ConfigRow[]);
-    });
-  });
-
-  const viewsConfig: Views = {};
-  result.forEach((row: ConfigRow) => {
-    viewsConfig[row.table_name] = JSON.parse(row.views_config);
-  });
-
-  return viewsConfig;
+    return viewsConfig;
+  } catch (error) {
+    console.error("Error fetching config:", error);
+    return {};
+  }
 };
 
 export const updateConfig = async (
-  db: DatabaseConnection,
   tableName: string,
   config: unknown,
 ): Promise<void> => {
-  const configString = JSON.stringify(config);
+  try {
+    const configString = JSON.stringify(config);
 
-  const query = `UPDATE config SET views_config = $1 WHERE table_name = $2`;
-
-  return new Promise((resolve, reject) => {
-    const pgClient = db as Client;
-    pgClient.query(query, [configString, tableName], (err: Error) => {
-      if (err) {
-        console.error("PostgreSQL Error:", err);
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
+    await configDb
+      .update(viewConfig)
+      .set({
+        viewsConfig: configString,
+      })
+      .where(eq(viewConfig.tableName, tableName));
+  } catch (error) {
+    console.error("Error updating config:", error);
+    throw error;
+  }
 };
 
-export const addNewTableToConfig = async (
-  db: DatabaseConnection,
-  tableName: string,
-): Promise<void> => {
-  const query = `INSERT INTO config (table_name, views_config) VALUES ($1, $2)`;
-
-  return new Promise((resolve, reject) => {
-    const pgClient = db as Client;
-    pgClient.query(query, [tableName, "{}"], (err: Error) => {
-      if (err) {
-        console.error("PostgreSQL Error:", err);
-        reject(err);
-      } else {
-        resolve();
-      }
+export const addNewTableToConfig = async (tableName: string): Promise<void> => {
+  try {
+    await configDb.insert(viewConfig).values({
+      tableName,
+      viewsConfig: "{}",
     });
-  });
+  } catch (error) {
+    console.error("Error adding new table to config:", error);
+    throw error;
+  }
 };
 
 export const removeTableFromConfig = async (
-  db: DatabaseConnection,
   tableName: string,
 ): Promise<void> => {
-  const query = `DELETE FROM config WHERE table_name = $1`;
-
-  return new Promise((resolve, reject) => {
-    const pgClient = db as Client;
-    pgClient.query(query, [tableName], (err: Error) => {
-      if (err) {
-        console.error("PostgreSQL Error:", err);
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
+  try {
+    await configDb
+      .delete(viewConfig)
+      .where(eq(viewConfig.tableName, tableName));
+  } catch (error) {
+    console.error("Error removing table from config:", error);
+    throw error;
+  }
 };
