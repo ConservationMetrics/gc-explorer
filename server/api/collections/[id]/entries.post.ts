@@ -3,9 +3,9 @@ import { addEntriesToCollection } from "@/server/database/dbOperations";
 
 export default defineEventHandler(async (event) => {
   try {
-    const collectionId = getRouterParam(event, 'id');
+    const collectionId = getRouterParam(event, "id");
     const body = await readBody(event);
-    
+
     if (!collectionId) {
       throw createError({
         statusCode: 400,
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
     }
     console.log(session.user);
 
-    const addedBy = session.user as {email: string};
+    const addedBy = session.user as { email: string };
 
     const configDb = await getDatabaseConnection(true);
     if (!configDb) {
@@ -43,9 +43,9 @@ export default defineEventHandler(async (event) => {
       configDb,
       collectionId,
       body.entries,
-      addedBy.email
+      addedBy.email,
     );
-    
+
     return {
       entries: newEntries,
     };

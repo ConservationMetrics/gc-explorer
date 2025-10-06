@@ -4,9 +4,9 @@ import type { AnnotatedCollection, Incident } from "@/types/types";
 
 export default defineEventHandler(async (event) => {
   try {
-    const collectionId = getRouterParam(event, 'id');
+    const collectionId = getRouterParam(event, "id");
     const body = await readBody(event);
-    
+
     if (!collectionId) {
       throw createError({
         statusCode: 400,
@@ -25,7 +25,8 @@ export default defineEventHandler(async (event) => {
     // Prepare collection updates
     const collectionUpdates: Partial<AnnotatedCollection> = {};
     if (body.name !== undefined) collectionUpdates.name = body.name;
-    if (body.description !== undefined) collectionUpdates.description = body.description;
+    if (body.description !== undefined)
+      collectionUpdates.description = body.description;
     if (body.status !== undefined) collectionUpdates.status = body.status;
     if (body.metadata !== undefined) collectionUpdates.metadata = body.metadata;
 
@@ -33,29 +34,32 @@ export default defineEventHandler(async (event) => {
     let incidentUpdates: Partial<Incident> | undefined;
     if (body.incident_data) {
       incidentUpdates = {};
-      if (body.incident_data.incident_type !== undefined) 
+      if (body.incident_data.incident_type !== undefined)
         incidentUpdates.incident_type = body.incident_data.incident_type;
-      if (body.incident_data.responsible_party !== undefined) 
-        incidentUpdates.responsible_party = body.incident_data.responsible_party;
-      if (body.incident_data.impact_description !== undefined) 
-        incidentUpdates.impact_description = body.incident_data.impact_description;
-      if (body.incident_data.supporting_evidence !== undefined) 
-        incidentUpdates.supporting_evidence = body.incident_data.supporting_evidence;
+      if (body.incident_data.responsible_party !== undefined)
+        incidentUpdates.responsible_party =
+          body.incident_data.responsible_party;
+      if (body.incident_data.impact_description !== undefined)
+        incidentUpdates.impact_description =
+          body.incident_data.impact_description;
+      if (body.incident_data.supporting_evidence !== undefined)
+        incidentUpdates.supporting_evidence =
+          body.incident_data.supporting_evidence;
     }
 
     const updatedCollection = await updateAnnotatedCollection(
       configDb,
       collectionId,
       collectionUpdates,
-      incidentUpdates
+      incidentUpdates,
     );
-    
+
     return {
       collection: updatedCollection,
     };
   } catch (error) {
     console.error("Error updating collection:", error);
-    if (error instanceof Error && error.message === 'Collection not found') {
+    if (error instanceof Error && error.message === "Collection not found") {
       throw createError({
         statusCode: 404,
         statusMessage: "Collection not found",
