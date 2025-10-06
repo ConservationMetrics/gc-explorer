@@ -1,3 +1,4 @@
+import { getDatabaseConnection } from "@/server/database/dbConnection";
 import { fetchConfig } from "@/server/database/dbOperations";
 import { getFilteredTableNames } from "./utils";
 
@@ -5,8 +6,11 @@ import type { H3Event } from "h3";
 
 export default defineEventHandler(async (event: H3Event) => {
   try {
-    const viewsConfig = await fetchConfig();
-    const tableNames = await getFilteredTableNames();
+    const configDb = await getDatabaseConnection(true);
+    const db = await getDatabaseConnection(false);
+
+    const viewsConfig = await fetchConfig(configDb);
+    const tableNames = await getFilteredTableNames(db);
 
     // Filter out any tables that are already in viewsConfig
     const filteredTableNames = tableNames.filter(

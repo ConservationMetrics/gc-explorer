@@ -1,5 +1,6 @@
 import murmurhash from "murmurhash";
 
+import { getDatabaseConnection } from "@/server/database/dbConnection";
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import {
   prepareAlertData,
@@ -61,7 +62,10 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   try {
-    const viewsConfig = await fetchConfig();
+    const configDb = await getDatabaseConnection(true);
+    const db = await getDatabaseConnection(false);
+
+    const viewsConfig = await fetchConfig(configDb);
 
     // Check visibility permissions
     const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "member";
@@ -69,7 +73,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData, metadata } = (await fetchData(table)) as {
+    const { mainData, metadata } = (await fetchData(db, table)) as {
       mainData: DataEntry[];
       metadata: AlertsMetadata[];
     };
@@ -91,7 +95,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     if (mapeoTable && mapeoCategoryIds) {
       // Fetch Mapeo data
-      const rawMapeoData = await fetchData(mapeoTable);
+      const rawMapeoData = await fetchData(db, mapeoTable);
 
       // Filter data to remove unwanted columns and substrings
       const filteredMapeoData = filterUnwantedKeys(
