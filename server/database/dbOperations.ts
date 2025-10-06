@@ -269,9 +269,7 @@ export const createAnnotatedCollection = async (
       collection.name,
       collection.description,
       collection.collection_type,
-      collection.status,
       collection.created_by,
-      collection.is_active,
       JSON.stringify(collection.metadata),
     ]);
 
