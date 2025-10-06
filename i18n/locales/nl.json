@@ -21,6 +21,7 @@
   "changeDetectionAlerts": "Veranderingsdetectie waarschuwingen",
   "clickOnAlertsForMoreInfo": "Klik op alerts voor meer informatie",
   "confidenceLevel": "Betrouwbaarheidsniveau",
+  "confidenceLevelTerrasImazonGoldMining": "1: Hoog betrouwbaarheidsniveau. Het heeft alle kenmerken van goudmijnen. 0: Laag betrouwbaarheidsniveau. Het is mogelijk om de verandering in landbedekking te zien, maar het is niet mogelijk om zeker te weten dat het goudmijnen is.",
   "configuration": "Instellingen",
   "config": "Configuratie",
   "configDeleted": "Instellingen verwijderd",

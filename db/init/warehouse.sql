@@ -739,7 +739,6 @@ CREATE TABLE public.annotated_collections (
     name text NOT NULL,
     description text,
     collection_type text NOT NULL,
-    status text DEFAULT 'active'::text,
     created_by text NOT NULL,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
@@ -755,6 +754,7 @@ CREATE TABLE public.incidents (
     collection_id uuid NOT NULL,
     incident_type text,
     responsible_party text,
+    status text DEFAULT 'suspected'::text,
     impact_description text,
     supporting_evidence jsonb
 );

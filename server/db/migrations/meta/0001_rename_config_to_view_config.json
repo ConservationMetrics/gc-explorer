@@ -4,7 +4,7 @@
   "entries": [
     {
       "type": "sql",
-      "sql": "-- Migration: Rename config table to view_config\n-- This migration renames the existing config table to view_config\n\n-- Rename the table\nALTER TABLE config RENAME TO view_config;\n\n-- Add the new timestamp columns if they don't exist\nALTER TABLE view_config \nADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL;\n\nALTER TABLE view_config \nADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL;"
+      "sql": "-- Migration: Rename config table to view_config\n-- This migration renames the existing config table to view_config\n\n-- Only rename if config table exists and view_config doesn't exist\nDO $$\nBEGIN\n    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'config')\n       AND NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'view_config') THEN\n        ALTER TABLE config RENAME TO view_config;\n    END IF;\nEND $$;"
     }
   ]
 }
