@@ -1,4 +1,3 @@
-import { getDatabaseConnection } from "@/server/database/dbConnection";
 import { createAnnotatedCollection } from "@/server/database/dbOperations";
 import type { AnnotatedCollection, Incident } from "@/types/types";
 
