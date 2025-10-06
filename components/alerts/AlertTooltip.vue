@@ -6,6 +6,8 @@ const props = defineProps<{
   alertType: string;
 }>();
 
+const { t } = useI18n();
+
 const showTooltip = ref(false);
 const tooltipPosition = ref({ x: 0, y: 0 });
 
@@ -20,17 +22,27 @@ const confidenceLevelTooltips: TooltipEntry[] = [
   {
     provider: "Global Forest Watch",
     alertType: "nasa viirs fire alerts",
-    text: 'This value is based on a collection of intermediate algorithm quantities used in the detection process. It is intended to help users gauge the quality of individual hotspot/fire pixels. Confidence values are set to low, nominal and high. "Low" confidence daytime fire pixels are typically associated with areas of sun glint and lower relative temperature anomaly (<15K) in the mid-infrared channel I4. "Nominal" confidence pixels are those free of potential sun glint contamination during the day and marked by strong (>15K) temperature anomaly in either day or nighttime data. "High" confidence fire pixels are associated with day or nighttime saturated pixels.',
+    text: t("confidenceLevelNasaVIIRSFireAlerts"),
   },
   {
     provider: "Global Forest Watch",
     alertType: "gfw integrated alerts",
-    text: 'Confidence levels help forest monitors prioritize alerts for follow up since satellite-derived data is subject to errors including false alerts. If two or more alert systems detect a change in the same location, we are more confident ("highest confidence") that these alerts indicate real disturbance. For individual systems, there is a delay before a first detection can be verified by additional satellite passes and thus reach "high confidence." The integrated layer displays where multiple systems overlap, in some cases providing increased confidence faster than waiting for individual systems to reach high confidence through additional satellite images, which can take weeks or months. False positives are effectively eliminated in the highest confidence class as it\'s uncommon for two systems to commit the same error since they use different data streams and algorithms.',
+    text: t("confidenceLevelGFWIntegratedAlerts"),
   },
   {
     provider: "Global Forest Watch",
     alertType: "gfw_glad_alerts",
-    text: "Probable loss is defined as a single observation to date flagged as loss. If there are repeat loss observations within 4 observations or 180 days it becomes confirmed loss, otherwise, it reverts back to no loss.",
+    text: t("confidenceLevelGFWGladAlerts"),
+  },
+  {
+    provider: "Imazon",
+    alertType: "gold mining",
+    text: t("confidenceLevelTerrasImazonGoldMining"),
+  },
+  {
+    provider: "Terras",
+    alertType: "gold mining",
+    text: t("confidenceLevelTerrasImazonGoldMining"),
   },
 ];
 
@@ -41,6 +53,13 @@ const getConfidenceLevelTooltip = (dataProvider: string, alertType: string) => {
       tooltip.provider === dataProvider && tooltip.alertType === alertType,
   );
   return entry?.text || "";
+};
+
+/** Safely decode HTML entities without using v-html */
+const decodeHtmlEntities = (text: string) => {
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = text;
+  return textarea.value;
 };
 
 /** Check if data provider and alert type combination has confidence level tooltip */
@@ -119,7 +138,11 @@ const shouldShowTooltip = computed(() => {
       data-testid="confidence-level-tooltip"
     >
       <div class="relative">
-        {{ getConfidenceLevelTooltip(props.dataProvider, props.alertType) }}
+        {{
+          decodeHtmlEntities(
+            getConfidenceLevelTooltip(props.dataProvider, props.alertType),
+          )
+        }}
         <!-- Tooltip arrow -->
         <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
           <div class="border-4 border-transparent border-t-white"></div>
