@@ -1,4 +1,3 @@
-import { getDatabaseConnection } from "@/server/database/dbConnection";
 import {
   createAnnotatedCollection,
   getAnnotatedCollection,
@@ -33,15 +32,7 @@ export const handleListCollections = async (
       }).filter(([_, value]) => value !== undefined),
     );
 
-    const configDb = await getDatabaseConnection(true);
-    if (!configDb) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: "Database connection failed",
-      });
-    }
-
-    const result = await listAnnotatedCollections(configDb, filters);
+    const result = await listAnnotatedCollections(filters);
 
     return {
       collections: result.collections,
@@ -88,14 +79,6 @@ export const handleCreateCollection = async (
       });
     }
 
-    const configDb = await getDatabaseConnection(true);
-    if (!configDb) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: "Database connection failed",
-      });
-    }
-
     // Prepare collection data
     const collectionData: Omit<
       AnnotatedCollection,
@@ -104,9 +87,7 @@ export const handleCreateCollection = async (
       name: body.name,
       description: body.description || "",
       collection_type: collectionType,
-      status: body.status || "active",
       created_by: body.created_by || "system",
-      is_active: body.is_active !== false,
       metadata: body.metadata || {},
     };
 
@@ -116,6 +97,8 @@ export const handleCreateCollection = async (
       incidentData = {
         incident_type: body.incident_type,
         responsible_party: body.responsible_party,
+        status: body.status || "suspected",
+        is_active: body.is_active !== false,
         impact_description: body.impact_description,
         supporting_evidence: body.supporting_evidence || {},
       };
@@ -123,7 +106,6 @@ export const handleCreateCollection = async (
 
     // Create the collection
     const result = await createAnnotatedCollection(
-      configDb,
       collectionData,
       incidentData,
       body.entries,
@@ -157,15 +139,7 @@ export const handleGetCollection = async (event: H3Event) => {
       });
     }
 
-    const configDb = await getDatabaseConnection(true);
-    if (!configDb) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: "Database connection failed",
-      });
-    }
-
-    const result = await getAnnotatedCollection(configDb, collectionId);
+    const result = await getAnnotatedCollection(collectionId);
     return result;
   } catch (error: unknown) {
     console.error("Error fetching collection:", error);
@@ -199,20 +173,11 @@ export const handleUpdateCollection = async (event: H3Event) => {
 
     const body = await readBody(event);
 
-    const configDb = await getDatabaseConnection(true);
-    if (!configDb) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: "Database connection failed",
-      });
-    }
-
     // Prepare collection updates
     const collectionUpdates: Partial<AnnotatedCollection> = {};
     if (body.name !== undefined) collectionUpdates.name = body.name;
     if (body.description !== undefined)
       collectionUpdates.description = body.description;
-    if (body.status !== undefined) collectionUpdates.status = body.status;
     if (body.metadata !== undefined) collectionUpdates.metadata = body.metadata;
 
     // Prepare incident updates if provided
@@ -224,10 +189,12 @@ export const handleUpdateCollection = async (event: H3Event) => {
       body.supporting_evidence !== undefined
     ) {
       incidentUpdates = {};
+      incidentUpdates.is_active = body.status && body.status !== "suspected";
       if (body.incident_type !== undefined)
         incidentUpdates.incident_type = body.incident_type;
       if (body.responsible_party !== undefined)
         incidentUpdates.responsible_party = body.responsible_party;
+      if (body.status !== undefined) incidentUpdates.status = body.status;
       if (body.impact_description !== undefined)
         incidentUpdates.impact_description = body.impact_description;
       if (body.supporting_evidence !== undefined)
@@ -235,7 +202,6 @@ export const handleUpdateCollection = async (event: H3Event) => {
     }
 
     const result = await updateAnnotatedCollection(
-      configDb,
       collectionId,
       collectionUpdates,
       incidentUpdates,
@@ -272,15 +238,7 @@ export const handleDeleteCollection = async (event: H3Event) => {
       });
     }
 
-    const configDb = await getDatabaseConnection(true);
-    if (!configDb) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: "Database connection failed",
-      });
-    }
-
-    await deleteAnnotatedCollection(configDb, collectionId);
+    await deleteAnnotatedCollection(collectionId);
     return { success: true };
   } catch (error) {
     console.error("Error deleting collection:", error);
@@ -314,16 +272,7 @@ export const handleAddEntriesToCollection = async (event: H3Event) => {
       });
     }
 
-    const configDb = await getDatabaseConnection(true);
-    if (!configDb) {
-      throw createError({
-        statusCode: 500,
-        statusMessage: "Database connection failed",
-      });
-    }
-
     const result = await addEntriesToCollection(
-      configDb,
       collectionId,
       body.entries,
       body.added_by || "system",

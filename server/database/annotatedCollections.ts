@@ -1,21 +1,19 @@
-import type { Client } from "pg";
+import { sql } from "drizzle-orm";
 import type {
   AnnotatedCollection,
   Incident,
   CollectionEntry,
-  DatabaseConnection,
 } from "@/types/types";
+import { configDb } from "../utils/db";
 
 /**
  * Creates a new annotated collection with optional incident data and entries
- * @param db - Database connection
  * @param collection - Collection data (without id, created_at, updated_at)
  * @param incidentData - Optional incident-specific data
  * @param entries - Optional array of entries to add to the collection
  * @returns Promise<AnnotatedCollection> - The created collection
  */
 export const createAnnotatedCollection = async (
-  db: DatabaseConnection,
   collection: Omit<AnnotatedCollection, "id" | "created_at" | "updated_at">,
   incidentData?: Omit<Incident, "collection_id">,
   entries?: Array<{
@@ -24,160 +22,123 @@ export const createAnnotatedCollection = async (
     notes?: string;
   }>,
 ): Promise<AnnotatedCollection> => {
-  const pgClient = db as Client;
-
   try {
-    await pgClient.query("BEGIN");
+    await configDb.execute(sql`BEGIN`);
 
     // Create the main collection
-    const collectionQuery = `
-      INSERT INTO annotated_collections (name, description, collection_type, status, created_by, is_active, metadata)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+    const collectionResult = await configDb.execute(sql`
+      INSERT INTO annotated_collections (name, description, collection_type, created_by, metadata)
+      VALUES (${collection.name}, ${collection.description}, ${collection.collection_type}, ${collection.created_by}, ${JSON.stringify(collection.metadata)})
       RETURNING *
-    `;
+    `);
 
-    const collectionResult = await pgClient.query(collectionQuery, [
-      collection.name,
-      collection.description,
-      collection.collection_type,
-      collection.status,
-      collection.created_by,
-      collection.is_active,
-      JSON.stringify(collection.metadata),
-    ]);
-
-    const newCollection = collectionResult.rows[0];
+    const newCollection = collectionResult[0];
 
     // Create incident-specific data if provided
     if (incidentData && collection.collection_type === "incident") {
-      const incidentQuery = `
-        INSERT INTO incidents (collection_id, incident_type, responsible_party, impact_description, supporting_evidence)
-        VALUES ($1, $2, $3, $4, $5)
-      `;
-
-      await pgClient.query(incidentQuery, [
-        newCollection.id,
-        incidentData.incident_type,
-        incidentData.responsible_party,
-        incidentData.impact_description,
-        JSON.stringify(incidentData.supporting_evidence || {}),
-      ]);
+      await configDb.execute(sql`
+        INSERT INTO incidents (collection_id, incident_type, responsible_party, status, is_active, impact_description, supporting_evidence)
+        VALUES (${newCollection.id}, ${incidentData.incident_type}, ${incidentData.responsible_party}, ${incidentData.status}, ${incidentData.is_active}, ${incidentData.impact_description}, ${JSON.stringify(incidentData.supporting_evidence || {})})
+      `);
     }
 
     // Add entries if provided
     if (entries && entries.length > 0) {
       for (const entry of entries) {
         // Fetch source data from the original table
-        const sourceDataQuery = `SELECT * FROM "${entry.source_table}" WHERE _id = $1 OR id = $1 LIMIT 1`;
-        const sourceResult = await pgClient.query(sourceDataQuery, [
-          entry.source_id,
-        ]);
+        const sourceResult = await configDb.execute(sql`
+          SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} OR id = ${entry.source_id} LIMIT 1
+        `);
 
-        const entryQuery = `
+        await configDb.execute(sql`
           INSERT INTO collection_entries (collection_id, source_table, source_id, source_data, added_by, notes)
-          VALUES ($1, $2, $3, $4, $5, $6)
-        `;
-
-        await pgClient.query(entryQuery, [
-          newCollection.id,
-          entry.source_table,
-          entry.source_id,
-          JSON.stringify(sourceResult.rows[0] || {}),
-          collection.created_by,
-          entry.notes,
-        ]);
+          VALUES (${newCollection.id}, ${entry.source_table}, ${entry.source_id}, ${JSON.stringify(sourceResult[0] || {})}, ${collection.created_by}, ${entry.notes})
+        `);
       }
     }
 
-    await pgClient.query("COMMIT");
+    await configDb.execute(sql`COMMIT`);
 
     return {
       ...newCollection,
-      metadata: JSON.parse(newCollection.metadata || "{}"),
-    };
+      metadata: JSON.parse((newCollection.metadata as string) || "{}"),
+    } as AnnotatedCollection;
   } catch (error) {
-    await pgClient.query("ROLLBACK");
+    await configDb.execute(sql`ROLLBACK`);
     throw error;
   }
 };
 
 /**
  * Retrieves an annotated collection by ID with its incident data and entries
- * @param db - Database connection
  * @param collectionId - The collection ID to retrieve
  * @returns Promise with collection, optional incident, and entries
  */
 export const getAnnotatedCollection = async (
-  db: DatabaseConnection,
   collectionId: string,
 ): Promise<{
   collection: AnnotatedCollection;
   incident?: Incident;
   entries: CollectionEntry[];
 }> => {
-  const pgClient = db as Client;
-
   // Get the main collection
-  const collectionQuery = `SELECT * FROM annotated_collections WHERE id = $1`;
-  const collectionResult = await pgClient.query(collectionQuery, [
-    collectionId,
-  ]);
+  const collectionResult = await configDb.execute(sql`
+    SELECT * FROM annotated_collections WHERE id = ${collectionId}
+  `);
 
-  if (collectionResult.rows.length === 0) {
+  if (collectionResult.length === 0) {
     throw new Error("Collection not found");
   }
 
   const collection = {
-    ...collectionResult.rows[0],
-    metadata: JSON.parse(collectionResult.rows[0].metadata || "{}"),
-  };
+    ...collectionResult[0],
+    metadata: JSON.parse((collectionResult[0].metadata as string) || "{}"),
+  } as AnnotatedCollection;
 
   // Get incident data if it's an incident collection
-  let incident = null;
+  let incident: Incident | undefined = undefined;
   if (collection.collection_type === "incident") {
-    const incidentQuery = `SELECT * FROM incidents WHERE collection_id = $1`;
-    const incidentResult = await pgClient.query(incidentQuery, [collectionId]);
+    const incidentResult = await configDb.execute(sql`
+      SELECT * FROM incidents WHERE collection_id = ${collectionId}
+    `);
 
-    if (incidentResult.rows.length > 0) {
+    if (incidentResult.length > 0) {
       incident = {
-        ...incidentResult.rows[0],
+        ...incidentResult[0],
         supporting_evidence: JSON.parse(
-          incidentResult.rows[0].supporting_evidence || "{}",
+          (incidentResult[0].supporting_evidence as string) || "{}",
         ),
-      };
+      } as Incident;
     }
   }
 
   // Get collection entries
-  const entriesQuery = `SELECT * FROM collection_entries WHERE collection_id = $1 ORDER BY added_at DESC`;
-  const entriesResult = await pgClient.query(entriesQuery, [collectionId]);
+  const entriesResult = await configDb.execute(sql`
+    SELECT * FROM collection_entries WHERE collection_id = ${collectionId} ORDER BY added_at DESC
+  `);
 
-  const entries = entriesResult.rows.map((row) => ({
+  const entries = entriesResult.map((row) => ({
     ...row,
-    source_data: JSON.parse(row.source_data || "{}"),
-  }));
+    source_data: JSON.parse((row.source_data as string) || "{}"),
+  })) as CollectionEntry[];
 
   return { collection, incident, entries };
 };
 
 /**
  * Updates an annotated collection and optionally its incident data
- * @param db - Database connection
  * @param collectionId - The collection ID to update
  * @param updates - Collection fields to update
  * @param incidentUpdates - Optional incident fields to update
  * @returns Promise<AnnotatedCollection> - The updated collection
  */
 export const updateAnnotatedCollection = async (
-  db: DatabaseConnection,
   collectionId: string,
   updates: Partial<AnnotatedCollection>,
   incidentUpdates?: Partial<Incident>,
 ): Promise<AnnotatedCollection> => {
-  const pgClient = db as Client;
-
   try {
-    await pgClient.query("BEGIN");
+    await configDb.execute(sql`BEGIN`);
 
     // Update main collection
     const updateFields = [];
@@ -191,10 +152,6 @@ export const updateAnnotatedCollection = async (
     if (updates.description !== undefined) {
       updateFields.push(`description = $${paramCount++}`);
       updateValues.push(updates.description);
-    }
-    if (updates.status !== undefined) {
-      updateFields.push(`status = $${paramCount++}`);
-      updateValues.push(updates.status);
     }
     if (updates.metadata !== undefined) {
       updateFields.push(`metadata = $${paramCount++}`);
@@ -212,9 +169,9 @@ export const updateAnnotatedCollection = async (
         RETURNING *
       `;
 
-      const result = await pgClient.query(updateQuery, updateValues);
+      const result = await configDb.execute(sql.raw(updateQuery));
 
-      if (result.rows.length === 0) {
+      if (result.length === 0) {
         throw new Error("Collection not found");
       }
 
@@ -240,6 +197,14 @@ export const updateAnnotatedCollection = async (
           );
           incidentUpdateValues.push(incidentUpdates.impact_description);
         }
+        if (incidentUpdates.status !== undefined) {
+          incidentUpdateFields.push(`status = $${incidentParamCount++}`);
+          incidentUpdateValues.push(incidentUpdates.status);
+        }
+        if (incidentUpdates.is_active !== undefined) {
+          incidentUpdateFields.push(`is_active = $${incidentParamCount++}`);
+          incidentUpdateValues.push(incidentUpdates.is_active);
+        }
         if (incidentUpdates.supporting_evidence !== undefined) {
           incidentUpdateFields.push(
             `supporting_evidence = $${incidentParamCount++}`,
@@ -258,36 +223,34 @@ export const updateAnnotatedCollection = async (
             WHERE collection_id = $${incidentParamCount}
           `;
 
-          await pgClient.query(incidentUpdateQuery, incidentUpdateValues);
+          await configDb.execute(sql.raw(incidentUpdateQuery));
         }
       }
 
-      await pgClient.query("COMMIT");
+      await configDb.execute(sql`COMMIT`);
 
       return {
-        ...result.rows[0],
-        metadata: JSON.parse(result.rows[0].metadata || "{}"),
-      };
+        ...result[0],
+        metadata: JSON.parse((result[0].metadata as string) || "{}"),
+      } as AnnotatedCollection;
     } else {
-      await pgClient.query("ROLLBACK");
+      await configDb.execute(sql`ROLLBACK`);
       throw new Error("No fields to update");
     }
   } catch (error) {
-    await pgClient.query("ROLLBACK");
+    await configDb.execute(sql`ROLLBACK`);
     throw error;
   }
 };
 
 /**
  * Adds entries to an existing collection
- * @param db - Database connection
  * @param collectionId - The collection ID to add entries to
  * @param entries - Array of entries to add
  * @param addedBy - User ID who is adding the entries
  * @returns Promise<CollectionEntry[]> - The added entries
  */
 export const addEntriesToCollection = async (
-  db: DatabaseConnection,
   collectionId: string,
   entries: Array<{
     source_table: string;
@@ -296,96 +259,70 @@ export const addEntriesToCollection = async (
   }>,
   addedBy: string,
 ): Promise<CollectionEntry[]> => {
-  const pgClient = db as Client;
-
   try {
-    await pgClient.query("BEGIN");
+    await configDb.execute(sql`BEGIN`);
 
     const newEntries = [];
 
     for (const entry of entries) {
       // Fetch source data from the original table
-      const sourceDataQuery = `SELECT * FROM "${entry.source_table}" WHERE _id = $1 OR id = $1 LIMIT 1`;
-      const sourceResult = await pgClient.query(sourceDataQuery, [
-        entry.source_id,
-      ]);
+      const sourceResult = await configDb.execute(sql`
+        SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} OR id = ${entry.source_id} LIMIT 1
+      `);
 
-      const entryQuery = `
+      const entryResult = await configDb.execute(sql`
         INSERT INTO collection_entries (collection_id, source_table, source_id, source_data, added_by, notes)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        VALUES (${collectionId}, ${entry.source_table}, ${entry.source_id}, ${JSON.stringify(sourceResult[0] || {})}, ${addedBy}, ${entry.notes})
         RETURNING *
-      `;
-
-      const entryResult = await pgClient.query(entryQuery, [
-        collectionId,
-        entry.source_table,
-        entry.source_id,
-        JSON.stringify(sourceResult.rows[0] || {}),
-        addedBy,
-        entry.notes,
-      ]);
+      `);
 
       newEntries.push({
-        ...entryResult.rows[0],
-        source_data: JSON.parse(entryResult.rows[0].source_data || "{}"),
-      });
+        ...entryResult[0],
+        source_data: JSON.parse((entryResult[0].source_data as string) || "{}"),
+      } as CollectionEntry);
     }
 
-    await pgClient.query("COMMIT");
+    await configDb.execute(sql`COMMIT`);
     return newEntries;
   } catch (error) {
-    await pgClient.query("ROLLBACK");
+    await configDb.execute(sql`ROLLBACK`);
     throw error;
   }
 };
 
 /**
  * Deletes an annotated collection by ID
- * @param db - Database connection
  * @param collectionId - The collection ID to delete
  * @returns Promise<void>
  */
 export const deleteAnnotatedCollection = async (
-  db: DatabaseConnection,
   collectionId: string,
 ): Promise<void> => {
-  const pgClient = db as Client;
-
-  return new Promise((resolve, reject) => {
-    const query = `DELETE FROM annotated_collections WHERE id = $1`;
-
-    pgClient.query(query, [collectionId], (err: Error) => {
-      if (err) {
-        console.error("PostgreSQL Error:", err);
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
+  try {
+    await configDb.execute(sql`
+      DELETE FROM annotated_collections WHERE id = ${collectionId}
+    `);
+  } catch (error) {
+    console.error("PostgreSQL Error:", error);
+    throw error;
+  }
 };
 
 /**
  * Lists annotated collections with optional filtering and pagination
- * @param db - Database connection
  * @param filters - Optional filters for collection_type, status, created_by, limit, offset
  * @returns Promise with collections array and total count
  */
-export const listAnnotatedCollections = async (
-  db: DatabaseConnection,
-  filters?: {
-    collection_type?: string;
-    status?: string;
-    created_by?: string;
-    limit?: number;
-    offset?: number;
-  },
-): Promise<{
+export const listAnnotatedCollections = async (filters?: {
+  collection_type?: string;
+  status?: string;
+  created_by?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{
   collections: AnnotatedCollection[];
   total: number;
 }> => {
-  const pgClient = db as Client;
-
   let whereClause = "";
   const queryParams = [];
   let paramCount = 1;
@@ -414,9 +351,10 @@ export const listAnnotatedCollections = async (
   }
 
   // Get total count
-  const countQuery = `SELECT COUNT(*) FROM annotated_collections ${whereClause}`;
-  const countResult = await pgClient.query(countQuery, queryParams);
-  const total = parseInt(countResult.rows[0].count);
+  const countResult = await configDb.execute(
+    sql.raw(`SELECT COUNT(*) FROM annotated_collections ${whereClause}`),
+  );
+  const total = parseInt(countResult[0].count as string);
 
   // Get collections with pagination
   const limit = filters?.limit || 20;
@@ -430,12 +368,12 @@ export const listAnnotatedCollections = async (
   `;
 
   queryParams.push(limit, offset);
-  const collectionsResult = await pgClient.query(collectionsQuery, queryParams);
+  const collectionsResult = await configDb.execute(sql.raw(collectionsQuery));
 
-  const collections = collectionsResult.rows.map((row) => ({
+  const collections = collectionsResult.map((row) => ({
     ...row,
-    metadata: JSON.parse(row.metadata || "{}"),
-  }));
+    metadata: JSON.parse((row.metadata as string) || "{}"),
+  })) as AnnotatedCollection[];
 
   return { collections, total };
 };
