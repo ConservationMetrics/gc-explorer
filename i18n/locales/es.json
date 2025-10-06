@@ -21,6 +21,7 @@
   "changeDetectionAlerts": "Alertas de detección de cambios",
   "clickOnAlertsForMoreInfo": "Haga clic en las alertas para obtener más información",
   "confidenceLevel": "Nivel de confianza",
+  "confidenceLevelTerrasImazonGoldMining": "1: Alto nivel de confianza. Tiene todas las características de garimpo de oro. 0: Bajo nivel de confianza. Es posible ver la cobertura de la tierra, pero no es posible estar seguro de que se trata de garimpo de oro.",
   "configuration": "Configuración",
   "config": "Configuración",
   "configUpdated": "Configuración actualizada",
