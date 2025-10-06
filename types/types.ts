@@ -177,8 +177,8 @@ export interface AnnotatedCollection {
   id: string;
   name: string;
   description?: string;
-  collection_type: 'incident' | 'wildlife_sighting' | 'research_plot';
-  status: 'active' | 'archived' | 'draft';
+  collection_type: "incident" | "wildlife_sighting" | "research_plot";
+  status: "active" | "archived" | "draft";
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -201,11 +201,16 @@ export interface Incident {
 export interface WildlifeSighting {
   collection_id: string;
   species?: string;
-  observation_type?: 'camera_trap' | 'direct_observation' | 'track' | 'scat' | 'call';
+  observation_type?:
+    | "camera_trap"
+    | "direct_observation"
+    | "track"
+    | "scat"
+    | "call";
   behavior_notes?: string;
   habitat_type?: string;
   weather_conditions?: string;
-  observer_confidence?: 'high' | 'medium' | 'low';
+  observer_confidence?: "high" | "medium" | "low";
 }
 
 export interface CollectionEntry {
