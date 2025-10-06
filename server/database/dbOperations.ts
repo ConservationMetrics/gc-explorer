@@ -1,17 +1,18 @@
+import { sql, eq } from "drizzle-orm";
 import type { Client } from "pg";
+
 import type {
-  Views,
-  DatabaseConnection,
-  DataEntry,
-  ColumnEntry,
   AnnotatedCollection,
-  Incident,
+  ColumnEntry,
   CollectionEntry,
+  DataEntry,
+  DatabaseConnection,
+  Incident,
+  Views,
 } from "@/types/types";
 
-import { sql, eq } from "drizzle-orm";
-import { configDb, warehouseDb } from "../utils/db";
 import { viewConfig } from "../db/schema";
+import { configDb, warehouseDb } from "../utils/db";
 
 const checkTableExists = async (
   table: string | undefined,
