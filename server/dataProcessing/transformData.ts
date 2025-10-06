@@ -426,7 +426,7 @@ const prepareAlertsStatistics = (
   let earliestDateStr, latestDateStr;
   let earliestDate: Date, latestDate: Date;
 
-  if (!isGFW && metadata && metadata.length > 0) {
+  if (metadata && metadata.length > 0) {
     // Find earliest and latest dates from metadata
     metadata.sort((a, b) =>
       a.year === b.year ? a.month - b.month : a.year - b.year,
