@@ -405,10 +405,6 @@ export const updateAnnotatedCollection = async (
       updateFields.push(`description = $${paramCount++}`);
       updateValues.push(updates.description);
     }
-    if (updates.status !== undefined) {
-      updateFields.push(`status = $${paramCount++}`);
-      updateValues.push(updates.status);
-    }
     if (updates.metadata !== undefined) {
       updateFields.push(`metadata = $${paramCount++}`);
       updateValues.push(JSON.stringify(updates.metadata));
@@ -440,6 +436,14 @@ export const updateAnnotatedCollection = async (
         if (incidentUpdates.incident_type !== undefined) {
           incidentUpdateFields.push(`incident_type = $${incidentParamCount++}`);
           incidentUpdateValues.push(incidentUpdates.incident_type);
+        }
+        if (incidentUpdates.status !== undefined) {
+          incidentUpdateFields.push(`status = $${incidentParamCount++}`);
+          incidentUpdateValues.push(incidentUpdates.status);
+        }
+        if (incidentUpdates.is_active !== undefined) {
+          incidentUpdateFields.push(`is_active = $${incidentParamCount++}`);
+          incidentUpdateValues.push(incidentUpdates.is_active);
         }
         if (incidentUpdates.responsible_party !== undefined) {
           incidentUpdateFields.push(
@@ -568,7 +572,6 @@ export const listAnnotatedCollections = async (
   db: DatabaseConnection,
   filters?: {
     collection_type?: string;
-    status?: string;
     created_by?: string;
     limit?: number;
     offset?: number;
@@ -590,12 +593,6 @@ export const listAnnotatedCollections = async (
       conditions.push(`collection_type = $${paramCount++}`);
       queryParams.push(filters.collection_type);
     }
-
-    if (filters.status) {
-      conditions.push(`status = $${paramCount++}`);
-      queryParams.push(filters.status);
-    }
-
     if (filters.created_by) {
       conditions.push(`created_by = $${paramCount++}`);
       queryParams.push(filters.created_by);
