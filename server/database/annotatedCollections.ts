@@ -1,10 +1,15 @@
-import { sql } from "drizzle-orm";
+import { sql, eq, and } from "drizzle-orm";
 import type {
   AnnotatedCollection,
   Incident,
   CollectionEntry,
 } from "@/types/types";
 import { configDb } from "../utils/db";
+import {
+  annotatedCollections,
+  incidents,
+  collectionEntries,
+} from "../db/schema";
 
 /**
  * Creates a new annotated collection with optional incident data and collection entries
@@ -29,20 +34,28 @@ export const createAnnotatedCollection = async (
     await configDb.execute(sql`BEGIN`);
 
     // Create the annotated parent collection first
-    const collectionResult = await configDb.execute(sql`
-      INSERT INTO annotated_collections (name, description, collection_type, created_by, metadata)
-      VALUES (${collection.name}, ${collection.description}, ${collection.collection_type}, ${collection.created_by}, ${JSON.stringify(collection.metadata)})
-      RETURNING *
-    `);
-
-    const newCollection = collectionResult[0];
+    const [newCollection] = await configDb
+      .insert(annotatedCollections)
+      .values({
+        name: collection.name,
+        description: collection.description,
+        collectionType: collection.collection_type,
+        createdBy: collection.created_by,
+        metadata: collection.metadata,
+      })
+      .returning();
 
     // Create incident-specific data if provided
     if (incidentData && collection.collection_type === "incident") {
-      await configDb.execute(sql`
-        INSERT INTO incidents (collection_id, incident_type, responsible_party, status, is_active, impact_description, supporting_evidence)
-        VALUES (${newCollection.id}, ${incidentData.incident_type}, ${incidentData.responsible_party}, ${incidentData.status}, ${incidentData.is_active}, ${incidentData.impact_description}, ${JSON.stringify(incidentData.supporting_evidence || {})})
-      `);
+      await configDb.insert(incidents).values({
+        collectionId: newCollection.id,
+        incidentType: incidentData.incident_type,
+        responsibleParty: incidentData.responsible_party,
+        status: incidentData.status,
+        isActive: incidentData.is_active,
+        impactDescription: incidentData.impact_description,
+        supportingEvidence: incidentData.supporting_evidence,
+      });
     }
 
     // Add entries if provided
@@ -53,18 +66,28 @@ export const createAnnotatedCollection = async (
           SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} OR id = ${entry.source_id} LIMIT 1
         `);
 
-        await configDb.execute(sql`
-          INSERT INTO collection_entries (collection_id, source_table, source_id, source_data, added_by, notes)
-          VALUES (${newCollection.id}, ${entry.source_table}, ${entry.source_id}, ${JSON.stringify(sourceResult[0] || {})}, ${collection.created_by}, ${entry.notes})
-        `);
+        await configDb.insert(collectionEntries).values({
+          collectionId: newCollection.id,
+          sourceTable: entry.source_table,
+          sourceId: entry.source_id,
+          sourceData: sourceResult[0] || {},
+          addedBy: collection.created_by,
+          notes: entry.notes,
+        });
       }
     }
 
     await configDb.execute(sql`COMMIT`);
 
     return {
-      ...newCollection,
-      metadata: JSON.parse((newCollection.metadata as string) || "{}"),
+      id: newCollection.id,
+      name: newCollection.name,
+      description: newCollection.description,
+      collection_type: newCollection.collectionType,
+      created_by: newCollection.createdBy,
+      created_at: newCollection.createdAt?.toISOString() || "",
+      updated_at: newCollection.updatedAt?.toISOString() || "",
+      metadata: newCollection.metadata || {},
     } as AnnotatedCollection;
   } catch (error) {
     await configDb.execute(sql`ROLLBACK`);
@@ -85,44 +108,63 @@ export const getAnnotatedCollection = async (
   entries: CollectionEntry[];
 }> => {
   // Get the main collection
-  const collectionResult = await configDb.execute(sql`
-    SELECT * FROM annotated_collections WHERE id = ${collectionId}
-  `);
+  const [collectionResult] = await configDb
+    .select()
+    .from(annotatedCollections)
+    .where(eq(annotatedCollections.id, collectionId));
 
-  if (collectionResult.length === 0) {
+  if (!collectionResult) {
     throw new Error("Collection not found");
   }
 
   const collection = {
-    ...collectionResult[0],
-    metadata: JSON.parse((collectionResult[0].metadata as string) || "{}"),
+    id: collectionResult.id,
+    name: collectionResult.name,
+    description: collectionResult.description,
+    collection_type: collectionResult.collectionType,
+    created_by: collectionResult.createdBy,
+    created_at: collectionResult.createdAt?.toISOString() || "",
+    updated_at: collectionResult.updatedAt?.toISOString() || "",
+    metadata: collectionResult.metadata || {},
   } as AnnotatedCollection;
 
   // Get incident data if it's an incident collection
   let incident: Incident | undefined = undefined;
   if (collection.collection_type === "incident") {
-    const incidentResult = await configDb.execute(sql`
-      SELECT * FROM incidents WHERE collection_id = ${collectionId}
-    `);
+    const [incidentResult] = await configDb
+      .select()
+      .from(incidents)
+      .where(eq(incidents.collectionId, collectionId));
 
-    if (incidentResult.length > 0) {
+    if (incidentResult) {
       incident = {
-        ...incidentResult[0],
-        supporting_evidence: JSON.parse(
-          (incidentResult[0].supporting_evidence as string) || "{}",
-        ),
+        collection_id: incidentResult.collectionId,
+        incident_type: incidentResult.incidentType,
+        responsible_party: incidentResult.responsibleParty,
+        status: incidentResult.status,
+        is_active: incidentResult.isActive,
+        impact_description: incidentResult.impactDescription,
+        supporting_evidence: incidentResult.supportingEvidence,
       } as Incident;
     }
   }
 
   // Get collection entries
-  const entriesResult = await configDb.execute(sql`
-    SELECT * FROM collection_entries WHERE collection_id = ${collectionId} ORDER BY added_at DESC
-  `);
+  const entriesResult = await configDb
+    .select()
+    .from(collectionEntries)
+    .where(eq(collectionEntries.collectionId, collectionId))
+    .orderBy(collectionEntries.addedAt);
 
   const entries = entriesResult.map((row) => ({
-    ...row,
-    source_data: JSON.parse((row.source_data as string) || "{}"),
+    id: row.id,
+    collection_id: row.collectionId,
+    source_table: row.sourceTable,
+    source_id: row.sourceId,
+    source_data: row.sourceData || {},
+    added_by: row.addedBy,
+    added_at: row.addedAt?.toISOString() || "",
+    notes: row.notes,
   })) as CollectionEntry[];
 
   return { collection, incident, entries };
@@ -144,97 +186,64 @@ export const updateAnnotatedCollection = async (
     await configDb.execute(sql`BEGIN`);
 
     // Update main collection
-    const updateFields = [];
-    const updateValues = [];
-    let paramCount = 1;
+    const collectionUpdateData: Partial<
+      typeof annotatedCollections.$inferInsert
+    > = {};
+    if (updates.name !== undefined) collectionUpdateData.name = updates.name;
+    if (updates.description !== undefined)
+      collectionUpdateData.description = updates.description;
+    if (updates.metadata !== undefined)
+      collectionUpdateData.metadata = updates.metadata;
 
-    if (updates.name !== undefined) {
-      updateFields.push(`name = $${paramCount++}`);
-      updateValues.push(updates.name);
-    }
-    if (updates.description !== undefined) {
-      updateFields.push(`description = $${paramCount++}`);
-      updateValues.push(updates.description);
-    }
-    if (updates.metadata !== undefined) {
-      updateFields.push(`metadata = $${paramCount++}`);
-      updateValues.push(JSON.stringify(updates.metadata));
-    }
+    if (Object.keys(collectionUpdateData).length > 0) {
+      const [updatedCollection] = await configDb
+        .update(annotatedCollections)
+        .set(collectionUpdateData)
+        .where(eq(annotatedCollections.id, collectionId))
+        .returning();
 
-    if (updateFields.length > 0) {
-      updateFields.push(`updated_at = NOW()`);
-      updateValues.push(collectionId);
-
-      const updateQuery = `
-        UPDATE annotated_collections 
-        SET ${updateFields.join(", ")}
-        WHERE id = $${paramCount}
-        RETURNING *
-      `;
-
-      const result = await configDb.execute(sql.raw(updateQuery));
-
-      if (result.length === 0) {
+      if (!updatedCollection) {
         throw new Error("Collection not found");
       }
 
       // Update incident data if provided
       if (incidentUpdates) {
-        const incidentUpdateFields = [];
-        const incidentUpdateValues = [];
-        let incidentParamCount = 1;
+        const incidentUpdateData: Partial<typeof incidents.$inferInsert> = {};
+        if (incidentUpdates.incident_type !== undefined)
+          incidentUpdateData.incidentType = incidentUpdates.incident_type;
+        if (incidentUpdates.responsible_party !== undefined)
+          incidentUpdateData.responsibleParty =
+            incidentUpdates.responsible_party;
+        if (incidentUpdates.impact_description !== undefined)
+          incidentUpdateData.impactDescription =
+            incidentUpdates.impact_description;
+        if (incidentUpdates.status !== undefined)
+          incidentUpdateData.status = incidentUpdates.status;
+        if (incidentUpdates.is_active !== undefined)
+          incidentUpdateData.isActive = incidentUpdates.is_active;
+        if (incidentUpdates.supporting_evidence !== undefined)
+          incidentUpdateData.supportingEvidence =
+            incidentUpdates.supporting_evidence;
 
-        if (incidentUpdates.incident_type !== undefined) {
-          incidentUpdateFields.push(`incident_type = $${incidentParamCount++}`);
-          incidentUpdateValues.push(incidentUpdates.incident_type);
-        }
-        if (incidentUpdates.responsible_party !== undefined) {
-          incidentUpdateFields.push(
-            `responsible_party = $${incidentParamCount++}`,
-          );
-          incidentUpdateValues.push(incidentUpdates.responsible_party);
-        }
-        if (incidentUpdates.impact_description !== undefined) {
-          incidentUpdateFields.push(
-            `impact_description = $${incidentParamCount++}`,
-          );
-          incidentUpdateValues.push(incidentUpdates.impact_description);
-        }
-        if (incidentUpdates.status !== undefined) {
-          incidentUpdateFields.push(`status = $${incidentParamCount++}`);
-          incidentUpdateValues.push(incidentUpdates.status);
-        }
-        if (incidentUpdates.is_active !== undefined) {
-          incidentUpdateFields.push(`is_active = $${incidentParamCount++}`);
-          incidentUpdateValues.push(incidentUpdates.is_active);
-        }
-        if (incidentUpdates.supporting_evidence !== undefined) {
-          incidentUpdateFields.push(
-            `supporting_evidence = $${incidentParamCount++}`,
-          );
-          incidentUpdateValues.push(
-            JSON.stringify(incidentUpdates.supporting_evidence),
-          );
-        }
-
-        if (incidentUpdateFields.length > 0) {
-          incidentUpdateValues.push(collectionId);
-
-          const incidentUpdateQuery = `
-            UPDATE incidents 
-            SET ${incidentUpdateFields.join(", ")}
-            WHERE collection_id = $${incidentParamCount}
-          `;
-
-          await configDb.execute(sql.raw(incidentUpdateQuery));
+        if (Object.keys(incidentUpdateData).length > 0) {
+          await configDb
+            .update(incidents)
+            .set(incidentUpdateData)
+            .where(eq(incidents.collectionId, collectionId));
         }
       }
 
       await configDb.execute(sql`COMMIT`);
 
       return {
-        ...result[0],
-        metadata: JSON.parse((result[0].metadata as string) || "{}"),
+        id: updatedCollection.id,
+        name: updatedCollection.name,
+        description: updatedCollection.description,
+        collection_type: updatedCollection.collectionType,
+        created_by: updatedCollection.createdBy,
+        created_at: updatedCollection.createdAt?.toISOString() || "",
+        updated_at: updatedCollection.updatedAt?.toISOString() || "",
+        metadata: updatedCollection.metadata || {},
       } as AnnotatedCollection;
     } else {
       await configDb.execute(sql`ROLLBACK`);
@@ -276,15 +285,27 @@ export const addEntriesToCollection = async (
         SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} OR id = ${entry.source_id} LIMIT 1
       `);
 
-      const entryResult = await configDb.execute(sql`
-        INSERT INTO collection_entries (collection_id, source_table, source_id, source_data, added_by, notes)
-        VALUES (${collectionId}, ${entry.source_table}, ${entry.source_id}, ${JSON.stringify(sourceResult[0] || {})}, ${addedBy}, ${entry.notes})
-        RETURNING *
-      `);
+      const [newEntry] = await configDb
+        .insert(collectionEntries)
+        .values({
+          collectionId: collectionId,
+          sourceTable: entry.source_table,
+          sourceId: entry.source_id,
+          sourceData: sourceResult[0] || {},
+          addedBy: addedBy,
+          notes: entry.notes,
+        })
+        .returning();
 
       newEntries.push({
-        ...entryResult[0],
-        source_data: JSON.parse((entryResult[0].source_data as string) || "{}"),
+        id: newEntry.id,
+        collection_id: newEntry.collectionId,
+        source_table: newEntry.sourceTable,
+        source_id: newEntry.sourceId,
+        source_data: newEntry.sourceData || {},
+        added_by: newEntry.addedBy,
+        added_at: newEntry.addedAt?.toISOString() || "",
+        notes: newEntry.notes,
       } as CollectionEntry);
     }
 
@@ -305,9 +326,9 @@ export const deleteAnnotatedCollection = async (
   collectionId: string,
 ): Promise<void> => {
   try {
-    await configDb.execute(sql`
-      DELETE FROM annotated_collections WHERE id = ${collectionId}
-    `);
+    await configDb
+      .delete(annotatedCollections)
+      .where(eq(annotatedCollections.id, collectionId));
   } catch (error) {
     console.error("PostgreSQL Error:", error);
     throw error;
@@ -329,57 +350,81 @@ export const listAnnotatedCollections = async (filters?: {
   collections: AnnotatedCollection[];
   total: number;
 }> => {
-  let whereClause = "";
-  const queryParams = [];
-  let paramCount = 1;
-
-  if (filters) {
-    const conditions = [];
-
-    if (filters.collection_type) {
-      conditions.push(`collection_type = $${paramCount++}`);
-      queryParams.push(filters.collection_type);
-    }
-
-    if (filters.status) {
-      conditions.push(`status = $${paramCount++}`);
-      queryParams.push(filters.status);
-    }
-
-    if (filters.created_by) {
-      conditions.push(`created_by = $${paramCount++}`);
-      queryParams.push(filters.created_by);
-    }
-
-    if (conditions.length > 0) {
-      whereClause = `WHERE ${conditions.join(" AND ")}`;
-    }
+  // Build where conditions
+  const whereConditions = [];
+  if (filters?.collection_type) {
+    whereConditions.push(
+      eq(annotatedCollections.collectionType, filters.collection_type),
+    );
+  }
+  if (filters?.created_by) {
+    whereConditions.push(
+      eq(annotatedCollections.createdBy, filters.created_by),
+    );
   }
 
-  // Get total count
-  const countResult = await configDb.execute(
-    sql.raw(`SELECT COUNT(*) FROM annotated_collections ${whereClause}`),
-  );
-  const total = parseInt(countResult[0].count as string);
+  // For status filtering, we need to join with incidents table
+  if (filters?.status) {
+    const collectionsResult = await configDb
+      .select()
+      .from(annotatedCollections)
+      .leftJoin(incidents, eq(annotatedCollections.id, incidents.collectionId))
+      .where(eq(incidents.status, filters.status))
+      .orderBy(annotatedCollections.createdAt)
+      .limit(filters?.limit || 20)
+      .offset(filters?.offset || 0);
 
-  // Get collections with pagination
-  const limit = filters?.limit || 20;
-  const offset = filters?.offset || 0;
+    const [countResult] = await configDb
+      .select({ count: sql<number>`count(*)` })
+      .from(annotatedCollections)
+      .leftJoin(incidents, eq(annotatedCollections.id, incidents.collectionId))
+      .where(eq(incidents.status, filters.status));
 
-  const collectionsQuery = `
-    SELECT * FROM annotated_collections 
-    ${whereClause}
-    ORDER BY created_at DESC
-    LIMIT $${paramCount++} OFFSET $${paramCount++}
-  `;
+    const collections = collectionsResult.map((row) => ({
+      id: row.annotated_collections.id,
+      name: row.annotated_collections.name,
+      description: row.annotated_collections.description,
+      collection_type: row.annotated_collections.collectionType,
+      created_by: row.annotated_collections.createdBy,
+      created_at: row.annotated_collections.createdAt?.toISOString() || "",
+      updated_at: row.annotated_collections.updatedAt?.toISOString() || "",
+      metadata: row.annotated_collections.metadata || {},
+    })) as AnnotatedCollection[];
 
-  queryParams.push(limit, offset);
-  const collectionsResult = await configDb.execute(sql.raw(collectionsQuery));
+    return { collections, total: countResult.count };
+  } else {
+    // Simple query without status filtering
+    const whereCondition =
+      whereConditions.length > 0
+        ? whereConditions.length === 1
+          ? whereConditions[0]
+          : and(...whereConditions)
+        : undefined;
 
-  const collections = collectionsResult.map((row) => ({
-    ...row,
-    metadata: JSON.parse((row.metadata as string) || "{}"),
-  })) as AnnotatedCollection[];
+    const [countResult] = await configDb
+      .select({ count: sql<number>`count(*)` })
+      .from(annotatedCollections)
+      .where(whereCondition);
 
-  return { collections, total };
+    const collectionsResult = await configDb
+      .select()
+      .from(annotatedCollections)
+      .where(whereCondition)
+      .orderBy(annotatedCollections.createdAt)
+      .limit(filters?.limit || 20)
+      .offset(filters?.offset || 0);
+
+    const collections = collectionsResult.map((row) => ({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      collection_type: row.collectionType,
+      created_by: row.createdBy,
+      created_at: row.createdAt?.toISOString() || "",
+      updated_at: row.updatedAt?.toISOString() || "",
+      metadata: row.metadata || {},
+    })) as AnnotatedCollection[];
+
+    return { collections, total: countResult.count };
+  }
 };
