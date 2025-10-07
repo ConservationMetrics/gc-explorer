@@ -8,6 +8,7 @@ import {
 } from "@/server/database/annotatedCollections";
 import type { AnnotatedCollection, Incident } from "@/types/types";
 import type { H3Event } from "h3";
+
 /**
  * Shared handler for listing collections with optional collection type filtering
  * @param event - Nuxt event object
