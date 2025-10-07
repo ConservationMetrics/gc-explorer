@@ -7,11 +7,14 @@ import type {
 import { configDb } from "../utils/db";
 
 /**
- * Creates a new annotated collection with optional incident data and entries
- * @param collection - Collection data (without id, created_at, updated_at)
- * @param incidentData - Optional incident-specific data
- * @param entries - Optional array of entries to add to the collection
- * @returns Promise<AnnotatedCollection> - The created collection
+ * Creates a new annotated collection with optional incident data and collection entries
+ * @param collection - The annotated collection data (without id, created_at, updated_at)
+ * @param incidentData - Optional incident-specific data if collection_type is "incident"
+ * @param entries - Optional array of collection entries to add to the collection. Each entry contains:
+ *   - source_table: The table name (e.g., "fake_alerts", "mapeo_data") corresponding to the URL path
+ *   - source_id: The unique identifier from the source table (e.g., alertID for alerts, mapeoID for mapeo)
+ *   - notes: Optional notes about the entry
+ * @returns Promise<AnnotatedCollection> - The created annotated collection
  */
 export const createAnnotatedCollection = async (
   collection: Omit<AnnotatedCollection, "id" | "created_at" | "updated_at">,
@@ -25,7 +28,7 @@ export const createAnnotatedCollection = async (
   try {
     await configDb.execute(sql`BEGIN`);
 
-    // Create the main collection
+    // Create the annotated parent collection first
     const collectionResult = await configDb.execute(sql`
       INSERT INTO annotated_collections (name, description, collection_type, created_by, metadata)
       VALUES (${collection.name}, ${collection.description}, ${collection.collection_type}, ${collection.created_by}, ${JSON.stringify(collection.metadata)})
@@ -70,9 +73,9 @@ export const createAnnotatedCollection = async (
 };
 
 /**
- * Retrieves an annotated collection by ID with its incident data and entries
- * @param collectionId - The collection ID to retrieve
- * @returns Promise with collection, optional incident, and entries
+ * Retrieves an annotated collection by ID with its incident data and collection entries
+ * @param collectionId - The annotated collection ID to retrieve
+ * @returns Promise with collection, optional incident data, and collection entries
  */
 export const getAnnotatedCollection = async (
   collectionId: string,
@@ -127,10 +130,10 @@ export const getAnnotatedCollection = async (
 
 /**
  * Updates an annotated collection and optionally its incident data
- * @param collectionId - The collection ID to update
- * @param updates - Collection fields to update
- * @param incidentUpdates - Optional incident fields to update
- * @returns Promise<AnnotatedCollection> - The updated collection
+ * @param collectionId - The annotated collection ID to update
+ * @param updates - Annotated collection fields to update
+ * @param incidentUpdates - Optional incident-specific fields to update
+ * @returns Promise<AnnotatedCollection> - The updated annotated collection
  */
 export const updateAnnotatedCollection = async (
   collectionId: string,
@@ -244,11 +247,14 @@ export const updateAnnotatedCollection = async (
 };
 
 /**
- * Adds entries to an existing collection
- * @param collectionId - The collection ID to add entries to
- * @param entries - Array of entries to add
- * @param addedBy - User ID who is adding the entries
- * @returns Promise<CollectionEntry[]> - The added entries
+ * Adds collection entries to an existing annotated collection
+ * @param collectionId - The annotated collection ID to add entries to
+ * @param entries - Array of collection entries to add. Each entry contains:
+ *   - source_table: The table name (e.g., "fake_alerts", "mapeo_data") corresponding to the URL path
+ *   - source_id: The unique identifier from the source table (e.g., alertID for alerts, mapeoID for mapeo)
+ *   - notes: Optional notes about the entry
+ * @param addedBy - User ID who is adding the collection entries
+ * @returns Promise<CollectionEntry[]> - The added collection entries
  */
 export const addEntriesToCollection = async (
   collectionId: string,
@@ -291,8 +297,8 @@ export const addEntriesToCollection = async (
 };
 
 /**
- * Deletes an annotated collection by ID
- * @param collectionId - The collection ID to delete
+ * Deletes an annotated collection by ID (cascades to related incidents and collection entries)
+ * @param collectionId - The annotated collection ID to delete
  * @returns Promise<void>
  */
 export const deleteAnnotatedCollection = async (
@@ -311,7 +317,7 @@ export const deleteAnnotatedCollection = async (
 /**
  * Lists annotated collections with optional filtering and pagination
  * @param filters - Optional filters for collection_type, status, created_by, limit, offset
- * @returns Promise with collections array and total count
+ * @returns Promise with annotated collections array and total count
  */
 export const listAnnotatedCollections = async (filters?: {
   collection_type?: string;
