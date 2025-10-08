@@ -39,7 +39,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
       const response = await $fetch<
         [
-          Record<string, { routeLevelPermission?: RouteLevelPermission }>,
+          Record<string, { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission }>,
           string[],
         ]
       >("/api/config", { headers });
@@ -48,7 +48,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
       // Extract the table name from the last part of the path
       const tableName = to.path.split("/").pop()!;
       const permission: RouteLevelPermission =
-        tableConfig?.[tableName]?.routeLevelPermission ?? "member";
+        tableConfig?.[tableName]?.ROUTE_LEVEL_PERMISSION ?? "signed-in";
       // Public access: no login needed
       if (permission === "anyone") return;
 
