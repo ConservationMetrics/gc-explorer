@@ -39,7 +39,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
       const response = await $fetch<
         [
-          Record<string, { routeLevelPermission?: RouteLevelPermission }>,
+          Record<string, { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission }>,
           string[],
         ]
       >("/api/config", { headers });
@@ -48,7 +48,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
       // Extract the table name from the last part of the path
       const tableName = to.path.split("/").pop()!;
       const permission: RouteLevelPermission =
-        tableConfig?.[tableName]?.routeLevelPermission ?? "member";
+        tableConfig?.[tableName]?.ROUTE_LEVEL_PERMISSION ?? "signed-in";
       // Public access: no login needed
       if (permission === "anyone") return;
 
@@ -60,7 +60,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
       // Authenticated from here on
       const typedUser = user.value as User;
-      const userRole = typedUser?.userRole ?? Role.Viewer;
+      const userRole = typedUser?.userRole ?? Role.Public;
       // Role-based access control
       switch (permission) {
         case "member":
@@ -91,7 +91,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Check role-based access for restricted routes
   if (authStrategy === "auth0" && loggedIn.value && user.value) {
     const typedUser = user.value as User;
-    const userRole = typedUser.userRole || Role.Viewer;
+    const userRole = typedUser.userRole ?? Role.Public;
 
     // Redirect non-Admins from config route
     if (to.path === "/config" && userRole < Role.Admin) {

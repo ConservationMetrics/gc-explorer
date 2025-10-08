@@ -23,7 +23,7 @@ const routeLevelPermission = ref<RouteLevelPermission | undefined>(
 const shouldShowPermissions = computed(() => {
   if (!user.value) return false;
   const typedUser = user.value as User;
-  const userRole = typedUser.userRole || Role.Viewer;
+  const userRole = typedUser.userRole ?? Role.Public;
   return userRole >= Role.Admin;
 });
 

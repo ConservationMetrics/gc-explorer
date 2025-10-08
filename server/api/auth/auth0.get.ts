@@ -255,18 +255,18 @@ export default oauthAuth0EventHandler({
       }
 
       // Determine user role level
-      let userRole: Role = Role.Public; // Default to Public (not signed in)
+      let userRole: Role = Role.Viewer; // Default to Viewer (not signed in)
       if (userRoles.length > 0) {
         const hasAdminRole = userRoles.some((role) => role.name === "Admin");
         const hasMemberRole = userRoles.some((role) => role.name === "Member");
-        const hasViewerRole = userRoles.some((role) => role.name === "Viewer");
+        const hasPublicRole = userRoles.some((role) => role.name === "Public");
 
         if (hasAdminRole) {
           userRole = Role.Admin;
         } else if (hasMemberRole) {
           userRole = Role.Member;
-        } else if (hasViewerRole) {
-          userRole = Role.Viewer;
+        } else if (hasPublicRole) {
+          userRole = Role.Public;
         } else {
           // User has roles but none of the expected ones, treat as Viewer
           userRole = Role.Viewer;
