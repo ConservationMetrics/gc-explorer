@@ -47,7 +47,6 @@ const filteredSortedViewsConfig = computed(() => {
   }
 
   const typedUser = user.value as User | null;
-  console.log("typedUser", typedUser);
   const userRole = typedUser?.userRole ?? Role.Public;
 
   return Object.keys(viewsConfig.value)
@@ -71,9 +70,6 @@ const filteredSortedViewsConfig = computed(() => {
         config.ROUTE_LEVEL_PERMISSION === undefined &&
         userRole < Role.Public
       ) {
-        console.log(
-          "config.ROUTE_LEVEL_PERMISSION is undefined and userRole is lower than Public",
-        );
         return false;
       }
 
