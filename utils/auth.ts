@@ -34,7 +34,7 @@ export const validatePermissions = async (
   // For member permission, check user role
   if (permission === "member") {
     const typedUser = session.user as User;
-    const userRole = typedUser?.userRole || Role.Viewer;
+    const userRole = typedUser?.userRole ?? Role.Public;
 
     if (userRole < Role.Member) {
       throw createError({
@@ -47,7 +47,7 @@ export const validatePermissions = async (
   // For admin permission, check user role
   if (permission === "admin") {
     const typedUser = session.user as User;
-    const userRole = typedUser?.userRole || Role.Viewer;
+    const userRole = typedUser?.userRole ?? Role.Public;
 
     if (userRole < Role.Admin) {
       throw createError({

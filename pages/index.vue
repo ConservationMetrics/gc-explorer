@@ -47,14 +47,14 @@ const filteredSortedViewsConfig = computed(() => {
   }
 
   const typedUser = user.value as User | null;
-  const userRole = typedUser?.userRole || Role.Viewer;
+  console.log("typedUser", typedUser);
+  const userRole = typedUser?.userRole ?? Role.Public;
 
   return Object.keys(viewsConfig.value)
     .filter((key) => {
       const config = viewsConfig.value[key];
       // Filter out empty configs
       if (Object.keys(config).length === 0) return false;
-
       // Filter views based on user role and permission level
       // Hide view if user role is lower than what's required
       if (
@@ -64,6 +64,16 @@ const filteredSortedViewsConfig = computed(() => {
         return false;
       }
       if (config.ROUTE_LEVEL_PERMISSION === "admin" && userRole < Role.Admin) {
+        return false;
+      }
+      // base case for when ROUTE_LEVEL_PERMISSION is undefined i.e. it has never been set and user role is lower than Public
+      if (
+        config.ROUTE_LEVEL_PERMISSION === undefined &&
+        userRole < Role.Public
+      ) {
+        console.log(
+          "config.ROUTE_LEVEL_PERMISSION is undefined and userRole is lower than Public",
+        );
         return false;
       }
 
@@ -84,7 +94,7 @@ const isViewRestricted = (tableName: string) => {
   if (!user.value) return false;
   const permission = viewsConfig.value[tableName]?.ROUTE_LEVEL_PERMISSION;
   const typedUser = user.value as User | null;
-  const userRole = typedUser?.userRole || Role.Viewer;
+  const userRole = typedUser?.userRole ?? Role.Public;
 
   return (
     userRole >= Role.Member &&
@@ -105,7 +115,7 @@ const shouldShowConfigLink = computed(() => {
 
   if (authStrategy === "auth0" && loggedIn.value && user.value) {
     const typedUser = user.value as User | null;
-    const userRole = typedUser?.userRole || Role.Viewer;
+    const userRole = typedUser?.userRole ?? Role.Public;
     return userRole >= Role.Admin;
   }
 

@@ -60,7 +60,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
       // Authenticated from here on
       const typedUser = user.value as User;
-      const userRole = typedUser?.userRole ?? Role.Viewer;
+      const userRole = typedUser?.userRole ?? Role.Public;
       // Role-based access control
       switch (permission) {
         case "member":
@@ -91,7 +91,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Check role-based access for restricted routes
   if (authStrategy === "auth0" && loggedIn.value && user.value) {
     const typedUser = user.value as User;
-    const userRole = typedUser.userRole || Role.Viewer;
+    const userRole = typedUser.userRole ?? Role.Public;
 
     // Redirect non-Admins from config route
     if (to.path === "/config" && userRole < Role.Admin) {
