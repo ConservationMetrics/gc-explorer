@@ -156,6 +156,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Generate date for image tag
+        id: imgtag_date
+        run: echo "DATE_FOR_IMGTAG=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -171,6 +174,7 @@ jobs:
           tags: |
             ${{ steps.meta.outputs.tags }}
             ${{ github.ref == 'refs/heads/main' && 'communityfirst/guardianconnector-explorer:latest' || '' }}
+            ${{ github.ref == 'refs/heads/main' && format('communityfirst/guardianconnector-explorer:{0}-{1}', steps.imgtag_date.outputs.DATE_FOR_IMGTAG, github.run_number) || '' }}
             communityfirst/guardianconnector-explorer:ci-test
           labels: ${{ steps.meta.outputs.labels }}
       - name: Docker Hub Description
