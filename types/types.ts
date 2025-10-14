@@ -138,6 +138,11 @@ export type AlertsStatistics = {
   twelveMonthsBefore: string;
 };
 
+export type MapStatistics = {
+  totalFeatures: number;
+  dateRange?: string;
+};
+
 export const Role = {
   Viewer: 0, // Not signed in, no permissions
   Public: 1, // Signed in but no special permissions

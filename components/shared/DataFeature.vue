@@ -1,13 +1,20 @@
 <script setup lang="ts">
 import MediaFile from "@/components/shared/MediaFile.vue";
+import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import { Copy, Check } from "lucide-vue-next";
 import AlertTooltip from "@/components/alerts/AlertTooltip.vue";
 
-import type { AllowedFileExtensions, DataEntry } from "@/types/types";
+import type {
+  AllowedFileExtensions,
+  DataEntry,
+  AlertsData,
+} from "@/types/types";
+import type { Feature } from "geojson";
 
 const props = defineProps<{
   allowedFileExtensions?: AllowedFileExtensions;
   feature: DataEntry;
+  featureGeojson?: Feature | AlertsData;
   filePaths?: Array<string>;
   isAlert?: boolean;
   isMapeo?: boolean;
@@ -51,6 +58,15 @@ const setMediaBasePath = () => {
     return "";
   }
 };
+
+/** Get GeoJSON Feature for download */
+const featureForDownload = computed((): Feature | AlertsData | null => {
+  if (props.featureGeojson) {
+    return props.featureGeojson;
+  }
+
+  return null;
+});
 </script>
 
 <template>
@@ -171,6 +187,11 @@ const setMediaBasePath = () => {
               : $t("copyLink")
         }}</span>
       </button>
+    </div>
+
+    <!-- Download section for individual feature -->
+    <div v-if="featureForDownload" class="p-6 pt-0">
+      <DownloadMapData :data-for-download="featureForDownload" />
     </div>
   </div>
 </template>

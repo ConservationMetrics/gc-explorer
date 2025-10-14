@@ -10,12 +10,49 @@ let loadCallback: (() => void) | undefined;
 const clickCallbacks: Record<string, Array<(evt: unknown) => void>> = {};
 
 // Spyable helpers --------------------------------------------------------
+export const addControl = vi.fn();
+export const setFeatureState = vi.fn();
+
+// Mock map object --------------------------------------------------------
+export const mockMap = {
+  on: vi.fn((event: string, layerOrCb: unknown, cb?: unknown) => {
+    if (event === "load") {
+      loadCallback = layerOrCb as () => void;
+    } else if (event === "click" && typeof layerOrCb === "string" && cb) {
+      (clickCallbacks[layerOrCb] ||= []).push(cb as (evt: unknown) => void);
+    }
+  }),
+  addControl,
+  addSource: vi.fn(),
+  addLayer: vi.fn((layer: Record<string, unknown>) => layers.push(layer)),
+  removeLayer: vi.fn(),
+  removeSource: vi.fn(),
+  getStyle: vi.fn(() => ({ layers })),
+  setStyle: vi.fn(),
+  getLayer: vi.fn(() => false),
+  getSource: vi.fn(() => false),
+  getCanvas: vi.fn(() => ({ style: { cursor: "" } })),
+  loadImage: vi.fn(
+    (_url: string, cb: (err: unknown, img: HTMLImageElement) => void) =>
+      cb(null, new Image()),
+  ),
+  hasImage: vi.fn(() => false),
+  addImage: vi.fn(),
+  setFeatureState,
+  setTerrain: vi.fn(),
+  queryRenderedFeatures: vi.fn(() => []),
+  setFilter: vi.fn(),
+  setLayoutProperty: vi.fn(),
+  once: vi.fn(),
+  flyTo: vi.fn(),
+  fitBounds: vi.fn(),
+  remove: vi.fn(),
+};
+
 export const Map = vi.fn(() => mockMap);
 export const NavigationControl = vi.fn();
 export const ScaleControl = vi.fn();
 export const FullscreenControl = vi.fn();
-export const addControl = vi.fn();
-export const setFeatureState = vi.fn();
 
 // Public helpers ---------------------------------------------------------
 export function fireLoad(): void {
@@ -33,6 +70,11 @@ export function reset(): void {
   FullscreenControl.mockClear();
   addControl.mockClear();
   setFeatureState.mockClear();
+  mockMap.addSource.mockClear();
+  mockMap.addLayer.mockClear();
+  mockMap.setTerrain.mockClear();
+  mockMap.flyTo.mockClear();
+  mockMap.remove.mockClear();
   layers.length = 0;
   loadCallback = undefined;
   Object.keys(clickCallbacks).forEach((k) => {
@@ -40,38 +82,6 @@ export function reset(): void {
     delete clickCallbacks[k];
   });
 }
-
-// Mock map object --------------------------------------------------------
-const mockMap = {
-  on: vi.fn((event: string, layerOrCb: unknown, cb?: unknown) => {
-    if (event === "load") {
-      loadCallback = layerOrCb as () => void;
-    } else if (event === "click" && typeof layerOrCb === "string" && cb) {
-      (clickCallbacks[layerOrCb] ||= []).push(cb as (evt: unknown) => void);
-    }
-  }),
-  addControl,
-  addSource: vi.fn(),
-  addLayer: vi.fn((layer: Record<string, unknown>) => layers.push(layer)),
-  getStyle: vi.fn(() => ({ layers })),
-  getLayer: vi.fn(() => false),
-  getSource: vi.fn(() => true),
-  getCanvas: vi.fn(() => ({ style: { cursor: "" } })),
-  loadImage: vi.fn(
-    (_url: string, cb: (err: unknown, img: HTMLImageElement) => void) =>
-      cb(null, new Image()),
-  ),
-  hasImage: vi.fn(() => false),
-  addImage: vi.fn(),
-  setFeatureState,
-  queryRenderedFeatures: vi.fn(() => []),
-  setFilter: vi.fn(),
-  setLayoutProperty: vi.fn(),
-  once: vi.fn(),
-  flyTo: vi.fn(),
-  fitBounds: vi.fn(),
-  remove: vi.fn(),
-};
 
 // Register global module mock -------------------------------------------
 vi.mock("mapbox-gl", () => {

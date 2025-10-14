@@ -22,11 +22,13 @@ import type {
   Dataset,
   FilterValues,
   MapLegendItem,
+  MapStatistics,
 } from "@/types/types";
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
   filterColumn: string;
+  mapStatistics: MapStatistics;
   mapLegendLayerIds?: string;
   mapboxAccessToken: string;
   mapboxBearing: number | null;
@@ -45,8 +47,10 @@ const props = defineProps<{
 const filteredData = ref([...props.mapData]);
 const map = ref();
 const selectedFeature = ref();
-const showSidebar = ref(false);
+const selectedFeatureOriginal = ref();
+const showSidebar = ref(true);
 const showBasemapSelector = ref(false);
+const showIntroPanel = ref(true);
 
 onMounted(() => {
   mapboxgl.accessToken = props.mapboxAccessToken;
@@ -220,18 +224,37 @@ const addDataToMap = () => {
       layerId,
       (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0 && e.features[0].properties) {
-          const featureObject = JSON.parse(e.features[0].properties.feature);
-          delete featureObject["filter-color"];
-
-          // Rewrite coordinates string from [long, lat] to lat, long, removing brackets
-          if (featureObject.geocoordinates) {
-            featureObject.geocoordinates = prepareCoordinatesForSelectedFeature(
-              featureObject.geocoordinates,
-            );
+          // Parse the feature if it's a string (Mapbox may serialize it)
+          let featureObject = e.features[0].properties.feature;
+          if (typeof featureObject === "string") {
+            featureObject = JSON.parse(featureObject);
           }
 
-          selectedFeature.value = featureObject;
+          // Create GeoJSON Feature for download
+          const featureGeojson = {
+            type: e.features[0].type,
+            geometry: e.features[0].geometry,
+            properties: { ...featureObject },
+          };
+          // Remove filter-color from properties
+          delete featureGeojson.properties["filter-color"];
+
+          // Create display feature with formatted coordinates
+          const displayFeature = JSON.parse(JSON.stringify(featureObject));
+          delete displayFeature["filter-color"];
+
+          // Rewrite coordinates string from [long, lat] to lat, long, removing brackets for display
+          if (displayFeature.geocoordinates) {
+            displayFeature.geocoordinates =
+              prepareCoordinatesForSelectedFeature(
+                displayFeature.geocoordinates,
+              );
+          }
+
+          selectedFeature.value = displayFeature;
+          selectedFeatureOriginal.value = featureGeojson;
           showSidebar.value = true;
+          showIntroPanel.value = false;
         }
       },
       { passive: true },
@@ -292,6 +315,30 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
   utilsToggleLayerVisibility(map.value, item);
 };
 
+/** Reset the map to initial state */
+const resetToInitialState = () => {
+  selectedFeature.value = null;
+  selectedFeatureOriginal.value = null;
+  showSidebar.value = true;
+  showIntroPanel.value = true;
+
+  // Fly to the initial position
+  map.value.flyTo({
+    center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
+    zoom: props.mapboxZoom || 2.5,
+    pitch: props.mapboxPitch || 0,
+    bearing: props.mapboxBearing || 0,
+  });
+};
+
+/** Handle sidebar close */
+const handleSidebarClose = () => {
+  showSidebar.value = false;
+  selectedFeature.value = null;
+  selectedFeatureOriginal.value = null;
+  showIntroPanel.value = true;
+};
+
 onBeforeUnmount(() => {
   if (map.value) {
     map.value.remove();
@@ -300,35 +347,49 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div id="map"></div>
-  <DataFilter
-    v-if="filterColumn"
-    :data="mapData"
-    :filter-column="filterColumn"
-    :show-colored-dot="true"
-    @filter="filterValues"
-  />
-  <ViewSidebar
-    :allowed-file-extensions="allowedFileExtensions"
-    :feature="selectedFeature"
-    :file-paths="
-      getFilePathsWithExtension(selectedFeature, allowedFileExtensions)
-    "
-    :media-base-path="mediaBasePath"
-    :show-sidebar="showSidebar"
-    @close="showSidebar = false"
-  />
-  <MapLegend
-    v-if="mapLegendContent && mapData"
-    :map-legend-content="mapLegendContent"
-    @toggle-layer-visibility="toggleLayerVisibility"
-  />
-  <BasemapSelector
-    v-if="showBasemapSelector"
-    :mapbox-style="mapboxStyle"
-    :planet-api-key="planetApiKey"
-    @basemap-selected="handleBasemapChange"
-  />
+  <div>
+    <div id="map"></div>
+    <button
+      v-if="!showSidebar"
+      class="reset-button bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
+      @click="resetToInitialState"
+    >
+      {{ $t("resetMap") }}
+    </button>
+    <DataFilter
+      v-if="filterColumn"
+      :data="mapData"
+      :filter-column="filterColumn"
+      :show-colored-dot="true"
+      @filter="filterValues"
+    />
+    <ViewSidebar
+      :allowed-file-extensions="allowedFileExtensions"
+      :feature="selectedFeature"
+      :feature-geojson="selectedFeatureOriginal"
+      :file-paths="
+        getFilePathsWithExtension(selectedFeature, allowedFileExtensions)
+      "
+      :is-alerts-dashboard="false"
+      :map-data="mapData"
+      :map-statistics="mapStatistics"
+      :media-base-path="mediaBasePath"
+      :show-intro-panel="showIntroPanel"
+      :show-sidebar="showSidebar"
+      @close="handleSidebarClose"
+    />
+    <MapLegend
+      v-if="mapLegendContent && mapData"
+      :map-legend-content="mapLegendContent"
+      @toggle-layer-visibility="toggleLayerVisibility"
+    />
+    <BasemapSelector
+      v-if="showBasemapSelector"
+      :mapbox-style="mapboxStyle"
+      :planet-api-key="planetApiKey"
+      @basemap-selected="handleBasemapChange"
+    />
+  </div>
 </template>
 
 <style scoped>
@@ -352,5 +413,12 @@ body {
   width: 100%;
   display: block;
   margin-top: 5px;
+}
+
+.reset-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
 }
 </style>

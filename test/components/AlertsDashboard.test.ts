@@ -17,7 +17,6 @@ import * as mapboxMock from "@/test/helpers/mapboxMock";
 import AlertsDashboard from "@/components/AlertsDashboard.vue";
 
 // Re-usable minimal props object
-
 const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
   alertsData: {
     mostRecentAlerts: { type: "FeatureCollection" as const, features: [] },

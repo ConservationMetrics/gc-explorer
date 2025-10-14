@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { X, ChevronDown } from "lucide-vue-next";
-import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
 import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
+import MapIntroPanel from "@/components/map/MapIntroPanel.vue";
 
 import type {
   AlertsData,
   AlertsStatistics,
   AllowedFileExtensions,
   DataEntry,
+  Dataset,
+  MapStatistics,
 } from "@/types/types";
 
 import type { Feature } from "geojson";
@@ -18,14 +20,16 @@ const props = defineProps<{
   allowedFileExtensions?: AllowedFileExtensions;
   calculateHectares?: boolean;
   dateOptions?: Array<string>;
-  downloadAlert?: boolean;
   feature?: DataEntry;
+  featureGeojson?: Feature | AlertsData;
   filePaths?: Array<string>;
   isAlert?: boolean;
   isMapeo?: boolean;
   isAlertsDashboard?: boolean;
   localAlertsData?: Feature | AlertsData;
   logoUrl?: string;
+  mapData?: Dataset;
+  mapStatistics?: MapStatistics;
   mediaBasePath?: string;
   mediaBasePathAlerts?: string;
   showIntroPanel?: boolean;
@@ -114,7 +118,7 @@ onBeforeUnmount(() => {
 
       <div class="p-4 sidebar-content">
         <AlertsIntroPanel
-          v-if="showIntroPanel && alertsStatistics"
+          v-if="showIntroPanel && alertsStatistics && isAlertsDashboard"
           :calculate-hectares="calculateHectares"
           :date-options="dateOptions"
           :data-for-alerts-intro-panel="dataForAlertsIntroPanel"
@@ -123,20 +127,25 @@ onBeforeUnmount(() => {
           :alerts-statistics="alertsStatistics"
           @date-range-changed="emit('date-range-changed', $event)"
         />
+        <MapIntroPanel
+          v-if="
+            showIntroPanel && mapStatistics && mapData && !isAlertsDashboard
+          "
+          :map-statistics="mapStatistics"
+          :map-data="mapData"
+          :logo-url="logoUrl"
+        />
         <DataFeature
           v-if="feature"
           :allowed-file-extensions="allowedFileExtensions"
           :feature="filteredFeature"
+          :feature-geojson="featureGeojson"
           :file-paths="filePaths"
           :is-alert="isAlert"
           :is-mapeo="isMapeo"
           :is-alerts-dashboard="isAlertsDashboard"
           :media-base-path="mediaBasePath"
           :media-base-path-alerts="mediaBasePathAlerts"
-        />
-        <DownloadMapData
-          v-if="downloadAlert"
-          :data-for-download="localAlertsData"
         />
       </div>
     </div>
