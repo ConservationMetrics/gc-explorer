@@ -22,11 +22,13 @@ import type {
   Dataset,
   FilterValues,
   MapLegendItem,
+  MapStatistics,
 } from "@/types/types";
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
   filterColumn: string;
+  mapStatistics: MapStatistics;
   mapLegendLayerIds?: string;
   mapboxAccessToken: string;
   mapboxBearing: number | null;
@@ -45,8 +47,10 @@ const props = defineProps<{
 const filteredData = ref([...props.mapData]);
 const map = ref();
 const selectedFeature = ref();
-const showSidebar = ref(false);
+const selectedFeatureOriginal = ref();
+const showSidebar = ref(true);
 const showBasemapSelector = ref(false);
+const showIntroPanel = ref(true);
 
 onMounted(() => {
   mapboxgl.accessToken = props.mapboxAccessToken;
@@ -230,8 +234,10 @@ const addDataToMap = () => {
             );
           }
 
-          selectedFeature.value = featureObject;
+          selectedFeature.value = displayFeature;
+          selectedFeatureOriginal.value = originalFeature;
           showSidebar.value = true;
+          showIntroPanel.value = false;
         }
       },
       { passive: true },
@@ -292,6 +298,30 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
   utilsToggleLayerVisibility(map.value, item);
 };
 
+/** Reset the map to initial state */
+const resetToInitialState = () => {
+  selectedFeature.value = null;
+  selectedFeatureOriginal.value = null;
+  showSidebar.value = true;
+  showIntroPanel.value = true;
+
+  // Fly to the initial position
+  map.value.flyTo({
+    center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
+    zoom: props.mapboxZoom || 2.5,
+    pitch: props.mapboxPitch || 0,
+    bearing: props.mapboxBearing || 0,
+  });
+};
+
+/** Handle sidebar close */
+const handleSidebarClose = () => {
+  showSidebar.value = false;
+  selectedFeature.value = null;
+  selectedFeatureOriginal.value = null;
+  showIntroPanel.value = true;
+};
+
 onBeforeUnmount(() => {
   if (map.value) {
     map.value.remove();
@@ -300,7 +330,15 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <div>
   <div id="map"></div>
+    <button
+      v-if="!showSidebar"
+      class="reset-button bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
+      @click="resetToInitialState"
+    >
+      {{ $t("resetMap") }}
+    </button>
   <DataFilter
     v-if="filterColumn"
     :data="mapData"
@@ -311,12 +349,17 @@ onBeforeUnmount(() => {
   <ViewSidebar
     :allowed-file-extensions="allowedFileExtensions"
     :feature="selectedFeature"
+      :feature-original="selectedFeatureOriginal"
     :file-paths="
       getFilePathsWithExtension(selectedFeature, allowedFileExtensions)
     "
+      :is-alerts-dashboard="false"
+      :map-data="mapData"
+      :map-statistics="mapStatistics"
     :media-base-path="mediaBasePath"
+      :show-intro-panel="showIntroPanel"
     :show-sidebar="showSidebar"
-    @close="showSidebar = false"
+      @close="handleSidebarClose"
   />
   <MapLegend
     v-if="mapLegendContent && mapData"
@@ -329,6 +372,7 @@ onBeforeUnmount(() => {
     :planet-api-key="planetApiKey"
     @basemap-selected="handleBasemapChange"
   />
+  </div>
 </template>
 
 <style scoped>
@@ -352,5 +396,12 @@ body {
   width: 100%;
   display: block;
   margin-top: 5px;
+}
+
+.reset-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
 }
 </style>
