@@ -1361,6 +1361,7 @@ onBeforeUnmount(() => {
       :date-options="dateOptions"
       :feature="selectedFeature"
       :feature-original="localAlertsData"
+      :feature-original-is-geojson="true"
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
       :is-alert="isAlert"

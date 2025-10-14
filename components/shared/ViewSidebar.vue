@@ -21,7 +21,8 @@ const props = defineProps<{
   calculateHectares?: boolean;
   dateOptions?: Array<string>;
   feature?: DataEntry;
-  featureOriginal?: DataEntry | Feature;
+  featureOriginal?: DataEntry | Feature | AlertsData;
+  featureOriginalIsGeojson?: boolean;
   filePaths?: Array<string>;
   isAlert?: boolean;
   isMapeo?: boolean;
@@ -140,6 +141,7 @@ onBeforeUnmount(() => {
           :allowed-file-extensions="allowedFileExtensions"
           :feature="filteredFeature"
           :feature-original="featureOriginal"
+          :feature-original-is-geojson="featureOriginalIsGeojson"
           :file-paths="filePaths"
           :is-alert="isAlert"
           :is-mapeo="isMapeo"
