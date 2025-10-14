@@ -2,6 +2,7 @@
 import type { Views, User } from "@/types/types";
 import { Role } from "@/types/types";
 import LanguagePicker from "@/components/shared/LanguagePicker.vue";
+import { formatDisplayName } from "@/utils/index";
 
 const viewsConfig = ref<Views>({});
 
@@ -86,26 +87,8 @@ const filteredSortedViewsConfig = computed(() => {
 });
 
 /**
- * Formats a permission level string for display
- * Transforms camelCase, kebab-case, and snake_case to Title Case
- *
- * @param {string} permission - The permission level string to format
- * @returns {string} The formatted permission level (e.g., "signed-in" → "Signed In")
- */
-const formatPermissionLevel = (permission: string) => {
-  return permission
-    .replace(/([A-Z])/g, " $1") // Add space before capital letters
-    .replace(/[-_]/g, " ") // Replace dashes and underscores with spaces
-    .trim() // Remove leading/trailing spaces
-    .replace(/\s+/g, " ") // Replace multiple spaces with single space
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize each word
-    .join(" ");
-};
-
-/**
  * Gets the formatted permission level for a table to display in the UI
- * Returns null for public permissions or in CI environment
+ * Returns null in CI environment, otherwise shows all permission levels
  *
  * @param {string} tableName - The name of the table to check permissions for
  * @returns {string | null} The formatted permission level or null if not applicable
@@ -116,9 +99,9 @@ const getPermissionLevel = (tableName: string) => {
 
   const permission = viewsConfig.value[tableName]?.ROUTE_LEVEL_PERMISSION;
 
-  // Only show pill for non-public permissions
-  if (permission && permission !== "anyone") {
-    return formatPermissionLevel(permission);
+  // Show pill for all permission levels (including "anyone" for public routes)
+  if (permission) {
+    return formatDisplayName(permission);
   }
 
   return null;

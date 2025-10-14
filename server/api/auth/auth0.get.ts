@@ -321,8 +321,9 @@ export default oauthAuth0EventHandler({
           if (userId) {
             try {
               const allRoles = await fetchRoles();
+              console.log("🔍 All roles from Auth0:", allRoles);
               const signedInRole = allRoles.find(
-                (role) => role.name === "SignedIn",
+                (role) => role.name === "SignedIn" || role.name === "Signedin",
               );
 
               if (signedInRole) {
