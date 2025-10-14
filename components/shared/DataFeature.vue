@@ -14,8 +14,7 @@ import type { Feature } from "geojson";
 const props = defineProps<{
   allowedFileExtensions?: AllowedFileExtensions;
   feature: DataEntry;
-  featureOriginal?: DataEntry | Feature | AlertsData;
-  featureOriginalIsGeojson?: boolean;
+  featureGeojson?: Feature | AlertsData;
   filePaths?: Array<string>;
   isAlert?: boolean;
   isMapeo?: boolean;
@@ -60,59 +59,13 @@ const setMediaBasePath = () => {
   }
 };
 
-/** Convert feature to GeoJSON Feature for download */
-const featureForDownload = computed((): Feature | null => {
-  // Use original feature for download if available, otherwise use display feature
-  const featureToUse = props.featureOriginal || props.feature;
-
-  if (!featureToUse) {
-    return null;
+/** Get GeoJSON Feature for download */
+const featureForDownload = computed((): Feature | AlertsData | null => {
+  if (props.featureGeojson) {
+    return props.featureGeojson;
   }
 
-  // If explicitly told it's already GeoJSON (e.g., alerts from AlertsDashboard), return as-is
-  if (props.featureOriginalIsGeojson) {
-    return featureToUse as Feature;
-  }
-
-  // Otherwise, convert from DataEntry format (for map features)
-  // Type guard: ensure it's a DataEntry with required fields
-  if (!("geocoordinates" in featureToUse) || !("geotype" in featureToUse)) {
-    return null;
-  }
-
-  const dataEntry = featureToUse as DataEntry;
-
-  if (!dataEntry.geocoordinates || !dataEntry.geotype) {
-    return null;
-  }
-
-  let coordinates;
-  try {
-    // Try to parse if it's a string, otherwise use as-is
-    coordinates =
-      typeof dataEntry.geocoordinates === "string"
-        ? JSON.parse(dataEntry.geocoordinates)
-        : dataEntry.geocoordinates;
-  } catch (error) {
-    console.error("Error parsing coordinates:", error);
-    return null;
-  }
-
-  // Create properties object without geocoordinates and geotype (they're in geometry)
-  const properties = { ...dataEntry };
-  delete properties.geocoordinates;
-  delete properties.geotype;
-
-  const geoJsonFeature: Feature = {
-    type: "Feature" as const,
-    geometry: {
-      type: dataEntry.geotype as "Point" | "LineString" | "Polygon",
-      coordinates: coordinates,
-    },
-    properties: properties,
-  };
-
-  return geoJsonFeature;
+  return null;
 });
 </script>
 

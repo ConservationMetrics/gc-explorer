@@ -230,12 +230,17 @@ const addDataToMap = () => {
             featureObject = JSON.parse(featureObject);
           }
 
-          // Create deep copies for both display and download
-          const originalFeature = JSON.parse(JSON.stringify(featureObject));
-          const displayFeature = JSON.parse(JSON.stringify(featureObject));
+          // Create GeoJSON Feature for download
+          const featureGeojson = {
+            type: e.features[0].type,
+            geometry: e.features[0].geometry,
+            properties: { ...featureObject },
+          };
+          // Remove filter-color from properties
+          delete featureGeojson.properties["filter-color"];
 
-          // Remove filter-color from both
-          delete originalFeature["filter-color"];
+          // Create display feature with formatted coordinates
+          const displayFeature = JSON.parse(JSON.stringify(featureObject));
           delete displayFeature["filter-color"];
 
           // Rewrite coordinates string from [long, lat] to lat, long, removing brackets for display
@@ -247,7 +252,7 @@ const addDataToMap = () => {
           }
 
           selectedFeature.value = displayFeature;
-          selectedFeatureOriginal.value = originalFeature;
+          selectedFeatureOriginal.value = featureGeojson;
           showSidebar.value = true;
           showIntroPanel.value = false;
         }
@@ -361,7 +366,7 @@ onBeforeUnmount(() => {
     <ViewSidebar
       :allowed-file-extensions="allowedFileExtensions"
       :feature="selectedFeature"
-      :feature-original="selectedFeatureOriginal"
+      :feature-geojson="selectedFeatureOriginal"
       :file-paths="
         getFilePathsWithExtension(selectedFeature, allowedFileExtensions)
       "
