@@ -10,16 +10,12 @@ Additionally, the application now supports **route-level visibility permissions*
 
 ## Access Control Matrix
 
-| Role | Access Level | Routes |
-|------|-------------|---------|
-| **Admin** | Full access | All routes including `/config` |
-| **Member** | Restricted access | Restricted routes (cannot access `/config`) |
-| **Viewer** | Limited access | Unrestricted routes only |
-| **Public** | Logged in but no permissions | Basic access only |
-
-> [!NOTE]
-> 
-> The "Viewer" role is nominal only — it is equivalent to users who have no account and can only view unrestricted routes.
+| Role         | Access Level                          | Routes                                      |
+| ------------ | ------------------------------------- | ------------------------------------------- |
+| **Admin**    | Full access                           | All routes including `/config`              |
+| **Member**   | Restricted access                     | Restricted routes (cannot access `/config`) |
+| **Guest**    | Limited access                        | Guest and unrestricted routes only          |
+| **SignedIn** | Logged in but no elevated permissions | Same access as unauthenticated users        |
 
 ## Route-Level Visibility Permissions
 
@@ -29,14 +25,14 @@ In addition to user role-based access control, the application now supports **ro
 
 ### Permission Levels
 
-Each dataset view can be configured with one of three visibility levels:
+Each dataset view can be configured with one of four visibility levels:
 
-| Permission Level | Description | Access Requirements |
-|------------------|-------------|-------------------|
-| **`anyone`** | Public access | No authentication required - anyone with the link can view |
-| **`signed-in`** | Authenticated users | Requires login - any authenticated user (Public, Member, or Admin) can view |
-| **`member`** | Member access | Requires Member or Admin role |
-| **`admin`** | Admin access | Requires Admin role only |
+| Permission Level | Description   | Access Requirements                                                                  |
+| ---------------- | ------------- | ------------------------------------------------------------------------------------ |
+| **`anyone`**     | Public access | No authentication required - anyone with the link can view (includes SignedIn users) |
+| **`guest`**      | Guest access  | Requires Guest, Member, or Admin role                                                |
+| **`member`**     | Member access | Requires Member or Admin role                                                        |
+| **`admin`**      | Admin access  | Requires Admin role only                                                             |
 
 ### Configuration
 
@@ -90,12 +86,9 @@ Before implementing RBAC, ensure:
      - `read:user_idp_tokens` - to read user roles
      - `update:users` - to assign roles to users
 
-4. **Create Public Role** (if not exists):
+4. **Create Required Roles** (if not exists): see `## Role Management` below.
    - Go to **User Management > Roles**
    - Click **"+ Create Role"**
-   - Name: `Public`
-   - Description: `User is logged in but not yet approved for higher access`
-   - Note the Role ID for configuration
 
 ## Role Management
 
@@ -104,18 +97,20 @@ Before implementing RBAC, ensure:
 1. Navigate to **User Management > Roles** in the Auth0 dashboard
 2. Click **"+ Create Role"** (blue button in the top right)
 3. Enter role details:
-   - **Name**: Admin, Member, Viewer, or Public
+   - **Name**: Admin, Member, Guest, or SignedIn
    - **Description**: Brief description of permissions
+
 
 ![Auth0 Roles Management](roles.png)
 
-*Screenshot showing the existing roles (Admin, Member, Public) and the "+ Create Role" button in the Auth0 dashboard*
+_Screenshot showing the existing roles (Admin, Member, Guest, SignedIn) and the "+ Create Role" button in the Auth0 dashboard_
 
-**Existing Roles in the System:**
+**Required Roles in Auth0:**
+
 - **Admin**: "can access anything a member can, plus /config"
-- **Member**: "can access both unrestricted and restricted views routes"
-- **Viewer**: "can access unrestricted views only"
-- **Public**: "logged in but no special permissions (assigned automatically)"
+- **Member**: "can access member, guest, and unrestricted views routes"
+- **Guest**: "can access guest and unrestricted views routes"
+- **SignedIn**: "logged in but no elevated permissions (same access as unauthenticated users)"
 
 ### Assigning Roles to Users
 
@@ -127,16 +122,18 @@ Before implementing RBAC, ensure:
 
 **Note**: Users can have multiple roles, but it's recommended to assign only the highest-level role needed (e.g., assign Admin and remove Member role).
 
-**Automatic Role Assignment**: New users with no roles are automatically assigned the "Public" role via the Management API.
+**Automatic Role Assignment**: New users with no roles are automatically assigned the "SignedIn" role via the Management API.
 
 ### Viewing User Roles
 
 You can view assigned roles using the Auth0 dashboard or Management API:
 
 **Dashboard Method**:
+
 1. User Management → Users → [User Name] → Roles tab
 
 **Management API Method**:
+
 ```bash
 curl --request GET \
   --url 'https://{yourDomain}/api/v2/users/USER_ID/roles' \
@@ -166,7 +163,8 @@ The application includes Playwright e2e tests that verify the visibility system 
 3. **"Failed to fetch user roles"**: Check Management API authorization and scopes
 4. **"Access denied"**: Verify user has appropriate role assigned
 5. **"Public views not working"**: Check that `routeLevelPermission` is set to `'anyone'` in the dataset configuration
-6. **"Role assignment failed"**: Verify Management API has `update:users` scope
+6. **"Guest permission not working"**: Verify the Guest role exists in Auth0 and is properly assigned to users
+7. **"Role assignment failed"**: Verify Management API has `update:users` scope
 
 ### RBAC not working in a GC-Explorer instance despite correct Auth0 configuration
 

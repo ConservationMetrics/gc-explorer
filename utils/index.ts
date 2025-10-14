@@ -43,3 +43,26 @@ export const toCamelCase = (key: string): string => {
 export const replaceUnderscoreWithSpace = (str: string): string => {
   return str.replace(/_/g, " ");
 };
+
+/**
+ * Formats a string for display by converting camelCase, kebab-case, and snake_case to Title Case
+ * Transforms various naming conventions into a human-readable format
+ *
+ * @param {string} str - The string to format
+ * @returns {string} The formatted string (e.g., "anyone" → "Public", "signed-in" → "Signed In", "camelCase" → "Camel Case")
+ */
+export const formatDisplayName = (str: string): string => {
+  // Special case for "anyone" permission level to show as "Public"
+  if (str === "anyone") {
+    return "Public";
+  }
+
+  return str
+    .replace(/([A-Z])/g, " $1") // Add space before capital letters
+    .replace(/[-_]/g, " ") // Replace dashes and underscores with spaces
+    .trim() // Remove leading/trailing spaces
+    .replace(/\s+/g, " ") // Replace multiple spaces with single space
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize each word
+    .join(" ");
+};

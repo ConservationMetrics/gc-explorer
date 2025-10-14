@@ -23,7 +23,7 @@ const routeLevelPermission = ref<RouteLevelPermission | undefined>(
 const shouldShowPermissions = computed(() => {
   if (!user.value) return false;
   const typedUser = user.value as User;
-  const userRole = typedUser.userRole ?? Role.Public;
+  const userRole = typedUser.userRole ?? Role.SignedIn;
   return userRole >= Role.Admin;
 });
 
@@ -100,15 +100,15 @@ watch(
         <input
           v-model="routeLevelPermission"
           type="radio"
-          value="signed-in"
+          value="guest"
           class="mt-0.5 flex-shrink-0"
         />
         <div class="flex flex-col gap-1">
           <span class="font-semibold text-gray-700">{{
-            $t("visibilityViewer")
+            $t("visibilityGuest")
           }}</span>
           <span class="text-sm text-gray-500 leading-relaxed">{{
-            $t("visibilityViewerDescription")
+            $t("visibilityGuestDescription")
           }}</span>
         </div>
       </label>
