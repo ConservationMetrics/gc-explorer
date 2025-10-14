@@ -753,31 +753,8 @@ const prepareMapStatistics = (data: DataEntry[]): MapStatistics => {
   if (!data || data.length === 0) {
     return {
       totalFeatures: 0,
-      geometryTypes: {
-        points: 0,
-        lines: 0,
-        polygons: 0,
-      },
     };
   }
-
-  // Count geometry types
-  const geometryTypes = {
-    points: 0,
-    lines: 0,
-    polygons: 0,
-  };
-
-  data.forEach((item) => {
-    const geotype = item.geotype?.toLowerCase();
-    if (geotype === "point") {
-      geometryTypes.points++;
-    } else if (geotype === "linestring") {
-      geometryTypes.lines++;
-    } else if (geotype === "polygon") {
-      geometryTypes.polygons++;
-    }
-  });
 
   // Calculate date range (look for date-related columns)
   let dateRange: string | undefined;
@@ -820,7 +797,6 @@ const prepareMapStatistics = (data: DataEntry[]): MapStatistics => {
 
   return {
     totalFeatures: data.length,
-    geometryTypes,
     dateRange,
   };
 };

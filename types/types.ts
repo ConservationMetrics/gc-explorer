@@ -140,11 +140,6 @@ export type AlertsStatistics = {
 
 export type MapStatistics = {
   totalFeatures: number;
-  geometryTypes: {
-    points: number;
-    lines: number;
-    polygons: number;
-  };
   dateRange?: string;
 };
 

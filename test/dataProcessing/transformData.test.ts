@@ -55,9 +55,6 @@ describe("prepareMapStatistics", () => {
     const result = prepareMapStatistics(transformedMapeoData);
 
     expect(result.totalFeatures).toBe(3);
-    expect(result.geometryTypes.points).toBe(3);
-    expect(result.geometryTypes.lines).toBe(0);
-    expect(result.geometryTypes.polygons).toBe(0);
     expect(result.dateRange).toBe("3/9/2024 to 3/9/2024");
   });
 
@@ -65,9 +62,6 @@ describe("prepareMapStatistics", () => {
     const result = prepareMapStatistics([]);
 
     expect(result.totalFeatures).toBe(0);
-    expect(result.geometryTypes.points).toBe(0);
-    expect(result.geometryTypes.lines).toBe(0);
-    expect(result.geometryTypes.polygons).toBe(0);
     expect(result.dateRange).toBeUndefined();
   });
 
