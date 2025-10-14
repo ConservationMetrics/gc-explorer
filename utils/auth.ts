@@ -28,7 +28,6 @@ export const validatePermissions = async (
     });
   }
 
-
   // For guest permission, check user role
   if (permission === "guest") {
     const typedUser = session.user as User;

@@ -23,7 +23,7 @@ let managementTokenCache: { token: string; expiresAt: number } | null = null;
  * Gets or generates a Management API access token for Auth0
  * Uses client credentials flow to obtain a token for API operations
  * Implements caching to avoid unnecessary token requests
- * 
+ *
  * @returns {Promise<string | null>} The access token or null if failed
  */
 const getManagementApiToken = async (): Promise<string | null> => {
@@ -90,7 +90,7 @@ const getManagementApiToken = async (): Promise<string | null> => {
 
 /**
  * Fetches a user's ID by their email address using Auth0 Management API
- * 
+ *
  * @param {string} email - The email address to search for
  * @returns {Promise<string | null>} The user ID or null if not found/error
  */
@@ -149,7 +149,7 @@ const fetchUserIdByEmail = async (email: string): Promise<string | null> => {
 /**
  * Fetches roles from Auth0 Management API
  * Can fetch either all available roles or roles assigned to a specific user
- * 
+ *
  * @param {string} [userId] - Optional user ID to fetch user-specific roles
  * @returns {Promise<Array<{id: string, name: string, description: string}>>} Array of role objects
  */
@@ -209,7 +209,7 @@ const fetchRoles = async (
 
 /**
  * Assigns roles to a user via Auth0 Management API
- * 
+ *
  * @param {string} userId - The Auth0 user ID to assign roles to
  * @param {string[]} roleIds - Array of role IDs to assign to the user
  * @returns {Promise<boolean>} True if successful, false otherwise
@@ -264,7 +264,7 @@ export default oauthAuth0EventHandler({
   /**
    * Handles successful Auth0 authentication
    * Processes user roles, assigns default SignedIn role if needed, and creates user session
-   * 
+   *
    * @param {H3Event} event - The H3 event object
    * @param {{user: Auth0User}} params - Object containing the authenticated user data
    */
@@ -399,11 +399,11 @@ export default oauthAuth0EventHandler({
     // Redirect directly to the target page instead of login
     return sendRedirect(event, "/login");
   },
-  
+
   /**
    * Handles Auth0 authentication errors
    * Logs the error and redirects to login page
-   * 
+   *
    * @param {H3Event} event - The H3 event object
    */
   onError(event: H3Event) {

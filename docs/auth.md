@@ -16,11 +16,6 @@ Additionally, the application now supports **route-level visibility permissions*
 | **Member**   | Restricted access                     | Restricted routes (cannot access `/config`) |
 | **Guest**    | Limited access                        | Guest and unrestricted routes only          |
 | **SignedIn** | Logged in but no elevated permissions | Same access as unauthenticated users        |
-| **Viewer**   | Not signed in                         | Unrestricted routes only                    |
-
-> [!NOTE]
->
-> The "Viewer" role is for unauthenticated users. "SignedIn" users have the same access as unauthenticated users but are logged in.
 
 ## Route-Level Visibility Permissions
 
@@ -126,7 +121,6 @@ _Screenshot showing the existing roles (Admin, Member, Guest, SignedIn) and the 
 - **Member**: "can access member, guest, and unrestricted views routes"
 - **Guest**: "can access guest and unrestricted views routes"
 - **SignedIn**: "logged in but no elevated permissions (same access as unauthenticated users)"
-- **Viewer**: "not signed in, can access unrestricted views only"
 
 ### Assigning Roles to Users
 

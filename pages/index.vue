@@ -56,10 +56,7 @@ const filteredSortedViewsConfig = computed(() => {
       if (Object.keys(config).length === 0) return false;
       // Filter views based on user role and permission level
       // Hide view if user role is lower than what's required
-      if (
-        config.ROUTE_LEVEL_PERMISSION === "guest" &&
-        userRole < Role.Guest
-      ) {
+      if (config.ROUTE_LEVEL_PERMISSION === "guest" && userRole < Role.Guest) {
         return false;
       }
       if (
@@ -91,25 +88,25 @@ const filteredSortedViewsConfig = computed(() => {
 /**
  * Formats a permission level string for display
  * Transforms camelCase, kebab-case, and snake_case to Title Case
- * 
+ *
  * @param {string} permission - The permission level string to format
  * @returns {string} The formatted permission level (e.g., "signed-in" → "Signed In")
  */
 const formatPermissionLevel = (permission: string) => {
   return permission
-    .replace(/([A-Z])/g, ' $1') // Add space before capital letters
-    .replace(/[-_]/g, ' ') // Replace dashes and underscores with spaces
+    .replace(/([A-Z])/g, " $1") // Add space before capital letters
+    .replace(/[-_]/g, " ") // Replace dashes and underscores with spaces
     .trim() // Remove leading/trailing spaces
-    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize each word
-    .join(' ');
+    .replace(/\s+/g, " ") // Replace multiple spaces with single space
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize each word
+    .join(" ");
 };
 
 /**
  * Gets the formatted permission level for a table to display in the UI
  * Returns null for public permissions or in CI environment
- * 
+ *
  * @param {string} tableName - The name of the table to check permissions for
  * @returns {string | null} The formatted permission level or null if not applicable
  */
@@ -118,12 +115,12 @@ const getPermissionLevel = (tableName: string) => {
   if (process.env.CI) return null;
 
   const permission = viewsConfig.value[tableName]?.ROUTE_LEVEL_PERMISSION;
-  
+
   // Only show pill for non-public permissions
   if (permission && permission !== "anyone") {
     return formatPermissionLevel(permission);
   }
-  
+
   return null;
 };
 
@@ -202,7 +199,7 @@ useHead({
         >
           <h2 class="text-gray-800 mb-2 flex items-center gap-2">
             {{ tableName }}
-            <span 
+            <span
               v-if="getPermissionLevel(String(tableName))"
               class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800"
             >
