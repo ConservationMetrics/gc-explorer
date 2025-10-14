@@ -86,7 +86,7 @@ Before implementing RBAC, ensure:
      - `read:user_idp_tokens` - to read user roles
      - `update:users` - to assign roles to users
 
-4. **Create Required Roles** (if not exists):
+4. **Create Required Roles** (if not exists): see `## Role Management` below.
    - Go to **User Management > Roles**
    - Click **"+ Create Role"**
    - Create the following roles:
