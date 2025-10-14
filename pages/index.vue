@@ -99,7 +99,7 @@ const getPermissionLevel = (tableName: string) => {
 
   const permission = viewsConfig.value[tableName]?.ROUTE_LEVEL_PERMISSION;
 
-  // Show pill for all permission levels (including "anyone" for public routes)
+  // Show pill for all permission levels
   if (permission) {
     return formatDisplayName(permission);
   }
