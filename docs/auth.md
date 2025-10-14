@@ -89,10 +89,6 @@ Before implementing RBAC, ensure:
 4. **Create Required Roles** (if not exists): see `## Role Management` below.
    - Go to **User Management > Roles**
    - Click **"+ Create Role"**
-   - Create the following roles:
-     - **Name**: `SignedIn` - Description: `User is logged in but not yet approved for higher access`
-     - **Name**: `Guest` - Description: `User is logged in with guest-level access`
-   - Note the Role IDs for configuration
 
 ## Role Management
 
