@@ -100,12 +100,6 @@ Before implementing RBAC, ensure:
    - **Name**: Admin, Member, Guest, or SignedIn
    - **Description**: Brief description of permissions
 
-**Required Roles in Auth0:**
-
-- **SignedIn**: "User is logged in but not yet approved for higher access" (assigned automatically)
-- **Guest**: "User is logged in with guest-level access"
-- **Member**: "User is logged in with member permissions"
-- **Admin**: "User is logged in with admin permissions"
 
 ![Auth0 Roles Management](roles.png)
 
