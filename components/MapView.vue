@@ -224,14 +224,26 @@ const addDataToMap = () => {
       layerId,
       (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0 && e.features[0].properties) {
-          const featureObject = JSON.parse(e.features[0].properties.feature);
-          delete featureObject["filter-color"];
+          // Parse the feature if it's a string (Mapbox may serialize it)
+          let featureObject = e.features[0].properties.feature;
+          if (typeof featureObject === "string") {
+            featureObject = JSON.parse(featureObject);
+          }
 
-          // Rewrite coordinates string from [long, lat] to lat, long, removing brackets
-          if (featureObject.geocoordinates) {
-            featureObject.geocoordinates = prepareCoordinatesForSelectedFeature(
-              featureObject.geocoordinates,
-            );
+          // Create deep copies for both display and download
+          const originalFeature = JSON.parse(JSON.stringify(featureObject));
+          const displayFeature = JSON.parse(JSON.stringify(featureObject));
+
+          // Remove filter-color from both
+          delete originalFeature["filter-color"];
+          delete displayFeature["filter-color"];
+
+          // Rewrite coordinates string from [long, lat] to lat, long, removing brackets for display
+          if (displayFeature.geocoordinates) {
+            displayFeature.geocoordinates =
+              prepareCoordinatesForSelectedFeature(
+                displayFeature.geocoordinates,
+              );
           }
 
           selectedFeature.value = displayFeature;
@@ -331,7 +343,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-  <div id="map"></div>
+    <div id="map"></div>
     <button
       v-if="!showSidebar"
       class="reset-button bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
@@ -339,39 +351,39 @@ onBeforeUnmount(() => {
     >
       {{ $t("resetMap") }}
     </button>
-  <DataFilter
-    v-if="filterColumn"
-    :data="mapData"
-    :filter-column="filterColumn"
-    :show-colored-dot="true"
-    @filter="filterValues"
-  />
-  <ViewSidebar
-    :allowed-file-extensions="allowedFileExtensions"
-    :feature="selectedFeature"
+    <DataFilter
+      v-if="filterColumn"
+      :data="mapData"
+      :filter-column="filterColumn"
+      :show-colored-dot="true"
+      @filter="filterValues"
+    />
+    <ViewSidebar
+      :allowed-file-extensions="allowedFileExtensions"
+      :feature="selectedFeature"
       :feature-original="selectedFeatureOriginal"
-    :file-paths="
-      getFilePathsWithExtension(selectedFeature, allowedFileExtensions)
-    "
+      :file-paths="
+        getFilePathsWithExtension(selectedFeature, allowedFileExtensions)
+      "
       :is-alerts-dashboard="false"
       :map-data="mapData"
       :map-statistics="mapStatistics"
-    :media-base-path="mediaBasePath"
+      :media-base-path="mediaBasePath"
       :show-intro-panel="showIntroPanel"
-    :show-sidebar="showSidebar"
+      :show-sidebar="showSidebar"
       @close="handleSidebarClose"
-  />
-  <MapLegend
-    v-if="mapLegendContent && mapData"
-    :map-legend-content="mapLegendContent"
-    @toggle-layer-visibility="toggleLayerVisibility"
-  />
-  <BasemapSelector
-    v-if="showBasemapSelector"
-    :mapbox-style="mapboxStyle"
-    :planet-api-key="planetApiKey"
-    @basemap-selected="handleBasemapChange"
-  />
+    />
+    <MapLegend
+      v-if="mapLegendContent && mapData"
+      :map-legend-content="mapLegendContent"
+      @toggle-layer-visibility="toggleLayerVisibility"
+    />
+    <BasemapSelector
+      v-if="showBasemapSelector"
+      :mapbox-style="mapboxStyle"
+      :planet-api-key="planetApiKey"
+      @basemap-selected="handleBasemapChange"
+    />
   </div>
 </template>
 
