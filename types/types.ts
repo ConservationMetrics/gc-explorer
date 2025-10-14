@@ -20,7 +20,7 @@ export interface Database {
   close?: () => Promise<void>;
 }
 
-export type RouteLevelPermission = "anyone" | "signed-in" | "member" | "admin";
+export type RouteLevelPermission = "anyone" | "guest" | "member" | "admin";
 
 export interface ViewConfig {
   ALERT_RESOURCES?: string;
@@ -139,8 +139,8 @@ export type AlertsStatistics = {
 };
 
 export const Role = {
-  Viewer: 0, // Not signed in, no permissions
-  Public: 1, // Signed in but no special permissions
+  SignedIn: 0, // Signed in but no elevated access
+  Guest: 1, // Signed in with guest permissions (old "unrestricted")
   Member: 2, // Signed in with member permissions
   Admin: 3, // Signed in with admin permissions
 } as const;

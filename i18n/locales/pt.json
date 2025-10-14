@@ -125,9 +125,13 @@
   "visibilityAdminsDescription": "Apenas usuários logados com papel de Administrador podem ver.",
   "visibilityPublic": "Público — sem login necessário",
   "visibilityPublicDescription": "Qualquer pessoa com o link pode ver.",
-  "visibilityViewer": "Logado (todos os papéis)",
-  "visibilityViewerDescription": "Qualquer usuário logado (Visualizador, Membro ou Administrador) pode ver.",
+  "visibilityGuest": "Convidado",
+  "visibilityGuestDescription": "Apenas usuários logados com o papel de Convidado, Membro ou Administrador podem ver.",
   "visibilityRequired": "Por favor, selecione um nível de visibilidade para este conjunto de dados.",
   "yourAccessIsPending": "Seu acesso está pendente. Entre em contato com um administrador do Guardian Connector para aprovação da conta.",
-  "yourMapboxStyleDefault": "Mapbox - seu estilo (padrão)"
+  "yourMapboxStyleDefault": "Mapbox - seu estilo (padrão)",
+  "permissionLevel_anyone": "Público",
+  "permissionLevel_guest": "Convidado",
+  "permissionLevel_member": "Membro",
+  "permissionLevel_admin": "Administrador"
 }

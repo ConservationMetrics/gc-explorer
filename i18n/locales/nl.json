@@ -128,9 +128,13 @@
   "visibilityAdminsDescription": "Alleen aangemelde gebruikers met de rol Beheerder kunnen bekijken.",
   "visibilityPublic": "Openbaar — geen aanmelding vereist",
   "visibilityPublicDescription": "Iedereen met de link kan bekijken.",
-  "visibilityViewer": "Aangemeld (alle rollen)",
-  "visibilityViewerDescription": "Elke aangemelde gebruiker (Kijker, Lid of Beheerder) kan bekijken.",
+  "visibilityGuest": "Gast",
+  "visibilityGuestDescription": "Alleen aangemelde gebruikers met de rol Gast, Lid of Beheerder kunnen bekijken.",
   "visibilityRequired": "Selecteer een zichtbaarheidsniveau voor deze dataset.",
   "yourAccessIsPending": "Uw toegang is in behandeling. Neem contact op met een Guardian Connector-beheerder voor goedkeuring van je account.",
-  "yourMapboxStyleDefault": "Mapbox - uw stijl (standaard)"
+  "yourMapboxStyleDefault": "Mapbox - uw stijl (standaard)",
+  "permissionLevel_anyone": "Openbaar",
+  "permissionLevel_guest": "Gast",
+  "permissionLevel_member": "Lid",
+  "permissionLevel_admin": "Beheerder"
 }

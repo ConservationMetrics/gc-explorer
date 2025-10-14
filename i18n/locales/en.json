@@ -130,9 +130,13 @@
   "visibilityAdminsDescription": "Only signed-in users with the Admin role can view.",
   "visibilityPublic": "Public — no sign-in required",
   "visibilityPublicDescription": "Anyone with the link can view.",
-  "visibilityViewer": "Signed-in (all roles)",
-  "visibilityViewerDescription": "Any signed-in user (Viewer, Member, or Admin) can view.",
+  "visibilityGuest": "Guest",
+  "visibilityGuestDescription": "Only signed-in users with the Guest, Member, or Admin role can view.",
   "visibilityRequired": "Please select a visibility level for this dataset.",
   "yourAccessIsPending": "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
-  "yourMapboxStyleDefault": "Mapbox - your style (default)"
+  "yourMapboxStyleDefault": "Mapbox - your style (default)",
+  "permissionLevel_anyone": "Public",
+  "permissionLevel_guest": "Guest",
+  "permissionLevel_member": "Member",
+  "permissionLevel_admin": "Admin"
 }

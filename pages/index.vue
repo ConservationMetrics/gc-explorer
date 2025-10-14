@@ -47,7 +47,7 @@ const filteredSortedViewsConfig = computed(() => {
   }
 
   const typedUser = user.value as User | null;
-  const userRole = typedUser?.userRole ?? Role.Public;
+  const userRole = typedUser?.userRole ?? Role.SignedIn;
 
   return Object.keys(viewsConfig.value)
     .filter((key) => {
@@ -57,6 +57,12 @@ const filteredSortedViewsConfig = computed(() => {
       // Filter views based on user role and permission level
       // Hide view if user role is lower than what's required
       if (
+        config.ROUTE_LEVEL_PERMISSION === "guest" &&
+        userRole < Role.Guest
+      ) {
+        return false;
+      }
+      if (
         config.ROUTE_LEVEL_PERMISSION === "member" &&
         userRole < Role.Member
       ) {
@@ -65,10 +71,10 @@ const filteredSortedViewsConfig = computed(() => {
       if (config.ROUTE_LEVEL_PERMISSION === "admin" && userRole < Role.Admin) {
         return false;
       }
-      // base case for when ROUTE_LEVEL_PERMISSION is undefined i.e. it has never been set and user role is lower than Public
+      // base case for when ROUTE_LEVEL_PERMISSION is undefined i.e. it has never been set and user role is lower than SignedIn
       if (
         config.ROUTE_LEVEL_PERMISSION === undefined &&
-        userRole < Role.Public
+        userRole < Role.SignedIn
       ) {
         return false;
       }
@@ -82,20 +88,43 @@ const filteredSortedViewsConfig = computed(() => {
     }, {});
 });
 
-// Helper function to check if a view is restricted and apply the icon
-const isViewRestricted = (tableName: string) => {
+/**
+ * Formats a permission level string for display
+ * Transforms camelCase, kebab-case, and snake_case to Title Case
+ * 
+ * @param {string} permission - The permission level string to format
+ * @returns {string} The formatted permission level (e.g., "signed-in" → "Signed In")
+ */
+const formatPermissionLevel = (permission: string) => {
+  return permission
+    .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+    .replace(/[-_]/g, ' ') // Replace dashes and underscores with spaces
+    .trim() // Remove leading/trailing spaces
+    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize each word
+    .join(' ');
+};
+
+/**
+ * Gets the formatted permission level for a table to display in the UI
+ * Returns null for public permissions or in CI environment
+ * 
+ * @param {string} tableName - The name of the table to check permissions for
+ * @returns {string | null} The formatted permission level or null if not applicable
+ */
+const getPermissionLevel = (tableName: string) => {
   // No restrictions in CI environment
-  if (process.env.CI) return false;
+  if (process.env.CI) return null;
 
-  if (!user.value) return false;
   const permission = viewsConfig.value[tableName]?.ROUTE_LEVEL_PERMISSION;
-  const typedUser = user.value as User | null;
-  const userRole = typedUser?.userRole ?? Role.Public;
-
-  return (
-    userRole >= Role.Member &&
-    (permission === "member" || permission === "admin")
-  );
+  
+  // Only show pill for non-public permissions
+  if (permission && permission !== "anyone") {
+    return formatPermissionLevel(permission);
+  }
+  
+  return null;
 };
 
 // Check if user should see config link
@@ -111,7 +140,7 @@ const shouldShowConfigLink = computed(() => {
 
   if (authStrategy === "auth0" && loggedIn.value && user.value) {
     const typedUser = user.value as User | null;
-    const userRole = typedUser?.userRole ?? Role.Public;
+    const userRole = typedUser?.userRole ?? Role.SignedIn;
     return userRole >= Role.Admin;
   }
 
@@ -173,12 +202,11 @@ useHead({
         >
           <h2 class="text-gray-800 mb-2 flex items-center gap-2">
             {{ tableName }}
-            <span
-              v-if="isViewRestricted(String(tableName))"
-              class="text-gray-600"
-              title="Restricted view - requires Member or Admin access"
+            <span 
+              v-if="getPermissionLevel(String(tableName))"
+              class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800"
             >
-              🔒
+              {{ getPermissionLevel(String(tableName)) }}
             </span>
           </h2>
           <ul class="list-none p-0">
