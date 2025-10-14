@@ -5,9 +5,17 @@ import tokml from "tokml";
 import type { Feature, FeatureCollection } from "geojson";
 import type { AlertsData } from "~/types/types";
 
+const route = useRoute();
+
 const props = defineProps<{
   dataForDownload?: Feature | FeatureCollection | AlertsData;
 }>();
+
+/** Get filename base from route tablename, fallback to 'data' */
+const getFilenameBase = (): string => {
+  const tablename = route.params.tablename;
+  return typeof tablename === "string" ? tablename : "data";
+};
 
 /** Incoming feature data can be either a single Feature, FeatureCollection, or an AlertsData object */
 const isAlertsData = (
@@ -82,7 +90,7 @@ const downloadCSVFromFeatureCollection = () => {
   const blob = new Blob([csvString], { type: "text/csv" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = "data.csv";
+  link.download = `${getFilenameBase()}.csv`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -144,8 +152,10 @@ const downloadAlertCSV = () => {
     filename = `${properties["alertID"]}.csv`;
   } else if (properties["ID"]) {
     filename = `${properties["ID"]}.csv`;
+  } else if (properties["id"]) {
+    filename = `${properties["id"]}.csv`;
   } else {
-    filename = "data.csv";
+    filename = `${getFilenameBase()}.csv`;
   }
 
   const blob = new Blob([csvString], { type: "text/csv" });
@@ -173,7 +183,7 @@ const downloadAlertGeoJSON = () => {
     const blob = new Blob([jsonStr], { type: "application/json" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "data.geojson";
+    link.download = `${getFilenameBase()}.geojson`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -203,8 +213,10 @@ const downloadAlertGeoJSON = () => {
     filename = `${geojsonCopy.properties["alertID"]}.geojson`;
   } else if (geojsonCopy.properties["ID"]) {
     filename = `${geojsonCopy.properties["ID"]}.geojson`;
+  } else if (geojsonCopy.properties["id"]) {
+    filename = `${geojsonCopy.properties["id"]}.geojson`;
   } else {
-    filename = "data.geojson";
+    filename = `${getFilenameBase()}.geojson`;
   }
 
   const jsonStr = JSON.stringify(geojsonCopy, null, 2);
@@ -238,7 +250,7 @@ const downloadAlertKML = () => {
     });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "data.kml";
+    link.download = `${getFilenameBase()}.kml`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -260,8 +272,10 @@ const downloadAlertKML = () => {
     filename = `${properties["alertID"]}.kml`;
   } else if (properties["ID"]) {
     filename = `${properties["ID"]}.kml`;
+  } else if (properties["id"]) {
+    filename = `${properties["id"]}.kml`;
   } else {
-    filename = "data.kml";
+    filename = `${getFilenameBase()}.kml`;
   }
 
   const blob = new Blob([kmlString], {
@@ -328,7 +342,7 @@ const downloadCSVSelection = () => {
 
   const filename = combinedFeatures[0].properties?.["territory"]
     ? `${combinedFeatures[0].properties["territory"]}_alerts.csv`
-    : "alerts.csv";
+    : `${getFilenameBase()}.csv`;
   const blob = new Blob([csvString], { type: "text/csv" });
 
   const link = document.createElement("a");
@@ -370,7 +384,7 @@ const downloadGeoJSONSelection = () => {
 
   const filename = combinedFeatures[0].properties?.["territory"]
     ? `${combinedFeatures[0].properties["territory"]}_alerts.geojson`
-    : "alerts.geojson";
+    : `${getFilenameBase()}.geojson`;
   const jsonStr = JSON.stringify(combinedGeoJSON, null, 2);
   const blob = new Blob([jsonStr], { type: "application/json" });
 
@@ -405,7 +419,7 @@ const downloadKMLSelection = () => {
 
   const filename = combinedFeatures[0].properties?.["territory"]
     ? `${combinedFeatures[0].properties["territory"]}_alerts.kml`
-    : "alerts.kml";
+    : `${getFilenameBase()}.kml`;
 
   const blob = new Blob([kmlString], {
     type: "application/vnd.google-earth.kml+xml",
