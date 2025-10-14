@@ -111,7 +111,7 @@ Before implementing RBAC, ensure:
 
 _Screenshot showing the existing roles (Admin, Member, Guest, SignedIn) and the "+ Create Role" button in the Auth0 dashboard_
 
-**Existing Roles in the System:**
+**Required Roles in Auth0:**
 
 - **Admin**: "can access anything a member can, plus /config"
 - **Member**: "can access member, guest, and unrestricted views routes"
