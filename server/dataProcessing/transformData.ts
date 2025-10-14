@@ -18,6 +18,7 @@ import type {
 import type {
   AlertsMetadata,
   AlertsPerMonth,
+  MapStatistics,
   AlertsStatistics,
   DataEntry,
 } from "@/types/types";
@@ -738,10 +739,97 @@ const isValidGeolocation = (item: DataEntry): boolean => {
   );
 };
 
+/**
+ * Prepares statistical data for the map view introduction panel.
+ *
+ * This function processes map data to generate statistics for display.
+ * It calculates the total number of features, counts geometry types,
+ * and determines date ranges if the data contains valid dates.
+ *
+ * @param {DataEntry[]} data - An array of data entries representing map features.
+ * @returns {MapStatistics} An object containing various statistics for the map view.
+ */
+const prepareMapStatistics = (data: DataEntry[]): MapStatistics => {
+  if (!data || data.length === 0) {
+    return {
+      totalFeatures: 0,
+      geometryTypes: {
+        points: 0,
+        lines: 0,
+        polygons: 0,
+      },
+    };
+  }
+
+  // Count geometry types
+  const geometryTypes = {
+    points: 0,
+    lines: 0,
+    polygons: 0,
+  };
+
+  data.forEach((item) => {
+    const geotype = item.geotype?.toLowerCase();
+    if (geotype === "point") {
+      geometryTypes.points++;
+    } else if (geotype === "linestring") {
+      geometryTypes.lines++;
+    } else if (geotype === "polygon") {
+      geometryTypes.polygons++;
+    }
+  });
+
+  // Calculate date range (look for date-related columns)
+  let dateRange: string | undefined;
+  const dateColumns = Object.keys(data[0] || {}).filter((key) => {
+    const lowerKey = key.toLowerCase();
+    return (
+      lowerKey.includes("date") ||
+      lowerKey.includes("time") ||
+      lowerKey.includes("created") ||
+      lowerKey.includes("modified") ||
+      lowerKey.includes("updated")
+    );
+  });
+
+  if (dateColumns.length > 0) {
+    const dates = data
+      .map((item) => {
+        for (const col of dateColumns) {
+          if (item[col]) {
+            const value = String(item[col]);
+            // Check if the value looks like a date (contains digits and common date separators)
+            // Pattern matches dates like: 2024-01-15, 01/15/2024, 3/9/2024, 2024, etc.
+            if (
+              /\d/.test(value) &&
+              (/[-/]/.test(value) || /^\d{4}$/.test(value))
+            ) {
+              return value;
+            }
+          }
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .sort();
+
+    if (dates.length > 0) {
+      dateRange = `${dates[0]} to ${dates[dates.length - 1]}`;
+    }
+  }
+
+  return {
+    totalFeatures: data.length,
+    geometryTypes,
+    dateRange,
+  };
+};
+
 export {
   transformSurveyData,
   prepareMapData,
   prepareAlertData,
   prepareAlertsStatistics,
+  prepareMapStatistics,
   transformToGeojson,
 };

@@ -1,6 +1,7 @@
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import {
   prepareMapData,
+  prepareMapStatistics,
   transformSurveyData,
 } from "@/server/dataProcessing/transformData";
 import {
@@ -56,11 +57,15 @@ export default defineEventHandler(async (event: H3Event) => {
       viewsConfig[table].FRONT_END_FILTER_COLUMN,
     );
 
+    // Prepare statistics data for the map view
+    const mapStatistics = prepareMapStatistics(processedGeoData);
+
     const response = {
       allowedFileExtensions: allowedFileExtensions,
       data: processedGeoData,
       filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
       mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,
+      mapStatistics: mapStatistics,
       mapbox3d: viewsConfig[table].MAPBOX_3D === "YES",
       mapboxAccessToken: viewsConfig[table].MAPBOX_ACCESS_TOKEN,
       mapboxBearing: Number(viewsConfig[table].MAPBOX_BEARING),

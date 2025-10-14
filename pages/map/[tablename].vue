@@ -13,6 +13,7 @@ const allowedFileExtensions = ref();
 const dataFetched = ref(false);
 const filterColumn = ref();
 const mapLegendLayerIds = ref();
+const mapStatistics = ref();
 const mapboxAccessToken = ref();
 const mapboxBearing = ref(0);
 const mapboxLatitude = ref(0);
@@ -41,6 +42,7 @@ if (data.value && !error.value) {
   dataFetched.value = true;
   filterColumn.value = data.value.filterColumn;
   mapLegendLayerIds.value = data.value.mapLegendLayerIds;
+  mapStatistics.value = data.value.mapStatistics;
   mapboxAccessToken.value = data.value.mapboxAccessToken;
   mapboxBearing.value = data.value.mapboxBearing;
   mapboxLatitude.value = data.value.mapboxLatitude;
@@ -84,6 +86,7 @@ useHead({
         :allowed-file-extensions="allowedFileExtensions"
         :filter-column="filterColumn"
         :map-legend-layer-ids="mapLegendLayerIds"
+        :map-statistics="mapStatistics"
         :mapbox-access-token="mapboxAccessToken"
         :mapbox-bearing="mapboxBearing"
         :mapbox-latitude="mapboxLatitude"

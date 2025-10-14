@@ -7,6 +7,7 @@ import {
   prepareMapData,
   prepareAlertData,
   prepareAlertsStatistics,
+  prepareMapStatistics,
   transformToGeojson,
 } from "@/server/dataProcessing/transformData";
 import { isValidCoordinate } from "@/server/dataProcessing/helpers";
@@ -46,6 +47,44 @@ describe("prepareMapData", () => {
         expect(item["filter-color"]).toBe(randomColorForHouseCategory);
       }
     });
+  });
+});
+
+describe("prepareMapStatistics", () => {
+  it("should calculate map statistics from transformed mapeo data", () => {
+    const result = prepareMapStatistics(transformedMapeoData);
+
+    expect(result.totalFeatures).toBe(3);
+    expect(result.geometryTypes.points).toBe(3);
+    expect(result.geometryTypes.lines).toBe(0);
+    expect(result.geometryTypes.polygons).toBe(0);
+    expect(result.dateRange).toBe("3/9/2024 to 3/9/2024");
+  });
+
+  it("should return zero statistics for empty data", () => {
+    const result = prepareMapStatistics([]);
+
+    expect(result.totalFeatures).toBe(0);
+    expect(result.geometryTypes.points).toBe(0);
+    expect(result.geometryTypes.lines).toBe(0);
+    expect(result.geometryTypes.polygons).toBe(0);
+    expect(result.dateRange).toBeUndefined();
+  });
+
+  it("should not include non-date values in date range", () => {
+    const dataWithNonDateColumn = [
+      {
+        ID: "test123",
+        geocoordinates: "[-1.0, 1.0]",
+        geotype: "Point",
+        "date-field": "not-a-date-value",
+        category: "Test",
+      },
+    ];
+
+    const result = prepareMapStatistics(dataWithNonDateColumn);
+
+    expect(result.dateRange).toBeUndefined();
   });
 });
 
