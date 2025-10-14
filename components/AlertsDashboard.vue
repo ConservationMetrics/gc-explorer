@@ -1147,7 +1147,6 @@ const filteredData = computed(() => {
 // === Methods for selecting and resetting ===
 // ===========================================
 
-const downloadAlert = ref(false);
 const imageCaption = ref();
 const imageUrl = ref();
 const isAlert = ref(false);
@@ -1218,7 +1217,6 @@ const selectFeature = (feature: Feature, layerId: string) => {
   selectedFeatureSource.value = layerId;
   showSidebar.value = true;
   showIntroPanel.value = false;
-  downloadAlert.value = true;
 
   if (featureObject["alertID"]) {
     isAlert.value = true;
@@ -1289,7 +1287,6 @@ const resetToInitialState = () => {
   localAlertsData.value = props.alertsData;
   showSidebar.value = true;
   showIntroPanel.value = true;
-  downloadAlert.value = false;
   imageUrl.value = [];
   imageCaption.value = null;
   selectedDateRange.value = null;
@@ -1362,8 +1359,8 @@ onBeforeUnmount(() => {
       :allowed-file-extensions="allowedFileExtensions"
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
-      :download-alert="downloadAlert"
       :feature="selectedFeature"
+      :feature-original="localAlertsData"
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
       :is-alert="isAlert"
