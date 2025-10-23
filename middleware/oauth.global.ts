@@ -48,7 +48,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
       // Extract the table name from the last part of the path
       const tableName = to.path.split("/").pop()!;
       const permission: RouteLevelPermission =
-        tableConfig?.[tableName]?.ROUTE_LEVEL_PERMISSION ?? "signed-in";
+        tableConfig?.[tableName]?.ROUTE_LEVEL_PERMISSION ?? "anyone";
       // Public access: no login needed
       if (permission === "anyone") return;
 
@@ -60,9 +60,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
       // Authenticated from here on
       const typedUser = user.value as User;
-      const userRole = typedUser?.userRole ?? Role.Public;
+      const userRole = typedUser?.userRole ?? Role.SignedIn;
       // Role-based access control
       switch (permission) {
+        case "guest":
+          if (userRole < Role.Guest)
+            return router.push("/?reason=unauthorized");
+          break;
         case "member":
           if (userRole < Role.Member)
             return router.push("/?reason=unauthorized");
@@ -71,8 +75,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
           if (userRole < Role.Admin)
             return router.push("/?reason=unauthorized");
           break;
-        case "signed-in":
-          return; // any signed-in user is fine
       }
     } catch (error) {
       console.error("Error checking view permissions:", error);
@@ -91,7 +93,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Check role-based access for restricted routes
   if (authStrategy === "auth0" && loggedIn.value && user.value) {
     const typedUser = user.value as User;
-    const userRole = typedUser.userRole ?? Role.Public;
+    const userRole = typedUser.userRole ?? Role.SignedIn;
 
     // Redirect non-Admins from config route
     if (to.path === "/config" && userRole < Role.Admin) {
