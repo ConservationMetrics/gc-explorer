@@ -45,7 +45,7 @@ const handleInput = (key: string, value: string | number | boolean): void => {
 const configData = props.config as Record<string, string | number | boolean>;
 
 const terrainExaggeration = ref<number>(
-  (props.config.MAPBOX_3D_TERRAIN_EXAGGERATION as number) ?? 1,
+  (props.config.MAPBOX_3D_TERRAIN_EXAGGERATION as number) ?? 1.5,
 );
 
 watch(terrainExaggeration, (value) => {
