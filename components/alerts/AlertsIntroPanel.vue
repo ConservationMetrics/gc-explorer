@@ -37,20 +37,11 @@ const emit = defineEmits(["dateRangeChanged"]);
         <div class="space-y-2 text-sm text-muted-foreground">
           <p class="italic">
             {{ $t("mostRecentAlertsShownIn") }}
-            <span class="text-red-500 font-medium">{{ $t("red") }}</span
+            <span class="text-red-500 font-bold">{{ $t("red") }}</span
             >,
             {{ $t("andPreviousAlertsShownIn") }}
-            <span class="text-orange-500 font-medium">{{ $t("orange") }}</span
+            <span class="text-orange-500 font-bold">{{ $t("orange") }}</span
             >.
-          </p>
-          <p class="italic inline-flex items-center whitespace-nowrap">
-            {{ $t("ifYouAreZoomedOutAlertsWillBeShownAsA") }}&nbsp;
-            <img
-              src="@/assets/icons/warning_red.png"
-              alt="Warning icon"
-              class="w-4 h-4 inline-block -mt-0.5 ml-0.5"
-              loading="eager"
-            />
           </p>
           <p class="italic">{{ $t("clickOnAlertsForMoreInfo") }}.</p>
         </div>

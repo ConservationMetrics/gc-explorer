@@ -79,25 +79,46 @@ const selectInitialAlertFeature = (alertId: string) => {
     ...props.alertsData.previousAlerts.features,
   ];
   const feature = allFeatures.find((f) => f.properties?.alertID === alertId);
-  if (feature?.properties) {
-    // Find the appropriate layer ID for this feature by checking both recent and previous layers
-    const geometryType = feature.geometry.type.toLowerCase();
-    const recentLayerId = `most-recent-alerts-${geometryType}`;
-    const previousLayerId = `previous-alerts-${geometryType}`;
 
+  if (feature?.properties) {
     // Check if feature exists in recent layer
     const isInRecentLayer = props.alertsData.mostRecentAlerts.features.some(
       (f) => f.properties?.alertID === feature.properties?.alertID,
     );
 
-    // Select feature in the correct layer
-    const layerId = isInRecentLayer ? recentLayerId : previousLayerId;
+    // Determine the correct layer based on geometry type
+    let layerId: string;
+    const geometryType = feature.geometry.type;
+
+    if (geometryType === "Point") {
+      // Point features use the point layer
+      layerId = isInRecentLayer
+        ? "most-recent-alerts-point"
+        : "previous-alerts-point";
+    } else if (
+      (geometryType === "Polygon" ||
+        geometryType === "LineString" ||
+        geometryType === "MultiPolygon") &&
+      feature.properties.geographicCentroid
+    ) {
+      // Polygon/LineString features use the centroids layer
+      layerId = isInRecentLayer
+        ? "most-recent-alerts-centroids"
+        : "previous-alerts-centroids";
+    } else {
+      // Fallback: use geometry-specific layer
+      layerId = isInRecentLayer
+        ? `most-recent-alerts-${geometryType.toLowerCase()}`
+        : `previous-alerts-${geometryType.toLowerCase()}`;
+    }
+
     selectFeature(feature, layerId);
 
     // Zoom to the feature
+    // Use zoom 15 (above clusterMaxZoom of 14) to ensure individual features are visible
     if (feature.geometry.type === "Point") {
       const [lng, lat] = feature.geometry.coordinates;
-      map.value.flyTo({ center: [lng, lat], zoom: 13 });
+      map.value.flyTo({ center: [lng, lat], zoom: 15 });
     } else if (
       feature.geometry.type === "Polygon" ||
       feature.geometry.type === "MultiPolygon"
@@ -108,7 +129,7 @@ const selectInitialAlertFeature = (alertId: string) => {
       const [lng, lat] = calculateLineStringCentroid(
         feature.geometry.coordinates,
       );
-      map.value.flyTo({ center: [lng, lat], zoom: 13 });
+      map.value.flyTo({ center: [lng, lat], zoom: 15 });
     }
     isMapeo.value = false;
   }
@@ -244,13 +265,18 @@ onMounted(() => {
     showSlider.value = true;
 
     // Check for alertId or mapeoDocId in URL and select the corresponding feature
+    // Wait for map to be idle (fully rendered) before selecting
     const alertId = route.query.alertId as string;
     const mapeoDocId = route.query.mapeoDocId as string;
 
-    if (alertId) {
-      selectInitialAlertFeature(alertId);
-    } else if (mapeoDocId && props.mapeoData) {
-      selectInitialMapeoFeature(mapeoDocId);
+    if (alertId || mapeoDocId) {
+      map.value.once("idle", () => {
+        if (alertId) {
+          selectInitialAlertFeature(alertId);
+        } else if (mapeoDocId && props.mapeoData) {
+          selectInitialMapeoFeature(mapeoDocId);
+        }
+      });
     }
   });
 });
@@ -296,7 +322,7 @@ const addAlertsData = async () => {
             (feature) => feature.geometry.type === type,
           ),
         },
-        minzoom: 10,
+        // No minzoom restriction - clusters should be visible at all zoom levels
       };
 
       // Clustering for Point features
@@ -307,6 +333,7 @@ const addAlertsData = async () => {
               cluster: true,
               clusterMaxZoom: 14, // Max zoom level to cluster points
               clusterRadius: 100, // Radius of each cluster in pixels
+              // Don't use generateId - preserve original feature.id for feature-state
             }
           : baseConfig;
 
@@ -385,7 +412,12 @@ const addAlertsData = async () => {
             source: layerId,
             filter: ["has", "point_count"],
             paint: {
-              "circle-color": fillColor,
+              "circle-color": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                "#FFFF00",
+                fillColor,
+              ],
               "circle-radius": [
                 "step",
                 ["get", "point_count"],
@@ -450,89 +482,75 @@ const addAlertsData = async () => {
     });
   };
 
-  /**
-   * Loads and adds an image to the style. Returns a promise that resolves
-   * when the image is successfully loaded and added to the map.
-   * Uses pixelRatio: 2 to ensure crisp rendering on high-DPI displays.
-   */
-  const loadMapImage = (iconName: string, iconUrl: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      map.value.loadImage(iconUrl, (error: Error, image: HTMLImageElement) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-
-        if (!map.value.hasImage(iconName)) {
-          // Add image with pixelRatio: 2 for crisp rendering when scaled
-          map.value.addImage(iconName, image, { pixelRatio: 2.5 });
-        }
-        resolve();
-      });
-    });
-  };
+  // Symbol layers and warning icons removed - using circle clusters for all geometry types now
 
   /**
-   * Adds a GeoJSON point layer to the map using the geographicCentroid property,
-   * with specified icon. Enables clustering for better performance.
+   * Adds clustered circle layers for Polygon/LineString centroids.
+   * Uses the geographicCentroid property to create Point features that can be clustered.
    */
-  const addAlertSymbolLayer = async (
+  const addCentroidCircleLayer = async (
     layerId: string,
     features: Feature[],
-    iconName: string,
-    iconUrl: string,
+    color: string,
   ) => {
-    await loadMapImage(iconName, iconUrl);
+    // Filter features that have centroids (Polygons and LineStrings ONLY, exclude Points!)
+    const centroidFeatures = features
+      .filter(
+        (feature) =>
+          feature.properties?.geographicCentroid &&
+          feature.geometry.type !== "Point", // Exclude Point features - they have their own layer
+      )
+      .map((feature) => ({
+        type: "Feature" as const,
+        geometry: {
+          type: "Point" as const,
+          coordinates: feature.properties?.geographicCentroid
+            .split(",")
+            .map(Number)
+            .reverse(),
+        },
+        properties: {
+          ...feature.properties,
+        },
+      }));
 
+    if (centroidFeatures.length === 0) return;
+
+    // Add source with clustering enabled
     if (!map.value.getSource(layerId)) {
       map.value.addSource(layerId, {
         type: "geojson",
         data: {
           type: "FeatureCollection",
-          features: features
-            .filter((feature) => feature.properties?.geographicCentroid)
-            .map((feature) => ({
-              type: "Feature",
-              geometry: {
-                type: "Point",
-                coordinates: feature.properties?.geographicCentroid
-                  .split(",")
-                  .map(Number)
-                  .reverse(),
-              },
-              properties: {
-                ...feature.properties,
-              },
-            })),
+          features: centroidFeatures,
         },
-        // Enable clustering for symbol layers
         cluster: true,
-        clusterMaxZoom: 10, // Clusters break apart at zoom 10 (where symbols disappear)
-        clusterRadius: 50,
+        clusterMaxZoom: 14,
+        clusterRadius: 100,
+        generateId: true, // Generate IDs for clusters to enable feature-state
+        promoteId: "alertID", // Use alertID as the feature ID for feature-state on individual points
       });
     }
 
-    // Add cluster circle layer for symbols
+    // Add cluster circle layer
     if (!map.value.getLayer(`${layerId}-clusters`)) {
       map.value.addLayer({
         id: `${layerId}-clusters`,
-        type: "symbol",
+        type: "circle",
         source: layerId,
         filter: ["has", "point_count"],
-        layout: {
-          "icon-image": iconName,
-          "icon-size": [
-            "step",
-            ["get", "point_count"],
-            2.0, // size for clusters with < 100 points (doubled for pixelRatio: 2)
-            100,
-            2.5, // size for clusters with 100-750 points
-            750,
-            3.0, // size for clusters with 750+ points
+        paint: {
+          "circle-color": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            "#FFFF00",
+            color,
           ],
-          "icon-allow-overlap": true,
+          "circle-radius": ["step", ["get", "point_count"], 15, 10, 25, 50, 35],
+          "circle-opacity": 0.8,
+          "circle-stroke-width": 2,
+          "circle-stroke-color": "#fff",
         },
-        maxzoom: 10,
       });
     }
 
@@ -546,45 +564,44 @@ const addAlertsData = async () => {
         layout: {
           "text-field": ["get", "point_count_abbreviated"],
           "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
-          "text-size": 16,
-          "text-offset": [0, -2.0],
+          "text-size": 14,
         },
         paint: {
-          "text-color": "#000000",
-          "text-halo-color": "#ffffff",
-          "text-halo-width": 2,
+          "text-color": "#ffffff",
         },
-        maxzoom: 10,
       });
     }
 
-    // Add unclustered symbol layer
+    // Add unclustered circle layer
     if (!map.value.getLayer(layerId)) {
       map.value.addLayer({
         id: layerId,
-        type: "symbol",
+        type: "circle",
         source: layerId,
-        filter: ["!", ["has", "point_count"]], // Only show unclustered symbols
-        layout: {
-          "icon-image": iconName,
-          "icon-size": 1.5,
-          "icon-allow-overlap": true,
+        filter: ["!", ["has", "point_count"]],
+        paint: {
+          "circle-color": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            "#FFFF00",
+            color,
+          ],
+          "circle-radius": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            12,
+            8,
+          ],
+          "circle-opacity": 0.8,
+          "circle-stroke-width": 2,
+          "circle-stroke-color": "#fff",
         },
-        maxzoom: 10,
       });
     }
   };
 
-  const orangeWarningIconUrl = new URL(
-    "@/assets/icons/warning_orange.png",
-    import.meta.url,
-  ).href;
-  const redWarningIconUrl = new URL(
-    "@/assets/icons/warning_red.png",
-    import.meta.url,
-  ).href;
-
   await Promise.all([
+    // Previous alerts - original geometry layers
     addAlertLayer(
       "previous-alerts-polygon",
       geoJsonSource.previousAlerts.features,
@@ -606,12 +623,14 @@ const addAlertsData = async () => {
       "#FD8D3C",
       "#FD8D3C",
     ),
-    addAlertSymbolLayer(
-      "previous-alerts-symbol",
+    // Previous alerts - centroid circles for Polygon/LineString
+    addCentroidCircleLayer(
+      "previous-alerts-centroids",
       geoJsonSource.previousAlerts.features,
-      "warning-orange",
-      orangeWarningIconUrl,
+      "#FD8D3C",
     ),
+
+    // Most recent alerts - original geometry layers
     addAlertLayer(
       "most-recent-alerts-polygon",
       geoJsonSource.mostRecentAlerts.features,
@@ -633,11 +652,11 @@ const addAlertsData = async () => {
       "#FF0000",
       "#FF0000",
     ),
-    addAlertSymbolLayer(
-      "most-recent-alerts-symbol",
+    // Most recent alerts - centroid circles for Polygon/LineString
+    addCentroidCircleLayer(
+      "most-recent-alerts-centroids",
       geoJsonSource.mostRecentAlerts.features,
-      "warning-red",
-      redWarningIconUrl,
+      "#FF0000",
     ),
   ]);
 
@@ -674,12 +693,13 @@ const addAlertsData = async () => {
         (e: MapMouseEvent) => {
           if (e.features && e.features.length > 0) {
             const feature = e.features[0];
-            if (layer.id.endsWith("symbol")) {
-              if (feature.geometry.type === "Point") {
-                const [lng, lat] = feature.geometry.coordinates;
-                map.value.flyTo({ center: [lng, lat], zoom: 13 });
-              }
-            } else if (layer.id.endsWith("clusters")) {
+
+            // Check if this is a cluster feature (either by layer name or properties)
+            if (
+              layer.id.endsWith("clusters") ||
+              feature.properties?.cluster ||
+              feature.properties?.cluster_id !== undefined
+            ) {
               // Handle cluster clicks - zoom in to expand
               const clusterId = feature.properties?.cluster_id;
               const source = map.value.getSource(layer.source);
@@ -698,6 +718,7 @@ const addAlertsData = async () => {
                 );
               }
             } else {
+              // Only select non-cluster features
               selectFeature(feature, layer.id);
             }
           }
@@ -735,10 +756,19 @@ const addAlertsData = async () => {
       (feature) => feature.geometry.type === "Point",
     );
 
-  // Add event listeners to update pulsing circles when map moves/zooms
-  // This ensures we only show circles for currently visible features
-  map.value.on("moveend", updatePulsingCirclesForViewport);
-  map.value.on("zoomend", updatePulsingCirclesForViewport);
+  // Update cluster highlighting when zoom/pan changes
+  map.value.on("zoomend", () => {
+    // Re-highlight cluster if a feature is selected (after a brief delay)
+    if (
+      selectedFeature.value &&
+      selectedFeatureGeometry.value &&
+      selectedFeatureSource.value
+    ) {
+      setTimeout(() => {
+        highlightClusterContainingFeature(selectedFeatureSource.value);
+      }, 100);
+    }
+  });
 };
 
 /**
@@ -844,9 +874,6 @@ const prepareMapCanvasContent = async () => {
     promises.push(addMapeoData());
   }
   await Promise.all(promises);
-
-  // Use updatePulsingCirclesForViewport to ensure clean state
-  updatePulsingCirclesForViewport();
   prepareMapLegendContent();
 };
 
@@ -910,159 +937,13 @@ const handleBufferMouseEvent = (e: MapMouseEvent) => {
   }
 };
 
-const pulsingCirclesAdded = ref(false);
-const pulsingMarkers: { value: mapboxgl.Marker[] } = ref([]);
-const MAX_PULSING_CIRCLES = 100; // Limit DOM markers for performance
+// Pulsing circles removed - now using pure Mapbox clustering for all geometries
 
-/**
- * Updates pulsing circles based on currently visible features in the viewport.
- * This is called when the map moves or zooms to keep DOM markers optimized.
- */
-const updatePulsingCirclesForViewport = () => {
-  // Remove existing circles and re-add for current viewport
-  removePulsingCircles();
-  pulsingCirclesAdded.value = false; // Reset flag
-  addPulsingCircles();
-};
-
-/**
- * Adds pulsing circles around the most recent alerts on the map.
- * The pulsing effect is based on the confidence level of the alerts.
- * Optimized to only show markers for visible features up to a maximum limit.
- */
-const addPulsingCircles = () => {
-  if (pulsingCirclesAdded.value) {
-    return;
-  }
-
-  pulsingCirclesAdded.value = true;
-
-  // Define the pulsing dot CSS
-  const pulsingDot = document.createElement("div");
-  pulsingDot.className = "pulsing-dot";
-
-  // Add objects for different confidence levels
-  const confidenceLevels = [
-    { interval: "1", opacity: "1" },
-    { interval: "0", opacity: "0.35" },
-  ];
-
-  // Add the CSS for the pulsing effect
-  const styleSheet = document.createElement("style");
-  styleSheet.type = "text/css";
-  styleSheet.innerText = confidenceLevels
-    .map(
-      (level) => `
-        @keyframes pulse-${level.interval} {
-          0% { transform: scale(1); opacity: ${level.opacity}; }
-          100% { transform: scale(1.5); opacity: 0; }
-        }
-        .pulsing-dot-${level.interval} {
-          width: 30px;
-          height: 30px;
-          position: absolute;
-          border-radius: 50%;
-          pointer-events: none!important;
-        }
-        .pulsing-dot-${level.interval}::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          border: 5px solid #FF0000;
-          border-radius: inherit;
-          box-shadow: 0 0 0 2px #FF0000;
-          animation: pulse-${level.interval} 2s infinite;
-        }
-      `,
-    )
-    .join("");
-  document.head.appendChild(styleSheet);
-
-  const addPulsingMarker = (feature: Feature) => {
-    let lng, lat;
-
-    if (
-      feature.geometry.type === "Polygon" ||
-      feature.geometry.type === "MultiPolygon"
-    ) {
-      // Calculate the center of the bounding box
-      const bounds = bbox(feature);
-      lng = (bounds[0] + bounds[2]) / 2;
-      lat = (bounds[1] + bounds[3]) / 2;
-    } else if (feature.geometry.type === "LineString") {
-      // Use Turf to find the midpoint of the LineString
-      [lng, lat] = calculateLineStringCentroid(feature.geometry.coordinates);
-    } else if (feature.geometry.type === "Point") {
-      [lng, lat] = feature.geometry.coordinates;
-    } else {
-      return;
-    }
-
-    // Determine the opacity based on confidenceLevel
-    let confidenceInterval = "1";
-    if (feature.properties && feature.properties.confidenceLevel === "0") {
-      confidenceInterval = "0";
-    }
-
-    // Create a new marker and add it to the map
-    const pulsingMarker = pulsingDot.cloneNode() as HTMLElement;
-    pulsingMarker.classList.add(`pulsing-dot-${confidenceInterval}`);
-    const marker = new mapboxgl.Marker(pulsingMarker);
-    marker.setLngLat([lng, lat]).addTo(map.value);
-
-    pulsingMarkers.value.push(marker);
-  };
-
-  // Query cluster features first - these are highest priority for pulsing
-  const clusterFeatures = map.value.queryRenderedFeatures({
-    layers: [
-      "most-recent-alerts-point-clusters",
-      "most-recent-alerts-symbol-clusters",
-    ],
-  });
-
-  // If we have clusters, only show pulsing on clusters for clean visualization
-  // If no clusters (zoomed in), show pulsing on individual features
-  let allFeatures = clusterFeatures;
-
-  if (clusterFeatures.length === 0) {
-    // No clusters visible - we're zoomed in, so show unclustered features
-    const unclusteredFeatures = map.value.queryRenderedFeatures({
-      layers: [
-        "most-recent-alerts-polygon",
-        "most-recent-alerts-linestring",
-        "most-recent-alerts-point",
-        "most-recent-alerts-symbol",
-      ],
-    });
-    allFeatures = unclusteredFeatures;
-  }
-
-  // Limit to MAX_PULSING_CIRCLES for performance
-  const limitedFeatures = allFeatures.slice(0, MAX_PULSING_CIRCLES);
-
-  // Add pulsing markers for visible features
-  limitedFeatures.forEach(addPulsingMarker);
-};
-
-/** Removes pulsing circles from the map */
-const removePulsingCircles = () => {
-  // Remove all markers properly using Mapbox API
-  pulsingMarkers.value.forEach((marker) => marker.remove());
-  pulsingMarkers.value = [];
-
-  // Fallback: clean up any remaining DOM elements
-  document.querySelectorAll(".pulsing-dot").forEach((el) => el.remove());
-  pulsingCirclesAdded.value = false;
-};
+// All pulsing circle functions removed - replaced with native Mapbox clustering
 
 /** Handles the change of the basemap style */
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
 const handleBasemapChange = (newBasemap: Basemap) => {
-  removePulsingCircles();
   changeMapStyle(map.value, newBasemap, props.planetApiKey);
 
   currentBasemap.value = newBasemap;
@@ -1084,11 +965,9 @@ const prepareMapLegendContent = () => {
       legendItems.push({
         id: "most-recent-alerts",
         name: "Most recent alerts",
-        type: "symbol", // Use symbol type to display warning icon
+        type: "circle",
         color: "#FF0000",
         visible: true,
-        iconUrl: new URL("@/assets/icons/warning_red.png", import.meta.url)
-          .href,
       });
     }
 
@@ -1097,11 +976,9 @@ const prepareMapLegendContent = () => {
       legendItems.push({
         id: "previous-alerts",
         name: "Previous alerts",
-        type: "symbol", // Use symbol type to display warning icon
+        type: "circle",
         color: "#FD8D3C",
         visible: true,
-        iconUrl: new URL("@/assets/icons/warning_orange.png", import.meta.url)
-          .href,
       });
     }
 
@@ -1143,7 +1020,7 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
   // Handle alert group layers - toggle all related layers
   if (item.id === "most-recent-alerts" || item.id === "previous-alerts") {
     const layerPrefix = item.id;
-    const layerTypes = ["polygon", "linestring", "point", "symbol"];
+    const layerTypes = ["polygon", "linestring", "point", "centroids"];
 
     layerTypes.forEach((type) => {
       const layerId = `${layerPrefix}-${type}`;
@@ -1159,24 +1036,8 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
         }
       }
 
-      // Handle cluster layers for points
-      if (type === "point") {
-        const clusterLayerId = `${layerId}-clusters`;
-        const clusterCountLayerId = `${layerId}-cluster-count`;
-        if (map.value.getLayer(clusterLayerId)) {
-          map.value.setLayoutProperty(clusterLayerId, "visibility", visibility);
-        }
-        if (map.value.getLayer(clusterCountLayerId)) {
-          map.value.setLayoutProperty(
-            clusterCountLayerId,
-            "visibility",
-            visibility,
-          );
-        }
-      }
-
-      // Handle cluster layers for symbols
-      if (type === "symbol") {
+      // Handle cluster layers for points and centroids
+      if (type === "point" || type === "centroids") {
         const clusterLayerId = `${layerId}-clusters`;
         const clusterCountLayerId = `${layerId}-cluster-count`;
         if (map.value.getLayer(clusterLayerId)) {
@@ -1191,17 +1052,6 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
         }
       }
     });
-
-    // Handle pulsing circles for most-recent-alerts
-    if (item.id === "most-recent-alerts") {
-      if (item.visible) {
-        // Layer is being made visible - update pulsing circles for current viewport
-        updatePulsingCirclesForViewport();
-      } else {
-        // Layer is being hidden - remove pulsing circles
-        removePulsingCircles();
-      }
-    }
   } else {
     // Handle individual layers (mapeo-data, etc.)
     utilsToggleLayerVisibility(map.value, item);
@@ -1287,8 +1137,8 @@ const handleDateRangeChanged = (newRange: [string, string]) => {
           ["<=", ["get", "YYYYMM"], endDate],
         ];
 
-        if (layer.id.endsWith("-point") || layer.id.endsWith("-symbol")) {
-          // Point and symbol layers need to exclude clustered items
+        if (layer.id.endsWith("-point") || layer.id.endsWith("-centroids")) {
+          // Point and centroid layers need to exclude clustered items
           map.value.setFilter(layer.id, [
             "all",
             dateFilter,
@@ -1299,32 +1149,6 @@ const handleDateRangeChanged = (newRange: [string, string]) => {
         }
       }
     });
-
-    // If 'most-recent-alerts' layers are empty, remove the pulsing circles. If not, add them.
-    const recentAlertsLayers = map.value
-      .getStyle()
-      .layers.filter((layer: Layer) =>
-        layer.id.startsWith("most-recent-alerts"),
-      );
-    const recentAlertsFeatures = [];
-    recentAlertsLayers.forEach((layer: Layer) => {
-      recentAlertsFeatures.push(
-        ...map.value.querySourceFeatures(layer.source, {
-          sourceLayer: layer["source-layer"],
-          filter: [
-            "all",
-            [">=", ["get", "YYYYMM"], startDate],
-            ["<=", ["get", "YYYYMM"], endDate],
-          ],
-        }),
-      );
-    });
-
-    if (recentAlertsFeatures.length > 0) {
-      updatePulsingCirclesForViewport();
-    } else {
-      removePulsingCircles();
-    }
 
     // Update the selected date range
     selectedDateRange.value = newRange;
@@ -1384,6 +1208,137 @@ const isAlert = ref(false);
 const selectedFeature = ref();
 const selectedFeatureId = ref();
 const selectedFeatureSource = ref();
+const selectedFeatureGeometry = ref(); // Store geometry separately for cluster highlighting
+const selectedClusterId = ref<number | string | null>(null);
+const selectedClusterSource = ref<string | null>(null);
+
+/**
+ * Highlights a cluster that contains the selected feature (if any).
+ * This makes the cluster turn yellow when zoomed out.
+ */
+const highlightClusterContainingFeature = async (selectedLayerId: string) => {
+  if (!selectedFeatureGeometry.value || !selectedFeature.value) {
+    return;
+  }
+
+  // Get the alertID of the selected feature
+  const selectedAlertId = selectedFeature.value.alertID;
+  if (!selectedAlertId) {
+    return; // Can't match without an ID
+  }
+
+  // Track the previous cluster to avoid redundant updates
+  const prevClusterId = selectedClusterId.value;
+  const prevClusterSource = selectedClusterSource.value;
+
+  // Determine which cluster layer to check (only check the one source we need)
+  let clusterLayerName: string;
+  let sourceName: string;
+
+  if (selectedLayerId.includes("-point")) {
+    sourceName = selectedLayerId;
+    clusterLayerName = `${selectedLayerId}-clusters`;
+  } else if (selectedLayerId.includes("-centroids")) {
+    sourceName = selectedLayerId;
+    clusterLayerName = `${selectedLayerId}-clusters`;
+  } else {
+    // For other geometry types, check the corresponding centroids layer
+    const prefix = selectedLayerId.replace(
+      /-polygon|-linestring|-multipolygon/i,
+      "",
+    );
+    sourceName = `${prefix}-centroids`;
+    clusterLayerName = `${prefix}-centroids-clusters`;
+  }
+
+  const sourceObj = map.value.getSource(sourceName) as mapboxgl.GeoJSONSource;
+  if (!sourceObj) return;
+
+  // Get all visible cluster features for this layer
+  const clusterFeatures = map.value.queryRenderedFeatures(undefined, {
+    layers: [clusterLayerName].filter((id) => map.value.getLayer(id)),
+  });
+
+  // Find which cluster contains the selected feature
+  let foundClusterId: number | string | null = null;
+  let foundClusterSource: string | null = null;
+
+  // Check each cluster to see if it contains our selected feature
+  for (const clusterFeature of clusterFeatures) {
+    const clusterId = clusterFeature.properties?.cluster_id;
+    if (clusterId === undefined) continue;
+
+    try {
+      // Get the leaves (individual points) of this cluster
+      const leaves: Feature[] = await new Promise((resolve, reject) => {
+        sourceObj.getClusterLeaves(
+          clusterId,
+          Infinity, // Get ALL leaves in the cluster (no limit)
+          0,
+          (err, features) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve(features as Feature[]);
+            }
+          },
+        );
+      });
+
+      // Check if any leaf matches our selected feature
+      const containsSelected = leaves.some(
+        (leaf) => leaf.properties?.alertID === selectedAlertId,
+      );
+
+      if (containsSelected) {
+        // Found the cluster!
+        foundClusterId = clusterId;
+        foundClusterSource = sourceName;
+        break; // Stop searching
+      }
+    } catch {
+      // Silently continue on error
+      continue;
+    }
+  }
+
+  // Only update if the cluster has changed
+  if (
+    foundClusterId !== prevClusterId ||
+    foundClusterSource !== prevClusterSource
+  ) {
+    // Reset the old cluster (only if it has a valid ID)
+    if (
+      prevClusterId !== null &&
+      prevClusterId !== undefined &&
+      prevClusterSource
+    ) {
+      map.value.setFeatureState(
+        { source: prevClusterSource, id: prevClusterId },
+        { selected: false },
+      );
+    }
+
+    // Highlight the new cluster (only if it has a valid ID)
+    if (
+      foundClusterId !== null &&
+      foundClusterId !== undefined &&
+      foundClusterSource
+    ) {
+      map.value.setFeatureState(
+        { source: foundClusterSource, id: foundClusterId },
+        { selected: true },
+      );
+      selectedClusterId.value = foundClusterId;
+      selectedClusterSource.value = foundClusterSource;
+    } else {
+      // No cluster found (feature is not in a cluster)
+      selectedClusterId.value = null;
+      selectedClusterSource.value = null;
+    }
+  }
+};
+
 /**
  * Selects a feature on the map, updating the component state and UI.
  * Resets any previously selected feature and highlights the new one.
@@ -1396,6 +1351,15 @@ const selectFeature = (feature: Feature, layerId: string) => {
   if (!feature.properties) {
     return;
   }
+
+  // Prevent cluster features from being displayed in sidebar
+  if (
+    feature.properties.cluster ||
+    feature.properties.cluster_id !== undefined
+  ) {
+    return;
+  }
+
   const featureObject = feature.properties;
 
   const featureGeojson = {
@@ -1403,7 +1367,12 @@ const selectFeature = (feature: Feature, layerId: string) => {
     geometry: feature.geometry,
     properties: feature.properties,
   };
-  const featureId = feature.id;
+
+  // For centroid layers, use alertID as the feature ID (due to promoteId)
+  // For other layers, use feature.id
+  const featureId = layerId.includes("-centroids")
+    ? featureObject.alertID
+    : feature.id;
 
   // Update URL with alertId or mapeoDocId
   const query = { ...route.query };
@@ -1443,11 +1412,17 @@ const selectFeature = (feature: Feature, layerId: string) => {
 
   // Update component state
   localAlertsData.value = featureGeojson;
-  selectedFeature.value = featureObject;
+  selectedFeature.value = featureObject; // Store properties for sidebar
+  selectedFeatureGeometry.value = feature.geometry; // Store geometry for cluster highlighting
   selectedFeatureId.value = featureId;
   selectedFeatureSource.value = layerId;
   showSidebar.value = true;
   showIntroPanel.value = false;
+
+  // Highlight any cluster that contains this feature (after a brief delay)
+  setTimeout(() => {
+    highlightClusterContainingFeature(layerId);
+  }, 100);
 
   if (featureObject["alertID"]) {
     isAlert.value = true;
@@ -1482,8 +1457,6 @@ const selectFeature = (feature: Feature, layerId: string) => {
       featureObject.geocoordinates,
     );
   }
-
-  removePulsingCircles();
 };
 
 /**
@@ -1497,8 +1470,23 @@ const resetSelectedFeature = () => {
     { source: selectedFeatureSource.value, id: selectedFeatureId.value },
     { selected: false },
   );
+
+  // Reset cluster highlight
+  if (selectedClusterId.value !== null && selectedClusterSource.value) {
+    map.value.setFeatureState(
+      {
+        source: selectedClusterSource.value,
+        id: selectedClusterId.value,
+      },
+      { selected: false },
+    );
+    selectedClusterId.value = null;
+    selectedClusterSource.value = null;
+  }
+
   localAlertsData.value = props.alertsData;
   selectedFeature.value = null;
+  selectedFeatureGeometry.value = null;
   selectedFeatureId.value = null;
   selectedFeatureSource.value = null;
 
@@ -1530,8 +1518,8 @@ const resetToInitialState = () => {
         layer.id.startsWith("alerts")) &&
       !layer.id.includes("-cluster")
     ) {
-      // Point and symbol layers need to restore their cluster exclusion filter
-      if (layer.id.endsWith("-point") || layer.id.endsWith("-symbol")) {
+      // Point and centroid layers need to restore their cluster exclusion filter
+      if (layer.id.endsWith("-point") || layer.id.endsWith("-centroids")) {
         map.value.setFilter(layer.id, ["!", ["has", "point_count"]]);
       } else {
         map.value.setFilter(layer.id, null);
@@ -1631,9 +1619,6 @@ const resetToInitialState = () => {
     });
 
     emit("reset-legend-visibility");
-
-    // Finally, add pulsing circles now that everything is in the right state
-    updatePulsingCirclesForViewport();
   });
 };
 
