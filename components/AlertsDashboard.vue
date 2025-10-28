@@ -522,7 +522,7 @@ const addAlertsData = async () => {
         },
         cluster: true,
         clusterMaxZoom: 14,
-        clusterRadius: 100,
+        clusterRadius: 50,
         promoteId: "alertID", // Use alertID as the feature ID for feature-state on individual points
       });
     }
