@@ -219,7 +219,44 @@ test("config page - form validation and change detection", async ({ page }) => {
     const submitButton = targetCard.locator("button[type='submit']");
     await expect(submitButton).toBeDisabled();
 
-    // 13. Find and modify a form field (e.g., mapbox access token)
+    // 13. Test mapbox3d checkbox and terrain exaggeration slider
+    const mapbox3dCheckbox = targetCard.locator(
+      'input[type="checkbox"][name*="MAPBOX_3D"], input[type="checkbox"][id*="mapbox3d"]',
+    );
+
+    if ((await mapbox3dCheckbox.count()) > 0) {
+      // 13a. Verify slider is not visible initially
+      const terrainSlider = targetCard.locator(
+        'input[type="range"][name*="TERRAIN_EXAGGERATION"], input[type="range"][id*="terrain"]',
+      );
+      await expect(terrainSlider).not.toBeVisible();
+
+      // 13b. Check the mapbox3d checkbox
+      await mapbox3dCheckbox.check();
+
+      // 13c. Verify the terrain exaggeration slider appears
+      await expect(terrainSlider).toBeVisible();
+
+      // 13d. Verify that the slider is set to the default value of 1.5
+      await expect(terrainSlider).toHaveValue("1.5");
+
+      // 13e. Verify that the slider is set to the custom value of 2.5
+      await terrainSlider.fill("2.5");
+
+      // 13f. Verify that the slider is set to the custom value of 2.5
+      await expect(terrainSlider).toHaveValue("2.5");
+
+      // 13g. Verify submit button is now enabled (change detected)
+      await expect(submitButton).toBeEnabled();
+
+      // 13h. Uncheck the mapbox3d checkbox
+      await mapbox3dCheckbox.uncheck();
+
+      // 13i. Verify slider is hidden again
+      await expect(terrainSlider).not.toBeVisible();
+    }
+
+    // 14. Find and modify a form field (e.g., mapbox access token)
     const mapboxTokenInput = targetCard
       .locator(
         'input[name*="MAPBOX_ACCESS_TOKEN"], input[placeholder*="Mapbox Access Token"]',
@@ -227,50 +264,50 @@ test("config page - form validation and change detection", async ({ page }) => {
       .first();
 
     if ((await mapboxTokenInput.count()) > 0) {
-      // 14. Test invalid token format (should not start with pk.ey)
+      // 15. Test invalid token format (should not start with pk.ey)
       await mapboxTokenInput.clear();
       await mapboxTokenInput.fill("invalid_token_123");
 
-      // 15. Verify submit button is disabled due to invalid format
+      // 16. Verify submit button is disabled due to invalid format
       await expect(submitButton).toBeDisabled();
 
-      // 16. Test valid token format (should start with pk.ey)
+      // 17. Test valid token format (should start with pk.ey)
       await mapboxTokenInput.clear();
       await mapboxTokenInput.fill(
         "pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjbGV4YW1wbGUifQ.example",
       );
 
-      // 17. Verify submit button is now enabled with valid format
+      // 18. Verify submit button is now enabled with valid format
       await expect(submitButton).toBeEnabled();
 
-      // 18. Test partial valid format (pk.ey but incomplete)
+      // 19. Test partial valid format (pk.ey but incomplete)
       await mapboxTokenInput.clear();
       await mapboxTokenInput.fill("pk.ey");
 
-      // 19. Verify submit button is still enabled (pattern allows pk.ey.*)
+      // 20. Verify submit button is still enabled (pattern allows pk.ey.*)
       await expect(submitButton).toBeEnabled();
 
-      // 20. Clear the field to make it invalid
+      // 21. Clear the field to make it invalid
       await mapboxTokenInput.clear();
 
-      // 21. Verify submit button is disabled again (invalid form)
+      // 22. Verify submit button is disabled again (invalid form)
       await expect(submitButton).toBeDisabled();
     }
 
-    // 18. Clean up: remove the table we added
+    // 23. Clean up: remove the table we added
     const removeButton = targetCard.locator("button.remove-button");
     await removeButton.click();
 
-    // 19. Verify the confirmation modal appears
+    // 24. Verify the confirmation modal appears
     await expect(modal).toBeVisible();
 
-    // 20. Click confirm to remove
+    // 25. Click confirm to remove
     await confirmButton.click();
 
-    // 21. Verify success message appears
+    // 26. Verify success message appears
     await expect(page.getByText(/table removed from views!/i)).toBeVisible();
 
-    // 22. Verify modal closes after timeout
+    // 27. Verify modal closes after timeout
     await page.waitForTimeout(3500);
     await expect(modal).not.toBeVisible();
   }
