@@ -95,18 +95,9 @@ const selectInitialAlertFeature = (alertId: string) => {
       layerId = isInRecentLayer
         ? "most-recent-alerts-point"
         : "previous-alerts-point";
-    } else if (
-      (geometryType === "Polygon" ||
-        geometryType === "LineString" ||
-        geometryType === "MultiPolygon") &&
-      feature.properties.geographicCentroid
-    ) {
-      // Polygon/LineString features use the centroids layer
-      layerId = isInRecentLayer
-        ? "most-recent-alerts-centroids"
-        : "previous-alerts-centroids";
     } else {
-      // Fallback: use geometry-specific layer
+      // Polygon/LineString features use the geometry-specific layer
+      // (not centroids, since we'll be zooming in to show the actual geometry)
       layerId = isInRecentLayer
         ? `most-recent-alerts-${geometryType.toLowerCase()}`
         : `previous-alerts-${geometryType.toLowerCase()}`;
@@ -116,6 +107,7 @@ const selectInitialAlertFeature = (alertId: string) => {
 
     // Zoom to the feature
     // Use zoom 15 (above clusterMaxZoom of 14) to ensure individual features are visible
+    // For polygons/linestrings, ensure we're at least at GEOMETRY_MIN_ZOOM (12) to show actual geometry
     if (feature.geometry.type === "Point") {
       const [lng, lat] = feature.geometry.coordinates;
       map.value.flyTo({ center: [lng, lat], zoom: 15 });
@@ -124,7 +116,7 @@ const selectInitialAlertFeature = (alertId: string) => {
       feature.geometry.type === "MultiPolygon"
     ) {
       const bounds = bbox(feature);
-      map.value.fitBounds(bounds, { padding: 50 });
+      map.value.fitBounds(bounds, { padding: 50, minZoom: 12 });
     } else if (feature.geometry.type === "LineString") {
       const [lng, lat] = calculateLineStringCentroid(
         feature.geometry.coordinates,
@@ -341,12 +333,16 @@ const addAlertsData = async () => {
     }
 
     return new Promise((resolve) => {
+      // Zoom threshold: below this, show centroid circles; at/above this, show actual geometries
+      const GEOMETRY_MIN_ZOOM = 12;
+
       if (type === "Polygon" || type === "MultiPolygon") {
         if (!map.value.getLayer(layerId)) {
           map.value.addLayer({
             id: layerId,
             type: "fill",
             source: layerId,
+            minzoom: GEOMETRY_MIN_ZOOM, // Only show actual polygons when zoomed in
             paint: {
               "fill-color": [
                 "case",
@@ -364,6 +360,7 @@ const addAlertsData = async () => {
             id: `${layerId}-stroke`,
             type: "line",
             source: layerId,
+            minzoom: GEOMETRY_MIN_ZOOM, // Only show actual polygon strokes when zoomed in
             paint: {
               "line-color": [
                 "case",
@@ -384,6 +381,7 @@ const addAlertsData = async () => {
             type: "line",
             source: layerId,
             filter: ["==", "$type", "LineString"],
+            minzoom: GEOMETRY_MIN_ZOOM, // Only show actual linestrings when zoomed in
             paint: {
               "line-color": [
                 "case",
@@ -412,12 +410,7 @@ const addAlertsData = async () => {
             source: layerId,
             filter: ["has", "point_count"],
             paint: {
-              "circle-color": [
-                "case",
-                ["boolean", ["feature-state", "selected"], false],
-                "#FFFF00",
-                fillColor,
-              ],
+              "circle-color": fillColor, // Will be dynamically updated by updateClusterHighlight()
               "circle-radius": [
                 "step",
                 ["get", "point_count"],
@@ -527,10 +520,13 @@ const addAlertsData = async () => {
         cluster: true,
         clusterMaxZoom: 14,
         clusterRadius: 100,
-        generateId: true, // Generate IDs for clusters to enable feature-state
         promoteId: "alertID", // Use alertID as the feature ID for feature-state on individual points
       });
     }
+
+    // Zoom threshold: centroid circles only show below zoom 12
+    // At zoom 12+, actual polygon/linestring geometries show instead
+    const CENTROID_MAX_ZOOM = 11;
 
     // Add cluster circle layer
     if (!map.value.getLayer(`${layerId}-clusters`)) {
@@ -539,13 +535,9 @@ const addAlertsData = async () => {
         type: "circle",
         source: layerId,
         filter: ["has", "point_count"],
+        maxzoom: CENTROID_MAX_ZOOM + 1, // Hide at zoom 12+
         paint: {
-          "circle-color": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            "#FFFF00",
-            color,
-          ],
+          "circle-color": color, // Will be dynamically updated by updateClusterHighlight()
           "circle-radius": ["step", ["get", "point_count"], 15, 10, 25, 50, 35],
           "circle-opacity": 0.8,
           "circle-stroke-width": 2,
@@ -561,6 +553,7 @@ const addAlertsData = async () => {
         type: "symbol",
         source: layerId,
         filter: ["has", "point_count"],
+        maxzoom: CENTROID_MAX_ZOOM + 1, // Hide at zoom 12+
         layout: {
           "text-field": ["get", "point_count_abbreviated"],
           "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
@@ -579,6 +572,7 @@ const addAlertsData = async () => {
         type: "circle",
         source: layerId,
         filter: ["!", ["has", "point_count"]],
+        maxzoom: CENTROID_MAX_ZOOM + 1, // Hide at zoom 12+
         paint: {
           "circle-color": [
             "case",
@@ -1213,6 +1207,117 @@ const selectedClusterId = ref<number | string | null>(null);
 const selectedClusterSource = ref<string | null>(null);
 
 /**
+ * Gets the companion layer ID for polygon/linestring features.
+ * Companion layers are geometry ↔ centroid pairs that represent the same features at different zoom levels.
+ * @param layerId - The current layer ID
+ * @param featureAlertId - Optional alertID to help determine the correct geometry type for centroids
+ * @returns The companion layer ID, or null if no companion exists
+ */
+const getCompanionLayerId = (
+  layerId: string,
+  featureAlertId?: string,
+): string | null => {
+  // Map geometry layers to their centroid companions
+  if (
+    layerId.includes("-polygon") ||
+    layerId.includes("-linestring") ||
+    layerId.includes("-multipolygon")
+  ) {
+    const prefix = layerId.replace(/-polygon|-linestring|-multipolygon/i, "");
+    return `${prefix}-centroids`;
+  }
+
+  // Map centroid layers to their geometry companions
+  // Need to determine which geometry type by checking the original feature
+  if (layerId.includes("-centroids") && featureAlertId) {
+    const prefix = layerId.replace("-centroids", "");
+    const possibleLayers = [
+      `${prefix}-polygon`,
+      `${prefix}-linestring`,
+      `${prefix}-multipolygon`,
+    ];
+
+    // Check each possible geometry source to find which one has this feature
+    for (const possibleLayer of possibleLayers) {
+      const source = map.value.getSource(
+        possibleLayer,
+      ) as mapboxgl.GeoJSONSource;
+      if (source && source.type === "geojson") {
+        const sourceData = (
+          source as mapboxgl.GeoJSONSource & {
+            _data?: { features?: Feature[] };
+          }
+        )._data;
+        if (sourceData?.features) {
+          const hasFeature = sourceData.features.some(
+            (f) => f.properties?.alertID === featureAlertId,
+          );
+          if (hasFeature) {
+            return possibleLayer;
+          }
+        }
+      }
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Updates cluster layer styling to highlight the selected cluster.
+ * Uses setPaintProperty with a data-driven expression since clusters don't have stable feature IDs.
+ */
+const updateClusterHighlight = () => {
+  if (!map.value) return;
+
+  // List of all cluster layer IDs that need updating
+  const clusterLayers = [
+    {
+      clustersLayer: "most-recent-alerts-centroids-clusters",
+      source: "most-recent-alerts-centroids",
+      color: "#FF0000",
+    },
+    {
+      clustersLayer: "most-recent-alerts-point-clusters",
+      source: "most-recent-alerts-point",
+      color: "#FF0000",
+    },
+    {
+      clustersLayer: "previous-alerts-centroids-clusters",
+      source: "previous-alerts-centroids",
+      color: "#FD8D3C",
+    },
+    {
+      clustersLayer: "previous-alerts-point-clusters",
+      source: "previous-alerts-point",
+      color: "#FD8D3C",
+    },
+  ];
+
+  clusterLayers.forEach(({ clustersLayer, source, color }) => {
+    if (map.value.getLayer(clustersLayer)) {
+      // Update cluster color based on whether this cluster is selected
+      const paintExpression =
+        selectedClusterId.value !== null &&
+        selectedClusterSource.value === source
+          ? [
+              "case",
+              ["==", ["get", "cluster_id"], selectedClusterId.value],
+              "#FFFF00", // Yellow if this is the selected cluster
+              color, // Default color otherwise
+            ]
+          : color; // No cluster selected, use default color
+
+      map.value.setPaintProperty(
+        clustersLayer,
+        "circle-color",
+        paintExpression,
+      );
+    }
+  });
+};
+
+/**
  * Highlights a cluster that contains the selected feature (if any).
  * This makes the cluster turn yellow when zoomed out.
  */
@@ -1291,52 +1396,36 @@ const highlightClusterContainingFeature = async (selectedLayerId: string) => {
       );
 
       if (containsSelected) {
-        // Found the cluster!
         foundClusterId = clusterId;
         foundClusterSource = sourceName;
         break; // Stop searching
       }
     } catch {
-      // Silently continue on error
       continue;
     }
   }
 
-  // Only update if the cluster has changed
+  // Only update if we found a NEW different cluster
+  // Don't reset if we simply didn't find any clusters (they might be hidden at current zoom)
   if (
-    foundClusterId !== prevClusterId ||
-    foundClusterSource !== prevClusterSource
+    foundClusterId !== null &&
+    foundClusterId !== undefined &&
+    foundClusterSource
   ) {
-    // Reset the old cluster (only if it has a valid ID)
+    // We found a cluster - update if it's different from the previous one
     if (
-      prevClusterId !== null &&
-      prevClusterId !== undefined &&
-      prevClusterSource
+      foundClusterId !== prevClusterId ||
+      foundClusterSource !== prevClusterSource
     ) {
-      map.value.setFeatureState(
-        { source: prevClusterSource, id: prevClusterId },
-        { selected: false },
-      );
-    }
-
-    // Highlight the new cluster (only if it has a valid ID)
-    if (
-      foundClusterId !== null &&
-      foundClusterId !== undefined &&
-      foundClusterSource
-    ) {
-      map.value.setFeatureState(
-        { source: foundClusterSource, id: foundClusterId },
-        { selected: true },
-      );
+      // Update the selected cluster refs
       selectedClusterId.value = foundClusterId;
       selectedClusterSource.value = foundClusterSource;
-    } else {
-      // No cluster found (feature is not in a cluster)
-      selectedClusterId.value = null;
-      selectedClusterSource.value = null;
+
+      // Update cluster styling using paint properties (clusters don't have stable feature IDs)
+      updateClusterHighlight();
     }
   }
+  // If no cluster found, keep the previous cluster highlighted so it shows when zooming back out
 };
 
 /**
@@ -1391,7 +1480,7 @@ const selectFeature = (feature: Feature, layerId: string) => {
 
   router.replace({ query });
 
-  // Reset the previously selected feature
+  // Reset the previously selected feature (on both geometry and centroid layers if applicable)
   if (selectedFeatureId.value !== null && selectedFeatureSource.value) {
     map.value.setFeatureState(
       {
@@ -1400,13 +1489,90 @@ const selectFeature = (feature: Feature, layerId: string) => {
       },
       { selected: false },
     );
+
+    // Also reset on the companion layer (centroid ↔ geometry)
+    const companionLayer = getCompanionLayerId(
+      selectedFeatureSource.value,
+      selectedFeature.value?.alertID,
+    );
+    if (companionLayer && map.value.getSource(companionLayer)) {
+      let companionFeatureId;
+
+      if (companionLayer.includes("-centroids")) {
+        // Centroid layers use promoteId: "alertID"
+        companionFeatureId = selectedFeature.value?.alertID;
+      } else {
+        // Geometry layers use feature.id - need to look up the actual feature
+        const source = map.value.getSource(
+          companionLayer,
+        ) as mapboxgl.GeoJSONSource;
+        const sourceData = (
+          source as mapboxgl.GeoJSONSource & {
+            _data?: { features?: Feature[] };
+          }
+        )._data;
+        const companionFeature = sourceData?.features?.find(
+          (f) => f.properties?.alertID === selectedFeature.value?.alertID,
+        );
+        companionFeatureId = companionFeature?.id;
+      }
+
+      if (companionFeatureId !== undefined && companionFeatureId !== null) {
+        map.value.setFeatureState(
+          { source: companionLayer, id: companionFeatureId },
+          { selected: false },
+        );
+      }
+    }
   }
 
-  // Set new feature state
+  // Set new feature state on the current layer
   map.value.setFeatureState(
     { source: layerId, id: featureId },
     { selected: true },
   );
+
+  // For polygon/linestring features (or their centroid representations),
+  // also set state on companion layer so selection persists across zoom thresholds
+  const geometryType = feature.geometry.type;
+  const isPolygonLinestring =
+    geometryType === "Polygon" ||
+    geometryType === "LineString" ||
+    geometryType === "MultiPolygon" ||
+    layerId.includes("-centroids"); // Centroids are Points but represent Polygons/LineStrings
+
+  if (isPolygonLinestring) {
+    const companionLayer = getCompanionLayerId(layerId, featureObject.alertID);
+    if (companionLayer && map.value.getSource(companionLayer)) {
+      let companionFeatureId;
+
+      if (companionLayer.includes("-centroids")) {
+        // Centroid layers use promoteId: "alertID"
+        companionFeatureId = featureObject.alertID;
+      } else {
+        // Geometry layers use feature.id - need to look up the actual feature
+        const source = map.value.getSource(
+          companionLayer,
+        ) as mapboxgl.GeoJSONSource;
+        const sourceData = (
+          source as mapboxgl.GeoJSONSource & {
+            _data?: { features?: Feature[] };
+          }
+        )._data;
+        const companionFeature = sourceData?.features?.find(
+          (f) => f.properties?.alertID === featureObject.alertID,
+        );
+        companionFeatureId = companionFeature?.id;
+      }
+
+      if (companionFeatureId !== undefined && companionFeatureId !== null) {
+        map.value.setFeatureState(
+          { source: companionLayer, id: companionFeatureId },
+          { selected: true },
+        );
+      }
+    }
+  }
 
   delete featureObject["YYYYMM"];
 
@@ -1419,15 +1585,22 @@ const selectFeature = (feature: Feature, layerId: string) => {
   showSidebar.value = true;
   showIntroPanel.value = false;
 
-  // Highlight any cluster that contains this feature (after a brief delay)
-  setTimeout(() => {
-    highlightClusterContainingFeature(layerId);
-  }, 100);
-
   if (featureObject["alertID"]) {
     isAlert.value = true;
+
+    // Highlight any cluster that contains this feature (after a brief delay)
+    setTimeout(() => {
+      highlightClusterContainingFeature(layerId);
+    }, 100);
   } else {
     isAlert.value = false;
+
+    // For Mapeo features, clear any cluster highlights
+    if (selectedClusterId.value !== null) {
+      selectedClusterId.value = null;
+      selectedClusterSource.value = null;
+      updateClusterHighlight();
+    }
   }
 
   // The following code handles deletions or rewrites of certain properties
@@ -1466,22 +1639,53 @@ const resetSelectedFeature = () => {
   if (selectedFeatureId.value === null || !selectedFeatureSource.value) {
     return;
   }
+
+  // Reset feature state on the current layer
   map.value.setFeatureState(
     { source: selectedFeatureSource.value, id: selectedFeatureId.value },
     { selected: false },
   );
 
+  // Also reset on the companion layer (centroid ↔ geometry) if applicable
+  const companionLayer = getCompanionLayerId(
+    selectedFeatureSource.value,
+    selectedFeature.value?.alertID,
+  );
+  if (companionLayer && map.value.getSource(companionLayer)) {
+    let companionFeatureId;
+
+    if (companionLayer.includes("-centroids")) {
+      // Centroid layers use promoteId: "alertID"
+      companionFeatureId = selectedFeature.value?.alertID;
+    } else {
+      // Geometry layers use feature.id - need to look up the actual feature
+      const source = map.value.getSource(
+        companionLayer,
+      ) as mapboxgl.GeoJSONSource;
+      const sourceData = (
+        source as mapboxgl.GeoJSONSource & {
+          _data?: { features?: Feature[] };
+        }
+      )._data;
+      const companionFeature = sourceData?.features?.find(
+        (f) => f.properties?.alertID === selectedFeature.value?.alertID,
+      );
+      companionFeatureId = companionFeature?.id;
+    }
+
+    if (companionFeatureId !== undefined && companionFeatureId !== null) {
+      map.value.setFeatureState(
+        { source: companionLayer, id: companionFeatureId },
+        { selected: false },
+      );
+    }
+  }
+
   // Reset cluster highlight
   if (selectedClusterId.value !== null && selectedClusterSource.value) {
-    map.value.setFeatureState(
-      {
-        source: selectedClusterSource.value,
-        id: selectedClusterId.value,
-      },
-      { selected: false },
-    );
     selectedClusterId.value = null;
     selectedClusterSource.value = null;
+    updateClusterHighlight(); // Update styling using paint properties
   }
 
   localAlertsData.value = props.alertsData;
