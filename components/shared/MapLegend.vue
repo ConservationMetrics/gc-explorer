@@ -65,9 +65,21 @@ watch(
         </div>
         <div
           v-else
-          :class="['color-box', getTypeClass(item)]"
+          :class="[
+            'color-box',
+            getTypeClass(item),
+            {
+              'with-hash': item.type === 'circle' && item.id.includes('alerts'),
+            },
+          ]"
           :style="{ backgroundColor: item.color }"
-        ></div>
+        >
+          <span
+            v-if="item.type === 'circle' && item.id.includes('alerts')"
+            class="hash-mark"
+            >#</span
+          >
+        </div>
         <span>
           {{
             item.name === "Mapeo data"
@@ -106,6 +118,10 @@ watch(
   position: relative;
 }
 
+.color-box:not(.circle-box) {
+  flex-shrink: 0;
+}
+
 .fill-box {
   border-radius: 30% 70% 70% 30% / 30% 30% 70% 70% !important;
   transform: rotate(60deg);
@@ -124,6 +140,28 @@ watch(
   height: 10px;
   margin: 5px;
   margin-right: 15px;
+}
+
+/* Larger circles for alerts */
+.circle-box.with-hash {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  margin: 0 10px 0 0;
+}
+
+/* Add hash/pound (#) symbol for clustered alert circles */
+.hash-mark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 1;
+  font-style: normal;
+  font-family: Arial, sans-serif;
 }
 
 .icon-box {
