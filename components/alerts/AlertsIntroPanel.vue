@@ -93,13 +93,13 @@ const emit = defineEmits(["dateRangeChanged"]);
               >{{ $t("recentAlertsNumber") }}:</span
             >
             <span class="text-sm text-muted-foreground">{{
-              props.alertsStatistics.recentAlertsNumber
+              $n(props.alertsStatistics.recentAlertsNumber)
             }}</span>
           </div>
           <div class="flex items-center gap-2">
             <span class="font-bold text-sm">{{ $t("alertsTotal") }}:</span>
             <span class="text-sm text-muted-foreground">{{
-              props.alertsStatistics.alertsTotal
+              $n(props.alertsStatistics.alertsTotal)
             }}</span>
           </div>
           <div
@@ -110,7 +110,7 @@ const emit = defineEmits(["dateRangeChanged"]);
           >
             <span class="font-bold text-sm">{{ $t("hectaresTotal") }}:</span>
             <span class="text-sm text-muted-foreground">{{
-              props.alertsStatistics.hectaresTotal
+              $n(Number(props.alertsStatistics.hectaresTotal))
             }}</span>
           </div>
         </div>
