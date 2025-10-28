@@ -39,6 +39,7 @@ export interface ViewConfig {
   MAPBOX_PITCH?: number;
   MAPBOX_PROJECTION?: string;
   MAPBOX_STYLE?: string;
+  MAPBOX_3D_TERRAIN_EXAGGERATION?: number;
   MAPBOX_ZOOM?: number;
   MAPEO_CATEGORY_IDS?: string;
   MAPEO_TABLE?: string;
