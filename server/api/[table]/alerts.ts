@@ -147,7 +147,7 @@ export default defineEventHandler(async (event: H3Event) => {
       allowedFileExtensions: allowedFileExtensions,
       logoUrl: viewsConfig[table].LOGO_URL,
       mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,
-      mapbox3d: viewsConfig[table].MAPBOX_3D === "YES",
+      mapbox3d: viewsConfig[table].MAPBOX_3D ?? false,
       mapbox3dTerrainExaggeration: Number(
         viewsConfig[table].MAPBOX_3D_TERRAIN_EXAGGERATION,
       ),
