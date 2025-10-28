@@ -288,16 +288,29 @@ const addAlertsData = async () => {
     if (!features.some((feature) => feature.geometry.type === type)) return;
 
     if (!map.value.getSource(layerId)) {
-      map.value.addSource(layerId, {
-        type: "geojson",
+      const baseConfig = {
+        type: "geojson" as const,
         data: {
-          type: "FeatureCollection",
+          type: "FeatureCollection" as const,
           features: features.filter(
             (feature) => feature.geometry.type === type,
           ),
         },
         minzoom: 10,
-      });
+      };
+
+      // Clustering for Point features
+      const sourceConfig =
+        type === "Point"
+          ? {
+              ...baseConfig,
+              cluster: true,
+              clusterMaxZoom: 14, // Max zoom level to cluster points
+              clusterRadius: 100, // Radius of each cluster in pixels
+            }
+          : baseConfig;
+
+      map.value.addSource(layerId, sourceConfig);
     }
 
     return new Promise((resolve) => {
@@ -364,11 +377,56 @@ const addAlertsData = async () => {
       }
 
       if (type === "Point") {
+        // Add cluster circle layer
+        if (!map.value.getLayer(`${layerId}-clusters`)) {
+          map.value.addLayer({
+            id: `${layerId}-clusters`,
+            type: "circle",
+            source: layerId,
+            filter: ["has", "point_count"],
+            paint: {
+              "circle-color": fillColor,
+              "circle-radius": [
+                "step",
+                ["get", "point_count"],
+                10, // radius for clusters with < 10 points
+                10,
+                20, // radius for clusters with 10-50 points
+                50,
+                30, // radius for clusters with 50+ points
+              ],
+              "circle-opacity": 0.8,
+              "circle-stroke-width": 2,
+              "circle-stroke-color": "#fff",
+            },
+          });
+        }
+
+        // Add cluster count label layer
+        if (!map.value.getLayer(`${layerId}-cluster-count`)) {
+          map.value.addLayer({
+            id: `${layerId}-cluster-count`,
+            type: "symbol",
+            source: layerId,
+            filter: ["has", "point_count"],
+            layout: {
+              "text-field": ["get", "point_count_abbreviated"],
+              "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+              "text-size": 12,
+            },
+            paint: {
+              "text-color": "#ffffff",
+            },
+          });
+        }
+
+        // Add unclustered point layer
         if (!map.value.getLayer(layerId)) {
           map.value.addLayer({
             id: layerId,
             type: "circle",
             source: layerId,
+            filter: ["!", ["has", "point_count"]], // Only show unclustered points
             paint: {
               "circle-color": [
                 "case",
@@ -395,6 +453,7 @@ const addAlertsData = async () => {
   /**
    * Loads and adds an image to the style. Returns a promise that resolves
    * when the image is successfully loaded and added to the map.
+   * Uses pixelRatio: 2 to ensure crisp rendering on high-DPI displays.
    */
   const loadMapImage = (iconName: string, iconUrl: string): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -405,7 +464,8 @@ const addAlertsData = async () => {
         }
 
         if (!map.value.hasImage(iconName)) {
-          map.value.addImage(iconName, image);
+          // Add image with pixelRatio: 2 for crisp rendering when scaled
+          map.value.addImage(iconName, image, { pixelRatio: 2.5 });
         }
         resolve();
       });
@@ -414,7 +474,7 @@ const addAlertsData = async () => {
 
   /**
    * Adds a GeoJSON point layer to the map using the geographicCentroid property,
-   * with specified icon.
+   * with specified icon. Enables clustering for better performance.
    */
   const addAlertSymbolLayer = async (
     layerId: string,
@@ -445,17 +505,69 @@ const addAlertsData = async () => {
               },
             })),
         },
+        // Enable clustering for symbol layers
+        cluster: true,
+        clusterMaxZoom: 10, // Clusters break apart at zoom 10 (where symbols disappear)
+        clusterRadius: 50,
       });
     }
 
+    // Add cluster circle layer for symbols
+    if (!map.value.getLayer(`${layerId}-clusters`)) {
+      map.value.addLayer({
+        id: `${layerId}-clusters`,
+        type: "symbol",
+        source: layerId,
+        filter: ["has", "point_count"],
+        layout: {
+          "icon-image": iconName,
+          "icon-size": [
+            "step",
+            ["get", "point_count"],
+            2.0, // size for clusters with < 100 points (doubled for pixelRatio: 2)
+            100,
+            2.5, // size for clusters with 100-750 points
+            750,
+            3.0, // size for clusters with 750+ points
+          ],
+          "icon-allow-overlap": true,
+        },
+        maxzoom: 10,
+      });
+    }
+
+    // Add cluster count label
+    if (!map.value.getLayer(`${layerId}-cluster-count`)) {
+      map.value.addLayer({
+        id: `${layerId}-cluster-count`,
+        type: "symbol",
+        source: layerId,
+        filter: ["has", "point_count"],
+        layout: {
+          "text-field": ["get", "point_count_abbreviated"],
+          "text-font": ["DIN Offc Pro Medium", "Arial Unicode MS Bold"],
+          "text-size": 16,
+          "text-offset": [0, -2.0],
+        },
+        paint: {
+          "text-color": "#000000",
+          "text-halo-color": "#ffffff",
+          "text-halo-width": 2,
+        },
+        maxzoom: 10,
+      });
+    }
+
+    // Add unclustered symbol layer
     if (!map.value.getLayer(layerId)) {
       map.value.addLayer({
         id: layerId,
         type: "symbol",
         source: layerId,
+        filter: ["!", ["has", "point_count"]], // Only show unclustered symbols
         layout: {
           "icon-image": iconName,
-          "icon-size": 0.75,
+          "icon-size": 1.5,
           "icon-allow-overlap": true,
         },
         maxzoom: 10,
@@ -567,6 +679,24 @@ const addAlertsData = async () => {
                 const [lng, lat] = feature.geometry.coordinates;
                 map.value.flyTo({ center: [lng, lat], zoom: 13 });
               }
+            } else if (layer.id.endsWith("clusters")) {
+              // Handle cluster clicks - zoom in to expand
+              const clusterId = feature.properties?.cluster_id;
+              const source = map.value.getSource(layer.source);
+              if (source && clusterId !== undefined) {
+                source.getClusterExpansionZoom(
+                  clusterId,
+                  (err: Error, zoom: number) => {
+                    if (err) return;
+                    if (feature.geometry.type === "Point") {
+                      map.value.easeTo({
+                        center: feature.geometry.coordinates,
+                        zoom: zoom,
+                      });
+                    }
+                  },
+                );
+              }
             } else {
               selectFeature(feature, layer.id);
             }
@@ -604,6 +734,11 @@ const addAlertsData = async () => {
     geoJsonSource.previousAlerts.features.some(
       (feature) => feature.geometry.type === "Point",
     );
+
+  // Add event listeners to update pulsing circles when map moves/zooms
+  // This ensures we only show circles for currently visible features
+  map.value.on("moveend", updatePulsingCirclesForViewport);
+  map.value.on("zoomend", updatePulsingCirclesForViewport);
 };
 
 /**
@@ -709,7 +844,9 @@ const prepareMapCanvasContent = async () => {
     promises.push(addMapeoData());
   }
   await Promise.all(promises);
-  addPulsingCircles();
+
+  // Use updatePulsingCirclesForViewport to ensure clean state
+  updatePulsingCirclesForViewport();
   prepareMapLegendContent();
 };
 
@@ -773,21 +910,32 @@ const handleBufferMouseEvent = (e: MapMouseEvent) => {
   }
 };
 
-const pulsingCirclesAdded = ref();
+const pulsingCirclesAdded = ref(false);
+const pulsingMarkers: { value: mapboxgl.Marker[] } = ref([]);
+const MAX_PULSING_CIRCLES = 100; // Limit DOM markers for performance
+
+/**
+ * Updates pulsing circles based on currently visible features in the viewport.
+ * This is called when the map moves or zooms to keep DOM markers optimized.
+ */
+const updatePulsingCirclesForViewport = () => {
+  // Remove existing circles and re-add for current viewport
+  removePulsingCircles();
+  pulsingCirclesAdded.value = false; // Reset flag
+  addPulsingCircles();
+};
+
 /**
  * Adds pulsing circles around the most recent alerts on the map.
  * The pulsing effect is based on the confidence level of the alerts.
+ * Optimized to only show markers for visible features up to a maximum limit.
  */
 const addPulsingCircles = () => {
   if (pulsingCirclesAdded.value) {
     return;
   }
-  pulsingCirclesAdded.value = true;
 
-  if (document.querySelector(".pulsing-dot")) {
-    return;
-  }
-  removePulsingCircles();
+  pulsingCirclesAdded.value = true;
 
   // Define the pulsing dot CSS
   const pulsingDot = document.createElement("div");
@@ -862,15 +1010,51 @@ const addPulsingCircles = () => {
     // Create a new marker and add it to the map
     const pulsingMarker = pulsingDot.cloneNode() as HTMLElement;
     pulsingMarker.classList.add(`pulsing-dot-${confidenceInterval}`);
-    new mapboxgl.Marker(pulsingMarker).setLngLat([lng, lat]).addTo(map.value);
+    const marker = new mapboxgl.Marker(pulsingMarker);
+    marker.setLngLat([lng, lat]).addTo(map.value);
+
+    pulsingMarkers.value.push(marker);
   };
 
-  // Add pulsing markers for most recent alerts
-  props.alertsData.mostRecentAlerts.features.forEach(addPulsingMarker);
+  // Query cluster features first - these are highest priority for pulsing
+  const clusterFeatures = map.value.queryRenderedFeatures({
+    layers: [
+      "most-recent-alerts-point-clusters",
+      "most-recent-alerts-symbol-clusters",
+    ],
+  });
+
+  // If we have clusters, only show pulsing on clusters for clean visualization
+  // If no clusters (zoomed in), show pulsing on individual features
+  let allFeatures = clusterFeatures;
+
+  if (clusterFeatures.length === 0) {
+    // No clusters visible - we're zoomed in, so show unclustered features
+    const unclusteredFeatures = map.value.queryRenderedFeatures({
+      layers: [
+        "most-recent-alerts-polygon",
+        "most-recent-alerts-linestring",
+        "most-recent-alerts-point",
+        "most-recent-alerts-symbol",
+      ],
+    });
+    allFeatures = unclusteredFeatures;
+  }
+
+  // Limit to MAX_PULSING_CIRCLES for performance
+  const limitedFeatures = allFeatures.slice(0, MAX_PULSING_CIRCLES);
+
+  // Add pulsing markers for visible features
+  limitedFeatures.forEach(addPulsingMarker);
 };
 
 /** Removes pulsing circles from the map */
 const removePulsingCircles = () => {
+  // Remove all markers properly using Mapbox API
+  pulsingMarkers.value.forEach((marker) => marker.remove());
+  pulsingMarkers.value = [];
+
+  // Fallback: clean up any remaining DOM elements
   document.querySelectorAll(".pulsing-dot").forEach((el) => el.remove());
   pulsingCirclesAdded.value = false;
 };
@@ -974,13 +1158,45 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
           map.value.setLayoutProperty(strokeLayerId, "visibility", visibility);
         }
       }
+
+      // Handle cluster layers for points
+      if (type === "point") {
+        const clusterLayerId = `${layerId}-clusters`;
+        const clusterCountLayerId = `${layerId}-cluster-count`;
+        if (map.value.getLayer(clusterLayerId)) {
+          map.value.setLayoutProperty(clusterLayerId, "visibility", visibility);
+        }
+        if (map.value.getLayer(clusterCountLayerId)) {
+          map.value.setLayoutProperty(
+            clusterCountLayerId,
+            "visibility",
+            visibility,
+          );
+        }
+      }
+
+      // Handle cluster layers for symbols
+      if (type === "symbol") {
+        const clusterLayerId = `${layerId}-clusters`;
+        const clusterCountLayerId = `${layerId}-cluster-count`;
+        if (map.value.getLayer(clusterLayerId)) {
+          map.value.setLayoutProperty(clusterLayerId, "visibility", visibility);
+        }
+        if (map.value.getLayer(clusterCountLayerId)) {
+          map.value.setLayoutProperty(
+            clusterCountLayerId,
+            "visibility",
+            visibility,
+          );
+        }
+      }
     });
 
     // Handle pulsing circles for most-recent-alerts
     if (item.id === "most-recent-alerts") {
       if (item.visible) {
-        // Layer is being made visible - add pulsing circles
-        addPulsingCircles();
+        // Layer is being made visible - update pulsing circles for current viewport
+        updatePulsingCirclesForViewport();
       } else {
         // Layer is being hidden - remove pulsing circles
         removePulsingCircles();
@@ -1058,14 +1274,29 @@ const handleDateRangeChanged = (newRange: [string, string]) => {
   nextTick(() => {
     map.value.getStyle().layers.forEach((layer: Layer) => {
       if (
-        layer.id.startsWith("most-recent-alerts") ||
-        layer.id.startsWith("previous-alerts")
+        (layer.id.startsWith("most-recent-alerts") ||
+          layer.id.startsWith("previous-alerts")) &&
+        // CRITICAL: Don't apply filters to cluster layers - they don't have feature properties
+        !layer.id.includes("-cluster")
       ) {
-        map.value.setFilter(layer.id, [
+        // For point and symbol layers, combine date filter with cluster exclusion filter
+        // For other layers (polygon, linestring), just use date filter
+        const dateFilter = [
           "all",
           [">=", ["get", "YYYYMM"], startDate],
           ["<=", ["get", "YYYYMM"], endDate],
-        ]);
+        ];
+
+        if (layer.id.endsWith("-point") || layer.id.endsWith("-symbol")) {
+          // Point and symbol layers need to exclude clustered items
+          map.value.setFilter(layer.id, [
+            "all",
+            dateFilter,
+            ["!", ["has", "point_count"]], // Exclude clustered items
+          ]);
+        } else {
+          map.value.setFilter(layer.id, dateFilter);
+        }
       }
     });
 
@@ -1090,7 +1321,7 @@ const handleDateRangeChanged = (newRange: [string, string]) => {
     });
 
     if (recentAlertsFeatures.length > 0) {
-      addPulsingCircles();
+      updatePulsingCirclesForViewport();
     } else {
       removePulsingCircles();
     }
@@ -1292,28 +1523,23 @@ const resetToInitialState = () => {
   selectedDateRange.value = null;
 
   // Reset the filters for layers that start with 'most-recent-alerts' and 'alerts'
+  // Skip cluster layers as they don't have filters applied
   map.value.getStyle().layers.forEach((layer: Layer) => {
     if (
-      layer.id.startsWith("most-recent-alerts") ||
-      layer.id.startsWith("alerts")
+      (layer.id.startsWith("most-recent-alerts") ||
+        layer.id.startsWith("alerts")) &&
+      !layer.id.includes("-cluster")
     ) {
-      map.value.setFilter(layer.id, null);
+      // Point and symbol layers need to restore their cluster exclusion filter
+      if (layer.id.endsWith("-point") || layer.id.endsWith("-symbol")) {
+        map.value.setFilter(layer.id, ["!", ["has", "point_count"]]);
+      } else {
+        map.value.setFilter(layer.id, null);
+      }
     }
   });
 
-  mapLegendContent.value = mapLegendContent.value.map(
-    (item: MapLegendItem) => ({
-      ...item,
-      visible: true,
-    }),
-  );
-  mapLegendContent.value.forEach((item: MapLegendItem) => {
-    // Use our custom toggle function to ensure all related layers are made visible
-    toggleLayerVisibility({ ...item, visible: true });
-  });
-  emit("reset-legend-visibility");
-
-  // Fly to the initial position
+  // First, fly to the initial position
   map.value.flyTo({
     center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
     zoom: props.mapboxZoom || 2.5,
@@ -1321,12 +1547,93 @@ const resetToInitialState = () => {
     bearing: props.mapboxBearing || 0,
   });
 
-  // Add pulsing circles after the map has finished flying
-  // to the initial position. This is for reasons of user experience,
-  // as well as the fact that queryRenderedFeatures() will only return
-  // features that are visible in the browser viewport.)
+  // After map movement is complete, reset visibility and add pulsing circles
   map.value.once("idle", () => {
-    addPulsingCircles();
+    // Reset legend visibility state
+    mapLegendContent.value = mapLegendContent.value.map(
+      (item: MapLegendItem) => ({
+        ...item,
+        visible: true,
+      }),
+    );
+
+    // Make all layers visible (without triggering pulsing circle updates yet)
+    mapLegendContent.value.forEach((item: MapLegendItem) => {
+      const visibility = "visible";
+
+      // Handle alert group layers
+      if (item.id === "most-recent-alerts" || item.id === "previous-alerts") {
+        const layerPrefix = item.id;
+        const layerTypes = ["polygon", "linestring", "point", "symbol"];
+
+        layerTypes.forEach((type) => {
+          const layerId = `${layerPrefix}-${type}`;
+          if (map.value.getLayer(layerId)) {
+            map.value.setLayoutProperty(layerId, "visibility", visibility);
+          }
+
+          // Handle stroke layers for polygons
+          if (type === "polygon") {
+            const strokeLayerId = `${layerId}-stroke`;
+            if (map.value.getLayer(strokeLayerId)) {
+              map.value.setLayoutProperty(
+                strokeLayerId,
+                "visibility",
+                visibility,
+              );
+            }
+          }
+
+          // Handle cluster layers for points
+          if (type === "point") {
+            const clusterLayerId = `${layerId}-clusters`;
+            const clusterCountLayerId = `${layerId}-cluster-count`;
+            if (map.value.getLayer(clusterLayerId)) {
+              map.value.setLayoutProperty(
+                clusterLayerId,
+                "visibility",
+                visibility,
+              );
+            }
+            if (map.value.getLayer(clusterCountLayerId)) {
+              map.value.setLayoutProperty(
+                clusterCountLayerId,
+                "visibility",
+                visibility,
+              );
+            }
+          }
+
+          // Handle cluster layers for symbols
+          if (type === "symbol") {
+            const clusterLayerId = `${layerId}-clusters`;
+            const clusterCountLayerId = `${layerId}-cluster-count`;
+            if (map.value.getLayer(clusterLayerId)) {
+              map.value.setLayoutProperty(
+                clusterLayerId,
+                "visibility",
+                visibility,
+              );
+            }
+            if (map.value.getLayer(clusterCountLayerId)) {
+              map.value.setLayoutProperty(
+                clusterCountLayerId,
+                "visibility",
+                visibility,
+              );
+            }
+          }
+        });
+      } else {
+        // Handle individual layers (mapeo-data, etc.)
+        utilsToggleLayerVisibility(map.value, item);
+      }
+    });
+
+    emit("reset-legend-visibility");
+
+    // Finally, add pulsing circles now that everything is in the right state
+    updatePulsingCirclesForViewport();
   });
 };
 
