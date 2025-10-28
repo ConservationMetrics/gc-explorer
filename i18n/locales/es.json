@@ -115,6 +115,7 @@
   "tableAddedToViews": "Tabla agregada a las vistas",
   "tableRemovedFromViews": "Tabla eliminada de las vistas",
   "tableRemovedNote": "Nota: esto no elimina la tabla de la base de datos. Solo elimina cualquier configuración de vistas para la tabla",
+  "terrainExaggeration": "exageración del terreno",
   "territory": "Territorio",
   "totalFeatures": "Características totales",
   "type": "Tipo",

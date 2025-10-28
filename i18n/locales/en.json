@@ -118,6 +118,7 @@
   "tableAddedToViews": "Table added to views",
   "tableRemovedFromViews": "Table removed from views",
   "tableRemovedNote": "Note: this does not delete the table from the database. It only removes any views configuration for the table",
+  "terrainExaggeration": "terrain exaggeration",
   "territory": "Territory",
   "totalFeatures": "Total features",
   "type": "Type",

@@ -27,6 +27,7 @@ const mapConfigKeys = computed(() => [
   "MAPBOX_BEARING",
   "MAPBOX_PITCH",
   "MAPBOX_3D",
+  "MAPBOX_3D_TERRAIN_EXAGGERATION",
   "MAP_LEGEND_LAYER_IDS",
   "PLANET_API_KEY",
 ]);

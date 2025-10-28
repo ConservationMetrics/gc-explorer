@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // @ts-expect-error - vue-tags-input does not have types
 import { VueTagsInput } from "@vojtechlanka/vue-tags-input";
+import VueSlider from "vue-3-slider-component";
 
 import { toCamelCase } from "@/utils";
 import { updateTags } from "@/composables/useTags";
@@ -42,6 +43,14 @@ const handleInput = (key: string, value: string | number | boolean): void => {
 };
 
 const configData = props.config as Record<string, string | number | boolean>;
+
+const terrainExaggeration = ref<number>(
+  (props.config.MAPBOX_3D_TERRAIN_EXAGGERATION as number) ?? 1.5,
+);
+
+watch(terrainExaggeration, (value) => {
+  emit("updateConfig", { MAPBOX_3D_TERRAIN_EXAGGERATION: value });
+});
 </script>
 
 <template>
@@ -167,6 +176,22 @@ const configData = props.config as Record<string, string | number | boolean>;
           />
           {{ $t("enable") }}
         </label>
+
+        <!-- Terrain Exaggeration Slider (shown when 3D is enabled) -->
+        <div v-if="Boolean(configData['MAPBOX_3D'])" class="mt-4">
+          <label>3D {{ $t("terrainExaggeration") }}</label>
+          <div class="mt-2 mb-10">
+            <VueSlider
+              v-model="terrainExaggeration"
+              :min="0"
+              :max="22"
+              :interval="0.1"
+              :height="10"
+              :tooltip="'always'"
+              :tooltip-placement="'bottom'"
+            />
+          </div>
+        </div>
       </template>
 
       <!-- Legend Layers -->

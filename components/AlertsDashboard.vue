@@ -49,6 +49,7 @@ const props = defineProps<{
   mapboxStyle: string;
   mapboxZoom: number;
   mapbox3d: boolean;
+  mapbox3dTerrainExaggeration: number;
   mapeoData: Dataset | null;
   mediaBasePath: string | undefined;
   mediaBasePathAlerts: string | undefined;
@@ -209,7 +210,10 @@ onMounted(() => {
         tileSize: 512,
         maxzoom: 14,
       });
-      map.value.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
+      map.value.setTerrain({
+        source: "mapbox-dem",
+        exaggeration: props.mapbox3dTerrainExaggeration,
+      });
     }
 
     await prepareMapCanvasContent();

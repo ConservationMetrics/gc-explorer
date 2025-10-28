@@ -31,7 +31,8 @@ export interface ViewConfig {
   FRONT_END_FILTER_COLUMN?: string;
   FRONT_END_FILTER_FIELD?: string;
   LOGO_URL?: string;
-  MAPBOX_3D?: string;
+  MAPBOX_3D?: boolean;
+  MAPBOX_3D_TERRAIN_EXAGGERATION?: number;
   MAPBOX_ACCESS_TOKEN?: string;
   MAPBOX_BEARING?: number;
   MAPBOX_CENTER_LATITUDE?: string;
