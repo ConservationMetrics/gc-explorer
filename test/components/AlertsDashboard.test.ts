@@ -53,6 +53,7 @@ const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
   mapboxStyle: "mapbox://styles/mapbox/streets-v12",
   mapboxZoom: 2,
   mapbox3d: false,
+  mapbox3dTerrainExaggeration: 1.5,
   mapeoData: null,
   mediaBasePath: "",
   mediaBasePathAlerts: "",
@@ -144,5 +145,61 @@ describe("AlertsDashboard component", () => {
       { source: "most-recent-alerts-point", id: "alert1" },
       { selected: true },
     );
+  });
+
+  it("adds 3D terrain when mapbox3d is true", async () => {
+    const propsWithTerrain = { ...baseProps, mapbox3d: true };
+
+    mount(AlertsDashboard, {
+      props: propsWithTerrain,
+      global: {
+        stubs: {
+          ViewSidebar: true,
+          MapLegend: true,
+          BasemapSelector: true,
+        },
+      },
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    expect(mapboxMock.mockMap.addSource).toHaveBeenCalledWith("mapbox-dem", {
+      type: "raster-dem",
+      url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+      tileSize: 512,
+      maxzoom: 14,
+    });
+    expect(mapboxMock.mockMap.setTerrain).toHaveBeenCalledWith({
+      source: "mapbox-dem",
+      exaggeration: 1.5,
+    });
+  });
+
+  it("uses custom terrain exaggeration value", async () => {
+    const propsWithCustomExaggeration = {
+      ...baseProps,
+      mapbox3d: true,
+      mapbox3dTerrainExaggeration: 3.0,
+    };
+
+    mount(AlertsDashboard, {
+      props: propsWithCustomExaggeration,
+      global: {
+        stubs: {
+          ViewSidebar: true,
+          MapLegend: true,
+          BasemapSelector: true,
+        },
+      },
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    expect(mapboxMock.mockMap.setTerrain).toHaveBeenCalledWith({
+      source: "mapbox-dem",
+      exaggeration: 3.0,
+    });
   });
 });

@@ -37,6 +37,7 @@ const baseProps: InstanceType<typeof MapView>["$props"] = {
   mapboxStyle: "mapbox://styles/mapbox/streets-v12",
   mapboxZoom: 10,
   mapbox3d: false,
+  mapbox3dTerrainExaggeration: 1.5,
   mapData: [
     {
       id: "1",
@@ -138,6 +139,27 @@ describe("MapView component", () => {
     expect(mapboxMock.mockMap.setTerrain).toHaveBeenCalledWith({
       source: "mapbox-dem",
       exaggeration: 1.5,
+    });
+  });
+
+  it("uses custom terrain exaggeration value", async () => {
+    const propsWithCustomExaggeration = {
+      ...baseProps,
+      mapbox3d: true,
+      mapbox3dTerrainExaggeration: 2.5,
+    };
+
+    mount(MapView, {
+      props: propsWithCustomExaggeration,
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    expect(mapboxMock.mockMap.setTerrain).toHaveBeenCalledWith({
+      source: "mapbox-dem",
+      exaggeration: 2.5,
     });
   });
 

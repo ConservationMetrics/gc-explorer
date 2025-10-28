@@ -113,6 +113,7 @@
   "tableAddedToViews": "Tabela adicionada às visualizações",
   "tableRemovedFromViews": "Tabela removida das visualizações",
   "tableRemovedNote": "Observe: isso não exclui a tabela do banco de dados. Ele apenas remove qualquer configuração de visualizações para a tabela",
+  "terrainExaggeration": "exagero do terreno",
   "territory": "Território",
   "totalFeatures": "Recursos totais",
   "type": "Tipo",
