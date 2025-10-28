@@ -329,7 +329,6 @@ const addAlertsData = async () => {
               cluster: true,
               clusterMaxZoom: 14, // Max zoom level to cluster points
               clusterRadius: 100, // Radius of each cluster in pixels
-              // Don't use generateId - preserve original feature.id for feature-state
             }
           : baseConfig;
 
@@ -861,7 +860,7 @@ const addMapeoData = () => {
 };
 /**
  * Prepares the map canvas content by adding alert and Mapeo data,
- * pulsing circles, and the map legend.
+ * and the map legend.
  */
 const prepareMapCanvasContent = async () => {
   const promises = [];
@@ -935,10 +934,6 @@ const handleBufferMouseEvent = (e: MapMouseEvent) => {
   }
 };
 
-// Pulsing circles removed - now using pure Mapbox clustering for all geometries
-
-// All pulsing circle functions removed - replaced with native Mapbox clustering
-
 /** Handles the change of the basemap style */
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
 const handleBasemapChange = (newBasemap: Basemap) => {
@@ -1010,7 +1005,6 @@ const prepareMapLegendContent = () => {
 /**
  * Toggles the visibility of a map layer or all related layers for alert groups.
  * For alert layers, toggles all geometry types and symbol layers together.
- * For most-recent-alerts, also toggles pulsing circles.
  */
 const toggleLayerVisibility = (item: MapLegendItem) => {
   const visibility = item.visible ? "visible" : "none";
@@ -1124,7 +1118,7 @@ const handleDateRangeChanged = (newRange: [string, string]) => {
       if (
         (layer.id.startsWith("most-recent-alerts") ||
           layer.id.startsWith("previous-alerts")) &&
-        // CRITICAL: Don't apply filters to cluster layers - they don't have feature properties
+        // Don't apply filters to cluster layers - they don't have feature properties
         !layer.id.includes("-cluster")
       ) {
         // For point and symbol layers, combine date filter with cluster exclusion filter
@@ -1707,7 +1701,7 @@ const resetSelectedFeature = () => {
 
 /**
  * Resets the map and UI to their initial states, clearing selections and filters.
- * Repositions the map to its initial view and re-adds pulsing circles.
+ * Repositions the map to its initial view
  */
 const resetToInitialState = () => {
   resetSelectedFeature();
@@ -1743,7 +1737,7 @@ const resetToInitialState = () => {
     bearing: props.mapboxBearing || 0,
   });
 
-  // After map movement is complete, reset visibility and add pulsing circles
+  // After map movement is complete, reset visibility
   map.value.once("idle", () => {
     // Reset legend visibility state
     mapLegendContent.value = mapLegendContent.value.map(
@@ -1753,7 +1747,7 @@ const resetToInitialState = () => {
       }),
     );
 
-    // Make all layers visible (without triggering pulsing circle updates yet)
+    // Make all layers visible
     mapLegendContent.value.forEach((item: MapLegendItem) => {
       const visibility = "visible";
 
