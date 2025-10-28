@@ -116,6 +116,7 @@
   "tableAddedToViews": "Tabel toegevoegd aan weergaven",
   "tableRemovedFromViews": "Tabel verwijderd uit weergaven",
   "tableRemovedNote": "Let op: dit verwijdert de tabel niet uit de database. Het verwijdert alleen de weergaveconfiguratie voor de tabel",
+  "terrainExaggeration": "terrein overdrijving",
   "territory": "Territorium",
   "totalFeatures": "Totaal aantal kenmerken",
   "type": "Type",
