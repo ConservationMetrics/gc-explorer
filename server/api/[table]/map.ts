@@ -67,6 +67,9 @@ export default defineEventHandler(async (event: H3Event) => {
       mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,
       mapStatistics: mapStatistics,
       mapbox3d: viewsConfig[table].MAPBOX_3D === "YES",
+      mapbox3dTerrainExaggeration: Number(
+        viewsConfig[table].MAPBOX_3D_TERRAIN_EXAGGERATION,
+      ),
       mapboxAccessToken: viewsConfig[table].MAPBOX_ACCESS_TOKEN,
       mapboxBearing: Number(viewsConfig[table].MAPBOX_BEARING),
       mapboxLatitude: Number(viewsConfig[table].MAPBOX_CENTER_LATITUDE),

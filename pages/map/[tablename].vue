@@ -23,6 +23,7 @@ const mapboxProjection = ref();
 const mapboxStyle = ref();
 const mapboxZoom = ref(0);
 const mapbox3d = ref(false);
+const mapbox3dTerrainExaggeration = ref(0);
 const mapData = ref();
 const mediaBasePath = ref();
 const planetApiKey = ref();
@@ -52,6 +53,7 @@ if (data.value && !error.value) {
   mapboxStyle.value = data.value.mapboxStyle;
   mapboxZoom.value = data.value.mapboxZoom;
   mapbox3d.value = data.value.mapbox3d;
+  mapbox3dTerrainExaggeration.value = data.value.mapbox3dTerrainExaggeration;
   mapData.value = data.value.data;
   mediaBasePath.value = data.value.mediaBasePath;
   planetApiKey.value = data.value.planetApiKey;
@@ -96,6 +98,7 @@ useHead({
         :mapbox-style="mapboxStyle"
         :mapbox-zoom="mapboxZoom"
         :mapbox3d="mapbox3d"
+        :mapbox3d-terrain-exaggeration="mapbox3dTerrainExaggeration"
         :map-data="mapData"
         :media-base-path="mediaBasePath"
         :planet-api-key="planetApiKey"
