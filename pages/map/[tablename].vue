@@ -4,6 +4,8 @@ import { useI18n } from "vue-i18n";
 import { replaceUnderscoreWithSpace } from "@/utils/index";
 import { useIsPublic } from "@/utils/permissions";
 
+import type { BasemapConfig } from "@/types/types";
+
 // Extract the tablename from the route parameters
 const route = useRoute();
 const tableRaw = route.params.tablename;
@@ -21,7 +23,7 @@ const mapboxLongitude = ref(0);
 const mapboxPitch = ref(0);
 const mapboxProjection = ref();
 const mapboxStyle = ref();
-const mapboxBasemaps = ref([]);
+const mapboxBasemaps = ref<BasemapConfig[]>([]);
 const mapboxZoom = ref(0);
 const mapbox3d = ref(false);
 const mapbox3dTerrainExaggeration = ref(0);
