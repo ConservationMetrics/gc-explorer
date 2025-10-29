@@ -116,6 +116,10 @@ const ensureDefault = () => {
 };
 
 const addBasemap = () => {
+  // Limit to 3 basemaps
+  if (basemaps.value.length >= 3) {
+    return;
+  }
   basemaps.value.push({
     name: "",
     style: "",
@@ -124,6 +128,8 @@ const addBasemap = () => {
   ensureDefault();
   saveBasemaps();
 };
+
+const canAddBasemap = computed(() => basemaps.value.length < 3);
 
 const removeBasemap = (index: number) => {
   // Cannot remove first item (default basemap)
@@ -278,7 +284,13 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
               </div>
             </div>
           </div>
-          <button type="button" class="add-basemap-button" @click="addBasemap">
+          <button
+            type="button"
+            class="add-basemap-button"
+            :class="{ disabled: !canAddBasemap }"
+            :disabled="!canAddBasemap"
+            @click="addBasemap"
+          >
             + {{ $t("addBasemapOption") }}
           </button>
         </div>
@@ -550,7 +562,13 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
   margin-top: 10px;
 }
 
-.add-basemap-button:hover {
+.add-basemap-button:hover:not(.disabled) {
   background-color: #0056b3;
+}
+
+.add-basemap-button.disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 </style>
