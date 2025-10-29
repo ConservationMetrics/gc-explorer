@@ -22,6 +22,7 @@ const mapboxLongitude = ref(0);
 const mapboxPitch = ref(0);
 const mapboxProjection = ref();
 const mapboxStyle = ref();
+const mapboxBasemaps = ref([]);
 const mapboxZoom = ref(0);
 const mapbox3d = ref(false);
 const mapbox3dTerrainExaggeration = ref(0);
@@ -54,6 +55,7 @@ if (data.value && !error.value) {
   mapboxPitch.value = data.value.mapboxPitch;
   mapboxProjection.value = data.value.mapboxProjection;
   mapboxStyle.value = data.value.mapboxStyle;
+  mapboxBasemaps.value = data.value.mapboxBasemaps || [];
   mapboxZoom.value = data.value.mapboxZoom;
   mapbox3d.value = data.value.mapbox3d;
   mapbox3dTerrainExaggeration.value = data.value.mapbox3dTerrainExaggeration;
@@ -101,6 +103,7 @@ useHead({
         :mapbox-pitch="mapboxPitch"
         :mapbox-projection="mapboxProjection"
         :mapbox-style="mapboxStyle"
+        :mapbox-basemaps="mapboxBasemaps"
         :mapbox-zoom="mapboxZoom"
         :mapbox3d="mapbox3d"
         :mapbox3d-terrain-exaggeration="mapbox3dTerrainExaggeration"

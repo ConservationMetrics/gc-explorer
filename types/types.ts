@@ -39,7 +39,8 @@ export interface ViewConfig {
   MAPBOX_CENTER_LONGITUDE?: string;
   MAPBOX_PITCH?: number;
   MAPBOX_PROJECTION?: string;
-  MAPBOX_STYLE?: string;
+  MAPBOX_STYLE?: string; // Deprecated: use MAPBOX_BASEMAPS instead
+  MAPBOX_BASEMAPS?: string; // JSON string of BasemapConfig[]
   MAPBOX_ZOOM?: number;
   MAPEO_CATEGORY_IDS?: string;
   MAPEO_TABLE?: string;
@@ -84,6 +85,19 @@ export interface Basemap {
   id: string;
   style?: string;
   url?: string;
+  monthYear?: string;
+}
+
+export interface BasemapConfig {
+  name: string;
+  style: string;
+  isDefault?: boolean;
+}
+
+export interface BasemapOption {
+  id: string;
+  name: string;
+  style?: string;
   monthYear?: string;
 }
 

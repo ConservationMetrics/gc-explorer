@@ -6,7 +6,7 @@ import VueSlider from "vue-3-slider-component";
 import { toCamelCase } from "@/utils";
 import { updateTags } from "@/composables/useTags";
 
-import type { ViewConfig } from "@/types/types";
+import type { ViewConfig, BasemapConfig } from "@/types/types";
 
 const props = defineProps<{
   tableName: string;
@@ -51,6 +51,120 @@ const terrainExaggeration = ref<number>(
 watch(terrainExaggeration, (value) => {
   emit("updateConfig", { MAPBOX_3D_TERRAIN_EXAGGERATION: value });
 });
+
+// Basemaps management
+const parseBasemaps = (): BasemapConfig[] => {
+  if (props.config.MAPBOX_BASEMAPS) {
+    try {
+      return JSON.parse(props.config.MAPBOX_BASEMAPS);
+    } catch {
+      return [];
+    }
+  }
+  // Fallback to legacy MAPBOX_STYLE
+  if (props.config.MAPBOX_STYLE) {
+    return [
+      {
+        name: "Default Style",
+        style: props.config.MAPBOX_STYLE,
+        isDefault: true,
+      },
+    ];
+  }
+  return [];
+};
+
+const basemaps = ref<BasemapConfig[]>(parseBasemaps());
+
+// Initialize basemaps on mount
+onMounted(() => {
+  basemaps.value = parseBasemaps();
+});
+
+watch(
+  () => props.config.MAPBOX_BASEMAPS,
+  () => {
+    basemaps.value = parseBasemaps();
+  },
+);
+
+watch(
+  () => props.config.MAPBOX_STYLE,
+  () => {
+    if (!props.config.MAPBOX_BASEMAPS && props.config.MAPBOX_STYLE) {
+      basemaps.value = [
+        {
+          name: "Default Style",
+          style: props.config.MAPBOX_STYLE,
+          isDefault: true,
+        },
+      ];
+    }
+  },
+);
+
+const addBasemap = () => {
+  basemaps.value.push({
+    name: "",
+    style: "",
+    isDefault: basemaps.value.length === 0,
+  });
+  saveBasemaps();
+};
+
+const removeBasemap = (index: number) => {
+  basemaps.value.splice(index, 1);
+  // If we removed the default, make the first one default
+  if (
+    basemaps.value.length > 0 &&
+    !basemaps.value.some((b) => b.isDefault)
+  ) {
+    basemaps.value[0].isDefault = true;
+  }
+  saveBasemaps();
+};
+
+const setDefaultBasemap = (index: number) => {
+  basemaps.value.forEach((b, i) => {
+    b.isDefault = i === index;
+  });
+  saveBasemaps();
+};
+
+const updateBasemap = (index: number, field: keyof BasemapConfig, value: string | boolean) => {
+  basemaps.value[index][field] = value as never;
+  saveBasemaps();
+};
+
+const saveBasemaps = () => {
+  emit("updateConfig", {
+    MAPBOX_BASEMAPS: JSON.stringify(basemaps.value),
+  });
+};
+
+// Drag and drop handlers
+const draggedIndex = ref<number | null>(null);
+
+const handleDragStart = (index: number) => {
+  draggedIndex.value = index;
+};
+
+const handleDragOver = (e: DragEvent, index: number) => {
+  e.preventDefault();
+};
+
+const handleDrop = (e: DragEvent, dropIndex: number) => {
+  e.preventDefault();
+  if (draggedIndex.value === null || draggedIndex.value === dropIndex) {
+    draggedIndex.value = null;
+    return;
+  }
+  const item = basemaps.value[draggedIndex.value];
+  basemaps.value.splice(draggedIndex.value, 1);
+  basemaps.value.splice(dropIndex, 0, item);
+  draggedIndex.value = null;
+  saveBasemaps();
+};
 </script>
 
 <template>
@@ -59,20 +173,81 @@ watch(terrainExaggeration, (value) => {
       <h3>{{ $t("map") }} {{ $t("configuration") }}</h3>
     </div>
     <div v-for="key in keys" :key="key" class="config-field">
-      <!-- Mapbox Style -->
+      <!-- Mapbox Basemaps -->
       <template v-if="key === 'MAPBOX_STYLE'">
-        <label :for="`${tableName}-${key}`">{{ $t("mapboxStyle") }}</label>
-        <input
-          :id="`${tableName}-${key}`"
-          class="input-field"
-          pattern="^mapbox:\/\/styles\/[^\/]+\/[^\/]+$"
-          placeholder="mapbox://styles/user/styleId"
-          :title="
-            $t('pleaseMatchFormat') + ': mapbox://styles/username/styleid'
-          "
-          :value="config[key]"
-          @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
-        />
+        <label>{{ $t("mapboxStyle") }}</label>
+        <div class="basemaps-container">
+          <div
+            v-for="(basemap, index) in basemaps"
+            :key="index"
+            class="basemap-item"
+            draggable="true"
+            @dragstart="handleDragStart(index)"
+            @dragover="handleDragOver($event, index)"
+            @drop="handleDrop($event, index)"
+          >
+            <div class="basemap-drag-handle">☰</div>
+            <div class="basemap-content">
+              <div class="basemap-fields">
+                <input
+                  :id="`${tableName}-basemap-name-${index}`"
+                  class="input-field basemap-name"
+                  :placeholder="$t('basemapName')"
+                  :value="basemap.name"
+                  @input="
+                    updateBasemap(
+                      index,
+                      'name',
+                      ($event.target as HTMLInputElement).value
+                    )
+                  "
+                />
+                <input
+                  :id="`${tableName}-basemap-style-${index}`"
+                  class="input-field basemap-style"
+                  pattern="^mapbox:\/\/styles\/[^\/]+\/[^\/]+$"
+                  placeholder="mapbox://styles/user/styleId"
+                  :title="
+                    $t('pleaseMatchFormat') +
+                    ': mapbox://styles/username/styleid'
+                  "
+                  :value="basemap.style"
+                  @input="
+                    updateBasemap(
+                      index,
+                      'style',
+                      ($event.target as HTMLInputElement).value
+                    )
+                  "
+                />
+              </div>
+              <div class="basemap-actions">
+                <label class="default-checkbox">
+                  <input
+                    type="checkbox"
+                    :checked="basemap.isDefault"
+                    @change="setDefaultBasemap(index)"
+                  />
+                  {{ $t("default") }}
+                </label>
+                <button
+                  type="button"
+                  class="remove-button"
+                  @click="removeBasemap(index)"
+                >
+                  {{ $t("remove") }}
+                </button>
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="add-basemap-button"
+            @click="addBasemap"
+          >
+            + {{ $t("addBasemapOption") }}
+          </button>
+        </div>
       </template>
 
       <!-- Access Token -->
@@ -218,3 +393,98 @@ watch(terrainExaggeration, (value) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.basemaps-container {
+  margin-top: 10px;
+}
+
+.basemap-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  cursor: move;
+}
+
+.basemap-item:hover {
+  background-color: #f0f0f0;
+}
+
+.basemap-drag-handle {
+  font-size: 18px;
+  color: #666;
+  cursor: grab;
+  user-select: none;
+}
+
+.basemap-drag-handle:active {
+  cursor: grabbing;
+}
+
+.basemap-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.basemap-fields {
+  display: flex;
+  gap: 10px;
+}
+
+.basemap-name {
+  flex: 1;
+  min-width: 150px;
+}
+
+.basemap-style {
+  flex: 2;
+  min-width: 250px;
+}
+
+.basemap-actions {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.default-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.remove-button {
+  padding: 5px 10px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.remove-button:hover {
+  background-color: #c82333;
+}
+
+.add-basemap-button {
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.add-basemap-button:hover {
+  background-color: #0056b3;
+}
+</style>
