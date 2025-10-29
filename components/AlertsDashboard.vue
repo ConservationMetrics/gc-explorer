@@ -203,60 +203,87 @@ onMounted(() => {
   // @ts-expect-error: Expose map instance for Playwright E2E tests; not a standard property on window
   window._testMap = map.value;
 
-  map.value.on("load", async () => {
-    // Add 3D Terrain if set in env var
+  // Function to apply 3D terrain - call it whenever the style loads
+  const applyTerrain = () => {
     if (props.mapbox3d) {
-      map.value.addSource("mapbox-dem", {
-        type: "raster-dem",
-        url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-        tileSize: 512,
-        maxzoom: 14,
-      });
+      // setStyle() clears all sources, so we just need to add the source if it doesn't exist
+      if (!map.value.getSource("mapbox-dem")) {
+        map.value.addSource("mapbox-dem", {
+          type: "raster-dem",
+          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+          tileSize: 512,
+          maxzoom: 14,
+        });
+      }
+
       map.value.setTerrain({
         source: "mapbox-dem",
         exaggeration: props.mapbox3dTerrainExaggeration,
       });
+    } else {
+      // If 3D is disabled, clear terrain
+      map.value.setTerrain(null);
     }
+  };
 
-    await prepareMapCanvasContent();
+  let controlsAdded = false;
 
-    // Navigation Control (zoom buttons and compass)
-    const nav = new mapboxgl.NavigationControl();
-    map.value.addControl(nav, "top-right");
+  // Apply terrain whenever style loads (initial load and style changes)
+  map.value.on("style.load", () => {
+    applyTerrain();
+  });
 
-    // Scale Control
-    const scale = new mapboxgl.ScaleControl({
-      maxWidth: 80,
-      unit: "metric",
-    });
-    map.value.addControl(scale, "bottom-left");
+  map.value.on("load", async () => {
+    // Add 3D Terrain if set in env var (for initial load)
+    applyTerrain();
 
-    // Fullscreen Control
-    const fullscreenControl = new mapboxgl.FullscreenControl();
-    map.value.addControl(fullscreenControl, "top-right");
+    // Only add controls once (on first load, not on style changes)
+    if (!controlsAdded) {
+      await prepareMapCanvasContent();
 
-    // Ruler control
-    const ruler = new rulerControl();
-    map.value.addControl(ruler, "top-right");
-    hasRulerControl.value = true;
+      // Navigation Control (zoom buttons and compass)
+      const nav = new mapboxgl.NavigationControl();
+      map.value.addControl(nav, "top-right");
 
-    showBasemapSelector.value = true;
+      // Scale Control
+      const scale = new mapboxgl.ScaleControl({
+        maxWidth: 80,
+        unit: "metric",
+      });
+      map.value.addControl(scale, "bottom-left");
 
-    dateOptions.value = getDateOptions();
+      // Fullscreen Control
+      const fullscreenControl = new mapboxgl.FullscreenControl();
+      map.value.addControl(fullscreenControl, "top-right");
 
-    if (isOnlyLineStringData() !== true) {
-      calculateHectares.value = true;
-    }
-    showSlider.value = true;
+      // Ruler control
+      const ruler = new rulerControl();
+      map.value.addControl(ruler, "top-right");
+      hasRulerControl.value = true;
 
-    // Check for alertId or mapeoDocId in URL and select the corresponding feature
-    const alertId = route.query.alertId as string;
-    const mapeoDocId = route.query.mapeoDocId as string;
+      showBasemapSelector.value = true;
 
-    if (alertId) {
-      selectInitialAlertFeature(alertId);
-    } else if (mapeoDocId && props.mapeoData) {
-      selectInitialMapeoFeature(mapeoDocId);
+      dateOptions.value = getDateOptions();
+
+      if (isOnlyLineStringData() !== true) {
+        calculateHectares.value = true;
+      }
+      showSlider.value = true;
+
+      // Check for alertId or mapeoDocId in URL and select the corresponding feature
+      const alertId = route.query.alertId as string;
+      const mapeoDocId = route.query.mapeoDocId as string;
+
+      if (alertId) {
+        selectInitialAlertFeature(alertId);
+      } else if (mapeoDocId && props.mapeoData) {
+        selectInitialMapeoFeature(mapeoDocId);
+      }
+
+      controlsAdded = true;
+    } else {
+      // On style changes (not initial load), just prepare canvas content
+      await prepareMapCanvasContent();
     }
   });
 });
@@ -889,7 +916,8 @@ const handleBasemapChange = (newBasemap: Basemap) => {
 
   currentBasemap.value = newBasemap;
 
-  // Once map is idle, re-add sources, layers, and event listeners
+  // Once map style loads, terrain will be re-applied via style.load event
+  // Then when map is idle, re-add sources, layers, and event listeners
   map.value.once("idle", () => {
     prepareMapCanvasContent();
   });
