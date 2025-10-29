@@ -318,7 +318,6 @@ const addAlertsData = async () => {
             (feature) => feature.geometry.type === type,
           ),
         },
-        // No minzoom restriction - clusters should be visible at all zoom levels
       };
 
       // Clustering for Point features
@@ -1585,14 +1584,14 @@ const selectFeature = (feature: Feature, layerId: string) => {
   if (featureObject["alertID"]) {
     isAlert.value = true;
 
-    // Highlight any cluster that contains this feature (after a brief delay)
+    // Highlight any cluster that contains this feature (after a brief delay - in order to let clusters render after selection).
     setTimeout(() => {
       highlightClusterContainingFeature(layerId);
     }, 100);
   } else {
     isAlert.value = false;
 
-    // For Mapeo features, clear any cluster highlights
+    // If a Mapeo feature is selected, clear any cluster highlights
     if (selectedClusterId.value !== null) {
       selectedClusterId.value = null;
       selectedClusterSource.value = null;
