@@ -19,6 +19,7 @@ import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
   AllowedFileExtensions,
   Basemap,
+  BasemapConfig,
   Dataset,
   FilterValues,
   MapLegendItem,
@@ -37,6 +38,7 @@ const props = defineProps<{
   mapboxPitch: number | null;
   mapboxProjection: string;
   mapboxStyle: string;
+  mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
@@ -390,6 +392,7 @@ onBeforeUnmount(() => {
     <BasemapSelector
       v-if="showBasemapSelector"
       :mapbox-style="mapboxStyle"
+      :mapbox-basemaps="mapboxBasemaps || []"
       :planet-api-key="planetApiKey"
       @basemap-selected="handleBasemapChange"
     />
