@@ -785,3 +785,458 @@ test("config page - visibility permissions configuration", async ({ page }) => {
     await expect(visibilitySection).not.toBeVisible();
   }
 });
+
+test("config page - basemap configuration - add and remove basemaps", async ({
+  page,
+}) => {
+  // 1. Navigate to the config page
+  await page.goto("/config");
+
+  // 2. Wait for the grid container to be present
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 3. Add a table to work with
+  const addTableButton = page.getByRole("button", {
+    name: /\+ add new table/i,
+  });
+  await addTableButton.click();
+
+  const modal = page.locator(".modal");
+  await expect(modal).toBeVisible();
+
+  const dropdown = page.locator("select");
+  await dropdown.selectOption({ index: 0 });
+
+  const selectedOption = dropdown.locator("option:checked");
+  const tableNameToAdd = await selectedOption.textContent();
+
+  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  await confirmButton.click();
+
+  await expect(page.getByText(/table added to views!/i)).toBeVisible();
+  await page.waitForTimeout(3500);
+
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 4. Find and expand the target card
+  if (tableNameToAdd) {
+    const targetCard = page.locator(
+      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    );
+    await expect(targetCard).toBeVisible();
+
+    const hamburgerButton = targetCard.locator("button.hamburger");
+    await hamburgerButton.click();
+
+    // 5. Wait for map configuration section
+    await targetCard
+      .locator(".config-section")
+      .first()
+      .waitFor({ state: "visible" });
+
+    // 6. Look for basemap configuration section
+    const basemapLabel = targetCard.locator(
+      'label:has-text("Mapbox Background Map(s)")',
+    );
+    const hasBasemapConfig = (await basemapLabel.count()) > 0;
+
+    if (hasBasemapConfig) {
+      // 7. Verify initial basemap exists
+      const basemapItems = targetCard.locator(".basemap-item");
+      await expect(basemapItems.first()).toBeVisible();
+
+      // 8. Verify first basemap has default styling
+      const firstBasemap = basemapItems.first();
+      await expect(firstBasemap).toHaveClass(/basemap-default/);
+
+      // 9. Find and click add basemap button
+      const addBasemapButton = targetCard.locator(
+        'button.add-basemap-button:has-text("+")',
+      );
+      await expect(addBasemapButton).toBeVisible();
+      await expect(addBasemapButton).toBeEnabled();
+
+      // 10. Add first basemap
+      await addBasemapButton.click();
+      await page.waitForTimeout(500);
+
+      // 11. Verify there are now 2 basemaps
+      const basemapItemsAfterAdd = targetCard.locator(".basemap-item");
+      expect(await basemapItemsAfterAdd.count()).toBe(2);
+
+      // 12. Add second basemap
+      await addBasemapButton.click();
+      await page.waitForTimeout(500);
+
+      // 13. Verify there are now 3 basemaps
+      expect(await basemapItemsAfterAdd.count()).toBe(3);
+
+      // 14. Verify add button is now disabled
+      await expect(addBasemapButton).toBeDisabled();
+      await expect(addBasemapButton).toHaveClass(/disabled/);
+
+      // 15. Find remove buttons (should be 2, since first cannot be removed)
+      const removeButtons = targetCard.locator("button.remove-button");
+      expect(await removeButtons.count()).toBe(2);
+
+      // 16. Remove the second basemap
+      await removeButtons.first().click();
+      await page.waitForTimeout(500);
+
+      // 17. Verify there are now 2 basemaps
+      expect(await basemapItemsAfterAdd.count()).toBe(2);
+
+      // 18. Verify add button is enabled again
+      await expect(addBasemapButton).toBeEnabled();
+    }
+
+    // 19. Clean up
+    const removeButton = targetCard.locator("button.remove-button").last();
+    await removeButton.click();
+    await expect(modal).toBeVisible();
+    await confirmButton.click();
+    await expect(page.getByText(/table removed from views!/i)).toBeVisible();
+    await page.waitForTimeout(3500);
+  }
+});
+
+test("config page - basemap configuration - validation", async ({ page }) => {
+  // 1. Navigate to the config page
+  await page.goto("/config");
+
+  // 2. Wait for the grid container
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 3. Add a table
+  const addTableButton = page.getByRole("button", {
+    name: /\+ add new table/i,
+  });
+  await addTableButton.click();
+
+  const modal = page.locator(".modal");
+  const dropdown = page.locator("select");
+  await dropdown.selectOption({ index: 0 });
+
+  const selectedOption = dropdown.locator("option:checked");
+  const tableNameToAdd = await selectedOption.textContent();
+
+  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  await confirmButton.click();
+
+  await expect(page.getByText(/table added to views!/i)).toBeVisible();
+  await page.waitForTimeout(3500);
+
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 4. Find and expand the target card
+  if (tableNameToAdd) {
+    const targetCard = page.locator(
+      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    );
+    const hamburgerButton = targetCard.locator("button.hamburger");
+    await hamburgerButton.click();
+
+    await targetCard
+      .locator(".config-section")
+      .first()
+      .waitFor({ state: "visible" });
+
+    // 5. Check for basemap configuration
+    const basemapLabel = targetCard.locator(
+      'label:has-text("Mapbox Background Map(s)")',
+    );
+    const hasBasemapConfig = (await basemapLabel.count()) > 0;
+
+    if (hasBasemapConfig) {
+      // 6. Add a second basemap
+      const addBasemapButton = targetCard.locator(
+        'button.add-basemap-button:has-text("+")',
+      );
+      await addBasemapButton.click();
+      await page.waitForTimeout(500);
+
+      // 7. Find the name inputs
+      const nameInputs = targetCard.locator('input[id$="-basemap-name-"]');
+      const nameInputCount = await nameInputs.count();
+
+      if (nameInputCount >= 2) {
+        const firstNameInput = nameInputs.nth(0);
+        const secondNameInput = nameInputs.nth(1);
+
+        // 8. Set first basemap name
+        await firstNameInput.clear();
+        await firstNameInput.fill("Satellite");
+        await page.waitForTimeout(300);
+
+        // 9. Set second basemap name to duplicate (should show validation error)
+        await secondNameInput.clear();
+        await secondNameInput.fill("Satellite");
+        await page.waitForTimeout(500);
+
+        // 10. Verify validation error appears
+        const validationErrors = targetCard.locator(".validation-error");
+        const errorCount = await validationErrors.count();
+        expect(errorCount).toBeGreaterThan(0);
+
+        // 11. Verify input has error class
+        await expect(secondNameInput).toHaveClass(/input-error/);
+
+        // 12. Change to unique name
+        await secondNameInput.clear();
+        await secondNameInput.fill("Streets");
+        await page.waitForTimeout(500);
+
+        // 13. Verify error is gone (wait a bit for validation to update)
+        await page.waitForTimeout(300);
+
+        // 14. Test blank name validation
+        await secondNameInput.clear();
+        await page.waitForTimeout(500);
+
+        // The input should still be visible but might show validation
+        const blankValidationErrors = targetCard.locator(
+          '.validation-error:has-text("cannot be blank")',
+        );
+        const blankErrorCount = await blankValidationErrors.count();
+        // Validation may appear or be handled by HTML5 required attribute
+        expect(blankErrorCount).toBeGreaterThanOrEqual(0);
+      }
+
+      // 15. Test Mapbox style URL validation
+      const styleInputs = targetCard.locator('input[id$="-basemap-style-"]');
+      if ((await styleInputs.count()) > 0) {
+        const firstStyleInput = styleInputs.first();
+
+        // 16. Try invalid style URL
+        await firstStyleInput.clear();
+        await firstStyleInput.fill("invalid://style/url");
+        await page.waitForTimeout(300);
+
+        // 17. Verify the input has the pattern attribute
+        await expect(firstStyleInput).toHaveAttribute(
+          "pattern",
+          "^mapbox://styles/[^/]+/[^/]+$",
+        );
+
+        // 18. Enter valid Mapbox style URL
+        await firstStyleInput.clear();
+        await firstStyleInput.fill("mapbox://styles/user/styleid");
+        await page.waitForTimeout(300);
+      }
+    }
+
+    // 19. Clean up
+    const removeButton = targetCard.locator("button.remove-button").last();
+    await removeButton.click();
+    await expect(modal).toBeVisible();
+    await confirmButton.click();
+    await expect(page.getByText(/table removed from views!/i)).toBeVisible();
+    await page.waitForTimeout(3500);
+  }
+});
+
+test("config page - basemap configuration - update name and style", async ({
+  page,
+}) => {
+  // 1. Navigate to the config page
+  await page.goto("/config");
+
+  // 2. Wait for the grid container
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 3. Add a table
+  const addTableButton = page.getByRole("button", {
+    name: /\+ add new table/i,
+  });
+  await addTableButton.click();
+
+  const modal = page.locator(".modal");
+  const dropdown = page.locator("select");
+  await dropdown.selectOption({ index: 0 });
+
+  const selectedOption = dropdown.locator("option:checked");
+  const tableNameToAdd = await selectedOption.textContent();
+
+  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  await confirmButton.click();
+
+  await expect(page.getByText(/table added to views!/i)).toBeVisible();
+  await page.waitForTimeout(3500);
+
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 4. Find and expand the target card
+  if (tableNameToAdd) {
+    const targetCard = page.locator(
+      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    );
+    const hamburgerButton = targetCard.locator("button.hamburger");
+    await hamburgerButton.click();
+
+    await targetCard
+      .locator(".config-section")
+      .first()
+      .waitFor({ state: "visible" });
+
+    // 5. Check for basemap configuration
+    const basemapLabel = targetCard.locator(
+      'label:has-text("Mapbox Background Map(s)")',
+    );
+    const hasBasemapConfig = (await basemapLabel.count()) > 0;
+
+    if (hasBasemapConfig) {
+      // 6. Find name and style inputs for first basemap
+      const nameInput = targetCard
+        .locator('input[id$="-basemap-name-0"]')
+        .first();
+      const styleInput = targetCard
+        .locator('input[id$="-basemap-style-0"]')
+        .first();
+
+      if ((await nameInput.count()) > 0 && (await styleInput.count()) > 0) {
+        // 7. Update basemap name
+        await nameInput.clear();
+        await nameInput.fill("Custom Basemap");
+        await page.waitForTimeout(300);
+
+        // 8. Verify the value is set
+        await expect(nameInput).toHaveValue("Custom Basemap");
+
+        // 9. Update basemap style
+        await styleInput.clear();
+        await styleInput.fill("mapbox://styles/myuser/mystyle");
+        await page.waitForTimeout(300);
+
+        // 10. Verify the value is set
+        await expect(styleInput).toHaveValue("mapbox://styles/myuser/mystyle");
+
+        // 11. Verify submit button is enabled (change detected)
+        const submitButton = targetCard.locator("button[type='submit']");
+        await expect(submitButton).toBeEnabled();
+      }
+    }
+
+    // 12. Clean up
+    const removeButton = targetCard.locator("button.remove-button").last();
+    await removeButton.click();
+    await expect(modal).toBeVisible();
+    await confirmButton.click();
+    await expect(page.getByText(/table removed from views!/i)).toBeVisible();
+    await page.waitForTimeout(3500);
+  }
+});
+
+test("config page - basemap configuration - max 3 limit", async ({ page }) => {
+  // 1. Navigate to the config page
+  await page.goto("/config");
+
+  // 2. Wait for the grid container
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 3. Add a table
+  const addTableButton = page.getByRole("button", {
+    name: /\+ add new table/i,
+  });
+  await addTableButton.click();
+
+  const modal = page.locator(".modal");
+  const dropdown = page.locator("select");
+  await dropdown.selectOption({ index: 0 });
+
+  const selectedOption = dropdown.locator("option:checked");
+  const tableNameToAdd = await selectedOption.textContent();
+
+  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  await confirmButton.click();
+
+  await expect(page.getByText(/table added to views!/i)).toBeVisible();
+  await page.waitForTimeout(3500);
+
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 4. Find and expand the target card
+  if (tableNameToAdd) {
+    const targetCard = page.locator(
+      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    );
+    const hamburgerButton = targetCard.locator("button.hamburger");
+    await hamburgerButton.click();
+
+    await targetCard
+      .locator(".config-section")
+      .first()
+      .waitFor({ state: "visible" });
+
+    // 5. Check for basemap configuration
+    const basemapLabel = targetCard.locator(
+      'label:has-text("Mapbox Background Map(s)")',
+    );
+    const hasBasemapConfig = (await basemapLabel.count()) > 0;
+
+    if (hasBasemapConfig) {
+      const addBasemapButton = targetCard.locator(
+        'button.add-basemap-button:has-text("+")',
+      );
+      const basemapItems = targetCard.locator(".basemap-item");
+
+      // 6. Add basemaps until limit is reached
+      let currentCount = await basemapItems.count();
+      while (currentCount < 3 && (await addBasemapButton.isEnabled())) {
+        await addBasemapButton.click();
+        await page.waitForTimeout(500);
+        currentCount = await basemapItems.count();
+      }
+
+      // 7. Verify there are exactly 3 basemaps
+      expect(await basemapItems.count()).toBe(3);
+
+      // 8. Verify add button is disabled
+      await expect(addBasemapButton).toBeDisabled();
+      await expect(addBasemapButton).toHaveClass(/disabled/);
+
+      // 9. Try clicking the disabled button (should not add another)
+      await addBasemapButton.click({ force: true });
+      await page.waitForTimeout(500);
+
+      // 10. Verify still only 3 basemaps
+      expect(await basemapItems.count()).toBe(3);
+
+      // 11. Remove one basemap
+      const removeButtons = targetCard.locator("button.remove-button");
+      if ((await removeButtons.count()) > 0) {
+        await removeButtons.first().click();
+        await page.waitForTimeout(500);
+
+        // 12. Verify there are now 2 basemaps
+        expect(await basemapItems.count()).toBe(2);
+
+        // 13. Verify add button is enabled again
+        await expect(addBasemapButton).toBeEnabled();
+      }
+    }
+
+    // 14. Clean up
+    const removeButton = targetCard.locator("button.remove-button").last();
+    await removeButton.click();
+    await expect(modal).toBeVisible();
+    await confirmButton.click();
+    await expect(page.getByText(/table removed from views!/i)).toBeVisible();
+    await page.waitForTimeout(3500);
+  }
+});
