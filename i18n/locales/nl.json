@@ -18,7 +18,7 @@
   "authMessage": "Meld u aan of log in om toegang te krijgen tot deze applicatie",
   "availableViews": "Beschikbare weergaven",
   "basemapName": "Basiskaart naam",
-  "basemapsDescription": "Geef maximaal drie achtergrondkaart opties van Mapbox op",
+  "basemapsDescription": "Geef maximaal drie achtergrondkaart opties van Mapbox op. Ze moeten allemaal van dezelfde Mapbox account zijn (bijvoorbeeld toegankelijk met hetzelfde toegangstoken).",
   "before": "Voor",
   "browserDoesntSupportAudio": "Sorry, uw browser ondersteunt het audio-element niet",
   "browserDoesntSupportVideo": "Sorry, uw browser ondersteunt het video-element niet",

@@ -18,7 +18,7 @@
   "authMessage": "Please sign up or log in to access this application",
   "availableViews": "Available Views",
   "basemapName": "Basemap name",
-  "basemapsDescription": "Provide up to three background map options from Mapbox",
+  "basemapsDescription": "Provide up to three background map options from Mapbox. They must all be from the same Mapbox account (e.g. accessible by the same access token).",
   "before": "Before",
   "browserDoesntSupportAudio": "Sorry, your browser does not support the audio element",
   "browserDoesntSupportVideo": "Sorry, your browser does not support the video element",

@@ -18,7 +18,7 @@
   "authMessage": "Por favor, regístrese o inicie sesión para acceder a esta aplicación",
   "availableViews": "Vistas disponibles",
   "basemapName": "Nombre del mapa base",
-  "basemapsDescription": "Proporcione hasta tres opciones de mapa base de Mapbox",
+  "basemapsDescription": "Proporcione hasta tres opciones de mapa base de Mapbox. Todos deben ser del mismo cuenta de Mapbox (e.g. accesible por el mismo token de acceso).",
   "before": "Antes",
   "browserDoesntSupportAudio": "Lo sentimos, su navegador no soporta el elemento de audio",
   "browserDoesntSupportVideo": "Lo sentimos, su navegador no soporta el elemento de video",
