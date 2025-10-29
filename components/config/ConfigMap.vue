@@ -212,7 +212,8 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
     <div v-for="key in keys" :key="key" class="config-field">
       <!-- Mapbox Basemaps -->
       <template v-if="key === 'MAPBOX_STYLE'">
-        <label>{{ $t("mapboxStyle") }}</label>
+        <label>{{ $t("mapboxBackgroundMaps") }}</label>
+        <p class="basemaps-description">{{ $t("basemapsDescription") }}</p>
         <div class="basemaps-container">
           <div
             v-for="(basemap, index) in basemaps"
@@ -441,6 +442,14 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
 </template>
 
 <style scoped>
+.basemaps-description {
+  font-style: italic;
+  color: #666;
+  font-size: 0.9em;
+  margin-top: 4px;
+  margin-bottom: 10px;
+}
+
 .basemaps-container {
   margin-top: 10px;
 }
