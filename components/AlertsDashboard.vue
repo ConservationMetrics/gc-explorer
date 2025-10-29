@@ -322,6 +322,7 @@ const addAlertsData = async () => {
       };
 
       // Clustering for Point features
+      // See https://docs.mapbox.com/mapbox-gl-js/example/cluster/
       const sourceConfig =
         type === "Point"
           ? {
