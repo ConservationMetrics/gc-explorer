@@ -132,6 +132,10 @@ const addBasemap = () => {
 const canAddBasemap = computed(() => basemaps.value.length < 3);
 
 const removeBasemap = (index: number) => {
+  // Must have at least one basemap - cannot remove if only one exists
+  if (basemaps.value.length <= 1) {
+    return;
+  }
   // Cannot remove first item (default basemap)
   if (index === 0) {
     return;
