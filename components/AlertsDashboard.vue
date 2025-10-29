@@ -478,8 +478,6 @@ const addAlertsData = async () => {
     });
   };
 
-  // Symbol layers and warning icons removed - using circle clusters for all geometry types now
-
   /**
    * Adds clustered circle layers for Polygon/LineString centroids.
    * Uses the geographicCentroid property to create Point features that can be clustered.
@@ -1729,7 +1727,7 @@ const resetToInitialState = () => {
     }
   });
 
-  // First, fly to the initial position
+  // Fly to the initial position
   map.value.flyTo({
     center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
     zoom: props.mapboxZoom || 2.5,
