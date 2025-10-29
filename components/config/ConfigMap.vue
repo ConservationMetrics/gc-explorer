@@ -79,12 +79,14 @@ const basemaps = ref<BasemapConfig[]>(parseBasemaps());
 // Initialize basemaps on mount
 onMounted(() => {
   basemaps.value = parseBasemaps();
+  ensureDefault();
 });
 
 watch(
   () => props.config.MAPBOX_BASEMAPS,
   () => {
     basemaps.value = parseBasemaps();
+    ensureDefault();
   },
 );
 
@@ -99,44 +101,72 @@ watch(
           isDefault: true,
         },
       ];
+      ensureDefault();
     }
   },
 );
+
+// Ensure first basemap is always marked as default
+const ensureDefault = () => {
+  if (basemaps.value.length > 0) {
+    basemaps.value.forEach((b, i) => {
+      b.isDefault = i === 0;
+    });
+  }
+};
 
 const addBasemap = () => {
   basemaps.value.push({
     name: "",
     style: "",
-    isDefault: basemaps.value.length === 0,
+    isDefault: false,
   });
+  ensureDefault();
   saveBasemaps();
 };
 
 const removeBasemap = (index: number) => {
-  basemaps.value.splice(index, 1);
-  // If we removed the default, make the first one default
-  if (
-    basemaps.value.length > 0 &&
-    !basemaps.value.some((b) => b.isDefault)
-  ) {
-    basemaps.value[0].isDefault = true;
+  // Cannot remove first item (default basemap)
+  if (index === 0) {
+    return;
   }
+  basemaps.value.splice(index, 1);
+  ensureDefault();
   saveBasemaps();
 };
 
-const setDefaultBasemap = (index: number) => {
-  basemaps.value.forEach((b, i) => {
-    b.isDefault = i === index;
-  });
-  saveBasemaps();
-};
-
-const updateBasemap = (index: number, field: keyof BasemapConfig, value: string | boolean) => {
+const updateBasemap = (
+  index: number,
+  field: keyof BasemapConfig,
+  value: string | boolean,
+) => {
   basemaps.value[index][field] = value as never;
+  ensureDefault();
   saveBasemaps();
+};
+
+// Validation helpers
+const isNameUnique = (index: number, name: string): boolean => {
+  if (!name.trim()) return false;
+  return basemaps.value.every((b, i) => i === index || b.name !== name);
+};
+
+const isNameValid = (index: number, name: string): boolean => {
+  return name.trim().length > 0 && isNameUnique(index, name);
+};
+
+const getValidationError = (index: number, name: string): string | null => {
+  if (!name.trim()) {
+    return "Basemap name cannot be blank";
+  }
+  if (!isNameUnique(index, name)) {
+    return "Basemap name must be unique";
+  }
+  return null;
 };
 
 const saveBasemaps = () => {
+  ensureDefault();
   emit("updateConfig", {
     MAPBOX_BASEMAPS: JSON.stringify(basemaps.value),
   });
@@ -149,7 +179,7 @@ const handleDragStart = (index: number) => {
   draggedIndex.value = index;
 };
 
-const handleDragOver = (e: DragEvent, index: number) => {
+const handleDragOver = (e: DragEvent, _index: number) => {
   e.preventDefault();
 };
 
@@ -163,6 +193,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
   basemaps.value.splice(draggedIndex.value, 1);
   basemaps.value.splice(dropIndex, 0, item);
   draggedIndex.value = null;
+  ensureDefault();
   saveBasemaps();
 };
 </script>
@@ -181,6 +212,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
             v-for="(basemap, index) in basemaps"
             :key="index"
             class="basemap-item"
+            :class="{ 'basemap-default': index === 0 }"
             draggable="true"
             @dragstart="handleDragStart(index)"
             @dragover="handleDragOver($event, index)"
@@ -189,19 +221,31 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
             <div class="basemap-drag-handle">☰</div>
             <div class="basemap-content">
               <div class="basemap-fields">
-                <input
-                  :id="`${tableName}-basemap-name-${index}`"
-                  class="input-field basemap-name"
-                  :placeholder="$t('basemapName')"
-                  :value="basemap.name"
-                  @input="
-                    updateBasemap(
-                      index,
-                      'name',
-                      ($event.target as HTMLInputElement).value
-                    )
-                  "
-                />
+                <div class="basemap-name-wrapper">
+                  <input
+                    :id="`${tableName}-basemap-name-${index}`"
+                    class="input-field basemap-name"
+                    :class="{
+                      'input-error': !isNameValid(index, basemap.name),
+                    }"
+                    :placeholder="$t('basemapName')"
+                    :value="basemap.name"
+                    required
+                    @input="
+                      updateBasemap(
+                        index,
+                        'name',
+                        ($event.target as HTMLInputElement).value,
+                      )
+                    "
+                  />
+                  <span
+                    v-if="basemap.name && !isNameValid(index, basemap.name)"
+                    class="validation-error"
+                  >
+                    {{ getValidationError(index, basemap.name) }}
+                  </span>
+                </div>
                 <input
                   :id="`${tableName}-basemap-style-${index}`"
                   class="input-field basemap-style"
@@ -212,25 +256,19 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
                     ': mapbox://styles/username/styleid'
                   "
                   :value="basemap.style"
+                  required
                   @input="
                     updateBasemap(
                       index,
                       'style',
-                      ($event.target as HTMLInputElement).value
+                      ($event.target as HTMLInputElement).value,
                     )
                   "
                 />
               </div>
               <div class="basemap-actions">
-                <label class="default-checkbox">
-                  <input
-                    type="checkbox"
-                    :checked="basemap.isDefault"
-                    @change="setDefaultBasemap(index)"
-                  />
-                  {{ $t("default") }}
-                </label>
                 <button
+                  v-if="index !== 0"
                   type="button"
                   class="remove-button"
                   @click="removeBasemap(index)"
@@ -240,11 +278,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
               </div>
             </div>
           </div>
-          <button
-            type="button"
-            class="add-basemap-button"
-            @click="addBasemap"
-          >
+          <button type="button" class="add-basemap-button" @click="addBasemap">
             + {{ $t("addBasemapOption") }}
           </button>
         </div>
@@ -409,10 +443,30 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
   border-radius: 4px;
   background-color: #f9f9f9;
   cursor: move;
+  position: relative;
 }
 
 .basemap-item:hover {
   background-color: #f0f0f0;
+}
+
+.basemap-item.basemap-default {
+  border: 2px solid #007bff;
+  background-color: #e7f3ff;
+}
+
+.basemap-item.basemap-default::before {
+  content: "Default";
+  position: absolute;
+  top: -10px;
+  left: 10px;
+  background-color: #007bff;
+  color: white;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 3px;
+  text-transform: uppercase;
 }
 
 .basemap-drag-handle {
@@ -436,11 +490,29 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
 .basemap-fields {
   display: flex;
   gap: 10px;
+  flex: 1;
+}
+
+.basemap-name-wrapper {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .basemap-name {
-  flex: 1;
-  min-width: 150px;
+  width: 100%;
+}
+
+.basemap-name.input-error {
+  border-color: #dc3545;
+}
+
+.validation-error {
+  font-size: 11px;
+  color: #dc3545;
+  margin-top: -4px;
 }
 
 .basemap-style {
@@ -450,15 +522,9 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
 
 .basemap-actions {
   display: flex;
-  gap: 15px;
-  align-items: center;
-}
-
-.default-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
+  justify-content: flex-end;
+  align-items: flex-start;
+  margin-left: auto;
 }
 
 .remove-button {
