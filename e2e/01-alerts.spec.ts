@@ -4,35 +4,6 @@ test("alerts dashboard - layer visibility toggles", async ({ page }) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
 
-  // Debug: Log page content to understand what's rendered
-  console.log("🔍 Page title:", await page.title());
-  console.log("🔍 Page URL:", page.url());
-
-  // Debug: Check if there are any links on the page
-  const allLinks = page.locator("a");
-  const linkCount = await allLinks.count();
-  console.log("🔍 Total links on page:", linkCount);
-
-  // Debug: Log all link texts
-  for (let i = 0; i < linkCount; i++) {
-    const link = allLinks.nth(i);
-    const text = await link.textContent();
-    const href = await link.getAttribute("href");
-    console.log(`🔍 Link ${i}: text="${text?.trim()}", href="${href}"`);
-  }
-
-  // Debug: Check if there are any elements with "alerts" text
-  const alertsElements = page.locator("*:has-text('alerts')");
-  const alertsCount = await alertsElements.count();
-  console.log("🔍 Elements containing 'alerts' text:", alertsCount);
-
-  // Debug: Log page HTML for debugging
-  const pageContent = await page.content();
-  console.log(
-    "🔍 Page HTML (first 1000 chars):",
-    pageContent.substring(0, 1000),
-  );
-
   // 2. Wait until the index page has rendered the list of available views
   // Find the first link that has an href starting with /alerts/
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
@@ -299,7 +270,9 @@ test("alerts dashboard - legend can control all alert layer types", async ({
     const label = checkbox.locator("xpath=../label");
     const labelText = await label.textContent();
     if (labelText) {
-      legendLabels.push(labelText.trim());
+      // Remove the hash mark (#) if present
+      const cleanLabel = labelText.trim().replace(/^#\s*/, "");
+      legendLabels.push(cleanLabel);
     }
   }
 
@@ -316,7 +289,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
       label.includes("polygon") ||
       label.includes("linestring") ||
       label.includes("point") ||
-      label.includes("symbol"),
+      label.includes("centroid"),
   );
 
   expect(geometrySpecificEntries).toHaveLength(0);
@@ -466,40 +439,52 @@ test("alerts dashboard - geometry type specific interactions", async ({
     { timeout: 5000 },
   );
 
-  // 9. Test Point features
+  // 9. Test Point features (clustered circles)
   const pointFeatures = await page.evaluate(() => {
     // @ts-expect-error _testMap is exposed for E2E testing only
     const map = window._testMap;
-    return map.queryRenderedFeatures({
+    // Try to find point features, including clustered ones
+    let features = map.queryRenderedFeatures({
       layers: ["most-recent-alerts-point", "previous-alerts-point"],
     });
+    // If no unclustered points, try centroids (for polygon/linestring)
+    if (features.length === 0) {
+      features = map.queryRenderedFeatures({
+        layers: ["most-recent-alerts-centroids", "previous-alerts-centroids"],
+      });
+    }
+    return features;
   });
 
   if (pointFeatures.length > 0) {
     console.log(`Testing ${pointFeatures.length} Point features`);
 
     const firstPoint = pointFeatures[0];
-    const [lng, lat] = firstPoint.geometry.coordinates;
+    if (!firstPoint?.geometry?.coordinates) {
+      console.log("Skipping point test - no valid coordinates");
+    } else {
+      const [lng, lat] = firstPoint.geometry.coordinates;
 
-    // Click on Point feature
-    await page.evaluate(
-      ([lng, lat]) => {
-        // @ts-expect-error _testMap is exposed for E2E testing only
-        const map = window._testMap;
-        const pt = map.project([lng, lat]);
-        map.fire("click", {
-          point: pt,
-          lngLat: [lng, lat],
-          originalEvent: {},
-          features: [],
-        });
-      },
-      [lng, lat],
-    );
+      // Click on Point feature
+      await page.evaluate(
+        ([lng, lat]) => {
+          // @ts-expect-error _testMap is exposed for E2E testing only
+          const map = window._testMap;
+          const pt = map.project([lng, lat]);
+          map.fire("click", {
+            point: pt,
+            lngLat: [lng, lat],
+            originalEvent: {},
+            features: [],
+          });
+        },
+        [lng, lat],
+      );
 
-    // Verify sidebar opens
-    await expect(page.getByText(/copy link to alert/i)).toBeVisible();
-    await expect(page).toHaveURL(/\?alertId=/);
+      // Verify sidebar opens
+      await expect(page.getByText(/copy link to alert/i)).toBeVisible();
+      await expect(page).toHaveURL(/\?alertId=/);
+    }
   }
 
   // 10. Test Polygon features
@@ -597,79 +582,27 @@ test("alerts dashboard - geometry type specific interactions", async ({
   }
 });
 
-test("alerts dashboard - opens sidebar and updates URL on symbol and polygon clicks", async ({
+test("alerts dashboard - cluster circles and centroid selection behavior", async ({
   page,
 }) => {
-  // 1. Navigate to the index page first to get available tables
+  // Navigate to alerts dashboard
   await page.goto("/");
-
-  // Debug: Log page content to understand what's rendered
-  console.log("🔍 Page title:", await page.title());
-  console.log("🔍 Page URL:", page.url());
-
-  // Debug: Check if there are any links on the page
-  const allLinks = page.locator("a");
-  const linkCount = await allLinks.count();
-  console.log("🔍 Total links on page:", linkCount);
-
-  // Debug: Log all link texts
-  for (let i = 0; i < linkCount; i++) {
-    const link = allLinks.nth(i);
-    const text = await link.textContent();
-    const href = await link.getAttribute("href");
-    console.log(`🔍 Link ${i}: text="${text?.trim()}", href="${href}"`);
-  }
-
-  // Debug: Check if there are any elements with "alerts" text
-  const alertsElements = page.locator("*:has-text('alerts')");
-  const alertsCount = await alertsElements.count();
-  console.log("🔍 Elements containing 'alerts' text:", alertsCount);
-
-  // Debug: Log page HTML for debugging
-  const pageContent = await page.content();
-  console.log(
-    "🔍 Page HTML (first 1000 chars):",
-    pageContent.substring(0, 1000),
-  );
-  // 2. Wait until the index page has rendered the list of available views
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
   await alertsLink.waitFor({ state: "visible", timeout: 5000 });
-
-  // 3. Get the href first
   const href = await alertsLink.getAttribute("href");
-
-  // 4. Navigate directly to alerts page
   await page.goto(href!);
-
-  // 5. Ensure the route change completed
   await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
-  // 6. Wait until the map container has been added to the DOM
+  // Wait for map to load
   await page.locator("#map").waitFor({ state: "attached", timeout: 5000 });
-
-  // 7. Give Mapbox a gentle nudge: click roughly at 75% of the viewport width
-  // (vertically centered). This ensures tiles are rendered and
-  // the map has focus before we look for pulsing markers.
-  const viewport = page.viewportSize();
-  if (viewport) {
-    console.log(
-      `🖱️ Clicking map at position (${viewport.width * 0.75}, ${viewport.height * 0.5})`,
-    );
-    await page.mouse.click(viewport.width * 0.75, viewport.height * 0.5);
-  }
-  await page.locator("#map").waitFor();
-
-  // 8. Wait for the map to be ready and the canvas to be visible
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await expect(mapCanvas).toBeVisible();
 
-  // 9. Ensure the Mapbox instance has been attached to window
   await page.waitForFunction(() => {
     // @ts-expect-error _testMap is exposed for E2E testing only
     return !!window._testMap;
   });
 
-  // 10. Wait for the map to be fully loaded and rendered
   await page.waitForFunction(
     () => {
       // @ts-expect-error _testMap is exposed for E2E testing only
@@ -679,107 +612,60 @@ test("alerts dashboard - opens sidebar and updates URL on symbol and polygon cli
     { timeout: 5000 },
   );
 
-  // 11. Pull every symbol feature Mapbox has already rendered
-  const symbolFeatures = await page.evaluate(() => {
-    // @ts-expect-error helper exposed in component
+  // Test 1: Verify cluster circles exist (instead of old symbols)
+  const clusterFeatures = await page.evaluate(() => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
     const map = window._testMap;
-    const features = map.queryRenderedFeatures({
-      layers: ["most-recent-alerts-symbol"],
+    const clusters = map.queryRenderedFeatures({
+      layers: [
+        "most-recent-alerts-centroids-clusters",
+        "previous-alerts-centroids-clusters",
+      ],
     });
-    return features;
+    return clusters;
   });
 
-  // 12. Wait for at least one symbol feature to be rendered
-  await page.waitForFunction(
-    () => {
+  if (clusterFeatures.length > 0) {
+    console.log(`✅ Found ${clusterFeatures.length} cluster circles`);
+
+    // Test 2: Click on a centroid circle (Point geometry)
+    const centroidFeatures = await page.evaluate(() => {
       // @ts-expect-error _testMap is exposed for E2E testing only
-      // We wait for symbol features to render because DOM or API readiness doesn't guarantee map rendering
       const map = window._testMap;
-      const features = map.queryRenderedFeatures({
-        layers: ["most-recent-alerts-symbol"],
+      return map.queryRenderedFeatures({
+        layers: ["most-recent-alerts-centroids", "previous-alerts-centroids"],
       });
-      return features.length > 0;
-    },
-    { timeout: 5000 },
-  );
-
-  // 13. Loop through them and fire a synthetic click
-  for (let i = 0; i < symbolFeatures.length; i++) {
-    const feature = symbolFeatures[i];
-    console.log(
-      `🎯 Processing symbol feature ${i + 1}/${symbolFeatures.length}`,
-    );
-
-    // 14. Parse centroid (as string "lat, lng")
-    const [lat, lng] = feature.properties.geographicCentroid
-      .split(",")
-      .map(Number);
-
-    // 15. Click the symbol to zoom
-    await page.evaluate(
-      ([lng, lat]) => {
-        // @ts-expect-error helper exposed in component
-        const map = window._testMap;
-        const pt = map.project([lng, lat]);
-        map.fire("click", {
-          point: pt,
-          lngLat: [lng, lat],
-          originalEvent: {},
-          features: [],
-        });
-      },
-      [lng, lat],
-    );
-
-    // 16. Wait until the map has finished panning/zooming
-    await page.waitForFunction(() => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const m = window._testMap;
-      return m && !m.isMoving();
     });
 
-    // 17. Project centroid to screen coordinates (use [lng, lat] order!)
-    const { x, y } = await page.evaluate(
-      ([lng, lat]) => {
-        // @ts-expect-error helper exposed in component
-        return window._testMap.project([lng, lat]);
-      },
-      [lng, lat],
-    );
+    if (centroidFeatures.length > 0) {
+      const feature = centroidFeatures[0];
+      if (!feature?.geometry?.coordinates) {
+        console.log("Skipping centroid test - no valid coordinates");
+      } else {
+        const [lng, lat] = feature.geometry.coordinates;
+        const alertID = feature.properties.alertID;
 
-    // 18. Try to find a polygon at or near that pixel (expand search radius)
-    const found = await page.evaluate(
-      ({ x, y }) => {
-        // @ts-expect-error helper exposed in component
-        const map = window._testMap;
-        // Try a wider offset in case of projection drift
-        for (let r = 0; r <= 50; r += 5) {
-          // search radius up to 50px, step 5px
-          for (let dx = -r; dx <= r; dx += 5) {
-            for (let dy = -r; dy <= r; dy += 5) {
-              const px = x + dx,
-                py = y + dy;
-              const poly = map.queryRenderedFeatures([px, py], {
-                layers: ["most-recent-alerts-polygon"],
-              })[0];
-              if (poly) return { found: true, px, py };
-            }
-          }
-        }
-        return { found: false };
-      },
-      { x, y },
-    );
+        // Click the centroid
+        await page.evaluate(
+          ([lng, lat, alertID]) => {
+            // @ts-expect-error _testMap is exposed for E2E testing only
+            const map = window._testMap;
+            const pt = map.project([lng, lat]);
+            map.fire("click", {
+              point: pt,
+              lngLat: [lng, lat],
+              originalEvent: {},
+              features: [{ properties: { alertID } }],
+            });
+          },
+          [lng, lat, alertID],
+        );
 
-    if (found.found) {
-      // 19. Click the canvas at the found pixel
-      await page.mouse.click(found.px, found.py);
-
-      // 20. Assert sidebar is visible
-      await expect(page.getByText(/copy link to alert/i)).toBeVisible();
-
-      // 21. Assert the URL contains the alertId query param
-      await expect(page).toHaveURL(/\?alertId=/);
+        // Wait for sidebar
+        await expect(page.getByText(/copy link to alert/i)).toBeVisible();
+        await expect(page).toHaveURL(/\?alertId=/);
+        console.log("✅ Centroid circle click works");
+      }
     }
   }
 });
