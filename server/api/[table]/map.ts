@@ -12,11 +12,8 @@ import {
 import { validatePermissions } from "@/utils/auth";
 
 import type { H3Event } from "h3";
-import type {
-  AllowedFileExtensions,
-  ColumnEntry,
-  BasemapConfig,
-} from "@/types/types";
+import type { AllowedFileExtensions, ColumnEntry } from "@/types/types";
+import { parseBasemaps } from "@/server/utils/basemaps";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -64,45 +61,8 @@ export default defineEventHandler(async (event: H3Event) => {
     // Prepare statistics data for the map view
     const mapStatistics = prepareMapStatistics(processedGeoData);
 
-    // Parse basemaps configuration
-    let basemaps: BasemapConfig[] = [];
-    let defaultMapboxStyle: string | undefined;
-    
-    if (viewsConfig[table].MAPBOX_BASEMAPS) {
-      try {
-        basemaps = JSON.parse(viewsConfig[table].MAPBOX_BASEMAPS);
-        // Find the default basemap
-        const defaultBasemap = basemaps.find((b) => b.isDefault);
-        if (defaultBasemap) {
-          defaultMapboxStyle = defaultBasemap.style;
-        } else if (basemaps.length > 0) {
-          // If no default is set, use the first one
-          defaultMapboxStyle = basemaps[0].style;
-        }
-      } catch {
-        // If parsing fails, fall back to legacy MAPBOX_STYLE
-        defaultMapboxStyle = viewsConfig[table].MAPBOX_STYLE;
-        if (defaultMapboxStyle) {
-          basemaps = [
-            {
-              name: "Default Style",
-              style: defaultMapboxStyle,
-              isDefault: true,
-            },
-          ];
-        }
-      }
-    } else if (viewsConfig[table].MAPBOX_STYLE) {
-      // Legacy fallback
-      defaultMapboxStyle = viewsConfig[table].MAPBOX_STYLE;
-      basemaps = [
-        {
-          name: "Default Style",
-          style: defaultMapboxStyle,
-          isDefault: true,
-        },
-      ];
-    }
+    // Parse basemaps configuration via shared utility
+    const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
 
     const response = {
       allowedFileExtensions: allowedFileExtensions,
