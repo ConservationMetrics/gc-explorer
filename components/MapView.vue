@@ -5,6 +5,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { getFilePathsWithExtension } from "@/utils";
 import {
   changeMapStyle,
+  applyTerrain,
   prepareMapLegendLayers,
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
@@ -68,39 +69,18 @@ onMounted(() => {
     bearing: props.mapboxBearing || 0,
   });
 
-  // Function to apply 3D terrain - call it whenever the style loads
-  const applyTerrain = () => {
-    if (props.mapbox3d) {
-      // setStyle() clears all sources, so we just need to add the source if it doesn't exist
-      if (!map.value.getSource("mapbox-dem")) {
-        map.value.addSource("mapbox-dem", {
-          type: "raster-dem",
-          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-          tileSize: 512,
-          maxzoom: 14,
-        });
-      }
-      
-      map.value.setTerrain({
-        source: "mapbox-dem",
-        exaggeration: props.mapbox3dTerrainExaggeration,
-      });
-    } else {
-      // If 3D is disabled, clear terrain
-      map.value.setTerrain(null);
-    }
-  };
+  // Apply 3D terrain whenever the style loads
 
   let controlsAdded = false;
 
   // Apply terrain whenever style loads (initial load and style changes)
   map.value.on("style.load", () => {
-    applyTerrain();
+    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
   });
 
   map.value.on("load", () => {
     // Add 3D Terrain if set (for initial load)
-    applyTerrain();
+    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
 
     // Only add controls once (on first load, not on style changes)
     if (!controlsAdded) {

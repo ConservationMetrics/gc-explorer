@@ -12,6 +12,7 @@ import rulerControl from "mapbox-gl-ruler-control";
 
 import {
   changeMapStyle,
+  applyTerrain,
   prepareMapLegendLayers,
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
@@ -203,39 +204,18 @@ onMounted(() => {
   // @ts-expect-error: Expose map instance for Playwright E2E tests; not a standard property on window
   window._testMap = map.value;
 
-  // Function to apply 3D terrain - call it whenever the style loads
-  const applyTerrain = () => {
-    if (props.mapbox3d) {
-      // setStyle() clears all sources, so we just need to add the source if it doesn't exist
-      if (!map.value.getSource("mapbox-dem")) {
-        map.value.addSource("mapbox-dem", {
-          type: "raster-dem",
-          url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-          tileSize: 512,
-          maxzoom: 14,
-        });
-      }
-
-      map.value.setTerrain({
-        source: "mapbox-dem",
-        exaggeration: props.mapbox3dTerrainExaggeration,
-      });
-    } else {
-      // If 3D is disabled, clear terrain
-      map.value.setTerrain(null);
-    }
-  };
+  // Apply 3D terrain whenever the style loads
 
   let controlsAdded = false;
 
   // Apply terrain whenever style loads (initial load and style changes)
   map.value.on("style.load", () => {
-    applyTerrain();
+    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
   });
 
   map.value.on("load", async () => {
     // Add 3D Terrain if set in env var (for initial load)
-    applyTerrain();
+    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
 
     // Only add controls once (on first load, not on style changes)
     if (!controlsAdded) {

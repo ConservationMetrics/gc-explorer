@@ -142,7 +142,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // Prepare statistics data for the alerts view
     const alertsStatistics = prepareAlertsStatistics(mainData, metadata);
 
-    // Parse basemaps configuration via shared utility
+    // Parse basemaps configuration
     const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
 
     const response = {

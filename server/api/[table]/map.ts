@@ -61,7 +61,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // Prepare statistics data for the map view
     const mapStatistics = prepareMapStatistics(processedGeoData);
 
-    // Parse basemaps configuration via shared utility
+    // Parse basemaps configuration
     const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
 
     const response = {
