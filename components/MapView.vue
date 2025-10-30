@@ -5,6 +5,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { getFilePathsWithExtension } from "@/utils";
 import {
   changeMapStyle,
+  applyTerrain,
   prepareMapLegendLayers,
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
@@ -19,6 +20,7 @@ import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
   AllowedFileExtensions,
   Basemap,
+  BasemapConfig,
   Dataset,
   FilterValues,
   MapLegendItem,
@@ -37,6 +39,7 @@ const props = defineProps<{
   mapboxPitch: number | null;
   mapboxProjection: string;
   mapboxStyle: string;
+  mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
@@ -66,38 +69,44 @@ onMounted(() => {
     bearing: props.mapboxBearing || 0,
   });
 
+  // Apply 3D terrain whenever the style loads
+
+  let controlsAdded = false;
+
+  // Apply terrain whenever style loads (initial load and style changes)
+  map.value.on("style.load", () => {
+    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
+  });
+
   map.value.on("load", () => {
-    if (props.mapbox3d) {
-      map.value.addSource("mapbox-dem", {
-        type: "raster-dem",
-        url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-        tileSize: 512,
-        maxzoom: 14,
+    // Add 3D Terrain if set (for initial load)
+    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
+
+    // Only add controls once (on first load, not on style changes)
+    if (!controlsAdded) {
+      prepareMapCanvasContent();
+
+      // Navigation Control (zoom buttons and compass)
+      const nav = new mapboxgl.NavigationControl();
+      map.value.addControl(nav, "top-right");
+
+      // Scale Control
+      const scale = new mapboxgl.ScaleControl({
+        maxWidth: 80,
+        unit: "metric",
       });
-      map.value.setTerrain({
-        source: "mapbox-dem",
-        exaggeration: props.mapbox3dTerrainExaggeration,
-      });
+      map.value.addControl(scale, "bottom-left");
+
+      // Fullscreen Control
+      const fullscreenControl = new mapboxgl.FullscreenControl();
+      map.value.addControl(fullscreenControl, "top-right");
+
+      showBasemapSelector.value = true;
+      controlsAdded = true;
+    } else {
+      // On style changes (not initial load), just prepare canvas content
+      prepareMapCanvasContent();
     }
-
-    prepareMapCanvasContent();
-
-    // Navigation Control (zoom buttons and compass)
-    const nav = new mapboxgl.NavigationControl();
-    map.value.addControl(nav, "top-right");
-
-    // Scale Control
-    const scale = new mapboxgl.ScaleControl({
-      maxWidth: 80,
-      unit: "metric",
-    });
-    map.value.addControl(scale, "bottom-left");
-
-    // Fullscreen Control
-    const fullscreenControl = new mapboxgl.FullscreenControl();
-    map.value.addControl(fullscreenControl, "top-right");
-
-    showBasemapSelector.value = true;
   });
 });
 
@@ -294,6 +303,8 @@ const handleBasemapChange = (newBasemap: Basemap) => {
 
   currentBasemap.value = newBasemap;
 
+  // Once map style loads, terrain will be re-applied via style.load event
+  // Then when map is idle, re-add sources, layers, and event listeners
   map.value.once("idle", () => {
     prepareMapCanvasContent();
   });
@@ -390,6 +401,7 @@ onBeforeUnmount(() => {
     <BasemapSelector
       v-if="showBasemapSelector"
       :mapbox-style="mapboxStyle"
+      :mapbox-basemaps="mapboxBasemaps || []"
       :planet-api-key="planetApiKey"
       @basemap-selected="handleBasemapChange"
     />

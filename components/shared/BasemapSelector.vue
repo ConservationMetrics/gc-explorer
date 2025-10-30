@@ -2,11 +2,15 @@
 import Datepicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
 
-import type { Basemap } from "~/types/types";
+import type { Basemap, BasemapConfig } from "~/types/types";
 
 const props = defineProps({
   hasRulerControl: Boolean,
   mapboxStyle: String,
+  mapboxBasemaps: {
+    type: Array as () => BasemapConfig[],
+    default: () => [],
+  },
   planetApiKey: String,
 });
 
@@ -15,10 +19,40 @@ const emit = defineEmits(["basemapSelected"]);
 const topPosition = computed(() => (props.hasRulerControl ? "187px" : "147px"));
 
 const showBasemapWindow = ref(false);
-const selectedBasemap = ref<Basemap>({
-  id: "custom",
-  style: props.mapboxStyle,
-});
+
+// Initialize selectedBasemap based on default basemap or fallback to mapboxStyle
+const getDefaultBasemap = (): Basemap => {
+  if (props.mapboxBasemaps && props.mapboxBasemaps.length > 0) {
+    const defaultBasemap = props.mapboxBasemaps.find((b) => b.isDefault);
+    if (defaultBasemap) {
+      return {
+        id: `custom-${props.mapboxBasemaps.indexOf(defaultBasemap)}`,
+        style: defaultBasemap.style,
+      };
+    }
+    // Use first basemap if no default is set
+    return {
+      id: `custom-0`,
+      style: props.mapboxBasemaps[0].style,
+    };
+  }
+  // Legacy fallback
+  return {
+    id: "custom",
+    style: props.mapboxStyle,
+  };
+};
+
+const selectedBasemap = ref<Basemap>(getDefaultBasemap());
+
+// Watch for changes in basemaps prop
+watch(
+  () => props.mapboxBasemaps,
+  () => {
+    selectedBasemap.value = getDefaultBasemap();
+  },
+  { deep: true },
+);
 
 const toggleBasemapWindow = () => {
   showBasemapWindow.value = !showBasemapWindow.value;
@@ -96,7 +130,24 @@ const emitBasemapChange = () => {
     >
       <div class="basemap-window-content">
         <h3 class="font-semibold mb-2">{{ $t("selectBasemap") }}</h3>
-        <label>
+        <!-- Custom basemaps (from config) -->
+        <label
+          v-for="(basemap, index) in mapboxBasemaps"
+          :key="`custom-${index}`"
+        >
+          <input
+            v-model="selectedBasemap"
+            type="radio"
+            :value="{ id: `custom-${index}`, style: basemap.style }"
+            name="basemap"
+            @change="emitBasemapChange"
+          />
+          {{ basemap.name }}
+        </label>
+        <!-- Legacy fallback if no custom basemaps and mapboxStyle exists -->
+        <label
+          v-if="(!mapboxBasemaps || mapboxBasemaps.length === 0) && mapboxStyle"
+        >
           <input
             v-model="selectedBasemap"
             type="radio"
@@ -106,6 +157,7 @@ const emitBasemapChange = () => {
           />
           {{ $t("yourMapboxStyleDefault") }}
         </label>
+        <!-- Standard Mapbox basemaps -->
         <label>
           <input
             v-model="selectedBasemap"
