@@ -79,7 +79,7 @@ const dataForDownload = computed<FeatureCollection>(() => {
           <div class="flex items-center gap-2">
             <span class="font-bold text-sm">{{ $t("totalFeatures") }}:</span>
             <span class="text-sm text-muted-foreground">{{
-              props.mapStatistics.totalFeatures
+              $n(props.mapStatistics.totalFeatures)
             }}</span>
           </div>
 
