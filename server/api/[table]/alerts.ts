@@ -20,6 +20,7 @@ import type {
   DataEntry,
   AlertsMetadata,
 } from "@/types/types";
+import { parseBasemaps } from "@/server/utils/basemaps";
 
 /**
  * Converts a Mapeo document ID (64-bit hex string) to a 32-bit integer
@@ -141,6 +142,9 @@ export default defineEventHandler(async (event: H3Event) => {
     // Prepare statistics data for the alerts view
     const alertsStatistics = prepareAlertsStatistics(mainData, metadata);
 
+    // Parse basemaps configuration
+    const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
+
     const response = {
       alertsData: alertsGeojsonData,
       alertsStatistics: alertsStatistics,
@@ -157,7 +161,8 @@ export default defineEventHandler(async (event: H3Event) => {
       mapboxLongitude: Number(viewsConfig[table].MAPBOX_CENTER_LONGITUDE),
       mapboxPitch: Number(viewsConfig[table].MAPBOX_PITCH),
       mapboxProjection: viewsConfig[table].MAPBOX_PROJECTION,
-      mapboxStyle: viewsConfig[table].MAPBOX_STYLE,
+      mapboxStyle: defaultMapboxStyle,
+      mapboxBasemaps: basemaps,
       mapboxZoom: Number(viewsConfig[table].MAPBOX_ZOOM),
       mapeoData: mapeoData,
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,

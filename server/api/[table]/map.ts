@@ -13,6 +13,7 @@ import { validatePermissions } from "@/utils/auth";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, ColumnEntry } from "@/types/types";
+import { parseBasemaps } from "@/server/utils/basemaps";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -60,6 +61,9 @@ export default defineEventHandler(async (event: H3Event) => {
     // Prepare statistics data for the map view
     const mapStatistics = prepareMapStatistics(processedGeoData);
 
+    // Parse basemaps configuration
+    const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
+
     const response = {
       allowedFileExtensions: allowedFileExtensions,
       data: processedGeoData,
@@ -76,7 +80,8 @@ export default defineEventHandler(async (event: H3Event) => {
       mapboxLongitude: Number(viewsConfig[table].MAPBOX_CENTER_LONGITUDE),
       mapboxPitch: Number(viewsConfig[table].MAPBOX_PITCH),
       mapboxProjection: viewsConfig[table].MAPBOX_PROJECTION,
-      mapboxStyle: viewsConfig[table].MAPBOX_STYLE,
+      mapboxStyle: defaultMapboxStyle,
+      mapboxBasemaps: basemaps,
       mapboxZoom: Number(viewsConfig[table].MAPBOX_ZOOM),
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
       planetApiKey: viewsConfig[table].PLANET_API_KEY,

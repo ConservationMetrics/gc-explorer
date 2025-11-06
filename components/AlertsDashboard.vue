@@ -12,6 +12,7 @@ import rulerControl from "mapbox-gl-ruler-control";
 
 import {
   changeMapStyle,
+  applyTerrain,
   prepareMapLegendLayers,
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
@@ -27,6 +28,7 @@ import type {
   AlertsStatistics,
   AllowedFileExtensions,
   Basemap,
+  BasemapConfig,
   Dataset,
   MapLegendItem,
 } from "@/types/types";
@@ -47,6 +49,7 @@ const props = defineProps<{
   mapboxPitch: number | null;
   mapboxProjection: string;
   mapboxStyle: string;
+  mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
@@ -214,65 +217,66 @@ onMounted(() => {
   // @ts-expect-error: Expose map instance for Playwright E2E tests; not a standard property on window
   window._testMap = map.value;
 
+  // Apply 3D terrain whenever the style loads
+
+  let controlsAdded = false;
+
+  // Apply terrain whenever style loads (initial load and style changes)
+  map.value.on("style.load", () => {
+    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
+  });
+
   map.value.on("load", async () => {
-    // Add 3D Terrain if set in env var
-    if (props.mapbox3d) {
-      map.value.addSource("mapbox-dem", {
-        type: "raster-dem",
-        url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-        tileSize: 512,
-        maxzoom: 14,
+    // Add 3D Terrain if set in env var (for initial load)
+    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
+
+    // Only add controls once (on first load, not on style changes)
+    if (!controlsAdded) {
+      await prepareMapCanvasContent();
+
+      // Navigation Control (zoom buttons and compass)
+      const nav = new mapboxgl.NavigationControl();
+      map.value.addControl(nav, "top-right");
+
+      // Scale Control
+      const scale = new mapboxgl.ScaleControl({
+        maxWidth: 80,
+        unit: "metric",
       });
-      map.value.setTerrain({
-        source: "mapbox-dem",
-        exaggeration: props.mapbox3dTerrainExaggeration,
-      });
-    }
+      map.value.addControl(scale, "bottom-left");
 
-    await prepareMapCanvasContent();
+      // Fullscreen Control
+      const fullscreenControl = new mapboxgl.FullscreenControl();
+      map.value.addControl(fullscreenControl, "top-right");
 
-    // Navigation Control (zoom buttons and compass)
-    const nav = new mapboxgl.NavigationControl();
-    map.value.addControl(nav, "top-right");
+      // Ruler control
+      const ruler = new rulerControl();
+      map.value.addControl(ruler, "top-right");
+      hasRulerControl.value = true;
 
-    // Scale Control
-    const scale = new mapboxgl.ScaleControl({
-      maxWidth: 80,
-      unit: "metric",
-    });
-    map.value.addControl(scale, "bottom-left");
+      showBasemapSelector.value = true;
 
-    // Fullscreen Control
-    const fullscreenControl = new mapboxgl.FullscreenControl();
-    map.value.addControl(fullscreenControl, "top-right");
+      dateOptions.value = getDateOptions();
 
-    // Ruler control
-    const ruler = new rulerControl();
-    map.value.addControl(ruler, "top-right");
-    hasRulerControl.value = true;
+      if (isOnlyLineStringData() !== true) {
+        calculateHectares.value = true;
+      }
+      showSlider.value = true;
 
-    showBasemapSelector.value = true;
+      // Check for alertId or mapeoDocId in URL and select the corresponding feature
+      const alertId = route.query.alertId as string;
+      const mapeoDocId = route.query.mapeoDocId as string;
 
-    dateOptions.value = getDateOptions();
+      if (alertId) {
+        selectInitialAlertFeature(alertId);
+      } else if (mapeoDocId && props.mapeoData) {
+        selectInitialMapeoFeature(mapeoDocId);
+      }
 
-    if (isOnlyLineStringData() !== true) {
-      calculateHectares.value = true;
-    }
-    showSlider.value = true;
-
-    // Check for alertId or mapeoDocId in URL and select the corresponding feature
-    // Wait for map to be idle (fully rendered) before selecting
-    const alertId = route.query.alertId as string;
-    const mapeoDocId = route.query.mapeoDocId as string;
-
-    if (alertId || mapeoDocId) {
-      map.value.once("idle", () => {
-        if (alertId) {
-          selectInitialAlertFeature(alertId);
-        } else if (mapeoDocId && props.mapeoData) {
-          selectInitialMapeoFeature(mapeoDocId);
-        }
-      });
+      controlsAdded = true;
+    } else {
+      // On style changes (not initial load), just prepare canvas content
+      await prepareMapCanvasContent();
     }
   });
 });
@@ -939,7 +943,8 @@ const handleBasemapChange = (newBasemap: Basemap) => {
 
   currentBasemap.value = newBasemap;
 
-  // Once map is idle, re-add sources, layers, and event listeners
+  // Once map style loads, terrain will be re-applied via style.load event
+  // Then when map is idle, re-add sources, layers, and event listeners
   map.value.once("idle", () => {
     prepareMapCanvasContent();
   });
@@ -1877,6 +1882,7 @@ onBeforeUnmount(() => {
       v-if="showBasemapSelector"
       :has-ruler-control="hasRulerControl"
       :mapbox-style="mapboxStyle"
+      :mapbox-basemaps="mapboxBasemaps || []"
       :planet-api-key="planetApiKey"
       @basemap-selected="handleBasemapChange"
     />
