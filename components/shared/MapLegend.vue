@@ -8,6 +8,7 @@ const props = defineProps<{
 const emit = defineEmits(["toggle-layer-visibility"]);
 
 const localMapLegendContent = ref();
+const isExpanded = ref(true);
 
 onMounted(() => {
   // Ensure all items are visible initially
@@ -20,6 +21,11 @@ onMounted(() => {
 /** Layer visibility toggles */
 const toggleLayerVisibility = (item: MapLegendItem) => {
   emit("toggle-layer-visibility", item);
+};
+
+/** Toggle legend expansion */
+const toggleExpanded = () => {
+  isExpanded.value = !isExpanded.value;
 };
 
 /** Get the class for the geometry type */
@@ -44,55 +50,79 @@ watch(
     data-testid="map-legend"
     class="map-legend feature p-4 rounded-lg shadow-lg"
   >
-    <h2 class="text-2xl font-semibold mb-2">{{ $t("mapLegend") }}</h2>
-    <div
-      v-for="item in localMapLegendContent"
-      :key="item.id"
-      class="legend-item"
-    >
-      <input
-        :id="item.id"
-        v-model="item.visible"
-        data-testid="map-legend-checkbox"
-        class="mr-2"
-        type="checkbox"
-        :checked="item.visible"
-        @change="toggleLayerVisibility(item)"
-      />
-      <label :for="item.id">
-        <div v-if="item.iconUrl" class="icon-box">
-          <img :src="item.iconUrl" :alt="item.name" class="legend-icon" />
-        </div>
+    <button class="legend-header" @click="toggleExpanded">
+      <h2 class="text-2xl font-semibold">{{ $t("mapLegend") }}</h2>
+      <svg
+        class="toggle-arrow"
+        :class="{ rotated: !isExpanded }"
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M5 7.5L10 12.5L15 7.5"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+    <Transition name="slide">
+      <div v-show="isExpanded" class="legend-content">
         <div
-          v-else
-          :class="[
-            'color-box',
-            getTypeClass(item),
-            {
-              'with-hash': item.type === 'circle' && item.id.includes('alerts'),
-            },
-          ]"
-          :style="{ backgroundColor: item.color }"
+          v-for="item in localMapLegendContent"
+          :key="item.id"
+          class="legend-item"
         >
-          <span
-            v-if="item.type === 'circle' && item.id.includes('alerts')"
-            class="hash-mark"
-            >#</span
-          >
+          <input
+            :id="item.id"
+            v-model="item.visible"
+            data-testid="map-legend-checkbox"
+            class="mr-2"
+            type="checkbox"
+            :checked="item.visible"
+            @change="toggleLayerVisibility(item)"
+          />
+          <label :for="item.id">
+            <div v-if="item.iconUrl" class="icon-box">
+              <img :src="item.iconUrl" :alt="item.name" class="legend-icon" />
+            </div>
+            <div
+              v-else
+              :class="[
+                'color-box',
+                getTypeClass(item),
+                {
+                  'with-hash':
+                    item.type === 'circle' && item.id.includes('alerts'),
+                },
+              ]"
+              :style="{ backgroundColor: item.color }"
+            >
+              <span
+                v-if="item.type === 'circle' && item.id.includes('alerts')"
+                class="hash-mark"
+                >#</span
+              >
+            </div>
+            <span>
+              {{
+                item.name === "Mapeo data"
+                  ? $t("mapeoData")
+                  : item.name === "Most recent alerts"
+                    ? $t("mostRecentAlerts")
+                    : item.name === "Previous alerts"
+                      ? $t("previousAlerts")
+                      : item.name
+              }}
+            </span>
+          </label>
         </div>
-        <span>
-          {{
-            item.name === "Mapeo data"
-              ? $t("mapeoData")
-              : item.name === "Most recent alerts"
-                ? $t("mostRecentAlerts")
-                : item.name === "Previous alerts"
-                  ? $t("previousAlerts")
-                  : item.name
-          }}
-        </span>
-      </label>
-    </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -183,6 +213,56 @@ watch(
   display: flex;
   align-items: center;
   margin-bottom: 10px;
+}
+
+.legend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.legend-header h2 {
+  margin: 0;
+}
+
+.toggle-arrow {
+  transition: transform 0.3s ease;
+  color: #333;
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+
+.toggle-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+.legend-content {
+  overflow: hidden;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition:
+    max-height 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.slide-enter-to,
+.slide-leave-from {
+  max-height: 1000px;
+  opacity: 1;
 }
 
 @media (max-width: 768px) {
