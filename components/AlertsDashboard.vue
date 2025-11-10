@@ -956,6 +956,17 @@ const prepareMapLegendContent = () => {
   map.value.once("idle", () => {
     const legendItems: MapLegendItem[] = [];
 
+    // Add mapeo-data layer first to ensure it's always on top
+    if (props.mapeoData) {
+      legendItems.push({
+        id: "mapeo-data",
+        name: "Mapeo data",
+        type: "circle",
+        color: mapeoDataColor.value || "#000000",
+        visible: true,
+      });
+    }
+
     // Add most recent alerts as a single grouped entry
     if (props.alertsData.mostRecentAlerts.features.length > 0) {
       legendItems.push({
@@ -974,17 +985,6 @@ const prepareMapLegendContent = () => {
         name: "Previous alerts",
         type: "circle",
         color: "#FD8D3C",
-        visible: true,
-      });
-    }
-
-    // Add mapeo-data layer to mapLegendContent
-    if (props.mapeoData) {
-      legendItems.push({
-        id: "mapeo-data",
-        name: "Mapeo data",
-        type: "circle",
-        color: mapeoDataColor.value || "#000000",
         visible: true,
       });
     }
