@@ -26,7 +26,7 @@ if (!skipPlaywright) {
     require.resolve("@playwright/test");
     // Install Playwright browsers
     execSync("pnpm exec playwright install --with-deps", { stdio: "inherit" });
-  } catch (error) {
+  } catch {
     // @playwright/test not available or installation failed, silently skip
     // This is expected in production builds where devDependencies aren't installed
   }
