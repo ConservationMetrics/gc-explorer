@@ -216,6 +216,8 @@ onMounted(() => {
 
   // @ts-expect-error: Expose map instance for Playwright E2E tests; not a standard property on window
   window._testMap = map.value;
+  // @ts-expect-error: Expose test helper for date range changes; not a standard property on window
+  window._testHandleDateRangeChanged = handleDateRangeChanged;
 
   // Apply 3D terrain whenever the style loads
 

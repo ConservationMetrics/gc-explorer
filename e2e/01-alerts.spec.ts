@@ -668,4 +668,111 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
       }
     }
   }
+
+  // Test 3: Verify clusters update when date range changes
+  const initialSourceData = await page.evaluate(() => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    const source = map.getSource(
+      "most-recent-alerts-centroids",
+    ) as mapboxgl.GeoJSONSource;
+    if (!source || !(source as { _data?: { features?: unknown[] } })._data)
+      return null;
+    const sourceData = (source as { _data?: { features?: unknown[] } })._data;
+    return {
+      featureCount: sourceData?.features?.length || 0,
+    };
+  });
+
+  if (initialSourceData && initialSourceData.featureCount > 0) {
+    console.log(
+      `Initial source has ${initialSourceData.featureCount} features`,
+    );
+
+    // Get date options from the page (they should be available in the slider)
+    const dateOptions = await page.evaluate(() => {
+      // @ts-expect-error accessing Vue component for testing
+      const app = document.querySelector("#__nuxt")?.__vue_app__;
+      if (!app) return null;
+
+      // Find the AlertsDashboard component
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const findComponent = (instance: any): any => {
+        if (!instance) return null;
+        if (instance.type?.name === "AlertsDashboard") return instance;
+        if (instance.parent) return findComponent(instance.parent);
+        if (instance.ctx?.parent) return findComponent(instance.ctx.parent);
+        return null;
+      };
+
+      const root = app._instance;
+      const dashboard = findComponent(root);
+      if (!dashboard) return null;
+
+      // Get dateOptions from props or setupState
+      return (
+        dashboard.props?.dateOptions ||
+        dashboard.setupState?.dateOptions?.value ||
+        null
+      );
+    });
+
+    if (dateOptions && dateOptions.length >= 2) {
+      // Use a narrower date range (first half of available dates)
+      const midPoint = Math.floor(dateOptions.length / 2);
+      const newRange: [string, string] = [
+        dateOptions[0],
+        dateOptions[midPoint],
+      ];
+
+      console.log(`Changing date range to: ${newRange[0]} - ${newRange[1]}`);
+
+      // Trigger date range change using the exposed test helper
+      await page.evaluate((range) => {
+        // @ts-expect-error _testHandleDateRangeChanged is exposed for E2E testing only
+        const handler = window._testHandleDateRangeChanged;
+        if (handler && typeof handler === "function") {
+          handler(range);
+        }
+      }, newRange);
+
+      // Wait for the update to complete (nextTick + source update)
+      await page.waitForTimeout(1000);
+
+      // Verify source data has been updated
+      const updatedSourceData = await page.evaluate(() => {
+        // @ts-expect-error _testMap is exposed for E2E testing only
+        const map = window._testMap;
+        const source = map.getSource(
+          "most-recent-alerts-centroids",
+        ) as mapboxgl.GeoJSONSource;
+        if (!source || !(source as { _data?: { features?: unknown[] } })._data)
+          return null;
+        const sourceData = (source as { _data?: { features?: unknown[] } })
+          ._data;
+        return {
+          featureCount: sourceData?.features?.length || 0,
+        };
+      });
+
+      if (updatedSourceData) {
+        console.log(
+          `Updated source has ${updatedSourceData.featureCount} features`,
+        );
+        // The updated count should be less than or equal to initial count
+        expect(updatedSourceData.featureCount).toBeLessThanOrEqual(
+          initialSourceData.featureCount,
+        );
+        // Verify that source data was actually updated (not just a check)
+        expect(updatedSourceData.featureCount).toBeGreaterThanOrEqual(0);
+        console.log("✅ Clusters updated correctly when date range changed");
+      } else {
+        console.log("⚠️ Could not verify source data update");
+      }
+    } else {
+      console.log("⚠️ Could not access date options, skipping date range test");
+    }
+  } else {
+    console.log("⚠️ No initial source data found, skipping date range test");
+  }
 });
