@@ -1,3 +1,58 @@
-.*
+# Git
+.git
+.gitignore
+.git-blame-ignore-revs
 
+# Dependencies (will be installed fresh)
+node_modules
+.nuxt
+.output
+
+# Test files and results
+test/
+e2e/
+test-results/
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+playwright.config.ts
+vitest.config.ts
+
+# Documentation
+docs/
+README.md
+CONTRIBUTING.md
+LICENSE
+
+# CI/CD
+.github/
+.husky/
+
+# Development tools
+.vscode/
+.eslintcache
+.prettierignore
+eslint.config.js
+windi.config.ts
+
+# Database (excluded as per original)
 db/
+
+# Docker files (don't need in image)
+Dockerfile
+.dockerignore
+docker-compose.tests.yml
+run-local-docker-tests.sh
+
+# Scripts (migrate-and-start.sh is needed and copied explicitly in Dockerfile)
+scripts/
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
