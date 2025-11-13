@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { toCamelCase } from "@/utils";
+import {
+  extractShareId,
+  deriveFilesOrigin,
+  buildFilebrowserBase,
+} from "@/utils/media";
 import type { ViewConfig } from "@/types/types";
 
-defineProps<{
+const props = defineProps<{
   tableName: string;
   config: ViewConfig;
   views: string[];
@@ -13,9 +18,163 @@ const emit = defineEmits<{
   (e: "updateConfig", payload: Partial<ViewConfig>): void;
 }>();
 
-const handleInput = (key: string, value: string) => {
-  emit("updateConfig", { [key]: value });
+type MediaProvider = "filebrowser" | "generic";
+
+// State
+const providerBasePath = ref<MediaProvider>("filebrowser");
+const shareInputBasePath = ref("");
+const providerAlerts = ref<MediaProvider>("filebrowser");
+const shareInputAlerts = ref("");
+const isInitializing = ref(true);
+
+/** Gets the default Filebrowser base URL from the current hostname. */
+const getDefaultBaseUrl = () => {
+  if (typeof window === "undefined") return "";
+  return buildFilebrowserBase(deriveFilesOrigin(window.location.hostname));
 };
+
+const defaultBaseUrl = getDefaultBaseUrl();
+
+/** Extracts base URL from input if it's a full URL, otherwise uses default. */
+const getBaseUrlFromInput = (input: string): string => {
+  if (!input || !input.trim()) return defaultBaseUrl;
+
+  try {
+    const u = new URL(input);
+    if (u.pathname.includes("/share/")) {
+      return `${u.origin}/api/public/dl/`;
+    }
+    if (u.pathname.includes("/api/public/dl/")) {
+      return `${u.origin}/api/public/dl/`;
+    }
+  } catch {
+    // Not a URL, use default
+  }
+
+  return defaultBaseUrl;
+};
+
+/** Validation regex for Filebrowser inputs (share URL, dl URL, or raw hash). */
+const filebrowserInputRegex =
+  /^(https?:\/\/[^\s]+\/(?:share|api\/public\/dl)\/[a-zA-Z0-9_-]+|[a-zA-Z0-9_-]+)$/;
+
+/** Validates Filebrowser input format. */
+const isValidFilebrowserInput = (input: string): boolean => {
+  if (!input.trim()) return true;
+  if (input.includes("/")) {
+    return filebrowserInputRegex.test(input.trim());
+  }
+  return /^[a-zA-Z0-9_-]+$/.test(input.trim());
+};
+
+// Computed
+const resolvedBasePath = computed(() => {
+  if (providerBasePath.value === "filebrowser") {
+    const shareId = extractShareId(shareInputBasePath.value);
+    if (!shareId) return "";
+    const baseUrl = getBaseUrlFromInput(shareInputBasePath.value);
+    return `${baseUrl.replace(/\/+$/, "")}/${shareId}`;
+  }
+  return shareInputBasePath.value || "";
+});
+
+const resolvedAlertsPath = computed(() => {
+  if (providerAlerts.value === "filebrowser") {
+    const shareId = extractShareId(shareInputAlerts.value);
+    if (!shareId) return "";
+    const baseUrl = getBaseUrlFromInput(shareInputAlerts.value);
+    return `${baseUrl.replace(/\/+$/, "")}/${shareId}`;
+  }
+  return shareInputAlerts.value || "";
+});
+
+const isBasePathValid = computed(() => {
+  if (providerBasePath.value === "filebrowser") {
+    return isValidFilebrowserInput(shareInputBasePath.value);
+  }
+  return true;
+});
+
+const isAlertsValid = computed(() => {
+  if (providerAlerts.value === "filebrowser") {
+    return isValidFilebrowserInput(shareInputAlerts.value);
+  }
+  return true;
+});
+
+// Handlers
+const handleInput = (key: "basePath" | "alerts", value: string) => {
+  if (key === "basePath") {
+    shareInputBasePath.value = value;
+  } else {
+    shareInputAlerts.value = value;
+  }
+};
+
+const handleProviderChange = (
+  key: "basePath" | "alerts",
+  value: MediaProvider,
+) => {
+  if (key === "basePath") {
+    providerBasePath.value = value;
+  } else {
+    providerAlerts.value = value;
+  }
+};
+
+// Watchers
+watch(resolvedBasePath, (newValue) => {
+  if (!isInitializing.value) {
+    emit("updateConfig", { MEDIA_BASE_PATH: newValue });
+  }
+});
+
+watch(resolvedAlertsPath, (newValue) => {
+  if (!isInitializing.value) {
+    emit("updateConfig", { MEDIA_BASE_PATH_ALERTS: newValue });
+  }
+});
+
+// Lifecycle
+onMounted(() => {
+  if (props.config.MEDIA_BASE_PATH) {
+    const existing = props.config.MEDIA_BASE_PATH;
+    if (existing.includes("/api/public/dl/")) {
+      providerBasePath.value = "filebrowser";
+      const parts = existing.split("/api/public/dl/");
+      if (parts.length === 2) {
+        shareInputBasePath.value = parts[1].replace(/\/+$/, "");
+      } else {
+        providerBasePath.value = "generic";
+        shareInputBasePath.value = existing;
+      }
+    } else {
+      providerBasePath.value = "generic";
+      shareInputBasePath.value = existing;
+    }
+  }
+
+  if (props.config.MEDIA_BASE_PATH_ALERTS) {
+    const existing = props.config.MEDIA_BASE_PATH_ALERTS;
+    if (existing.includes("/api/public/dl/")) {
+      providerAlerts.value = "filebrowser";
+      const parts = existing.split("/api/public/dl/");
+      if (parts.length === 2) {
+        shareInputAlerts.value = parts[1].replace(/\/+$/, "");
+      } else {
+        providerAlerts.value = "generic";
+        shareInputAlerts.value = existing;
+      }
+    } else {
+      providerAlerts.value = "generic";
+      shareInputAlerts.value = existing;
+    }
+  }
+
+  nextTick(() => {
+    isInitializing.value = false;
+  });
+});
 </script>
 
 <template>
