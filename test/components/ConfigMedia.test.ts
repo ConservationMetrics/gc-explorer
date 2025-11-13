@@ -40,6 +40,30 @@ vi.mock("@/utils/media", () => ({
     if (!origin) return "";
     return `${origin.replace(/\/+$/, "")}/api/public/dl/`;
   }),
+  getBaseUrlFromInput: vi.fn((input: string, defaultBaseUrl: string) => {
+    if (!input || !input.trim()) return defaultBaseUrl;
+    try {
+      const u = new URL(input);
+      if (u.pathname.includes("/share/")) {
+        return `${u.origin}/api/public/dl/`;
+      }
+      if (u.pathname.includes("/api/public/dl/")) {
+        return `${u.origin}/api/public/dl/`;
+      }
+    } catch {
+      // Not a URL, use default
+    }
+    return defaultBaseUrl;
+  }),
+  isValidFilebrowserInput: vi.fn((input: string) => {
+    if (!input.trim()) return true;
+    if (input.includes("/")) {
+      const regex =
+        /^(https?:\/\/[^\s]+\/(?:share|api\/public\/dl)\/[a-zA-Z0-9_-]+|[a-zA-Z0-9_-]+)$/;
+      return regex.test(input.trim());
+    }
+    return /^[a-zA-Z0-9_-]+$/.test(input.trim());
+  }),
 }));
 
 // Mock window.location
