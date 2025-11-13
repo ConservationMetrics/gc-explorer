@@ -29,6 +29,7 @@ export const extractShareId = (input: string): string => {
  * Examples:
  * - explorer.demo.guardianconnector.net → files.demo.guardianconnector.net
  * - demo.guardianconnector.net → files.demo.guardianconnector.net
+ * Note that this assumes that Filebrowser will always be used with the same hostname and with a `files` subdomain. Please see https://github.com/ConservationMetrics/gc-deploy for more information on this deployment pattern.
  */
 export const deriveFilesOrigin = (hostname: string): string => {
   if (!hostname) return "";
