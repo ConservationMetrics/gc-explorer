@@ -1,11 +1,13 @@
 /**
  * Extracts the share ID from a Filebrowser share URL or returns the input if it's already a hash.
- * Handles URLs in formats:
- * - https://files.{slug}.guardianconnector.net/share/{id}
- * - https://files.{slug}.guardianconnector.net/api/public/dl/{id}
- * - Raw hash string
+ * @example
+ * // "https://files.demo.guardianconnector.net/share/abc123" → "abc123"
+ * @example
+ * // "https://files.demo.guardianconnector.net/api/public/dl/abc123" → "abc123"
+ * @example
+ * // "abc123" → "abc123"
  */
-export function extractShareId(input: string): string {
+export const extractShareId = (input: string): string => {
   if (!input || !input.trim()) return "";
 
   try {
@@ -20,7 +22,7 @@ export function extractShareId(input: string): string {
 
   // Raw hash
   return input.trim();
-}
+};
 
 /**
  * Derives the files origin from the current hostname.
@@ -28,7 +30,7 @@ export function extractShareId(input: string): string {
  * - explorer.demo.guardianconnector.net → files.demo.guardianconnector.net
  * - demo.guardianconnector.net → files.demo.guardianconnector.net
  */
-export function deriveFilesOrigin(hostname: string): string {
+export const deriveFilesOrigin = (hostname: string): string => {
   if (!hostname) return "";
 
   const parts = hostname.split(".");
@@ -38,14 +40,17 @@ export function deriveFilesOrigin(hostname: string): string {
     parts.unshift("files"); // foo.bar → files.foo.bar
   }
   return `https://${parts.join(".")}`;
-}
+};
 
 /**
  * Builds a Filebrowser base URL from an origin.
  * Ensures the URL ends with /api/public/dl/
+ * @example
+ * // "https://files.demo.guardianconnector.net" → "https://files.demo.guardianconnector.net/api/public/dl/"
+ * @example
+ * // "https://files.demo.guardianconnector.net/" → "https://files.demo.guardianconnector.net/api/public/dl/"
  */
-export function buildFilebrowserBase(origin: string): string {
+export const buildFilebrowserBase = (origin: string): string => {
   if (!origin) return "";
   return `${origin.replace(/\/+$/, "")}/api/public/dl/`;
-}
-
+};

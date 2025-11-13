@@ -27,7 +27,12 @@ const providerAlerts = ref<MediaProvider>("filebrowser");
 const shareInputAlerts = ref("");
 const isInitializing = ref(true);
 
-/** Gets the default Filebrowser base URL from the current hostname. */
+/**
+ * Gets the default Filebrowser base URL from the current hostname.
+ * @example
+ * // If hostname is "explorer.demo.guardianconnector.net"
+ * // Returns: "https://files.demo.guardianconnector.net/api/public/dl/"
+ */
 const getDefaultBaseUrl = () => {
   if (typeof window === "undefined") return "";
   return buildFilebrowserBase(deriveFilesOrigin(window.location.hostname));
@@ -35,7 +40,18 @@ const getDefaultBaseUrl = () => {
 
 const defaultBaseUrl = getDefaultBaseUrl();
 
-/** Extracts base URL from input if it's a full URL, otherwise uses default. */
+/**
+ * Extracts base URL from input if it's a full URL, otherwise uses default.
+ * @example
+ * // "https://files.demo.guardianconnector.net/share/abc123"
+ * // → "https://files.demo.guardianconnector.net/api/public/dl/"
+ * @example
+ * // "https://files.demo.guardianconnector.net/api/public/dl/abc123"
+ * // → "https://files.demo.guardianconnector.net/api/public/dl/"
+ * @example
+ * // "abc123" (raw hash)
+ * // → defaultBaseUrl (from current hostname)
+ */
 const getBaseUrlFromInput = (input: string): string => {
   if (!input || !input.trim()) return defaultBaseUrl;
 
@@ -54,11 +70,25 @@ const getBaseUrlFromInput = (input: string): string => {
   return defaultBaseUrl;
 };
 
-/** Validation regex for Filebrowser inputs (share URL, dl URL, or raw hash). */
+/**
+ * Validation regex for Filebrowser inputs.
+ * Matches:
+ * - https://files.example.com/share/{hash}
+ * - https://files.example.com/api/public/dl/{hash}
+ * - Raw hash (alphanumeric, hyphens, underscores)
+ */
 const filebrowserInputRegex =
   /^(https?:\/\/[^\s]+\/(?:share|api\/public\/dl)\/[a-zA-Z0-9_-]+|[a-zA-Z0-9_-]+)$/;
 
-/** Validates Filebrowser input format. */
+/**
+ * Validates Filebrowser input format.
+ * @example
+ * // Valid: "https://files.example.com/share/abc123"
+ * // Valid: "https://files.example.com/api/public/dl/abc123"
+ * // Valid: "abc123"
+ * // Valid: "" (empty)
+ * // Invalid: "invalid input with spaces!"
+ */
 const isValidFilebrowserInput = (input: string): boolean => {
   if (!input.trim()) return true;
   if (input.includes("/")) {
