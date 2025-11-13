@@ -84,7 +84,6 @@
   "mediaAccepts": "Acepta:",
   "mediaBaseUrl": "URL base",
   "mediaFilebrowserDefault": "Filebrowser (predeterminado de Guardian Connector)",
-  "mediaFilebrowserGcDefault": "Filebrowser (predeterminado GC)",
   "mediaGenericHttpBaseUrl": "URL base HTTP genérica",
   "mediaInvalidFormat": "Formato inválido. Por favor, use una URL de compartir de Filebrowser o hash.",
   "mediaPasteFilebrowserShareUrlOrHash": "Pegar URL de compartir de Filebrowser o hash",

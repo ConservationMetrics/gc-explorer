@@ -85,7 +85,6 @@
   "mediaAccepts": "Accepteert:",
   "mediaBaseUrl": "Basis URL",
   "mediaFilebrowserDefault": "Filebrowser (Guardian Connector standaard)",
-  "mediaFilebrowserGcDefault": "Filebrowser (GC standaard)",
   "mediaGenericHttpBaseUrl": "Generieke HTTP basis URL",
   "mediaInvalidFormat": "Ongeldig formaat. Gebruik alstublieft een Filebrowser deel-URL of hash.",
   "mediaPasteFilebrowserShareUrlOrHash": "Plak Filebrowser deel-URL of hash",

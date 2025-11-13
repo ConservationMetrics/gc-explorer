@@ -90,7 +90,6 @@ const globalConfig = {
         mediaAccepts: "Accepts:",
         mediaBaseUrl: "Base URL",
         mediaFilebrowserDefault: "Filebrowser (Guardian Connector default)",
-        mediaFilebrowserGcDefault: "Filebrowser (GC default)",
         mediaGenericHttpBaseUrl: "Generic HTTP base URL",
         mediaInvalidFormat:
           "Invalid format. Please use a Filebrowser share URL or hash.",

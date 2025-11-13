@@ -270,7 +270,7 @@ onMounted(() => {
           "
         >
           <option value="filebrowser">
-            {{ $t("mediaFilebrowserGcDefault") }}
+            {{ $t("mediaFilebrowserDefault") }}
           </option>
           <option value="generic">{{ $t("mediaGenericHttpBaseUrl") }}</option>
         </select>
