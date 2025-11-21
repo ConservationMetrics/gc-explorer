@@ -27,6 +27,8 @@
   "changeDetectionAlerts": "Alertas de detección de cambios",
   "clickOnAlertsForMoreInfo": "Haga clic en las alertas para obtener más información",
   "clickOnFeaturesForMoreInfo": "Haga clic en las características del mapa para obtener más información",
+  "colorColumn": "Columna de Color",
+  "colorColumnDescription": "Opcional: Especifique un nombre de columna (por ejemplo, 'color') que contenga valores de color (por ejemplo, códigos hexadecimales como #FF0000). Cuando se establece, las características del mapa y los puntos del filtro utilizarán estos colores en lugar de los colores generados aleatoriamente.",
   "confidenceLevel": "Nivel de confianza",
   "confidenceLevelTerrasImazonGoldMining": "1: Alto nivel de confianza. Tiene todas las características de garimpo de oro. 0: Bajo nivel de confianza. Es posible ver la cobertura de la tierra, pero no es posible estar seguro de que se trata de garimpo de oro.",
   "config": "Configuración",

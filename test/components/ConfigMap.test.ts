@@ -626,4 +626,53 @@ describe("ConfigMap component", () => {
     expect(vm.basemaps[1].name).toBe("First");
     expect(vm.basemaps[1].isDefault).toBe(false);
   });
+
+  it("renders COLOR_COLUMN field when included in keys", () => {
+    const propsWithColorColumn = {
+      ...baseProps,
+      keys: [...baseProps.keys, "COLOR_COLUMN"],
+    };
+
+    const wrapper = mount(ConfigMap, {
+      props: propsWithColorColumn,
+      global: globalConfig,
+    });
+
+    const colorColumnInput = wrapper.find('input[id="test_table-COLOR_COLUMN"]');
+    expect(colorColumnInput.exists()).toBe(true);
+  });
+
+  it("updates COLOR_COLUMN value when input changes", async () => {
+    const propsWithColorColumn = {
+      ...baseProps,
+      keys: [...baseProps.keys, "COLOR_COLUMN"],
+    };
+
+    const wrapper = mount(ConfigMap, {
+      props: propsWithColorColumn,
+      global: globalConfig,
+    });
+
+    const colorColumnInput = wrapper.find('input[id="test_table-COLOR_COLUMN"]');
+    await colorColumnInput.setValue("color");
+
+    expect(wrapper.emitted("updateConfig")).toBeTruthy();
+    const emitted = wrapper.emitted("updateConfig");
+    expect(emitted?.[0]?.[0]).toEqual({ COLOR_COLUMN: "color" });
+  });
+
+  it("displays placeholder for COLOR_COLUMN field", () => {
+    const propsWithColorColumn = {
+      ...baseProps,
+      keys: [...baseProps.keys, "COLOR_COLUMN"],
+    };
+
+    const wrapper = mount(ConfigMap, {
+      props: propsWithColorColumn,
+      global: globalConfig,
+    });
+
+    const colorColumnInput = wrapper.find('input[id="test_table-COLOR_COLUMN"]');
+    expect(colorColumnInput.attributes("placeholder")).toBe("color");
+  });
 });

@@ -441,11 +441,33 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
           @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
         />
       </template>
+
+      <!-- Color Column -->
+      <template v-else-if="key === 'COLOR_COLUMN'">
+        <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
+        <input
+          :id="`${tableName}-${key}`"
+          class="input-field"
+          type="text"
+          placeholder="color"
+          :value="config[key]"
+          @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
+        />
+        <p class="field-description">{{ $t("colorColumnDescription") }}</p>
+      </template>
     </div>
   </div>
 </template>
 
 <style scoped>
+.field-description {
+  font-style: italic;
+  color: #666;
+  font-size: 0.9em;
+  margin-top: 4px;
+  margin-bottom: 10px;
+}
+
 .basemaps-description {
   font-style: italic;
   color: #666;

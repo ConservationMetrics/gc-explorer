@@ -27,6 +27,8 @@
   "changeDetectionAlerts": "Change Detection Alerts",
   "clickOnAlertsForMoreInfo": "Click on alerts for more information",
   "clickOnFeaturesForMoreInfo": "Click on map features for more information",
+  "colorColumn": "Color Column",
+  "colorColumnDescription": "Optional: Specify a column name (e.g., 'color') that contains color values (e.g., hex codes like #FF0000). When set, map features and filter dots will use these colors instead of the randomly generated colors.",
   "confidenceLevel": "Confidence level",
   "confidenceLevelGFWGladAlerts": "Probable loss is defined as a single observation to date flagged as loss. If there are repeat loss observations within 4 observations or 180 days it becomes confirmed loss, otherwise, it reverts back to no loss.",
   "confidenceLevelGFWIntegratedAlerts": "Confidence levels help forest monitors prioritize alerts for follow up since satellite-derived data is subject to errors including false alerts. If two or more alert systems detect a change in the same location, we are more confident (&quot;highest confidence&quot;) that these alerts indicate real disturbance. For individual systems, there is a delay before a first detection can be verified by additional satellite passes and thus reach &quot;high confidence.&quot; The integrated layer displays where multiple systems overlap, in some cases providing increased confidence faster than waiting for individual systems to reach high confidence through additional satellite images, which can take weeks or months. False positives are effectively eliminated in the highest confidence class as it's uncommon for two systems to commit the same error since they use different data streams and algorithms.",

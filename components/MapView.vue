@@ -29,6 +29,7 @@ import type {
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
+  colorColumn?: string;
   filterColumn: string;
   mapStatistics: MapStatistics;
   mapLegendLayerIds?: string;
@@ -167,6 +168,15 @@ const addDataToMap = () => {
 
   // Add a layer for Point features if present
   if (hasPointFeatures && !map.value.getLayer("data-layer-point")) {
+    // Use colorColumn if specified, otherwise fall back to filter-color
+    const colorExpression = props.colorColumn
+      ? [
+          "coalesce",
+          ["get", props.colorColumn, ["get", "feature"]],
+          ["get", "filter-color", ["get", "feature"]],
+        ]
+      : ["get", "filter-color", ["get", "feature"]];
+
     map.value.addLayer({
       id: "data-layer-point",
       type: "circle",
@@ -174,7 +184,7 @@ const addDataToMap = () => {
       filter: ["==", "$type", "Point"],
       paint: {
         "circle-radius": 8,
-        "circle-color": ["get", "filter-color", ["get", "feature"]],
+        "circle-color": colorExpression,
         "circle-stroke-width": 3,
         "circle-stroke-color": "#fff",
       },
@@ -183,13 +193,22 @@ const addDataToMap = () => {
 
   // Add a layer for LineString features if present
   if (hasLineStringFeatures && !map.value.getLayer("data-layer-linestring")) {
+    // Use colorColumn if specified, otherwise fall back to filter-color
+    const colorExpression = props.colorColumn
+      ? [
+          "coalesce",
+          ["get", props.colorColumn, ["get", "feature"]],
+          ["get", "filter-color", ["get", "feature"]],
+        ]
+      : ["get", "filter-color", ["get", "feature"]];
+
     map.value.addLayer({
       id: "data-layer-linestring",
       type: "line",
       source: "data-source",
       filter: ["==", "$type", "LineString"],
       paint: {
-        "line-color": ["get", "filter-color", ["get", "feature"]],
+        "line-color": colorExpression,
         "line-width": 2,
       },
     });
@@ -197,13 +216,22 @@ const addDataToMap = () => {
 
   // Add a layer for Polygon features if present
   if (hasPolygonFeatures && !map.value.getLayer("data-layer-polygon")) {
+    // Use colorColumn if specified, otherwise fall back to filter-color
+    const colorExpression = props.colorColumn
+      ? [
+          "coalesce",
+          ["get", props.colorColumn, ["get", "feature"]],
+          ["get", "filter-color", ["get", "feature"]],
+        ]
+      : ["get", "filter-color", ["get", "feature"]];
+
     map.value.addLayer({
       id: "data-layer-polygon",
       type: "fill",
       source: "data-source",
       filter: ["==", "$type", "Polygon"],
       paint: {
-        "fill-color": ["get", "filter-color", ["get", "feature"]],
+        "fill-color": colorExpression,
         "fill-opacity": 0.5,
       },
     });
@@ -375,6 +403,7 @@ onBeforeUnmount(() => {
       v-if="filterColumn"
       :data="mapData"
       :filter-column="filterColumn"
+      :color-column="colorColumn"
       :show-colored-dot="true"
       @filter="filterValues"
     />
