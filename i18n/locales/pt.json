@@ -94,6 +94,8 @@
   "media": "Mídia",
   "mediaBasePath": "Caminho base para mídia",
   "mediaBasePathAlerts": "Caminho base para imagens de alertas",
+  "mediaColumn": "Coluna a usar para arquivos de mídia",
+  "mediaColumnDescription": "Especifique o nome da coluna que contém referências de arquivos de mídia (por exemplo, foto, áudio). Apenas valores desta coluna serão renderizados como arquivos de mídia. Deixe vazio para renderizar mídia de todas as colunas.",
   "modified": "Modificado",
   "monthDetected": "Mês detectado",
   "mostRecentAlerts": "Alertas mais recentes",

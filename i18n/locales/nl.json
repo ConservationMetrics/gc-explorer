@@ -95,6 +95,8 @@
   "media": "Media",
   "mediaBasePath": "Basis pad voor media",
   "mediaBasePathAlerts": "Basis pad voor alert afbeeldingen",
+  "mediaColumn": "Kolom om te gebruiken voor mediabestanden",
+  "mediaColumnDescription": "Specificeer de kolomnaam die verwijzingen naar mediabestanden bevat (bijv. foto, audio). Alleen waarden uit deze kolom worden weergegeven als mediabestanden. Laat leeg om media uit alle kolommen weer te geven.",
   "modified": "Gewijzigd",
   "monthDetected": "Maand gedetecteerd",
   "mostRecentAlerts": "Meest recente alerts",

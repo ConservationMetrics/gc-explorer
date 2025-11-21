@@ -14,6 +14,7 @@ const dataFetched = ref(false);
 const filterColumn = ref();
 const galleryData = ref();
 const mediaBasePath = ref();
+const mediaColumn = ref();
 
 const {
   public: { appApiKey },
@@ -32,6 +33,7 @@ if (data.value && !error.value) {
   filterColumn.value = data.value.filterColumn;
   galleryData.value = data.value.data;
   mediaBasePath.value = data.value.mediaBasePath;
+  mediaColumn.value = data.value.mediaColumn;
 } else {
   console.error("Error fetching data:", error.value);
 }
@@ -64,6 +66,7 @@ useHead({
         :gallery-data="galleryData"
         :filter-column="filterColumn"
         :media-base-path="mediaBasePath"
+        :media-column="mediaColumn"
       />
       <h3
         v-if="!mediaBasePath && dataFetched"

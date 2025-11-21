@@ -47,6 +47,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const dataWithFilesOnly = filterDataByExtension(
       dataFilteredByValues,
       allowedFileExtensions,
+      viewsConfig[table].MEDIA_COLUMN,
     );
     // Transform data that was collected using survey apps (e.g. KoBoToolbox, Mapeo)
     const transformedData = transformSurveyData(dataWithFilesOnly);
@@ -56,6 +57,7 @@ export default defineEventHandler(async (event: H3Event) => {
       data: transformedData,
       filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
+      mediaColumn: viewsConfig[table].MEDIA_COLUMN,
       table: table,
       routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
     };
