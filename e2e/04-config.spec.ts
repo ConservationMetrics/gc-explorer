@@ -1138,6 +1138,88 @@ test("config page - basemap configuration - update name and style", async ({
   }
 });
 
+test("config page - color column configuration", async ({ page }) => {
+  // 1. Navigate to the config page
+  await page.goto("/config");
+
+  // 2. Wait for the grid container
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 3. Add a table
+  const addTableButton = page.getByRole("button", {
+    name: /\+ add new table/i,
+  });
+  await addTableButton.click();
+
+  const modal = page.locator(".modal");
+  const dropdown = page.locator("select");
+  await dropdown.selectOption({ index: 0 });
+
+  const selectedOption = dropdown.locator("option:checked");
+  const tableNameToAdd = await selectedOption.textContent();
+
+  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  await confirmButton.click();
+
+  await expect(page.getByText(/table added to views!/i)).toBeVisible();
+  await page.waitForTimeout(3500);
+
+  await page
+    .locator(".grid-container")
+    .waitFor({ state: "attached", timeout: 5000 });
+
+  // 4. Find and expand the target card
+  if (tableNameToAdd) {
+    const targetCard = page.locator(
+      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    );
+    const hamburgerButton = targetCard.locator("button.hamburger");
+    await hamburgerButton.click();
+
+    await targetCard
+      .locator(".config-section")
+      .first()
+      .waitFor({ state: "visible" });
+
+    // 5. Look for COLOR_COLUMN input
+    const colorColumnInput = targetCard.locator('input[id$="-COLOR_COLUMN"]');
+    const hasColorColumn = (await colorColumnInput.count()) > 0;
+
+    if (hasColorColumn) {
+      // 6. Verify the input exists and has correct placeholder
+      await expect(colorColumnInput).toBeVisible();
+      await expect(colorColumnInput).toHaveAttribute("placeholder", "color");
+
+      // 7. Enter a color column value
+      await colorColumnInput.clear();
+      await colorColumnInput.fill("color");
+      await page.waitForTimeout(300);
+
+      // 8. Verify the value is set
+      await expect(colorColumnInput).toHaveValue("color");
+
+      // 9. Verify submit button is enabled (change detected)
+      const submitButton = targetCard.locator("button[type='submit']");
+      await expect(submitButton).toBeEnabled();
+
+      // 10. Verify the description is present
+      const descriptionText = targetCard.locator(".field-description");
+      const descriptionCount = await descriptionText.count();
+      expect(descriptionCount).toBeGreaterThan(0);
+    }
+
+    // 11. Clean up
+    const removeButton = targetCard.locator("button.remove-button").last();
+    await removeButton.click();
+    await expect(modal).toBeVisible();
+    await confirmButton.click();
+    await expect(page.getByText(/table removed from views!/i)).toBeVisible();
+    await page.waitForTimeout(3500);
+  }
+});
+
 test("config page - basemap configuration - max 3 limit", async ({ page }) => {
   // 1. Navigate to the config page
   await page.goto("/config");

@@ -66,6 +66,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const response = {
       allowedFileExtensions: allowedFileExtensions,
+      colorColumn: viewsConfig[table].COLOR_COLUMN,
       data: processedGeoData,
       filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
       mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,

@@ -415,4 +415,98 @@ describe("MapView component", () => {
 
     expect(mapboxMock.mockMap.remove).toHaveBeenCalled();
   });
+
+  it("uses colorColumn for feature colors when specified", async () => {
+    const propsWithColorColumn = {
+      ...baseProps,
+      colorColumn: "color",
+      mapData: [
+        {
+          id: "1",
+          geotype: "Point",
+          geocoordinates: "[0, 0]",
+          status: "active",
+          color: "#B209B2",
+          "filter-color": "#ff0000",
+        },
+      ],
+    };
+
+    mount(MapView, {
+      props: propsWithColorColumn,
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    // Verify addLayer was called with colorColumn expression
+    expect(mapboxMock.mockMap.addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "data-layer-point",
+        paint: expect.objectContaining({
+          "circle-color": expect.arrayContaining(["coalesce"]),
+        }),
+      }),
+    );
+  });
+
+  it("falls back to filter-color when colorColumn is not set", async () => {
+    const propsWithoutColorColumn = {
+      ...baseProps,
+      colorColumn: undefined,
+      mapData: [
+        {
+          id: "1",
+          geotype: "Point",
+          geocoordinates: "[0, 0]",
+          status: "active",
+          "filter-color": "#ff0000",
+        },
+      ],
+    };
+
+    mount(MapView, {
+      props: propsWithoutColorColumn,
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    // Verify addLayer was called with filter-color expression
+    expect(mapboxMock.mockMap.addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "data-layer-point",
+        paint: expect.objectContaining({
+          "circle-color": ["get", "filter-color", ["get", "feature"]],
+        }),
+      }),
+    );
+  });
+
+  it("passes colorColumn to DataFilter component", async () => {
+    const propsWithColorColumn = {
+      ...baseProps,
+      colorColumn: "color",
+    };
+
+    const wrapper = mount(MapView, {
+      props: propsWithColorColumn,
+      global: {
+        ...globalConfig,
+        stubs: {
+          ...globalConfig.stubs,
+          DataFilter: false,
+        },
+      },
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const dataFilter = wrapper.findComponent({ name: "DataFilter" });
+    expect(dataFilter.exists()).toBe(true);
+    expect(dataFilter.props("colorColumn")).toBe("color");
+  });
 });

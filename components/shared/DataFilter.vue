@@ -10,6 +10,7 @@ const { t } = useI18n();
 const props = defineProps<{
   data: Dataset;
   filterColumn: string;
+  colorColumn?: string;
   showColoredDot?: boolean;
 }>();
 
@@ -22,7 +23,10 @@ const selectedFilterValue = ref([]);
 const getUniqueFilterValues = computed(() => {
   const allDataFilterValues = props.data.map((item) => {
     const value = item[props.filterColumn];
-    const color = item["filter-color"] || defaultColoredDotColor;
+    // Use colorColumn if specified, otherwise fall back to filter-color
+    const color = props.colorColumn
+      ? item[props.colorColumn] || item["filter-color"] || defaultColoredDotColor
+      : item["filter-color"] || defaultColoredDotColor;
     return {
       label: value !== null && value !== undefined ? value : t("noColumnEntry"),
       value: value,
