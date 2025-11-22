@@ -17,6 +17,7 @@ const props = defineProps<{
   filterColumn: string;
   galleryData: Dataset;
   mediaBasePath: string;
+  mediaColumn?: string;
 }>();
 const filteredData = ref(props.galleryData);
 
@@ -88,7 +89,7 @@ const featureWithPreparedCoordinates = (feature: DataEntry): DataEntry => {
       :key="index"
       :allowed-file-extensions="allowedFileExtensions"
       :feature="featureWithPreparedCoordinates(feature)"
-      :file-paths="getFilePathsWithExtension(feature, allowedFileExtensions)"
+      :file-paths="getFilePathsWithExtension(feature, allowedFileExtensions, mediaColumn)"
       :media-base-path="mediaBasePath"
       :data-testid="`gallery-item-${index}`"
     />

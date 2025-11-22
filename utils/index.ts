@@ -2,11 +2,14 @@
 export const getFilePathsWithExtension = (
   feature: { [key: string]: unknown },
   allExtensions: { [category: string]: string[] },
+  mediaColumn?: string,
 ): string[] => {
   if (!feature) return [];
 
   const filePaths: string[] = [];
-  Object.keys(feature).forEach((key) => {
+  const keysToProcess = mediaColumn ? [mediaColumn] : Object.keys(feature);
+
+  keysToProcess.forEach((key) => {
     if (typeof feature[key] !== "string") return;
     if (feature[key].includes("attachment")) return;
 

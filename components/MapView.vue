@@ -45,6 +45,7 @@ const props = defineProps<{
   mapbox3dTerrainExaggeration: number;
   mapData: Dataset;
   mediaBasePath?: string;
+  mediaColumn?: string;
   planetApiKey?: string;
 }>();
 
@@ -383,7 +384,7 @@ onBeforeUnmount(() => {
       :feature="selectedFeature"
       :feature-geojson="selectedFeatureOriginal"
       :file-paths="
-        getFilePathsWithExtension(selectedFeature, allowedFileExtensions)
+        getFilePathsWithExtension(selectedFeature, allowedFileExtensions, mediaColumn)
       "
       :is-alerts-dashboard="false"
       :map-data="mapData"

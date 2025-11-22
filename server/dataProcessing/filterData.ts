@@ -140,9 +140,12 @@ export const filterGeoData = (
 export const filterDataByExtension = (
   data: DataEntry[],
   extensions: AllowedFileExtensions,
+  mediaColumn?: string,
 ): DataEntry[] => {
   return data.filter((entry) => {
-    return Object.values(entry).some((value) => {
+    const valuesToCheck = mediaColumn ? [entry[mediaColumn]] : Object.values(entry);
+    
+    return valuesToCheck.some((value) => {
       return (
         typeof value === "string" &&
         (extensions.audio.some((ext) => value.toLowerCase().includes(ext)) ||

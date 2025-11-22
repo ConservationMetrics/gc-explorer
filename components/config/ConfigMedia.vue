@@ -27,6 +27,7 @@ const providerBasePath = ref<MediaProvider>("filebrowser");
 const shareInputBasePath = ref("");
 const providerAlerts = ref<MediaProvider>("filebrowser");
 const shareInputAlerts = ref("");
+const mediaColumn = ref("");
 const isInitializing = ref(true);
 
 /**
@@ -113,6 +114,12 @@ watch(resolvedAlertsPath, (newValue) => {
   }
 });
 
+watch(mediaColumn, (newValue) => {
+  if (!isInitializing.value) {
+    emit("updateConfig", { MEDIA_COLUMN: newValue });
+  }
+});
+
 // Lifecycle
 onMounted(() => {
   if (props.config.MEDIA_BASE_PATH) {
@@ -147,6 +154,10 @@ onMounted(() => {
       providerAlerts.value = "generic";
       shareInputAlerts.value = existing;
     }
+  }
+
+  if (props.config.MEDIA_COLUMN) {
+    mediaColumn.value = props.config.MEDIA_COLUMN;
   }
 
   nextTick(() => {
@@ -325,6 +336,22 @@ onMounted(() => {
           />
         </div>
       </template>
+    </div>
+
+    <!-- MEDIA_COLUMN -->
+    <div v-if="keys.includes('MEDIA_COLUMN')" class="config-field">
+      <label>{{ $t(toCamelCase("MEDIA_COLUMN")) }}</label>
+      <p class="field-hint" style="margin-top: 0; margin-bottom: 0.75em">
+        {{ $t("mediaColumnDescription") }}
+      </p>
+      <input
+        :id="`${tableName}-media-column`"
+        class="input-field"
+        type="text"
+        :value="mediaColumn"
+        placeholder="photo"
+        @input="mediaColumn = ($event.target as HTMLInputElement).value"
+      />
     </div>
   </div>
 </template>
