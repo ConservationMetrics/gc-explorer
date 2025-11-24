@@ -73,4 +73,25 @@ describe("filterDataByExtension", () => {
     // the fixture data has 3 entries, but only 1 has media attachments
     expect(result).toHaveLength(1);
   });
+
+  it("should filter data by specific media column when provided", () => {
+    const testData = [
+      { photo: "image1.jpg", icon: "icon1.png", name: "Feature 1" },
+      { photo: "image2.jpg", icon: "icon2.png", name: "Feature 2" },
+      { photo: "", icon: "icon3.png", name: "Feature 3" },
+    ];
+    const extensions = {
+      image: ["jpg", "jpeg", "png", "webp"],
+      audio: ["mp3", "ogg", "wav"],
+      video: ["mov", "mp4", "avi", "mkv"],
+    };
+
+    // Filter by 'photo' column only
+    const result = filterDataByExtension(testData, extensions, "photo");
+
+    // Should only return entries with valid extensions in the 'photo' column
+    expect(result).toHaveLength(2);
+    expect(result[0].name).toBe("Feature 1");
+    expect(result[1].name).toBe("Feature 2");
+  });
 });

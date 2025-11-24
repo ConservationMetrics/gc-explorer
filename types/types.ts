@@ -48,6 +48,7 @@ export interface ViewConfig {
   MAP_LEGEND_LAYER_IDS?: string;
   MEDIA_BASE_PATH?: string;
   MEDIA_BASE_PATH_ALERTS?: string;
+  MEDIA_COLUMN?: string;
   PLANET_API_KEY?: string;
   UNWANTED_COLUMNS?: string;
   UNWANTED_SUBSTRINGS?: string;

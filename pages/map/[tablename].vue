@@ -30,6 +30,7 @@ const mapbox3d = ref(false);
 const mapbox3dTerrainExaggeration = ref(0);
 const mapData = ref();
 const mediaBasePath = ref();
+const mediaColumn = ref();
 const planetApiKey = ref();
 
 const {
@@ -62,6 +63,7 @@ if (data.value && !error.value) {
   mapbox3dTerrainExaggeration.value = data.value.mapbox3dTerrainExaggeration;
   mapData.value = data.value.data;
   mediaBasePath.value = data.value.mediaBasePath;
+  mediaColumn.value = data.value.mediaColumn;
   planetApiKey.value = data.value.planetApiKey;
 } else {
   console.error("Error fetching data:", error.value);
@@ -109,6 +111,7 @@ useHead({
         :mapbox3d-terrain-exaggeration="mapbox3dTerrainExaggeration"
         :map-data="mapData"
         :media-base-path="mediaBasePath"
+        :media-column="mediaColumn"
         :planet-api-key="planetApiKey"
       />
     </ClientOnly>

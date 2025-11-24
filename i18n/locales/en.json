@@ -99,6 +99,8 @@
   "media": "Media",
   "mediaBasePath": "Base path for media",
   "mediaBasePathAlerts": "Base path for alert images",
+  "mediaColumn": "Column to use for media files",
+  "mediaColumnDescription": "Specify the column name containing media file references (e.g., photo, audio). Only values from this column will be rendered as media files. Leave empty to render media from all columns.",
   "modified": "Modified",
   "monthDetected": "Month detected",
   "mostRecentAlerts": "Most recent alerts",

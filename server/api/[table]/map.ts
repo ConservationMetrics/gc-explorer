@@ -85,6 +85,7 @@ export default defineEventHandler(async (event: H3Event) => {
       mapboxBasemaps: basemaps,
       mapboxZoom: Number(viewsConfig[table].MAPBOX_ZOOM),
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
+      mediaColumn: viewsConfig[table].MEDIA_COLUMN,
       planetApiKey: viewsConfig[table].PLANET_API_KEY,
       table: table,
       routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
