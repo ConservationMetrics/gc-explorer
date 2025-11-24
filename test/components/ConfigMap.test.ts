@@ -638,7 +638,9 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const colorColumnInput = wrapper.find('input[id="test_table-COLOR_COLUMN"]');
+    const colorColumnInput = wrapper.find(
+      'input[id="test_table-COLOR_COLUMN"]',
+    );
     expect(colorColumnInput.exists()).toBe(true);
   });
 
@@ -653,7 +655,9 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const colorColumnInput = wrapper.find('input[id="test_table-COLOR_COLUMN"]');
+    const colorColumnInput = wrapper.find(
+      'input[id="test_table-COLOR_COLUMN"]',
+    );
     await colorColumnInput.setValue("color");
 
     expect(wrapper.emitted("updateConfig")).toBeTruthy();
@@ -672,7 +676,9 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const colorColumnInput = wrapper.find('input[id="test_table-COLOR_COLUMN"]');
+    const colorColumnInput = wrapper.find(
+      'input[id="test_table-COLOR_COLUMN"]',
+    );
     expect(colorColumnInput.attributes("placeholder")).toBe("color");
   });
 });

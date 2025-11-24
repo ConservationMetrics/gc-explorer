@@ -143,8 +143,10 @@ export const filterDataByExtension = (
   mediaColumn?: string,
 ): DataEntry[] => {
   return data.filter((entry) => {
-    const valuesToCheck = mediaColumn ? [entry[mediaColumn]] : Object.values(entry);
-    
+    const valuesToCheck = mediaColumn
+      ? [entry[mediaColumn]]
+      : Object.values(entry);
+
     return valuesToCheck.some((value) => {
       return (
         typeof value === "string" &&

@@ -25,7 +25,9 @@ const getUniqueFilterValues = computed(() => {
     const value = item[props.filterColumn];
     // Use colorColumn if specified, otherwise fall back to filter-color
     const color = props.colorColumn
-      ? item[props.colorColumn] || item["filter-color"] || defaultColoredDotColor
+      ? item[props.colorColumn] ||
+        item["filter-color"] ||
+        defaultColoredDotColor
       : item["filter-color"] || defaultColoredDotColor;
     return {
       label: value !== null && value !== undefined ? value : t("noColumnEntry"),

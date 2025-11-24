@@ -89,7 +89,9 @@ const featureWithPreparedCoordinates = (feature: DataEntry): DataEntry => {
       :key="index"
       :allowed-file-extensions="allowedFileExtensions"
       :feature="featureWithPreparedCoordinates(feature)"
-      :file-paths="getFilePathsWithExtension(feature, allowedFileExtensions, mediaColumn)"
+      :file-paths="
+        getFilePathsWithExtension(feature, allowedFileExtensions, mediaColumn)
+      "
       :media-base-path="mediaBasePath"
       :data-testid="`gallery-item-${index}`"
     />

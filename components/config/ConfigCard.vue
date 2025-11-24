@@ -32,7 +32,11 @@ const mapConfigKeys = computed(() => [
   "PLANET_API_KEY",
   "COLOR_COLUMN",
 ]);
-const mediaKeys = computed(() => ["MEDIA_BASE_PATH", "MEDIA_BASE_PATH_ALERTS", "MEDIA_COLUMN"]);
+const mediaKeys = computed(() => [
+  "MEDIA_BASE_PATH",
+  "MEDIA_BASE_PATH_ALERTS",
+  "MEDIA_COLUMN",
+]);
 const alertKeys = computed(() => ["MAPEO_CATEGORY_IDS", "MAPEO_TABLE"]);
 const filterKeys = computed(() => [
   "FILTER_OUT_VALUES_FROM_COLUMN",

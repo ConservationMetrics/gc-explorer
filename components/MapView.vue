@@ -413,7 +413,11 @@ onBeforeUnmount(() => {
       :feature="selectedFeature"
       :feature-geojson="selectedFeatureOriginal"
       :file-paths="
-        getFilePathsWithExtension(selectedFeature, allowedFileExtensions, mediaColumn)
+        getFilePathsWithExtension(
+          selectedFeature,
+          allowedFileExtensions,
+          mediaColumn,
+        )
       "
       :is-alerts-dashboard="false"
       :map-data="mapData"

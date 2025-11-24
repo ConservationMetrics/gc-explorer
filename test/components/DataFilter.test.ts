@@ -77,7 +77,11 @@ describe("DataFilter component", () => {
     });
 
     const vm = wrapper.vm as unknown as {
-      getUniqueFilterValues: Array<{ label: string; value: string; color: string }>;
+      getUniqueFilterValues: Array<{
+        label: string;
+        value: string;
+        color: string;
+      }>;
     };
 
     const campEntry = vm.getUniqueFilterValues.find(
@@ -98,7 +102,11 @@ describe("DataFilter component", () => {
     });
 
     const vm = wrapper.vm as unknown as {
-      getUniqueFilterValues: Array<{ label: string; value: string; color: string }>;
+      getUniqueFilterValues: Array<{
+        label: string;
+        value: string;
+        color: string;
+      }>;
     };
 
     const campEntry = vm.getUniqueFilterValues.find(
@@ -140,7 +148,11 @@ describe("DataFilter component", () => {
     });
 
     const vm = wrapper.vm as unknown as {
-      getUniqueFilterValues: Array<{ label: string; value: string; color: string }>;
+      getUniqueFilterValues: Array<{
+        label: string;
+        value: string;
+        color: string;
+      }>;
     };
 
     const campEntry = vm.getUniqueFilterValues.find(
@@ -177,7 +189,11 @@ describe("DataFilter component", () => {
     });
 
     const vm = wrapper.vm as unknown as {
-      getUniqueFilterValues: Array<{ label: string; value: string; color: string }>;
+      getUniqueFilterValues: Array<{
+        label: string;
+        value: string;
+        color: string;
+      }>;
     };
 
     const campEntry = vm.getUniqueFilterValues.find(
@@ -194,7 +210,11 @@ describe("DataFilter component", () => {
     });
 
     const vm = wrapper.vm as unknown as {
-      getUniqueFilterValues: Array<{ label: string; value: string; color: string }>;
+      getUniqueFilterValues: Array<{
+        label: string;
+        value: string;
+        color: string;
+      }>;
     };
 
     // Should have 2 unique values (Camp and Water Source)
@@ -237,4 +257,3 @@ describe("DataFilter component", () => {
     expect(wrapper.emitted("filter")?.[0]).toEqual(["null"]);
   });
 });
-
