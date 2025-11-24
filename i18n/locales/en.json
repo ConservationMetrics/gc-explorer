@@ -80,7 +80,7 @@
   "mapboxCenterLongitude": "Center longitude (-180 to 180)",
   "mapboxPitch": "Map pitch (0 to 85)",
   "mapboxProjection": "Map projection",
-  "mapboxSatelliteUpTo2019": "Mapbox Satellite (up to 2019)",
+  "mapboxSatellite": "Mapbox Satellite",
   "mapboxStreets": "Mapbox Streets",
   "mapboxStyle": "Mapbox Style",
   "mapboxZoom": "Zoom level (0 to 22)",

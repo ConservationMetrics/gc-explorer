@@ -77,7 +77,7 @@
   "mapboxCenterLongitude": "Longitud del centro (-180 a 180)",
   "mapboxPitch": "Inclinación del mapa (0 a 85)",
   "mapboxProjection": "Proyección del mapa",
-  "mapboxSatelliteUpTo2019": "Mapbox Satellite (hasta 2019)",
+  "mapboxSatellite": "Mapbox Satellite",
   "mapboxStreets": "Mapbox Streets",
   "mapboxStyle": "Estilo de Mapbox",
   "mapboxZoom": "Nivel de zoom (0 a 22)",

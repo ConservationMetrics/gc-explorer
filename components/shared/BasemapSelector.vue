@@ -169,7 +169,7 @@ const emitBasemapChange = () => {
             name="basemap"
             @change="emitBasemapChange"
           />
-          {{ $t("mapboxSatelliteUpTo2019") }}
+          {{ $t("mapboxSatellite") }}
         </label>
         <label>
           <input

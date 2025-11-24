@@ -78,7 +78,7 @@
   "mapboxCenterLongitude": "Midden lengtegraad (-180 tot 180)",
   "mapboxPitch": "Kaart helling (0 tot 85)",
   "mapboxProjection": "Kaart projectie",
-  "mapboxSatelliteUpTo2019": "Mapbox Satellite (tot 2019)",
+  "mapboxSatellite": "Mapbox Satellite",
   "mapboxStreets": "Mapbox Streets",
   "mapboxStyle": "Mapbox stijl",
   "mapboxZoom": "Zoomniveau (0 tot 22)",
