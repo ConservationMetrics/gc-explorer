@@ -12,6 +12,7 @@ const tableRaw = route.params.tablename;
 const table = Array.isArray(tableRaw) ? tableRaw.join("/") : tableRaw;
 
 const allowedFileExtensions = ref();
+const colorColumn = ref();
 const dataFetched = ref(false);
 const filterColumn = ref();
 const mapLegendLayerIds = ref();
@@ -43,6 +44,7 @@ const { data, error } = await useFetch(`/api/${table}/map`, {
 
 if (data.value && !error.value) {
   allowedFileExtensions.value = data.value.allowedFileExtensions;
+  colorColumn.value = data.value.colorColumn;
   dataFetched.value = true;
   filterColumn.value = data.value.filterColumn;
   mapLegendLayerIds.value = data.value.mapLegendLayerIds;
@@ -90,6 +92,7 @@ useHead({
       <MapView
         v-if="dataFetched"
         :allowed-file-extensions="allowedFileExtensions"
+        :color-column="colorColumn"
         :filter-column="filterColumn"
         :map-legend-layer-ids="mapLegendLayerIds"
         :map-statistics="mapStatistics"

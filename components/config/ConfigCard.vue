@@ -30,6 +30,7 @@ const mapConfigKeys = computed(() => [
   "MAPBOX_3D_TERRAIN_EXAGGERATION",
   "MAP_LEGEND_LAYER_IDS",
   "PLANET_API_KEY",
+  "COLOR_COLUMN",
 ]);
 const mediaKeys = computed(() => ["MEDIA_BASE_PATH", "MEDIA_BASE_PATH_ALERTS"]);
 const alertKeys = computed(() => ["MAPEO_CATEGORY_IDS", "MAPEO_TABLE"]);

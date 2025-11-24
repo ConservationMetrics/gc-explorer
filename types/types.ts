@@ -24,6 +24,7 @@ export type RouteLevelPermission = "anyone" | "guest" | "member" | "admin";
 
 export interface ViewConfig {
   ALERT_RESOURCES?: string;
+  COLOR_COLUMN?: string;
   EMBED_MEDIA?: string;
   FILTER_BY_COLUMN?: string;
   FILTER_OUT_VALUES_FROM_COLUMN?: string;
