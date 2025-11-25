@@ -55,6 +55,8 @@ test.describe("RBAC - Role-Based Access Control", () => {
     // Navigate to home to ensure session is loaded
     await page.goto("/");
     await page.waitForLoadState("networkidle");
+    const { loggedIn, user } = useUserSession();
+    console.log("🔍 [TEST] User session after setting SignedIn role:", loggedIn, user);
 
     // Should access public dataset
     await page.goto("/gallery/seed_survey_data");
@@ -62,7 +64,7 @@ test.describe("RBAC - Role-Based Access Control", () => {
     await expect(page.getByTestId("gallery-container")).toBeVisible();
 
     // Should be rejected from member dataset
-    await page.goto("/gallery/bcmform_responses");
+    await page.goto("/map/bcmform_responses");
     // Wait for redirect
     await page.waitForURL(/\/(\?reason=unauthorized|\/login)/, {
       timeout: 5000,
