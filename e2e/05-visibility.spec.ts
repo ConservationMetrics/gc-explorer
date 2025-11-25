@@ -49,26 +49,10 @@ test.describe("RBAC - Role-Based Access Control", () => {
   test("RBAC - SignedIn user can access public dataset but not member dataset", async ({
     page,
   }) => {
-    // Set SignedIn role (lowest authenticated role)
-    await page.goto(`/api/test/set-session?role=${Role.SignedIn}`);
+    // Set SignedIn role via middleware query parameter
+    await page.goto(`/?testRole=${Role.SignedIn}`);
     await page.waitForURL("**/", { timeout: 5000 });
-    // Navigate to home to ensure session is loaded
-    await page.goto("/");
     await page.waitForLoadState("networkidle");
-
-    // Check that session cookie is set
-    const cookies = await page.context().cookies();
-    const sessionCookie = cookies.find(
-      (cookie) =>
-        cookie.name.includes("session") || cookie.name.includes("auth"),
-    );
-    console.log("🔍 [TEST] Cookies after setting SignedIn role:", cookies);
-    console.log("🔍 [TEST] Session cookie:", sessionCookie);
-    expect(sessionCookie).toBeDefined();
-    expect(sessionCookie?.value).toBeTruthy();
-
-    const { loggedIn, user } = useUserSession();
-    console.log("🔍 [TEST] User session:", loggedIn, user);
 
     // Should access public dataset
     await page.goto("/gallery/seed_survey_data");
@@ -88,22 +72,10 @@ test.describe("RBAC - Role-Based Access Control", () => {
   test("RBAC - Guest user can access public dataset but not member dataset", async ({
     page,
   }) => {
-    // Set Guest role
-    await page.goto(`/api/test/set-session?role=${Role.Guest}`);
+    // Set Guest role via middleware query parameter
+    await page.goto(`/?testRole=${Role.Guest}`);
     await page.waitForURL("**/", { timeout: 5000 });
-    // Navigate to home to ensure session is loaded
-    await page.goto("/");
     await page.waitForLoadState("networkidle");
-
-    // Check that session cookie is set
-    const cookies = await page.context().cookies();
-    const sessionCookie = cookies.find(
-      (cookie) =>
-        cookie.name.includes("session") || cookie.name.includes("auth"),
-    );
-    console.log("🔍 [TEST] Session cookie for Guest role:", sessionCookie);
-    expect(sessionCookie).toBeDefined();
-    expect(sessionCookie?.value).toBeTruthy();
 
     // Should access public dataset
     await page.goto("/gallery/seed_survey_data");
@@ -123,22 +95,10 @@ test.describe("RBAC - Role-Based Access Control", () => {
   test("RBAC - Member user can access both public and member datasets", async ({
     page,
   }) => {
-    // Set Member role
-    await page.goto(`/api/test/set-session?role=${Role.Member}`);
+    // Set Member role via middleware query parameter
+    await page.goto(`/?testRole=${Role.Member}`);
     await page.waitForURL("**/", { timeout: 5000 });
-    // Navigate to home to ensure session is loaded
-    await page.goto("/");
     await page.waitForLoadState("networkidle");
-
-    // Check that session cookie is set
-    const cookies = await page.context().cookies();
-    const sessionCookie = cookies.find(
-      (cookie) =>
-        cookie.name.includes("session") || cookie.name.includes("auth"),
-    );
-    console.log("🔍 [TEST] Session cookie for Member role:", sessionCookie);
-    expect(sessionCookie).toBeDefined();
-    expect(sessionCookie?.value).toBeTruthy();
 
     // Should access public dataset
     await page.goto("/gallery/seed_survey_data");
@@ -156,22 +116,10 @@ test.describe("RBAC - Role-Based Access Control", () => {
   test("RBAC - Admin user can access both public and member datasets", async ({
     page,
   }) => {
-    // Set Admin role
-    await page.goto(`/api/test/set-session?role=${Role.Admin}`);
+    // Set Admin role via middleware query parameter
+    await page.goto(`/?testRole=${Role.Admin}`);
     await page.waitForURL("**/", { timeout: 5000 });
-    // Navigate to home to ensure session is loaded
-    await page.goto("/");
     await page.waitForLoadState("networkidle");
-
-    // Check that session cookie is set
-    const cookies = await page.context().cookies();
-    const sessionCookie = cookies.find(
-      (cookie) =>
-        cookie.name.includes("session") || cookie.name.includes("auth"),
-    );
-    console.log("🔍 [TEST] Session cookie for Admin role:", sessionCookie);
-    expect(sessionCookie).toBeDefined();
-    expect(sessionCookie?.value).toBeTruthy();
 
     // Should access public dataset
     await page.goto("/gallery/seed_survey_data");
