@@ -14,12 +14,18 @@ test("index page - displays available views and alerts link", async ({
   const linkCount = await allLinks.count();
   console.log("🔍 Total links on page:", linkCount);
 
-  // Debug: Log all link texts
+  // Debug: Log all link texts (with error handling for links that might not be accessible)
   for (let i = 0; i < linkCount; i++) {
-    const link = allLinks.nth(i);
-    const text = await link.textContent();
-    const href = await link.getAttribute("href");
-    console.log(`🔍 Link ${i}: text="${text?.trim()}", href="${href}"`);
+    try {
+      const link = allLinks.nth(i);
+      const text = await link.textContent({ timeout: 2000 }).catch(() => null);
+      const href = await link.getAttribute("href").catch(() => null);
+      console.log(
+        `🔍 Link ${i}: text="${text?.trim() || "(no text)"}", href="${href || "(no href)"}"`,
+      );
+    } catch (error) {
+      console.log(`🔍 Link ${i}: (error accessing link: ${String(error)})`);
+    }
   }
 
   // Debug: Check if there are any elements with "alerts" text
