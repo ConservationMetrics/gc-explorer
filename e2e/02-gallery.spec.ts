@@ -14,8 +14,13 @@ test("gallery page - displays gallery with media files", async ({ page }) => {
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be visible before clicking
+    // 4. Wait for the first gallery link to be attached, then visible
     const galleryLink = galleryLinks.first();
+
+    // First wait for the link to be attached to the DOM
+    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
+
+    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
@@ -55,8 +60,13 @@ test("gallery page - displays images with lightbox functionality", async ({
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be visible before clicking
+    // 4. Wait for the first gallery link to be attached, then visible
     const galleryLink = galleryLinks.first();
+
+    // First wait for the link to be attached to the DOM
+    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
+
+    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
@@ -114,8 +124,13 @@ test("gallery page - audio playback functionality", async ({ page }) => {
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be visible before clicking
+    // 4. Wait for the first gallery link to be attached, then visible
     const galleryLink = galleryLinks.first();
+
+    // First wait for the link to be attached to the DOM
+    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
+
+    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
@@ -212,8 +227,13 @@ test("gallery page - filter functionality", async ({ page }) => {
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be visible before clicking
+    // 4. Wait for the first gallery link to be attached, then visible
     const galleryLink = galleryLinks.first();
+
+    // First wait for the link to be attached to the DOM
+    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
+
+    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
@@ -313,8 +333,28 @@ test("gallery page - pagination and infinite scroll", async ({ page }) => {
   }
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be visible before clicking
+    // 4. Wait for the first gallery link to be attached, then visible
     const galleryLink = galleryLinks.first();
+
+    // Debug: Log gallery link details before waiting
+    try {
+      const href = await galleryLink.getAttribute("href").catch(() => null);
+      const text = await galleryLink
+        .textContent({ timeout: 2000 })
+        .catch(() => null);
+      const isAttached = (await galleryLink.count()) > 0;
+      const isVisible = await galleryLink.isVisible().catch(() => false);
+      console.log(
+        `🔍 Gallery link before wait: href="${href || "(no href)"}", text="${text?.trim() || "(no text)"}", attached=${isAttached}, visible=${isVisible}`,
+      );
+    } catch (error) {
+      console.log(`🔍 Error checking gallery link: ${String(error)}`);
+    }
+
+    // First wait for the link to be attached to the DOM
+    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
+
+    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
@@ -402,8 +442,13 @@ test("gallery page - data feature information display", async ({ page }) => {
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be visible before clicking
+    // 4. Wait for the first gallery link to be attached, then visible
     const galleryLink = galleryLinks.first();
+
+    // First wait for the link to be attached to the DOM
+    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
+
+    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
@@ -504,8 +549,13 @@ test("gallery page - responsive grid layout", async ({ page }) => {
   }
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be visible before clicking
+    // 4. Wait for the first gallery link to be attached, then visible
     const galleryLink = galleryLinks.first();
+
+    // First wait for the link to be attached to the DOM
+    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
+
+    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
@@ -567,8 +617,13 @@ test("gallery page - error handling for unavailable gallery", async ({
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be visible before clicking
+    // 4. Wait for the first gallery link to be attached, then visible
     const galleryLink = galleryLinks.first();
+
+    // First wait for the link to be attached to the DOM
+    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
+
+    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
