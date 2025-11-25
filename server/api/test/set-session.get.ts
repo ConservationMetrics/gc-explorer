@@ -8,8 +8,13 @@ import { Role } from "~/types/types";
  * Usage: /api/test/set-session?role=0 (for SignedIn) or /api/test/set-session?clear=true (to clear)
  */
 export default defineEventHandler(async (event: H3Event) => {
+  console.log("🔍 [TEST] set-session endpoint called");
+
   // Only allow in CI or test environment
   if (!process.env.CI && process.env.NODE_ENV !== "test") {
+    console.warn(
+      "🔍 [TEST] set-session endpoint called outside test environment"
+    );
     throw createError({
       statusCode: 403,
       statusMessage: "This endpoint is only available in test environments",
@@ -19,9 +24,13 @@ export default defineEventHandler(async (event: H3Event) => {
   const query = getQuery(event);
   const { role, clear, email = "test@example.com" } = query;
 
+  console.log("🔍 [TEST] Query params:", { role, clear, email });
+
   // Allow clearing session
   if (clear === "true" || clear === true) {
+    console.log("🔍 [TEST] Clearing user session");
     await clearUserSession(event);
+    console.log("🔍 [TEST] Session cleared successfully");
     return sendRedirect(event, "/");
   }
 
@@ -29,6 +38,7 @@ export default defineEventHandler(async (event: H3Event) => {
   const roleNum = role ? Number(role) : null;
 
   if (roleNum === null || isNaN(roleNum)) {
+    console.error("🔍 [TEST] Invalid role parameter:", role);
     throw createError({
       statusCode: 400,
       statusMessage:
@@ -44,6 +54,7 @@ export default defineEventHandler(async (event: H3Event) => {
     Role.Admin,
   ];
   if (!validRoles.includes(roleNum as Role)) {
+    console.error("🔍 [TEST] Invalid role value:", roleNum);
     throw createError({
       statusCode: 400,
       statusMessage: `Invalid role. Must be one of: ${validRoles.join(", ")}`,
@@ -62,6 +73,9 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   const roleName = roleNames[userRole];
+  console.log(
+    `🔍 [TEST] Setting user session with role: ${roleName} (${userRole})`
+  );
 
   await setUserSession(event, {
     user: {
@@ -77,6 +91,10 @@ export default defineEventHandler(async (event: H3Event) => {
     },
     loggedInAt: Date.now(),
   });
+
+  console.log(
+    `🔍 [TEST] User session set successfully for ${email} with role ${roleName}`
+  );
 
   // Redirect to home page after setting session
   return sendRedirect(event, "/");
