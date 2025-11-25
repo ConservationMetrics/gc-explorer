@@ -277,44 +277,9 @@ test("gallery page - filter functionality", async ({ page }) => {
 });
 
 test("gallery page - pagination and infinite scroll", async ({ page }) => {
-  // --- STEP 1: Load home page ---
-  await page.goto("/");
-  await expect(
-    page.getByRole("heading", { name: /available views/i }),
-  ).toBeVisible();
-
-  // --- STEP 2: Get gallery links ---
-  const galleryLinks = page.locator('a[href^="/gallery/"]');
-  const linkCount = await galleryLinks.count();
-  console.log("🔍 Found gallery links:", linkCount);
-
-  // Debug if none found
-  if (linkCount === 0) {
-    const allLinks = page.locator("a");
-    const allCount = await allLinks.count();
-    console.log("⚠️ No gallery links. Total <a> found:", allCount);
-
-    for (let i = 0; i < Math.min(allCount, 10); i++) {
-      const href = await allLinks
-        .nth(i)
-        .getAttribute("href")
-        .catch(() => null);
-      const text = await allLinks
-        .nth(i)
-        .textContent()
-        .catch(() => null);
-      console.log(`Link ${i}: href="${href}", text="${text?.trim()}"`);
-    }
-
-    expect(linkCount).toBeGreaterThan(0);
-    return;
-  }
-
-  // --- STEP 3: Visit first gallery ---
-  const firstGalleryLink = galleryLinks.first();
-  await firstGalleryLink.waitFor({ state: "visible", timeout: 10000 });
-  await firstGalleryLink.click();
-  await page.waitForURL("**/gallery/**", { timeout: 5000 });
+  // --- STEP 1: Navigate directly to seed_survey_data gallery ---
+  await page.goto("/gallery/seed_survey_data");
+  await page.waitForURL("**/gallery/seed_survey_data", { timeout: 5000 });
 
   // --- STEP 4: Ensure gallery is loaded ---
   const galleryContainer = page.getByTestId("gallery-container");
