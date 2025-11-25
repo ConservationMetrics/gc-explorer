@@ -4,82 +4,59 @@ import { Role } from "~/types/types";
 
 // Following example: https://github.com/atinux/atidone/blob/main/app/middleware/auth.ts
 export default defineNuxtRouteMiddleware(async (to) => {
-  // Test mode: Set role directly via server-side session in middleware
-  // This bypasses cookie issues by setting session state directly
-  if (
-    (process.env.CI || process.env.NODE_ENV === "test") &&
-    to.query.testRole
-  ) {
-    const testRole = Number(to.query.testRole);
-    const validRoles = [0, 1, 2, 3]; // SignedIn, Guest, Member, Admin
-    if (validRoles.includes(testRole)) {
-      const roleNames: Record<number, string> = {
-        0: "SignedIn",
-        1: "Guest",
-        2: "Member",
-        3: "Admin",
-      };
-      // For testing: directly set user in session composable
-      // This works because middleware runs on both server and client
-      const session = useUserSession();
-      const testUser: User = {
-        auth0: "test@example.com",
-        roles: [
-          {
-            id: `test-${roleNames[testRole].toLowerCase()}-role`,
-            name: roleNames[testRole],
-            description: `Test ${roleNames[testRole]} role for e2e testing`,
-          },
-        ],
-        userRole: testRole as Role,
-      };
-      console.log("🔍 [TEST] Setting test user:", testUser);
-      console.log("🔍 [TEST] Current session state before setting:", {
-        loggedIn: session.loggedIn.value,
-        user: session.user.value,
-      });
+  const session = useUserSession();
+  const { loggedIn, user } = session;
 
-      // Use fetch to update session on server, then update client state
-      try {
-        console.log(`🔍 [TEST] Calling /api/test/set-session?role=${testRole}`);
-        const response = await $fetch(
-          `/api/test/set-session?role=${testRole}`,
-          {
-            method: "GET",
-            redirect: "manual",
-          },
+  // Test mode: Directly set user role in middleware for permission testing
+  // This bypasses authentication entirely - we just set the role state directly
+  // The role persists via a query parameter that we keep in the URL
+  if (process.env.CI || process.env.NODE_ENV === "test") {
+    // Check for testRole in query - if present, set the user directly
+    if (to.query.testRole) {
+      const testRole = Number(to.query.testRole);
+      const validRoles = [0, 1, 2, 3]; // SignedIn, Guest, Member, Admin
+      if (validRoles.includes(testRole)) {
+        const roleNames: Record<number, string> = {
+          0: "SignedIn",
+          1: "Guest",
+          2: "Member",
+          3: "Admin",
+        };
+        const testUser: User = {
+          auth0: "test@example.com",
+          roles: [
+            {
+              id: `test-${roleNames[testRole].toLowerCase()}-role`,
+              name: roleNames[testRole],
+              description: `Test ${roleNames[testRole]} role for e2e testing`,
+            },
+          ],
+          userRole: testRole as Role,
+        };
+
+        // Directly set the session state - bypassing cookies entirely
+        // Use type assertion to set readonly properties for testing
+        (session as any).user = testUser;
+        (session as any).loggedIn = true;
+
+        console.log(
+          `🔍 [TEST] ✅ Directly set test role in middleware: ${roleNames[testRole]} (${testRole})`,
         );
-        console.log("🔍 [TEST] Set-session endpoint response:", response);
-
-        // Force refresh session
-        console.log("🔍 [TEST] Fetching session to sync client state");
-        await session.fetch();
-        console.log("🔍 [TEST] Session state after fetch:", {
+        console.log("🔍 [TEST] Test user set:", testUser);
+        console.log("🔍 [TEST] Session state after setting:", {
           loggedIn: session.loggedIn.value,
           user: session.user.value,
         });
-        console.log(
-          `🔍 [TEST] ✅ Set test role via middleware: ${roleNames[testRole]} (${testRole})`,
-        );
-      } catch (error) {
-        // Even if fetch fails, set client-side state for testing
-        console.error(
-          `🔍 [TEST] ❌ Failed to set test role via endpoint: ${error}`,
-        );
-        console.log("🔍 [TEST] Error details:", error);
-        // Note: Could hardcode role here in CI mode as fallback
-        console.log(
-          `🔍 [TEST] Would set test role client-side: ${roleNames[testRole]} (${testRole})`,
-        );
-      }
-      // Remove query parameter and redirect
-      const newQuery = { ...to.query };
-      delete newQuery.testRole;
-      return navigateTo({ path: to.path, query: newQuery });
-    }
-  }
 
-  const { loggedIn, user } = useUserSession();
+        // Keep the testRole in query for subsequent navigations
+        // This allows the role to persist across page navigations
+        return; // Continue with the route, keeping testRole in URL
+      }
+    }
+
+    // If no testRole but we're in CI, check if we should clear any existing test user
+    // (This handles the case where we want to test unauthenticated access)
+  }
   const {
     public: { authStrategy },
   } = useRuntimeConfig();

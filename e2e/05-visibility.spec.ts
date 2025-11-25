@@ -50,38 +50,17 @@ test.describe("RBAC - Role-Based Access Control", () => {
     page,
   }) => {
     console.log("🔍 [TEST] Starting SignedIn role test");
-    // Set SignedIn role via middleware query parameter
-    await page.goto(`/?testRole=${Role.SignedIn}`);
-    await page.waitForURL("**/", { timeout: 5000 });
+    const testRole = Role.SignedIn;
+
+    // Set SignedIn role via middleware query parameter - keep it in URL
+    await page.goto(`/?testRole=${testRole}`);
+    await page.waitForURL(`**/?testRole=${testRole}`, { timeout: 5000 });
     await page.waitForLoadState("networkidle");
+    console.log("🔍 [TEST] After setting SignedIn role - URL:", page.url());
 
-    // Check session state via page evaluation
-    const sessionState = await page.evaluate(() => {
-      // Try to access session from window or global state
-      return {
-        url: window.location.href,
-        cookies: document.cookie,
-      };
-    });
-    console.log(
-      "🔍 [TEST] After setting SignedIn role - URL:",
-      sessionState.url,
-    );
-    console.log(
-      "🔍 [TEST] After setting SignedIn role - Cookies:",
-      sessionState.cookies,
-    );
-
-    // Check cookies via Playwright
-    const cookies = await page.context().cookies();
-    console.log(
-      "🔍 [TEST] All cookies after setting SignedIn role:",
-      cookies.map((c) => ({ name: c.name, value: c.value?.substring(0, 50) })),
-    );
-
-    // Should access public dataset
+    // Should access public dataset (testRole persists in URL)
     console.log("🔍 [TEST] Attempting to access public dataset");
-    await page.goto("/gallery/seed_survey_data");
+    await page.goto(`/gallery/seed_survey_data?testRole=${testRole}`);
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
     const publicUrl = page.url();
     console.log("🔍 [TEST] Public dataset URL:", publicUrl);
@@ -92,7 +71,7 @@ test.describe("RBAC - Role-Based Access Control", () => {
     console.log(
       "🔍 [TEST] Attempting to access member dataset (should be rejected)",
     );
-    await page.goto("/map/bcmform_responses");
+    await page.goto(`/map/bcmform_responses?testRole=${testRole}`);
     // Wait for redirect
     await page.waitForURL(/\/(\?reason=unauthorized|\/login)/, {
       timeout: 5000,
@@ -107,15 +86,17 @@ test.describe("RBAC - Role-Based Access Control", () => {
     page,
   }) => {
     console.log("🔍 [TEST] Starting Guest role test");
-    // Set Guest role via middleware query parameter
-    await page.goto(`/?testRole=${Role.Guest}`);
-    await page.waitForURL("**/", { timeout: 5000 });
+    const testRole = Role.Guest;
+
+    // Set Guest role via middleware query parameter - keep it in URL
+    await page.goto(`/?testRole=${testRole}`);
+    await page.waitForURL(`**/?testRole=${testRole}`, { timeout: 5000 });
     await page.waitForLoadState("networkidle");
     console.log("🔍 [TEST] After setting Guest role - URL:", page.url());
 
-    // Should access public dataset
+    // Should access public dataset (testRole persists in URL)
     console.log("🔍 [TEST] Guest: Attempting to access public dataset");
-    await page.goto("/gallery/seed_survey_data");
+    await page.goto(`/gallery/seed_survey_data?testRole=${testRole}`);
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
     await expect(page.getByTestId("gallery-container")).toBeVisible();
     console.log("🔍 [TEST] Guest: ✅ Successfully accessed public dataset");
@@ -124,7 +105,7 @@ test.describe("RBAC - Role-Based Access Control", () => {
     console.log(
       "🔍 [TEST] Guest: Attempting to access member dataset (should be rejected)",
     );
-    await page.goto("/gallery/bcmform_responses");
+    await page.goto(`/gallery/bcmform_responses?testRole=${testRole}`);
     // Wait for redirect
     await page.waitForURL(/\/(\?reason=unauthorized|\/login)/, {
       timeout: 5000,
@@ -139,22 +120,24 @@ test.describe("RBAC - Role-Based Access Control", () => {
     page,
   }) => {
     console.log("🔍 [TEST] Starting Member role test");
-    // Set Member role via middleware query parameter
-    await page.goto(`/?testRole=${Role.Member}`);
-    await page.waitForURL("**/", { timeout: 5000 });
+    const testRole = Role.Member;
+
+    // Set Member role via middleware query parameter - keep it in URL
+    await page.goto(`/?testRole=${testRole}`);
+    await page.waitForURL(`**/?testRole=${testRole}`, { timeout: 5000 });
     await page.waitForLoadState("networkidle");
     console.log("🔍 [TEST] After setting Member role - URL:", page.url());
 
-    // Should access public dataset
+    // Should access public dataset (testRole persists in URL)
     console.log("🔍 [TEST] Member: Attempting to access public dataset");
-    await page.goto("/gallery/seed_survey_data");
+    await page.goto(`/gallery/seed_survey_data?testRole=${testRole}`);
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
     await expect(page.getByTestId("gallery-container")).toBeVisible();
     console.log("🔍 [TEST] Member: ✅ Successfully accessed public dataset");
 
     // Should access member dataset
     console.log("🔍 [TEST] Member: Attempting to access member dataset");
-    await page.goto("/gallery/bcmform_responses");
+    await page.goto(`/gallery/bcmform_responses?testRole=${testRole}`);
     await page.waitForURL("**/gallery/**", { timeout: 10000 });
     await expect(page.getByTestId("gallery-container")).toBeVisible({
       timeout: 10000,
@@ -166,22 +149,24 @@ test.describe("RBAC - Role-Based Access Control", () => {
     page,
   }) => {
     console.log("🔍 [TEST] Starting Admin role test");
-    // Set Admin role via middleware query parameter
-    await page.goto(`/?testRole=${Role.Admin}`);
-    await page.waitForURL("**/", { timeout: 5000 });
+    const testRole = Role.Admin;
+
+    // Set Admin role via middleware query parameter - keep it in URL
+    await page.goto(`/?testRole=${testRole}`);
+    await page.waitForURL(`**/?testRole=${testRole}`, { timeout: 5000 });
     await page.waitForLoadState("networkidle");
     console.log("🔍 [TEST] After setting Admin role - URL:", page.url());
 
-    // Should access public dataset
+    // Should access public dataset (testRole persists in URL)
     console.log("🔍 [TEST] Admin: Attempting to access public dataset");
-    await page.goto("/gallery/seed_survey_data");
+    await page.goto(`/gallery/seed_survey_data?testRole=${testRole}`);
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
     await expect(page.getByTestId("gallery-container")).toBeVisible();
     console.log("🔍 [TEST] Admin: ✅ Successfully accessed public dataset");
 
     // Should access member dataset
     console.log("🔍 [TEST] Admin: Attempting to access member dataset");
-    await page.goto("/gallery/bcmform_responses");
+    await page.goto(`/gallery/bcmform_responses?testRole=${testRole}`);
     await page.waitForURL("**/gallery/**", { timeout: 10000 });
     await expect(page.getByTestId("gallery-container")).toBeVisible({
       timeout: 10000,
