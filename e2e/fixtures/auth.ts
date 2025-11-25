@@ -1,73 +1,75 @@
-import { test as baseTest } from "@playwright/test";
-import type { Role } from "~/types/types";
+import {
+  test as baseTest,
+  type Page,
+  type APIRequestContext,
+} from "@playwright/test";
+import { Role } from "~/types/types";
 
 /**
  * Custom Playwright fixture for setting user sessions in tests
  * This allows us to test RBAC without actual authentication
- * Uses page.request to ensure cookies are shared with page context
+ * Uses request to set session, then returns the page for use in tests
  */
 export const test = baseTest.extend<{
-  setTestRole: (role: Role) => Promise<void>;
-  clearTestSession: () => Promise<void>;
+  loggedInPageAsSignedIn: Page;
+  loggedInPageAsGuest: Page;
+  loggedInPageAsMember: Page;
+  loggedInPageAsAdmin: Page;
 }>({
   /**
-   * Helper function to set a test user role via server endpoint
-   * Uses page.request so cookies are shared with the page context
+   * Fixture that sets SignedIn role and returns the page
    */
-  setTestRole: async ({ page }, use) => {
-    let currentRole: Role | null = null;
-
-    await use(async (role: Role) => {
-      currentRole = role;
-      console.log(`🔍 [TEST] Setting test role via fixture: ${role}`);
-      try {
-        // Use page.request to ensure cookies are shared with page context
-        const response = await page.request.post("/api/test/set-session", {
-          data: { role },
-        });
-        console.log(`🔍 [TEST] Set role response status:`, response.status());
-        const responseBody = await response.json();
-        console.log(`🔍 [TEST] Set role response:`, responseBody);
-
-        // Verify cookies were set
-        const cookies = await page.context().cookies();
-        console.log(
-          `🔍 [TEST] Cookies after setting role:`,
-          cookies.map((c) => c.name),
-        );
-      } catch (error) {
-        console.error(`🔍 [TEST] Failed to set role:`, error);
-        throw error;
-      }
+  loggedInPageAsSignedIn: async (
+    { page, request }: { page: Page; request: APIRequestContext },
+    use: (page: Page) => Promise<void>,
+  ) => {
+    console.log(`🔍 [TEST] Setting SignedIn role via fixture`);
+    await request.post("/api/test/set-session", {
+      data: { role: Role.SignedIn },
     });
-
-    // Cleanup: clear session after test
-    if (currentRole !== null) {
-      try {
-        await page.request.post("/api/test/set-session", {
-          data: { role: null },
-        });
-        console.log("🔍 [TEST] Cleared session after test");
-      } catch (error) {
-        console.warn("🔍 [TEST] Failed to clear session after test:", error);
-      }
-    }
+    await use(page);
   },
 
   /**
-   * Helper function to clear test session
+   * Fixture that sets Guest role and returns the page
    */
-  clearTestSession: async ({ page }, use) => {
-    await use(async () => {
-      console.log("🔍 [TEST] Clearing test session via fixture");
-      try {
-        await page.request.post("/api/test/set-session", {
-          data: { role: null },
-        });
-      } catch (error) {
-        console.error("🔍 [TEST] Failed to clear session:", error);
-      }
+  loggedInPageAsGuest: async (
+    { page, request }: { page: Page; request: APIRequestContext },
+    use: (page: Page) => Promise<void>,
+  ) => {
+    console.log(`🔍 [TEST] Setting Guest role via fixture`);
+    await request.post("/api/test/set-session", {
+      data: { role: Role.Guest },
     });
+    await use(page);
+  },
+
+  /**
+   * Fixture that sets Member role and returns the page
+   */
+  loggedInPageAsMember: async (
+    { page, request }: { page: Page; request: APIRequestContext },
+    use: (page: Page) => Promise<void>,
+  ) => {
+    console.log(`🔍 [TEST] Setting Member role via fixture`);
+    await request.post("/api/test/set-session", {
+      data: { role: Role.Member },
+    });
+    await use(page);
+  },
+
+  /**
+   * Fixture that sets Admin role and returns the page
+   */
+  loggedInPageAsAdmin: async (
+    { page, request }: { page: Page; request: APIRequestContext },
+    use: (page: Page) => Promise<void>,
+  ) => {
+    console.log(`🔍 [TEST] Setting Admin role via fixture`);
+    await request.post("/api/test/set-session", {
+      data: { role: Role.Admin },
+    });
+    await use(page);
   },
 });
 
