@@ -21,12 +21,14 @@ export const test = baseTest.extend<{
    */
   loggedInPageAsSignedIn: async (
     { page, request }: { page: Page; request: APIRequestContext },
-    use: (page: Page) => Promise<void>,
+    use: (page: Page) => Promise<void>
   ) => {
     console.log(`🔍 [TEST] Setting SignedIn role via fixture`);
-    await request.post("/api/test/set-session", {
+    const response = await request.post("/api/test/set-session", {
       data: { role: Role.SignedIn },
     });
+    console.log(`🔍 [TEST] Response: ${response.status()}`);
+    console.log(`🔍 [TEST] Response body: ${await response.json()}`);
     await use(page);
   },
 
@@ -35,7 +37,7 @@ export const test = baseTest.extend<{
    */
   loggedInPageAsGuest: async (
     { page, request }: { page: Page; request: APIRequestContext },
-    use: (page: Page) => Promise<void>,
+    use: (page: Page) => Promise<void>
   ) => {
     console.log(`🔍 [TEST] Setting Guest role via fixture`);
     await request.post("/api/test/set-session", {
@@ -49,7 +51,7 @@ export const test = baseTest.extend<{
    */
   loggedInPageAsMember: async (
     { page, request }: { page: Page; request: APIRequestContext },
-    use: (page: Page) => Promise<void>,
+    use: (page: Page) => Promise<void>
   ) => {
     console.log(`🔍 [TEST] Setting Member role via fixture`);
     await request.post("/api/test/set-session", {
@@ -63,7 +65,7 @@ export const test = baseTest.extend<{
    */
   loggedInPageAsAdmin: async (
     { page, request }: { page: Page; request: APIRequestContext },
-    use: (page: Page) => Promise<void>,
+    use: (page: Page) => Promise<void>
   ) => {
     console.log(`🔍 [TEST] Setting Admin role via fixture`);
     await request.post("/api/test/set-session", {
