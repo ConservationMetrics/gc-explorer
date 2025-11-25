@@ -13,7 +13,7 @@ export default defineEventHandler(async (event: H3Event) => {
   // Only allow in CI or test environment
   if (!process.env.CI && process.env.NODE_ENV !== "test") {
     console.warn(
-      "🔍 [TEST] set-session endpoint called outside test environment"
+      "🔍 [TEST] set-session endpoint called outside test environment",
     );
     throw createError({
       statusCode: 403,
@@ -74,7 +74,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
   const roleName = roleNames[userRole];
   console.log(
-    `🔍 [TEST] Setting user session with role: ${roleName} (${userRole})`
+    `🔍 [TEST] Setting user session with role: ${roleName} (${userRole})`,
   );
 
   await setUserSession(event, {
@@ -93,7 +93,7 @@ export default defineEventHandler(async (event: H3Event) => {
   });
 
   console.log(
-    `🔍 [TEST] User session set successfully for ${email} with role ${roleName}`
+    `🔍 [TEST] User session set successfully for ${email} with role ${roleName}`,
   );
 
   // Redirect to home page after setting session
