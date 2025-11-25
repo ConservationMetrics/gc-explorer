@@ -55,8 +55,20 @@ test.describe("RBAC - Role-Based Access Control", () => {
     // Navigate to home to ensure session is loaded
     await page.goto("/");
     await page.waitForLoadState("networkidle");
+
+    // Check that session cookie is set
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find(
+      (cookie) =>
+        cookie.name.includes("session") || cookie.name.includes("auth"),
+    );
+    console.log("🔍 [TEST] Cookies after setting SignedIn role:", cookies);
+    console.log("🔍 [TEST] Session cookie:", sessionCookie);
+    expect(sessionCookie).toBeDefined();
+    expect(sessionCookie?.value).toBeTruthy();
+
     const { loggedIn, user } = useUserSession();
-    console.log("🔍 [TEST] User session after setting SignedIn role:", loggedIn, user);
+    console.log("🔍 [TEST] User session:", loggedIn, user);
 
     // Should access public dataset
     await page.goto("/gallery/seed_survey_data");
@@ -83,6 +95,16 @@ test.describe("RBAC - Role-Based Access Control", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
+    // Check that session cookie is set
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find(
+      (cookie) =>
+        cookie.name.includes("session") || cookie.name.includes("auth"),
+    );
+    console.log("🔍 [TEST] Session cookie for Guest role:", sessionCookie);
+    expect(sessionCookie).toBeDefined();
+    expect(sessionCookie?.value).toBeTruthy();
+
     // Should access public dataset
     await page.goto("/gallery/seed_survey_data");
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
@@ -108,6 +130,16 @@ test.describe("RBAC - Role-Based Access Control", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
+    // Check that session cookie is set
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find(
+      (cookie) =>
+        cookie.name.includes("session") || cookie.name.includes("auth"),
+    );
+    console.log("🔍 [TEST] Session cookie for Member role:", sessionCookie);
+    expect(sessionCookie).toBeDefined();
+    expect(sessionCookie?.value).toBeTruthy();
+
     // Should access public dataset
     await page.goto("/gallery/seed_survey_data");
     await page.waitForURL("**/gallery/**", { timeout: 5000 });
@@ -130,6 +162,16 @@ test.describe("RBAC - Role-Based Access Control", () => {
     // Navigate to home to ensure session is loaded
     await page.goto("/");
     await page.waitForLoadState("networkidle");
+
+    // Check that session cookie is set
+    const cookies = await page.context().cookies();
+    const sessionCookie = cookies.find(
+      (cookie) =>
+        cookie.name.includes("session") || cookie.name.includes("auth"),
+    );
+    console.log("🔍 [TEST] Session cookie for Admin role:", sessionCookie);
+    expect(sessionCookie).toBeDefined();
+    expect(sessionCookie?.value).toBeTruthy();
 
     // Should access public dataset
     await page.goto("/gallery/seed_survey_data");
