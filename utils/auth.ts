@@ -10,10 +10,16 @@ import { Role } from "@/types/types";
  */
 export const validatePermissions = async (
   event: H3Event,
-  permission: RouteLevelPermission,
+  permission: RouteLevelPermission
 ): Promise<void> => {
-  // Skip authentication checks in CI environment
-  if (process.env.CI) return;
+  // Skip authentication checks in CI environment UNLESS we have a test session
+  // This allows RBAC testing in CI while still bypassing auth for other tests
+  if (process.env.CI) {
+    const session = await getUserSession(event);
+    // If there's no user session, skip checks (normal CI behavior)
+    // If there IS a user session, continue with permission checks (for RBAC testing)
+    if (!session.user) return;
+  }
 
   // Public access requires no authentication
   if (permission === "anyone") return;

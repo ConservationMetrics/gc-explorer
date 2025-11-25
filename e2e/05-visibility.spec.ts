@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { Role } from "~/types/types";
 
 test("visibility system - public dataset accessible without authentication", async ({
   page,
@@ -38,4 +39,82 @@ test("visibility system - protected dataset redirects to login when not authenti
     await expect(page).toHaveURL(/\/login/);
     console.log("✅ Correctly redirected to login for protected dataset");
   }
+});
+
+test.describe("RBAC - Role-Based Access Control", () => {
+  // Using existing datasets with their configured permissions:
+  // - seed_survey_data: "anyone" (public)
+  // - bcmform_responses: "member" (requires Member role or higher)
+
+  test("RBAC - SignedIn user can access public dataset but not member dataset", async ({
+    page,
+  }) => {
+    // Set SignedIn role (lowest authenticated role)
+    await page.goto(`/api/test/set-session?role=${Role.SignedIn}`);
+    await page.waitForURL("**/", { timeout: 5000 });
+
+    // Should access public dataset
+    await page.goto("/gallery/seed_survey_data");
+    await page.waitForURL("**/gallery/**", { timeout: 5000 });
+    await expect(page.getByTestId("gallery-container")).toBeVisible();
+
+    // Should be rejected from member dataset
+    await page.goto("/gallery/bcmform_responses");
+    const url = page.url();
+    expect(url).toMatch(/\/\?reason=unauthorized/);
+  });
+
+  test("RBAC - Guest user can access public dataset but not member dataset", async ({
+    page,
+  }) => {
+    // Set Guest role
+    await page.goto(`/api/test/set-session?role=${Role.Guest}`);
+    await page.waitForURL("**/", { timeout: 5000 });
+
+    // Should access public dataset
+    await page.goto("/gallery/seed_survey_data");
+    await page.waitForURL("**/gallery/**", { timeout: 5000 });
+    await expect(page.getByTestId("gallery-container")).toBeVisible();
+
+    // Should be rejected from member dataset
+    await page.goto("/gallery/bcmform_responses");
+    const url = page.url();
+    expect(url).toMatch(/\/\?reason=unauthorized/);
+  });
+
+  test("RBAC - Member user can access both public and member datasets", async ({
+    page,
+  }) => {
+    // Set Member role
+    await page.goto(`/api/test/set-session?role=${Role.Member}`);
+    await page.waitForURL("**/", { timeout: 5000 });
+
+    // Should access public dataset
+    await page.goto("/gallery/seed_survey_data");
+    await page.waitForURL("**/gallery/**", { timeout: 5000 });
+    await expect(page.getByTestId("gallery-container")).toBeVisible();
+
+    // Should access member dataset
+    await page.goto("/gallery/bcmform_responses");
+    await page.waitForURL("**/gallery/**", { timeout: 5000 });
+    await expect(page.getByTestId("gallery-container")).toBeVisible();
+  });
+
+  test("RBAC - Admin user can access both public and member datasets", async ({
+    page,
+  }) => {
+    // Set Admin role
+    await page.goto(`/api/test/set-session?role=${Role.Admin}`);
+    await page.waitForURL("**/", { timeout: 5000 });
+
+    // Should access public dataset
+    await page.goto("/gallery/seed_survey_data");
+    await page.waitForURL("**/gallery/**", { timeout: 5000 });
+    await expect(page.getByTestId("gallery-container")).toBeVisible();
+
+    // Should access member dataset
+    await page.goto("/gallery/bcmform_responses");
+    await page.waitForURL("**/gallery/**", { timeout: 5000 });
+    await expect(page.getByTestId("gallery-container")).toBeVisible();
+  });
 });
