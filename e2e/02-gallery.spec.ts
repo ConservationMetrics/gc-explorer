@@ -125,27 +125,26 @@ test("gallery page - audio playback functionality", async ({ page }) => {
 
     // 9. Test audio playback using browser context with better error handling
     try {
-        // First, check if audio element exists and is ready
-        const audioExists = await page.evaluate(() => {
-          const audio = document.querySelector("audio");
-          return {
-            exists: !!audio,
-            readyState: audio?.readyState,
-            paused: audio?.paused,
-            src: audio?.src || audio?.currentSrc,
-          };
-        });
+      // First, check if audio element exists and is ready
+      const audioExists = await page.evaluate(() => {
+        const audio = document.querySelector("audio");
+        return {
+          exists: !!audio,
+          readyState: audio?.readyState,
+          paused: audio?.paused,
+          src: audio?.src || audio?.currentSrc,
+        };
+      });
 
-        // Wait for audio to be ready if needed
-        if (audioExists.exists && (audioExists.readyState ?? 0) < 2) {
-          await page.waitForTimeout(2000); // Wait for audio to load
-        }
+      // Wait for audio to be ready if needed
+      if (audioExists.exists && (audioExists.readyState ?? 0) < 2) {
+        await page.waitForTimeout(2000); // Wait for audio to load
+      }
 
-        // Try to play audio
+      // Try to play audio
       await page.evaluate(() => {
         const audio = document.querySelector("audio");
-        if (!audio)
-          return { success: false, error: "No audio element found" };
+        if (!audio) return { success: false, error: "No audio element found" };
 
         try {
           const playPromise = audio.play();
@@ -218,9 +217,7 @@ test("gallery page - filter functionality", async ({ page }) => {
 
     // 9. Wait for dropdown options to appear
     const dropdownOptions = page.getByRole("option");
-    await dropdownOptions
-      .first()
-      .waitFor({ state: "visible", timeout: 5000 });
+    await dropdownOptions.first().waitFor({ state: "visible", timeout: 5000 });
 
     // 10. Get initial gallery item count
     const initialItems = page.locator('[data-testid^="gallery-item-"]');
