@@ -42,14 +42,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
         // Force refresh session
         await session.fetch();
         console.log(
-          `🔍 [TEST] Set test role via middleware: ${roleNames[testRole]} (${testRole})`
+          `🔍 [TEST] Set test role via middleware: ${roleNames[testRole]} (${testRole})`,
         );
       } catch (error) {
         // Even if fetch fails, set client-side state for testing
         (session as any).user = testUser;
         (session as any).loggedIn = true;
         console.log(
-          `🔍 [TEST] Set test role client-side: ${roleNames[testRole]} (${testRole})`
+          `🔍 [TEST] Set test role client-side: ${roleNames[testRole]} (${testRole})`,
         );
       }
       // Remove query parameter and redirect
@@ -135,7 +135,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
           if (userRole < Role.Guest) {
             console.log(
               "🔍 [TEST] Guest permission denied for role:",
-              userRole
+              userRole,
             );
             return router.push("/?reason=unauthorized");
           }
@@ -144,7 +144,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
           if (userRole < Role.Member) {
             console.log(
               "🔍 [TEST] Member permission denied for role:",
-              userRole
+              userRole,
             );
             return router.push("/?reason=unauthorized");
           }
@@ -153,7 +153,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
           if (userRole < Role.Admin) {
             console.log(
               "🔍 [TEST] Admin permission denied for role:",
-              userRole
+              userRole,
             );
             return router.push("/?reason=unauthorized");
           }
