@@ -165,10 +165,12 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       ).toBeVisible();
       console.log("🔍 [TEST] Member: ✅ Successfully accessed public dataset");
 
-      // Should access member dataset
-      console.log("🔍 [TEST] Member: Attempting to access member dataset");
-      await loggedInPageAsMember.goto("/gallery/bcmform_responses");
-      await loggedInPageAsMember.waitForURL("**/gallery/**", {
+      // Should access member dataset (map view)
+      console.log(
+        "🔍 [TEST] Member: Attempting to access member dataset (map)",
+      );
+      await loggedInPageAsMember.goto("/map/bcmform_responses");
+      await loggedInPageAsMember.waitForURL("**/map/**", {
         timeout: 10000,
       });
       const memberDatasetUrl = loggedInPageAsMember.url();
@@ -177,25 +179,31 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
         "🔍 [TEST] Member: Current page title:",
         await loggedInPageAsMember.title(),
       );
+      // Wait for map container to be attached (like in alerts tests)
       console.log(
-        "🔍 [TEST] Member: Waiting for gallery-container to be attached...",
+        "🔍 [TEST] Member: Waiting for map container to be attached...",
       );
-      // Wait for gallery container to be attached (like in gallery tests)
-      await loggedInPageAsMember
-        .getByTestId("gallery-container")
-        .waitFor({ state: "attached", timeout: 10000 });
+      await loggedInPageAsMember.locator("#map").waitFor({
+        state: "attached",
+        timeout: 10000,
+      });
+      // Wait for the map canvas to be visible
+      const mapCanvas = loggedInPageAsMember
+        .locator("canvas.mapboxgl-canvas")
+        .first();
+      await authExpect(mapCanvas).toBeVisible();
+      // Wait for the map to be fully loaded
+      await loggedInPageAsMember.waitForFunction(
+        () => {
+          // @ts-expect-error _testMap is exposed for E2E testing only
+          const map = window._testMap;
+          return map?.isStyleLoaded() && map.loaded();
+        },
+        { timeout: 10000 },
+      );
       console.log(
-        "🔍 [TEST] Member: Gallery container attached, checking visibility...",
+        "🔍 [TEST] Member: ✅ Successfully accessed member dataset (map loaded)",
       );
-      await authExpect(
-        loggedInPageAsMember.getByTestId("gallery-container"),
-      ).toBeVisible();
-      // Also check for gallery items to ensure content loaded
-      const galleryItems = loggedInPageAsMember.getByTestId("gallery-item-0");
-      const itemCount = await galleryItems.count();
-      console.log("🔍 [TEST] Member: Gallery items found:", itemCount);
-      expect(itemCount).toBeGreaterThan(0);
-      console.log("🔍 [TEST] Member: ✅ Successfully accessed member dataset");
     },
   );
 
@@ -222,10 +230,10 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       ).toBeVisible();
       console.log("🔍 [TEST] Admin: ✅ Successfully accessed public dataset");
 
-      // Should access member dataset
-      console.log("🔍 [TEST] Admin: Attempting to access member dataset");
-      await loggedInPageAsAdmin.goto("/gallery/bcmform_responses");
-      await loggedInPageAsAdmin.waitForURL("**/gallery/**", {
+      // Should access member dataset (map view)
+      console.log("🔍 [TEST] Admin: Attempting to access member dataset (map)");
+      await loggedInPageAsAdmin.goto("/map/bcmform_responses");
+      await loggedInPageAsAdmin.waitForURL("**/map/**", {
         timeout: 10000,
       });
       const adminDatasetUrl = loggedInPageAsAdmin.url();
@@ -234,25 +242,31 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
         "🔍 [TEST] Admin: Current page title:",
         await loggedInPageAsAdmin.title(),
       );
+      // Wait for map container to be attached (like in alerts tests)
       console.log(
-        "🔍 [TEST] Admin: Waiting for gallery-container to be attached...",
+        "🔍 [TEST] Admin: Waiting for map container to be attached...",
       );
-      // Wait for gallery container to be attached (like in gallery tests)
-      await loggedInPageAsAdmin
-        .getByTestId("gallery-container")
-        .waitFor({ state: "attached", timeout: 10000 });
+      await loggedInPageAsAdmin.locator("#map").waitFor({
+        state: "attached",
+        timeout: 10000,
+      });
+      // Wait for the map canvas to be visible
+      const mapCanvas = loggedInPageAsAdmin
+        .locator("canvas.mapboxgl-canvas")
+        .first();
+      await authExpect(mapCanvas).toBeVisible();
+      // Wait for the map to be fully loaded
+      await loggedInPageAsAdmin.waitForFunction(
+        () => {
+          // @ts-expect-error _testMap is exposed for E2E testing only
+          const map = window._testMap;
+          return map?.isStyleLoaded() && map.loaded();
+        },
+        { timeout: 10000 },
+      );
       console.log(
-        "🔍 [TEST] Admin: Gallery container attached, checking visibility...",
+        "🔍 [TEST] Admin: ✅ Successfully accessed member dataset (map loaded)",
       );
-      await authExpect(
-        loggedInPageAsAdmin.getByTestId("gallery-container"),
-      ).toBeVisible();
-      // Also check for gallery items to ensure content loaded
-      const galleryItems = loggedInPageAsAdmin.getByTestId("gallery-item-0");
-      const itemCount = await galleryItems.count();
-      console.log("🔍 [TEST] Admin: Gallery items found:", itemCount);
-      expect(itemCount).toBeGreaterThan(0);
-      console.log("🔍 [TEST] Admin: ✅ Successfully accessed member dataset");
     },
   );
 });
