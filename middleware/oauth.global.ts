@@ -46,8 +46,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
         );
       } catch (error) {
         // Even if fetch fails, set client-side state for testing
-        (session as any).user = testUser;
-        (session as any).loggedIn = true;
+        // (session).user = testUser;
+        // (session).loggedIn = true;
         console.log(
           `🔍 [TEST] Set test role client-side: ${roleNames[testRole]} (${testRole})`,
         );
