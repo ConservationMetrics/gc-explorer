@@ -23,13 +23,46 @@ export const test = baseTest.extend<{
     { page, request }: { page: Page; request: APIRequestContext },
     use: (page: Page) => Promise<void>,
   ) => {
-    console.log(`🔍 [TEST] Setting SignedIn role via fixture`);
-    const response = await request.post("/api/test/set-session", {
-      data: { role: Role.SignedIn },
-    });
-    console.log(`🔍 [TEST] Response: ${response.status()}`);
-    console.log(`🔍 [TEST] Response body: ${await response.json()}`);
-    await use(page);
+    try {
+      console.log(`🔍 [TEST] Setting SignedIn role via fixture`);
+      const response = await request.post("/api/test/set-session", {
+        data: { role: Role.SignedIn },
+      });
+      const status = response.status();
+      console.log(`🔍 [TEST] Response status: ${status}`);
+
+      if (status !== 200) {
+        const responseText = await response
+          .text()
+          .catch(() => "Unable to read response");
+        const responseJson = await response.json().catch(() => null);
+        console.error(`❌ [TEST] Error response (${status}):`, {
+          status,
+          text: responseText,
+          json: responseJson ? JSON.stringify(responseJson, null, 2) : null,
+        });
+        throw new Error(
+          `Failed to set SignedIn role: ${status} - ${responseText}`,
+        );
+      }
+
+      const responseBody = await response.json().catch(() => null);
+      console.log(
+        `🔍 [TEST] Response body:`,
+        JSON.stringify(responseBody, null, 2),
+      );
+      await use(page);
+    } catch (error) {
+      console.error(`❌ [TEST] Error in loggedInPageAsSignedIn fixture:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        errorStringified: JSON.stringify(
+          error,
+          Object.getOwnPropertyNames(error),
+        ),
+      });
+      throw error;
+    }
   },
 
   /**
@@ -39,11 +72,46 @@ export const test = baseTest.extend<{
     { page, request }: { page: Page; request: APIRequestContext },
     use: (page: Page) => Promise<void>,
   ) => {
-    console.log(`🔍 [TEST] Setting Guest role via fixture`);
-    await request.post("/api/test/set-session", {
-      data: { role: Role.Guest },
-    });
-    await use(page);
+    try {
+      console.log(`🔍 [TEST] Setting Guest role via fixture`);
+      const response = await request.post("/api/test/set-session", {
+        data: { role: Role.Guest },
+      });
+      const status = response.status();
+      console.log(`🔍 [TEST] Response status: ${status}`);
+
+      if (status !== 200) {
+        const responseText = await response
+          .text()
+          .catch(() => "Unable to read response");
+        const responseJson = await response.json().catch(() => null);
+        console.error(`❌ [TEST] Error response (${status}):`, {
+          status,
+          text: responseText,
+          json: responseJson ? JSON.stringify(responseJson, null, 2) : null,
+        });
+        throw new Error(
+          `Failed to set Guest role: ${status} - ${responseText}`,
+        );
+      }
+
+      const responseBody = await response.json().catch(() => null);
+      console.log(
+        `🔍 [TEST] Response body:`,
+        JSON.stringify(responseBody, null, 2),
+      );
+      await use(page);
+    } catch (error) {
+      console.error(`❌ [TEST] Error in loggedInPageAsGuest fixture:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        errorStringified: JSON.stringify(
+          error,
+          Object.getOwnPropertyNames(error),
+        ),
+      });
+      throw error;
+    }
   },
 
   /**
@@ -53,11 +121,46 @@ export const test = baseTest.extend<{
     { page, request }: { page: Page; request: APIRequestContext },
     use: (page: Page) => Promise<void>,
   ) => {
-    console.log(`🔍 [TEST] Setting Member role via fixture`);
-    await request.post("/api/test/set-session", {
-      data: { role: Role.Member },
-    });
-    await use(page);
+    try {
+      console.log(`🔍 [TEST] Setting Member role via fixture`);
+      const response = await request.post("/api/test/set-session", {
+        data: { role: Role.Member },
+      });
+      const status = response.status();
+      console.log(`🔍 [TEST] Response status: ${status}`);
+
+      if (status !== 200) {
+        const responseText = await response
+          .text()
+          .catch(() => "Unable to read response");
+        const responseJson = await response.json().catch(() => null);
+        console.error(`❌ [TEST] Error response (${status}):`, {
+          status,
+          text: responseText,
+          json: responseJson ? JSON.stringify(responseJson, null, 2) : null,
+        });
+        throw new Error(
+          `Failed to set Member role: ${status} - ${responseText}`,
+        );
+      }
+
+      const responseBody = await response.json().catch(() => null);
+      console.log(
+        `🔍 [TEST] Response body:`,
+        JSON.stringify(responseBody, null, 2),
+      );
+      await use(page);
+    } catch (error) {
+      console.error(`❌ [TEST] Error in loggedInPageAsMember fixture:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        errorStringified: JSON.stringify(
+          error,
+          Object.getOwnPropertyNames(error),
+        ),
+      });
+      throw error;
+    }
   },
 
   /**
@@ -67,11 +170,46 @@ export const test = baseTest.extend<{
     { page, request }: { page: Page; request: APIRequestContext },
     use: (page: Page) => Promise<void>,
   ) => {
-    console.log(`🔍 [TEST] Setting Admin role via fixture`);
-    await request.post("/api/test/set-session", {
-      data: { role: Role.Admin },
-    });
-    await use(page);
+    try {
+      console.log(`🔍 [TEST] Setting Admin role via fixture`);
+      const response = await request.post("/api/test/set-session", {
+        data: { role: Role.Admin },
+      });
+      const status = response.status();
+      console.log(`🔍 [TEST] Response status: ${status}`);
+
+      if (status !== 200) {
+        const responseText = await response
+          .text()
+          .catch(() => "Unable to read response");
+        const responseJson = await response.json().catch(() => null);
+        console.error(`❌ [TEST] Error response (${status}):`, {
+          status,
+          text: responseText,
+          json: responseJson ? JSON.stringify(responseJson, null, 2) : null,
+        });
+        throw new Error(
+          `Failed to set Admin role: ${status} - ${responseText}`,
+        );
+      }
+
+      const responseBody = await response.json().catch(() => null);
+      console.log(
+        `🔍 [TEST] Response body:`,
+        JSON.stringify(responseBody, null, 2),
+      );
+      await use(page);
+    } catch (error) {
+      console.error(`❌ [TEST] Error in loggedInPageAsAdmin fixture:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        errorStringified: JSON.stringify(
+          error,
+          Object.getOwnPropertyNames(error),
+        ),
+      });
+      throw error;
+    }
   },
 });
 
