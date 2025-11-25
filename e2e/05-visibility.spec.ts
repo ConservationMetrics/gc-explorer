@@ -1,5 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { test as baseTest, expect } from "@playwright/test";
+import { test as authTest, expect as authExpect } from "../e2e/fixtures/auth";
 import { Role } from "~/types/types";
+
+// Use regular test for tests that don't need authentication
+const test = baseTest;
 
 test("visibility system - public dataset accessible without authentication", async ({
   page,
@@ -41,136 +45,129 @@ test("visibility system - protected dataset redirects to login when not authenti
   }
 });
 
-test.describe("RBAC - Role-Based Access Control", () => {
+// Use authTest for RBAC tests that need role setting
+authTest.describe("RBAC - Role-Based Access Control", () => {
   // Using existing datasets with their configured permissions:
   // - seed_survey_data: "anyone" (public)
   // - bcmform_responses: "member" (requires Member role or higher)
 
-  test("RBAC - SignedIn user can access public dataset but not member dataset", async ({
-    page,
-  }) => {
-    console.log("🔍 [TEST] Starting SignedIn role test");
-    const testRole = Role.SignedIn;
+  authTest(
+    "RBAC - SignedIn user can access public dataset but not member dataset",
+    async ({ page, setTestRole }) => {
+      console.log("🔍 [TEST] Starting SignedIn role test");
 
-    // Set SignedIn role via middleware query parameter - keep it in URL
-    await page.goto(`/?testRole=${testRole}`);
-    await page.waitForURL(`**/?testRole=${testRole}`, { timeout: 5000 });
-    await page.waitForLoadState("networkidle");
-    console.log("🔍 [TEST] After setting SignedIn role - URL:", page.url());
+      // Set SignedIn role via fixture
+      await setTestRole(Role.SignedIn);
+      await page.waitForTimeout(500); // Give session time to set
 
-    // Should access public dataset (testRole persists in URL)
-    console.log("🔍 [TEST] Attempting to access public dataset");
-    await page.goto(`/gallery/seed_survey_data?testRole=${testRole}`);
-    await page.waitForURL("**/gallery/**", { timeout: 5000 });
-    const publicUrl = page.url();
-    console.log("🔍 [TEST] Public dataset URL:", publicUrl);
-    await expect(page.getByTestId("gallery-container")).toBeVisible();
-    console.log("🔍 [TEST] ✅ Successfully accessed public dataset");
+      // Should access public dataset
+      console.log("🔍 [TEST] Attempting to access public dataset");
+      await page.goto("/gallery/seed_survey_data");
+      await page.waitForURL("**/gallery/**", { timeout: 5000 });
+      const publicUrl = page.url();
+      console.log("🔍 [TEST] Public dataset URL:", publicUrl);
+      await expect(page.getByTestId("gallery-container")).toBeVisible();
+      console.log("🔍 [TEST] ✅ Successfully accessed public dataset");
 
-    // Should be rejected from member dataset
-    console.log(
-      "🔍 [TEST] Attempting to access member dataset (should be rejected)",
-    );
-    await page.goto(`/map/bcmform_responses?testRole=${testRole}`);
-    // Wait for redirect
-    await page.waitForURL(/\/(\?reason=unauthorized|\/login)/, {
-      timeout: 5000,
-    });
-    const url = page.url();
-    console.log("🔍 [TEST] Member dataset access result URL:", url);
-    expect(url).toMatch(/\/\?reason=unauthorized|\/login/);
-    console.log("🔍 [TEST] ✅ Correctly rejected from member dataset");
-  });
+      // Should be rejected from member dataset
+      console.log(
+        "🔍 [TEST] Attempting to access member dataset (should be rejected)",
+      );
+      await page.goto("/map/bcmform_responses");
+      // Wait for redirect
+      await page.waitForURL(/\/(\?reason=unauthorized|\/login)/, {
+        timeout: 5000,
+      });
+      const url = page.url();
+      console.log("🔍 [TEST] Member dataset access result URL:", url);
+      expect(url).toMatch(/\/\?reason=unauthorized|\/login/);
+      console.log("🔍 [TEST] ✅ Correctly rejected from member dataset");
+    },
+  );
 
-  test("RBAC - Guest user can access public dataset but not member dataset", async ({
-    page,
-  }) => {
-    console.log("🔍 [TEST] Starting Guest role test");
-    const testRole = Role.Guest;
+  authTest(
+    "RBAC - Guest user can access public dataset but not member dataset",
+    async ({ page, setTestRole }) => {
+      console.log("🔍 [TEST] Starting Guest role test");
 
-    // Set Guest role via middleware query parameter - keep it in URL
-    await page.goto(`/?testRole=${testRole}`);
-    await page.waitForURL(`**/?testRole=${testRole}`, { timeout: 5000 });
-    await page.waitForLoadState("networkidle");
-    console.log("🔍 [TEST] After setting Guest role - URL:", page.url());
+      // Set Guest role via fixture
+      await setTestRole(Role.Guest);
+      await page.waitForTimeout(500); // Give session time to set
 
-    // Should access public dataset (testRole persists in URL)
-    console.log("🔍 [TEST] Guest: Attempting to access public dataset");
-    await page.goto(`/gallery/seed_survey_data?testRole=${testRole}`);
-    await page.waitForURL("**/gallery/**", { timeout: 5000 });
-    await expect(page.getByTestId("gallery-container")).toBeVisible();
-    console.log("🔍 [TEST] Guest: ✅ Successfully accessed public dataset");
+      // Should access public dataset
+      console.log("🔍 [TEST] Guest: Attempting to access public dataset");
+      await page.goto("/gallery/seed_survey_data");
+      await page.waitForURL("**/gallery/**", { timeout: 5000 });
+      await expect(page.getByTestId("gallery-container")).toBeVisible();
+      console.log("🔍 [TEST] Guest: ✅ Successfully accessed public dataset");
 
-    // Should be rejected from member dataset
-    console.log(
-      "🔍 [TEST] Guest: Attempting to access member dataset (should be rejected)",
-    );
-    await page.goto(`/gallery/bcmform_responses?testRole=${testRole}`);
-    // Wait for redirect
-    await page.waitForURL(/\/(\?reason=unauthorized|\/login)/, {
-      timeout: 5000,
-    });
-    const url = page.url();
-    console.log("🔍 [TEST] Guest: Member dataset access result URL:", url);
-    expect(url).toMatch(/\/\?reason=unauthorized|\/login/);
-    console.log("🔍 [TEST] Guest: ✅ Correctly rejected from member dataset");
-  });
+      // Should be rejected from member dataset
+      console.log(
+        "🔍 [TEST] Guest: Attempting to access member dataset (should be rejected)",
+      );
+      await page.goto("/gallery/bcmform_responses");
+      // Wait for redirect
+      await page.waitForURL(/\/(\?reason=unauthorized|\/login)/, {
+        timeout: 5000,
+      });
+      const url = page.url();
+      console.log("🔍 [TEST] Guest: Member dataset access result URL:", url);
+      expect(url).toMatch(/\/\?reason=unauthorized|\/login/);
+      console.log("🔍 [TEST] Guest: ✅ Correctly rejected from member dataset");
+    },
+  );
 
-  test("RBAC - Member user can access both public and member datasets", async ({
-    page,
-  }) => {
-    console.log("🔍 [TEST] Starting Member role test");
-    const testRole = Role.Member;
+  authTest(
+    "RBAC - Member user can access both public and member datasets",
+    async ({ page, setTestRole }) => {
+      console.log("🔍 [TEST] Starting Member role test");
 
-    // Set Member role via middleware query parameter - keep it in URL
-    await page.goto(`/?testRole=${testRole}`);
-    await page.waitForURL(`**/?testRole=${testRole}`, { timeout: 5000 });
-    await page.waitForLoadState("networkidle");
-    console.log("🔍 [TEST] After setting Member role - URL:", page.url());
+      // Set Member role via fixture
+      await setTestRole(Role.Member);
+      await page.waitForTimeout(500); // Give session time to set
 
-    // Should access public dataset (testRole persists in URL)
-    console.log("🔍 [TEST] Member: Attempting to access public dataset");
-    await page.goto(`/gallery/seed_survey_data?testRole=${testRole}`);
-    await page.waitForURL("**/gallery/**", { timeout: 5000 });
-    await expect(page.getByTestId("gallery-container")).toBeVisible();
-    console.log("🔍 [TEST] Member: ✅ Successfully accessed public dataset");
+      // Should access public dataset
+      console.log("🔍 [TEST] Member: Attempting to access public dataset");
+      await page.goto("/gallery/seed_survey_data");
+      await page.waitForURL("**/gallery/**", { timeout: 5000 });
+      await expect(page.getByTestId("gallery-container")).toBeVisible();
+      console.log("🔍 [TEST] Member: ✅ Successfully accessed public dataset");
 
-    // Should access member dataset
-    console.log("🔍 [TEST] Member: Attempting to access member dataset");
-    await page.goto(`/gallery/bcmform_responses?testRole=${testRole}`);
-    await page.waitForURL("**/gallery/**", { timeout: 10000 });
-    await expect(page.getByTestId("gallery-container")).toBeVisible({
-      timeout: 10000,
-    });
-    console.log("🔍 [TEST] Member: ✅ Successfully accessed member dataset");
-  });
+      // Should access member dataset
+      console.log("🔍 [TEST] Member: Attempting to access member dataset");
+      await page.goto("/gallery/bcmform_responses");
+      await page.waitForURL("**/gallery/**", { timeout: 10000 });
+      await expect(page.getByTestId("gallery-container")).toBeVisible({
+        timeout: 10000,
+      });
+      console.log("🔍 [TEST] Member: ✅ Successfully accessed member dataset");
+    },
+  );
 
-  test("RBAC - Admin user can access both public and member datasets", async ({
-    page,
-  }) => {
-    console.log("🔍 [TEST] Starting Admin role test");
-    const testRole = Role.Admin;
+  authTest(
+    "RBAC - Admin user can access both public and member datasets",
+    async ({ page, setTestRole }) => {
+      console.log("🔍 [TEST] Starting Admin role test");
 
-    // Set Admin role via middleware query parameter - keep it in URL
-    await page.goto(`/?testRole=${testRole}`);
-    await page.waitForURL(`**/?testRole=${testRole}`, { timeout: 5000 });
-    await page.waitForLoadState("networkidle");
-    console.log("🔍 [TEST] After setting Admin role - URL:", page.url());
+      // Set Admin role via fixture
+      await setTestRole(Role.Admin);
+      await page.waitForTimeout(500); // Give session time to set
 
-    // Should access public dataset (testRole persists in URL)
-    console.log("🔍 [TEST] Admin: Attempting to access public dataset");
-    await page.goto(`/gallery/seed_survey_data?testRole=${testRole}`);
-    await page.waitForURL("**/gallery/**", { timeout: 5000 });
-    await expect(page.getByTestId("gallery-container")).toBeVisible();
-    console.log("🔍 [TEST] Admin: ✅ Successfully accessed public dataset");
+      // Should access public dataset
+      console.log("🔍 [TEST] Admin: Attempting to access public dataset");
+      await page.goto("/gallery/seed_survey_data");
+      await page.waitForURL("**/gallery/**", { timeout: 5000 });
+      await expect(page.getByTestId("gallery-container")).toBeVisible();
+      console.log("🔍 [TEST] Admin: ✅ Successfully accessed public dataset");
 
-    // Should access member dataset
-    console.log("🔍 [TEST] Admin: Attempting to access member dataset");
-    await page.goto(`/gallery/bcmform_responses?testRole=${testRole}`);
-    await page.waitForURL("**/gallery/**", { timeout: 10000 });
-    await expect(page.getByTestId("gallery-container")).toBeVisible({
-      timeout: 10000,
-    });
-    console.log("🔍 [TEST] Admin: ✅ Successfully accessed member dataset");
-  });
+      // Should access member dataset
+      console.log("🔍 [TEST] Admin: Attempting to access member dataset");
+      await page.goto("/gallery/bcmform_responses");
+      await page.waitForURL("**/gallery/**", { timeout: 10000 });
+      await expect(page.getByTestId("gallery-container")).toBeVisible({
+        timeout: 10000,
+      });
+      console.log("🔍 [TEST] Admin: ✅ Successfully accessed member dataset");
+    },
+  );
 });
