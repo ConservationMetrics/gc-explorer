@@ -66,7 +66,7 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       await page.waitForURL("**/gallery/**", { timeout: 5000 });
       const publicUrl = page.url();
       console.log("🔍 [TEST] Public dataset URL:", publicUrl);
-      await expect(page.getByTestId("gallery-container")).toBeVisible();
+      await authExpect(page.getByTestId("gallery-container")).toBeVisible();
       console.log("🔍 [TEST] ✅ Successfully accessed public dataset");
 
       // Should be rejected from member dataset
@@ -80,7 +80,7 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       });
       const url = page.url();
       console.log("🔍 [TEST] Member dataset access result URL:", url);
-      expect(url).toMatch(/\/\?reason=unauthorized|\/login/);
+      authExpect(url).toMatch(/\/\?reason=unauthorized|\/login/);
       console.log("🔍 [TEST] ✅ Correctly rejected from member dataset");
     },
   );
@@ -98,7 +98,7 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       console.log("🔍 [TEST] Guest: Attempting to access public dataset");
       await page.goto("/gallery/seed_survey_data");
       await page.waitForURL("**/gallery/**", { timeout: 5000 });
-      await expect(page.getByTestId("gallery-container")).toBeVisible();
+      await authExpect(page.getByTestId("gallery-container")).toBeVisible();
       console.log("🔍 [TEST] Guest: ✅ Successfully accessed public dataset");
 
       // Should be rejected from member dataset
@@ -112,7 +112,7 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       });
       const url = page.url();
       console.log("🔍 [TEST] Guest: Member dataset access result URL:", url);
-      expect(url).toMatch(/\/\?reason=unauthorized|\/login/);
+      authExpect(url).toMatch(/\/\?reason=unauthorized|\/login/);
       console.log("🔍 [TEST] Guest: ✅ Correctly rejected from member dataset");
     },
   );
@@ -130,14 +130,14 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       console.log("🔍 [TEST] Member: Attempting to access public dataset");
       await page.goto("/gallery/seed_survey_data");
       await page.waitForURL("**/gallery/**", { timeout: 5000 });
-      await expect(page.getByTestId("gallery-container")).toBeVisible();
+      await authExpect(page.getByTestId("gallery-container")).toBeVisible();
       console.log("🔍 [TEST] Member: ✅ Successfully accessed public dataset");
 
       // Should access member dataset
       console.log("🔍 [TEST] Member: Attempting to access member dataset");
       await page.goto("/gallery/bcmform_responses");
       await page.waitForURL("**/gallery/**", { timeout: 10000 });
-      await expect(page.getByTestId("gallery-container")).toBeVisible({
+      await authExpect(page.getByTestId("gallery-container")).toBeVisible({
         timeout: 10000,
       });
       console.log("🔍 [TEST] Member: ✅ Successfully accessed member dataset");
@@ -157,14 +157,14 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       console.log("🔍 [TEST] Admin: Attempting to access public dataset");
       await page.goto("/gallery/seed_survey_data");
       await page.waitForURL("**/gallery/**", { timeout: 5000 });
-      await expect(page.getByTestId("gallery-container")).toBeVisible();
+      await authExpect(page.getByTestId("gallery-container")).toBeVisible();
       console.log("🔍 [TEST] Admin: ✅ Successfully accessed public dataset");
 
       // Should access member dataset
       console.log("🔍 [TEST] Admin: Attempting to access member dataset");
       await page.goto("/gallery/bcmform_responses");
       await page.waitForURL("**/gallery/**", { timeout: 10000 });
-      await expect(page.getByTestId("gallery-container")).toBeVisible({
+      await authExpect(page.getByTestId("gallery-container")).toBeVisible({
         timeout: 10000,
       });
       console.log("🔍 [TEST] Admin: ✅ Successfully accessed member dataset");
