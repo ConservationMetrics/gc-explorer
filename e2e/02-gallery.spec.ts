@@ -289,6 +289,29 @@ test("gallery page - pagination and infinite scroll", async ({ page }) => {
   const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
 
+  // Debug: Log information about gallery links
+  console.log("🔍 Gallery link count:", linkCount);
+  if (linkCount === 0) {
+    // Debug: Log all links to see what's available (with error handling)
+    const allLinks = page.locator("a");
+    const allLinkCount = await allLinks.count();
+    console.log("🔍 Total links on page:", allLinkCount);
+    for (let i = 0; i < Math.min(allLinkCount, 10); i++) {
+      try {
+        const link = allLinks.nth(i);
+        const href = await link.getAttribute("href").catch(() => null);
+        const text = await link
+          .textContent({ timeout: 2000 })
+          .catch(() => null);
+        console.log(
+          `🔍 Link ${i}: href="${href || "(no href)"}", text="${text?.trim() || "(no text)"}"`,
+        );
+      } catch (error) {
+        console.log(`🔍 Link ${i}: (error accessing link: ${String(error)})`);
+      }
+    }
+  }
+
   if (linkCount > 0) {
     // 4. Wait for the first gallery link to be visible before clicking
     const galleryLink = galleryLinks.first();
@@ -437,6 +460,48 @@ test("gallery page - responsive grid layout", async ({ page }) => {
   // 3. Find gallery links
   const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
+
+  // Debug: Log information about gallery links
+  console.log("🔍 Gallery link count:", linkCount);
+  if (linkCount > 0) {
+    // Debug: Log gallery link details (with error handling)
+    for (let i = 0; i < Math.min(linkCount, 5); i++) {
+      try {
+        const link = galleryLinks.nth(i);
+        const href = await link.getAttribute("href").catch(() => null);
+        const text = await link
+          .textContent({ timeout: 2000 })
+          .catch(() => null);
+        const isVisible = await link.isVisible().catch(() => false);
+        console.log(
+          `🔍 Gallery link ${i}: href="${href || "(no href)"}", text="${text?.trim() || "(no text)"}", visible=${isVisible}`,
+        );
+      } catch (error) {
+        console.log(
+          `🔍 Gallery link ${i}: (error accessing link: ${String(error)})`,
+        );
+      }
+    }
+  } else {
+    // Debug: Log all links to see what's available (with error handling)
+    const allLinks = page.locator("a");
+    const allLinkCount = await allLinks.count();
+    console.log("🔍 Total links on page:", allLinkCount);
+    for (let i = 0; i < Math.min(allLinkCount, 10); i++) {
+      try {
+        const link = allLinks.nth(i);
+        const href = await link.getAttribute("href").catch(() => null);
+        const text = await link
+          .textContent({ timeout: 2000 })
+          .catch(() => null);
+        console.log(
+          `🔍 Link ${i}: href="${href || "(no href)"}", text="${text?.trim() || "(no text)"}"`,
+        );
+      } catch (error) {
+        console.log(`🔍 Link ${i}: (error accessing link: ${String(error)})`);
+      }
+    }
+  }
 
   if (linkCount > 0) {
     // 4. Wait for the first gallery link to be visible before clicking
