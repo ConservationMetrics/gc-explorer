@@ -40,7 +40,11 @@ export const validatePermissions = async (
         };
 
         // Set the session directly for this request
-        (session as any).user = {
+        // Use unknown as intermediate type to allow mutation in test mode
+        const mutableSession = session as unknown as {
+          user?: User;
+        };
+        mutableSession.user = {
           auth0: "test@example.com",
           roles: [
             {

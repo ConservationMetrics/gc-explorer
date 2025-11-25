@@ -35,9 +35,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
         };
 
         // Directly set the session state - bypassing cookies entirely
-        // Use type assertion to set readonly properties for testing
-        (session as any).user = testUser;
-        (session as any).loggedIn = true;
+        // Use unknown as intermediate type to allow mutation in test mode
+        const mutableSession = session as unknown as {
+          user?: { value?: User };
+          loggedIn?: { value: boolean };
+        };
+        if (mutableSession.user) {
+          mutableSession.user.value = testUser;
+        }
+        if (mutableSession.loggedIn) {
+          mutableSession.loggedIn.value = true;
+        }
 
         console.log(
           `🔍 [TEST] ✅ Directly set test role in middleware: ${roleNames[testRole]} (${testRole})`,
