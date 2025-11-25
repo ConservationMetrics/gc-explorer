@@ -34,23 +34,42 @@ export default defineNuxtRouteMiddleware(async (to) => {
         userRole: testRole as Role,
       };
       console.log("🔍 [TEST] Setting test user:", testUser);
+      console.log("🔍 [TEST] Current session state before setting:", {
+        loggedIn: session.loggedIn.value,
+        user: session.user.value,
+      });
+
       // Use fetch to update session on server, then update client state
       try {
-        await $fetch(`/api/test/set-session?role=${testRole}`, {
-          method: "GET",
-          redirect: "manual",
-        });
+        console.log(`🔍 [TEST] Calling /api/test/set-session?role=${testRole}`);
+        const response = await $fetch(
+          `/api/test/set-session?role=${testRole}`,
+          {
+            method: "GET",
+            redirect: "manual",
+          },
+        );
+        console.log("🔍 [TEST] Set-session endpoint response:", response);
+
         // Force refresh session
+        console.log("🔍 [TEST] Fetching session to sync client state");
         await session.fetch();
+        console.log("🔍 [TEST] Session state after fetch:", {
+          loggedIn: session.loggedIn.value,
+          user: session.user.value,
+        });
         console.log(
-          `🔍 [TEST] Set test role via middleware: ${roleNames[testRole]} (${testRole})`,
+          `🔍 [TEST] ✅ Set test role via middleware: ${roleNames[testRole]} (${testRole})`,
         );
       } catch (error) {
         // Even if fetch fails, set client-side state for testing
-        // (session).user = testUser;
-        // (session).loggedIn = true;
+        console.error(
+          `🔍 [TEST] ❌ Failed to set test role via endpoint: ${error}`,
+        );
+        console.log("🔍 [TEST] Error details:", error);
+        // Note: Could hardcode role here in CI mode as fallback
         console.log(
-          `🔍 [TEST] Set test role client-side: ${roleNames[testRole]} (${testRole}) ${error}`,
+          `🔍 [TEST] Would set test role client-side: ${roleNames[testRole]} (${testRole})`,
         );
       }
       // Remove query parameter and redirect
