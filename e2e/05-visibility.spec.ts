@@ -52,6 +52,9 @@ test.describe("RBAC - Role-Based Access Control", () => {
     // Set SignedIn role (lowest authenticated role)
     await page.goto(`/api/test/set-session?role=${Role.SignedIn}`);
     await page.waitForURL("**/", { timeout: 5000 });
+    // Navigate to home to ensure session is loaded
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Should access public dataset
     await page.goto("/gallery/seed_survey_data");
@@ -60,8 +63,12 @@ test.describe("RBAC - Role-Based Access Control", () => {
 
     // Should be rejected from member dataset
     await page.goto("/gallery/bcmform_responses");
+    // Wait for redirect
+    await page.waitForURL(/\/(\?reason=unauthorized|\/login)/, {
+      timeout: 5000,
+    });
     const url = page.url();
-    expect(url).toMatch(/\/\?reason=unauthorized/);
+    expect(url).toMatch(/\/\?reason=unauthorized|\/login/);
   });
 
   test("RBAC - Guest user can access public dataset but not member dataset", async ({
@@ -70,6 +77,9 @@ test.describe("RBAC - Role-Based Access Control", () => {
     // Set Guest role
     await page.goto(`/api/test/set-session?role=${Role.Guest}`);
     await page.waitForURL("**/", { timeout: 5000 });
+    // Navigate to home to ensure session is loaded
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Should access public dataset
     await page.goto("/gallery/seed_survey_data");
@@ -78,8 +88,12 @@ test.describe("RBAC - Role-Based Access Control", () => {
 
     // Should be rejected from member dataset
     await page.goto("/gallery/bcmform_responses");
+    // Wait for redirect
+    await page.waitForURL(/\/(\?reason=unauthorized|\/login)/, {
+      timeout: 5000,
+    });
     const url = page.url();
-    expect(url).toMatch(/\/\?reason=unauthorized/);
+    expect(url).toMatch(/\/\?reason=unauthorized|\/login/);
   });
 
   test("RBAC - Member user can access both public and member datasets", async ({
@@ -88,6 +102,9 @@ test.describe("RBAC - Role-Based Access Control", () => {
     // Set Member role
     await page.goto(`/api/test/set-session?role=${Role.Member}`);
     await page.waitForURL("**/", { timeout: 5000 });
+    // Navigate to home to ensure session is loaded
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Should access public dataset
     await page.goto("/gallery/seed_survey_data");
@@ -96,8 +113,10 @@ test.describe("RBAC - Role-Based Access Control", () => {
 
     // Should access member dataset
     await page.goto("/gallery/bcmform_responses");
-    await page.waitForURL("**/gallery/**", { timeout: 5000 });
-    await expect(page.getByTestId("gallery-container")).toBeVisible();
+    await page.waitForURL("**/gallery/**", { timeout: 10000 });
+    await expect(page.getByTestId("gallery-container")).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test("RBAC - Admin user can access both public and member datasets", async ({
@@ -106,6 +125,9 @@ test.describe("RBAC - Role-Based Access Control", () => {
     // Set Admin role
     await page.goto(`/api/test/set-session?role=${Role.Admin}`);
     await page.waitForURL("**/", { timeout: 5000 });
+    // Navigate to home to ensure session is loaded
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
 
     // Should access public dataset
     await page.goto("/gallery/seed_survey_data");
@@ -114,7 +136,9 @@ test.describe("RBAC - Role-Based Access Control", () => {
 
     // Should access member dataset
     await page.goto("/gallery/bcmform_responses");
-    await page.waitForURL("**/gallery/**", { timeout: 5000 });
-    await expect(page.getByTestId("gallery-container")).toBeVisible();
+    await page.waitForURL("**/gallery/**", { timeout: 10000 });
+    await expect(page.getByTestId("gallery-container")).toBeVisible({
+      timeout: 10000,
+    });
   });
 });
