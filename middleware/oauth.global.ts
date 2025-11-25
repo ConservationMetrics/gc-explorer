@@ -33,6 +33,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
         ],
         userRole: testRole as Role,
       };
+      console.log("🔍 [TEST] Setting test user:", testUser);
       // Use fetch to update session on server, then update client state
       try {
         await $fetch(`/api/test/set-session?role=${testRole}`, {
@@ -49,7 +50,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
         // (session).user = testUser;
         // (session).loggedIn = true;
         console.log(
-          `🔍 [TEST] Set test role client-side: ${roleNames[testRole]} (${testRole})`,
+          `🔍 [TEST] Set test role client-side: ${roleNames[testRole]} (${testRole}) ${error}`,
         );
       }
       // Remove query parameter and redirect
