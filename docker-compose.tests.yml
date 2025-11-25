@@ -18,7 +18,7 @@ services:
       # Add the secrets from GitHub Actions
       NUXT_PUBLIC_APP_API_KEY: ${NUXT_PUBLIC_APP_API_KEY}
       NUXT_PUBLIC_AUTH_STRATEGY: "none"
-      NUXT_SESSION_SECRET: ${NUXT_SESSION_SECRET}
+      NUXT_SESSION_SECRET: ${SESSION_SECRET}
       NUXT_PORT: 8080
       CI: "true"
       BASE_URL: http://localhost:8080
