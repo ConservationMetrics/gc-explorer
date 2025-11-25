@@ -1,5 +1,5 @@
 import { test as baseTest } from "@playwright/test";
-import { Role } from "~/types/types";
+import type { Role } from "~/types/types";
 
 /**
  * Custom Playwright fixture for setting user sessions in tests
