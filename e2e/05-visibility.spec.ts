@@ -63,14 +63,11 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       });
       const publicUrl = loggedInPageAsSignedIn.url();
       console.log("🔍 [TEST] Public dataset URL:", publicUrl);
-      console.log(
-        "🔍 [TEST] Current page title:",
-        await loggedInPageAsSignedIn.title(),
-      );
-      console.log(
-        "🔍 [TEST] Page content preview:",
-        await loggedInPageAsSignedIn.content().then((c) => c.substring(0, 500)),
-      );
+      console.log("🔍 [TEST] Waiting for gallery-container to be attached...");
+      // Wait for gallery container to be attached (like in gallery tests)
+      await loggedInPageAsSignedIn
+        .getByTestId("gallery-container")
+        .waitFor({ state: "attached", timeout: 5000 });
       await authExpect(
         loggedInPageAsSignedIn.getByTestId("gallery-container"),
       ).toBeVisible();
@@ -111,9 +108,12 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       const guestPublicUrl = loggedInPageAsGuest.url();
       console.log("🔍 [TEST] Guest: Public dataset URL:", guestPublicUrl);
       console.log(
-        "🔍 [TEST] Guest: Current page title:",
-        await loggedInPageAsGuest.title(),
+        "🔍 [TEST] Guest: Waiting for gallery-container to be attached...",
       );
+      // Wait for gallery container to be attached (like in gallery tests)
+      await loggedInPageAsGuest
+        .getByTestId("gallery-container")
+        .waitFor({ state: "attached", timeout: 5000 });
       await authExpect(
         loggedInPageAsGuest.getByTestId("gallery-container"),
       ).toBeVisible();
@@ -154,9 +154,12 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       const memberPublicUrl = loggedInPageAsMember.url();
       console.log("🔍 [TEST] Member: Public dataset URL:", memberPublicUrl);
       console.log(
-        "🔍 [TEST] Member: Current page title:",
-        await loggedInPageAsMember.title(),
+        "🔍 [TEST] Member: Waiting for gallery-container to be attached...",
       );
+      // Wait for gallery container to be attached (like in gallery tests)
+      await loggedInPageAsMember
+        .getByTestId("gallery-container")
+        .waitFor({ state: "attached", timeout: 5000 });
       await authExpect(
         loggedInPageAsMember.getByTestId("gallery-container"),
       ).toBeVisible();
@@ -175,15 +178,23 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
         await loggedInPageAsMember.title(),
       );
       console.log(
-        "🔍 [TEST] Member: Page content preview:",
-        await loggedInPageAsMember.content().then((c) => c.substring(0, 500)),
+        "🔍 [TEST] Member: Waiting for gallery-container to be attached...",
       );
-      console.log("🔍 [TEST] Member: Checking for gallery-container...");
+      // Wait for gallery container to be attached (like in gallery tests)
+      await loggedInPageAsMember
+        .getByTestId("gallery-container")
+        .waitFor({ state: "attached", timeout: 10000 });
+      console.log(
+        "🔍 [TEST] Member: Gallery container attached, checking visibility...",
+      );
       await authExpect(
         loggedInPageAsMember.getByTestId("gallery-container"),
-      ).toBeVisible({
-        timeout: 10000,
-      });
+      ).toBeVisible();
+      // Also check for gallery items to ensure content loaded
+      const galleryItems = loggedInPageAsMember.getByTestId("gallery-item-0");
+      const itemCount = await galleryItems.count();
+      console.log("🔍 [TEST] Member: Gallery items found:", itemCount);
+      expect(itemCount).toBeGreaterThan(0);
       console.log("🔍 [TEST] Member: ✅ Successfully accessed member dataset");
     },
   );
@@ -200,9 +211,12 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       const adminPublicUrl = loggedInPageAsAdmin.url();
       console.log("🔍 [TEST] Admin: Public dataset URL:", adminPublicUrl);
       console.log(
-        "🔍 [TEST] Admin: Current page title:",
-        await loggedInPageAsAdmin.title(),
+        "🔍 [TEST] Admin: Waiting for gallery-container to be attached...",
       );
+      // Wait for gallery container to be attached (like in gallery tests)
+      await loggedInPageAsAdmin
+        .getByTestId("gallery-container")
+        .waitFor({ state: "attached", timeout: 5000 });
       await authExpect(
         loggedInPageAsAdmin.getByTestId("gallery-container"),
       ).toBeVisible();
@@ -221,15 +235,23 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
         await loggedInPageAsAdmin.title(),
       );
       console.log(
-        "🔍 [TEST] Admin: Page content preview:",
-        await loggedInPageAsAdmin.content().then((c) => c.substring(0, 500)),
+        "🔍 [TEST] Admin: Waiting for gallery-container to be attached...",
       );
-      console.log("🔍 [TEST] Admin: Checking for gallery-container...");
+      // Wait for gallery container to be attached (like in gallery tests)
+      await loggedInPageAsAdmin
+        .getByTestId("gallery-container")
+        .waitFor({ state: "attached", timeout: 10000 });
+      console.log(
+        "🔍 [TEST] Admin: Gallery container attached, checking visibility...",
+      );
       await authExpect(
         loggedInPageAsAdmin.getByTestId("gallery-container"),
-      ).toBeVisible({
-        timeout: 10000,
-      });
+      ).toBeVisible();
+      // Also check for gallery items to ensure content loaded
+      const galleryItems = loggedInPageAsAdmin.getByTestId("gallery-item-0");
+      const itemCount = await galleryItems.count();
+      console.log("🔍 [TEST] Admin: Gallery items found:", itemCount);
+      expect(itemCount).toBeGreaterThan(0);
       console.log("🔍 [TEST] Admin: ✅ Successfully accessed member dataset");
     },
   );
