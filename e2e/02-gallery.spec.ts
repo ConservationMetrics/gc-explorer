@@ -14,13 +14,8 @@ test("gallery page - displays gallery with media files", async ({ page }) => {
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be attached, then visible
+    // 4. Wait for the first gallery link to be visible before clicking
     const galleryLink = galleryLinks.first();
-
-    // First wait for the link to be attached to the DOM
-    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
-
-    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
@@ -60,13 +55,8 @@ test("gallery page - displays images with lightbox functionality", async ({
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be attached, then visible
+    // 4. Wait for the first gallery link to be visible before clicking
     const galleryLink = galleryLinks.first();
-
-    // First wait for the link to be attached to the DOM
-    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
-
-    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
@@ -124,13 +114,8 @@ test("gallery page - audio playback functionality", async ({ page }) => {
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be attached, then visible
+    // 4. Wait for the first gallery link to be visible before clicking
     const galleryLink = galleryLinks.first();
-
-    // First wait for the link to be attached to the DOM
-    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
-
-    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
@@ -227,13 +212,8 @@ test("gallery page - filter functionality", async ({ page }) => {
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be attached, then visible
+    // 4. Wait for the first gallery link to be visible before clicking
     const galleryLink = galleryLinks.first();
-
-    // First wait for the link to be attached to the DOM
-    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
-
-    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
@@ -297,134 +277,108 @@ test("gallery page - filter functionality", async ({ page }) => {
 });
 
 test("gallery page - pagination and infinite scroll", async ({ page }) => {
-  // 1. Navigate to the index page first to get available tables
+  // --- STEP 1: Load home page ---
   await page.goto("/");
-
-  // 2. Wait for the page heading to become visible
   await expect(
     page.getByRole("heading", { name: /available views/i }),
   ).toBeVisible();
 
-  // 3. Find gallery links
+  // --- STEP 2: Get gallery links ---
   const galleryLinks = page.locator('a[href^="/gallery/"]');
   const linkCount = await galleryLinks.count();
+  console.log("🔍 Found gallery links:", linkCount);
 
-  // Debug: Log information about gallery links
-  console.log("🔍 Gallery link count:", linkCount);
+  // Debug if none found
   if (linkCount === 0) {
-    // Debug: Log all links to see what's available (with error handling)
     const allLinks = page.locator("a");
-    const allLinkCount = await allLinks.count();
-    console.log("🔍 Total links on page:", allLinkCount);
-    for (let i = 0; i < Math.min(allLinkCount, 10); i++) {
-      try {
-        const link = allLinks.nth(i);
-        const href = await link.getAttribute("href").catch(() => null);
-        const text = await link
-          .textContent({ timeout: 2000 })
-          .catch(() => null);
-        console.log(
-          `🔍 Link ${i}: href="${href || "(no href)"}", text="${text?.trim() || "(no text)"}"`,
-        );
-      } catch (error) {
-        console.log(`🔍 Link ${i}: (error accessing link: ${String(error)})`);
-      }
+    const allCount = await allLinks.count();
+    console.log("⚠️ No gallery links. Total <a> found:", allCount);
+
+    for (let i = 0; i < Math.min(allCount, 10); i++) {
+      const href = await allLinks
+        .nth(i)
+        .getAttribute("href")
+        .catch(() => null);
+      const text = await allLinks
+        .nth(i)
+        .textContent()
+        .catch(() => null);
+      console.log(`Link ${i}: href="${href}", text="${text?.trim()}"`);
     }
+
+    expect(linkCount).toBeGreaterThan(0);
+    return;
   }
 
-  if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be attached, then visible
-    const galleryLink = galleryLinks.first();
+  // --- STEP 3: Visit first gallery ---
+  const firstGalleryLink = galleryLinks.first();
+  await firstGalleryLink.waitFor({ state: "visible", timeout: 10000 });
+  await firstGalleryLink.click();
+  await page.waitForURL("**/gallery/**", { timeout: 5000 });
 
-    // Debug: Log gallery link details before waiting
-    try {
-      const href = await galleryLink.getAttribute("href").catch(() => null);
-      const text = await galleryLink
-        .textContent({ timeout: 2000 })
-        .catch(() => null);
-      const isAttached = (await galleryLink.count()) > 0;
-      const isVisible = await galleryLink.isVisible().catch(() => false);
-      console.log(
-        `🔍 Gallery link before wait: href="${href || "(no href)"}", text="${text?.trim() || "(no text)"}", attached=${isAttached}, visible=${isVisible}`,
-      );
-    } catch (error) {
-      console.log(`🔍 Error checking gallery link: ${String(error)}`);
-    }
+  // --- STEP 4: Ensure gallery is loaded ---
+  const galleryContainer = page.getByTestId("gallery-container");
+  await galleryContainer.waitFor({ state: "attached", timeout: 5000 });
 
-    // First wait for the link to be attached to the DOM
-    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
+  const items = page.locator('[data-testid^="gallery-item-"]');
+  await items.first().waitFor({ state: "visible", timeout: 5000 });
 
-    // Then wait for it to be visible
-    await galleryLink.waitFor({ state: "visible", timeout: 10000 });
+  const initialItemCount = await items.count();
+  console.log("📸 Initial gallery items:", initialItemCount);
 
-    // 5. Click the first gallery link
-    await galleryLink.click();
+  // --- STEP 5: Read pagination info ---
+  const paginationInfo = page.getByTestId("pagination-info");
+  const totalItems = parseInt(
+    (await paginationInfo.getAttribute("data-total-items")) || "0",
+  );
+  const paginatedItems = parseInt(
+    (await paginationInfo.getAttribute("data-paginated-count")) || "0",
+  );
 
-    // 6. Wait for the gallery page to load
-    await page.waitForURL("**/gallery/**", { timeout: 5000 });
+  console.log(`📄 Pagination: showing ${paginatedItems} of ${totalItems}`);
 
-    // 7. Wait for the gallery container to be present
+  // Only infinite-scroll test if more items exist
+  if (totalItems > paginatedItems) {
+    console.log("🔄 Triggering infinite scroll...");
+
+    const initialPaginated = paginatedItems;
+
+    // --- STEP 6: Scroll to bottom (universal + reliable) ---
+    await page.evaluate(() => {
+      const scrollHeight =
+        document.documentElement.scrollHeight || document.body.scrollHeight;
+      window.scrollTo(0, scrollHeight);
+    });
+
+    // Allow frontend scroll handler to fire
+    await page.waitForTimeout(500);
+
+    // --- STEP 7: Wait for new items ---
     await page
-      .getByTestId("gallery-container")
-      .waitFor({ state: "attached", timeout: 5000 });
-
-    // 8. Wait for at least one gallery item to be visible
-    const initialItems = page.locator('[data-testid^="gallery-item-"]');
-    await initialItems.first().waitFor({ state: "visible", timeout: 5000 });
-    const initialCount = await initialItems.count();
-
-    // 9. Check pagination info to see if there are more items available
-    const paginationInfo = page.getByTestId("pagination-info");
-    const totalItems = await paginationInfo.getAttribute("data-total-items");
-    const paginatedCount = await paginationInfo.getAttribute(
-      "data-paginated-count",
-    );
-
-    // 10. Only test infinite scroll if there are more items than currently displayed
-    if (
-      totalItems &&
-      paginatedCount &&
-      parseInt(totalItems) > parseInt(paginatedCount)
-    ) {
-      // 11. Scroll to bottom to trigger infinite scroll
-      await page.evaluate(() => {
-        window.scrollTo(0, document.body.scrollHeight);
+      .waitForFunction(
+        (expected) => {
+          const el = document.querySelector('[data-testid="pagination-info"]');
+          if (!el) return false;
+          const current = el.getAttribute("data-paginated-count");
+          return current && parseInt(current) > expected;
+        },
+        initialPaginated,
+        { timeout: 5000 },
+      )
+      .catch(() => {
+        console.log(
+          "ℹ️ Pagination didn't increase — may already be at final batch.",
+        );
       });
 
-      // 12. Wait for potential new items to load (wait for pagination to update)
-      const initialPaginatedCount = parseInt(paginatedCount || "0");
-      await page
-        .waitForFunction(
-          (expectedInitialCount) => {
-            const paginationEl = document.querySelector(
-              '[data-testid="pagination-info"]',
-            );
-            if (!paginationEl) return false;
-            const currentPaginated = paginationEl.getAttribute(
-              "data-paginated-count",
-            );
-            return (
-              currentPaginated &&
-              parseInt(currentPaginated) > expectedInitialCount
-            );
-          },
-          initialPaginatedCount,
-          { timeout: 5000 },
-        )
-        .catch(() => {
-          // If pagination doesn't update, that's okay - might be at the end
-        });
+    // --- STEP 8: Validate item count ---
+    const finalItemCount = await items.count();
+    console.log("🧮 New gallery item count:", finalItemCount);
 
-      // 13. Get new item count
-      const newItems = page.locator('[data-testid^="gallery-item-"]');
-      const newCount = await newItems.count();
-
-      // 14. Verify either more items loaded or we're at the end
-      expect(newCount).toBeGreaterThanOrEqual(initialCount);
-    } else {
-      // If all items are already displayed, just verify the initial count is greater than 0
-      expect(initialCount).toBeGreaterThan(0);
-    }
+    expect(finalItemCount).toBeGreaterThanOrEqual(initialItemCount);
+  } else {
+    console.log("✔ All items already visible; skipping infinite scroll");
+    expect(initialItemCount).toBeGreaterThan(0);
   }
 });
 
@@ -442,13 +396,8 @@ test("gallery page - data feature information display", async ({ page }) => {
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be attached, then visible
+    // 4. Wait for the first gallery link to be visible before clicking
     const galleryLink = galleryLinks.first();
-
-    // First wait for the link to be attached to the DOM
-    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
-
-    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
@@ -549,13 +498,8 @@ test("gallery page - responsive grid layout", async ({ page }) => {
   }
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be attached, then visible
+    // 4. Wait for the first gallery link to be visible before clicking
     const galleryLink = galleryLinks.first();
-
-    // First wait for the link to be attached to the DOM
-    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
-
-    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
@@ -617,13 +561,8 @@ test("gallery page - error handling for unavailable gallery", async ({
   const linkCount = await galleryLinks.count();
 
   if (linkCount > 0) {
-    // 4. Wait for the first gallery link to be attached, then visible
+    // 4. Wait for the first gallery link to be visible before clicking
     const galleryLink = galleryLinks.first();
-
-    // First wait for the link to be attached to the DOM
-    await galleryLink.waitFor({ state: "attached", timeout: 10000 });
-
-    // Then wait for it to be visible
     await galleryLink.waitFor({ state: "visible", timeout: 10000 });
 
     // 5. Click the first gallery link
