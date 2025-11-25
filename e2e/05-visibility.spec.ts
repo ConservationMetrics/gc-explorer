@@ -63,6 +63,14 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       });
       const publicUrl = loggedInPageAsSignedIn.url();
       console.log("🔍 [TEST] Public dataset URL:", publicUrl);
+      console.log(
+        "🔍 [TEST] Current page title:",
+        await loggedInPageAsSignedIn.title(),
+      );
+      console.log(
+        "🔍 [TEST] Page content preview:",
+        await loggedInPageAsSignedIn.content().then((c) => c.substring(0, 500)),
+      );
       await authExpect(
         loggedInPageAsSignedIn.getByTestId("gallery-container"),
       ).toBeVisible();
@@ -82,6 +90,10 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       );
       const url = loggedInPageAsSignedIn.url();
       console.log("🔍 [TEST] Member dataset access result URL:", url);
+      console.log(
+        "🔍 [TEST] Current page title:",
+        await loggedInPageAsSignedIn.title(),
+      );
       authExpect(url).toMatch(/\/\?reason=unauthorized|\/login/);
       console.log("🔍 [TEST] ✅ Correctly rejected from member dataset");
     },
@@ -96,6 +108,12 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       console.log("🔍 [TEST] Guest: Attempting to access public dataset");
       await loggedInPageAsGuest.goto("/gallery/seed_survey_data");
       await loggedInPageAsGuest.waitForURL("**/gallery/**", { timeout: 5000 });
+      const guestPublicUrl = loggedInPageAsGuest.url();
+      console.log("🔍 [TEST] Guest: Public dataset URL:", guestPublicUrl);
+      console.log(
+        "🔍 [TEST] Guest: Current page title:",
+        await loggedInPageAsGuest.title(),
+      );
       await authExpect(
         loggedInPageAsGuest.getByTestId("gallery-container"),
       ).toBeVisible();
@@ -115,6 +133,10 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       );
       const url = loggedInPageAsGuest.url();
       console.log("🔍 [TEST] Guest: Member dataset access result URL:", url);
+      console.log(
+        "🔍 [TEST] Guest: Current page title:",
+        await loggedInPageAsGuest.title(),
+      );
       authExpect(url).toMatch(/\/\?reason=unauthorized|\/login/);
       console.log("🔍 [TEST] Guest: ✅ Correctly rejected from member dataset");
     },
@@ -129,6 +151,12 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       console.log("🔍 [TEST] Member: Attempting to access public dataset");
       await loggedInPageAsMember.goto("/gallery/seed_survey_data");
       await loggedInPageAsMember.waitForURL("**/gallery/**", { timeout: 5000 });
+      const memberPublicUrl = loggedInPageAsMember.url();
+      console.log("🔍 [TEST] Member: Public dataset URL:", memberPublicUrl);
+      console.log(
+        "🔍 [TEST] Member: Current page title:",
+        await loggedInPageAsMember.title(),
+      );
       await authExpect(
         loggedInPageAsMember.getByTestId("gallery-container"),
       ).toBeVisible();
@@ -140,6 +168,17 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       await loggedInPageAsMember.waitForURL("**/gallery/**", {
         timeout: 10000,
       });
+      const memberDatasetUrl = loggedInPageAsMember.url();
+      console.log("🔍 [TEST] Member: Member dataset URL:", memberDatasetUrl);
+      console.log(
+        "🔍 [TEST] Member: Current page title:",
+        await loggedInPageAsMember.title(),
+      );
+      console.log(
+        "🔍 [TEST] Member: Page content preview:",
+        await loggedInPageAsMember.content().then((c) => c.substring(0, 500)),
+      );
+      console.log("🔍 [TEST] Member: Checking for gallery-container...");
       await authExpect(
         loggedInPageAsMember.getByTestId("gallery-container"),
       ).toBeVisible({
@@ -158,6 +197,12 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       console.log("🔍 [TEST] Admin: Attempting to access public dataset");
       await loggedInPageAsAdmin.goto("/gallery/seed_survey_data");
       await loggedInPageAsAdmin.waitForURL("**/gallery/**", { timeout: 5000 });
+      const adminPublicUrl = loggedInPageAsAdmin.url();
+      console.log("🔍 [TEST] Admin: Public dataset URL:", adminPublicUrl);
+      console.log(
+        "🔍 [TEST] Admin: Current page title:",
+        await loggedInPageAsAdmin.title(),
+      );
       await authExpect(
         loggedInPageAsAdmin.getByTestId("gallery-container"),
       ).toBeVisible();
@@ -169,6 +214,17 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       await loggedInPageAsAdmin.waitForURL("**/gallery/**", {
         timeout: 10000,
       });
+      const adminDatasetUrl = loggedInPageAsAdmin.url();
+      console.log("🔍 [TEST] Admin: Member dataset URL:", adminDatasetUrl);
+      console.log(
+        "🔍 [TEST] Admin: Current page title:",
+        await loggedInPageAsAdmin.title(),
+      );
+      console.log(
+        "🔍 [TEST] Admin: Page content preview:",
+        await loggedInPageAsAdmin.content().then((c) => c.substring(0, 500)),
+      );
+      console.log("🔍 [TEST] Admin: Checking for gallery-container...");
       await authExpect(
         loggedInPageAsAdmin.getByTestId("gallery-container"),
       ).toBeVisible({
