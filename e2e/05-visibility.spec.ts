@@ -172,10 +172,11 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       });
       const memberDatasetUrl = loggedInPageAsMember.url();
       console.log("🔍 [TEST] Member: Member dataset URL:", memberDatasetUrl);
-      // Wait for map intro panel heading or text instead of map container
-      // Check for heading with "data" or text "clickOnFeaturesForMoreInfo"
+      // Wait for map intro panel text instead of map container
       await authExpect(
-        loggedInPageAsMember.getByText(/click on features for more info/i),
+        loggedInPageAsMember.getByText(
+          "Click on map features for more information",
+        ),
       ).toBeVisible({ timeout: 5000 });
       console.log(
         "🔍 [TEST] Member: ✅ Successfully accessed member dataset (map page loaded)",
@@ -215,10 +216,11 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       });
       const adminDatasetUrl = loggedInPageAsAdmin.url();
       console.log("🔍 [TEST] Admin: Member dataset URL:", adminDatasetUrl);
-      // Wait for map intro panel heading or text instead of map container
-      // Check for heading with "data" or text "clickOnFeaturesForMoreInfo"
+      // Wait for map intro panel text instead of map container
       await authExpect(
-        loggedInPageAsAdmin.getByText(/click on features for more info/i),
+        loggedInPageAsAdmin.getByText(
+          "Click on map features for more information",
+        ),
       ).toBeVisible({ timeout: 5000 });
       console.log(
         "🔍 [TEST] Admin: ✅ Successfully accessed member dataset (map page loaded)",
