@@ -1,11 +1,14 @@
 import type { H3Event } from "h3";
 import { Role } from "~/types/types";
+import type { User } from "~/types/types";
 
 /**
  * Test-only API endpoint to set user session with a specific role (POST version for Playwright)
  * Only available when CI=true or NODE_ENV=test
  * This allows e2e tests to simulate different user roles without Auth0
  * Usage: POST /api/test/set-session with body: { role: 0 } (for SignedIn) or { role: null } (to clear)
+ *
+ * Sets a cookie with JWT-like token containing user info for test authentication
  */
 export default defineEventHandler(async (event: H3Event) => {
   console.log("🔍 [TEST] set-session POST endpoint called");
@@ -29,12 +32,17 @@ export default defineEventHandler(async (event: H3Event) => {
 
     // Allow clearing session by passing null or undefined role
     if (role === null || role === undefined) {
-      console.log("🔍 [TEST] Clearing user session - skipping for now");
-      // Note: clearUserSession may not be available, so we'll just return success
-      // The session will be overwritten on next setUserSession call anyway
+      console.log("🔍 [TEST] Clearing test cookie");
+      setCookie(event, "test-auth-token", "", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+        maxAge: 0, // Delete cookie
+        path: "/",
+      });
       return {
         success: true,
-        message: "Session clear requested (not implemented)",
+        message: "Test session cleared",
       };
     }
 
@@ -76,46 +84,46 @@ export default defineEventHandler(async (event: H3Event) => {
       `🔍 [TEST] Setting user session with role: ${roleName} (${userRole})`,
     );
 
-    try {
-      await setUserSession(event, {
-        user: {
-          auth0: email as string,
-          roles: [
-            {
-              id: `test-${roleName.toLowerCase()}-role`,
-              name: roleName,
-              description: `Test ${roleName} role for e2e testing`,
-            },
-          ],
-          userRole,
+    // Create user object
+    const testUser: User = {
+      auth0: email as string,
+      roles: [
+        {
+          id: `test-${roleName.toLowerCase()}-role`,
+          name: roleName,
+          description: `Test ${roleName} role for e2e testing`,
         },
-        loggedInAt: Date.now(),
-      });
+      ],
+      userRole,
+    };
 
-      console.log(
-        `🔍 [TEST] User session set successfully for ${email} with role ${roleName}`,
-      );
+    // Create JWT-like token (simple base64 encoded JSON for testing)
+    // Format: base64(JSON.stringify({ user, loggedInAt }))
+    const tokenPayload = {
+      user: testUser,
+      loggedInAt: Date.now(),
+    };
+    const token = Buffer.from(JSON.stringify(tokenPayload)).toString("base64");
 
-      return {
-        success: true,
-        role: userRole,
-        roleName,
-        email,
-      };
-    } catch (sessionError) {
-      console.error("🔍 [TEST] Error setting user session:", sessionError);
-      console.error("🔍 [TEST] Error details:", {
-        message:
-          sessionError instanceof Error
-            ? sessionError.message
-            : String(sessionError),
-        stack: sessionError instanceof Error ? sessionError.stack : undefined,
-      });
-      throw createError({
-        statusCode: 500,
-        statusMessage: `Failed to set user session: ${sessionError instanceof Error ? sessionError.message : String(sessionError)}`,
-      });
-    }
+    // Set cookie with the token
+    setCookie(event, "test-auth-token", token, {
+      httpOnly: true,
+      secure: false, // Allow in test environments
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24, // 24 hours
+      path: "/",
+    });
+
+    console.log(
+      `🔍 [TEST] Test auth cookie set successfully for ${email} with role ${roleName}`,
+    );
+
+    return {
+      success: true,
+      role: userRole,
+      roleName,
+      email,
+    };
   } catch (error) {
     console.error("🔍 [TEST] Unhandled error in set-session POST:", error);
     throw error;
