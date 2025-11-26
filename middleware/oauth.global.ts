@@ -44,31 +44,20 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const session = useUserSession();
   const { loggedIn, user } = session;
 
-  // Test mode: Check for test auth cookie first, then fallback to query param
+  // Test mode: Check for test auth cookie/query early - we'll use this for permission checks
+  // We can't mutate session in middleware, so we'll use testUser directly for checks
+  let testUser: User | null = null;
   if (process.env.CI || process.env.NODE_ENV === "test") {
     // First, check for test auth cookie
-    const testUser = decodeTestAuthToken();
-    if (testUser && !user.value) {
-      // Set the session from cookie token
-      const mutableSession = session as unknown as {
-        user?: { value?: User };
-        loggedIn?: { value: boolean };
-      };
-      if (mutableSession.user) {
-        mutableSession.user.value = testUser;
-      }
-      if (mutableSession.loggedIn) {
-        mutableSession.loggedIn.value = true;
-      }
-
+    testUser = decodeTestAuthToken();
+    if (testUser) {
       console.log(
-        `🔍 [TEST] ✅ Set test user from cookie in middleware: role=${testUser.userRole}`,
+        `🔍 [TEST] Found test user from cookie: role=${testUser.userRole}, roles=${JSON.stringify(testUser.roles)}`,
       );
-      return; // Continue with the route
     }
 
-    // Fallback: Check for testRole in query - if present, set the user directly
-    if (to.query.testRole) {
+    // Fallback: Check for testRole in query
+    if (!testUser && to.query.testRole) {
       const testRole = Number(to.query.testRole);
       const validRoles = [0, 1, 2, 3]; // SignedIn, Guest, Member, Admin
       if (validRoles.includes(testRole)) {
@@ -78,7 +67,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
           2: "Member",
           3: "Admin",
         };
-        const testUserFromQuery: User = {
+        testUser = {
           auth0: "test@example.com",
           roles: [
             {
@@ -89,32 +78,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
           ],
           userRole: testRole as Role,
         };
-
-        // Directly set the session state - bypassing cookies entirely
-        // Use unknown as intermediate type to allow mutation in test mode
-        const mutableSession = session as unknown as {
-          user?: { value?: User };
-          loggedIn?: { value: boolean };
-        };
-        if (mutableSession.user) {
-          mutableSession.user.value = testUserFromQuery;
-        }
-        if (mutableSession.loggedIn) {
-          mutableSession.loggedIn.value = true;
-        }
-
         console.log(
-          `🔍 [TEST] ✅ Directly set test role in middleware: ${roleNames[testRole]} (${testRole})`,
+          `🔍 [TEST] Found test user from query: role=${roleNames[testRole]} (${testRole})`,
         );
-
-        // Keep the testRole in query for subsequent navigations
-        // This allows the role to persist across page navigations
-        return; // Continue with the route, keeping testRole in URL
       }
     }
-
-    // If no testRole and no cookie but we're in CI, check if we should clear any existing test user
-    // (This handles the case where we want to test unauthenticated access)
   }
   const {
     public: { authStrategy },
@@ -164,7 +132,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
       if (permission === "anyone") return;
 
       // Require authentication
-      if (!loggedIn.value) {
+      // In CI/test mode, check if we have testUser - if so, treat as authenticated
+      const isAuthenticated = loggedIn.value || testUser !== null;
+      if (!isAuthenticated) {
         if (authStrategy === "auth0") return router.push("/login");
         // In CI/test mode with "none" auth strategy, still check permissions
         // For member/admin permissions, block unauthenticated access even in CI
@@ -177,15 +147,23 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return; // allow for other auth strategies or guest permission in CI
       }
 
-      // Authenticated from here on
-      const typedUser = user.value as User;
-      const userRole = typedUser?.userRole ?? Role.SignedIn;
+      // Authenticated from here on - check permissions using userRole
+      // In CI/test mode, use testUser if available, otherwise use session user
+      const userToCheck =
+        (process.env.CI || process.env.NODE_ENV === "test") && testUser
+          ? testUser
+          : (user.value as User);
+      const userRole = userToCheck?.userRole ?? Role.SignedIn;
       console.log("🔍 [TEST] Middleware checking permissions:", {
         permission,
         userRole,
+        userRoles: userToCheck?.roles?.map((r) => r.name),
         path: to.path,
+        isTestUser:
+          (process.env.CI || process.env.NODE_ENV === "test") &&
+          testUser !== null,
       });
-      // Role-based access control
+      // Role-based access control - same logic for test and real users
       switch (permission) {
         case "guest":
           if (userRole < Role.Guest) {
@@ -218,21 +196,29 @@ export default defineNuxtRouteMiddleware(async (to) => {
     } catch (error) {
       console.error("Error checking view permissions:", error);
       // On error, fall back to requiring authentication
-      if (!loggedIn.value && authStrategy === "auth0") {
+      // In CI/test mode, check if we have testUser - if so, treat as authenticated
+      const isAuthenticated = loggedIn.value || testUser !== null;
+      if (!isAuthenticated && authStrategy === "auth0") {
         return router.push("/login");
       }
     }
   }
 
   // Handle authentication for non-dataset routes
-  if (authStrategy === "auth0" && !loggedIn.value && to.path !== "/login") {
+  // In CI/test mode, check if we have testUser - if so, treat as authenticated
+  const isAuthenticated = loggedIn.value || testUser !== null;
+  if (authStrategy === "auth0" && !isAuthenticated && to.path !== "/login") {
     return router.push("/login");
   }
 
   // Check role-based access for restricted routes
-  if (authStrategy === "auth0" && loggedIn.value && user.value) {
-    const typedUser = user.value as User;
-    const userRole = typedUser.userRole ?? Role.SignedIn;
+  // In CI/test mode, use testUser if available, otherwise use session user
+  if (authStrategy === "auth0" && isAuthenticated) {
+    const userToCheck =
+      (process.env.CI || process.env.NODE_ENV === "test") && testUser
+        ? testUser
+        : (user.value as User);
+    const userRole = userToCheck?.userRole ?? Role.SignedIn;
 
     // Redirect non-Admins from config route
     if (to.path === "/config" && userRole < Role.Admin) {
