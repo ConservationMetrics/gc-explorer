@@ -1322,3 +1322,53 @@ test("config page - basemap configuration - max 3 limit", async ({ page }) => {
     await page.waitForTimeout(3500);
   }
 });
+
+test("config page - non-admin user redirected from /config", async ({
+  page,
+}) => {
+  // 1. Navigate to the config page
+  await page.goto("/config");
+
+  // 2. Wait for potential redirect
+  await page.waitForTimeout(1000);
+
+  // 3. Check if we're redirected to home page with unauthorized reason
+  const currentUrl = page.url();
+  const urlParams = new URL(currentUrl).searchParams;
+
+  // Should be redirected to home page
+  expect(currentUrl).toMatch(/\/$/);
+  // Should have unauthorized reason in query params
+  expect(urlParams.get("reason")).toBe("unauthorized");
+});
+
+test("config page - non-admin user redirected from /config/[dataset]", async ({
+  page,
+}) => {
+  // 1. First, we need to get a valid dataset name
+  // Navigate to index to see available datasets
+  await page.goto("/");
+
+  // 2. Wait for the page to load
+  await page.waitForTimeout(1000);
+
+  // 3. Try to find a dataset link or use a common test dataset name
+  // For this test, we'll use a placeholder dataset name
+  // In a real scenario, you'd extract this from the page
+  const testDataset = "test_dataset";
+
+  // 4. Navigate to the config dataset page
+  await page.goto(`/config/${testDataset}`);
+
+  // 5. Wait for potential redirect
+  await page.waitForTimeout(1000);
+
+  // 6. Check if we're redirected to home page with unauthorized reason
+  const currentUrl = page.url();
+  const urlParams = new URL(currentUrl).searchParams;
+
+  // Should be redirected to home page
+  expect(currentUrl).toMatch(/\/$/);
+  // Should have unauthorized reason in query params
+  expect(urlParams.get("reason")).toBe("unauthorized");
+});

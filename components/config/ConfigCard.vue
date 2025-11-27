@@ -15,7 +15,7 @@ const emit = defineEmits([
 ]);
 
 // Set keys for the different sections of the config
-const availableViews = ref();
+const availableViews = ref<string[]>([]);
 const viewsKeys = computed(() => ["VIEWS"]);
 const mapConfigKeys = computed(() => [
   "MAPBOX_STYLE",
@@ -62,10 +62,10 @@ onMounted(() => {
 // Form validations and helpers
 const isChanged = computed(() => {
   const localConfigFiltered = Object.fromEntries(
-    Object.entries(localConfig.value).filter(([value]) => value !== ""),
+    Object.entries(localConfig.value).filter(([value]) => value !== "")
   );
   const originalConfigFiltered = Object.fromEntries(
-    Object.entries(originalConfig.value).filter(([value]) => value !== ""),
+    Object.entries(originalConfig.value).filter(([value]) => value !== "")
   );
   return (
     JSON.stringify(localConfigFiltered) !==
@@ -87,15 +87,18 @@ const isFormValid = computed(() => {
 
 const shouldShowConfigMap = computed(() => hasView(["alerts", "map"]));
 const shouldShowConfigMedia = computed(() =>
-  hasView(["map", "gallery", "alerts"]),
+  hasView(["map", "gallery", "alerts"])
 );
 const shouldShowConfigAlerts = computed(() => hasView(["alerts"]));
 const shouldShowConfigFilters = computed(() => hasView(["map", "gallery"]));
 const shouldShowConfigOther = computed(() =>
-  hasView(["map", "gallery", "alerts"]),
+  hasView(["map", "gallery", "alerts"])
 );
 
 const hasView = (viewsArray: Array<string>) => {
+  if (!availableViews.value || availableViews.value.length === 0) {
+    return false;
+  }
   return viewsArray.some((view) => availableViews.value.includes(view));
 };
 
