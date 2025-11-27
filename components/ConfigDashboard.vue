@@ -25,7 +25,7 @@ const sortedViewsConfig = computed(() => {
         accumulator[key] = props.viewsConfig[key];
         return accumulator;
       },
-      {} as Record<string, ViewConfig>
+      {} as Record<string, ViewConfig>,
     );
 });
 

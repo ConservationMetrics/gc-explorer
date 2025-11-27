@@ -47,7 +47,7 @@ if (data.value && !error.value) {
       (key) =>
         key === dataset ||
         decodeURIComponent(key) === dataset ||
-        key === decodeURIComponent(dataset)
+        key === decodeURIComponent(dataset),
     );
     if (matchingKey) {
       datasetConfig.value = fetchedViewsData[matchingKey];
