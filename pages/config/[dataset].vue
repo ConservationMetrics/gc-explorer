@@ -84,18 +84,50 @@ const submitConfig = async ({
   }
 };
 
-/** POST request to remove a table from the config */
-const removeTableFromConfig = async (tableName: string) => {
-  try {
-    await $fetch(`/api/config/delete_table/${tableName}`, {
-      method: "POST",
-      headers,
-    });
-    // Redirect to config page after removal
-    await navigateTo("/config");
-  } catch (error) {
-    console.error("Error removing table from config:", error);
+// Modal state for remove confirmation
+const showModal = ref(false);
+const showModalButtons = ref(false);
+const modalMessage = ref("");
+const tableNameToRemove = ref<string | null>(null);
+
+const handleRemoveTableFromConfig = (tableName: string) => {
+  tableNameToRemove.value = tableName;
+  modalMessage.value =
+    t("removeTableAreYouSure") +
+    ": <strong>" +
+    tableName +
+    "</strong>?<br><br><em>" +
+    t("tableRemovedNote") +
+    ".</em>";
+  showModal.value = true;
+  showModalButtons.value = true;
+};
+
+const handleConfirmRemove = async () => {
+  if (tableNameToRemove.value) {
+    try {
+      await $fetch(`/api/config/delete_table/${tableNameToRemove.value}`, {
+        method: "POST",
+        headers,
+      });
+      modalMessage.value = t("tableRemovedFromViews") + "!";
+      showModalButtons.value = false;
+      setTimeout(() => {
+        showModal.value = false;
+        navigateTo("/config");
+      }, 3000);
+    } catch (error) {
+      console.error("Error removing table from config:", error);
+      showModal.value = false;
+    }
   }
+};
+
+const handleCancelRemove = () => {
+  showModal.value = false;
+  showModalButtons.value = false;
+  modalMessage.value = "";
+  tableNameToRemove.value = null;
 };
 
 const { t } = useI18n();
@@ -128,9 +160,30 @@ useHead({
             :view-config="datasetConfig"
             :is-minimized="false"
             @submit-config="submitConfig"
-            @remove-table-from-config="removeTableFromConfig"
+            @remove-table-from-config="handleRemoveTableFromConfig"
             @toggle-minimize="() => {}"
           />
+        </div>
+        <div v-if="showModal" class="overlay"></div>
+        <div v-if="showModal" class="modal">
+          <!-- eslint-disable vue/no-v-html -->
+          <!-- this is done intentionally to allow for HTML rendering in the modal message -->
+          <p v-html="modalMessage"></p>
+          <!-- eslint-enable vue/no-v-html -->
+          <div v-if="showModalButtons" class="mt-4">
+            <button
+              class="text-white font-bold mb-2 mr-2 py-2 px-4 rounded transition-colors duration-200 bg-red-500 hover:bg-red-700"
+              @click="handleConfirmRemove"
+            >
+              {{ $t("confirm") }}
+            </button>
+            <button
+              class="text-white font-bold bg-blue-500 hover:bg-blue-700 mb-2 py-2 px-4 rounded transition-colors duration-200"
+              @click="handleCancelRemove"
+            >
+              {{ $t("cancel") }}
+            </button>
+          </div>
         </div>
       </div>
     </ClientOnly>
