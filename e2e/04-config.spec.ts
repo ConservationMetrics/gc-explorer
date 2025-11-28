@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("config page - displays configuration dashboard with table cards", async ({
+test("config page - displays configuration dashboard with dataset cards", async ({
   page,
 }) => {
   // 1. Navigate to the config page
@@ -27,6 +27,15 @@ test("config page - displays configuration dashboard with table cards", async ({
   await page
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
+
+  // 6. Verify dataset cards are present (list view)
+  const datasetCards = page.locator(".dataset-card");
+  const cardCount = await datasetCards.count();
+  expect(cardCount).toBeGreaterThan(0);
+
+  // 7. Verify "Edit dataset" buttons are present
+  const editButtons = page.getByRole("link", { name: /edit dataset/i });
+  await expect(editButtons.first()).toBeVisible();
 });
 
 test("config page - add and remove table functionality", async ({ page }) => {
@@ -79,19 +88,28 @@ test("config page - add and remove table functionality", async ({ page }) => {
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 14. Find the card with the table name we just added and remove it
+  // 14. Find the dataset card with the table name we just added and navigate to edit page
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+      `.dataset-card:has(.dataset-name:has-text("${tableNameToAdd.trim()}"))`,
     );
     await expect(targetCard).toBeVisible();
 
-    // 15. Expand the target card
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // 15. Click "Edit dataset" to navigate to the edit page
+    const editButton = targetCard.getByRole("link", { name: /edit dataset/i });
+    await editButton.click();
 
-    // 16. Click the remove table button
-    const removeButton = targetCard.locator("button.remove-button");
+    // 16. Wait for navigation to complete
+    await page.waitForURL(`**/config/${tableNameToAdd.trim()}`, {
+      timeout: 5000,
+    });
+
+    // 17. Find the config card on the edit page
+    const configCard = page.locator(".table-item.card");
+    await expect(configCard).toBeVisible();
+
+    // 18. Click the remove table button
+    const removeButton = configCard.locator("button.remove-button");
     await removeButton.click();
 
     // 17. Verify the confirmation modal appears
@@ -131,9 +149,7 @@ test("config page - cancel add table modal", async ({ page }) => {
   await expect(modal).not.toBeVisible();
 });
 
-test("config page - table card minimize/expand functionality", async ({
-  page,
-}) => {
+test("config page - navigate to dataset edit page", async ({ page }) => {
   // 1. Navigate to the config page
   await page.goto("/config");
 
@@ -142,25 +158,27 @@ test("config page - table card minimize/expand functionality", async ({
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 3. Look for table cards
-  const tableCards = page.locator(".table-item.card");
-  const cardCount = await tableCards.count();
+  // 3. Look for dataset cards
+  const datasetCards = page.locator(".dataset-card");
+  const cardCount = await datasetCards.count();
 
   if (cardCount > 0) {
-    // 4. Click the hamburger button on the first card
-    const firstCard = tableCards.first();
-    const hamburgerButton = firstCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // 4. Get the first dataset name
+    const firstCard = datasetCards.first();
+    const datasetName = await firstCard.locator(".dataset-name").textContent();
 
-    // 5. Verify the card body is now visible (expanded)
-    const cardBody = firstCard.locator(".card-body");
+    // 5. Click the "Edit dataset" button
+    const editButton = firstCard.getByRole("link", { name: /edit dataset/i });
+    await editButton.click();
+
+    // 6. Verify we're on the dataset edit page
+    await page.waitForURL(`**/config/${datasetName?.trim()}`, {
+      timeout: 5000,
+    });
+
+    // 7. Verify the card body is visible (accordion is open by default)
+    const cardBody = page.locator(".card-body");
     await expect(cardBody).toBeVisible();
-
-    // 6. Click the hamburger button again to minimize
-    await hamburgerButton.click();
-
-    // 7. Verify the card body is hidden (minimized)
-    await expect(cardBody).not.toBeVisible();
   }
 });
 
@@ -204,18 +222,27 @@ test("config page - form validation and change detection", async ({ page }) => {
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 10. Find the card with the table name we just added
+  // 10. Find the dataset card with the table name we just added and navigate to edit page
   if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    const datasetCard = page.locator(
+      `.dataset-card:has(.dataset-name:has-text("${tableNameToAdd.trim()}"))`,
     );
+    await expect(datasetCard).toBeVisible();
+
+    // 11. Click "Edit dataset" to navigate to the edit page
+    const editButton = datasetCard.getByRole("link", { name: /edit dataset/i });
+    await editButton.click();
+
+    // 12. Wait for navigation to complete
+    await page.waitForURL(`**/config/${tableNameToAdd.trim()}`, {
+      timeout: 5000,
+    });
+
+    // 13. Find the config card on the edit page (accordion is open by default)
+    const targetCard = page.locator(".table-item.card");
     await expect(targetCard).toBeVisible();
 
-    // 11. Expand the target card
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
-
-    // 12. Wait for form content to be visible
+    // 14. Wait for form content to be visible
     await targetCard
       .locator(".config-section")
       .first()
@@ -353,18 +380,27 @@ test("config page - submit configuration changes", async ({ page }) => {
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 10. Find the card with the table name we just added
+  // 10. Find the dataset card with the table name we just added and navigate to edit page
   if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    const datasetCard = page.locator(
+      `.dataset-card:has(.dataset-name:has-text("${tableNameToAdd.trim()}"))`,
     );
+    await expect(datasetCard).toBeVisible();
+
+    // 11. Click "Edit dataset" to navigate to the edit page
+    const editButton = datasetCard.getByRole("link", { name: /edit dataset/i });
+    await editButton.click();
+
+    // 12. Wait for navigation to complete
+    await page.waitForURL(`**/config/${tableNameToAdd.trim()}`, {
+      timeout: 5000,
+    });
+
+    // 13. Find the config card on the edit page (accordion is open by default)
+    const targetCard = page.locator(".table-item.card");
     await expect(targetCard).toBeVisible();
 
-    // 11. Expand the target card
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
-
-    // 12. Find and modify a form field
+    // 14. Find and modify a form field
     const mapboxTokenInput = targetCard
       .locator(
         'input[name*="MAPBOX_ACCESS_TOKEN"], input[placeholder*="Mapbox Access Token"]',
@@ -418,15 +454,24 @@ test("config page - views configuration section", async ({ page }) => {
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 3. Look for table cards
-  const tableCards = page.locator(".table-item.card");
-  const cardCount = await tableCards.count();
+  // 3. Look for dataset cards
+  const datasetCards = page.locator(".dataset-card");
+  const cardCount = await datasetCards.count();
 
   if (cardCount > 0) {
-    // 4. Expand the first card
-    const firstCard = tableCards.first();
-    const hamburgerButton = firstCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // 4. Click "Edit dataset" on the first card to navigate to edit page
+    const firstDatasetCard = datasetCards.first();
+    const editButton = firstDatasetCard.getByRole("link", {
+      name: /edit dataset/i,
+    });
+    await editButton.click();
+
+    // 5. Wait for navigation to complete
+    await page.waitForURL("**/config/**", { timeout: 5000 });
+
+    // 6. Find the config card on the edit page (accordion is open by default)
+    const firstCard = page.locator(".table-item.card").first();
+    await expect(firstCard).toBeVisible();
 
     // 5. Look for views checkboxes
     const viewsCheckboxes = firstCard.locator('input[type="checkbox"]');
@@ -511,18 +556,27 @@ test("config page - conditional form sections based on views", async ({
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 10. Find the card with the table name we just added
+  // 10. Find the dataset card with the table name we just added and navigate to edit page
   if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    const datasetCard = page.locator(
+      `.dataset-card:has(.dataset-name:has-text("${tableNameToAdd.trim()}"))`,
     );
+    await expect(datasetCard).toBeVisible();
+
+    // 11. Click "Edit dataset" to navigate to the edit page
+    const editButton = datasetCard.getByRole("link", { name: /edit dataset/i });
+    await editButton.click();
+
+    // 12. Wait for navigation to complete
+    await page.waitForURL(`**/config/${tableNameToAdd.trim()}`, {
+      timeout: 5000,
+    });
+
+    // 13. Find the config card on the edit page (accordion is open by default)
+    const targetCard = page.locator(".table-item.card");
     await expect(targetCard).toBeVisible();
 
-    // 11. Expand the target card
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
-
-    // 12. Check for different config sections
+    // 14. Check for different config sections
     const configSections = targetCard.locator(".config-section");
     const sectionCount = await configSections.count();
 
@@ -642,18 +696,27 @@ test("config page - error handling for invalid form submission", async ({
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 10. Find the card with the table name we just added
+  // 10. Find the dataset card with the table name we just added and navigate to edit page
   if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    const datasetCard = page.locator(
+      `.dataset-card:has(.dataset-name:has-text("${tableNameToAdd.trim()}"))`,
     );
+    await expect(datasetCard).toBeVisible();
+
+    // 11. Click "Edit dataset" to navigate to the edit page
+    const editButton = datasetCard.getByRole("link", { name: /edit dataset/i });
+    await editButton.click();
+
+    // 12. Wait for navigation to complete
+    await page.waitForURL(`**/config/${tableNameToAdd.trim()}`, {
+      timeout: 5000,
+    });
+
+    // 13. Find the config card on the edit page (accordion is open by default)
+    const targetCard = page.locator(".table-item.card");
     await expect(targetCard).toBeVisible();
 
-    // 11. Expand the target card
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
-
-    // 12. Find mapbox access token field
+    // 14. Find mapbox access token field
     const mapboxTokenInput = targetCard
       .locator(
         'input[name*="MAPBOX_ACCESS_TOKEN"], input[placeholder*="Mapbox Access Token"]',
@@ -750,12 +813,21 @@ test("config page - visibility permissions configuration", async ({ page }) => {
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 3. Find the first table card and expand it
-  const firstCard = page.locator(".table-item.card").first();
-  const hamburgerButton = firstCard.locator("button.hamburger");
-  await hamburgerButton.click();
+  // 3. Find the first dataset card and click "Edit dataset"
+  const firstDatasetCard = page.locator(".dataset-card").first();
+  const editButton = firstDatasetCard.getByRole("link", {
+    name: /edit dataset/i,
+  });
+  await editButton.click();
 
-  // 4. Look for the visibility section (should be visible to admins)
+  // 4. Wait for navigation to the edit page
+  await page.waitForURL("**/config/**", { timeout: 5000 });
+
+  // 5. Find the config card on the edit page (accordion is open by default)
+  const firstCard = page.locator(".table-item.card").first();
+  await expect(firstCard).toBeVisible();
+
+  // 6. Look for the visibility section (should be visible to admins)
   const visibilitySection = firstCard.locator("text=Visibility");
 
   // If visibility section is visible (admin user), test the functionality
@@ -822,15 +894,25 @@ test("config page - basemap configuration - add and remove basemaps", async ({
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 4. Find and expand the target card
+  // 4. Find the dataset card and navigate to edit page
   if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    const datasetCard = page.locator(
+      `.dataset-card:has(.dataset-name:has-text("${tableNameToAdd.trim()}"))`,
     );
-    await expect(targetCard).toBeVisible();
+    await expect(datasetCard).toBeVisible();
 
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // Click "Edit dataset" to navigate to the edit page
+    const editButton = datasetCard.getByRole("link", { name: /edit dataset/i });
+    await editButton.click();
+
+    // Wait for navigation to complete
+    await page.waitForURL(`**/config/${tableNameToAdd.trim()}`, {
+      timeout: 5000,
+    });
+
+    // Find the config card on the edit page (accordion is open by default)
+    const targetCard = page.locator(".table-item.card");
+    await expect(targetCard).toBeVisible();
 
     // 5. Wait for map configuration section
     await targetCard
@@ -936,13 +1018,25 @@ test("config page - basemap configuration - validation", async ({ page }) => {
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 4. Find and expand the target card
+  // 4. Find the dataset card and navigate to edit page
   if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    const datasetCard = page.locator(
+      `.dataset-card:has(.dataset-name:has-text("${tableNameToAdd.trim()}"))`,
     );
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    await expect(datasetCard).toBeVisible();
+
+    // Click "Edit dataset" to navigate to the edit page
+    const editButton = datasetCard.getByRole("link", { name: /edit dataset/i });
+    await editButton.click();
+
+    // Wait for navigation to complete
+    await page.waitForURL(`**/config/${tableNameToAdd.trim()}`, {
+      timeout: 5000,
+    });
+
+    // Find the config card on the edit page (accordion is open by default)
+    const targetCard = page.locator(".table-item.card");
+    await expect(targetCard).toBeVisible();
 
     await targetCard
       .locator(".config-section")
@@ -1077,13 +1171,25 @@ test("config page - basemap configuration - update name and style", async ({
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 4. Find and expand the target card
+  // 4. Find the dataset card and navigate to edit page
   if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    const datasetCard = page.locator(
+      `.dataset-card:has(.dataset-name:has-text("${tableNameToAdd.trim()}"))`,
     );
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    await expect(datasetCard).toBeVisible();
+
+    // Click "Edit dataset" to navigate to the edit page
+    const editButton = datasetCard.getByRole("link", { name: /edit dataset/i });
+    await editButton.click();
+
+    // Wait for navigation to complete
+    await page.waitForURL(`**/config/${tableNameToAdd.trim()}`, {
+      timeout: 5000,
+    });
+
+    // Find the config card on the edit page (accordion is open by default)
+    const targetCard = page.locator(".table-item.card");
+    await expect(targetCard).toBeVisible();
 
     await targetCard
       .locator(".config-section")
@@ -1170,13 +1276,25 @@ test("config page - color column configuration", async ({ page }) => {
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 4. Find and expand the target card
+  // 4. Find the dataset card and navigate to edit page
   if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    const datasetCard = page.locator(
+      `.dataset-card:has(.dataset-name:has-text("${tableNameToAdd.trim()}"))`,
     );
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    await expect(datasetCard).toBeVisible();
+
+    // Click "Edit dataset" to navigate to the edit page
+    const editButton = datasetCard.getByRole("link", { name: /edit dataset/i });
+    await editButton.click();
+
+    // Wait for navigation to complete
+    await page.waitForURL(`**/config/${tableNameToAdd.trim()}`, {
+      timeout: 5000,
+    });
+
+    // Find the config card on the edit page (accordion is open by default)
+    const targetCard = page.locator(".table-item.card");
+    await expect(targetCard).toBeVisible();
 
     await targetCard
       .locator(".config-section")
@@ -1252,13 +1370,25 @@ test("config page - basemap configuration - max 3 limit", async ({ page }) => {
     .locator(".grid-container")
     .waitFor({ state: "attached", timeout: 5000 });
 
-  // 4. Find and expand the target card
+  // 4. Find the dataset card and navigate to edit page
   if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+    const datasetCard = page.locator(
+      `.dataset-card:has(.dataset-name:has-text("${tableNameToAdd.trim()}"))`,
     );
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    await expect(datasetCard).toBeVisible();
+
+    // Click "Edit dataset" to navigate to the edit page
+    const editButton = datasetCard.getByRole("link", { name: /edit dataset/i });
+    await editButton.click();
+
+    // Wait for navigation to complete
+    await page.waitForURL(`**/config/${tableNameToAdd.trim()}`, {
+      timeout: 5000,
+    });
+
+    // Find the config card on the edit page (accordion is open by default)
+    const targetCard = page.locator(".table-item.card");
+    await expect(targetCard).toBeVisible();
 
     await targetCard
       .locator(".config-section")
@@ -1323,52 +1453,5 @@ test("config page - basemap configuration - max 3 limit", async ({ page }) => {
   }
 });
 
-test("config page - non-admin user redirected from /config", async ({
-  page,
-}) => {
-  // 1. Navigate to the config page
-  await page.goto("/config");
-
-  // 2. Wait for potential redirect
-  await page.waitForTimeout(1000);
-
-  // 3. Check if we're redirected to home page with unauthorized reason
-  const currentUrl = page.url();
-  const urlParams = new URL(currentUrl).searchParams;
-
-  // Should be redirected to home page
-  expect(currentUrl).toMatch(/\/$/);
-  // Should have unauthorized reason in query params
-  expect(urlParams.get("reason")).toBe("unauthorized");
-});
-
-test("config page - non-admin user redirected from /config/[dataset]", async ({
-  page,
-}) => {
-  // 1. First, we need to get a valid dataset name
-  // Navigate to index to see available datasets
-  await page.goto("/");
-
-  // 2. Wait for the page to load
-  await page.waitForTimeout(1000);
-
-  // 3. Try to find a dataset link or use a common test dataset name
-  // For this test, we'll use a placeholder dataset name
-  // In a real scenario, you'd extract this from the page
-  const testDataset = "test_dataset";
-
-  // 4. Navigate to the config dataset page
-  await page.goto(`/config/${testDataset}`);
-
-  // 5. Wait for potential redirect
-  await page.waitForTimeout(1000);
-
-  // 6. Check if we're redirected to home page with unauthorized reason
-  const currentUrl = page.url();
-  const urlParams = new URL(currentUrl).searchParams;
-
-  // Should be redirected to home page
-  expect(currentUrl).toMatch(/\/$/);
-  // Should have unauthorized reason in query params
-  expect(urlParams.get("reason")).toBe("unauthorized");
-});
+// Note: Redirect tests removed since authStrategy is "none" in test environment,
+// making these tests pointless. They would only be relevant with authStrategy === "auth0"
