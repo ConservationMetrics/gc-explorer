@@ -110,11 +110,15 @@ const handleConfirmRemove = async () => {
         method: "POST",
         headers,
       });
-      modalMessage.value = t("tableRemovedFromViews") + "!";
+      // Hide buttons and update message to show success
       showModalButtons.value = false;
-      setTimeout(() => {
+      modalMessage.value = t("tableRemovedFromViews") + "!";
+      // Ensure DOM updates before continuing
+      await nextTick();
+      // Wait 3 seconds to show success message, then navigate
+      setTimeout(async () => {
         showModal.value = false;
-        navigateTo("/config");
+        await navigateTo("/config");
       }, 3000);
     } catch (error) {
       console.error("Error removing table from config:", error);
@@ -166,21 +170,23 @@ useHead({
         </div>
       </div>
       <!-- Modal moved outside conditional block so it stays visible after deletion -->
-      <div v-if="showModal" class="overlay"></div>
-      <div v-if="showModal" class="modal">
+      <div v-if="showModal" class="overlay" data-testid="modal-overlay"></div>
+      <div v-if="showModal" class="modal" data-testid="remove-table-modal">
         <!-- eslint-disable vue/no-v-html -->
         <!-- this is done intentionally to allow for HTML rendering in the modal message -->
-        <p v-html="modalMessage"></p>
+        <p data-testid="modal-message" v-html="modalMessage"></p>
         <!-- eslint-enable vue/no-v-html -->
-        <div v-if="showModalButtons" class="mt-4">
+        <div v-if="showModalButtons" class="mt-4" data-testid="modal-buttons">
           <button
             class="text-white font-bold mb-2 mr-2 py-2 px-4 rounded transition-colors duration-200 bg-red-500 hover:bg-red-700"
+            data-testid="confirm-remove-button"
             @click="handleConfirmRemove"
           >
             {{ $t("confirm") }}
           </button>
           <button
             class="text-white font-bold bg-blue-500 hover:bg-blue-700 mb-2 py-2 px-4 rounded transition-colors duration-200"
+            data-testid="cancel-remove-button"
             @click="handleCancelRemove"
           >
             {{ $t("cancel") }}
