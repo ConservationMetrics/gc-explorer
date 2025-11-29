@@ -32,6 +32,16 @@ const isPermissionSelected = computed(() => {
   return routeLevelPermission.value !== undefined;
 });
 
+// Watch for config changes to sync permission value
+watch(
+  () => props.viewConfig.ROUTE_LEVEL_PERMISSION,
+  (newPermission) => {
+    if (newPermission !== routeLevelPermission.value) {
+      routeLevelPermission.value = newPermission;
+    }
+  },
+);
+
 // Watch for changes and emit updates
 watch(routeLevelPermission, (newPermission) => {
   const updatedConfig = {

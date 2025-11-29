@@ -88,6 +88,7 @@ useHead({
         v-if="dataFetched"
         :views-config="viewsConfig"
         :table-names="tableNames"
+        :list-mode="true"
         @submit-config="submitConfig"
         @remove-table-from-config="removeTableFromConfig"
         @add-table-to-config="addTableToConfig"

@@ -15,7 +15,7 @@ const emit = defineEmits([
 ]);
 
 // Set keys for the different sections of the config
-const availableViews = ref();
+const availableViews = ref<string[]>([]);
 const viewsKeys = computed(() => ["VIEWS"]);
 const mapConfigKeys = computed(() => [
   "MAPBOX_STYLE",
@@ -96,6 +96,9 @@ const shouldShowConfigOther = computed(() =>
 );
 
 const hasView = (viewsArray: Array<string>) => {
+  if (!availableViews.value || availableViews.value.length === 0) {
+    return false;
+  }
   return viewsArray.some((view) => availableViews.value.includes(view));
 };
 
