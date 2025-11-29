@@ -208,11 +208,13 @@ export const updateConfig = async (
 export const addNewTableToConfig = async (tableName: string): Promise<void> => {
   try {
     // Set default config with permission to allow form submission
-    // In CI, default to "public", otherwise "member"
-    const defaultPermission = process.env.CI ? "anyone" : "member";
-    const defaultConfig = {
-      ROUTE_LEVEL_PERMISSION: defaultPermission,
-    };
+    // In CI, default to "anyone", otherwise "empty
+    let defaultConfig = {};
+    if (process.env.CI) {
+      defaultConfig = {
+        ROUTE_LEVEL_PERMISSION: "anyone",
+      };
+    }
     await configDb.insert(viewConfig).values({
       tableName,
       viewsConfig: JSON.stringify(defaultConfig),
