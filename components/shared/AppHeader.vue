@@ -4,7 +4,12 @@ import { Role } from "@/types/types";
 import GlobeLanguagePicker from "@/components/shared/GlobeLanguagePicker.vue";
 
 const config = useRuntimeConfig();
-const communityName = config.public.communityName || "Guardian Connector";
+const { t } = useI18n();
+const communityName = computed(() => {
+  const name = config.public.communityName || "community";
+  // Use i18n to translate community name
+  return t(`community.${name}`) || name;
+});
 const {
   public: { authStrategy },
 } = useRuntimeConfig();
@@ -52,7 +57,7 @@ const shouldShowConfigLink = computed(() => {
         />
         <div class="rounded-lg px-4 py-2 max-[1200px]:px-2">
           <h1 class="text-lg max-[1200px]:text-xs font-bold">
-            {{ $t("guardianConnector") }}
+            Guardian Connector
           </h1>
         </div>
       </div>
@@ -164,7 +169,7 @@ const shouldShowConfigLink = computed(() => {
           class="h-10 w-auto"
         />
         <div class="rounded-lg px-2">
-          <h1 class="text-sm font-bold">{{ $t("guardianConnector") }}</h1>
+          <h1 class="text-sm font-bold">Guardian Connector</h1>
         </div>
       </div>
 

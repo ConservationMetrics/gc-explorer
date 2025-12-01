@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import LanguagePicker from "@/components/shared/LanguagePicker.vue";
+import GlobeLanguagePicker from "@/components/shared/GlobeLanguagePicker.vue";
 
 interface Props {
   title: string;
@@ -33,7 +33,11 @@ const toggleMobileMenu = () => {
           </p>
         </div>
         <div class="ml-4 flex items-center gap-3">
-          <LanguagePicker v-if="showLanguagePicker" />
+          <GlobeLanguagePicker
+            v-if="showLanguagePicker"
+            theme="white"
+            variant="icon"
+          />
         </div>
       </div>
     </div>
@@ -47,7 +51,11 @@ const toggleMobileMenu = () => {
           </h1>
         </div>
         <div class="flex items-center gap-2">
-          <LanguagePicker v-if="showLanguagePicker" />
+          <GlobeLanguagePicker
+            v-if="showLanguagePicker"
+            theme="white"
+            variant="icon"
+          />
         </div>
       </div>
     </div>

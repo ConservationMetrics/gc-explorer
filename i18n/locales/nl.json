@@ -59,7 +59,9 @@
   "gallery": "Galerij",
   "galleryNotAvailable": "GuardianConnector Explorer Gallery is niet beschikbaar. Activeer media-inbedding",
   "geocoordinates": "Coördinaten",
-  "guardianConnector": "Guardian Connector",
+  "community": {
+    "community": "gemeenschap"
+  },
   "geographicCentroid": "Geografisch middelpunt",
   "geotype": "Geotype",
   "header.languagePicker": "Taal",

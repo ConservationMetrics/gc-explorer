@@ -58,7 +58,9 @@
   "gallery": "Galeria",
   "galleryNotAvailable": "A galeria do GuardianConnector Explorer não está disponível. Por favor, ative a incorporação de mídia",
   "geocoordinates": "Coordenadas",
-  "guardianConnector": "Guardian Connector",
+  "community": {
+    "community": "comunidade"
+  },
   "geographicCentroid": "Centróide geográfico",
   "geotype": "Tipo de geometria",
   "header.languagePicker": "Idioma",

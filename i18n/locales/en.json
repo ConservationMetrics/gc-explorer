@@ -61,7 +61,9 @@
   "gallery": "Gallery",
   "galleryNotAvailable": "GuardianConnector Explorer Gallery is not available. Please activate media embedding",
   "geocoordinates": "Coordinates",
-  "guardianConnector": "Guardian Connector",
+  "community": {
+    "community": "community"
+  },
   "geographicCentroid": "Geographic centroid",
   "geotype": "Geotype",
   "header.languagePicker": "Language",

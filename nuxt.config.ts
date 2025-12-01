@@ -138,7 +138,7 @@ export default defineNuxtConfig({
       appApiKey: "",
       authStrategy: "none",
       baseUrl: "http://localhost:8080",
-      communityName: "your", // we use "your" right now as a placeholder for the community name because we need to update it for all communities which is not something we can do till Rudo is available
+      communityName: "community",
     },
   },
 });
