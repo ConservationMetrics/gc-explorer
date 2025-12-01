@@ -162,10 +162,8 @@ useHead({
           <ConfigCard
             :table-name="dataset"
             :view-config="datasetConfig"
-            :is-minimized="false"
             @submit-config="submitConfig"
             @remove-table-from-config="handleRemoveTableFromConfig"
-            @toggle-minimize="() => {}"
           />
         </div>
       </div>
@@ -216,7 +214,7 @@ useHead({
   align-items: center;
   gap: 1em;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto 1em auto;
 }
 

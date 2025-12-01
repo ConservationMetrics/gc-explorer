@@ -6,7 +6,6 @@ import type { Views, ViewConfig } from "@/types/types";
 const props = defineProps<{
   viewsConfig: Views;
   tableNames: Array<string>;
-  listMode?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -48,20 +47,6 @@ const handleAddNewTable = () => {
   showModalDropdown.value = true;
 };
 
-const handleRemoveTableFromConfig = (tableName: string) => {
-  currentModalAction.value = "removeTable";
-  modalMessage.value =
-    t("removeTableAreYouSure") +
-    ": <strong>" +
-    tableName +
-    "</strong>?<br><br><em>" +
-    t("tableRemovedNote") +
-    ".</em>";
-  showModal.value = true;
-  showModalButtons.value = true;
-  tableNameToRemove.value = tableName;
-};
-
 const handleConfirmButton = () => {
   if (currentModalAction.value === "removeTable") {
     emit("removeTableFromConfig", tableNameToRemove.value);
@@ -93,40 +78,6 @@ const handleCancelButton = () => {
   currentModalAction.value = null;
 };
 
-const handleSubmit = async ({
-  tableName,
-  config,
-}: {
-  tableName: string;
-  config: ViewConfig;
-}) => {
-  emit("submitConfig", { tableName, config });
-  modalMessage.value = t("configUpdated") + "!";
-  showModal.value = true;
-  setTimeout(() => {
-    showModal.value = false;
-    location.reload();
-  }, 3000);
-};
-
-// Helpers for minimizing cards
-const initializeMinimizedCards = () => {
-  const minimized: Record<string, boolean> = {};
-  for (const tableName in props.viewsConfig) {
-    minimized[tableName] = true;
-  }
-  return minimized;
-};
-const minimizedCards = ref(initializeMinimizedCards());
-
-const toggleMinimize = ({ tableName }: { tableName: string }) => {
-  const isCurrentlyMinimized = minimizedCards.value[tableName];
-  for (const key in minimizedCards.value) {
-    minimizedCards.value[key] = true;
-  }
-  minimizedCards.value[tableName] = !isCurrentlyMinimized;
-};
-
 // Validation for confirm button; disable if tableNameToAdd is empty
 watch(tableNameToAdd, (newVal) => {
   confirmButtonDisabled.value = !newVal;
@@ -139,7 +90,7 @@ watch(tableNameToAdd, (newVal) => {
       <LanguagePicker />
     </div>
     <h1>{{ $t("availableViews") }}: {{ $t("configuration") }}</h1>
-    <div v-if="listMode" class="grid-container list-grid">
+    <div class="grid-container list-grid">
       <div
         v-for="(config, tableName) in sortedViewsConfig"
         :key="tableName"
@@ -153,18 +104,6 @@ watch(tableNameToAdd, (newVal) => {
           {{ $t("editDataset") }}
         </NuxtLink>
       </div>
-    </div>
-    <div v-else class="grid-container">
-      <ConfigCard
-        v-for="(config, tableName) in sortedViewsConfig"
-        :key="tableName"
-        :table-name="tableName"
-        :view-config="config"
-        :is-minimized="minimizedCards[tableName]"
-        @toggle-minimize="toggleMinimize"
-        @submit-config="handleSubmit"
-        @remove-table-from-config="handleRemoveTableFromConfig"
-      />
     </div>
     <button
       class="text-white font-bold bg-blue-500 hover:bg-blue-700 py-2 px-4 rounded transition-colors duration-200 mb-6"
