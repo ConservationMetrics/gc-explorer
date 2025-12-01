@@ -95,8 +95,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const typedUser = user.value as User;
     const userRole = typedUser.userRole ?? Role.SignedIn;
 
-    // Redirect non-Admins from config route
-    if (to.path === "/config" && userRole < Role.Admin) {
+    // Redirect non-Admins from config routes
+    if (to.path.startsWith("/config") && userRole < Role.Admin) {
       return router.push("/?reason=unauthorized");
     }
   }
