@@ -48,9 +48,9 @@ const shouldShowConfigLink = computed(() => {
         <img
           src="/gcexplorer.png"
           alt="Guardian Connector Explorer"
-          class="h-10 w-auto"
+          class="h-10 w-auto max-[1200px]:h-8"
         />
-        <div class="rounded-lg px-4 py-2">
+        <div class="rounded-lg px-4 py-2 max-[1200px]:px-2">
           <h1 class="text-lg max-[1200px]:text-xs font-bold">
             {{ $t("guardianConnector") }}
           </h1>
@@ -59,7 +59,7 @@ const shouldShowConfigLink = computed(() => {
 
       <!-- Tab with Community Name -->
       <div
-        class="flex absolute left-[25%] -bottom-3 flex-col items-center t-[32%]"
+        class="tab-container flex absolute left-[25%] -bottom-3 flex-col items-center t-[32%]"
       >
         <button class="tab-trigger active">
           <svg
@@ -80,7 +80,9 @@ const shouldShowConfigLink = computed(() => {
               transform="translate(-740 -2113.0982)"
             />
           </svg>
-          <span class="text-lg font-bold">{{ communityName }}</span>
+          <span class="text-lg max-[1200px]:text-xs font-bold">{{
+            communityName
+          }}</span>
           <svg
             class="right-curve"
             xmlns="http://www.w3.org/2000/svg"

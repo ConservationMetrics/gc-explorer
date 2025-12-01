@@ -60,3 +60,10 @@
   right: 1px;
   transform: translateX(100%);
 }
+
+/* Hide tab container below 1100px */
+@media (max-width: 1100px) {
+  .tab-container {
+    display: none;
+  }
+}
