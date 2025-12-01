@@ -6,10 +6,10 @@ import AppHeader from "@/components/shared/AppHeader.vue";
 const viewsConfig = ref<Views>({});
 
 const {
-  public: { appApiKey },
+  public: { appApiKey, authStrategy },
 } = useRuntimeConfig();
 
-const { user } = useUserSession();
+const { loggedIn, user } = useUserSession();
 const { error: showErrorToast } = useToast();
 const { t } = useI18n();
 const route = useRoute();
@@ -85,6 +85,26 @@ const filteredSortedViewsConfig = computed(() => {
     }, {});
 });
 
+// Check if user should see config link
+const shouldShowConfigLink = computed(() => {
+  // Show config link in CI environment
+  if (process.env.CI) {
+    return true;
+  }
+
+  if (authStrategy === "none") {
+    return true;
+  }
+
+  if (authStrategy === "auth0" && loggedIn.value && user.value) {
+    const typedUser = user.value as User | null;
+    const userRole = typedUser?.userRole ?? Role.SignedIn;
+    return userRole >= Role.Admin;
+  }
+
+  return false;
+});
+
 // Handle unauthorized access toast
 onMounted(async () => {
   if (route.query.reason === "unauthorized") {
@@ -122,6 +142,19 @@ useHead({
         >
           {{ $t("indexDescription") }}
         </p>
+      </div>
+
+      <!-- Manage Datasets Button - Right above cards on RHS -->
+      <div
+        v-if="shouldShowConfigLink && viewsConfig"
+        class="flex justify-end mb-4"
+      >
+        <a
+          href="/config"
+          class="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer"
+        >
+          {{ $t("manageDatasets") }}
+        </a>
       </div>
 
       <!-- Project Cards Grid -->
