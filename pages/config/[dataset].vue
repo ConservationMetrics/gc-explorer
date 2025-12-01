@@ -156,7 +156,7 @@ useHead({
           </NuxtLink>
         </div>
         <h1>
-          {{ $t("availableViews") }}: {{ $t("configuration") }} - {{ dataset }}
+          {{ $t("configuration") }} - {{ dataset }}
         </h1>
         <div class="grid-container">
           <ConfigCard
