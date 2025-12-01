@@ -36,24 +36,12 @@ const getPermissionLevel = () => {
         {{ String(tableName).charAt(0).toUpperCase() }}
       </div>
       <div class="flex-1 min-w-0 max-w-full overflow-hidden">
-        <div class="flex items-center gap-2 mb-2">
-          <h2
-            class="text-lg sm:text-xl font-semibold text-gray-800 break-words max-w-full"
-            style="
-              overflow-wrap: anywhere;
-              word-break: break-word;
-              hyphens: auto;
-            "
-          >
-            {{ String(tableName) }}
-          </h2>
-          <span
-            v-if="getPermissionLevel()"
-            class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 whitespace-nowrap flex-shrink-0"
-          >
-            {{ getPermissionLevel() }}
-          </span>
-        </div>
+        <h2
+          class="text-lg sm:text-xl font-semibold text-gray-800 break-words max-w-full mb-2"
+          style="overflow-wrap: anywhere; word-break: break-word; hyphens: auto"
+        >
+          {{ String(tableName) }}
+        </h2>
         <!-- Description placeholder - to be populated with actual project descriptions -->
         <!-- <p class="text-sm sm:text-base text-gray-600 mb-4 line-clamp-2">
           Description lorem ipsum dolor sit amet, consectetur adipiscing
@@ -115,6 +103,18 @@ const getPermissionLevel = () => {
         </svg>
         {{ $t(view) }}
       </NuxtLink>
+    </div>
+
+    <!-- Permission Level -->
+    <div v-if="getPermissionLevel()" class="flex items-center gap-2 mb-2">
+      <span class="text-sm text-gray-600 font-medium">
+        {{ $t("permission") }}:
+      </span>
+      <span
+        class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 whitespace-nowrap"
+      >
+        {{ getPermissionLevel() }}
+      </span>
     </div>
 
     <!-- Open Project Button - Commented out for now -->

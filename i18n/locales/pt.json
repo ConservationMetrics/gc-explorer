@@ -60,7 +60,8 @@
   "galleryNotAvailable": "A galeria do GuardianConnector Explorer não está disponível. Por favor, ative a incorporação de mídia",
   "geocoordinates": "Coordenadas",
   "community": {
-    "community": "comunidade"
+    "community": "comunidade",
+    "demo": "demo"
   },
   "geographicCentroid": "Centróide geográfico",
   "geotype": "Tipo de geometria",
@@ -118,6 +119,7 @@
   "other": "Outro",
   "password": "Senha",
   "passwordIncorrect": "A senha que você inseriu está incorreta",
+  "permission": "Permissão",
   "permissionLevel_admin": "Administrador",
   "permissionLevel_anyone": "Público",
   "permissionLevel_guest": "Convidado",

@@ -61,7 +61,8 @@
   "galleryNotAvailable": "GuardianConnector Explorer Gallery is niet beschikbaar. Activeer media-inbedding",
   "geocoordinates": "Coördinaten",
   "community": {
-    "community": "gemeenschap"
+    "community": "gemeenschap",
+    "demo": "demo"
   },
   "geographicCentroid": "Geografisch middelpunt",
   "geotype": "Geotype",
@@ -119,6 +120,7 @@
   "other": "Andere",
   "password": "Wachtwoord",
   "passwordIncorrect": "Het ingevoerde wachtwoord is onjuist",
+  "permission": "Toestemming",
   "permissionLevel_admin": "Beheerder",
   "permissionLevel_anyone": "Openbaar",
   "permissionLevel_guest": "Gast",

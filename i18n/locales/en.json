@@ -63,7 +63,8 @@
   "galleryNotAvailable": "GuardianConnector Explorer Gallery is not available. Please activate media embedding",
   "geocoordinates": "Coordinates",
   "community": {
-    "community": "community"
+    "community": "community",
+    "demo": "demo"
   },
   "geographicCentroid": "Geographic centroid",
   "geotype": "Geotype",
@@ -121,6 +122,7 @@
   "other": "Other",
   "password": "Password",
   "passwordIncorrect": "The password you entered is incorrect",
+  "permission": "Permission",
   "permissionLevel_admin": "Admin",
   "permissionLevel_anyone": "Public",
   "permissionLevel_guest": "Guest",
