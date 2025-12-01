@@ -9,7 +9,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const getPermissionLevel = (tableName: string | number) => {
+const getPermissionLevel = () => {
   // No restrictions in CI environment
   if (process.env.CI) return null;
 
@@ -26,27 +26,32 @@ const getPermissionLevel = (tableName: string | number) => {
 
 <template>
   <div
-    class="bg-purple-50 rounded-lg p-4 sm:p-6 shadow-sm border border-purple-100"
+    class="bg-purple-50 rounded-lg p-4 sm:p-6 shadow-sm border border-purple-100 overflow-hidden"
   >
     <!-- Card Icon/Initial -->
     <div class="flex items-start mb-3">
       <div
-        class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-200 flex items-center justify-center text-white font-bold text-sm sm:text-base mr-3"
+        class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-200 flex items-center justify-center text-white font-bold text-sm sm:text-base mr-3 flex-shrink-0"
       >
         {{ String(tableName).charAt(0).toUpperCase() }}
       </div>
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2 mb-2 flex-wrap">
+      <div class="flex-1 min-w-0 max-w-full overflow-hidden">
+        <div class="flex items-center gap-2 mb-2">
           <h2
-            class="text-lg sm:text-xl font-semibold text-gray-800 break-words"
+            class="text-lg sm:text-xl font-semibold text-gray-800 break-words max-w-full"
+            style="
+              overflow-wrap: anywhere;
+              word-break: break-word;
+              hyphens: auto;
+            "
           >
             {{ String(tableName) }}
           </h2>
           <span
-            v-if="getPermissionLevel(tableName)"
-            class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800"
+            v-if="getPermissionLevel()"
+            class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 whitespace-nowrap flex-shrink-0"
           >
-            {{ getPermissionLevel(tableName) }}
+            {{ getPermissionLevel() }}
           </span>
         </div>
         <!-- Description placeholder - to be populated with actual project descriptions -->
@@ -59,12 +64,12 @@ const getPermissionLevel = (tableName: string | number) => {
     </div>
 
     <!-- View Pills -->
-    <div class="flex flex-wrap gap-2 mb-4">
+    <div class="flex flex-wrap gap-2 mb-4 overflow-hidden">
       <NuxtLink
         v-for="view in config.VIEWS ? config.VIEWS.split(',') : []"
         :key="view"
         :to="`/${view}/${String(tableName)}`"
-        class="inline-flex items-center gap-1 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-medium bg-purple-100 text-purple-800 rounded-full hover:bg-purple-200 transition-colors"
+        class="inline-flex items-center gap-1 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-medium bg-purple-100 text-purple-800 rounded-full hover:bg-purple-200 transition-colors flex-shrink-0 max-w-full"
       >
         <!-- Map Icon -->
         <svg
