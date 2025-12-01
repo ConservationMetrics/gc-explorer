@@ -155,9 +155,7 @@ useHead({
             ← {{ $t("configuration") }}
           </NuxtLink>
         </div>
-        <h1>
-          {{ $t("configuration") }} - {{ dataset }}
-        </h1>
+        <h1>{{ $t("configuration") }} - {{ dataset }}</h1>
         <div class="grid-container">
           <ConfigCard
             :table-name="dataset"
