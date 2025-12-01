@@ -137,12 +137,6 @@ useHead({
         <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
           {{ $t("availableViews") }}
         </h1>
-        <p
-          v-if="$t('indexDescription')"
-          class="text-sm sm:text-base text-gray-600"
-        >
-          {{ $t("indexDescription") }}
-        </p>
       </div>
 
       <!-- Manage Datasets Button - Right above cards on RHS -->
@@ -174,7 +168,7 @@ useHead({
       <!-- Empty State -->
       <div v-else class="text-center py-12">
         <p class="text-gray-500 text-sm sm:text-base">
-          {{ $t("noProjectsAvailable") || "No projects available" }}
+          {{ $t("noDatasetViewsAvailable") || "No dataset views available" }}
         </p>
       </div>
     </main>
