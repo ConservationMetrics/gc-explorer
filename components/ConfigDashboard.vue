@@ -47,20 +47,6 @@ const handleAddNewTable = () => {
   showModalDropdown.value = true;
 };
 
-const handleRemoveTableFromConfig = (tableName: string) => {
-  currentModalAction.value = "removeTable";
-  modalMessage.value =
-    t("removeTableAreYouSure") +
-    ": <strong>" +
-    tableName +
-    "</strong>?<br><br><em>" +
-    t("tableRemovedNote") +
-    ".</em>";
-  showModal.value = true;
-  showModalButtons.value = true;
-  tableNameToRemove.value = tableName;
-};
-
 const handleConfirmButton = () => {
   if (currentModalAction.value === "removeTable") {
     emit("removeTableFromConfig", tableNameToRemove.value);
@@ -92,40 +78,6 @@ const handleCancelButton = () => {
   currentModalAction.value = null;
 };
 
-const handleSubmit = async ({
-  tableName,
-  config,
-}: {
-  tableName: string;
-  config: ViewConfig;
-}) => {
-  emit("submitConfig", { tableName, config });
-  modalMessage.value = t("configUpdated") + "!";
-  showModal.value = true;
-  setTimeout(() => {
-    showModal.value = false;
-    location.reload();
-  }, 3000);
-};
-
-// Helpers for minimizing cards
-const initializeMinimizedCards = () => {
-  const minimized: Record<string, boolean> = {};
-  for (const tableName in props.viewsConfig) {
-    minimized[tableName] = true;
-  }
-  return minimized;
-};
-const minimizedCards = ref(initializeMinimizedCards());
-
-const toggleMinimize = ({ tableName }: { tableName: string }) => {
-  const isCurrentlyMinimized = minimizedCards.value[tableName];
-  for (const key in minimizedCards.value) {
-    minimizedCards.value[key] = true;
-  }
-  minimizedCards.value[tableName] = !isCurrentlyMinimized;
-};
-
 // Validation for confirm button; disable if tableNameToAdd is empty
 watch(tableNameToAdd, (newVal) => {
   confirmButtonDisabled.value = !newVal;
@@ -138,17 +90,20 @@ watch(tableNameToAdd, (newVal) => {
       <LanguagePicker />
     </div>
     <h1>{{ $t("availableViews") }}: {{ $t("configuration") }}</h1>
-    <div class="grid-container">
-      <ConfigCard
+    <div class="grid-container list-grid">
+      <div
         v-for="(config, tableName) in sortedViewsConfig"
         :key="tableName"
-        :table-name="tableName"
-        :view-config="config"
-        :is-minimized="minimizedCards[tableName]"
-        @toggle-minimize="toggleMinimize"
-        @submit-config="handleSubmit"
-        @remove-table-from-config="handleRemoveTableFromConfig"
-      />
+        class="dataset-card"
+      >
+        <p class="dataset-name">{{ tableName }}</p>
+        <NuxtLink
+          :to="`/config/${tableName}`"
+          class="edit-button text-white font-bold bg-blue-500 hover:bg-blue-700 py-2 px-4 rounded transition-colors duration-200 self-start"
+        >
+          {{ $t("editDataset") }}
+        </NuxtLink>
+      </div>
     </div>
     <button
       class="text-white font-bold bg-blue-500 hover:bg-blue-700 py-2 px-4 rounded transition-colors duration-200 mb-6"
@@ -224,5 +179,49 @@ watch(tableNameToAdd, (newVal) => {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto 1em auto;
+}
+
+.grid-container.list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  align-items: stretch;
+  gap: 1.5em;
+}
+
+.dataset-card {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.5em;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1em;
+  min-height: 120px;
+}
+
+@media (min-width: 768px) {
+  .grid-container.list-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-container.list-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.dataset-name {
+  margin: 0;
+  font-size: 1.25em;
+  font-weight: bold;
+  color: #333;
+}
+
+.edit-button {
+  text-decoration: none;
+  display: inline-block;
 }
 </style>

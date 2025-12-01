@@ -50,6 +50,7 @@
   "downloadGeoJSON": "Baixar GeoJSON",
   "downloadKML": "Baixar KML",
   "earlier": "Anterior",
+  "editDataset": "Editar conjunto de dados",
   "enable": "Ativar",
   "filterDataByColumn": "Filtrar dados por coluna",
   "filterOutValuesFromColumn": "Quais valores filtrar da coluna",

@@ -5,17 +5,12 @@ import ConfigPermissions from "./ConfigPermissions.vue";
 const props = defineProps<{
   tableName: string;
   viewConfig: ViewConfig;
-  isMinimized: boolean;
 }>();
 
-const emit = defineEmits([
-  "submitConfig",
-  "removeTableFromConfig",
-  "toggleMinimize",
-]);
+const emit = defineEmits(["submitConfig", "removeTableFromConfig"]);
 
 // Set keys for the different sections of the config
-const availableViews = ref();
+const availableViews = ref<string[]>([]);
 const viewsKeys = computed(() => ["VIEWS"]);
 const mapConfigKeys = computed(() => [
   "MAPBOX_STYLE",
@@ -96,6 +91,9 @@ const shouldShowConfigOther = computed(() =>
 );
 
 const hasView = (viewsArray: Array<string>) => {
+  if (!availableViews.value || availableViews.value.length === 0) {
+    return false;
+  }
   return viewsArray.some((view) => availableViews.value.includes(view));
 };
 
@@ -125,11 +123,8 @@ const handleSubmit = () => {
   <div class="table-item card">
     <h2 class="card-header">
       <p class="table-name">{{ tableName }}</p>
-      <button class="hamburger" @click="$emit('toggleMinimize', { tableName })">
-        ☰
-      </button>
     </h2>
-    <div v-if="!isMinimized" class="card-body">
+    <div class="card-body">
       <form @submit.prevent="handleSubmit">
         <ConfigViews
           :table-name="tableName"
@@ -218,21 +213,17 @@ const handleSubmit = () => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 1em;
   width: 100%;
-  max-width: 600px;
+  max-width: 1200px;
 }
 
 .card-header {
   background-color: #d3bce3;
   border-bottom: 1px solid #b399c1;
   padding: 0.75em 1em;
-  height: 3em;
   font-size: 1.25em;
   font-weight: bold;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .card-body {
@@ -241,14 +232,6 @@ const handleSubmit = () => {
 
 .table-name {
   margin: 0;
-  float: left;
-}
-
-.hamburger {
-  background: none;
-  border: none;
-  font-size: 1.5em;
-  cursor: pointer;
 }
 
 .config-section {
