@@ -46,14 +46,14 @@ const getPermissionLevel = () => {
           class="text-lg sm:text-xl font-semibold text-gray-800 break-words max-w-full mb-2"
           style="overflow-wrap: anywhere; word-break: break-word; hyphens: auto"
         >
-          {{ String(tableName) }}
+          {{ config.DATASET_TABLE || String(tableName) }}
         </h2>
-        <!-- Description placeholder - to be populated with actual project descriptions -->
-        <!-- <p class="text-sm sm:text-base text-gray-600 mb-4 line-clamp-2">
-          Description lorem ipsum dolor sit amet, consectetur adipiscing
-          elit, sed do eiusmod tempor incididunt ut labore et dolore magna
-          aliqua.
-        </p> -->
+        <p
+          v-if="config.VIEW_DESCRIPTION"
+          class="text-sm sm:text-base text-gray-600 mb-4 line-clamp-2"
+        >
+          {{ config.VIEW_DESCRIPTION }}
+        </p>
       </div>
     </div>
 

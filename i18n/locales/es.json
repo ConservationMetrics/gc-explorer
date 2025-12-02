@@ -44,6 +44,9 @@
   "dataProvider": "Proveedor de datos",
   "dataProviders": "Proveedor(es) de datos",
   "dataset": "Conjunto de datos",
+  "datasetTable": "Nombre para mostrar del conjunto de datos",
+  "datasetTablePlaceholder": "ej., Alertas falsas",
+  "datasetTableDescription": "Opcional: Un nombre más agradable para este conjunto de datos",
   "dateRange": "Rango de fechas",
   "default": "Predeterminado",
   "downloadCSV": "Descargar CSV",
@@ -166,6 +169,11 @@
   "visibilityPublic": "Público — no se requiere inicio de sesión",
   "visibilityPublicDescription": "Cualquiera con el enlace puede ver.",
   "visibilityRequired": "Por favor, seleccione un nivel de visibilidad para este conjunto de datos.",
+  "viewDescription": "Descripción de la vista",
+  "viewDescriptionPlaceholder": "Ingrese una descripción para este conjunto de datos...",
+  "viewDescriptionDescription": "Opcional: Descripción de este conjunto de datos",
+  "viewHeaderImage": "Imagen de encabezado de la vista",
+  "viewHeaderImageDescription": "Opcional: URL para la imagen de fondo del encabezado",
   "yourAccessIsPending": "Su acceso está pendiente. Ponte en contacto con un administrador de Guardian Connector para la aprobación de su cuenta.",
   "yourMapboxStyleDefault": "Mapbox - su estilo (predeterminado)"
 }

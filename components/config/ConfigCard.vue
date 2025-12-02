@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ViewConfig } from "@/types/types";
 import ConfigPermissions from "./ConfigPermissions.vue";
+import ConfigDatasetInfo from "./ConfigDatasetInfo.vue";
 
 const props = defineProps<{
   tableName: string;
@@ -40,6 +41,11 @@ const filterKeys = computed(() => [
   "UNWANTED_SUBSTRINGS",
 ]);
 const otherKeys = computed(() => ["LOGO_URL"]);
+const datasetInfoKeys = computed(() => [
+  "DATASET_TABLE",
+  "VIEW_HEADER_IMAGE",
+  "VIEW_DESCRIPTION",
+]);
 
 // On mounted, set localConfig to props.config
 const originalConfig = ref<ViewConfig>({});
@@ -171,6 +177,13 @@ const handleSubmit = () => {
           :views="availableViews"
           :config="localConfig"
           :keys="otherKeys"
+          @update-config="handleConfigUpdate"
+        />
+        <ConfigDatasetInfo
+          :table-name="tableName"
+          :views="availableViews"
+          :config="localConfig"
+          :keys="datasetInfoKeys"
           @update-config="handleConfigUpdate"
         />
         <ConfigPermissions

@@ -54,6 +54,9 @@ export interface ViewConfig {
   UNWANTED_SUBSTRINGS?: string;
   VIEWS?: string;
   ROUTE_LEVEL_PERMISSION?: RouteLevelPermission; // Who can access this view: anyone, signed-in, member, or admin
+  DATASET_TABLE?: string; // Display name for the dataset/table (e.g., "Fake Alerts" instead of "fake_alerts")
+  VIEW_HEADER_IMAGE?: string; // Image source URL for the dataset card header background
+  VIEW_DESCRIPTION?: string; // Description of the dataset/table
 }
 
 export interface Views {
