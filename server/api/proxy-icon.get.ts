@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   try {
     // Fetch the image from the external source
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       throw createError({
         statusCode: response.status,
@@ -40,8 +40,7 @@ export default defineEventHandler(async (event) => {
   } catch (error) {
     throw createError({
       statusCode: 500,
-      statusMessage: "Failed to proxy image",
+      statusMessage: `Failed to proxy image: ${error}`,
     });
   }
 });
-
