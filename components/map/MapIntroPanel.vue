@@ -10,6 +10,7 @@ const props = defineProps<{
   logoUrl?: string;
   showIcons?: boolean;
   canToggleIcons?: boolean;
+  loadingIcons?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -114,10 +115,12 @@ const dataForDownload = computed<FeatureCollection>(() => {
     >
       <div class="p-6 flex justify-center">
         <button
-          class="toggle-icons-button bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          class="toggle-icons-button bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 disabled:cursor-not-allowed"
+          :disabled="loadingIcons"
           @click="emit('toggleIcons')"
         >
-          {{ showIcons ? $t("showPoints") : $t("showIcons") }}
+          <span v-if="loadingIcons">Loading icons...</span>
+          <span v-else>{{ showIcons ? $t("showPoints") : $t("showIcons") }}</span>
         </button>
       </div>
     </div>

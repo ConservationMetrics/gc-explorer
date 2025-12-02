@@ -60,6 +60,7 @@ const showSidebar = ref(true);
 const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showIcons = ref(false);
+const loadingIcons = ref(false);
 
 // Check if icon toggle is available
 const canToggleIcons = computed(() => {
@@ -376,6 +377,7 @@ const loadIconImages = async () => {
 
 /** Prepare map canvas content by adding data and legend */
 const prepareMapCanvasContent = async () => {
+  // For initial load, load icons if needed
   if (showIcons.value && props.iconColumn && props.mediaBasePathIcons) {
     await loadIconImages();
   }
@@ -458,13 +460,31 @@ const handleSidebarClose = () => {
 
 /** Toggle between icons and points */
 const handleToggleIcons = async () => {
-  showIcons.value = !showIcons.value;
-  // Remove existing point layer
+  if (!map.value) return;
+  
+  const newShowIcons = !showIcons.value;
+  
+  // Remove existing point layer first
   if (map.value.getLayer("data-layer-point")) {
     map.value.removeLayer("data-layer-point");
   }
-  // Re-add data to map with new style
-  await prepareMapCanvasContent();
+  
+  // If switching TO icons, load them FIRST before updating state
+  if (newShowIcons && props.iconColumn && props.mediaBasePathIcons) {
+    loadingIcons.value = true;
+    try {
+      await loadIconImages();
+    } finally {
+      loadingIcons.value = false;
+    }
+  }
+  
+  // NOW update the state
+  showIcons.value = newShowIcons;
+  
+  // Add the new layer (icons are guaranteed to be loaded if needed)
+  addDataToMap();
+  prepareMapLegendContent();
 };
 
 onBeforeUnmount(() => {
@@ -511,6 +531,7 @@ onBeforeUnmount(() => {
       :show-sidebar="showSidebar"
       :show-icons="showIcons"
       :can-toggle-icons="canToggleIcons"
+      :loading-icons="loadingIcons"
       @close="handleSidebarClose"
       @toggle-icons="handleToggleIcons"
     />
