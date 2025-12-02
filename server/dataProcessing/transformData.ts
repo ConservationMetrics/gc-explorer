@@ -40,13 +40,16 @@ import type {
  * @param {string} iconColumn - Optional icon column name to exclude from transformation
  * @returns {DataEntry[]} - A new array of data entries with transformed keys and values.
  */
-const transformSurveyData = (data: DataEntry[], iconColumn?: string): DataEntry[] => {
+const transformSurveyData = (
+  data: DataEntry[],
+  iconColumn?: string,
+): DataEntry[] => {
   const transformSurveyDataKey = (key: string): string => {
     // Don't transform the icon column key
     if (iconColumn && key === iconColumn) {
       return key;
     }
-    
+
     let transformedKey = key
       .replace(/^g__/, "geo")
       .replace(/^p__/, "")
@@ -105,7 +108,8 @@ const transformSurveyData = (data: DataEntry[], iconColumn?: string): DataEntry[
     const transformedEntry: DataEntry = {};
     Object.entries(entry).forEach(([key, value]) => {
       // Use original key for icon column, don't transform it
-      const transformedKey = (iconColumn && key === iconColumn) ? key : transformSurveyDataKey(key);
+      const transformedKey =
+        iconColumn && key === iconColumn ? key : transformSurveyDataKey(key);
       const transformedValue = transformSurveyDataValue(key, value);
       if (transformedValue !== null) {
         transformedEntry[transformedKey] = String(transformedValue);
