@@ -144,6 +144,7 @@ useHead({
         v-if="shouldShowConfigLink && viewsConfig"
         class="flex justify-end mb-4"
       >
+        <!-- NuxtLink messes up the layout, hence the use of a regular anchor tag -->
         <a
           href="/config"
           class="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer"

@@ -9,6 +9,12 @@ interface Props {
 
 const props = defineProps<Props>();
 
+/**
+ * Gets the formatted permission level for a table to display in the UI
+ * Returns null in CI environment, otherwise shows all permission levels
+ *
+ * @returns {string | null} The formatted permission level or null if not applicable
+ */
 const getPermissionLevel = () => {
   // No restrictions in CI environment
   if (process.env.CI) return null;
@@ -108,7 +114,7 @@ const getPermissionLevel = () => {
     <!-- Permission Level -->
     <div v-if="getPermissionLevel()" class="flex items-center gap-2 mb-2">
       <span class="text-sm text-gray-600 font-medium">
-        {{ $t("permission") }}:
+        {{ $t("permissionLevel") }}:
       </span>
       <span
         class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800 whitespace-nowrap"

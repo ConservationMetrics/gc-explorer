@@ -60,8 +60,7 @@
   "galleryNotAvailable": "A galeria do GuardianConnector Explorer não está disponível. Por favor, ative a incorporação de mídia",
   "geocoordinates": "Coordenadas",
   "community": {
-    "community": "comunidade",
-    "demo": "demo"
+    "community": "comunidade"
   },
   "geographicCentroid": "Centróide geográfico",
   "geotype": "Tipo de geometria",
@@ -70,7 +69,6 @@
   "hectaresPerMonth": "Hectares por mês",
   "hectaresTotal": "Número total de hectares afetados",
   "ifYouAreZoomedOutAlertsWillBeShownAsA": "Se você estiver afastado, os alertas serão mostrados como um",
-  "indexDescription": "Aqui você pode encontrar todos os projetos enviados pelos membros da comunidade. Você também pode criar um novo projeto clicando no botão de novo projeto.",
   "login": "Faça login",
   "loginButton": "Inscreva-se ou faça login",
   "loginError": "Ocorreu um erro ao tentar fazer login",
@@ -119,7 +117,7 @@
   "other": "Outro",
   "password": "Senha",
   "passwordIncorrect": "A senha que você inseriu está incorreta",
-  "permission": "Permissão",
+  "permissionLevel": "Nível de permissão",
   "permissionLevel_admin": "Administrador",
   "permissionLevel_anyone": "Público",
   "permissionLevel_guest": "Convidado",
