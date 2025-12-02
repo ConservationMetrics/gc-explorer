@@ -80,6 +80,7 @@ vi.mock("vue-router", () => ({
 const globalConfig = {
   mocks: {
     $t: (key: string) => key,
+    $n: (value: number) => value.toString(),
   },
   stubs: {
     DataFilter: true,
@@ -508,5 +509,214 @@ describe("MapView component", () => {
     const dataFilter = wrapper.findComponent({ name: "DataFilter" });
     expect(dataFilter.exists()).toBe(true);
     expect(dataFilter.props("colorColumn")).toBe("color");
+  });
+
+  it("enables icon toggle when iconColumn and mediaBasePathIcons are provided", async () => {
+    const propsWithIcons = {
+      ...baseProps,
+      iconColumn: "icon",
+      mediaBasePathIcons: "https://example.com/icons",
+    };
+
+    const wrapper = mount(MapView, {
+      props: propsWithIcons,
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      canToggleIcons: boolean;
+    };
+    expect(vm.canToggleIcons).toBe(true);
+  });
+
+  it("disables icon toggle when iconColumn is missing", async () => {
+    const propsWithoutIconColumn = {
+      ...baseProps,
+      mediaBasePathIcons: "https://example.com/icons",
+    };
+
+    const wrapper = mount(MapView, {
+      props: propsWithoutIconColumn,
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      canToggleIcons: boolean;
+    };
+    expect(vm.canToggleIcons).toBe(false);
+  });
+
+  it("disables icon toggle when mediaBasePathIcons is missing", async () => {
+    const propsWithoutMediaPath = {
+      ...baseProps,
+      iconColumn: "icon",
+    };
+
+    const wrapper = mount(MapView, {
+      props: propsWithoutMediaPath,
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      canToggleIcons: boolean;
+    };
+    expect(vm.canToggleIcons).toBe(false);
+  });
+
+  it("uses showIcons state to determine layer type", async () => {
+    const propsWithIcons = {
+      ...baseProps,
+      iconColumn: "icon",
+      mediaBasePathIcons: "https://example.com/icons",
+      mapData: [
+        {
+          id: "1",
+          geotype: "Point",
+          geocoordinates: "[0, 0]",
+          status: "active",
+          icon: "camp.png",
+          "filter-color": "#ff0000",
+        },
+      ],
+    };
+
+    const wrapper = mount(MapView, {
+      props: propsWithIcons,
+      global: globalConfig,
+    });
+
+    const vm = wrapper.vm as unknown as {
+      showIcons: boolean;
+      canToggleIcons: boolean;
+    };
+
+    // Verify that toggle is available and starts as false
+    expect(vm.canToggleIcons).toBe(true);
+    expect(vm.showIcons).toBe(false);
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    // Check that addLayer was called with circle type (default)
+    const addLayerCalls = mapboxMock.mockMap.addLayer.mock.calls;
+    const circleLayer = addLayerCalls.find(
+      (call) => call[0].id === "data-layer-point" && call[0].type === "circle",
+    );
+    expect(circleLayer).toBeDefined();
+  });
+
+  it("adds circle layer when icons are disabled", async () => {
+    const propsWithIcons = {
+      ...baseProps,
+      iconColumn: "icon",
+      mediaBasePathIcons: "https://example.com/icons",
+    };
+
+    const wrapper = mount(MapView, {
+      props: propsWithIcons,
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    // Check that addLayer was called with circle type (default)
+    const addLayerCalls = mapboxMock.mockMap.addLayer.mock.calls;
+    const circleLayer = addLayerCalls.find(
+      (call) => call[0].id === "data-layer-point" && call[0].type === "circle",
+    );
+    expect(circleLayer).toBeDefined();
+  });
+
+  it("toggles showIcons state when handleToggleIcons is called", async () => {
+    const propsWithIcons = {
+      ...baseProps,
+      iconColumn: "icon",
+      mediaBasePathIcons: "https://example.com/icons",
+    };
+
+    const wrapper = mount(MapView, {
+      props: propsWithIcons,
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      showIcons: boolean;
+    };
+
+    expect(vm.showIcons).toBe(false);
+
+    // Toggle the state directly (simulating the toggle function)
+    vm.showIcons = !vm.showIcons;
+    await flushPromises();
+
+    expect(vm.showIcons).toBe(true);
+
+    // Toggle back
+    vm.showIcons = !vm.showIcons;
+    await flushPromises();
+
+    expect(vm.showIcons).toBe(false);
+  });
+
+  it("passes icon props to ViewSidebar", async () => {
+    const propsWithIcons = {
+      ...baseProps,
+      iconColumn: "icon",
+      mediaBasePathIcons: "https://example.com/icons",
+    };
+
+    const wrapper = mount(MapView, {
+      props: propsWithIcons,
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const sidebar = wrapper.findComponent({ name: "ViewSidebar" });
+    expect(sidebar.exists()).toBe(true);
+    expect(sidebar.props("canToggleIcons")).toBe(true);
+    expect(sidebar.props("showIcons")).toBe(false);
+  });
+
+  it("handles toggle-icons event from ViewSidebar", async () => {
+    const propsWithIcons = {
+      ...baseProps,
+      iconColumn: "icon",
+      mediaBasePathIcons: "https://example.com/icons",
+    };
+
+    const wrapper = mount(MapView, {
+      props: propsWithIcons,
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      showIcons: boolean;
+    };
+
+    expect(vm.showIcons).toBe(false);
+
+    const sidebar = wrapper.findComponent({ name: "ViewSidebar" });
+    await sidebar.vm.$emit("toggle-icons");
+    await flushPromises();
+
+    expect(vm.showIcons).toBe(true);
   });
 });

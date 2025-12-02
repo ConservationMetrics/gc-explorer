@@ -31,6 +31,7 @@ export interface ViewConfig {
   FRONT_END_FILTERING?: string;
   FRONT_END_FILTER_COLUMN?: string;
   FRONT_END_FILTER_FIELD?: string;
+  ICON_COLUMN?: string;
   LOGO_URL?: string;
   MAPBOX_3D?: boolean;
   MAPBOX_3D_TERRAIN_EXAGGERATION?: number;
@@ -48,6 +49,7 @@ export interface ViewConfig {
   MAP_LEGEND_LAYER_IDS?: string;
   MEDIA_BASE_PATH?: string;
   MEDIA_BASE_PATH_ALERTS?: string;
+  MEDIA_BASE_PATH_ICONS?: string;
   MEDIA_COLUMN?: string;
   PLANET_API_KEY?: string;
   UNWANTED_COLUMNS?: string;

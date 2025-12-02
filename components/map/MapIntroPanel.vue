@@ -8,6 +8,12 @@ const props = defineProps<{
   mapStatistics: MapStatistics;
   mapData: Dataset;
   logoUrl?: string;
+  showIcons?: boolean;
+  canToggleIcons?: boolean;
+}>();
+
+const emit = defineEmits<{
+  (e: "toggleIcons"): void;
 }>();
 
 /** Get data source from first item if available */
@@ -99,6 +105,20 @@ const dataForDownload = computed<FeatureCollection>(() => {
     <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
       <div class="p-6">
         <DownloadMapData :data-for-download="dataForDownload" />
+      </div>
+    </div>
+
+    <div
+      v-if="canToggleIcons"
+      class="rounded-lg border bg-card text-card-foreground shadow-sm"
+    >
+      <div class="p-6 flex justify-center">
+        <button
+          class="toggle-icons-button bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          @click="emit('toggleIcons')"
+        >
+          {{ showIcons ? $t("showPoints") : $t("showIcons") }}
+        </button>
       </div>
     </div>
   </div>
