@@ -138,6 +138,7 @@ export default defineNuxtConfig({
       appApiKey: "",
       authStrategy: "none",
       baseUrl: "http://localhost:8080",
+      communityName: "community",
     },
   },
 });
