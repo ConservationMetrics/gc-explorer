@@ -45,6 +45,9 @@
   "dataProvider": "Data provider",
   "dataProviders": "Data provider(s)",
   "dataset": "Dataset",
+  "datasetTable": "Weergavenaam dataset",
+  "datasetTablePlaceholder": "bijv., Nepwaarschuwingen",
+  "datasetTableDescription": "Optioneel: Een mooiere weergavenaam voor deze dataset",
   "dateRange": "Datumbereik",
   "default": "Standaard",
   "downloadCSV": "Download CSV",
@@ -167,6 +170,11 @@
   "visibilityPublic": "Openbaar — geen aanmelding vereist",
   "visibilityPublicDescription": "Iedereen met de link kan bekijken.",
   "visibilityRequired": "Selecteer een zichtbaarheidsniveau voor deze dataset.",
+  "viewDescription": "Weergavebeschrijving",
+  "viewDescriptionPlaceholder": "Voer een beschrijving in voor deze dataset...",
+  "viewDescriptionDescription": "Optioneel: Beschrijving van deze dataset",
+  "viewHeaderImage": "Weergave headerafbeelding",
+  "viewHeaderImageDescription": "Optioneel: URL voor de header achtergrondafbeelding",
   "yourAccessIsPending": "Uw toegang is in behandeling. Neem contact op met een Guardian Connector-beheerder voor goedkeuring van je account.",
   "yourMapboxStyleDefault": "Mapbox - uw stijl (standaard)"
 }

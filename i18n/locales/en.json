@@ -47,6 +47,9 @@
   "dataProvider": "Data provider",
   "dataProviders": "Data provider(s)",
   "dataset": "Dataset",
+  "datasetTable": "Dataset Display Name",
+  "datasetTablePlaceholder": "e.g., Fake Alerts",
+  "datasetTableDescription": "Optional: A nicer display name for this dataset",
   "dateRange": "Date range",
   "default": "Default",
   "downloadCSV": "Download CSV",
@@ -169,6 +172,11 @@
   "visibilityPublic": "Public — no sign-in required",
   "visibilityPublicDescription": "Anyone with the link can view.",
   "visibilityRequired": "Please select a visibility level for this dataset.",
+  "viewDescription": "View Description",
+  "viewDescriptionPlaceholder": "Enter a description for this dataset...",
+  "viewDescriptionDescription": "Optional: Description of this dataset",
+  "viewHeaderImage": "View Header Image",
+  "viewHeaderImageDescription": "Optional: URL for the header background image",
   "yourAccessIsPending": "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
   "yourMapboxStyleDefault": "Mapbox - your style (default)"
 }

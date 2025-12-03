@@ -113,6 +113,9 @@ export const fetchConfig = async (): Promise<Views> => {
         FRONT_END_FILTER_COLUMN: "community",
         MEDIA_BASE_PATH: mediaBasePath,
         ROUTE_LEVEL_PERMISSION: "anyone",
+        DATASET_TABLE: undefined,
+        VIEW_HEADER_IMAGE: undefined,
+        VIEW_DESCRIPTION: undefined,
       },
       bcmform_responses: {
         VIEWS: "map,gallery",
@@ -127,6 +130,9 @@ export const fetchConfig = async (): Promise<Views> => {
         FRONT_END_FILTER_COLUMN: "community",
         MEDIA_BASE_PATH: mediaBasePath,
         ROUTE_LEVEL_PERMISSION: "member",
+        DATASET_TABLE: undefined,
+        VIEW_HEADER_IMAGE: undefined,
+        VIEW_DESCRIPTION: undefined,
       },
       fake_alerts: {
         VIEWS: "alerts",
@@ -142,7 +148,7 @@ export const fetchConfig = async (): Promise<Views> => {
         MAPBOX_ZOOM: 7,
         MAPBOX_PITCH: 0,
         MAPBOX_BEARING: 0,
-        MAPBOX_3D: "NO",
+        MAPBOX_3D: false,
         MAPEO_TABLE: "mapeo_data",
         MAPEO_CATEGORY_IDS: "threat",
         MAP_LEGEND_LAYER_IDS: "road-primary,aerialway",
@@ -150,6 +156,9 @@ export const fetchConfig = async (): Promise<Views> => {
         MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
         PLANET_API_KEY: planetApiKey,
         ROUTE_LEVEL_PERMISSION: "anyone",
+        DATASET_TABLE: undefined,
+        VIEW_HEADER_IMAGE: undefined,
+        VIEW_DESCRIPTION: undefined,
       },
     };
   }
