@@ -131,18 +131,18 @@ onBeforeUnmount(() => {
           :alerts-statistics="alertsStatistics"
           @date-range-changed="emit('date-range-changed', $event)"
         />
-    <MapIntroPanel
-      v-if="
-        showIntroPanel && mapStatistics && mapData && !isAlertsDashboard
-      "
-      :map-statistics="mapStatistics"
-      :map-data="mapData"
-      :logo-url="logoUrl"
-      :show-icons="showIcons"
-      :can-toggle-icons="canToggleIcons"
-      :loading-icons="loadingIcons"
-      @toggle-icons="emit('toggle-icons')"
-    />
+        <MapIntroPanel
+          v-if="
+            showIntroPanel && mapStatistics && mapData && !isAlertsDashboard
+          "
+          :map-statistics="mapStatistics"
+          :map-data="mapData"
+          :logo-url="logoUrl"
+          :show-icons="showIcons"
+          :can-toggle-icons="canToggleIcons"
+          :loading-icons="loadingIcons"
+          @toggle-icons="emit('toggle-icons')"
+        />
         <DataFeature
           v-if="feature"
           :allowed-file-extensions="allowedFileExtensions"

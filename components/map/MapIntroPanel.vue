@@ -120,7 +120,9 @@ const dataForDownload = computed<FeatureCollection>(() => {
           @click="emit('toggleIcons')"
         >
           <span v-if="loadingIcons">Loading icons...</span>
-          <span v-else>{{ showIcons ? $t("showPoints") : $t("showIcons") }}</span>
+          <span v-else>{{
+            showIcons ? $t("showPoints") : $t("showIcons")
+          }}</span>
         </button>
       </div>
     </div>
