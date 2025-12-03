@@ -461,14 +461,14 @@ const handleSidebarClose = () => {
 /** Toggle between icons and points */
 const handleToggleIcons = async () => {
   if (!map.value) return;
-  
+
   const newShowIcons = !showIcons.value;
-  
+
   // Remove existing point layer first
   if (map.value.getLayer("data-layer-point")) {
     map.value.removeLayer("data-layer-point");
   }
-  
+
   // If switching TO icons, load them FIRST before updating state
   if (newShowIcons && props.iconColumn && props.mediaBasePathIcons) {
     loadingIcons.value = true;
@@ -478,10 +478,10 @@ const handleToggleIcons = async () => {
       loadingIcons.value = false;
     }
   }
-  
+
   // NOW update the state
   showIcons.value = newShowIcons;
-  
+
   // Add the new layer (icons are guaranteed to be loaded if needed)
   addDataToMap();
   prepareMapLegendContent();

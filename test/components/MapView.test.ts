@@ -621,7 +621,7 @@ describe("MapView component", () => {
       mediaBasePathIcons: "https://example.com/icons",
     };
 
-    const wrapper = mount(MapView, {
+    mount(MapView, {
       props: propsWithIcons,
       global: globalConfig,
     });
