@@ -16,7 +16,8 @@ export default eventHandler((event) => {
   if (
     url.startsWith("/api/map") ||
     url.startsWith("/api/_auth/") ||
-    url.startsWith("/api/auth/auth0")
+    url.startsWith("/api/auth/auth0") ||
+    url.startsWith("/api/proxy-icon")
   ) {
     return;
   }

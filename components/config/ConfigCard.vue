@@ -26,10 +26,12 @@ const mapConfigKeys = computed(() => [
   "MAP_LEGEND_LAYER_IDS",
   "PLANET_API_KEY",
   "COLOR_COLUMN",
+  "ICON_COLUMN",
 ]);
 const mediaKeys = computed(() => [
   "MEDIA_BASE_PATH",
   "MEDIA_BASE_PATH_ALERTS",
+  "MEDIA_BASE_PATH_ICONS",
   "MEDIA_COLUMN",
 ]);
 const alertKeys = computed(() => ["MAPEO_CATEGORY_IDS", "MAPEO_TABLE"]);

@@ -31,6 +31,7 @@ const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
   colorColumn?: string;
   filterColumn: string;
+  iconColumn?: string;
   mapStatistics: MapStatistics;
   mapLegendLayerIds?: string;
   mapboxAccessToken: string;
@@ -46,6 +47,7 @@ const props = defineProps<{
   mapbox3dTerrainExaggeration: number;
   mapData: Dataset;
   mediaBasePath?: string;
+  mediaBasePathIcons?: string;
   mediaColumn?: string;
   planetApiKey?: string;
 }>();
@@ -57,6 +59,13 @@ const selectedFeatureOriginal = ref();
 const showSidebar = ref(true);
 const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
+const showIcons = ref(false);
+const loadingIcons = ref(false);
+
+// Check if icon toggle is available
+const canToggleIcons = computed(() => {
+  return !!(props.iconColumn && props.mediaBasePathIcons);
+});
 
 onMounted(() => {
   mapboxgl.accessToken = props.mapboxAccessToken;
@@ -169,27 +178,50 @@ const addDataToMap = () => {
 
   // Add a layer for Point features if present
   if (hasPointFeatures && !map.value.getLayer("data-layer-point")) {
-    // Use colorColumn if specified, otherwise fall back to filter-color
-    const colorExpression = props.colorColumn
-      ? [
-          "coalesce",
-          ["get", props.colorColumn, ["get", "feature"]],
-          ["get", "filter-color", ["get", "feature"]],
-        ]
-      : ["get", "filter-color", ["get", "feature"]];
+    // Determine if we should use icons based on config and toggle state
+    const useIcons =
+      showIcons.value && props.iconColumn && props.mediaBasePathIcons;
 
-    map.value.addLayer({
-      id: "data-layer-point",
-      type: "circle",
-      source: "data-source",
-      filter: ["==", "$type", "Point"],
-      paint: {
-        "circle-radius": 8,
-        "circle-color": colorExpression,
-        "circle-stroke-width": 3,
-        "circle-stroke-color": "#fff",
-      },
-    });
+    if (useIcons) {
+      // Add symbol layer for icons
+      map.value.addLayer({
+        id: "data-layer-point",
+        type: "symbol",
+        source: "data-source",
+        filter: ["==", "$type", "Point"],
+        layout: {
+          "icon-image": [
+            "concat",
+            "icon-",
+            ["get", props.iconColumn, ["get", "feature"]],
+          ],
+          "icon-size": 1.0,
+          "icon-allow-overlap": true,
+        },
+      });
+    } else {
+      // Use colorColumn if specified, otherwise fall back to filter-color
+      const colorExpression = props.colorColumn
+        ? [
+            "coalesce",
+            ["get", props.colorColumn, ["get", "feature"]],
+            ["get", "filter-color", ["get", "feature"]],
+          ]
+        : ["get", "filter-color", ["get", "feature"]];
+
+      map.value.addLayer({
+        id: "data-layer-point",
+        type: "circle",
+        source: "data-source",
+        filter: ["==", "$type", "Point"],
+        paint: {
+          "circle-radius": 8,
+          "circle-color": colorExpression,
+          "circle-stroke-width": 3,
+          "circle-stroke-color": "#fff",
+        },
+      });
+    }
   }
 
   // Add a layer for LineString features if present
@@ -304,8 +336,51 @@ const addDataToMap = () => {
   });
 };
 
+/** Load icon images when using icon mode */
+const loadIconImages = async () => {
+  if (!props.iconColumn || !props.mediaBasePathIcons || !map.value) return;
+
+  // Get unique icon filenames from data
+  const iconFilenames = new Set<string>();
+  filteredData.value.forEach((item) => {
+    const iconFilename = item[props.iconColumn!];
+    if (iconFilename && typeof iconFilename === "string") {
+      iconFilenames.add(iconFilename);
+    }
+  });
+
+  // Load each unique icon
+  for (const filename of iconFilenames) {
+    const iconId = `icon-${filename}`;
+    if (!map.value.hasImage(iconId)) {
+      try {
+        const originalUrl = `${props.mediaBasePathIcons}/${filename}`;
+        // Proxy through our server to avoid CORS issues with Mapbox Canvas API
+        const iconUrl = `/api/proxy-icon?url=${encodeURIComponent(originalUrl)}`;
+        const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = iconUrl;
+        });
+        // Check again before adding (in case of race condition from multiple toggles)
+        if (!map.value.hasImage(iconId)) {
+          map.value.addImage(iconId, image);
+        }
+      } catch (error) {
+        console.error(`Failed to load icon: ${filename}`, error);
+      }
+    }
+  }
+};
+
 /** Prepare map canvas content by adding data and legend */
-const prepareMapCanvasContent = () => {
+const prepareMapCanvasContent = async () => {
+  // For initial load, load icons if needed
+  if (showIcons.value && props.iconColumn && props.mediaBasePathIcons) {
+    await loadIconImages();
+  }
   addDataToMap();
   prepareMapLegendContent();
 };
@@ -383,6 +458,35 @@ const handleSidebarClose = () => {
   showIntroPanel.value = true;
 };
 
+/** Toggle between icons and points */
+const handleToggleIcons = async () => {
+  if (!map.value) return;
+
+  const newShowIcons = !showIcons.value;
+
+  // Remove existing point layer first
+  if (map.value.getLayer("data-layer-point")) {
+    map.value.removeLayer("data-layer-point");
+  }
+
+  // If switching TO icons, load them FIRST before updating state
+  if (newShowIcons && props.iconColumn && props.mediaBasePathIcons) {
+    loadingIcons.value = true;
+    try {
+      await loadIconImages();
+    } finally {
+      loadingIcons.value = false;
+    }
+  }
+
+  // NOW update the state
+  showIcons.value = newShowIcons;
+
+  // Add the new layer (icons are guaranteed to be loaded if needed)
+  addDataToMap();
+  prepareMapLegendContent();
+};
+
 onBeforeUnmount(() => {
   if (map.value) {
     map.value.remove();
@@ -425,7 +529,11 @@ onBeforeUnmount(() => {
       :media-base-path="mediaBasePath"
       :show-intro-panel="showIntroPanel"
       :show-sidebar="showSidebar"
+      :show-icons="showIcons"
+      :can-toggle-icons="canToggleIcons"
+      :loading-icons="loadingIcons"
       @close="handleSidebarClose"
+      @toggle-icons="handleToggleIcons"
     />
     <MapLegend
       v-if="mapLegendContent && mapData"
