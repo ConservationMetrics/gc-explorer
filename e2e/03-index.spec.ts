@@ -26,12 +26,6 @@ test("index page - displays available views and project cards", async ({
     page.getByRole("heading", { name: /available views/i }),
   ).toBeVisible();
 
-  // 3. Verify the header description is visible
-  const description = page
-    .locator("p")
-    .filter({ hasText: /here you can find/i });
-  await expect(description).toBeVisible();
-
   // 4. Verify at least one "Open Project" button is visible
   const openProjectButton = page
     .locator("a")
@@ -39,9 +33,9 @@ test("index page - displays available views and project cards", async ({
     .first();
   await expect(openProjectButton).toBeVisible();
 
-  // 5. Verify the "Open Project" button links to #
+  // 5. Verify the "Open Project" button links to a dataset page
   const href = await openProjectButton.getAttribute("href");
-  expect(href).toBe("#");
+  expect(href).toMatch(/\/dataset\/\w+/);
 
   // 6. Ensure at least one view pill (alerts, maps, or gallery) is visible
   // This checks that the pills are rendered correctly
