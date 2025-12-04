@@ -58,17 +58,16 @@ const getPermissionLevel = () => {
     </div>
 
     <!-- View Pills -->
-    <div class="flex flex-wrap gap-2 mb-4 overflow-hidden">
-      <NuxtLink
+    <div class="flex flex-wrap gap-1.5 mb-4 overflow-hidden">
+      <span
         v-for="view in config.VIEWS ? config.VIEWS.split(',') : []"
         :key="view"
-        :to="`/${view}/${String(tableName)}`"
-        class="inline-flex items-center gap-1 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-medium bg-purple-100 text-purple-800 rounded-full hover:bg-purple-200 transition-colors flex-shrink-0 max-w-full"
+        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full flex-shrink-0"
       >
         <!-- Map Icon -->
         <svg
           v-if="view === 'map'"
-          class="w-4 h-4 sm:w-5 sm:h-5"
+          class="w-3 h-3"
           fill="currentColor"
           viewBox="0 0 20 20"
           xmlns="http://www.w3.org/2000/svg"
@@ -82,7 +81,7 @@ const getPermissionLevel = () => {
         <!-- Gallery Icon -->
         <svg
           v-else-if="view === 'gallery'"
-          class="w-4 h-4 sm:w-5 sm:h-5"
+          class="w-3 h-3"
           fill="currentColor"
           viewBox="0 0 20 20"
           xmlns="http://www.w3.org/2000/svg"
@@ -96,7 +95,7 @@ const getPermissionLevel = () => {
         <!-- Alerts Icon -->
         <svg
           v-else-if="view === 'alerts'"
-          class="w-4 h-4 sm:w-5 sm:h-5"
+          class="w-3 h-3"
           fill="currentColor"
           viewBox="0 0 20 20"
           xmlns="http://www.w3.org/2000/svg"
@@ -108,11 +107,11 @@ const getPermissionLevel = () => {
           />
         </svg>
         {{ $t(view) }}
-      </NuxtLink>
+      </span>
     </div>
 
     <!-- Permission Level -->
-    <div v-if="getPermissionLevel()" class="flex items-center gap-2 mb-2">
+    <div v-if="getPermissionLevel()" class="flex items-center gap-2 mb-4">
       <span class="text-sm text-gray-600 font-medium">
         {{ $t("permissionLevel") }}:
       </span>
@@ -123,12 +122,12 @@ const getPermissionLevel = () => {
       </span>
     </div>
 
-    <!-- Open Project Button - Commented out for now -->
-    <!-- <a
-      href="#"
-      class="block w-full text-center px-4 py-2 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200 cursor-pointer"
+    <!-- Open Project Button -->
+    <NuxtLink
+      :to="`/dataset/${String(tableName)}`"
+      class="block w-full text-center px-4 py-2 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200"
     >
       {{ $t("openProject") }}
-    </a> -->
+    </NuxtLink>
   </div>
 </template>
