@@ -5,11 +5,11 @@ import GlobeLanguagePicker from "@/components/shared/GlobeLanguagePicker.vue";
 
 const config = useRuntimeConfig();
 const { t } = useI18n();
+
 const communityName = computed(() => {
-  const name = config.public.communityName || "community";
-  // Use i18n to translate community name
-  return t(`community.${name}`) || name;
+  return config.public.communityName || t("community");
 });
+
 const {
   public: { authStrategy },
 } = useRuntimeConfig();
