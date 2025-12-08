@@ -97,7 +97,11 @@ const truncateDescription = (desc: string): string => {
     <!-- View Pills -->
     <div class="flex flex-wrap gap-1.5 mb-4 overflow-hidden">
       <span
-        v-for="view in config.VIEWS ? config.VIEWS.split(',') : []"
+        v-for="view in config.VIEWS
+          ? config.VIEWS.split(',')
+              .map((v) => v.trim())
+              .sort()
+          : []"
         :key="view"
         class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full flex-shrink-0"
       >

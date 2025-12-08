@@ -12,15 +12,14 @@ const viewDisplayName = computed(() => {
   return t(props.view) || props.view;
 });
 
-// Get view description based on type
 const viewDescription = computed(() => {
   switch (props.view) {
     case "map":
-      return "Borders, production sites, demographic changes.";
+      return t("viewDescriptionMap");
     case "gallery":
-      return "Showcase of animal species, habitats and related.";
+      return t("viewDescriptionGallery");
     case "alerts":
-      return "Wildfire, deforestation, extraction, violence rates.";
+      return t("viewDescriptionAlerts");
     default:
       return "";
   }
