@@ -3,7 +3,6 @@ import murmurhash from "murmurhash";
 import {
   calculateCentroid,
   capitalizeFirstLetter,
-  formatDate,
   getRandomColor,
 } from "./helpers";
 
