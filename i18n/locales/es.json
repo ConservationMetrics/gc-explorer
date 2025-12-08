@@ -50,7 +50,7 @@
   "dataset": "Conjunto de datos",
   "datasetTable": "Nombre para mostrar del conjunto de datos",
   "datasetTableDescription": "Opcional: Un nombre más agradable para este conjunto de datos",
-  "datasetTablePlaceholder": "ej., Alertas falsas",
+  "datasetTablePlaceholder": "ej., Mis Datos de Mapeo",
   "dateRange": "Rango de fechas",
   "default": "Predeterminado",
   "downloadCSV": "Descargar CSV",

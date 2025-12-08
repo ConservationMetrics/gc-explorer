@@ -50,7 +50,7 @@
   "dataset": "Conjunto de dados",
   "datasetTable": "Nome de exibição do conjunto de dados",
   "datasetTableDescription": "Opcional: Um nome mais agradável para este conjunto de dados",
-  "datasetTablePlaceholder": "ex., Alertas falsos",
+  "datasetTablePlaceholder": "ex., Meus Dados de Mapeamento",
   "dateRange": "Período",
   "default": "Padrão",
   "downloadCSV": "Baixar CSV",

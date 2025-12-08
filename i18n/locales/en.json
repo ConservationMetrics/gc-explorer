@@ -53,7 +53,7 @@
   "dataset": "Dataset",
   "datasetTable": "Dataset Display Name",
   "datasetTableDescription": "Optional: A nicer display name for this dataset",
-  "datasetTablePlaceholder": "e.g., Fake Alerts",
+  "datasetTablePlaceholder": "e.g., My Mapping Data",
   "dateRange": "Date range",
   "default": "Default",
   "downloadCSV": "Download CSV",

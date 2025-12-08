@@ -51,7 +51,7 @@
   "dataset": "Dataset",
   "datasetTable": "Weergavenaam dataset",
   "datasetTableDescription": "Optioneel: Een mooiere weergavenaam voor deze dataset",
-  "datasetTablePlaceholder": "bijv., Nepwaarschuwingen",
+  "datasetTablePlaceholder": "bijv., Mijn Kaartgegevens",
   "dateRange": "Datumbereik",
   "default": "Standaard",
   "downloadCSV": "Download CSV",
