@@ -166,7 +166,7 @@ const truncateDescription = (desc: string): string => {
     <!-- Open Project Button -->
     <NuxtLink
       :to="`/dataset/${String(tableName)}`"
-      class="block w-full text-center px-4 py-2 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200"
+      class="mt-auto block w-full text-center px-4 py-2 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200"
     >
       {{ $t("openProject") }}
     </NuxtLink>
