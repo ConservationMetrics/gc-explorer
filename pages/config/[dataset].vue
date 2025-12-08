@@ -17,6 +17,7 @@ const viewsConfig = ref<Views>({});
 const tableNames = ref();
 const dataFetched = ref(false);
 const datasetConfig = ref<ViewConfig | null>(null);
+const errorMessage = ref<string | null>(null);
 
 // API request to fetch the data
 const {
@@ -70,6 +71,8 @@ const submitConfig = async ({
   config: ViewConfig;
   tableName: string;
 }) => {
+  errorMessage.value = null;
+
   try {
     await $fetch(`/api/config/update_config/${tableName}`, {
       method: "POST",
@@ -81,6 +84,12 @@ const submitConfig = async ({
     await navigateTo("/config");
   } catch (error) {
     console.error("Error submitting request data:", error);
+    if (error instanceof Error) {
+      errorMessage.value = error.message;
+    } else {
+      errorMessage.value =
+        "An error occurred while updating the configuration.";
+    }
   }
 };
 
@@ -156,6 +165,12 @@ useHead({
           </NuxtLink>
         </div>
         <h1>{{ $t("configuration") }} - {{ dataset }}</h1>
+        <div
+          v-if="errorMessage"
+          class="error-message mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded"
+        >
+          {{ errorMessage }}
+        </div>
         <div class="grid-container">
           <ConfigCard
             :table-name="dataset"

@@ -7,14 +7,14 @@ interface Props {
   showLanguagePicker?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+const _props = withDefaults(defineProps<Props>(), {
   subtitle: undefined,
   showLanguagePicker: true,
 });
 
 const mobileMenuOpen = ref(false);
 
-const toggleMobileMenu = () => {
+const _toggleMobileMenu = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value;
 };
 </script>

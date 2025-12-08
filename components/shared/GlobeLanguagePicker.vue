@@ -17,7 +17,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Populate available locales from i18n plugin
 const availableLocales = computed(() => locales.value);
-const currentLocaleName = computed(() => {
+const _currentLocaleName = computed(() => {
   const currentLocale = locales.value.find(
     (lang) => lang.code === locale.value,
   );

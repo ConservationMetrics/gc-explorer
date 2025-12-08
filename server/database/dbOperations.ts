@@ -1,7 +1,8 @@
 import { sql, eq } from "drizzle-orm";
 import { configDb, warehouseDb } from "../utils/db";
 import { viewConfig } from "../db/schema";
-import type { Views, DataEntry, ColumnEntry } from "@/types/types";
+import type { Views, DataEntry, ColumnEntry, ViewConfig } from "@/types/types";
+import { CONFIG_LIMITS } from "@/utils";
 
 const checkTableExists = async (
   table: string | undefined,
@@ -200,6 +201,27 @@ export const updateConfig = async (
   config: unknown,
 ): Promise<void> => {
   try {
+    const typedConfig = config as ViewConfig;
+
+    // Validate character limits - check even if field exists as empty string
+    if (typedConfig.DATASET_TABLE) {
+      const datasetTableValue = String(typedConfig.DATASET_TABLE);
+      if (datasetTableValue.length > CONFIG_LIMITS.DATASET_TABLE) {
+        throw new Error(
+          `DATASET_TABLE must be at most ${CONFIG_LIMITS.DATASET_TABLE} characters (received ${datasetTableValue.length})`,
+        );
+      }
+    }
+
+    if (typedConfig.VIEW_DESCRIPTION) {
+      const viewDescriptionValue = String(typedConfig.VIEW_DESCRIPTION);
+      if (viewDescriptionValue.length > CONFIG_LIMITS.VIEW_DESCRIPTION) {
+        throw new Error(
+          `VIEW_DESCRIPTION must be at most ${CONFIG_LIMITS.VIEW_DESCRIPTION} characters (received ${viewDescriptionValue.length})`,
+        );
+      }
+    }
+
     const configString = JSON.stringify(config);
 
     await configDb

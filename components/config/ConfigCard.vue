@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ViewConfig } from "@/types/types";
+import { CONFIG_LIMITS } from "@/utils";
 import ConfigPermissions from "./ConfigPermissions.vue";
 import ConfigDatasetInfo from "./ConfigDatasetInfo.vue";
 
@@ -118,6 +119,27 @@ const handlePermissionValidation = (isValid: boolean) => {
 };
 
 const handleSubmit = () => {
+  // Client-side validation before submission
+  if (localConfig.value.DATASET_TABLE) {
+    const datasetTableValue = String(localConfig.value.DATASET_TABLE);
+    if (datasetTableValue.length > CONFIG_LIMITS.DATASET_TABLE) {
+      alert(
+        `DATASET_TABLE must be at most ${CONFIG_LIMITS.DATASET_TABLE} characters (current: ${datasetTableValue.length})`,
+      );
+      return;
+    }
+  }
+
+  if (localConfig.value.VIEW_DESCRIPTION) {
+    const viewDescriptionValue = String(localConfig.value.VIEW_DESCRIPTION);
+    if (viewDescriptionValue.length > CONFIG_LIMITS.VIEW_DESCRIPTION) {
+      alert(
+        `VIEW_DESCRIPTION must be at most ${CONFIG_LIMITS.VIEW_DESCRIPTION} characters (current: ${viewDescriptionValue.length})`,
+      );
+      return;
+    }
+  }
+
   emit("submitConfig", {
     tableName: props.tableName,
     config: localConfig.value,
