@@ -3,7 +3,8 @@
 import tokml from "tokml";
 
 import type { Feature, FeatureCollection } from "geojson";
-import type { AlertsData } from "~/types/types";
+import type { AlertsData } from "@/types/types";
+import { escapeCSVValue } from "@/utils/csvUtils";
 
 const route = useRoute();
 
@@ -66,7 +67,7 @@ const downloadCSVFromFeatureCollection = () => {
     return columns
       .map((col) => {
         if (col === "geometry_type") {
-          return feature.geometry.type;
+          return escapeCSVValue(feature.geometry.type);
         } else if (col === "coordinates") {
           // Only Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon have coordinates
           const geom = feature.geometry;
@@ -76,11 +77,7 @@ const downloadCSVFromFeatureCollection = () => {
           return "";
         } else {
           const value = feature.properties?.[col];
-          if (value === undefined || value === null) return "";
-          if (typeof value === "string" && value.includes(",")) {
-            return `"${value.replace(/"/g, '""')}"`;
-          }
-          return value;
+          return escapeCSVValue(value);
         }
       })
       .join(",");
@@ -123,9 +120,7 @@ const downloadAlertCSV = () => {
 
   const csvColumns = Object.keys(flattenedProperties);
   const csvData = Object.values(flattenedProperties).map((value) =>
-    typeof value === "string" && value.includes(",")
-      ? `"${value.replace(/"/g, '""')}"`
-      : value,
+    escapeCSVValue(value),
   );
 
   // Remove top level GeoJSON "type" property
@@ -136,7 +131,7 @@ const downloadAlertCSV = () => {
   }
 
   csvColumns.push("type");
-  csvData.push(`"${geometry.type}"`);
+  csvData.push(escapeCSVValue(geometry.type));
 
   const coordinates = JSON.stringify(
     (geometry as GeoJSON.Point | GeoJSON.LineString | GeoJSON.Polygon)
@@ -324,13 +319,11 @@ const downloadCSVSelection = () => {
 
     const csvColumns = Object.keys(flattenedProperties);
     const csvData = Object.values(flattenedProperties).map((value) =>
-      typeof value === "string" && value.includes(",")
-        ? `"${value.replace(/"/g, '""')}"`
-        : value,
+      escapeCSVValue(value),
     );
 
     csvColumns.push("geometry type");
-    csvData.push(`"${geometry.type}"`);
+    csvData.push(escapeCSVValue(geometry.type));
 
     if (!headerWritten) {
       csvString += csvColumns.join(",") + "\n";
