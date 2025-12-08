@@ -69,3 +69,14 @@ export const formatDisplayName = (str: string): string => {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize each word
     .join(" ");
 };
+
+/**
+ * Character limits for dataset configuration fields
+ * @type {Object}
+ */
+export const CONFIG_LIMITS = {
+  /** @type {number} Maximum length for dataset table display name */
+  DATASET_TABLE: 100,
+  /** @type {number} Maximum length for view description */
+  VIEW_DESCRIPTION: 500,
+} as const;

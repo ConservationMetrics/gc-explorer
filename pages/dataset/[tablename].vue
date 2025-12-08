@@ -13,13 +13,14 @@ const tableName = Array.isArray(tableRaw)
 const viewsConfig = ref<Views>({});
 const datasetConfig = ref<ViewConfig | null>(null);
 const dataFetched = ref(false);
+const isTitleExpanded = ref(false);
+const isDescriptionExpanded = ref(false);
 
 const {
   public: { appApiKey, authStrategy },
 } = useRuntimeConfig();
 
 const { loggedIn, user } = useUserSession();
-const { t } = useI18n();
 
 const headers = {
   "x-api-key": appApiKey,
@@ -93,8 +94,10 @@ const enabledViews = computed(() => {
   return datasetConfig.value.VIEWS.split(",").map((v) => v.trim());
 });
 
-// Get display name
-const displayName = computed(() => {
+const PAGE_TITLE_LIMIT = 70;
+const PAGE_DESCRIPTION_LIMIT = 300;
+
+const fullDisplayName = computed(() => {
   return (
     datasetConfig.value?.DATASET_TABLE ||
     String(tableName).charAt(0).toUpperCase() +
@@ -102,9 +105,31 @@ const displayName = computed(() => {
   );
 });
 
-// Get description
-const description = computed(() => {
+const isTitleTruncated = computed(() => {
+  return fullDisplayName.value.length > PAGE_TITLE_LIMIT;
+});
+
+const displayName = computed(() => {
+  if (isTitleExpanded.value || !isTitleTruncated.value) {
+    return fullDisplayName.value;
+  }
+  return fullDisplayName.value.substring(0, PAGE_TITLE_LIMIT) + "...";
+});
+
+const fullDescription = computed(() => {
   return datasetConfig.value?.VIEW_DESCRIPTION || "";
+});
+
+const isDescriptionTruncated = computed(() => {
+  return fullDescription.value.length > PAGE_DESCRIPTION_LIMIT;
+});
+
+// Get description (truncated if needed)
+const description = computed(() => {
+  if (isDescriptionExpanded.value || !isDescriptionTruncated.value) {
+    return fullDescription.value;
+  }
+  return fullDescription.value.substring(0, PAGE_DESCRIPTION_LIMIT) + "...";
 });
 
 // Get header image
@@ -133,7 +158,7 @@ const isAdmin = computed(() => {
 });
 
 useHead({
-  title: `${displayName.value} - GuardianConnector Explorer`,
+  title: `${fullDisplayName.value} - GuardianConnector Explorer`,
 });
 </script>
 
@@ -142,86 +167,181 @@ useHead({
     <AppHeader />
 
     <main v-if="dataFetched && canViewDataset" class="w-full">
-      <!-- Header Image with Dataset Name Overlay -->
+      <!-- Header Image Container with Content -->
       <div
         v-if="headerImage"
-        class="relative w-full h-64 sm:h-80 md:h-96 overflow-hidden"
+        class="relative w-5/6 mx-auto overflow-hidden rounded-xl"
       >
-        <img
-          :src="headerImage"
-          :alt="displayName"
-          class="w-full h-full object-cover"
-        />
-        <div
-          class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6 sm:p-8"
-        >
-          <h1
-            class="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2"
+        <!-- Background Image -->
+        <div class="relative h-64 sm:h-80 md:h-96">
+          <img
+            :src="headerImage"
+            :alt="displayName"
+            class="w-full h-full object-cover"
+          />
+          <div
+            class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6 sm:p-8"
           >
-            {{ displayName }}
-          </h1>
+            <div class="flex items-start gap-2">
+              <h1
+                class="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 break-words flex-1"
+                style="
+                  overflow-wrap: anywhere;
+                  word-break: break-word;
+                  hyphens: auto;
+                "
+              >
+                {{ displayName }}
+              </h1>
+              <button
+                v-if="isTitleTruncated"
+                class="text-white/80 hover:text-white text-sm font-medium underline flex-shrink-0 mt-1"
+                @click="isTitleExpanded = !isTitleExpanded"
+              >
+                {{ isTitleExpanded ? "Show less" : "Show more" }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description and Cards Container (overlay on image) -->
+        <div class="relative p-6 sm:p-8 text-white">
+          <!-- Description -->
+          <div class="mb-6 sm:mb-8">
+            <div v-if="description || isDescriptionTruncated">
+              <p class="text-base sm:text-lg text-black leading-relaxed">
+                {{ description }}
+              </p>
+              <button
+                v-if="isDescriptionTruncated"
+                class="text-purple-300 hover:text-purple-100 text-sm font-medium underline mt-2"
+                @click="isDescriptionExpanded = !isDescriptionExpanded"
+              >
+                {{ isDescriptionExpanded ? "Show less" : "Show more" }}
+              </button>
+            </div>
+            <!-- Fallback description message -->
+            <div v-else class="text-base sm:text-lg text-white/70 italic">
+              <span>{{ $t("noDescriptionProvidedYet") }}</span>
+              <NuxtLink
+                v-if="isAdmin"
+                :to="`/config/${tableName}`"
+                class="ml-1 text-purple-300 hover:text-purple-100 underline"
+              >
+                {{ $t("addDescription") }}
+              </NuxtLink>
+              <span v-else class="ml-1">
+                Please contact an admin to add a description.
+              </span>
+            </div>
+          </div>
+
+          <!-- View Cards Grid -->
+          <div v-if="enabledViews.length > 0">
+            <div
+              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+            >
+              <ViewCard
+                v-for="view in enabledViews"
+                :key="view"
+                :view="view"
+                :table-name="tableName"
+              />
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else class="text-center py-8">
+            <p class="text-white/70 text-sm sm:text-base">
+              {{
+                $t("noDatasetViewsAvailable") ||
+                "No views available for this dataset"
+              }}
+            </p>
+          </div>
         </div>
       </div>
 
-      <!-- Fallback Header (no image) -->
+      <!-- Fallback Header (no image) with Content -->
       <div
         v-else
-        class="w-full bg-gradient-to-r from-purple-100 to-purple-50 p-6 sm:p-8"
+        class="w-5/6 mx-auto bg-gradient-to-r from-purple-100 to-purple-50 rounded-xl overflow-hidden"
       >
-        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">
-          {{ displayName }}
-        </h1>
-      </div>
+        <div class="p-6 sm:p-8">
+          <div class="flex items-start gap-2 mb-6 sm:mb-8">
+            <h1
+              class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 break-words flex-1"
+              style="
+                overflow-wrap: anywhere;
+                word-break: break-word;
+                hyphens: auto;
+              "
+            >
+              {{ displayName }}
+            </h1>
+            <button
+              v-if="isTitleTruncated"
+              class="text-purple-600 hover:text-purple-800 text-sm font-medium underline flex-shrink-0 mt-1"
+              @click="isTitleExpanded = !isTitleExpanded"
+            >
+              {{ isTitleExpanded ? "Show less" : "Show more" }}
+            </button>
+          </div>
 
-      <!-- Description -->
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <p
-          v-if="description"
-          class="text-base sm:text-lg text-gray-700 leading-relaxed"
-        >
-          {{ description }}
-        </p>
-        <!-- Fallback description message -->
-        <div v-else class="text-base sm:text-lg text-gray-500 italic">
-          <span>{{ $t("noDescriptionProvidedYet") }}</span>
-          <NuxtLink
-            v-if="isAdmin"
-            :to="`/config/${tableName}`"
-            class="ml-1 text-purple-600 hover:text-purple-800 underline"
-          >
-            {{ $t("addDescription") }}
-          </NuxtLink>
-          <span v-else class="ml-1">
-            {{ $t("contactAdminToAddDescription") }}
-          </span>
+          <!-- Description -->
+          <div class="mb-6 sm:mb-8">
+            <div v-if="description || isDescriptionTruncated">
+              <p class="text-base sm:text-lg text-gray-700 leading-relaxed">
+                {{ description }}
+              </p>
+              <button
+                v-if="isDescriptionTruncated"
+                class="text-purple-600 hover:text-purple-800 text-sm font-medium underline mt-2"
+                @click="isDescriptionExpanded = !isDescriptionExpanded"
+              >
+                {{ isDescriptionExpanded ? "Show less" : "Show more" }}
+              </button>
+            </div>
+            <!-- Fallback description message -->
+            <div v-else class="text-base sm:text-lg text-gray-500 italic">
+              <span>{{ $t("noDescriptionProvidedYet") }}</span>
+              <NuxtLink
+                v-if="isAdmin"
+                :to="`/config/${tableName}`"
+                class="ml-1 text-purple-600 hover:text-purple-800 underline"
+              >
+                {{ $t("addDescription") }}
+              </NuxtLink>
+              <span v-else class="ml-1">
+                Please contact an admin to add a description.
+              </span>
+            </div>
+          </div>
+
+          <!-- View Cards Grid -->
+          <div v-if="enabledViews.length > 0">
+            <div
+              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+            >
+              <ViewCard
+                v-for="view in enabledViews"
+                :key="view"
+                :view="view"
+                :table-name="tableName"
+              />
+            </div>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else class="text-center py-8">
+            <p class="text-gray-500 text-sm sm:text-base">
+              {{
+                $t("noDatasetViewsAvailable") ||
+                "No views available for this dataset"
+              }}
+            </p>
+          </div>
         </div>
-      </div>
-
-      <!-- View Cards Grid -->
-      <div
-        v-if="enabledViews.length > 0"
-        class="max-w-7xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12"
-      >
-        <div
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-        >
-          <ViewCard
-            v-for="view in enabledViews"
-            :key="view"
-            :view="view"
-            :table-name="tableName"
-          />
-        </div>
-      </div>
-
-      <!-- Empty State -->
-      <div v-else class="max-w-7xl mx-auto px-4 sm:px-6 py-12 text-center">
-        <p class="text-gray-500 text-sm sm:text-base">
-          {{
-            $t("noDatasetViewsAvailable") ||
-            "No views available for this dataset"
-          }}
-        </p>
       </div>
     </main>
 

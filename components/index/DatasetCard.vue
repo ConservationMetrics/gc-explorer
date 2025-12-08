@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ViewConfig } from "@/types/types";
-import { formatDisplayName } from "@/utils/index";
+import { formatDisplayName, CONFIG_LIMITS } from "@/utils/index";
 
 interface Props {
   tableName: string | number;
@@ -28,11 +28,37 @@ const getPermissionLevel = () => {
 
   return null;
 };
+
+/**
+ * Truncates the display name if it exceeds the character limit
+ *
+ * @param {string} name - The display name to truncate
+ * @returns {string} The truncated display name with ellipsis if needed
+ */
+const truncateDisplayName = (name: string): string => {
+  if (!name) return "";
+  return name.length > CONFIG_LIMITS.DATASET_TABLE
+    ? name.substring(0, CONFIG_LIMITS.DATASET_TABLE) + "..."
+    : name;
+};
+
+/**
+ * Truncates the description if it exceeds the character limit
+ *
+ * @param {string} desc - The description to truncate
+ * @returns {string} The truncated description with ellipsis if needed
+ */
+const truncateDescription = (desc: string): string => {
+  if (!desc) return "";
+  return desc.length > CONFIG_LIMITS.VIEW_DESCRIPTION
+    ? desc.substring(0, CONFIG_LIMITS.VIEW_DESCRIPTION) + "..."
+    : desc;
+};
 </script>
 
 <template>
   <div
-    class="bg-purple-50 rounded-lg p-4 sm:p-6 shadow-sm border border-purple-100 overflow-hidden"
+    class="bg-purple-50 rounded-lg p-4 sm:p-6 shadow-sm border border-purple-100 overflow-hidden flex flex-col h-full"
   >
     <!-- Card Icon/Initial -->
     <div class="flex items-start mb-3">
@@ -46,14 +72,25 @@ const getPermissionLevel = () => {
           class="text-lg sm:text-xl font-semibold text-gray-800 break-words max-w-full mb-2"
           style="overflow-wrap: anywhere; word-break: break-word; hyphens: auto"
         >
-          {{ config.DATASET_TABLE || String(tableName) }}
+          {{ truncateDisplayName(config.DATASET_TABLE || String(tableName)) }}
         </h2>
-        <p
-          v-if="config.VIEW_DESCRIPTION"
-          class="text-sm sm:text-base text-gray-600 mb-4 line-clamp-2"
-        >
-          {{ config.VIEW_DESCRIPTION }}
-        </p>
+        <!-- Description with fixed height to ensure consistent card heights -->
+        <div class="h-10 mb-4">
+          <p
+            v-if="config.VIEW_DESCRIPTION"
+            class="text-sm sm:text-base text-gray-600 line-clamp-2"
+            style="
+              display: -webkit-box;
+              -webkit-line-clamp: 2;
+              line-clamp: 2;
+              -webkit-box-orient: vertical;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            "
+          >
+            {{ truncateDescription(config.VIEW_DESCRIPTION) }}
+          </p>
+        </div>
       </div>
     </div>
 

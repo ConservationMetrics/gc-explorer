@@ -156,7 +156,7 @@ useHead({
       <!-- Project Cards Grid -->
       <div
         v-if="viewsConfig"
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch"
       >
         <DatasetCard
           v-for="(config, tableName) in filteredSortedViewsConfig"
