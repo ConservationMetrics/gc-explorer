@@ -34,12 +34,10 @@ if (data.value && !error.value) {
   const fetchedViewsData = data.value[0] as Views;
   viewsConfig.value = fetchedViewsData;
 
-  // Get the specific dataset config
   if (fetchedViewsData[tableName]) {
     datasetConfig.value = fetchedViewsData[tableName];
     dataFetched.value = true;
   } else {
-    // Try to find by matching keys (in case of URL encoding issues)
     const matchingKey = Object.keys(fetchedViewsData).find(
       (key) =>
         key === tableName ||
@@ -50,7 +48,6 @@ if (data.value && !error.value) {
       datasetConfig.value = fetchedViewsData[matchingKey];
       dataFetched.value = true;
     } else {
-      // Dataset not found, redirect to index
       console.warn(`Dataset "${tableName}" not found in config`);
       await navigateTo("/");
     }
@@ -59,18 +56,15 @@ if (data.value && !error.value) {
   console.error("Error fetching data:", error.value);
 }
 
-// Check if user has permission to view this dataset
 const canViewDataset = computed(() => {
   if (!datasetConfig.value) return false;
 
-  // Skip permission check in CI environment
   if (process.env.CI) return true;
 
   const config = datasetConfig.value;
   const typedUser = user.value as User | null;
   const userRole = typedUser?.userRole ?? Role.SignedIn;
 
-  // Check permission level
   if (config.ROUTE_LEVEL_PERMISSION === "guest" && userRole < Role.Guest) {
     return false;
   }
@@ -80,7 +74,6 @@ const canViewDataset = computed(() => {
   if (config.ROUTE_LEVEL_PERMISSION === "admin" && userRole < Role.Admin) {
     return false;
   }
-  // base case for when ROUTE_LEVEL_PERMISSION is undefined
   if (config.ROUTE_LEVEL_PERMISSION === undefined && userRole < Role.SignedIn) {
     return false;
   }
@@ -88,7 +81,6 @@ const canViewDataset = computed(() => {
   return true;
 });
 
-// Get enabled views for this dataset
 const enabledViews = computed(() => {
   if (!datasetConfig.value?.VIEWS) return [];
   return datasetConfig.value.VIEWS.split(",").map((v) => v.trim());
@@ -124,7 +116,6 @@ const isDescriptionTruncated = computed(() => {
   return fullDescription.value.length > PAGE_DESCRIPTION_LIMIT;
 });
 
-// Get description (truncated if needed)
 const description = computed(() => {
   if (isDescriptionExpanded.value || !isDescriptionTruncated.value) {
     return fullDescription.value;
@@ -132,14 +123,11 @@ const description = computed(() => {
   return fullDescription.value.substring(0, PAGE_DESCRIPTION_LIMIT) + "...";
 });
 
-// Get header image
 const headerImage = computed(() => {
   return datasetConfig.value?.VIEW_HEADER_IMAGE || "";
 });
 
-// Check if user is admin
 const isAdmin = computed(() => {
-  // Show config link in CI environment
   if (process.env.CI) {
     return true;
   }
@@ -167,12 +155,10 @@ useHead({
     <AppHeader />
 
     <main v-if="dataFetched && canViewDataset" class="w-full">
-      <!-- Header Image Container with Content -->
       <div
         v-if="headerImage"
         class="relative w-5/6 mx-auto overflow-hidden rounded-xl"
       >
-        <!-- Background Image -->
         <div class="relative h-64 sm:h-80 md:h-96">
           <img
             :src="headerImage"
@@ -204,9 +190,7 @@ useHead({
           </div>
         </div>
 
-        <!-- Description and Cards Container (overlay on image) -->
         <div class="relative p-6 sm:p-8 text-white">
-          <!-- Description -->
           <div class="mb-6 sm:mb-8">
             <div v-if="description || isDescriptionTruncated">
               <p class="text-base sm:text-lg text-black leading-relaxed">
@@ -220,7 +204,6 @@ useHead({
                 {{ isDescriptionExpanded ? "Show less" : "Show more" }}
               </button>
             </div>
-            <!-- Fallback description message -->
             <div v-else class="text-base sm:text-lg text-white/70 italic">
               <span>{{ $t("noDescriptionProvidedYet") }}</span>
               <NuxtLink
@@ -236,7 +219,6 @@ useHead({
             </div>
           </div>
 
-          <!-- View Cards Grid -->
           <div v-if="enabledViews.length > 0">
             <div
               class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
@@ -250,7 +232,6 @@ useHead({
             </div>
           </div>
 
-          <!-- Empty State -->
           <div v-else class="text-center py-8">
             <p class="text-white/70 text-sm sm:text-base">
               {{
@@ -262,7 +243,6 @@ useHead({
         </div>
       </div>
 
-      <!-- Fallback Header (no image) with Content -->
       <div
         v-else
         class="w-5/6 mx-auto bg-gradient-to-r from-purple-100 to-purple-50 rounded-xl overflow-hidden"
@@ -288,7 +268,6 @@ useHead({
             </button>
           </div>
 
-          <!-- Description -->
           <div class="mb-6 sm:mb-8">
             <div v-if="description || isDescriptionTruncated">
               <p class="text-base sm:text-lg text-gray-700 leading-relaxed">
@@ -302,7 +281,6 @@ useHead({
                 {{ isDescriptionExpanded ? "Show less" : "Show more" }}
               </button>
             </div>
-            <!-- Fallback description message -->
             <div v-else class="text-base sm:text-lg text-gray-500 italic">
               <span>{{ $t("noDescriptionProvidedYet") }}</span>
               <NuxtLink
@@ -318,7 +296,6 @@ useHead({
             </div>
           </div>
 
-          <!-- View Cards Grid -->
           <div v-if="enabledViews.length > 0">
             <div
               class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
@@ -332,7 +309,6 @@ useHead({
             </div>
           </div>
 
-          <!-- Empty State -->
           <div v-else class="text-center py-8">
             <p class="text-gray-500 text-sm sm:text-base">
               {{
@@ -345,7 +321,6 @@ useHead({
       </div>
     </main>
 
-    <!-- Unauthorized or Not Found -->
     <div
       v-else-if="dataFetched && !canViewDataset"
       class="max-w-7xl mx-auto px-4 sm:px-6 py-12 text-center"

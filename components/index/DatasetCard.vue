@@ -16,12 +16,10 @@ const props = defineProps<Props>();
  * @returns {string | null} The formatted permission level or null if not applicable
  */
 const getPermissionLevel = () => {
-  // No restrictions in CI environment
   if (process.env.CI) return null;
 
   const permission = props.config.ROUTE_LEVEL_PERMISSION;
 
-  // Show pill for all permission levels
   if (permission) {
     return formatDisplayName(permission);
   }
@@ -60,7 +58,6 @@ const truncateDescription = (desc: string): string => {
   <div
     class="bg-purple-50 rounded-lg p-4 sm:p-6 shadow-sm border border-purple-100 overflow-hidden flex flex-col h-full"
   >
-    <!-- Card Icon/Initial -->
     <div class="flex items-start mb-3">
       <div
         class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-200 flex items-center justify-center text-white font-bold text-sm sm:text-base mr-3 flex-shrink-0"
@@ -74,7 +71,6 @@ const truncateDescription = (desc: string): string => {
         >
           {{ truncateDisplayName(config.DATASET_TABLE || String(tableName)) }}
         </h2>
-        <!-- Description with fixed height to ensure consistent card heights -->
         <div class="h-10 mb-4">
           <p
             v-if="config.VIEW_DESCRIPTION"
@@ -94,7 +90,6 @@ const truncateDescription = (desc: string): string => {
       </div>
     </div>
 
-    <!-- View Pills -->
     <div class="flex flex-wrap gap-1.5 mb-4 overflow-hidden">
       <span
         v-for="view in config.VIEWS
@@ -105,7 +100,6 @@ const truncateDescription = (desc: string): string => {
         :key="view"
         class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full flex-shrink-0"
       >
-        <!-- Map Icon -->
         <svg
           v-if="view === 'map'"
           class="w-3 h-3"
@@ -119,7 +113,6 @@ const truncateDescription = (desc: string): string => {
             clip-rule="evenodd"
           />
         </svg>
-        <!-- Gallery Icon -->
         <svg
           v-else-if="view === 'gallery'"
           class="w-3 h-3"
@@ -133,7 +126,6 @@ const truncateDescription = (desc: string): string => {
             clip-rule="evenodd"
           />
         </svg>
-        <!-- Alerts Icon -->
         <svg
           v-else-if="view === 'alerts'"
           class="w-3 h-3"
@@ -151,7 +143,6 @@ const truncateDescription = (desc: string): string => {
       </span>
     </div>
 
-    <!-- Permission Level -->
     <div v-if="getPermissionLevel()" class="flex items-center gap-2 mb-4">
       <span class="text-sm text-gray-600 font-medium">
         {{ $t("permissionLevel") }}:
@@ -163,7 +154,6 @@ const truncateDescription = (desc: string): string => {
       </span>
     </div>
 
-    <!-- Open Project Button -->
     <NuxtLink
       :to="`/dataset/${String(tableName)}`"
       class="mt-auto block w-full text-center px-4 py-2 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200"
