@@ -36,29 +36,29 @@ function getAuthFile(role: string): string {
   if (!fs.existsSync(authFile)) {
     console.error(`\n❌ [FIXTURE] Auth file not found: ${authFile}`);
     console.error(
-      `❌ [FIXTURE] This means the auth setup did not run or failed.`
+      `❌ [FIXTURE] This means the auth setup did not run or failed.`,
     );
     console.error(`❌ [FIXTURE] Make sure:`);
     console.error(`❌ [FIXTURE]   1. The setup project runs before tests`);
     console.error(
-      `❌ [FIXTURE]   2. E2E_AUTH0_${role.toUpperCase()}_PASSWORD is set`
+      `❌ [FIXTURE]   2. E2E_AUTH0_${role.toUpperCase()}_PASSWORD is set`,
     );
     console.error(`❌ [FIXTURE]   3. Auth0 authentication succeeded`);
     console.error(
-      `❌ [FIXTURE]   4. In Docker/GitHub Actions, files persist between projects`
+      `❌ [FIXTURE]   4. In Docker/GitHub Actions, files persist between projects`,
     );
 
     // In Docker, check if we're in CI and provide Docker-specific guidance
     if (process.env.CI) {
       console.error(`❌ [FIXTURE] Running in CI environment`);
       console.error(
-        `❌ [FIXTURE] Check that setup project completed successfully`
+        `❌ [FIXTURE] Check that setup project completed successfully`,
       );
       console.error(
-        `❌ [FIXTURE] Check GitHub Actions logs for auth.setup.ts output`
+        `❌ [FIXTURE] Check GitHub Actions logs for auth.setup.ts output`,
       );
       console.error(
-        `❌ [FIXTURE] Verify password env vars are set in GitHub Actions secrets`
+        `❌ [FIXTURE] Verify password env vars are set in GitHub Actions secrets`,
       );
     }
 
@@ -66,7 +66,7 @@ function getAuthFile(role: string): string {
       `Auth file not found: ${authFile}. ` +
         `Make sure auth.setup.ts runs successfully and creates the auth files. ` +
         `Check that E2E_AUTH0_${role.toUpperCase()}_PASSWORD is set. ` +
-        `In Docker/GitHub Actions, ensure the setup project runs before tests.`
+        `In Docker/GitHub Actions, ensure the setup project runs before tests.`,
     );
   }
 
