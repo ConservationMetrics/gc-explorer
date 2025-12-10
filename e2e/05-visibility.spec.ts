@@ -1,5 +1,8 @@
 import { test as baseTest, expect } from "@playwright/test";
-import { test as authTest, expect as authExpect } from "../e2e/fixtures/auth";
+import {
+  test as authTest,
+  expect as authExpect,
+} from "../e2e/fixtures/auth-storage";
 
 // Use regular test for tests that don't need authentication
 const test = baseTest;
@@ -52,24 +55,24 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
 
   authTest(
     "RBAC - SignedIn user can access public dataset but not member dataset",
-    async ({ loggedInPageAsSignedIn }) => {
+    async ({ authenticatedPageAsSignedIn }) => {
       console.log("🔍 [TEST] Starting SignedIn role test");
 
       // Should access public dataset
       console.log("🔍 [TEST] Attempting to access public dataset");
-      await loggedInPageAsSignedIn.goto("/gallery/seed_survey_data");
-      await loggedInPageAsSignedIn.waitForURL("**/gallery/**", {
+      await authenticatedPageAsSignedIn.goto("/gallery/seed_survey_data");
+      await authenticatedPageAsSignedIn.waitForURL("**/gallery/**", {
         timeout: 5000,
       });
-      const publicUrl = loggedInPageAsSignedIn.url();
+      const publicUrl = authenticatedPageAsSignedIn.url();
       console.log("🔍 [TEST] Public dataset URL:", publicUrl);
       console.log("🔍 [TEST] Waiting for gallery-container to be attached...");
       // Wait for gallery container to be attached (like in gallery tests)
-      await loggedInPageAsSignedIn
+      await authenticatedPageAsSignedIn
         .getByTestId("gallery-container")
         .waitFor({ state: "attached", timeout: 5000 });
       await authExpect(
-        loggedInPageAsSignedIn.getByTestId("gallery-container"),
+        authenticatedPageAsSignedIn.getByTestId("gallery-container"),
       ).toBeVisible();
       console.log("🔍 [TEST] ✅ Successfully accessed public dataset");
 
@@ -77,19 +80,19 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       console.log(
         "🔍 [TEST] Attempting to access member dataset (should be rejected)",
       );
-      await loggedInPageAsSignedIn.goto("/map/bcmform_responses");
+      await authenticatedPageAsSignedIn.goto("/map/bcmform_responses");
       // Wait for redirect
-      await loggedInPageAsSignedIn.waitForURL(
+      await authenticatedPageAsSignedIn.waitForURL(
         /\/(\?reason=unauthorized|\/login)/,
         {
           timeout: 5000,
         },
       );
-      const url = loggedInPageAsSignedIn.url();
+      const url = authenticatedPageAsSignedIn.url();
       console.log("🔍 [TEST] Member dataset access result URL:", url);
       console.log(
         "🔍 [TEST] Current page title:",
-        await loggedInPageAsSignedIn.title(),
+        await authenticatedPageAsSignedIn.title(),
       );
       authExpect(url).toMatch(/\/\?reason=unauthorized|\/login/);
       console.log("🔍 [TEST] ✅ Correctly rejected from member dataset");
@@ -98,26 +101,26 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
 
   authTest(
     "RBAC - Guest user can access public dataset but not member dataset",
-    async ({ loggedInPageAsGuest }) => {
+    async ({ authenticatedPageAsGuest }) => {
       console.log("🔍 [TEST] Starting Guest role test");
 
       // Should access public dataset
       console.log("🔍 [TEST] Guest: Attempting to access public dataset");
-      await loggedInPageAsGuest.goto("/gallery/seed_survey_data");
-      await loggedInPageAsGuest.waitForURL("**/gallery/**", {
+      await authenticatedPageAsGuest.goto("/gallery/seed_survey_data");
+      await authenticatedPageAsGuest.waitForURL("**/gallery/**", {
         timeout: 5000,
       });
-      const guestPublicUrl = loggedInPageAsGuest.url();
+      const guestPublicUrl = authenticatedPageAsGuest.url();
       console.log("🔍 [TEST] Guest: Public dataset URL:", guestPublicUrl);
       console.log(
         "🔍 [TEST] Guest: Waiting for gallery-container to be attached...",
       );
       // Wait for gallery container to be attached (like in gallery tests)
-      await loggedInPageAsGuest
+      await authenticatedPageAsGuest
         .getByTestId("gallery-container")
         .waitFor({ state: "attached", timeout: 5000 });
       await authExpect(
-        loggedInPageAsGuest.getByTestId("gallery-container"),
+        authenticatedPageAsGuest.getByTestId("gallery-container"),
       ).toBeVisible();
       console.log("🔍 [TEST] Guest: ✅ Successfully accessed public dataset");
 
@@ -125,19 +128,19 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       console.log(
         "🔍 [TEST] Guest: Attempting to access member dataset (should be rejected)",
       );
-      await loggedInPageAsGuest.goto("/gallery/bcmform_responses");
+      await authenticatedPageAsGuest.goto("/gallery/bcmform_responses");
       // Wait for redirect
-      await loggedInPageAsGuest.waitForURL(
+      await authenticatedPageAsGuest.waitForURL(
         /\/(\?reason=unauthorized|\/login)/,
         {
           timeout: 5000,
         },
       );
-      const url = loggedInPageAsGuest.url();
+      const url = authenticatedPageAsGuest.url();
       console.log("🔍 [TEST] Guest: Member dataset access result URL:", url);
       console.log(
         "🔍 [TEST] Guest: Current page title:",
-        await loggedInPageAsGuest.title(),
+        await authenticatedPageAsGuest.title(),
       );
       authExpect(url).toMatch(/\/\?reason=unauthorized|\/login/);
       console.log("🔍 [TEST] Guest: ✅ Correctly rejected from member dataset");
@@ -146,26 +149,26 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
 
   authTest(
     "RBAC - Member user can access both public and member datasets",
-    async ({ loggedInPageAsMember }) => {
+    async ({ authenticatedPageAsMember }) => {
       console.log("🔍 [TEST] Starting Member role test");
 
       // Should access public dataset
       console.log("🔍 [TEST] Member: Attempting to access public dataset");
-      await loggedInPageAsMember.goto("/gallery/seed_survey_data");
-      await loggedInPageAsMember.waitForURL("**/gallery/**", {
+      await authenticatedPageAsMember.goto("/gallery/seed_survey_data");
+      await authenticatedPageAsMember.waitForURL("**/gallery/**", {
         timeout: 5000,
       });
-      const memberPublicUrl = loggedInPageAsMember.url();
+      const memberPublicUrl = authenticatedPageAsMember.url();
       console.log("🔍 [TEST] Member: Public dataset URL:", memberPublicUrl);
       console.log(
         "🔍 [TEST] Member: Waiting for gallery-container to be attached...",
       );
       // Wait for gallery container to be attached (like in gallery tests)
-      await loggedInPageAsMember
+      await authenticatedPageAsMember
         .getByTestId("gallery-container")
         .waitFor({ state: "attached", timeout: 5000 });
       await authExpect(
-        loggedInPageAsMember.getByTestId("gallery-container"),
+        authenticatedPageAsMember.getByTestId("gallery-container"),
       ).toBeVisible();
       console.log("🔍 [TEST] Member: ✅ Successfully accessed public dataset");
 
@@ -173,31 +176,31 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       console.log(
         "🔍 [TEST] Member: Attempting to access member dataset (map)",
       );
-      await loggedInPageAsMember.goto("/map/bcmform_responses");
-      await loggedInPageAsMember.waitForURL("**/map/**", {
+      await authenticatedPageAsMember.goto("/map/bcmform_responses");
+      await authenticatedPageAsMember.waitForURL("**/map/**", {
         timeout: 10000,
       });
-      const memberDatasetUrl = loggedInPageAsMember.url();
+      const memberDatasetUrl = authenticatedPageAsMember.url();
       console.log("🔍 [TEST] Member: Member dataset URL:", memberDatasetUrl);
       console.log(
         "🔍 [TEST] Member: Current page title:",
-        await loggedInPageAsMember.title(),
+        await authenticatedPageAsMember.title(),
       );
       // Wait for map container to be attached (like in alerts tests)
       console.log(
         "🔍 [TEST] Member: Waiting for map container to be attached...",
       );
-      await loggedInPageAsMember.locator("#map").waitFor({
+      await authenticatedPageAsMember.locator("#map").waitFor({
         state: "attached",
         timeout: 10000,
       });
       // Wait for the map canvas to be visible
-      const mapCanvas = loggedInPageAsMember
+      const mapCanvas = authenticatedPageAsMember
         .locator("canvas.mapboxgl-canvas")
         .first();
       await authExpect(mapCanvas).toBeVisible();
       // Wait for the map to be fully loaded
-      await loggedInPageAsMember.waitForFunction(
+      await authenticatedPageAsMember.waitForFunction(
         () => {
           // @ts-expect-error _testMap is exposed for E2E testing only
           const map = window._testMap;
@@ -213,56 +216,56 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
 
   authTest(
     "RBAC - Admin user can access both public and member datasets",
-    async ({ loggedInPageAsAdmin }) => {
+    async ({ authenticatedPageAsAdmin }) => {
       console.log("🔍 [TEST] Starting Admin role test");
 
       // Should access public dataset
       console.log("🔍 [TEST] Admin: Attempting to access public dataset");
-      await loggedInPageAsAdmin.goto("/gallery/seed_survey_data");
-      await loggedInPageAsAdmin.waitForURL("**/gallery/**", {
+      await authenticatedPageAsAdmin.goto("/gallery/seed_survey_data");
+      await authenticatedPageAsAdmin.waitForURL("**/gallery/**", {
         timeout: 5000,
       });
-      const adminPublicUrl = loggedInPageAsAdmin.url();
+      const adminPublicUrl = authenticatedPageAsAdmin.url();
       console.log("🔍 [TEST] Admin: Public dataset URL:", adminPublicUrl);
       console.log(
         "🔍 [TEST] Admin: Waiting for gallery-container to be attached...",
       );
       // Wait for gallery container to be attached (like in gallery tests)
-      await loggedInPageAsAdmin
+      await authenticatedPageAsAdmin
         .getByTestId("gallery-container")
         .waitFor({ state: "attached", timeout: 5000 });
       await authExpect(
-        loggedInPageAsAdmin.getByTestId("gallery-container"),
+        authenticatedPageAsAdmin.getByTestId("gallery-container"),
       ).toBeVisible();
       console.log("🔍 [TEST] Admin: ✅ Successfully accessed public dataset");
 
       // Should access member dataset (map view)
       console.log("🔍 [TEST] Admin: Attempting to access member dataset (map)");
-      await loggedInPageAsAdmin.goto("/map/bcmform_responses");
-      await loggedInPageAsAdmin.waitForURL("**/map/**", {
+      await authenticatedPageAsAdmin.goto("/map/bcmform_responses");
+      await authenticatedPageAsAdmin.waitForURL("**/map/**", {
         timeout: 10000,
       });
-      const adminDatasetUrl = loggedInPageAsAdmin.url();
+      const adminDatasetUrl = authenticatedPageAsAdmin.url();
       console.log("🔍 [TEST] Admin: Member dataset URL:", adminDatasetUrl);
       console.log(
         "🔍 [TEST] Admin: Current page title:",
-        await loggedInPageAsAdmin.title(),
+        await authenticatedPageAsAdmin.title(),
       );
       // Wait for map container to be attached (like in alerts tests)
       console.log(
         "🔍 [TEST] Admin: Waiting for map container to be attached...",
       );
-      await loggedInPageAsAdmin.locator("#map").waitFor({
+      await authenticatedPageAsAdmin.locator("#map").waitFor({
         state: "attached",
         timeout: 10000,
       });
       // Wait for the map canvas to be visible
-      const mapCanvas = loggedInPageAsAdmin
+      const mapCanvas = authenticatedPageAsAdmin
         .locator("canvas.mapboxgl-canvas")
         .first();
       await authExpect(mapCanvas).toBeVisible();
       // Wait for the map to be fully loaded
-      await loggedInPageAsAdmin.waitForFunction(
+      await authenticatedPageAsAdmin.waitForFunction(
         () => {
           // @ts-expect-error _testMap is exposed for E2E testing only
           const map = window._testMap;
