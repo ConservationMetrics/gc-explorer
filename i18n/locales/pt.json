@@ -51,6 +51,7 @@
   "datasetTable": "Nome de exibição do conjunto de dados",
   "datasetTableDescription": "Opcional: Um nome mais agradável para este conjunto de dados",
   "datasetTablePlaceholder": "ex., Meus Dados de Mapeamento",
+  "datasetViewManagement": "Gerenciamento de Visualizações de Conjuntos de Dados",
   "dateRange": "Período",
   "default": "Padrão",
   "downloadCSV": "Baixar CSV",

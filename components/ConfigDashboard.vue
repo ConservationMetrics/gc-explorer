@@ -134,7 +134,7 @@ watch(tableNameToAdd, (newVal) => {
         {{ $t("availableViews") }}
       </NuxtLink>
       <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-        {{ $t("availableViews") }}: {{ $t("configuration") }}
+        {{ $t("datasetViewManagement") }}
       </h1>
     </div>
 

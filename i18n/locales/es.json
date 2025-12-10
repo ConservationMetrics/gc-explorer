@@ -51,6 +51,7 @@
   "datasetTable": "Nombre para mostrar del conjunto de datos",
   "datasetTableDescription": "Opcional: Un nombre más agradable para este conjunto de datos",
   "datasetTablePlaceholder": "ej., Mis Datos de Mapeo",
+  "datasetViewManagement": "Gestión de Vistas de Conjuntos de Datos",
   "dateRange": "Rango de fechas",
   "default": "Predeterminado",
   "downloadCSV": "Descargar CSV",
