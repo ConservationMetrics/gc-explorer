@@ -1,5 +1,6 @@
 import { test as setup, type Page } from "@playwright/test";
 import path from "path";
+import { fileURLToPath } from "url";
 
 /**
  * Playwright authentication setup
@@ -7,6 +8,8 @@ import path from "path";
  * This runs before all tests and creates authenticated sessions
  */
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const authDir = path.join(__dirname, "../playwright/.auth");
 
 // Test account emails (from environment variables)
