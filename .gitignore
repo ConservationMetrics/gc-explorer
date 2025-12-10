@@ -102,3 +102,6 @@ sw.*
 !.env.test.compose.example
 *.db
 test-results/
+
+# Playwright authentication state (contains sensitive cookies)
+playwright/.auth/
