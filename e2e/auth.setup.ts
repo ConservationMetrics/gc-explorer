@@ -334,9 +334,13 @@ setup("authenticate as guest", async ({ page }) => {
   console.log(`🔍 [SETUP] Password set: ${!!password}`);
 
   if (!password) {
-    console.warn(
-      `⚠️ [SETUP] E2E_AUTH0_GUEST_PASSWORD not set, skipping Guest authentication`,
-    );
+    const message = `⚠️ [SETUP] E2E_AUTH0_GUEST_PASSWORD not set, skipping Guest authentication`;
+    console.warn(message);
+    if (process.env.CI) {
+      console.warn(
+        `⚠️ [SETUP] In CI: Set E2E_AUTH0_GUEST_PASSWORD in GitHub Actions secrets to enable Auth0 authentication`,
+      );
+    }
     return;
   }
 
@@ -372,9 +376,13 @@ setup("authenticate as member", async ({ page }) => {
   console.log(`🔍 [SETUP] Password set: ${!!password}`);
 
   if (!password) {
-    console.warn(
-      `⚠️ [SETUP] E2E_AUTH0_MEMBER_PASSWORD not set, skipping Member authentication`,
-    );
+    const message = `⚠️ [SETUP] E2E_AUTH0_MEMBER_PASSWORD not set, skipping Member authentication`;
+    console.warn(message);
+    if (process.env.CI) {
+      console.warn(
+        `⚠️ [SETUP] In CI: Set E2E_AUTH0_MEMBER_PASSWORD in GitHub Actions secrets to enable Auth0 authentication`,
+      );
+    }
     return;
   }
 
@@ -410,9 +418,13 @@ setup("authenticate as admin", async ({ page }) => {
   console.log(`🔍 [SETUP] Password set: ${!!password}`);
 
   if (!password) {
-    console.warn(
-      `⚠️ [SETUP] E2E_AUTH0_ADMIN_PASSWORD not set, skipping Admin authentication`,
-    );
+    const message = `⚠️ [SETUP] E2E_AUTH0_ADMIN_PASSWORD not set, skipping Admin authentication`;
+    console.warn(message);
+    if (process.env.CI) {
+      console.warn(
+        `⚠️ [SETUP] In CI: Set E2E_AUTH0_ADMIN_PASSWORD in GitHub Actions secrets to enable Auth0 authentication`,
+      );
+    }
     return;
   }
 
