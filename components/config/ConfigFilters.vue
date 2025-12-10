@@ -52,17 +52,19 @@ const handleInput = (key: string, value: string): void => {
 </script>
 
 <template>
-  <div class="config-section">
-    <div class="config-header">
-      <h3>{{ $t("filtering") }} {{ $t("configuration") }}</h3>
-    </div>
-    <div v-for="key in keys" :key="key" class="config-field">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div v-for="key in keys" :key="key" class="space-y-2">
       <template v-if="key === 'FRONT_END_FILTER_COLUMN'">
-        <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t(toCamelCase(key)) }}
+        </label>
         <input
           :id="`${tableName}-${key}`"
           :value="config[key]"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           type="text"
           @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
         />
@@ -74,7 +76,12 @@ const handleInput = (key: string, value: string): void => {
           key === 'UNWANTED_SUBSTRINGS'
         "
       >
-        <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t(toCamelCase(key)) }}
+        </label>
         <VueTagsInput
           class="tag-field"
           :tags="tags[key]"

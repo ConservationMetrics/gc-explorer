@@ -14,16 +14,18 @@ const emit = defineEmits(["updateConfig"]);
 </script>
 
 <template>
-  <div class="config-section">
-    <div class="config-header">
-      <h3>{{ $t("other") }} {{ $t("configuration") }}</h3>
-    </div>
-    <div v-for="key in keys" :key="key" class="config-field">
+  <div class="space-y-6">
+    <div v-for="key in keys" :key="key" class="space-y-2">
       <template v-if="key === 'LOGO_URL'">
-        <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t(toCamelCase(key)) }}
+        </label>
         <input
           :id="`${tableName}-${key}`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           placeholder="https://…"
           type="url"
           :value="config[key]"

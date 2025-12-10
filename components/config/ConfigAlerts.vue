@@ -40,16 +40,18 @@ const handleTagsChanged = (key: string, newTags: Tag[]): void => {
 </script>
 
 <template>
-  <div class="config-section">
-    <div class="config-header">
-      <h3>{{ $t("alerts") }} {{ $t("configuration") }}</h3>
-    </div>
-    <div v-for="key in keys" :key="key" class="config-field">
-      <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
+  <div class="space-y-6">
+    <div v-for="key in keys" :key="key" class="space-y-2">
+      <label
+        :for="`${tableName}-${key}`"
+        class="block text-sm font-medium text-gray-700"
+      >
+        {{ $t(toCamelCase(key)) }}
+      </label>
       <template v-if="key === 'MAPEO_TABLE'">
         <input
           :id="`${tableName}-${key}`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           type="text"
           :value="config[key]"
           @input="

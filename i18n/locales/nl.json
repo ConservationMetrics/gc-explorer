@@ -52,6 +52,7 @@
   "datasetTable": "Weergavenaam dataset",
   "datasetTableDescription": "Optioneel: Een mooiere weergavenaam voor deze dataset",
   "datasetTablePlaceholder": "bijv., Mijn Kaartgegevens",
+  "datasetViewManagement": "Dataset Weergave Beheer",
   "dateRange": "Datumbereik",
   "default": "Standaard",
   "downloadCSV": "Download CSV",

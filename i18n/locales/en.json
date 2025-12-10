@@ -54,6 +54,7 @@
   "datasetTable": "Dataset Display Name",
   "datasetTableDescription": "Optional: A nicer display name for this dataset",
   "datasetTablePlaceholder": "e.g., My Mapping Data",
+  "datasetViewManagement": "Dataset View Management",
   "dateRange": "Date range",
   "default": "Default",
   "downloadCSV": "Download CSV",
