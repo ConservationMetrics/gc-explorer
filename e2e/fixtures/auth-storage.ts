@@ -1,8 +1,4 @@
-import {
-  test as baseTest,
-  type Page,
-  type BrowserContext,
-} from "@playwright/test";
+import { test as baseTest, type Page } from "@playwright/test";
 import path from "path";
 
 /**
