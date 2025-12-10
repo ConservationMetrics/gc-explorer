@@ -1,6 +1,7 @@
 import { test as setup, type Page } from "@playwright/test";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 /**
  * Playwright authentication setup
@@ -11,6 +12,19 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const authDir = path.join(__dirname, "../playwright/.auth");
+
+// Ensure auth directory exists (important in Docker/GitHub Actions)
+if (!fs.existsSync(authDir)) {
+  console.log(`🔍 [SETUP] Creating auth directory: ${authDir}`);
+  fs.mkdirSync(authDir, { recursive: true });
+  console.log(`✅ [SETUP] Auth directory created`);
+} else {
+  console.log(`✅ [SETUP] Auth directory already exists: ${authDir}`);
+}
+console.log(`🔍 [SETUP] Current working directory: ${process.cwd()}`);
+console.log(
+  `🔍 [SETUP] Auth directory absolute path: ${path.resolve(authDir)}`
+);
 
 // Test account emails (from environment variables)
 const TEST_ACCOUNTS = {
@@ -41,7 +55,7 @@ async function authenticateWithAuth0(
   page: Page,
   email: string,
   password: string,
-  roleName: string,
+  roleName: string
 ) {
   console.log(`\n🔍 [AUTH] ========================================`);
   console.log(`🔍 [AUTH] Starting authentication for ${roleName}`);
@@ -85,7 +99,7 @@ async function authenticateWithAuth0(
     'input[name="email"], input[type="email"], input[name="username"], input[id*="email"], input[id*="username"]',
     {
       timeout: 15000,
-    },
+    }
   );
   console.log(`🔍 [AUTH] ✅ Auth0 login page loaded`);
 
@@ -117,13 +131,13 @@ async function authenticateWithAuth0(
     console.error(`🔍 [AUTH] ❌ Could not find email input field`);
     console.error(
       `🔍 [AUTH] Page HTML preview:`,
-      await page.content().then((c) => c.substring(0, 1000)),
+      await page.content().then((c) => c.substring(0, 1000))
     );
     throw new Error("Could not find email input field on Auth0 login page");
   }
 
   console.log(
-    `🔍 [AUTH] ✅ Found email input with selector: "${foundSelector}"`,
+    `🔍 [AUTH] ✅ Found email input with selector: "${foundSelector}"`
   );
   await emailInput.fill(email);
   const filledEmail = await emailInput.inputValue();
@@ -143,7 +157,7 @@ async function authenticateWithAuth0(
     const input = page.locator(selector).first();
     const count = await input.count();
     console.log(
-      `🔍 [AUTH]   Trying password selector "${selector}": ${count} found`,
+      `🔍 [AUTH]   Trying password selector "${selector}": ${count} found`
     );
     if (count > 0) {
       passwordInput = input;
@@ -159,7 +173,7 @@ async function authenticateWithAuth0(
 
   await passwordInput.waitFor({ state: "visible", timeout: 5000 });
   console.log(
-    `🔍 [AUTH] ✅ Found password input with selector: "${foundPasswordSelector}"`,
+    `🔍 [AUTH] ✅ Found password input with selector: "${foundPasswordSelector}"`
   );
   await passwordInput.fill(password);
   const passwordLength = password.length;
@@ -185,7 +199,7 @@ async function authenticateWithAuth0(
     if (count > 0) {
       const buttonText = await button.textContent().catch(() => "");
       console.log(
-        `🔍 [AUTH]   Trying submit selector "${selector}": ${count} found, text: "${buttonText}"`,
+        `🔍 [AUTH]   Trying submit selector "${selector}": ${count} found, text: "${buttonText}"`
       );
       submitButton = button;
       foundSubmitSelector = selector;
@@ -195,7 +209,7 @@ async function authenticateWithAuth0(
 
   if (!submitButton) {
     console.log(
-      `🔍 [AUTH]   No submit button found with specific selectors, trying fallback...`,
+      `🔍 [AUTH]   No submit button found with specific selectors, trying fallback...`
     );
     // Fallback: try to find any button
     submitButton = page.locator("button").first();
@@ -208,13 +222,13 @@ async function authenticateWithAuth0(
     }
   } else {
     console.log(
-      `🔍 [AUTH] ✅ Found submit button with selector: "${foundSubmitSelector}"`,
+      `🔍 [AUTH] ✅ Found submit button with selector: "${foundSubmitSelector}"`
     );
   }
 
   const submitButtonText = await submitButton.textContent().catch(() => "");
   console.log(
-    `🔍 [AUTH] Clicking submit button (text: "${submitButtonText}")...`,
+    `🔍 [AUTH] Clicking submit button (text: "${submitButtonText}")...`
   );
 
   // Click and wait for redirect back to our app
@@ -245,14 +259,14 @@ async function authenticateWithAuth0(
     (c) =>
       c.name.includes("session") ||
       c.name.includes("auth") ||
-      c.name.includes("nuxt"),
+      c.name.includes("nuxt")
   );
   console.log(
-    `🔍 [AUTH] Session-related cookies found: ${sessionCookies.length}`,
+    `🔍 [AUTH] Session-related cookies found: ${sessionCookies.length}`
   );
   sessionCookies.forEach((cookie) => {
     console.log(
-      `🔍 [AUTH]   Cookie: ${cookie.name} (domain: ${cookie.domain}, path: ${cookie.path})`,
+      `🔍 [AUTH]   Cookie: ${cookie.name} (domain: ${cookie.domain}, path: ${cookie.path})`
     );
   });
 
@@ -283,7 +297,7 @@ setup("authenticate as signedIn", async ({ page }) => {
 
   if (!password) {
     console.warn(
-      `⚠️ [SETUP] E2E_AUTH0_SIGNEDIN_PASSWORD not set, skipping SignedIn authentication`,
+      `⚠️ [SETUP] E2E_AUTH0_SIGNEDIN_PASSWORD not set, skipping SignedIn authentication`
     );
     return;
   }
@@ -294,7 +308,6 @@ setup("authenticate as signedIn", async ({ page }) => {
   await page.context().storageState({ path: authFile });
 
   // Verify file was created
-  const fs = await import("fs");
   const fileExists = fs.existsSync(authFile);
   const fileStats = fileExists ? fs.statSync(authFile) : null;
   console.log(`🔍 [SETUP] Storage state file exists: ${fileExists}`);
@@ -322,7 +335,7 @@ setup("authenticate as guest", async ({ page }) => {
 
   if (!password) {
     console.warn(
-      `⚠️ [SETUP] E2E_AUTH0_GUEST_PASSWORD not set, skipping Guest authentication`,
+      `⚠️ [SETUP] E2E_AUTH0_GUEST_PASSWORD not set, skipping Guest authentication`
     );
     return;
   }
@@ -333,7 +346,6 @@ setup("authenticate as guest", async ({ page }) => {
   await page.context().storageState({ path: authFile });
 
   // Verify file was created
-  const fs = await import("fs");
   const fileExists = fs.existsSync(authFile);
   const fileStats = fileExists ? fs.statSync(authFile) : null;
   console.log(`🔍 [SETUP] Storage state file exists: ${fileExists}`);
@@ -361,7 +373,7 @@ setup("authenticate as member", async ({ page }) => {
 
   if (!password) {
     console.warn(
-      `⚠️ [SETUP] E2E_AUTH0_MEMBER_PASSWORD not set, skipping Member authentication`,
+      `⚠️ [SETUP] E2E_AUTH0_MEMBER_PASSWORD not set, skipping Member authentication`
     );
     return;
   }
@@ -372,7 +384,6 @@ setup("authenticate as member", async ({ page }) => {
   await page.context().storageState({ path: authFile });
 
   // Verify file was created
-  const fs = await import("fs");
   const fileExists = fs.existsSync(authFile);
   const fileStats = fileExists ? fs.statSync(authFile) : null;
   console.log(`🔍 [SETUP] Storage state file exists: ${fileExists}`);
@@ -400,7 +411,7 @@ setup("authenticate as admin", async ({ page }) => {
 
   if (!password) {
     console.warn(
-      `⚠️ [SETUP] E2E_AUTH0_ADMIN_PASSWORD not set, skipping Admin authentication`,
+      `⚠️ [SETUP] E2E_AUTH0_ADMIN_PASSWORD not set, skipping Admin authentication`
     );
     return;
   }
@@ -411,7 +422,6 @@ setup("authenticate as admin", async ({ page }) => {
   await page.context().storageState({ path: authFile });
 
   // Verify file was created
-  const fs = await import("fs");
   const fileExists = fs.existsSync(authFile);
   const fileStats = fileExists ? fs.statSync(authFile) : null;
   console.log(`🔍 [SETUP] Storage state file exists: ${fileExists}`);
