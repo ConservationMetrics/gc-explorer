@@ -13,6 +13,24 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const authDir = path.join(__dirname, "../../playwright/.auth");
 
+// Check if we're in CI and passwords aren't set - if so, provide helpful message
+const hasAnyPassword =
+  process.env.E2E_AUTH0_SIGNEDIN_PASSWORD ||
+  process.env.E2E_AUTH0_GUEST_PASSWORD ||
+  process.env.E2E_AUTH0_MEMBER_PASSWORD ||
+  process.env.E2E_AUTH0_ADMIN_PASSWORD;
+
+if (process.env.CI && !hasAnyPassword) {
+  console.warn(`\n⚠️ [FIXTURE] Running in CI but no Auth0 passwords are set.`);
+  console.warn(`⚠️ [FIXTURE] Auth0 authentication will be skipped.`);
+  console.warn(
+    `⚠️ [FIXTURE] Set E2E_AUTH0_*_PASSWORD env vars in GitHub Actions secrets to enable Auth0 tests.`,
+  );
+  console.warn(
+    `⚠️ [FIXTURE] Note: If NUXT_PUBLIC_AUTH_STRATEGY="none", use mock auth fixtures instead.\n`,
+  );
+}
+
 /**
  * Helper function to check if auth file exists and provide helpful error message
  */
