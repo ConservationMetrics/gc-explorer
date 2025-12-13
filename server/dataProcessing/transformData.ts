@@ -36,10 +36,19 @@ import type {
  *   joining items with commas.
  *
  * @param {DataEntry[]} data - An array of survey data entries to be transformed.
+ * @param {string} iconColumn - Optional icon column name to exclude from transformation
  * @returns {DataEntry[]} - A new array of data entries with transformed keys and values.
  */
-const transformSurveyData = (data: DataEntry[]): DataEntry[] => {
+const transformSurveyData = (
+  data: DataEntry[],
+  iconColumn?: string,
+): DataEntry[] => {
   const transformSurveyDataKey = (key: string): string => {
+    // Don't transform the icon column key
+    if (iconColumn && key === iconColumn) {
+      return key;
+    }
+
     let transformedKey = key
       .replace(/^g__/, "geo")
       .replace(/^p__/, "")
@@ -60,6 +69,8 @@ const transformSurveyData = (data: DataEntry[]): DataEntry[] => {
   ) => {
     if (value === null) return null;
     if (key === "g__coordinates") return value;
+    // Don't transform icon column values (filenames)
+    if (iconColumn && key === iconColumn) return value;
 
     let transformedValue = value;
     if (typeof transformedValue === "string") {
@@ -98,7 +109,9 @@ const transformSurveyData = (data: DataEntry[]): DataEntry[] => {
   const transformedData = data.map((entry) => {
     const transformedEntry: DataEntry = {};
     Object.entries(entry).forEach(([key, value]) => {
-      const transformedKey = transformSurveyDataKey(key);
+      // Use original key for icon column, don't transform it
+      const transformedKey =
+        iconColumn && key === iconColumn ? key : transformSurveyDataKey(key);
       const transformedValue = transformSurveyDataValue(key, value);
       if (transformedValue !== null) {
         transformedEntry[transformedKey] = String(transformedValue);
