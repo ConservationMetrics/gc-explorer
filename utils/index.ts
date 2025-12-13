@@ -14,23 +14,25 @@ export const getFilePathsWithExtension = (
     if (feature[key].includes("attachment")) return;
 
     const files = feature[key].split(",");
+    // handle ["\"5bf52de27e1a7b36f2d2cec254b766c8.jpg\""]
 
     files.forEach((file: string) => {
+      const cleanedFile = file
+        .trim()
+        .replace(/^[\s"'\\[]+|[\s"'\\[\]]+$/g, "") // Remove brackets, quotes, backslashes, and whitespace from edges
+        .replace(/ /g, "_");
+
       const hasValidExtension = Object.values(allExtensions).some(
         (extensions) =>
-          extensions.some((ext: string) => file.trim().endsWith(ext)),
+          extensions.some((ext: string) => cleanedFile.endsWith(ext)),
       );
 
       if (hasValidExtension) {
-        const cleanedFile = file
-          .trim()
-          .replace(/ /g, "_")
-          .replace(/^\['|'\]$/g, "");
-
         filePaths.push(cleanedFile);
       }
     });
   });
+
   return filePaths;
 };
 
