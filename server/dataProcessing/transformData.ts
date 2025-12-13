@@ -3,7 +3,6 @@ import murmurhash from "murmurhash";
 import {
   calculateCentroid,
   capitalizeFirstLetter,
-  formatDate,
   getRandomColor,
 } from "./helpers";
 
@@ -81,13 +80,16 @@ const transformSurveyData = (
       if (key.toLowerCase().includes("category")) {
         transformedValue = transformedValue.replace(/-/g, " ");
       }
-      if (
-        key.toLowerCase().includes("created") ||
-        key.toLowerCase().includes("modified") ||
-        key.toLowerCase().includes("updated")
-      ) {
-        transformedValue = formatDate(transformedValue);
-      }
+      // TODO: For now this is a quick fix to ensure original timestamps are
+      // returned in file downloads. We need to rethink how we do data transformations
+      // so that file downloads return the original records, not transformed ones.
+      // if (
+      //   key.toLowerCase().includes("created") ||
+      //   key.toLowerCase().includes("modified") ||
+      //   key.toLowerCase().includes("updated")
+      // ) {
+      //   transformedValue = formatDate(transformedValue);
+      // }
       transformedValue =
         transformedValue.charAt(0).toUpperCase() + transformedValue.slice(1);
     }

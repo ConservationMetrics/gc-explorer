@@ -34,3 +34,11 @@ export const useRuntimeConfig = vi.fn(() => ({
 export const useCookie = vi.fn(() => ({
   value: null,
 }));
+
+export const useRoute = vi.fn(() => ({
+  params: {
+    tablename: "test_data",
+  },
+  query: {},
+  path: "/test",
+}));
