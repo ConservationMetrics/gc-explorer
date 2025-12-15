@@ -263,15 +263,128 @@ async function authenticateWithAuth0(
     `🔍 [AUTH] Clicking submit button (text: "${submitButtonText}")...`,
   );
 
-  // Click and wait for redirect back to our app
-  console.log(`🔍 [AUTH] Waiting for redirect back to /login...`);
-  const redirectPromise = page.waitForURL(/\/login/, { timeout: 30000 });
-  await Promise.all([redirectPromise, submitButton.click()]);
+  // Click and wait for redirect (could be to consent page or directly to /login)
+  console.log(`🔍 [AUTH] Waiting for redirect after login...`);
+  await submitButton.click();
+
+  // Wait for navigation to complete (either to consent page or /login)
+  try {
+    // Wait for URL to change (either consent page or /login)
+    await page.waitForURL(/\/u\/consent|\/consent|\/login/, { timeout: 30000 });
+  } catch {
+    // If timeout, check current URL anyway
+    console.log(`🔍 [AUTH] ⚠️ Navigation timeout, checking current URL...`);
+  }
+
+  // Wait a bit for page to fully load
+  await page.waitForTimeout(2000);
+
+  // Check if we're on a consent/authorize page
+  const postLoginUrl = page.url();
+  const postLoginTitle = await page.title().catch(() => "");
+  console.log(`🔍 [AUTH] After login click, URL: ${postLoginUrl}`);
+  console.log(`🔍 [AUTH] After login click, title: ${postLoginTitle}`);
+
+  const isConsentPage =
+    postLoginUrl.includes("/u/consent") ||
+    postLoginUrl.includes("/consent") ||
+    postLoginTitle.toLowerCase().includes("authorize") ||
+    postLoginTitle.toLowerCase().includes("consent");
+
+  if (isConsentPage) {
+    console.log(`🔍 [AUTH] ✅ Consent screen detected`);
+    console.log(
+      `🔍 [AUTH] Detected consent/authorize page, looking for authorize button...`,
+    );
+
+    // Look for authorize/consent buttons - try multiple selectors
+    const consentButtonSelectors = [
+      'button:has-text("Continue")',
+      'button:has-text("Yes")',
+      'button:has-text("Authorize")',
+      'button:has-text("Allow")',
+      'button[type="submit"]',
+      "button[data-action-button-primary]",
+      'button[class*="continue"]',
+      'button[class*="authorize"]',
+    ];
+
+    let consentButton = null;
+
+    for (const selector of consentButtonSelectors) {
+      const button = page.locator(selector).first();
+      const count = await button.count();
+      if (count > 0) {
+        const isVisible = await button.isVisible().catch(() => false);
+        const buttonText = await button.textContent().catch(() => "");
+        console.log(
+          `🔍 [AUTH]   Trying consent selector "${selector}": ${count} found, text: "${buttonText}", visible: ${isVisible}`,
+        );
+        if (isVisible) {
+          consentButton = button;
+          break;
+        }
+      }
+    }
+
+    if (!consentButton) {
+      // Fallback: find any visible button
+      const allButtons = page.locator("button");
+      const buttonCount = await allButtons.count();
+      for (let i = 0; i < buttonCount; i++) {
+        const button = allButtons.nth(i);
+        const isVisible = await button.isVisible().catch(() => false);
+        if (isVisible) {
+          const buttonText = await button.textContent().catch(() => "");
+          console.log(
+            `🔍 [AUTH]   Found fallback consent button ${i}, text: "${buttonText}"`,
+          );
+          consentButton = button;
+          break;
+        }
+      }
+    }
+
+    if (consentButton) {
+      const consentButtonText = await consentButton
+        .textContent()
+        .catch(() => "");
+      console.log(
+        `🔍 [AUTH] ✅ Found consent button (text: "${consentButtonText}"), clicking...`,
+      );
+      await consentButton.click();
+      await page.waitForTimeout(2000); // Wait for redirect after consent
+      console.log(`🔍 [AUTH] After consent click, URL: ${page.url()}`);
+      console.log(
+        `🔍 [AUTH] After consent click, title: ${await page.title().catch(() => "")}`,
+      );
+    } else {
+      console.log(
+        `🔍 [AUTH] ⚠️ No consent button found, but on consent page - may need manual intervention`,
+      );
+    }
+  } else {
+    console.log(
+      `🔍 [AUTH] ✅ No consent screen detected, proceeding directly to /login`,
+    );
+  }
+
+  // Now wait for final redirect to /login (if not already there)
+  console.log(`🔍 [AUTH] Waiting for final redirect to /login...`);
+  try {
+    await page.waitForURL(/\/login/, { timeout: 30000 });
+  } catch {
+    console.log(
+      `🔍 [AUTH] ⚠️ Did not redirect to /login within timeout, current URL: ${page.url()}`,
+    );
+  }
 
   const finalUrl = page.url();
   console.log(`🔍 [AUTH] ✅ Successfully authenticated ${roleName}`);
   console.log(`🔍 [AUTH] Redirected back to: ${finalUrl}`);
-  console.log(`🔍 [AUTH] Final page title: ${await page.title()}`);
+  console.log(
+    `🔍 [AUTH] Final page title: ${await page.title().catch(() => "")}`,
+  );
 
   // Step 7: Wait for session to be fully established
   console.log(`🔍 [AUTH] Step 7: Waiting for session to be established...`);
