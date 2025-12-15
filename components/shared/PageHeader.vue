@@ -61,6 +61,6 @@ const _toggleMobileMenu = () => {
     </div>
 
     <!-- Children content (for any additional content below header) -->
-    <slot />
+    <slot></slot>
   </div>
 </template>

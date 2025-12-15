@@ -131,7 +131,7 @@ const emit = defineEmits(["updateConfig"]);
               });
             }
           "
-        />
+        ></textarea>
         <p class="text-gray-500 text-sm mt-1">
           {{
             $t("viewDescriptionDescription") ||
