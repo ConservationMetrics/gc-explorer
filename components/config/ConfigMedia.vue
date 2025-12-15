@@ -27,6 +27,8 @@ const providerBasePath = ref<MediaProvider>("filebrowser");
 const shareInputBasePath = ref("");
 const providerAlerts = ref<MediaProvider>("filebrowser");
 const shareInputAlerts = ref("");
+const providerIcons = ref<MediaProvider>("filebrowser");
+const shareInputIcons = ref("");
 const mediaColumn = ref("");
 const isInitializing = ref(true);
 
@@ -67,6 +69,16 @@ const resolvedAlertsPath = computed(() => {
   return shareInputAlerts.value || "";
 });
 
+const resolvedIconsPath = computed(() => {
+  if (providerIcons.value === "filebrowser") {
+    const shareId = extractShareId(shareInputIcons.value);
+    if (!shareId) return "";
+    const baseUrl = getBaseUrlFromInput(shareInputIcons.value, defaultBaseUrl);
+    return `${baseUrl.replace(/\/+$/, "")}/${shareId}`;
+  }
+  return shareInputIcons.value || "";
+});
+
 const isBasePathValid = computed(() => {
   if (providerBasePath.value === "filebrowser") {
     return isValidFilebrowserInput(shareInputBasePath.value);
@@ -81,23 +93,34 @@ const isAlertsValid = computed(() => {
   return true;
 });
 
+const isIconsValid = computed(() => {
+  if (providerIcons.value === "filebrowser") {
+    return isValidFilebrowserInput(shareInputIcons.value);
+  }
+  return true;
+});
+
 // Handlers
-const handleInput = (key: "basePath" | "alerts", value: string) => {
+const handleInput = (key: "basePath" | "alerts" | "icons", value: string) => {
   if (key === "basePath") {
     shareInputBasePath.value = value;
-  } else {
+  } else if (key === "alerts") {
     shareInputAlerts.value = value;
+  } else {
+    shareInputIcons.value = value;
   }
 };
 
 const handleProviderChange = (
-  key: "basePath" | "alerts",
+  key: "basePath" | "alerts" | "icons",
   value: MediaProvider,
 ) => {
   if (key === "basePath") {
     providerBasePath.value = value;
-  } else {
+  } else if (key === "alerts") {
     providerAlerts.value = value;
+  } else {
+    providerIcons.value = value;
   }
 };
 
@@ -111,6 +134,12 @@ watch(resolvedBasePath, (newValue) => {
 watch(resolvedAlertsPath, (newValue) => {
   if (!isInitializing.value) {
     emit("updateConfig", { MEDIA_BASE_PATH_ALERTS: newValue });
+  }
+});
+
+watch(resolvedIconsPath, (newValue) => {
+  if (!isInitializing.value) {
+    emit("updateConfig", { MEDIA_BASE_PATH_ICONS: newValue });
   }
 });
 
@@ -153,6 +182,23 @@ onMounted(() => {
     } else {
       providerAlerts.value = "generic";
       shareInputAlerts.value = existing;
+    }
+  }
+
+  if (props.config.MEDIA_BASE_PATH_ICONS) {
+    const existing = props.config.MEDIA_BASE_PATH_ICONS;
+    if (existing.includes("/api/public/dl/")) {
+      providerIcons.value = "filebrowser";
+      const parts = existing.split("/api/public/dl/");
+      if (parts.length === 2) {
+        shareInputIcons.value = parts[1].replace(/\/+$/, "");
+      } else {
+        providerIcons.value = "generic";
+        shareInputIcons.value = existing;
+      }
+    } else {
+      providerIcons.value = "generic";
+      shareInputIcons.value = existing;
     }
   }
 
@@ -332,6 +378,86 @@ onMounted(() => {
             placeholder="https://your-files-host.example/api/public/dl/"
             @input="
               handleInput('alerts', ($event.target as HTMLInputElement).value)
+            "
+          />
+        </div>
+      </template>
+    </div>
+
+    <!-- MEDIA_BASE_PATH_ICONS -->
+    <div
+      v-if="keys.includes('MEDIA_BASE_PATH_ICONS') && views.includes('map')"
+      class="config-field"
+    >
+      <label>{{ $t(toCamelCase("MEDIA_BASE_PATH_ICONS")) }}</label>
+
+      <div class="media-provider-selector">
+        <label :for="`${tableName}-provider-icons`" class="media-field-label">{{
+          $t("mediaProvider")
+        }}</label>
+        <select
+          :id="`${tableName}-provider-icons`"
+          class="input-field"
+          :value="providerIcons"
+          @change="
+            handleProviderChange(
+              'icons',
+              ($event.target as HTMLSelectElement).value as MediaProvider,
+            )
+          "
+        >
+          <option value="filebrowser">
+            {{ $t("mediaFilebrowserDefault") }}
+          </option>
+          <option value="generic">{{ $t("mediaGenericHttpBaseUrl") }}</option>
+        </select>
+      </div>
+
+      <template v-if="providerIcons === 'filebrowser'">
+        <div class="media-share-input">
+          <label :for="`${tableName}-share-icons`" class="media-field-label">{{
+            $t("mediaPasteFilebrowserShareUrlOrHash")
+          }}</label>
+          <input
+            :id="`${tableName}-share-icons`"
+            class="input-field"
+            :class="{ 'input-invalid': !isIconsValid && shareInputIcons }"
+            type="text"
+            :value="shareInputIcons"
+            placeholder="https://files.example.com/share/abc123 or abc123"
+            pattern="^(https?://[^\s]+/(?:share|api/public/dl)/[a-zA-Z0-9_-]+|[a-zA-Z0-9_-]+)$"
+            @input="
+              handleInput('icons', ($event.target as HTMLInputElement).value)
+            "
+          />
+          <p v-if="!isIconsValid && shareInputIcons" class="validation-error">
+            {{ $t("mediaInvalidFormat") }}
+          </p>
+          <p class="field-hint">
+            <strong>{{ $t("mediaAccepts") }}</strong>
+            <code>https://files.example.com/share/abc123</code>,
+            <code>https://files.example.com/api/public/dl/abc123</code>,
+            {{ $t("or") }}
+            <code>abc123</code>
+          </p>
+        </div>
+      </template>
+
+      <template v-else>
+        <div class="media-base-url">
+          <label
+            :for="`${tableName}-baseUrl-generic-icons`"
+            class="media-field-label"
+            >{{ $t("mediaBaseUrl") }}</label
+          >
+          <input
+            :id="`${tableName}-baseUrl-generic-icons`"
+            class="input-field"
+            type="url"
+            :value="shareInputIcons"
+            placeholder="https://your-files-host.example/api/public/dl/"
+            @input="
+              handleInput('icons', ($event.target as HTMLInputElement).value)
             "
           />
         </div>

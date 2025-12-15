@@ -522,4 +522,180 @@ describe("ConfigMedia component", () => {
       expect(lastEmit.MEDIA_BASE_PATH_ALERTS).toContain("alerts-hash-456");
     }
   });
+
+  it("renders with MEDIA_BASE_PATH_ICONS when map view is enabled", () => {
+    const wrapper = mount(ConfigMedia, {
+      props: {
+        ...baseProps,
+        views: ["map"],
+        keys: ["MEDIA_BASE_PATH_ICONS"],
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.text()).toContain("mediaBasePathIcons");
+    expect(
+      wrapper.find('label[for="test_table-provider-icons"]').exists(),
+    ).toBe(true);
+  });
+
+  it("does not render MEDIA_BASE_PATH_ICONS when map view is not enabled", () => {
+    const wrapper = mount(ConfigMedia, {
+      props: {
+        ...baseProps,
+        views: ["gallery"],
+        keys: ["MEDIA_BASE_PATH_ICONS"],
+      },
+      global: globalConfig,
+    });
+
+    expect(
+      wrapper.find('label[for="test_table-provider-icons"]').exists(),
+    ).toBe(false);
+  });
+
+  it("parses existing Filebrowser URL for icons from config on mount", async () => {
+    const configWithFilebrowser = {
+      MEDIA_BASE_PATH_ICONS:
+        "https://files.demo.guardianconnector.net/api/public/dl/icon123",
+    } as ViewConfig;
+
+    const wrapper = mount(ConfigMedia, {
+      props: {
+        ...baseProps,
+        views: ["map"],
+        keys: ["MEDIA_BASE_PATH_ICONS"],
+        config: configWithFilebrowser,
+      },
+      global: globalConfig,
+    });
+
+    await nextTick();
+    await wrapper.vm.$nextTick();
+
+    const input = wrapper.find<HTMLInputElement>(
+      'input[id="test_table-share-icons"]',
+    );
+    expect(input.element.value).toBe("icon123");
+  });
+
+  it("emits updateConfig when icons share input changes", async () => {
+    const wrapper = mount(ConfigMedia, {
+      props: {
+        ...baseProps,
+        views: ["map"],
+        keys: ["MEDIA_BASE_PATH_ICONS"],
+      },
+      global: globalConfig,
+    });
+
+    await nextTick();
+    await wrapper.vm.$nextTick();
+
+    const input = wrapper.find<HTMLInputElement>(
+      'input[id="test_table-share-icons"]',
+    );
+    await input.setValue("icon-hash-789");
+
+    await nextTick();
+    await wrapper.vm.$nextTick();
+
+    const emitted = wrapper.emitted("updateConfig");
+    expect(emitted).toBeTruthy();
+    if (emitted && emitted.length > 0) {
+      const lastEmit = emitted[emitted.length - 1][0] as Partial<ViewConfig>;
+      expect(lastEmit.MEDIA_BASE_PATH_ICONS).toContain("icon-hash-789");
+    }
+  });
+
+  it("constructs correct Filebrowser URL from icons hash", async () => {
+    const wrapper = mount(ConfigMedia, {
+      props: {
+        ...baseProps,
+        views: ["map"],
+        keys: ["MEDIA_BASE_PATH_ICONS"],
+      },
+      global: globalConfig,
+    });
+
+    await nextTick();
+    await wrapper.vm.$nextTick();
+
+    const input = wrapper.find<HTMLInputElement>(
+      'input[id="test_table-share-icons"]',
+    );
+    await input.setValue("my-icons-hash");
+
+    await nextTick();
+    await wrapper.vm.$nextTick();
+
+    const emitted = wrapper.emitted("updateConfig");
+    if (emitted && emitted.length > 0) {
+      const lastEmit = emitted[emitted.length - 1][0] as Partial<ViewConfig>;
+      expect(lastEmit.MEDIA_BASE_PATH_ICONS).toContain("/api/public/dl/");
+      expect(lastEmit.MEDIA_BASE_PATH_ICONS).toContain("my-icons-hash");
+    }
+  });
+
+  it("switches to generic provider for icons and uses input as-is", async () => {
+    const wrapper = mount(ConfigMedia, {
+      props: {
+        ...baseProps,
+        views: ["map"],
+        keys: ["MEDIA_BASE_PATH_ICONS"],
+      },
+      global: globalConfig,
+    });
+
+    await nextTick();
+    await wrapper.vm.$nextTick();
+
+    const select = wrapper.find<HTMLSelectElement>(
+      'select[id="test_table-provider-icons"]',
+    );
+    await select.setValue("generic");
+
+    await nextTick();
+
+    const input = wrapper.find<HTMLInputElement>(
+      'input[id="test_table-baseUrl-generic-icons"]',
+    );
+    await input.setValue("https://custom-icons.example.com");
+
+    await nextTick();
+    await wrapper.vm.$nextTick();
+
+    const emitted = wrapper.emitted("updateConfig");
+    if (emitted && emitted.length > 0) {
+      const lastEmit = emitted[emitted.length - 1][0] as Partial<ViewConfig>;
+      expect(lastEmit.MEDIA_BASE_PATH_ICONS).toBe(
+        "https://custom-icons.example.com",
+      );
+    }
+  });
+
+  it("shows validation error for invalid Filebrowser icons input", async () => {
+    const wrapper = mount(ConfigMedia, {
+      props: {
+        ...baseProps,
+        views: ["map"],
+        keys: ["MEDIA_BASE_PATH_ICONS"],
+      },
+      global: globalConfig,
+    });
+
+    await nextTick();
+    await wrapper.vm.$nextTick();
+
+    const input = wrapper.find<HTMLInputElement>(
+      'input[id="test_table-share-icons"]',
+    );
+    await input.setValue("invalid input with spaces!");
+
+    await nextTick();
+
+    const validationErrors = wrapper.findAll(".validation-error");
+    expect(validationErrors.length).toBeGreaterThan(0);
+    expect(wrapper.find(".input-invalid").exists()).toBe(true);
+  });
 });

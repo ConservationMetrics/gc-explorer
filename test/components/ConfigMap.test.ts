@@ -681,4 +681,53 @@ describe("ConfigMap component", () => {
     );
     expect(colorColumnInput.attributes("placeholder")).toBe("color");
   });
+
+  it("renders ICON_COLUMN field when included in keys", () => {
+    const propsWithIconColumn = {
+      ...baseProps,
+      keys: [...baseProps.keys, "ICON_COLUMN"],
+    };
+
+    const wrapper = mount(ConfigMap, {
+      props: propsWithIconColumn,
+      global: globalConfig,
+    });
+
+    const iconColumnInput = wrapper.find('input[id="test_table-ICON_COLUMN"]');
+    expect(iconColumnInput.exists()).toBe(true);
+  });
+
+  it("updates ICON_COLUMN value when input changes", async () => {
+    const propsWithIconColumn = {
+      ...baseProps,
+      keys: [...baseProps.keys, "ICON_COLUMN"],
+    };
+
+    const wrapper = mount(ConfigMap, {
+      props: propsWithIconColumn,
+      global: globalConfig,
+    });
+
+    const iconColumnInput = wrapper.find('input[id="test_table-ICON_COLUMN"]');
+    await iconColumnInput.setValue("icon");
+
+    expect(wrapper.emitted("updateConfig")).toBeTruthy();
+    const emitted = wrapper.emitted("updateConfig");
+    expect(emitted?.[0]?.[0]).toEqual({ ICON_COLUMN: "icon" });
+  });
+
+  it("displays placeholder for ICON_COLUMN field", () => {
+    const propsWithIconColumn = {
+      ...baseProps,
+      keys: [...baseProps.keys, "ICON_COLUMN"],
+    };
+
+    const wrapper = mount(ConfigMap, {
+      props: propsWithIconColumn,
+      global: globalConfig,
+    });
+
+    const iconColumnInput = wrapper.find('input[id="test_table-ICON_COLUMN"]');
+    expect(iconColumnInput.attributes("placeholder")).toBe("icon");
+  });
 });

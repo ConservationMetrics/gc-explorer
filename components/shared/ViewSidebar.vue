@@ -19,6 +19,7 @@ const props = defineProps<{
   alertsStatistics?: AlertsStatistics;
   allowedFileExtensions?: AllowedFileExtensions;
   calculateHectares?: boolean;
+  canToggleIcons?: boolean;
   dateOptions?: Array<string>;
   feature?: DataEntry;
   featureGeojson?: Feature | AlertsData;
@@ -32,6 +33,8 @@ const props = defineProps<{
   mapStatistics?: MapStatistics;
   mediaBasePath?: string;
   mediaBasePathAlerts?: string;
+  showIcons?: boolean;
+  loadingIcons?: boolean;
   showIntroPanel?: boolean;
   showSidebar?: boolean;
   showSlider?: boolean;
@@ -58,6 +61,7 @@ const dataForAlertsIntroPanel = computed<AlertsData | undefined>(() => {
 const emit = defineEmits<{
   close: [];
   "date-range-changed": [[string, string]];
+  "toggle-icons": [];
   "update:showSidebar": [boolean];
 }>();
 
@@ -134,6 +138,10 @@ onBeforeUnmount(() => {
           :map-statistics="mapStatistics"
           :map-data="mapData"
           :logo-url="logoUrl"
+          :show-icons="showIcons"
+          :can-toggle-icons="canToggleIcons"
+          :loading-icons="loadingIcons"
+          @toggle-icons="emit('toggle-icons')"
         />
         <DataFeature
           v-if="feature"
