@@ -500,6 +500,20 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
         />
         <p class="field-description">{{ $t("colorColumnDescription") }}</p>
       </template>
+
+      <!-- Icon Column -->
+      <template v-else-if="key === 'ICON_COLUMN'">
+        <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
+        <input
+          :id="`${tableName}-${key}`"
+          class="input-field"
+          type="text"
+          placeholder="icon"
+          :value="config[key]"
+          @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
+        />
+        <p class="field-description">{{ $t("iconColumnDescription") }}</p>
+      </template>
     </div>
   </div>
 </template>

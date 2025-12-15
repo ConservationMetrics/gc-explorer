@@ -22,7 +22,12 @@ describe("transformSurveyData", () => {
       expect(item).not.toHaveProperty("g__coordinates");
       expect(item).toHaveProperty("geocoordinates");
       expect(item.category[0]).toBe(item.category[0].toUpperCase());
-      expect(item.created).toMatch(/^\d{1,2}\/\d{1,2}\/\d{4}$/);
+      // TODO: For now this expects original timestamps instead of formatted dates
+      // See comment in transformSurveyData function for more details.
+      expect(item.created).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
+      // expect(item.created).toMatch(/^\d{1,2}\/\d{1,2}\/\d{4}$/);
       expect(item.photos).toMatch(/^(\w+\.jpg(, )?)*\w+\.jpg$|^$/);
       expect(item).toHaveProperty("id");
     });

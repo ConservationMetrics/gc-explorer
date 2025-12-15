@@ -51,7 +51,10 @@ export default defineEventHandler(async (event: H3Event) => {
     // Filter only data with valid geofields
     const filteredGeoData = filterGeoData(dataFilteredByValues);
     // Transform data that was collected using survey apps (e.g. KoBoToolbox, Mapeo)
-    const transformedData = transformSurveyData(filteredGeoData);
+    const transformedData = transformSurveyData(
+      filteredGeoData,
+      viewsConfig[table].ICON_COLUMN,
+    );
     // Process geodata
     const processedGeoData = prepareMapData(
       transformedData,
@@ -69,6 +72,7 @@ export default defineEventHandler(async (event: H3Event) => {
       colorColumn: viewsConfig[table].COLOR_COLUMN,
       data: processedGeoData,
       filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
+      iconColumn: viewsConfig[table].ICON_COLUMN,
       mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,
       mapStatistics: mapStatistics,
       mapbox3d: viewsConfig[table].MAPBOX_3D ?? false,
@@ -85,6 +89,7 @@ export default defineEventHandler(async (event: H3Event) => {
       mapboxBasemaps: basemaps,
       mapboxZoom: Number(viewsConfig[table].MAPBOX_ZOOM),
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
+      mediaBasePathIcons: viewsConfig[table].MEDIA_BASE_PATH_ICONS,
       mediaColumn: viewsConfig[table].MEDIA_COLUMN,
       planetApiKey: viewsConfig[table].PLANET_API_KEY,
       table: table,
