@@ -90,6 +90,12 @@ async function authenticateWithAuth0(
   console.log(`🔍 [AUTH] Auth0 URL: ${auth0Url}`);
   console.log(`🔍 [AUTH] Page title: ${await page.title()}`);
 
+  // Check if we're on Auth0 domain
+  const isAuth0Domain = /\.us\.auth0\.com|auth0\.com/.test(auth0Url);
+  console.log(
+    `🔍 [AUTH] Is Auth0 domain (.us.auth0.com or auth0.com): ${isAuth0Domain}`,
+  );
+
   // Step 3: Wait for Auth0 login page to load
   console.log(`🔍 [AUTH] Step 3: Waiting for Auth0 login page to load...`);
   console.log(`🔍 [AUTH] Looking for email/username input field...`);
@@ -105,8 +111,10 @@ async function authenticateWithAuth0(
 
   // Step 4: Fill in email
   console.log(`🔍 [AUTH] Step 4: Finding and filling email field...`);
-  // Try multiple selectors for Auth0's email field
+  // Try multiple selectors for Auth0's email field, including placeholder text
   const emailSelectors = [
+    'input[placeholder*="Email" i], input[placeholder*="email" i]', // By placeholder text
+    'input[placeholder*="Email address" i]',
     'input[name="email"]',
     'input[type="email"]',
     'input[name="username"]',
@@ -119,8 +127,13 @@ async function authenticateWithAuth0(
   for (const selector of emailSelectors) {
     const input = page.locator(selector).first();
     const count = await input.count();
-    console.log(`🔍 [AUTH]   Trying selector "${selector}": ${count} found`);
     if (count > 0) {
+      const placeholder = await input
+        .getAttribute("placeholder")
+        .catch(() => "");
+      console.log(
+        `🔍 [AUTH]   Trying selector "${selector}": ${count} found, placeholder: "${placeholder}"`,
+      );
       emailInput = input;
       foundSelector = selector;
       break;
@@ -146,6 +159,7 @@ async function authenticateWithAuth0(
   // Step 5: Fill in password
   console.log(`🔍 [AUTH] Step 5: Finding and filling password field...`);
   const passwordSelectors = [
+    'input[placeholder*="Password" i], input[placeholder*="password" i]', // By placeholder text
     'input[name="password"]',
     'input[type="password"]',
     'input[id*="password"]',
@@ -156,10 +170,13 @@ async function authenticateWithAuth0(
   for (const selector of passwordSelectors) {
     const input = page.locator(selector).first();
     const count = await input.count();
-    console.log(
-      `🔍 [AUTH]   Trying password selector "${selector}": ${count} found`,
-    );
     if (count > 0) {
+      const placeholder = await input
+        .getAttribute("placeholder")
+        .catch(() => "");
+      console.log(
+        `🔍 [AUTH]   Trying password selector "${selector}": ${count} found, placeholder: "${placeholder}"`,
+      );
       passwordInput = input;
       foundPasswordSelector = selector;
       break;
@@ -179,12 +196,13 @@ async function authenticateWithAuth0(
   const passwordLength = password.length;
   console.log(`🔍 [AUTH] ✅ Filled in password (${passwordLength} characters)`);
 
-  // Step 6: Click submit/login button on Auth0 page
-  console.log(`🔍 [AUTH] Step 6: Finding and clicking submit button...`);
-  // Auth0 buttons can have various text/labels
+  // Step 6: Click Continue/Submit button on Auth0 page
+  console.log(`🔍 [AUTH] Step 6: Finding and clicking Continue button...`);
+  // Auth0 buttons - prioritize "Continue" button by text content
   const submitSelectors = [
+    'button:has-text("Continue")', // Prioritize Continue button
+    'button[type="submit"]:has-text("Continue")',
     'button[type="submit"]',
-    'button:has-text("Continue")',
     'button:has-text("Log in")',
     'button:has-text("Sign in")',
     'button:has-text("Continue with Email")',
@@ -198,12 +216,15 @@ async function authenticateWithAuth0(
     const count = await button.count();
     if (count > 0) {
       const buttonText = await button.textContent().catch(() => "");
+      const isVisible = await button.isVisible().catch(() => false);
       console.log(
-        `🔍 [AUTH]   Trying submit selector "${selector}": ${count} found, text: "${buttonText}"`,
+        `🔍 [AUTH]   Trying submit selector "${selector}": ${count} found, text: "${buttonText}", visible: ${isVisible}`,
       );
-      submitButton = button;
-      foundSubmitSelector = selector;
-      break;
+      if (isVisible) {
+        submitButton = button;
+        foundSubmitSelector = selector;
+        break;
+      }
     }
   }
 
@@ -211,18 +232,29 @@ async function authenticateWithAuth0(
     console.log(
       `🔍 [AUTH]   No submit button found with specific selectors, trying fallback...`,
     );
-    // Fallback: try to find any button
-    submitButton = page.locator("button").first();
-    const fallbackCount = await submitButton.count();
-    if (fallbackCount > 0) {
-      const buttonText = await submitButton.textContent().catch(() => "");
-      console.log(`🔍 [AUTH]   Found fallback button, text: "${buttonText}"`);
-    } else {
-      throw new Error("Could not find submit button on Auth0 login page");
+    // Fallback: try to find any visible button
+    const allButtons = page.locator("button");
+    const buttonCount = await allButtons.count();
+    for (let i = 0; i < buttonCount; i++) {
+      const button = allButtons.nth(i);
+      const isVisible = await button.isVisible().catch(() => false);
+      if (isVisible) {
+        const buttonText = await button.textContent().catch(() => "");
+        console.log(
+          `🔍 [AUTH]   Found fallback button ${i}, text: "${buttonText}"`,
+        );
+        submitButton = button;
+        break;
+      }
+    }
+    if (!submitButton) {
+      throw new Error(
+        "Could not find submit/Continue button on Auth0 login page",
+      );
     }
   } else {
     console.log(
-      `🔍 [AUTH] ✅ Found submit button with selector: "${foundSubmitSelector}"`,
+      `🔍 [AUTH] ✅ Found Continue/submit button with selector: "${foundSubmitSelector}"`,
     );
   }
 
