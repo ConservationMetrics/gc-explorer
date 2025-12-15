@@ -416,17 +416,22 @@ onMounted(() => {
     <!-- MEDIA_BASE_PATH_ICONS -->
     <div
       v-if="keys.includes('MEDIA_BASE_PATH_ICONS') && views.includes('map')"
-      class="config-field"
+      class="space-y-4"
     >
-      <label>{{ $t(toCamelCase("MEDIA_BASE_PATH_ICONS")) }}</label>
+      <label class="block text-sm font-medium text-gray-700">
+        {{ $t(toCamelCase("MEDIA_BASE_PATH_ICONS")) }}
+      </label>
 
-      <div class="media-provider-selector">
-        <label :for="`${tableName}-provider-icons`" class="media-field-label">{{
-          $t("mediaProvider")
-        }}</label>
+      <div class="space-y-2">
+        <label
+          :for="`${tableName}-provider-icons`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t("mediaProvider") }}
+        </label>
         <select
           :id="`${tableName}-provider-icons`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
           :value="providerIcons"
           @change="
             handleProviderChange(
@@ -443,14 +448,22 @@ onMounted(() => {
       </div>
 
       <template v-if="providerIcons === 'filebrowser'">
-        <div class="media-share-input">
-          <label :for="`${tableName}-share-icons`" class="media-field-label">{{
-            $t("mediaPasteFilebrowserShareUrlOrHash")
-          }}</label>
+        <div class="space-y-2">
+          <label
+            :for="`${tableName}-share-icons`"
+            class="block text-sm font-medium text-gray-700"
+          >
+            {{ $t("mediaPasteFilebrowserShareUrlOrHash") }}
+          </label>
           <input
             :id="`${tableName}-share-icons`"
-            class="input-field"
-            :class="{ 'input-invalid': !isIconsValid && shareInputIcons }"
+            class="w-full px-4 py-2 border rounded-lg transition-colors"
+            :class="{
+              'border-red-300 focus:ring-red-500 focus:border-red-500':
+                !isIconsValid && shareInputIcons,
+              'border-gray-300 focus:ring-purple-500 focus:border-purple-500':
+                isIconsValid || !shareInputIcons,
+            }"
             type="text"
             :value="shareInputIcons"
             placeholder="https://files.example.com/share/abc123 or abc123"
@@ -459,29 +472,37 @@ onMounted(() => {
               handleInput('icons', ($event.target as HTMLInputElement).value)
             "
           />
-          <p v-if="!isIconsValid && shareInputIcons" class="validation-error">
+          <p
+            v-if="!isIconsValid && shareInputIcons"
+            class="text-sm text-red-600"
+          >
             {{ $t("mediaInvalidFormat") }}
           </p>
-          <p class="field-hint">
+          <p class="text-xs text-gray-500">
             <strong>{{ $t("mediaAccepts") }}</strong>
-            <code>https://files.example.com/share/abc123</code>,
-            <code>https://files.example.com/api/public/dl/abc123</code>,
+            <code class="px-1 py-0.5 bg-gray-100 rounded"
+              >https://files.example.com/share/abc123</code
+            >,
+            <code class="px-1 py-0.5 bg-gray-100 rounded"
+              >https://files.example.com/api/public/dl/abc123</code
+            >,
             {{ $t("or") }}
-            <code>abc123</code>
+            <code class="px-1 py-0.5 bg-gray-100 rounded">abc123</code>
           </p>
         </div>
       </template>
 
       <template v-else>
-        <div class="media-base-url">
+        <div class="space-y-2">
           <label
             :for="`${tableName}-baseUrl-generic-icons`"
-            class="media-field-label"
-            >{{ $t("mediaBaseUrl") }}</label
+            class="block text-sm font-medium text-gray-700"
           >
+            {{ $t("mediaBaseUrl") }}
+          </label>
           <input
             :id="`${tableName}-baseUrl-generic-icons`"
-            class="input-field"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
             type="url"
             :value="shareInputIcons"
             placeholder="https://your-files-host.example/api/public/dl/"
