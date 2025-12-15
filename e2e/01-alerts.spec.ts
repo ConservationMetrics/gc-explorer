@@ -1,6 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { test, expect } from "./fixtures/auth-storage";
 
-test("alerts dashboard - layer visibility toggles", async ({ page }) => {
+test("alerts dashboard - layer visibility toggles", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
 

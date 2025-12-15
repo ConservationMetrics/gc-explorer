@@ -1,6 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { test, expect } from "./fixtures/auth-storage";
 
-test("gallery page - displays gallery with media files", async ({ page }) => {
+test("gallery page - displays gallery with media files", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
   // Navigate directly to seed_survey_data gallery
   await page.goto("/gallery/seed_survey_data");
   await page.waitForURL("**/gallery/seed_survey_data", { timeout: 5000 });

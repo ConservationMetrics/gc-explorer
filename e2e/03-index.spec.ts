@@ -1,7 +1,7 @@
-import { expect, test } from "@playwright/test";
+import { test, expect } from "./fixtures/auth-storage";
 
 test("index page - displays available views and alerts link", async ({
-  page,
+  authenticatedPageAsAdmin: page,
 }) => {
   // 1. Navigate to the root of the application
   await page.goto("/");
