@@ -267,10 +267,12 @@ async function authenticateWithAuth0(
   console.log(`🔍 [AUTH] Waiting for redirect after login...`);
   await submitButton.click();
 
-  // Wait for navigation to complete (either to consent page or /login)
+  // Wait for navigation to complete (either to consent page, /login, or home page)
   try {
-    // Wait for URL to change (either consent page or /login)
-    await page.waitForURL(/\/u\/consent|\/consent|\/login/, { timeout: 30000 });
+    // Wait for URL to change (consent page, /login, or home page)
+    await page.waitForURL(/\/u\/consent|\/consent|\/login|\/$/, {
+      timeout: 30000,
+    });
   } catch {
     // If timeout, check current URL anyway
     console.log(`🔍 [AUTH] ⚠️ Navigation timeout, checking current URL...`);
@@ -403,14 +405,20 @@ async function authenticateWithAuth0(
     );
   }
 
-  // Now wait for final redirect to /login (if not already there)
-  console.log(`🔍 [AUTH] Waiting for final redirect to /login...`);
+  // Now wait for final redirect (could be to /login or home page /)
+  console.log(`🔍 [AUTH] Waiting for final redirect...`);
   try {
-    await page.waitForURL(/\/login/, { timeout: 30000 });
+    // Accept redirect to either /login or home page (/)
+    await page.waitForURL(/\/login|\/$/, { timeout: 30000 });
   } catch {
+    const currentUrl = page.url();
     console.log(
-      `🔍 [AUTH] ⚠️ Did not redirect to /login within timeout, current URL: ${page.url()}`,
+      `🔍 [AUTH] ⚠️ Did not redirect to /login or / within timeout, current URL: ${currentUrl}`,
     );
+    // Check if we're already on a valid page (home or login)
+    if (currentUrl.includes("/login") || currentUrl.endsWith("/")) {
+      console.log(`🔍 [AUTH] ✅ Already on valid page (${currentUrl})`);
+    }
   }
 
   const finalUrl = page.url();
