@@ -213,16 +213,23 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
         console.log(
           "🔍 [TEST] Member: ⚠️ Map loading timeout, checking map state...",
         );
-        const mapState = await authenticatedPageAsMember.evaluate(() => {
-          // @ts-expect-error _testMap is exposed for E2E testing only
-          const map = window._testMap;
-          return {
-            exists: !!map,
-            isStyleLoaded: map?.isStyleLoaded() || false,
-            loaded: map?.loaded() || false,
-          };
-        });
-        console.log("🔍 [TEST] Member: Map state:", mapState);
+        try {
+          const mapState = await authenticatedPageAsMember.evaluate(() => {
+            // @ts-expect-error _testMap is exposed for E2E testing only
+            const map = window._testMap;
+            return {
+              exists: !!map,
+              isStyleLoaded: map?.isStyleLoaded() || false,
+              loaded: map?.loaded() || false,
+            };
+          });
+          console.log("🔍 [TEST] Member: Map state:", mapState);
+        } catch (evaluateError) {
+          console.log(
+            "🔍 [TEST] Member: Could not evaluate map state (page may be closed):",
+            evaluateError,
+          );
+        }
         throw error;
       }
       console.log(
@@ -295,16 +302,23 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
         console.log(
           "🔍 [TEST] Admin: ⚠️ Map loading timeout, checking map state...",
         );
-        const mapState = await authenticatedPageAsAdmin.evaluate(() => {
-          // @ts-expect-error _testMap is exposed for E2E testing only
-          const map = window._testMap;
-          return {
-            exists: !!map,
-            isStyleLoaded: map?.isStyleLoaded() || false,
-            loaded: map?.loaded() || false,
-          };
-        });
-        console.log("🔍 [TEST] Admin: Map state:", mapState);
+        try {
+          const mapState = await authenticatedPageAsAdmin.evaluate(() => {
+            // @ts-expect-error _testMap is exposed for E2E testing only
+            const map = window._testMap;
+            return {
+              exists: !!map,
+              isStyleLoaded: map?.isStyleLoaded() || false,
+              loaded: map?.loaded() || false,
+            };
+          });
+          console.log("🔍 [TEST] Admin: Map state:", mapState);
+        } catch (evaluateError) {
+          console.log(
+            "🔍 [TEST] Admin: Could not evaluate map state (page may be closed):",
+            evaluateError,
+          );
+        }
         throw error;
       }
       console.log(
