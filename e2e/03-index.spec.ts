@@ -112,10 +112,13 @@ test("index page - language picker functionality", async ({ page }) => {
 });
 
 test("index page - language switching to Portuguese changes heading", async ({
-  page,
+  authenticatedPageAsAdmin: page,
 }) => {
   // 1. Navigate to the root of the application
   await page.goto("/");
+
+  // Wait for page to load
+  await page.waitForLoadState("networkidle");
 
   // 2. Wait for the language picker button to be visible
   const languageButton = page

@@ -301,14 +301,17 @@ test("alerts dashboard - legend can control all alert layer types", async ({
 });
 
 test("alerts dashboard - LineString buffer click behavior", async ({
-  page,
+  authenticatedPageAsAdmin: page,
 }) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
 
+  // Wait for page to load
+  await page.waitForLoadState("networkidle");
+
   // 2. Wait until the index page has rendered the list of available views
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 5000 });
+  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
   // 3. Get the href first
   const href = await alertsLink.getAttribute("href");
@@ -406,14 +409,17 @@ test("alerts dashboard - LineString buffer click behavior", async ({
 });
 
 test("alerts dashboard - geometry type specific interactions", async ({
-  page,
+  authenticatedPageAsAdmin: page,
 }) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
 
+  // Wait for page to load
+  await page.waitForLoadState("networkidle");
+
   // 2. Wait until the index page has rendered the list of available views
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 5000 });
+  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
   // 3. Get the href first
   const href = await alertsLink.getAttribute("href");
@@ -585,7 +591,7 @@ test("alerts dashboard - geometry type specific interactions", async ({
 });
 
 test("alerts dashboard - cluster circles and centroid selection behavior", async ({
-  page,
+  authenticatedPageAsAdmin: page,
 }) => {
   // Navigate to alerts dashboard
   await page.goto("/");

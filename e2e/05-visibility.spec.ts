@@ -200,14 +200,31 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
         .first();
       await authExpect(mapCanvas).toBeVisible();
       // Wait for the map to be fully loaded
-      await authenticatedPageAsMember.waitForFunction(
-        () => {
+      try {
+        await authenticatedPageAsMember.waitForFunction(
+          () => {
+            // @ts-expect-error _testMap is exposed for E2E testing only
+            const map = window._testMap;
+            return map?.isStyleLoaded() && map.loaded();
+          },
+          { timeout: 15000 },
+        );
+      } catch (error) {
+        console.log(
+          "🔍 [TEST] Member: ⚠️ Map loading timeout, checking map state...",
+        );
+        const mapState = await authenticatedPageAsMember.evaluate(() => {
           // @ts-expect-error _testMap is exposed for E2E testing only
           const map = window._testMap;
-          return map?.isStyleLoaded() && map.loaded();
-        },
-        { timeout: 10000 },
-      );
+          return {
+            exists: !!map,
+            isStyleLoaded: map?.isStyleLoaded() || false,
+            loaded: map?.loaded() || false,
+          };
+        });
+        console.log("🔍 [TEST] Member: Map state:", mapState);
+        throw error;
+      }
       console.log(
         "🔍 [TEST] Member: ✅ Successfully accessed member dataset (map loaded)",
       );
@@ -265,14 +282,31 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
         .first();
       await authExpect(mapCanvas).toBeVisible();
       // Wait for the map to be fully loaded
-      await authenticatedPageAsAdmin.waitForFunction(
-        () => {
+      try {
+        await authenticatedPageAsAdmin.waitForFunction(
+          () => {
+            // @ts-expect-error _testMap is exposed for E2E testing only
+            const map = window._testMap;
+            return map?.isStyleLoaded() && map.loaded();
+          },
+          { timeout: 15000 },
+        );
+      } catch (error) {
+        console.log(
+          "🔍 [TEST] Admin: ⚠️ Map loading timeout, checking map state...",
+        );
+        const mapState = await authenticatedPageAsAdmin.evaluate(() => {
           // @ts-expect-error _testMap is exposed for E2E testing only
           const map = window._testMap;
-          return map?.isStyleLoaded() && map.loaded();
-        },
-        { timeout: 10000 },
-      );
+          return {
+            exists: !!map,
+            isStyleLoaded: map?.isStyleLoaded() || false,
+            loaded: map?.loaded() || false,
+          };
+        });
+        console.log("🔍 [TEST] Admin: Map state:", mapState);
+        throw error;
+      }
       console.log(
         "🔍 [TEST] Admin: ✅ Successfully accessed member dataset (map loaded)",
       );

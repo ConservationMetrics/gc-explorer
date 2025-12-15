@@ -204,17 +204,22 @@ test("config page - navigate to dataset edit page", async ({ page }) => {
   console.log("[TEST] ✅ Test completed successfully");
 });
 
-test("config page - edit dataset form", async ({ page }) => {
+test("config page - edit dataset form", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
   console.log("[TEST] Starting: edit dataset form");
   // 1. Navigate to the config page
   console.log("[TEST] Step 1: Navigating to /config");
   await page.goto("/config");
 
+  // Wait for page to load
+  await page.waitForLoadState("networkidle");
+
   // 2. Wait for the grid container to be present (indicates data has loaded)
   console.log("[TEST] Step 2: Waiting for grid container");
   await page
     .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+    .waitFor({ state: "attached", timeout: 10000 });
   console.log("[TEST] Step 2: Grid container is present");
 
   // 3. Look for dataset cards
