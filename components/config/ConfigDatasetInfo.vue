@@ -13,16 +13,18 @@ const emit = defineEmits(["updateConfig"]);
 </script>
 
 <template>
-  <div class="config-section">
-    <div class="config-header">
-      <h3>{{ $t("dataset") }} {{ $t("configuration") }}</h3>
-    </div>
-    <div v-for="key in keys" :key="key" class="config-field">
+  <div class="space-y-6">
+    <div v-for="key in keys" :key="key" class="space-y-2">
       <template v-if="key === 'DATASET_TABLE'">
-        <label :for="`${tableName}-${key}`">{{ $t("datasetTable") }}</label>
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t("datasetTable") }}
+        </label>
         <input
           :id="`${tableName}-${key}`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           :placeholder="$t('datasetTablePlaceholder') || 'e.g., Fake Alerts'"
           type="text"
           :maxlength="CONFIG_LIMITS.DATASET_TABLE"
@@ -30,12 +32,10 @@ const emit = defineEmits(["updateConfig"]);
           @input="
             (e) => {
               const value = (e.target as HTMLInputElement).value;
-              // Trim and enforce maxlength client-side
               const trimmedValue = value.substring(
                 0,
                 CONFIG_LIMITS.DATASET_TABLE,
               );
-              // Update the input value directly to prevent exceeding limit
               (e.target as HTMLInputElement).value = trimmedValue;
               emit('updateConfig', {
                 [key]: trimmedValue,
@@ -59,7 +59,7 @@ const emit = defineEmits(["updateConfig"]);
             }
           "
         />
-        <p class="text-gray-500 text-sm mt-1">
+        <p class="text-gray-500 text-sm">
           {{
             $t("datasetTableDescription") ||
             "Optional: A nicer display name for this dataset"
@@ -67,10 +67,15 @@ const emit = defineEmits(["updateConfig"]);
         </p>
       </template>
       <template v-else-if="key === 'VIEW_HEADER_IMAGE'">
-        <label :for="`${tableName}-${key}`">{{ $t("viewHeaderImage") }}</label>
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t("viewHeaderImage") }}
+        </label>
         <input
           :id="`${tableName}-${key}`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           placeholder="https://…"
           type="url"
           :value="config[key]"
@@ -81,7 +86,7 @@ const emit = defineEmits(["updateConfig"]);
               })
           "
         />
-        <p class="text-gray-500 text-sm mt-1">
+        <p class="text-gray-500 text-sm">
           {{
             $t("viewHeaderImageDescription") ||
             "Optional: URL for the header background image"
@@ -89,10 +94,15 @@ const emit = defineEmits(["updateConfig"]);
         </p>
       </template>
       <template v-else-if="key === 'VIEW_DESCRIPTION'">
-        <label :for="`${tableName}-${key}`">{{ $t("viewDescription") }}</label>
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t("viewDescription") }}
+        </label>
         <textarea
           :id="`${tableName}-${key}`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors resize-y"
           rows="3"
           :maxlength="CONFIG_LIMITS.VIEW_DESCRIPTION"
           :placeholder="
@@ -103,12 +113,10 @@ const emit = defineEmits(["updateConfig"]);
           @input="
             (e) => {
               const value = (e.target as HTMLTextAreaElement).value;
-              // Trim and enforce maxlength client-side
               const trimmedValue = value.substring(
                 0,
                 CONFIG_LIMITS.VIEW_DESCRIPTION,
               );
-              // Update the textarea value directly to prevent exceeding limit
               (e.target as HTMLTextAreaElement).value = trimmedValue;
               emit('updateConfig', {
                 [key]: trimmedValue,
@@ -132,7 +140,7 @@ const emit = defineEmits(["updateConfig"]);
             }
           "
         />
-        <p class="text-gray-500 text-sm mt-1">
+        <p class="text-gray-500 text-sm">
           {{
             $t("viewDescriptionDescription") ||
             "Optional: Description of this dataset"
