@@ -297,50 +297,84 @@ async function authenticateWithAuth0(
       `🔍 [AUTH] Detected consent/authorize page, looking for authorize button...`,
     );
 
-    // Look for authorize/consent buttons - try multiple selectors
+    // Look for authorize/consent buttons - prioritize positive action buttons
+    // Filter out negative buttons like "Decline", "Cancel", "No"
+    const declineTexts = ["decline", "cancel", "no", "deny", "reject"];
+
     const consentButtonSelectors = [
       'button:has-text("Continue")',
       'button:has-text("Yes")',
       'button:has-text("Authorize")',
       'button:has-text("Allow")',
-      'button[type="submit"]',
+      'button:has-text("Accept")',
       "button[data-action-button-primary]",
       'button[class*="continue"]',
       'button[class*="authorize"]',
+      'button[class*="accept"]',
+      'button[type="submit"]', // Check this last, as it might be Decline
     ];
 
     let consentButton = null;
 
     for (const selector of consentButtonSelectors) {
-      const button = page.locator(selector).first();
-      const count = await button.count();
+      const buttons = page.locator(selector);
+      const count = await buttons.count();
       if (count > 0) {
-        const isVisible = await button.isVisible().catch(() => false);
-        const buttonText = await button.textContent().catch(() => "");
-        console.log(
-          `🔍 [AUTH]   Trying consent selector "${selector}": ${count} found, text: "${buttonText}", visible: ${isVisible}`,
-        );
-        if (isVisible) {
-          consentButton = button;
-          break;
+        // Check all matching buttons to find the right one
+        for (let i = 0; i < count; i++) {
+          const button = buttons.nth(i);
+          const isVisible = await button.isVisible().catch(() => false);
+          if (!isVisible) continue;
+
+          const buttonText = (
+            (await button.textContent().catch(() => "")) || ""
+          )
+            .trim()
+            .toLowerCase();
+          const isDecline = declineTexts.some((declineText) =>
+            buttonText.includes(declineText),
+          );
+
+          console.log(
+            `🔍 [AUTH]   Trying consent selector "${selector}" [${i}]: text: "${buttonText}", isDecline: ${isDecline}`,
+          );
+
+          if (!isDecline) {
+            // Found a positive action button
+            consentButton = button;
+            break;
+          }
         }
+        if (consentButton) break;
       }
     }
 
     if (!consentButton) {
-      // Fallback: find any visible button
+      // Fallback: find any visible button that's not a decline button
       const allButtons = page.locator("button");
       const buttonCount = await allButtons.count();
       for (let i = 0; i < buttonCount; i++) {
         const button = allButtons.nth(i);
         const isVisible = await button.isVisible().catch(() => false);
-        if (isVisible) {
-          const buttonText = await button.textContent().catch(() => "");
+        if (!isVisible) continue;
+
+        const buttonText = ((await button.textContent().catch(() => "")) || "")
+          .trim()
+          .toLowerCase();
+        const isDecline = declineTexts.some((declineText) =>
+          buttonText.includes(declineText),
+        );
+
+        if (!isDecline) {
           console.log(
             `🔍 [AUTH]   Found fallback consent button ${i}, text: "${buttonText}"`,
           );
           consentButton = button;
           break;
+        } else {
+          console.log(
+            `🔍 [AUTH]   Skipping decline button ${i}, text: "${buttonText}"`,
+          );
         }
       }
     }
