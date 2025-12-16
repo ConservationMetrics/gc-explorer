@@ -1,24 +1,20 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
-import LanguagePicker from "@/components/shared/LanguagePicker.vue";
 import ConfigCard from "@/components/config/ConfigCard.vue";
-
+import AppHeader from "@/components/shared/AppHeader.vue";
 import type { Views, ViewConfig } from "@/types/types";
 
-// Extract the dataset parameter from the route
 const route = useRoute();
 const datasetRaw = route.params.dataset;
 const dataset = Array.isArray(datasetRaw)
   ? datasetRaw.join("/")
   : String(datasetRaw || "");
 
-// Refs to store the fetched data
 const viewsConfig = ref<Views>({});
 const tableNames = ref();
 const dataFetched = ref(false);
 const datasetConfig = ref<ViewConfig | null>(null);
+const errorMessage = ref<string | null>(null);
 
-// API request to fetch the data
 const {
   public: { appApiKey },
 } = useRuntimeConfig();
@@ -37,12 +33,10 @@ if (data.value && !error.value) {
 
   const fetchedTableNames = data.value[1] as string[];
   tableNames.value = fetchedTableNames;
-  // Get the specific dataset config - try exact match first
   if (fetchedViewsData[dataset]) {
     datasetConfig.value = fetchedViewsData[dataset];
     dataFetched.value = true;
   } else {
-    // Try to find by matching keys (in case of URL encoding issues)
     const matchingKey = Object.keys(fetchedViewsData).find(
       (key) =>
         key === dataset ||
@@ -53,7 +47,6 @@ if (data.value && !error.value) {
       datasetConfig.value = fetchedViewsData[matchingKey];
       dataFetched.value = true;
     } else {
-      // Dataset not found, redirect to config page
       console.warn(`Dataset "${dataset}" not found in config`);
       await navigateTo("/config");
     }
@@ -62,7 +55,8 @@ if (data.value && !error.value) {
   console.error("Error fetching data:", error.value);
 }
 
-/** POST request to submit the updated config */
+const showSavedModal = ref(false);
+
 const submitConfig = async ({
   config,
   tableName,
@@ -70,17 +64,29 @@ const submitConfig = async ({
   config: ViewConfig;
   tableName: string;
 }) => {
+  errorMessage.value = null;
+
   try {
     await $fetch(`/api/config/update_config/${tableName}`, {
       method: "POST",
       headers,
       body: JSON.stringify(config),
     });
-    // Show success message and redirect after a delay
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    await navigateTo("/config");
+    // Update the local datasetConfig to reflect the saved state
+    // This will trigger the watch in ConfigCard to update originalConfig baseline thus clearing the button and applying edit
+    datasetConfig.value = JSON.parse(JSON.stringify(config));
+    showSavedModal.value = true;
+    setTimeout(() => {
+      showSavedModal.value = false;
+    }, 2000);
   } catch (error) {
     console.error("Error submitting request data:", error);
+    if (error instanceof Error) {
+      errorMessage.value = error.message;
+    } else {
+      errorMessage.value =
+        "An error occurred while updating the configuration.";
+    }
   }
 };
 
@@ -141,92 +147,107 @@ useHead({
 </script>
 
 <template>
-  <div>
+  <div class="min-h-screen flex flex-col bg-white">
+    <AppHeader />
     <ClientOnly>
-      <div v-if="dataFetched && datasetConfig" class="container relative">
-        <div class="absolute top-0 right-4 flex justify-end space-x-4 mb-4">
-          <LanguagePicker />
-        </div>
-        <div class="back-navigation mb-4">
+      <div
+        v-if="dataFetched && datasetConfig"
+        class="max-w-7xl mx-auto p-3 sm:p-6 w-full"
+      >
+        <div class="mb-6">
           <NuxtLink
             to="/config"
-            class="back-link text-blue-500 hover:text-blue-700 font-bold"
+            class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium mb-4 transition-colors"
           >
-            ← {{ $t("configuration") }}
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+            {{ $t("configuration") }}
           </NuxtLink>
+          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+            {{ $t("configuration") }} - {{ dataset }}
+          </h1>
         </div>
-        <h1>{{ $t("configuration") }} - {{ dataset }}</h1>
-        <div class="grid-container">
-          <ConfigCard
-            :table-name="dataset"
-            :view-config="datasetConfig"
-            @submit-config="submitConfig"
-            @remove-table-from-config="handleRemoveTableFromConfig"
-          />
+        <div
+          v-if="errorMessage"
+          class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg"
+        >
+          {{ errorMessage }}
+        </div>
+        <ConfigCard
+          :table-name="dataset"
+          :view-config="datasetConfig"
+          @submit-config="submitConfig"
+          @remove-table-from-config="handleRemoveTableFromConfig"
+        />
+      </div>
+      <div
+        v-if="showModal"
+        class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      >
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <p class="mb-4 text-gray-700">{{ modalMessage }}</p>
+          <div v-if="showModalButtons" class="flex gap-3 justify-end">
+            <button
+              class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
+              @click="handleConfirmRemove"
+            >
+              {{ $t("confirm") }}
+            </button>
+            <button
+              class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
+              @click="handleCancelRemove"
+            >
+              {{ $t("cancel") }}
+            </button>
+          </div>
         </div>
       </div>
-      <!-- Modal moved outside conditional block so it stays visible after deletion -->
-      <div v-if="showModal" class="overlay"></div>
-      <div v-if="showModal" class="modal">
-        <!-- eslint-disable vue/no-v-html -->
-        <!-- this is done intentionally to allow for HTML rendering in the modal message -->
-        <p v-html="modalMessage"></p>
-        <!-- eslint-enable vue/no-v-html -->
-        <div v-if="showModalButtons" class="mt-4">
-          <button
-            class="text-white font-bold mb-2 mr-2 py-2 px-4 rounded transition-colors duration-200 bg-red-500 hover:bg-red-700"
-            @click="handleConfirmRemove"
-          >
-            {{ $t("confirm") }}
-          </button>
-          <button
-            class="text-white font-bold bg-blue-500 hover:bg-blue-700 mb-2 py-2 px-4 rounded transition-colors duration-200"
-            @click="handleCancelRemove"
-          >
-            {{ $t("cancel") }}
-          </button>
+    </ClientOnly>
+
+    <!-- Saved! Modal -->
+    <ClientOnly>
+      <div
+        v-if="showSavedModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+        @click="showSavedModal = false"
+      >
+        <div
+          class="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4 text-center"
+          @click.stop
+        >
+          <div class="mb-4">
+            <svg
+              class="w-16 h-16 mx-auto text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Saved!</h2>
+          <p class="text-gray-600">
+            Configuration has been saved successfully.
+          </p>
         </div>
       </div>
     </ClientOnly>
   </div>
 </template>
-
-<style scoped>
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 2em;
-}
-
-.container h1 {
-  color: #333;
-  margin-bottom: 1em;
-  font-size: 2em;
-  font-weight: 900;
-}
-
-.grid-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1em;
-  width: 100%;
-  max-width: 1400px;
-  margin: 0 auto 1em auto;
-}
-
-.back-navigation {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.back-link {
-  text-decoration: none;
-}
-
-.back-link:hover {
-  text-decoration: underline;
-}
-</style>

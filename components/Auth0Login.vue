@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useUserSession, onMounted } from "#imports";
-import LanguagePicker from "./shared/LanguagePicker.vue";
+import GlobeLanguagePicker from "./shared/GlobeLanguagePicker.vue";
 
 interface Props {
   errorMessage: string;
@@ -24,7 +24,7 @@ onMounted(() => {
     <div
       class="absolute top-0 right-0 flex justify-end space-x-4 mt-4 mr-4 mb-4"
     >
-      <LanguagePicker />
+      <GlobeLanguagePicker theme="white" variant="icon" />
     </div>
     <div class="flex flex-col items-center justify-center h-screen">
       <p class="italic">{{ $t("authMessage") }}.</p>

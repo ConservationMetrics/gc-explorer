@@ -42,3 +42,10 @@ export const useRoute = vi.fn(() => ({
   query: {},
   path: "/test",
 }));
+
+export const useI18n = vi.fn(() => ({
+  locale: { value: "en" },
+  locales: { value: ["en", "es", "pt", "nl"] },
+  setLocale: vi.fn(),
+  t: (key: string) => key,
+}));
