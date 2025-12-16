@@ -27,7 +27,7 @@ if (process.env.CI && !hasAnyPassword) {
     `⚠️ [FIXTURE] Set E2E_AUTH0_*_PASSWORD env vars in GitHub Actions secrets to enable Auth0 tests.`,
   );
   console.warn(
-    `⚠️ [FIXTURE] Note: If NUXT_PUBLIC_AUTH_STRATEGY="none", use mock auth fixtures instead.\n`,
+    `⚠️ [FIXTURE] Note: NUXT_PUBLIC_AUTH_STRATEGY must be set to "auth0" for these fixtures to work.\n`,
   );
 }
 
