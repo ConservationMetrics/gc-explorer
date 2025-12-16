@@ -360,8 +360,8 @@ describe("ConfigMedia component", () => {
 
     await nextTick();
 
-    expect(wrapper.find(".validation-error").exists()).toBe(true);
-    expect(wrapper.find(".input-invalid").exists()).toBe(true);
+    expect(wrapper.find(".text-red-600").exists()).toBe(true);
+    expect(input.classes()).toContain("border-red-300");
   });
 
   it("does not show validation error for valid Filebrowser hash", async () => {
@@ -410,9 +410,9 @@ describe("ConfigMedia component", () => {
       global: globalConfig,
     });
 
-    const hint = wrapper.find(".field-hint");
+    const hint = wrapper.find(".text-xs.text-gray-500");
     expect(hint.exists()).toBe(true);
-    expect(hint.find("strong").text()).toBe("Accepts:");
+    expect(hint.find("strong").text()).toContain("Accepts");
   });
 
   it("handles both MEDIA_BASE_PATH and MEDIA_BASE_PATH_ALERTS independently", async () => {
@@ -694,8 +694,8 @@ describe("ConfigMedia component", () => {
 
     await nextTick();
 
-    const validationErrors = wrapper.findAll(".validation-error");
+    const validationErrors = wrapper.findAll(".text-red-600");
     expect(validationErrors.length).toBeGreaterThan(0);
-    expect(wrapper.find(".input-invalid").exists()).toBe(true);
+    expect(input.classes()).toContain("border-red-300");
   });
 });
