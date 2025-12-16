@@ -107,7 +107,7 @@ async function authenticateWithAuth0(
   page: Page,
   email: string,
   password: string,
-  roleName: string,
+  roleName: string
 ) {
   console.log(`\n[AUTH] ========================================`);
   console.log(`[AUTH] Starting authentication for ${roleName}`);
@@ -145,7 +145,7 @@ async function authenticateWithAuth0(
   // Check if we're on Auth0 domain
   const isAuth0Domain = /\.us\.auth0\.com|auth0\.com/.test(auth0Url);
   console.log(
-    `[AUTH] Is Auth0 domain (.us.auth0.com or auth0.com): ${isAuth0Domain}`,
+    `[AUTH] Is Auth0 domain (.us.auth0.com or auth0.com): ${isAuth0Domain}`
   );
 
   // Step 3: Wait for Auth0 login page to load
@@ -157,7 +157,7 @@ async function authenticateWithAuth0(
     'input[name="email"], input[type="email"], input[name="username"], input[id*="email"], input[id*="username"]',
     {
       timeout: 15000,
-    },
+    }
   );
   console.log(`[AUTH] Auth0 login page loaded`);
 
@@ -184,7 +184,7 @@ async function authenticateWithAuth0(
         .getAttribute("placeholder")
         .catch(() => "");
       console.log(
-        `[AUTH]   Trying selector "${selector}": ${count} found, placeholder: "${placeholder}"`,
+        `[AUTH]   Trying selector "${selector}": ${count} found, placeholder: "${placeholder}"`
       );
       emailInput = input;
       foundSelector = selector;
@@ -196,7 +196,7 @@ async function authenticateWithAuth0(
     console.error(`[AUTH] Could not find email input field`);
     console.error(
       `[AUTH] Page HTML preview:`,
-      await page.content().then((c) => c.substring(0, 1000)),
+      await page.content().then((c) => c.substring(0, 1000))
     );
     throw new Error("Could not find email input field on Auth0 login page");
   }
@@ -225,7 +225,7 @@ async function authenticateWithAuth0(
         .getAttribute("placeholder")
         .catch(() => "");
       console.log(
-        `[AUTH]   Trying password selector "${selector}": ${count} found, placeholder: "${placeholder}"`,
+        `[AUTH]   Trying password selector "${selector}": ${count} found, placeholder: "${placeholder}"`
       );
       passwordInput = input;
       foundPasswordSelector = selector;
@@ -240,7 +240,7 @@ async function authenticateWithAuth0(
 
   await passwordInput.waitFor({ state: "visible", timeout: 5000 });
   console.log(
-    `[AUTH] Found password input with selector: "${foundPasswordSelector}"`,
+    `[AUTH] Found password input with selector: "${foundPasswordSelector}"`
   );
   await passwordInput.fill(password);
   const passwordLength = password.length;
@@ -268,7 +268,7 @@ async function authenticateWithAuth0(
       const buttonText = await button.textContent().catch(() => "");
       const isVisible = await button.isVisible().catch(() => false);
       console.log(
-        `[AUTH]   Trying submit selector "${selector}": ${count} found, text: "${buttonText}", visible: ${isVisible}`,
+        `[AUTH]   Trying submit selector "${selector}": ${count} found, text: "${buttonText}", visible: ${isVisible}`
       );
       if (isVisible) {
         submitButton = button;
@@ -280,7 +280,7 @@ async function authenticateWithAuth0(
 
   if (!submitButton) {
     console.log(
-      `[AUTH]   No submit button found with specific selectors, trying fallback...`,
+      `[AUTH]   No submit button found with specific selectors, trying fallback...`
     );
     // Fallback: try to find any visible button
     const allButtons = page.locator("button");
@@ -291,7 +291,7 @@ async function authenticateWithAuth0(
       if (isVisible) {
         const buttonText = await button.textContent().catch(() => "");
         console.log(
-          `[AUTH]   Found fallback button ${i}, text: "${buttonText}"`,
+          `[AUTH]   Found fallback button ${i}, text: "${buttonText}"`
         );
         submitButton = button;
         break;
@@ -299,12 +299,12 @@ async function authenticateWithAuth0(
     }
     if (!submitButton) {
       throw new Error(
-        "Could not find submit/Continue button on Auth0 login page",
+        "Could not find submit/Continue button on Auth0 login page"
       );
     }
   } else {
     console.log(
-      `[AUTH] Found Continue/submit button with selector: "${foundSubmitSelector}"`,
+      `[AUTH] Found Continue/submit button with selector: "${foundSubmitSelector}"`
     );
   }
 
@@ -344,7 +344,7 @@ async function authenticateWithAuth0(
   if (isConsentPage) {
     console.log(`[AUTH] Consent screen detected`);
     console.log(
-      `[AUTH] Detected consent/authorize page, looking for authorize button...`,
+      `[AUTH] Detected consent/authorize page, looking for authorize button...`
     );
 
     // Look for authorize/consent buttons - prioritize positive action buttons
@@ -382,11 +382,11 @@ async function authenticateWithAuth0(
             .trim()
             .toLowerCase();
           const isDecline = declineTexts.some((declineText) =>
-            buttonText.includes(declineText),
+            buttonText.includes(declineText)
           );
 
           console.log(
-            `[AUTH]   Trying consent selector "${selector}" [${i}]: text: "${buttonText}", isDecline: ${isDecline}`,
+            `[AUTH]   Trying consent selector "${selector}" [${i}]: text: "${buttonText}", isDecline: ${isDecline}`
           );
 
           if (!isDecline) {
@@ -412,18 +412,18 @@ async function authenticateWithAuth0(
           .trim()
           .toLowerCase();
         const isDecline = declineTexts.some((declineText) =>
-          buttonText.includes(declineText),
+          buttonText.includes(declineText)
         );
 
         if (!isDecline) {
           console.log(
-            `[AUTH]   Found fallback consent button ${i}, text: "${buttonText}"`,
+            `[AUTH]   Found fallback consent button ${i}, text: "${buttonText}"`
           );
           consentButton = button;
           break;
         } else {
           console.log(
-            `[AUTH]   Skipping decline button ${i}, text: "${buttonText}"`,
+            `[AUTH]   Skipping decline button ${i}, text: "${buttonText}"`
           );
         }
       }
@@ -434,22 +434,22 @@ async function authenticateWithAuth0(
         .textContent()
         .catch(() => "");
       console.log(
-        `[AUTH] Found consent button (text: "${consentButtonText}"), clicking...`,
+        `[AUTH] Found consent button (text: "${consentButtonText}"), clicking...`
       );
       await consentButton.click();
       await page.waitForTimeout(2000); // Wait for redirect after consent
       console.log(`[AUTH] After consent click, URL: ${page.url()}`);
       console.log(
-        `[AUTH] After consent click, title: ${await page.title().catch(() => "")}`,
+        `[AUTH] After consent click, title: ${await page.title().catch(() => "")}`
       );
     } else {
       console.log(
-        `[AUTH] No consent button found, but on consent page - may need manual intervention`,
+        `[AUTH] No consent button found, but on consent page - may need manual intervention`
       );
     }
   } else {
     console.log(
-      `[AUTH] No consent screen detected, proceeding directly to /login`,
+      `[AUTH] No consent screen detected, proceeding directly to /login`
     );
   }
 
@@ -461,7 +461,7 @@ async function authenticateWithAuth0(
   } catch {
     const currentUrl = page.url();
     console.log(
-      `[AUTH] Did not redirect to /login or / within timeout, current URL: ${currentUrl}`,
+      `[AUTH] Did not redirect to /login or / within timeout, current URL: ${currentUrl}`
     );
     // Check if we're already on a valid page (home or login)
     if (currentUrl.includes("/login") || currentUrl.endsWith("/")) {
@@ -492,12 +492,12 @@ async function authenticateWithAuth0(
     (c) =>
       c.name.includes("session") ||
       c.name.includes("auth") ||
-      c.name.includes("nuxt"),
+      c.name.includes("nuxt")
   );
   console.log(`[AUTH] Session-related cookies found: ${sessionCookies.length}`);
   sessionCookies.forEach((cookie) => {
     console.log(
-      `[AUTH]   Cookie: ${cookie.name} (domain: ${cookie.domain}, path: ${cookie.path})`,
+      `[AUTH]   Cookie: ${cookie.name} (domain: ${cookie.domain}, path: ${cookie.path})`
     );
   });
 
@@ -538,7 +538,7 @@ setup("authenticate as signedIn", async ({ page }) => {
 
   if (!password) {
     console.warn(
-      `[SETUP] E2E_AUTH0_SIGNEDIN_PASSWORD not set, skipping SignedIn authentication`,
+      `[SETUP] E2E_AUTH0_SIGNEDIN_PASSWORD not set, skipping SignedIn authentication`
     );
     return;
   }
@@ -589,7 +589,7 @@ setup("authenticate as guest", async ({ page }) => {
     console.warn(message);
     if (process.env.CI) {
       console.warn(
-        `[SETUP] In CI: Set E2E_AUTH0_GUEST_PASSWORD in GitHub Actions secrets to enable Auth0 authentication`,
+        `[SETUP] In CI: Set E2E_AUTH0_GUEST_PASSWORD in GitHub Actions secrets to enable Auth0 authentication`
       );
     }
     return;
@@ -641,7 +641,7 @@ setup("authenticate as member", async ({ page }) => {
     console.warn(message);
     if (process.env.CI) {
       console.warn(
-        `[SETUP] In CI: Set E2E_AUTH0_MEMBER_PASSWORD in GitHub Actions secrets to enable Auth0 authentication`,
+        `[SETUP] In CI: Set E2E_AUTH0_MEMBER_PASSWORD in GitHub Actions secrets to enable Auth0 authentication`
       );
     }
     return;
@@ -693,7 +693,7 @@ setup("authenticate as admin", async ({ page }) => {
     console.warn(message);
     if (process.env.CI) {
       console.warn(
-        `[SETUP] In CI: Set E2E_AUTH0_ADMIN_PASSWORD in GitHub Actions secrets to enable Auth0 authentication`,
+        `[SETUP] In CI: Set E2E_AUTH0_ADMIN_PASSWORD in GitHub Actions secrets to enable Auth0 authentication`
       );
     }
     return;
