@@ -72,6 +72,9 @@ const submitConfig = async ({
       headers,
       body: JSON.stringify(config),
     });
+    // Update the local datasetConfig to reflect the saved state
+    // This will trigger the watch in ConfigCard to update originalConfig baseline
+    datasetConfig.value = JSON.parse(JSON.stringify(config));
     showSavedModal.value = true;
     setTimeout(() => {
       showSavedModal.value = false;

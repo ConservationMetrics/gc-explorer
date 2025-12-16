@@ -63,6 +63,21 @@ onMounted(() => {
     : [];
 });
 
+// Watch for changes to viewConfig prop and update baseline after save
+watch(
+  () => props.viewConfig,
+  (newConfig) => {
+    if (newConfig) {
+      localConfig.value = JSON.parse(JSON.stringify(newConfig));
+      originalConfig.value = JSON.parse(JSON.stringify(localConfig.value));
+      availableViews.value = localConfig.value?.VIEWS
+        ? localConfig.value.VIEWS.split(",")
+        : [];
+    }
+  },
+  { deep: true },
+);
+
 // Form validations and helpers
 const isChanged = computed(() => {
   const localConfigFiltered = Object.fromEntries(
