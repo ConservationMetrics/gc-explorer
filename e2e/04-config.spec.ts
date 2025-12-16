@@ -50,7 +50,7 @@ test("config page - displays configuration dashboard with table cards", async ({
   const editButtons = page.getByRole("link", { name: /edit dataset/i });
   await expect(editButtons.first()).toBeVisible();
   console.log("[TEST] Step 7: Edit dataset buttons are visible");
-  console.log("[TEST] ✅ Test completed successfully");
+  console.log("[TEST] Test completed successfully");
 });
 
 test("config page - add and remove table functionality", async ({
@@ -149,7 +149,7 @@ test("config page - add and remove table functionality", async ({
       `[TEST] Step 15: Found dataset card for ${tableNameToAdd.trim()}`,
     );
   }
-  console.log("[TEST] ✅ Test completed successfully");
+  console.log("[TEST] Test completed successfully");
 });
 
 test("config page - navigate to dataset edit page", async ({ page }) => {
@@ -199,9 +199,9 @@ test("config page - navigate to dataset edit page", async ({ page }) => {
     await expect(cardBody).toBeVisible();
     console.log("[TEST] Step 7: Card body is visible");
   } else {
-    console.log("[TEST] ⚠️ No dataset cards found, skipping test");
+    console.log("[TEST] No dataset cards found, skipping test");
   }
-  console.log("[TEST] ✅ Test completed successfully");
+  console.log("[TEST] Test completed successfully");
 });
 
 test("config page - edit dataset form", async ({
@@ -295,9 +295,9 @@ test("config page - edit dataset form", async ({
       );
     }
   } else {
-    console.log("[TEST] ⚠️ No dataset cards found, skipping test");
+    console.log("[TEST] No dataset cards found, skipping test");
   }
-  console.log("[TEST] ✅ Test completed successfully");
+  console.log("[TEST] Test completed successfully");
 });
 
 test("config page - cancel add table modal", async ({
@@ -330,6 +330,7 @@ test("config page - cancel add table modal", async ({
   // 5. Verify the modal closes
   console.log("[TEST] Step 5: Checking modal is closed");
   await expect(modal).not.toBeVisible();
+<<<<<<< HEAD
 });
 
 test("config page - table card minimize/expand functionality", async ({
@@ -1529,4 +1530,8 @@ test("config page - basemap configuration - max 3 limit", async ({
     await page.waitForTimeout(3500);
   }
 >>>>>>> ee05a41 (turn auth0 always on)
+=======
+  console.log("[TEST] Step 5: Modal is closed");
+  console.log("[TEST] Test completed successfully");
+>>>>>>> 17f7b53 (more cleanup and consistency work)
 });

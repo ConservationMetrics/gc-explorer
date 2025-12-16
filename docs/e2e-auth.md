@@ -171,13 +171,13 @@ Server-side logs (including middleware `console.log` statements) appear in Playw
 
 1. **In CI**: Logs appear in the test output automatically
 2. **Locally**: When running `npx playwright test`, server logs appear in the console
-3. **Middleware logs**: Logs from `middleware/oauth.global.ts` will show up prefixed with `🔍 [TEST]`
+3. **Middleware logs**: Logs from `middleware/oauth.global.ts` will show up prefixed with `[TEST]`
 
 Example middleware log output:
 
 ```
-🔍 [TEST] oauth.global middleware called { user: {...}, path: '/gallery/seed_survey_data' }
-🔍 [TEST] Middleware checking permissions: { permission: 'anyone', userRole: 0, path: '/gallery/seed_survey_data' }
+[TEST] oauth.global middleware called { user: {...}, path: '/gallery/seed_survey_data' }
+[TEST] Middleware checking permissions: { permission: 'anyone', userRole: 0, path: '/gallery/seed_survey_data' }
 ```
 
 ## Troubleshooting

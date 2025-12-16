@@ -13,7 +13,7 @@ test("alerts dashboard - layer visibility toggles", async ({
 
   // 3. Get the href first
   const href = await alertsLink.getAttribute("href");
-  console.log("🔍 Alerts link href:", href);
+  console.log("Alerts link href:", href);
 
   // 4. Navigate directly to alerts page
   await page.goto(href!);
@@ -24,13 +24,13 @@ test("alerts dashboard - layer visibility toggles", async ({
   // Debug: Check if map container exists
   const mapContainer = page.locator("#map");
   const mapExists = await mapContainer.count();
-  console.log("🔍 Map container exists:", mapExists > 0);
+  console.log("Map container exists:", mapExists > 0);
 
   if (mapExists === 0) {
     // Debug: Log the page content to see what's actually there
     const alertsPageContent = await page.content();
     console.log(
-      "🔍 Alerts page HTML (first 2000 chars):",
+      "Alerts page HTML (first 2000 chars):",
       alertsPageContent.substring(0, 2000),
     );
 
@@ -73,13 +73,13 @@ test("alerts dashboard - layer visibility toggles", async ({
 
   // Debug: Check if map legend exists
   const legendExists = await mapLegend.count();
-  console.log("🔍 Map legend exists:", legendExists > 0);
+  console.log("Map legend exists:", legendExists > 0);
 
   if (legendExists === 0) {
     // Debug: Log the page content to see what's actually there
     const alertsPageContent = await page.content();
     console.log(
-      "🔍 Alerts page HTML (first 2000 chars):",
+      "Alerts page HTML (first 2000 chars):",
       alertsPageContent.substring(0, 2000),
     );
 
@@ -195,7 +195,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
       (layer: { visible: boolean }) => layer.visible,
     );
     expect(initiallyVisible.length).toBeGreaterThan(0);
-    console.log(`✅ ${initiallyVisible.length} layers initially visible`);
+    console.log(`${initiallyVisible.length} layers initially visible`);
 
     // Simulate the toggle function behavior by directly controlling map layers
     // This tests that the layer setup supports the grouped toggle functionality
@@ -258,7 +258,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
     });
 
     console.log(
-      `✅ ${alertType.name} all ${alertLayers.length} layers can be controlled as a group`,
+      `${alertType.name} all ${alertLayers.length} layers can be controlled as a group`,
     );
   }
 
@@ -295,9 +295,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
   );
 
   expect(geometrySpecificEntries).toHaveLength(0);
-  console.log(
-    "✅ Legend shows grouped entries, not individual geometry layers",
-  );
+  console.log("Legend shows grouped entries, not individual geometry layers");
 });
 
 test("alerts dashboard - LineString buffer click behavior", async ({
@@ -634,7 +632,7 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
   });
 
   if (clusterFeatures.length > 0) {
-    console.log(`✅ Found ${clusterFeatures.length} cluster circles`);
+    console.log(`Found ${clusterFeatures.length} cluster circles`);
 
     // Test 2: Click on a centroid circle (Point geometry)
     const centroidFeatures = await page.evaluate(() => {
@@ -672,7 +670,7 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
         // Wait for sidebar
         await expect(page.getByText(/copy link to alert/i)).toBeVisible();
         await expect(page).toHaveURL(/\?alertId=/);
-        console.log("✅ Centroid circle click works");
+        console.log("Centroid circle click works");
       }
     }
   }
@@ -773,14 +771,14 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
         );
         // Verify that source data was actually updated (not just a check)
         expect(updatedSourceData.featureCount).toBeGreaterThanOrEqual(0);
-        console.log("✅ Clusters updated correctly when date range changed");
+        console.log("Clusters updated correctly when date range changed");
       } else {
-        console.log("⚠️ Could not verify source data update");
+        console.log("Could not verify source data update");
       }
     } else {
-      console.log("⚠️ Could not access date options, skipping date range test");
+      console.log("Could not access date options, skipping date range test");
     }
   } else {
-    console.log("⚠️ No initial source data found, skipping date range test");
+    console.log("No initial source data found, skipping date range test");
   }
 });

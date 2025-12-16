@@ -13,13 +13,13 @@ test("index page - displays available views and alerts link", async ({
 
   // Debug: Log page content to understand what's rendered (after page is ready)
   try {
-    console.log("🔍 Page title:", await page.title());
-    console.log("🔍 Page URL:", page.url());
+    console.log("Page title:", await page.title());
+    console.log("Page URL:", page.url());
 
     // Debug: Check if there are any links on the page
     const allLinks = page.locator("a");
     const linkCount = await allLinks.count().catch(() => 0);
-    console.log("🔍 Total links on page:", linkCount);
+    console.log("Total links on page:", linkCount);
 
     // Debug: Log all link texts (with error handling for links that might not be accessible)
     for (let i = 0; i < Math.min(linkCount, 10); i++) {
@@ -30,26 +30,26 @@ test("index page - displays available views and alerts link", async ({
           .catch(() => null);
         const href = await link.getAttribute("href").catch(() => null);
         console.log(
-          `🔍 Link ${i}: text="${text?.trim() || "(no text)"}", href="${href || "(no href)"}"`,
+          `Link ${i}: text="${text?.trim() || "(no text)"}", href="${href || "(no href)"}"`,
         );
       } catch (error) {
-        console.log(`🔍 Link ${i}: (error accessing link: ${String(error)})`);
+        console.log(`Link ${i}: (error accessing link: ${String(error)})`);
       }
     }
 
     // Debug: Check if there are any elements with "alerts" text
     const alertsElements = page.locator("*:has-text('alerts')");
     const alertsCount = await alertsElements.count().catch(() => 0);
-    console.log("🔍 Elements containing 'alerts' text:", alertsCount);
+    console.log("Elements containing 'alerts' text:", alertsCount);
 
     // Debug: Log page HTML for debugging
     const pageContent = await page.content().catch(() => "");
     console.log(
-      "🔍 Page HTML (first 1000 chars):",
+      "Page HTML (first 1000 chars):",
       pageContent.substring(0, 1000),
     );
   } catch (error) {
-    console.log("🔍 Debug logging failed:", String(error));
+    console.log("Debug logging failed:", String(error));
   }
 
   // 3. Ensure at least one Alerts link is visible (guaranteed through a database connection that has an alerts view)
