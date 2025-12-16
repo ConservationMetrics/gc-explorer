@@ -197,7 +197,7 @@ useHead({
         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
       >
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-          <p v-html="modalMessage" class="mb-4 text-gray-700"></p>
+          <p class="mb-4 text-gray-700">{{ modalMessage }}</p>
           <div v-if="showModalButtons" class="flex gap-3 justify-end">
             <button
               class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"

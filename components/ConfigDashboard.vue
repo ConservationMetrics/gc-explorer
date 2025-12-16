@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import type { Views, ViewConfig } from "@/types/types";
-import { formatDisplayName, CONFIG_LIMITS } from "@/utils/index";
+import { CONFIG_LIMITS } from "@/utils/index";
 
 const props = defineProps<{
   viewsConfig: Views;
@@ -288,7 +288,7 @@ watch(tableNameToAdd, (newVal) => {
       class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
     >
       <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <p v-html="modalMessage" class="mb-4 text-gray-700"></p>
+        <p class="mb-4 text-gray-700">{{ modalMessage }}</p>
         <div v-if="showModalDropdown" class="mb-4">
           <select
             v-model="tableNameToAdd"

@@ -108,8 +108,8 @@ const mobileItemClasses = computed(() => {
       <button
         type="button"
         class="relative w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-        @click.stop="dropdownOpen = !dropdownOpen"
         :title="t('header.languagePicker') || 'Language'"
+        @click.stop="dropdownOpen = !dropdownOpen"
       >
         <svg
           class="w-5 h-5 text-gray-600"
@@ -149,8 +149,8 @@ const mobileItemClasses = computed(() => {
   <!-- Mobile Variant -->
   <div v-else-if="variant === 'mobile'" class="px-4 py-3 mb-2">
     <button
-      @click="toggleLanguagePicker"
       class="w-full flex items-center justify-between space-x-3 hover:bg-purple-50 rounded-lg px-2 py-2 transition-colors"
+      @click="toggleLanguagePicker"
     >
       <div class="flex items-center space-x-3">
         <svg
@@ -191,8 +191,8 @@ const mobileItemClasses = computed(() => {
       <button
         v-for="lang in availableLocales"
         :key="lang.code"
-        @click="changeLocale(lang.code)"
         :class="mobileItemClasses(lang.code)"
+        @click="changeLocale(lang.code)"
       >
         {{ lang.name }}
       </button>
