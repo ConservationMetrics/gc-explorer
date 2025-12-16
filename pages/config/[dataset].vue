@@ -55,6 +55,8 @@ if (data.value && !error.value) {
   console.error("Error fetching data:", error.value);
 }
 
+const showSavedModal = ref(false);
+
 const submitConfig = async ({
   config,
   tableName,
@@ -70,8 +72,13 @@ const submitConfig = async ({
       headers,
       body: JSON.stringify(config),
     });
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    await navigateTo("/config");
+    // Update the local datasetConfig to reflect the saved state
+    // This will trigger the watch in ConfigCard to update originalConfig baseline
+    datasetConfig.value = JSON.parse(JSON.stringify(config));
+    showSavedModal.value = true;
+    setTimeout(() => {
+      showSavedModal.value = false;
+    }, 2000);
   } catch (error) {
     console.error("Error submitting request data:", error);
     if (error instanceof Error) {
@@ -205,6 +212,40 @@ useHead({
               {{ $t("cancel") }}
             </button>
           </div>
+        </div>
+      </div>
+    </ClientOnly>
+
+    <!-- Saved! Modal -->
+    <ClientOnly>
+      <div
+        v-if="showSavedModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+        @click="showSavedModal = false"
+      >
+        <div
+          class="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4 text-center"
+          @click.stop
+        >
+          <div class="mb-4">
+            <svg
+              class="w-16 h-16 mx-auto text-green-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Saved!</h2>
+          <p class="text-gray-600">
+            Configuration has been saved successfully.
+          </p>
         </div>
       </div>
     </ClientOnly>

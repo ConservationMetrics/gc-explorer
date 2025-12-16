@@ -155,6 +155,29 @@ useHead({
     <AppHeader />
 
     <main v-if="dataFetched && canViewDataset" class="w-full">
+      <div class="w-5/6 mx-auto mb-4">
+        <NuxtLink
+          to="/"
+          class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium transition-colors"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+          {{ $t("availableViews") }}
+        </NuxtLink>
+      </div>
+
       <div
         v-if="headerImage"
         class="relative w-5/6 mx-auto overflow-hidden rounded-xl"
@@ -245,7 +268,7 @@ useHead({
 
       <div
         v-else
-        class="w-5/6 mx-auto bg-gradient-to-r from-purple-100 to-purple-50 rounded-xl overflow-hidden"
+        class="w-5/6 mx-auto bg-gradient-to-r from-purple-100 to-purple-50 rounded-xl overflow-hidden mt-4"
       >
         <div class="p-6 sm:p-8">
           <div class="flex items-start gap-2 mb-6 sm:mb-8">
