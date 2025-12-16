@@ -49,24 +49,29 @@ const shouldShowConfigLink = computed(() => {
     <!-- Desktop Layout - show above 1000px -->
     <div class="flex max-[1000px]:hidden relative items-end justify-around">
       <!-- Left: GC Explorer Logo -->
-      <div class="flex items-center">
+      <NuxtLink
+        to="/"
+        class="flex items-center mr-4 min-[1109px]:mr-8 min-w-fit max-w-[180px] min-[1109px]:max-w-[200px] min-[1230px]:max-w-none"
+      >
         <img
           src="/gcexplorer.png"
           alt="Guardian Connector Explorer"
-          class="h-10 w-auto max-[1200px]:h-8"
+          class="h-10 w-auto max-[1108px]:h-7 min-[1109px]:h-8 min-[1230px]:h-10 flex-shrink-0"
         />
-        <div class="rounded-lg px-4 py-2 max-[1200px]:px-2">
-          <h1 class="text-lg max-[1200px]:text-xs font-bold">
+        <div
+          class="rounded-lg px-1.5 min-[1109px]:px-2 min-[1230px]:px-4 py-2 flex-shrink min-w-0"
+        >
+          <h1 class="text-lg max-[1200px]:text-xs font-bold whitespace-nowrap">
             Guardian Connector
           </h1>
         </div>
-      </div>
+      </NuxtLink>
 
       <!-- Tab with Community Name -->
       <div
-        class="tab-container flex absolute left-[25%] -bottom-3 flex-col items-center t-[32%]"
+        class="tab-container flex absolute left-[28%] min-[1109px]:left-[26%] min-[1230px]:left-[25%] -bottom-3 flex-col items-center t-[32%]"
       >
-        <button class="tab-trigger active">
+        <NuxtLink to="/" class="tab-trigger active">
           <svg
             class="left-curve"
             xmlns="http://www.w3.org/2000/svg"
@@ -106,7 +111,7 @@ const shouldShowConfigLink = computed(() => {
               transform="translate(-740 -2113.0982)"
             />
           </svg>
-        </button>
+        </NuxtLink>
       </div>
 
       <!-- Right: Action buttons -->
@@ -162,16 +167,18 @@ const shouldShowConfigLink = computed(() => {
     <!-- Mobile Layout - show below 1000px -->
     <div class="hidden max-[1000px]:flex items-center justify-between">
       <!-- Left: GC Explorer Logo -->
-      <div class="flex items-center">
+      <NuxtLink to="/" class="flex items-center min-w-0 flex-1">
         <img
           src="/gcexplorer.png"
           alt="Guardian Connector Explorer"
-          class="h-10 w-auto"
+          class="h-10 w-auto flex-shrink-0"
         />
-        <div class="rounded-lg px-2">
-          <h1 class="text-sm font-bold">Guardian Connector</h1>
+        <div class="rounded-lg px-2 min-w-0 flex-1">
+          <h1 class="text-xs sm:text-sm font-bold whitespace-nowrap">
+            Guardian Connector
+          </h1>
         </div>
-      </div>
+      </NuxtLink>
 
       <!-- Right: Config Icon and Hamburger Menu -->
       <div class="flex items-center space-x-2">

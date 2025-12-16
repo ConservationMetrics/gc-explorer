@@ -2,7 +2,6 @@
 import type { ViewConfig } from "@/types/types";
 import { CONFIG_LIMITS } from "@/utils";
 import ConfigPermissions from "./ConfigPermissions.vue";
-import ConfigDatasetInfo from "./ConfigDatasetInfo.vue";
 import ConfigCollapsibleSection from "./ConfigCollapsibleSection.vue";
 
 const props = defineProps<{
@@ -44,8 +43,8 @@ const filterKeys = computed(() => [
   "UNWANTED_COLUMNS",
   "UNWANTED_SUBSTRINGS",
 ]);
-const otherKeys = computed(() => ["LOGO_URL"]);
 const datasetInfoKeys = computed(() => [
+  "LOGO_URL",
   "DATASET_TABLE",
   "VIEW_HEADER_IMAGE",
   "VIEW_DESCRIPTION",
@@ -96,9 +95,6 @@ const shouldShowConfigMedia = computed(() =>
 );
 const shouldShowConfigAlerts = computed(() => hasView(["alerts"]));
 const shouldShowConfigFilters = computed(() => hasView(["map", "gallery"]));
-const shouldShowConfigOther = computed(() =>
-  hasView(["map", "gallery", "alerts"]),
-);
 
 const hasView = (viewsArray: Array<string>) => {
   if (!availableViews.value || availableViews.value.length === 0) {
@@ -187,7 +183,7 @@ const handleSubmit = () => {
 
         <ConfigCollapsibleSection
           v-if="shouldShowConfigMedia"
-          :title="$t('gallery')"
+          :title="$t('media')"
           :default-open="false"
         >
           <ConfigMedia
@@ -223,20 +219,6 @@ const handleSubmit = () => {
             :views="availableViews"
             :config="localConfig"
             :keys="filterKeys"
-            @update-config="handleConfigUpdate"
-          />
-        </ConfigCollapsibleSection>
-
-        <ConfigCollapsibleSection
-          v-if="shouldShowConfigOther"
-          :title="$t('other')"
-          :default-open="false"
-        >
-          <ConfigOther
-            :table-name="tableName"
-            :views="availableViews"
-            :config="localConfig"
-            :keys="otherKeys"
             @update-config="handleConfigUpdate"
           />
         </ConfigCollapsibleSection>

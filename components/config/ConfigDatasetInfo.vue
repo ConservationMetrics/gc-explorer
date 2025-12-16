@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { toCamelCase, CONFIG_LIMITS } from "@/utils";
 import type { ViewConfig } from "@/types/types";
-import { CONFIG_LIMITS } from "@/utils";
 
 defineProps<{
   tableName: string;
@@ -15,7 +15,28 @@ const emit = defineEmits(["updateConfig"]);
 <template>
   <div class="space-y-6">
     <div v-for="key in keys" :key="key" class="space-y-2">
-      <template v-if="key === 'DATASET_TABLE'">
+      <template v-if="key === 'LOGO_URL'">
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t(toCamelCase(key)) }}
+        </label>
+        <input
+          :id="`${tableName}-${key}`"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+          placeholder="https://…"
+          type="url"
+          :value="config[key]"
+          @input="
+            (e) =>
+              emit('updateConfig', {
+                [key]: (e.target as HTMLInputElement).value,
+              })
+          "
+        />
+      </template>
+      <template v-else-if="key === 'DATASET_TABLE'">
         <label
           :for="`${tableName}-${key}`"
           class="block text-sm font-medium text-gray-700"
@@ -45,9 +66,10 @@ const emit = defineEmits(["updateConfig"]);
           @paste="
             (e) => {
               e.preventDefault();
-              const pastedText = (
-                e.clipboardData || window.clipboardData
-              ).getData('text');
+              const clipboardData = e.clipboardData;
+              const pastedText = clipboardData
+                ? clipboardData.getData('text')
+                : '';
               const trimmedValue = pastedText.substring(
                 0,
                 CONFIG_LIMITS.DATASET_TABLE,
@@ -126,9 +148,10 @@ const emit = defineEmits(["updateConfig"]);
           @paste="
             (e) => {
               e.preventDefault();
-              const pastedText = (
-                e.clipboardData || window.clipboardData
-              ).getData('text');
+              const clipboardData = e.clipboardData;
+              const pastedText = clipboardData
+                ? clipboardData.getData('text')
+                : '';
               const trimmedValue = pastedText.substring(
                 0,
                 CONFIG_LIMITS.VIEW_DESCRIPTION,
@@ -139,7 +162,7 @@ const emit = defineEmits(["updateConfig"]);
               });
             }
           "
-        />
+        ></textarea>
         <p class="text-gray-500 text-sm">
           {{
             $t("viewDescriptionDescription") ||

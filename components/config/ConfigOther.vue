@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { toCamelCase } from "@/utils";
+import ConfigDatasetInfo from "./ConfigDatasetInfo.vue";
 
 import type { ViewConfig } from "@/types/types";
 
-defineProps<{
+const props = defineProps<{
   tableName: string;
   config: ViewConfig;
   views: Array<string>;
@@ -11,11 +12,20 @@ defineProps<{
 }>();
 
 const emit = defineEmits(["updateConfig"]);
+
+const logoUrlKeys = computed(() =>
+  props.keys.filter((key) => key === "LOGO_URL"),
+);
+const datasetInfoKeys = computed(() =>
+  props.keys.filter((key) =>
+    ["DATASET_TABLE", "VIEW_HEADER_IMAGE", "VIEW_DESCRIPTION"].includes(key),
+  ),
+);
 </script>
 
 <template>
   <div class="space-y-6">
-    <div v-for="key in keys" :key="key" class="space-y-2">
+    <div v-for="key in logoUrlKeys" :key="key" class="space-y-2">
       <template v-if="key === 'LOGO_URL'">
         <label
           :for="`${tableName}-${key}`"
@@ -38,5 +48,13 @@ const emit = defineEmits(["updateConfig"]);
         />
       </template>
     </div>
+    <ConfigDatasetInfo
+      v-if="datasetInfoKeys.length > 0"
+      :table-name="tableName"
+      :views="views"
+      :config="config"
+      :keys="datasetInfoKeys"
+      @update-config="emit('updateConfig', $event)"
+    />
   </div>
 </template>
