@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
-
 import type { Views, ViewConfig } from "@/types/types";
+import AppHeader from "@/components/shared/AppHeader.vue";
 
-// Refs to store the fetched data
 const viewsConfig = ref<Views>({});
 const tableNames = ref();
 const dataFetched = ref(false);
 
-// API request to fetch the data
 const {
   public: { appApiKey },
 } = useRuntimeConfig();
@@ -32,7 +29,6 @@ if (data.value && !error.value) {
   console.error("Error fetching data:", error.value);
 }
 
-/** POST request to submit the updated config */
 const submitConfig = async ({
   config,
   tableName,
@@ -51,7 +47,6 @@ const submitConfig = async ({
   }
 };
 
-/** POST request to remove a table from the config */
 const removeTableFromConfig = async (tableName: string) => {
   try {
     await $fetch(`/api/config/delete_table/${tableName}`, {
@@ -63,7 +58,6 @@ const removeTableFromConfig = async (tableName: string) => {
   }
 };
 
-/** POST request to add a table to the config */
 const addTableToConfig = async (tableName: string) => {
   try {
     await $fetch(`/api/config/new_table/${tableName}`, {
@@ -82,7 +76,8 @@ useHead({
 </script>
 
 <template>
-  <div>
+  <div class="min-h-screen flex flex-col bg-white">
+    <AppHeader />
     <ClientOnly>
       <ConfigDashboard
         v-if="dataFetched"
@@ -91,6 +86,7 @@ useHead({
         @submit-config="submitConfig"
         @remove-table-from-config="removeTableFromConfig"
         @add-table-to-config="addTableToConfig"
-    /></ClientOnly>
+      />
+    </ClientOnly>
   </div>
 </template>
