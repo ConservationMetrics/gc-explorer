@@ -42,7 +42,7 @@ const toggle = () => {
       </svg>
     </button>
     <div v-show="isOpen" class="p-4">
-      <slot ></slot>
+      <slot></slot>
     </div>
   </div>
 </template>
