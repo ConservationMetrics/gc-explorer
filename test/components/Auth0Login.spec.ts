@@ -17,6 +17,12 @@ vi.mock("#imports", () => ({
     clearAuth: vi.fn(),
     authData: { value: null },
   }),
+  useI18n: () => ({
+    locale: { value: "en" },
+    locales: { value: ["en", "es", "pt", "nl"] },
+    setLocale: vi.fn(),
+    t: (key: string) => key,
+  }),
   navigateTo: vi.fn(),
   onMounted: vi.fn((callback) => {
     // Execute the callback immediately for testing
@@ -70,8 +76,8 @@ const mountAuth0Login = (
           return messages[key as keyof typeof messages] || key;
         },
       },
-      components: {
-        LanguagePicker: {
+      stubs: {
+        GlobeLanguagePicker: {
           template: "<div></div>",
         },
       },
@@ -135,6 +141,6 @@ describe("Auth0Login", () => {
 
   it("renders LanguagePicker component", () => {
     const wrapper = mountAuth0Login();
-    expect(wrapper.findComponent({ name: "LanguagePicker" })).toBeTruthy();
+    expect(wrapper.findComponent({ name: "GlobeLanguagePicker" })).toBeTruthy();
   });
 });

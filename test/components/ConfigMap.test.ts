@@ -158,8 +158,11 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const addButton = wrapper.find(".add-basemap-button");
-    await addButton.trigger("click");
+    const addButton = wrapper
+      .findAll("button")
+      .find((btn) => btn.text().includes("+") || btn.text().includes("Add"));
+    expect(addButton).toBeTruthy();
+    await addButton!.trigger("click");
 
     const vm = wrapper.vm as unknown as {
       basemaps: Array<{ name: string; style: string }>;
@@ -197,11 +200,14 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const addButton = wrapper.find(".add-basemap-button");
-    expect(addButton.attributes("disabled")).toBeDefined();
-    expect(addButton.classes()).toContain("disabled");
+    const addButton = wrapper
+      .findAll("button")
+      .find((btn) => btn.text().includes("+") || btn.text().includes("Add"));
+    expect(addButton).toBeTruthy();
+    expect(addButton!.attributes("disabled")).toBeDefined();
+    expect(addButton!.element.hasAttribute("disabled")).toBe(true);
 
-    await addButton.trigger("click");
+    await addButton!.trigger("click");
 
     const vm = wrapper.vm as unknown as {
       basemaps: Array<unknown>;
@@ -232,7 +238,9 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const removeButtons = wrapper.findAll(".remove-button");
+    const removeButtons = wrapper
+      .findAll("button")
+      .filter((btn) => btn.text().toLowerCase().includes("remove"));
     expect(removeButtons).toHaveLength(1); // Only second item has remove button
 
     await removeButtons[0].trigger("click");
@@ -410,12 +418,17 @@ describe("ConfigMap component", () => {
 
     await wrapper.vm.$nextTick();
 
-    const validationErrors = wrapper.findAll(".validation-error");
+    const validationErrors = wrapper.findAll(".text-red-600");
     expect(validationErrors.length).toBeGreaterThan(0);
-    expect(validationErrors[0].text()).toBe("Basemap name must be unique");
+    expect(validationErrors[0].text()).toContain("unique");
 
     const secondNameInput = nameInputs[1];
-    expect(secondNameInput.classes()).toContain("input-error");
+    // Check for red border classes instead of input-error
+    expect(
+      secondNameInput
+        .classes()
+        .some((cls) => cls.includes("red") || cls.includes("border-red")),
+    ).toBe(true);
   });
 
   it("emits updateConfig when basemap is added", async () => {
@@ -424,8 +437,11 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const addButton = wrapper.find(".add-basemap-button");
-    await addButton.trigger("click");
+    const addButton = wrapper
+      .findAll("button")
+      .find((btn) => btn.text().includes("+") || btn.text().includes("Add"));
+    expect(addButton).toBeTruthy();
+    await addButton!.trigger("click");
 
     expect(wrapper.emitted("updateConfig")).toBeTruthy();
     const emitted = wrapper.emitted("updateConfig");
@@ -454,8 +470,11 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const removeButton = wrapper.find(".remove-button");
-    await removeButton.trigger("click");
+    const removeButton = wrapper
+      .findAll("button")
+      .find((btn) => btn.text().toLowerCase().includes("remove"));
+    expect(removeButton).toBeTruthy();
+    await removeButton!.trigger("click");
 
     expect(wrapper.emitted("updateConfig")).toBeTruthy();
   });
@@ -478,8 +497,14 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const basemapItems = wrapper.findAll(".basemap-item");
-    expect(basemapItems[0].classes()).toContain("basemap-default");
+    const basemapItems = wrapper.findAll(
+      'input[id^="test_table-basemap-name-"]',
+    );
+    expect(basemapItems.length).toBeGreaterThan(0);
+    // Check that first basemap container has the default styling
+    const firstBasemapContainer =
+      basemapItems[0].element.closest(".border-purple-300");
+    expect(firstBasemapContainer).toBeTruthy();
   });
 
   it("reorders basemaps on drag and drop", async () => {
@@ -568,9 +593,12 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const addButton = wrapper.find(".add-basemap-button");
-    expect(addButton.attributes("disabled")).toBeDefined();
-    expect(addButton.classes()).toContain("disabled");
+    const addButton = wrapper
+      .findAll("button")
+      .find((btn) => btn.text().includes("+") || btn.text().includes("Add"));
+    expect(addButton).toBeTruthy();
+    expect(addButton!.attributes("disabled")).toBeDefined();
+    expect(addButton!.element.hasAttribute("disabled")).toBe(true);
   });
 
   it("enables add button when less than 3 basemaps", () => {
@@ -579,9 +607,12 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const addButton = wrapper.find(".add-basemap-button");
-    expect(addButton.attributes("disabled")).toBeUndefined();
-    expect(addButton.classes()).not.toContain("disabled");
+    const addButton = wrapper
+      .findAll("button")
+      .find((btn) => btn.text().includes("+") || btn.text().includes("Add"));
+    expect(addButton).toBeTruthy();
+    expect(addButton!.attributes("disabled")).toBeUndefined();
+    expect(addButton!.element.hasAttribute("disabled")).toBe(false);
   });
 
   it("updates default basemap when first item is dragged to different position", async () => {

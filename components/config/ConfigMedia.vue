@@ -213,24 +213,23 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="config-section">
-    <div class="config-header">
-      <h3>{{ $t("media") }} {{ $t("configuration") }}</h3>
-    </div>
-
+  <div class="space-y-6">
     <!-- MEDIA_BASE_PATH -->
-    <div v-if="keys.includes('MEDIA_BASE_PATH')" class="config-field">
-      <label>{{ $t(toCamelCase("MEDIA_BASE_PATH")) }}</label>
+    <div v-if="keys.includes('MEDIA_BASE_PATH')" class="space-y-4">
+      <label class="block text-sm font-medium text-gray-700">
+        {{ $t(toCamelCase("MEDIA_BASE_PATH")) }}
+      </label>
 
-      <div class="media-provider-selector">
+      <div class="space-y-2">
         <label
           :for="`${tableName}-provider-basePath`"
-          class="media-field-label"
-          >{{ $t("mediaProvider") }}</label
+          class="block text-sm font-medium text-gray-700"
         >
+          {{ $t("mediaProvider") }}
+        </label>
         <select
           :id="`${tableName}-provider-basePath`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
           :value="providerBasePath"
           @change="
             handleProviderChange(
@@ -247,16 +246,22 @@ onMounted(() => {
       </div>
 
       <template v-if="providerBasePath === 'filebrowser'">
-        <div class="media-share-input">
+        <div class="space-y-2">
           <label
             :for="`${tableName}-share-basePath`"
-            class="media-field-label"
-            >{{ $t("mediaPasteFilebrowserShareUrlOrHash") }}</label
+            class="block text-sm font-medium text-gray-700"
           >
+            {{ $t("mediaPasteFilebrowserShareUrlOrHash") }}
+          </label>
           <input
             :id="`${tableName}-share-basePath`"
-            class="input-field"
-            :class="{ 'input-invalid': !isBasePathValid && shareInputBasePath }"
+            class="w-full px-4 py-2 border rounded-lg transition-colors"
+            :class="{
+              'border-red-300 focus:ring-red-500 focus:border-red-500':
+                !isBasePathValid && shareInputBasePath,
+              'border-gray-300 focus:ring-purple-500 focus:border-purple-500':
+                isBasePathValid || !shareInputBasePath,
+            }"
             type="text"
             :value="shareInputBasePath"
             placeholder="https://files.example.com/share/abc123 or abc123"
@@ -267,30 +272,35 @@ onMounted(() => {
           />
           <p
             v-if="!isBasePathValid && shareInputBasePath"
-            class="validation-error"
+            class="text-sm text-red-600"
           >
             {{ $t("mediaInvalidFormat") }}
           </p>
-          <p class="field-hint">
+          <p class="text-xs text-gray-500">
             <strong>{{ $t("mediaAccepts") }}</strong>
-            <code>https://files.example.com/share/abc123</code>,
-            <code>https://files.example.com/api/public/dl/abc123</code>,
+            <code class="px-1 py-0.5 bg-gray-100 rounded"
+              >https://files.example.com/share/abc123</code
+            >,
+            <code class="px-1 py-0.5 bg-gray-100 rounded"
+              >https://files.example.com/api/public/dl/abc123</code
+            >,
             {{ $t("or") }}
-            <code>abc123</code>
+            <code class="px-1 py-0.5 bg-gray-100 rounded">abc123</code>
           </p>
         </div>
       </template>
 
       <template v-else>
-        <div class="media-base-url">
+        <div class="space-y-2">
           <label
             :for="`${tableName}-baseUrl-generic-basePath`"
-            class="media-field-label"
-            >{{ $t("mediaBaseUrl") }}</label
+            class="block text-sm font-medium text-gray-700"
           >
+            {{ $t("mediaBaseUrl") }}
+          </label>
           <input
             :id="`${tableName}-baseUrl-generic-basePath`"
-            class="input-field"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
             type="url"
             :value="shareInputBasePath"
             placeholder="https://your-files-host.example/api/public/dl/"
@@ -305,19 +315,22 @@ onMounted(() => {
     <!-- MEDIA_BASE_PATH_ALERTS -->
     <div
       v-if="keys.includes('MEDIA_BASE_PATH_ALERTS') && views.includes('alerts')"
-      class="config-field"
+      class="space-y-4"
     >
-      <label>{{ $t(toCamelCase("MEDIA_BASE_PATH_ALERTS")) }}</label>
+      <label class="block text-sm font-medium text-gray-700">
+        {{ $t(toCamelCase("MEDIA_BASE_PATH_ALERTS")) }}
+      </label>
 
-      <div class="media-provider-selector">
+      <div class="space-y-2">
         <label
           :for="`${tableName}-provider-alerts`"
-          class="media-field-label"
-          >{{ $t("mediaProvider") }}</label
+          class="block text-sm font-medium text-gray-700"
         >
+          {{ $t("mediaProvider") }}
+        </label>
         <select
           :id="`${tableName}-provider-alerts`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
           :value="providerAlerts"
           @change="
             handleProviderChange(
@@ -334,14 +347,22 @@ onMounted(() => {
       </div>
 
       <template v-if="providerAlerts === 'filebrowser'">
-        <div class="media-share-input">
-          <label :for="`${tableName}-share-alerts`" class="media-field-label">{{
-            $t("mediaPasteFilebrowserShareUrlOrHash")
-          }}</label>
+        <div class="space-y-2">
+          <label
+            :for="`${tableName}-share-alerts`"
+            class="block text-sm font-medium text-gray-700"
+          >
+            {{ $t("mediaPasteFilebrowserShareUrlOrHash") }}
+          </label>
           <input
             :id="`${tableName}-share-alerts`"
-            class="input-field"
-            :class="{ 'input-invalid': !isAlertsValid && shareInputAlerts }"
+            class="w-full px-4 py-2 border rounded-lg transition-colors"
+            :class="{
+              'border-red-300 focus:ring-red-500 focus:border-red-500':
+                !isAlertsValid && shareInputAlerts,
+              'border-gray-300 focus:ring-purple-500 focus:border-purple-500':
+                isAlertsValid || !shareInputAlerts,
+            }"
             type="text"
             :value="shareInputAlerts"
             placeholder="https://files.example.com/share/abc123 or abc123"
@@ -350,29 +371,37 @@ onMounted(() => {
               handleInput('alerts', ($event.target as HTMLInputElement).value)
             "
           />
-          <p v-if="!isAlertsValid && shareInputAlerts" class="validation-error">
+          <p
+            v-if="!isAlertsValid && shareInputAlerts"
+            class="text-sm text-red-600"
+          >
             {{ $t("mediaInvalidFormat") }}
           </p>
-          <p class="field-hint">
+          <p class="text-xs text-gray-500">
             <strong>{{ $t("mediaAccepts") }}</strong>
-            <code>https://files.example.com/share/abc123</code>,
-            <code>https://files.example.com/api/public/dl/abc123</code>,
+            <code class="px-1 py-0.5 bg-gray-100 rounded"
+              >https://files.example.com/share/abc123</code
+            >,
+            <code class="px-1 py-0.5 bg-gray-100 rounded"
+              >https://files.example.com/api/public/dl/abc123</code
+            >,
             {{ $t("or") }}
-            <code>abc123</code>
+            <code class="px-1 py-0.5 bg-gray-100 rounded">abc123</code>
           </p>
         </div>
       </template>
 
       <template v-else>
-        <div class="media-base-url">
+        <div class="space-y-2">
           <label
             :for="`${tableName}-baseUrl-generic-alerts`"
-            class="media-field-label"
-            >{{ $t("mediaBaseUrl") }}</label
+            class="block text-sm font-medium text-gray-700"
           >
+            {{ $t("mediaBaseUrl") }}
+          </label>
           <input
             :id="`${tableName}-baseUrl-generic-alerts`"
-            class="input-field"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
             type="url"
             :value="shareInputAlerts"
             placeholder="https://your-files-host.example/api/public/dl/"
@@ -387,17 +416,22 @@ onMounted(() => {
     <!-- MEDIA_BASE_PATH_ICONS -->
     <div
       v-if="keys.includes('MEDIA_BASE_PATH_ICONS') && views.includes('map')"
-      class="config-field"
+      class="space-y-4"
     >
-      <label>{{ $t(toCamelCase("MEDIA_BASE_PATH_ICONS")) }}</label>
+      <label class="block text-sm font-medium text-gray-700">
+        {{ $t(toCamelCase("MEDIA_BASE_PATH_ICONS")) }}
+      </label>
 
-      <div class="media-provider-selector">
-        <label :for="`${tableName}-provider-icons`" class="media-field-label">{{
-          $t("mediaProvider")
-        }}</label>
+      <div class="space-y-2">
+        <label
+          :for="`${tableName}-provider-icons`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t("mediaProvider") }}
+        </label>
         <select
           :id="`${tableName}-provider-icons`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
           :value="providerIcons"
           @change="
             handleProviderChange(
@@ -414,14 +448,22 @@ onMounted(() => {
       </div>
 
       <template v-if="providerIcons === 'filebrowser'">
-        <div class="media-share-input">
-          <label :for="`${tableName}-share-icons`" class="media-field-label">{{
-            $t("mediaPasteFilebrowserShareUrlOrHash")
-          }}</label>
+        <div class="space-y-2">
+          <label
+            :for="`${tableName}-share-icons`"
+            class="block text-sm font-medium text-gray-700"
+          >
+            {{ $t("mediaPasteFilebrowserShareUrlOrHash") }}
+          </label>
           <input
             :id="`${tableName}-share-icons`"
-            class="input-field"
-            :class="{ 'input-invalid': !isIconsValid && shareInputIcons }"
+            class="w-full px-4 py-2 border rounded-lg transition-colors"
+            :class="{
+              'border-red-300 focus:ring-red-500 focus:border-red-500':
+                !isIconsValid && shareInputIcons,
+              'border-gray-300 focus:ring-purple-500 focus:border-purple-500':
+                isIconsValid || !shareInputIcons,
+            }"
             type="text"
             :value="shareInputIcons"
             placeholder="https://files.example.com/share/abc123 or abc123"
@@ -430,29 +472,37 @@ onMounted(() => {
               handleInput('icons', ($event.target as HTMLInputElement).value)
             "
           />
-          <p v-if="!isIconsValid && shareInputIcons" class="validation-error">
+          <p
+            v-if="!isIconsValid && shareInputIcons"
+            class="text-sm text-red-600"
+          >
             {{ $t("mediaInvalidFormat") }}
           </p>
-          <p class="field-hint">
+          <p class="text-xs text-gray-500">
             <strong>{{ $t("mediaAccepts") }}</strong>
-            <code>https://files.example.com/share/abc123</code>,
-            <code>https://files.example.com/api/public/dl/abc123</code>,
+            <code class="px-1 py-0.5 bg-gray-100 rounded"
+              >https://files.example.com/share/abc123</code
+            >,
+            <code class="px-1 py-0.5 bg-gray-100 rounded"
+              >https://files.example.com/api/public/dl/abc123</code
+            >,
             {{ $t("or") }}
-            <code>abc123</code>
+            <code class="px-1 py-0.5 bg-gray-100 rounded">abc123</code>
           </p>
         </div>
       </template>
 
       <template v-else>
-        <div class="media-base-url">
+        <div class="space-y-2">
           <label
             :for="`${tableName}-baseUrl-generic-icons`"
-            class="media-field-label"
-            >{{ $t("mediaBaseUrl") }}</label
+            class="block text-sm font-medium text-gray-700"
           >
+            {{ $t("mediaBaseUrl") }}
+          </label>
           <input
             :id="`${tableName}-baseUrl-generic-icons`"
-            class="input-field"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
             type="url"
             :value="shareInputIcons"
             placeholder="https://your-files-host.example/api/public/dl/"
@@ -465,14 +515,16 @@ onMounted(() => {
     </div>
 
     <!-- MEDIA_COLUMN -->
-    <div v-if="keys.includes('MEDIA_COLUMN')" class="config-field">
-      <label>{{ $t(toCamelCase("MEDIA_COLUMN")) }}</label>
-      <p class="field-hint" style="margin-top: 0; margin-bottom: 0.75em">
+    <div v-if="keys.includes('MEDIA_COLUMN')" class="space-y-2">
+      <label class="block text-sm font-medium text-gray-700">
+        {{ $t(toCamelCase("MEDIA_COLUMN")) }}
+      </label>
+      <p class="text-xs text-gray-500 mb-2">
         {{ $t("mediaColumnDescription") }}
       </p>
       <input
         :id="`${tableName}-media-column`"
-        class="input-field"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
         type="text"
         :value="mediaColumn"
         placeholder="photo"
@@ -481,63 +533,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.media-field-label {
-  font-size: 0.95em;
-  font-weight: 500;
-  color: #555;
-  font-style: italic;
-  letter-spacing: 0.3px;
-  padding-left: 0.5em;
-  border-left: 3px solid #999;
-  margin-bottom: 0.5em;
-  display: block;
-}
-
-.media-provider-selector {
-  margin-bottom: 1em;
-}
-
-.media-share-input {
-  margin-bottom: 0;
-}
-
-.media-share-input .input-field {
-  max-width: 100%;
-  min-width: 500px;
-}
-
-.field-hint {
-  margin: 0.5em 0 0 0;
-  font-size: 0.85em;
-  color: #666;
-  line-height: 1.5;
-}
-
-.field-hint code {
-  background-color: #f3f4f6;
-  padding: 0.15em 0.4em;
-  border-radius: 3px;
-  font-size: 0.9em;
-  color: #333;
-  font-family:
-    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
-    monospace;
-}
-
-.media-base-url {
-  margin-bottom: 0;
-}
-
-.input-invalid {
-  border-color: #dc3545;
-  background-color: #fff5f5;
-}
-
-.validation-error {
-  margin: 0.5em 0 0 0;
-  font-size: 0.85em;
-  color: #dc3545;
-}
-</style>

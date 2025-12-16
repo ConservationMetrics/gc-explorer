@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { Views, User } from "@/types/types";
 import { Role } from "@/types/types";
-import LanguagePicker from "@/components/shared/LanguagePicker.vue";
-import { formatDisplayName } from "@/utils/index";
+import AppHeader from "@/components/shared/AppHeader.vue";
+import DatasetCard from "@/components/index/DatasetCard.vue";
 
 const viewsConfig = ref<Views>({});
 
@@ -86,27 +86,6 @@ const filteredSortedViewsConfig = computed(() => {
     }, {});
 });
 
-/**
- * Gets the formatted permission level for a table to display in the UI
- * Returns null in CI environment, otherwise shows all permission levels
- *
- * @param {string} tableName - The name of the table to check permissions for
- * @returns {string | null} The formatted permission level or null if not applicable
- */
-const getPermissionLevel = (tableName: string) => {
-  // No restrictions in CI environment
-  if (process.env.CI) return null;
-
-  const permission = viewsConfig.value[tableName]?.ROUTE_LEVEL_PERMISSION;
-
-  // Show pill for all permission levels
-  if (permission) {
-    return formatDisplayName(permission);
-  }
-
-  return null;
-};
-
 // Check if user should see config link
 const shouldShowConfigLink = computed(() => {
   // Show config link in CI environment
@@ -149,104 +128,50 @@ useHead({
 </script>
 
 <template>
-  <div class="container flex flex-col items-center mt-8 relative w-full">
-    <div class="absolute top-0 right-4 flex justify-end space-x-4 mb-4">
-      <LanguagePicker />
-    </div>
-    <img
-      src="/gcexplorer.png"
-      alt="Guardian Connector Explorer Logo"
-      class="w-48 h-auto mb-4 mx-auto"
-      loading="eager"
-    />
-    <h1 class="text-4xl font-black text-gray-800 mb-4">
-      {{ $t("availableViews") }}
-    </h1>
-    <div class="w-1/2">
-      <!-- Config Link for Admins or when auth is disabled -->
-      <div v-if="shouldShowConfigLink" class="flex justify-center mt-4 mb-4">
-        <a
-          href="/config"
-          class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded cursor-pointer transition-colors duration-200"
-        >
-          {{ $t("config") || "Configuration" }}
-        </a>
-        <!-- NuxtLink messes up the layout, hence the use of a regular anchor tag -->
+  <div class="min-h-screen flex flex-col bg-white">
+    <AppHeader />
+
+    <main class="max-w-7xl mx-auto p-3 sm:p-6 w-full">
+      <!-- Page Title and Description -->
+      <div class="mb-6 sm:mb-8">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+          {{ $t("availableViews") }}
+        </h1>
       </div>
 
-      <div v-if="viewsConfig" class="w-full">
-        <div
+      <!-- Manage Datasets Button - Right above cards on RHS -->
+      <div
+        v-if="shouldShowConfigLink && viewsConfig"
+        class="flex justify-end mb-4"
+      >
+        <!-- NuxtLink messes up the layout, hence the use of a regular anchor tag -->
+        <a
+          href="/config"
+          class="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer"
+        >
+          {{ $t("manageDatasets") }}
+        </a>
+      </div>
+
+      <!-- Project Cards Grid -->
+      <div
+        v-if="viewsConfig"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch"
+      >
+        <DatasetCard
           v-for="(config, tableName) in filteredSortedViewsConfig"
           :key="tableName"
-          class="table-item bg-gray-100 rounded p-4 mb-4 w-full"
-        >
-          <h2 class="text-gray-800 mb-2 flex items-center gap-2">
-            {{ tableName }}
-            <span
-              v-if="getPermissionLevel(String(tableName))"
-              class="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800"
-            >
-              {{ getPermissionLevel(String(tableName)) }}
-            </span>
-          </h2>
-          <ul class="list-none p-0">
-            <li
-              v-for="view in config.VIEWS ? config.VIEWS.split(',') : []"
-              :key="view"
-              class="mb-2"
-            >
-              <NuxtLink
-                :to="`/${view}/${tableName}`"
-                class="text-blue-500 no-underline hover:text-blue-700 hover:underline flex items-center gap-2"
-              >
-                <!-- Map Icon -->
-                <svg
-                  v-if="view === 'map'"
-                  class="w-4 h-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-                <!-- Gallery Icon -->
-                <svg
-                  v-else-if="view === 'gallery'"
-                  class="w-4 h-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-                <!-- Alerts Icon -->
-                <svg
-                  v-else-if="view === 'alerts'"
-                  class="w-4 h-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-                {{ $t(view) }}
-              </NuxtLink>
-            </li>
-          </ul>
-        </div>
+          :table-name="tableName"
+          :config="config"
+        />
       </div>
-    </div>
+
+      <!-- Empty State -->
+      <div v-else class="text-center py-12">
+        <p class="text-gray-500 text-sm sm:text-base">
+          {{ $t("noDatasetViewsAvailable") || "No dataset views available" }}
+        </p>
+      </div>
+    </main>
   </div>
 </template>

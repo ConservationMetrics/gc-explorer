@@ -209,35 +209,43 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
 </script>
 
 <template>
-  <div class="config-section">
-    <div class="config-header">
-      <h3>{{ $t("map") }} {{ $t("configuration") }}</h3>
-    </div>
-    <div v-for="key in keys" :key="key" class="config-field">
+  <div class="space-y-6">
+    <div v-for="key in keys" :key="key" class="space-y-2">
       <!-- Mapbox Basemaps -->
       <template v-if="key === 'MAPBOX_STYLE'">
-        <label>{{ $t("mapboxBackgroundMaps") }}</label>
-        <p class="basemaps-description">{{ $t("basemapsDescription") }}</p>
-        <div class="basemaps-container">
+        <label class="block text-sm font-medium text-gray-700 mb-2">
+          {{ $t("mapboxBackgroundMaps") }}
+        </label>
+        <p class="text-sm text-gray-500 mb-4">
+          {{ $t("basemapsDescription") }}
+        </p>
+        <div class="space-y-4">
           <div
             v-for="(basemap, index) in basemaps"
             :key="index"
-            class="basemap-item"
-            :class="{ 'basemap-default': index === 0 }"
+            class="p-4 border-2 rounded-lg transition-colors"
+            :class="
+              index === 0
+                ? 'border-purple-300 bg-purple-50'
+                : 'border-gray-200 bg-white hover:border-purple-200'
+            "
             draggable="true"
             @dragstart="handleDragStart(index)"
             @dragover="handleDragOver($event, index)"
             @drop="handleDrop($event, index)"
           >
-            <div class="basemap-drag-handle">☰</div>
-            <div class="basemap-content">
-              <div class="basemap-fields">
-                <div class="basemap-name-wrapper">
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 pt-2 text-gray-400 cursor-move">☰</div>
+              <div class="flex-1 space-y-3">
+                <div>
                   <input
                     :id="`${tableName}-basemap-name-${index}`"
-                    class="input-field basemap-name"
+                    class="w-full px-4 py-2 border rounded-lg transition-colors"
                     :class="{
-                      'input-error': !isNameValid(index, basemap.name),
+                      'border-red-300 focus:ring-red-500 focus:border-red-500':
+                        !isNameValid(index, basemap.name),
+                      'border-gray-300 focus:ring-purple-500 focus:border-purple-500':
+                        isNameValid(index, basemap.name) || !basemap.name,
                     }"
                     :placeholder="$t('basemapName')"
                     :value="basemap.name"
@@ -252,14 +260,14 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
                   />
                   <span
                     v-if="basemap.name && !isNameValid(index, basemap.name)"
-                    class="validation-error"
+                    class="block mt-1 text-sm text-red-600"
                   >
                     {{ getValidationError(index, basemap.name) }}
                   </span>
                 </div>
                 <input
                   :id="`${tableName}-basemap-style-${index}`"
-                  class="input-field basemap-style"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
                   pattern="^mapbox:\/\/styles\/[^\/]+\/[^\/]+$"
                   placeholder="mapbox://styles/user/styleId"
                   :title="
@@ -277,22 +285,19 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
                   "
                 />
               </div>
-              <div class="basemap-actions">
-                <button
-                  v-if="index !== 0"
-                  type="button"
-                  class="remove-button"
-                  @click="removeBasemap(index)"
-                >
-                  {{ $t("remove") }}
-                </button>
-              </div>
+              <button
+                v-if="index !== 0"
+                type="button"
+                class="flex-shrink-0 px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                @click="removeBasemap(index)"
+              >
+                {{ $t("remove") }}
+              </button>
             </div>
           </div>
           <button
             type="button"
-            class="add-basemap-button"
-            :class="{ disabled: !canAddBasemap }"
+            class="w-full px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="!canAddBasemap"
             @click="addBasemap"
           >
@@ -303,12 +308,15 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
 
       <!-- Access Token -->
       <template v-else-if="key === 'MAPBOX_ACCESS_TOKEN'">
-        <label :for="`${tableName}-${key}`">
-          {{ $t(toCamelCase(key)) }} <span style="color: red">*</span>
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t(toCamelCase(key)) }} <span class="text-red-500">*</span>
         </label>
         <input
           :id="`${tableName}-${key}`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           pattern="^pk\.ey.*"
           placeholder="pk.ey…"
           :title="$t('pleaseMatchFormat') + ': pk.ey… '"
@@ -329,10 +337,15 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
           ].includes(key)
         "
       >
-        <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t(toCamelCase(key)) }}
+        </label>
         <input
           :id="`${tableName}-${key}`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           type="number"
           step="any"
           :min="
@@ -368,10 +381,15 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
 
       <!-- Projection -->
       <template v-else-if="key === 'MAPBOX_PROJECTION'">
-        <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t(toCamelCase(key)) }}
+        </label>
         <select
           :id="`${tableName}-${key}`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
           :value="config[key]"
           @change="
             (e) => handleInput(key, (e.target as HTMLSelectElement).value)
@@ -390,22 +408,34 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
 
       <!-- 3D -->
       <template v-else-if="key === 'MAPBOX_3D'">
-        <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
-        <label class="checkbox-label">
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700 mb-2"
+        >
+          {{ $t(toCamelCase(key)) }}
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer group">
           <input
             :id="`${tableName}-${key}`"
             type="checkbox"
+            class="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
             :checked="Boolean(configData[key])"
             @change="
               (e) => handleInput(key, (e.target as HTMLInputElement).checked)
             "
           />
-          {{ $t("enable") }}
+          <span
+            class="text-gray-700 font-medium group-hover:text-purple-700 transition-colors"
+          >
+            {{ $t("enable") }}
+          </span>
         </label>
 
         <!-- Terrain Exaggeration Slider (shown when 3D is enabled) -->
-        <div v-if="Boolean(configData['MAPBOX_3D'])" class="mt-4">
-          <label>3D {{ $t("terrainExaggeration") }}</label>
+        <div v-if="Boolean(configData['MAPBOX_3D'])" class="mt-4 space-y-2">
+          <label class="block text-sm font-medium text-gray-700">
+            3D {{ $t("terrainExaggeration") }}
+          </label>
           <div class="mt-2 mb-10">
             <VueSlider
               v-model="terrainExaggeration"
@@ -422,7 +452,12 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
 
       <!-- Legend Layers -->
       <template v-else-if="key === 'MAP_LEGEND_LAYER_IDS'">
-        <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t(toCamelCase(key)) }}
+        </label>
         <VueTagsInput
           class="tag-field"
           :tags="tags[key]"
@@ -432,10 +467,15 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
 
       <!-- Planet API Key -->
       <template v-else-if="key === 'PLANET_API_KEY'">
-        <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t(toCamelCase(key)) }}
+        </label>
         <input
           :id="`${tableName}-${key}`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           type="text"
           :value="config[key]"
           @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
@@ -444,10 +484,15 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
 
       <!-- Color Column -->
       <template v-else-if="key === 'COLOR_COLUMN'">
-        <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t(toCamelCase(key)) }}
+        </label>
         <input
           :id="`${tableName}-${key}`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           type="text"
           placeholder="color"
           :value="config[key]"
@@ -458,16 +503,23 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
 
       <!-- Icon Column -->
       <template v-else-if="key === 'ICON_COLUMN'">
-        <label :for="`${tableName}-${key}`">{{ $t(toCamelCase(key)) }}</label>
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t(toCamelCase(key)) }}
+        </label>
         <input
           :id="`${tableName}-${key}`"
-          class="input-field"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           type="text"
           placeholder="icon"
           :value="config[key]"
           @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
         />
-        <p class="field-description">{{ $t("iconColumnDescription") }}</p>
+        <p class="text-xs text-gray-500 mt-1">
+          {{ $t("iconColumnDescription") }}
+        </p>
       </template>
     </div>
   </div>
