@@ -73,7 +73,7 @@ const submitConfig = async ({
       body: JSON.stringify(config),
     });
     // Update the local datasetConfig to reflect the saved state
-    // This will trigger the watch in ConfigCard to update originalConfig baseline
+    // This will trigger the watch in ConfigCard to update originalConfig baseline thus clearing the button and applying edit
     datasetConfig.value = JSON.parse(JSON.stringify(config));
     showSavedModal.value = true;
     setTimeout(() => {
