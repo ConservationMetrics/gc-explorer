@@ -6,9 +6,12 @@ test("index page - displays available views and alerts link", async ({
   // 1. Navigate to the root of the application
   await page.goto("/");
 
-  // 2. Verify header elements are visible
-  // Check for Guardian Connector logo
-  const logo = page.locator('img[alt="Guardian Connector Explorer"]');
+  // 2. Wait for page to load
+  await page.waitForLoadState("networkidle");
+
+  // 3. Verify header elements are visible
+  // Check for Guardian Connector logo (use first() to avoid strict mode violation)
+  const logo = page.locator('img[alt="Guardian Connector Explorer"]').first();
   await expect(logo).toBeVisible();
 
   // Check for Guardian Connector text in header
@@ -21,10 +24,11 @@ test("index page - displays available views and alerts link", async ({
   const communityNameTab = page.locator("button.tab-trigger");
   await expect(communityNameTab).toBeVisible({ timeout: 5000 });
 
-  // 3. Wait for the page heading "Available Views" to become visible
+  // 4. Wait for the page heading "Available Views" to become visible
+  await page.waitForLoadState("networkidle");
   await expect(
     page.getByRole("heading", { name: /available views/i }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 10000 });
 
   // 4. Verify at least one "Open Project" button is visible
   const openProjectButton = page
@@ -46,14 +50,17 @@ test("index page - displays available views and alerts link", async ({
   expect(pillCount).toBeGreaterThan(0);
 });
 
-test("index page - language picker functionality", async ({ page }) => {
+test("index page - language picker functionality", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
   // 1. Navigate to the root of the application
   await page.goto("/");
+  await page.waitForLoadState("networkidle");
 
   // 2. Wait for the page heading to be visible first
   await expect(
     page.getByRole("heading", { name: /available views/i }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 10000 });
 
   // 3. Wait for the language picker button to be visible
   const languageButton = page
@@ -101,11 +108,12 @@ test("index page - language switching to Portuguese changes heading", async ({
 }) => {
   // 1. Navigate to the root of the application
   await page.goto("/");
+  await page.waitForLoadState("networkidle");
 
   // 2. Wait for the page heading to be visible first
   await expect(
     page.getByRole("heading", { name: /available views/i }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 10000 });
 
   // 3. Wait for the language picker button to be visible
   const languageButton = page

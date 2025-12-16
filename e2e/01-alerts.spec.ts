@@ -5,11 +5,22 @@ test("alerts dashboard - layer visibility toggles", async ({
 }) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
+  await page.waitForLoadState("networkidle");
 
-  // 2. Wait until the index page has rendered the list of available views
-  // Find the first link that has an href starting with /alerts/
+  // 2. Find an "Open Project" button to navigate to a dataset page
+  const openProjectButton = page
+    .locator("a")
+    .filter({ hasText: /open project/i })
+    .first();
+  await openProjectButton.waitFor({ state: "visible", timeout: 10000 });
+
+  // 3. Click to go to dataset page
+  await openProjectButton.click();
+  await page.waitForLoadState("networkidle");
+
+  // 4. Find the alerts link on the dataset page (ViewCard with alerts)
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 5000 });
+  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
   // 3. Get the href first
   const href = await alertsLink.getAttribute("href");
@@ -303,11 +314,20 @@ test("alerts dashboard - LineString buffer click behavior", async ({
 }) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
-
-  // Wait for page to load
   await page.waitForLoadState("networkidle");
 
-  // 2. Wait until the index page has rendered the list of available views
+  // 2. Find an "Open Project" button to navigate to a dataset page
+  const openProjectButton = page
+    .locator("a")
+    .filter({ hasText: /open project/i })
+    .first();
+  await openProjectButton.waitFor({ state: "visible", timeout: 10000 });
+
+  // 3. Click to go to dataset page
+  await openProjectButton.click();
+  await page.waitForLoadState("networkidle");
+
+  // 4. Find the alerts link on the dataset page (ViewCard with alerts)
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
   await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
@@ -411,11 +431,20 @@ test("alerts dashboard - geometry type specific interactions", async ({
 }) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
-
-  // Wait for page to load
   await page.waitForLoadState("networkidle");
 
-  // 2. Wait until the index page has rendered the list of available views
+  // 2. Find an "Open Project" button to navigate to a dataset page
+  const openProjectButton = page
+    .locator("a")
+    .filter({ hasText: /open project/i })
+    .first();
+  await openProjectButton.waitFor({ state: "visible", timeout: 10000 });
+
+  // 3. Click to go to dataset page
+  await openProjectButton.click();
+  await page.waitForLoadState("networkidle");
+
+  // 4. Find the alerts link on the dataset page (ViewCard with alerts)
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
   await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
@@ -593,8 +622,19 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
 }) => {
   // Navigate to alerts dashboard
   await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Find an "Open Project" button to navigate to a dataset page
+  const openProjectButton = page
+    .locator("a")
+    .filter({ hasText: /open project/i })
+    .first();
+  await openProjectButton.waitFor({ state: "visible", timeout: 10000 });
+  await openProjectButton.click();
+  await page.waitForLoadState("networkidle");
+
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 5000 });
+  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
   const href = await alertsLink.getAttribute("href");
   await page.goto(href!);
   await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });

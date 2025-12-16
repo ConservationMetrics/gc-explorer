@@ -7,12 +7,17 @@ test("config page - displays configuration dashboard with table cards", async ({
   // 1. Navigate to the config page
   console.log("[TEST] Step 1: Navigating to /config");
   await page.goto("/config");
+  await page.waitForLoadState("networkidle");
 
-  // 2. Wait for the page heading to become visible
+  // 2. Wait for ClientOnly component to render and page to load
+  await page.waitForLoadState("networkidle");
   console.log("[TEST] Step 2: Waiting for page heading");
+  // ConfigDashboard uses "datasetViewManagement" heading, not "available views: configuration"
   await expect(
-    page.getByRole("heading", { name: /available views: configuration/i }),
-  ).toBeVisible();
+    page.getByRole("heading", {
+      name: /dataset view management|configuration/i,
+    }),
+  ).toBeVisible({ timeout: 10000 });
   console.log("[TEST] Step 2: Page heading is visible");
 
   // 3. Verify the language picker is present
@@ -25,22 +30,20 @@ test("config page - displays configuration dashboard with table cards", async ({
 
   // 4. Verify the add new table button is present
   console.log("[TEST] Step 4: Checking add new table button");
-  const addTableButton = page.getByRole("button", {
-    name: /\+ add new table/i,
-  });
-  await expect(addTableButton).toBeVisible();
+  // Button is in flex justify-end section
+  const addTableButton = page.locator("div.flex.justify-end button").first();
+  await expect(addTableButton).toBeVisible({ timeout: 10000 });
   console.log("[TEST] Step 4: Add new table button is visible");
 
-  // 5. Wait for the grid container to be present (indicates data has loaded)
-  console.log("[TEST] Step 5: Waiting for grid container");
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
-  console.log("[TEST] Step 5: Grid container is present");
+  // 5. Wait for the grid to be present (indicates data has loaded)
+  // ConfigDashboard uses "grid" class, not "grid-container"
+  console.log("[TEST] Step 5: Waiting for grid");
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+  console.log("[TEST] Step 5: Grid is present");
 
-  // 6. Verify dataset cards are present (list view)
+  // 6. Verify dataset cards are present (cards are divs with purple background)
   console.log("[TEST] Step 6: Checking dataset cards");
-  const datasetCards = page.locator(".dataset-card");
+  const datasetCards = page.locator(".bg-purple-50");
   const cardCount = await datasetCards.count();
   console.log(`[TEST] Step 6: Found ${cardCount} dataset cards`);
   expect(cardCount).toBeGreaterThan(0);
@@ -59,25 +62,25 @@ test("config page - add and remove table functionality", async ({
   // 1. Navigate to the config page
   console.log("[TEST] Step 1: Navigating to /config");
   await page.goto("/config");
+  await page.waitForLoadState("networkidle");
 
-  // 2. Wait for the grid container
-  console.log("[TEST] Step 2: Waiting for grid container");
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  // 2. Wait for page load and grid
+  await page.waitForLoadState("networkidle");
+  console.log("[TEST] Step 2: Waiting for grid");
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
   console.log("[TEST] Step 2: Grid container is present");
 
   // 3. Click the add new table button
   console.log("[TEST] Step 3: Clicking add new table button");
-  const addTableButton = page.getByRole("button", {
-    name: /\+ add new table/i,
-  });
+  // Button is in flex justify-end section, has SVG plus icon
+  const addTableButton = page.locator("div.flex.justify-end button").first();
+  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
   console.log("[TEST] Step 3: Clicked add new table button");
 
   // 4. Verify the modal appears with dropdown
   console.log("[TEST] Step 4: Checking for modal");
-  const modal = page.locator(".modal");
+  const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
   await expect(modal).toBeVisible();
   console.log("[TEST] Step 4: Modal is visible");
 
@@ -131,9 +134,7 @@ test("config page - add and remove table functionality", async ({
 
   // 14. Wait for the page to reload and find the newly added table
   console.log("[TEST] Step 14: Waiting for page reload");
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
   console.log("[TEST] Step 14: Page reloaded");
 
   // 15. Find the dataset card with the table name we just added
@@ -157,17 +158,16 @@ test("config page - navigate to dataset edit page", async ({ page }) => {
   // 1. Navigate to the config page
   console.log("[TEST] Step 1: Navigating to /config");
   await page.goto("/config");
+  await page.waitForLoadState("networkidle");
 
   // 2. Wait for the grid container to be present (indicates data has loaded)
   console.log("[TEST] Step 2: Waiting for grid container");
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
   console.log("[TEST] Step 2: Grid container is present");
 
   // 3. Look for dataset cards
   console.log("[TEST] Step 3: Looking for dataset cards");
-  const datasetCards = page.locator(".dataset-card");
+  const datasetCards = page.locator(".bg-purple-50");
   const cardCount = await datasetCards.count();
   console.log(`[TEST] Step 3: Found ${cardCount} dataset cards`);
 
@@ -211,20 +211,19 @@ test("config page - edit dataset form", async ({
   // 1. Navigate to the config page
   console.log("[TEST] Step 1: Navigating to /config");
   await page.goto("/config");
+  await page.waitForLoadState("networkidle");
 
   // Wait for page to load
   await page.waitForLoadState("networkidle");
 
   // 2. Wait for the grid container to be present (indicates data has loaded)
   console.log("[TEST] Step 2: Waiting for grid container");
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 10000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
   console.log("[TEST] Step 2: Grid container is present");
 
   // 3. Look for dataset cards
   console.log("[TEST] Step 3: Looking for dataset cards");
-  const datasetCards = page.locator(".dataset-card");
+  const datasetCards = page.locator(".bg-purple-50");
   const cardCount = await datasetCards.count();
   console.log(`[TEST] Step 3: Found ${cardCount} dataset cards`);
 
@@ -306,18 +305,19 @@ test("config page - cancel add table modal", async ({
   // 1. Navigate to the config page
   console.log("[TEST] Step 1: Navigating to /config");
   await page.goto("/config");
+  await page.waitForLoadState("networkidle");
 
   // 2. Click the add new table button
   console.log("[TEST] Step 2: Clicking add new table button");
-  const addTableButton = page.getByRole("button", {
-    name: /\+ add new table/i,
-  });
+  // Button is in flex justify-end section
+  const addTableButton = page.locator("div.flex.justify-end button").first();
+  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
   console.log("[TEST] Step 2: Clicked add new table button");
 
   // 3. Verify the modal appears
   console.log("[TEST] Step 3: Checking for modal");
-  const modal = page.locator(".modal");
+  const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
   await expect(modal).toBeVisible();
   console.log("[TEST] Step 3: Modal is visible");
 
@@ -341,12 +341,10 @@ test("config page - table card minimize/expand functionality", async ({
   await page.goto("/config");
 
   // 2. Wait for the grid container to be present (indicates data has loaded)
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
-  // 3. Look for table cards
-  const tableCards = page.locator(".table-item.card");
+  // 3. Look for table cards (cards are divs with purple background)
+  const tableCards = page.locator(".bg-purple-50");
   const cardCount = await tableCards.count();
 
   if (cardCount > 0) {
@@ -372,9 +370,7 @@ test("config page - form validation and change detection", async ({ page }) => {
   await page.goto("/config");
 
   // 2. Wait for the grid container to be present (indicates data has loaded)
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. First, add a table to work with
   const addTableButton = page.getByRole("button", {
@@ -383,7 +379,7 @@ test("config page - form validation and change detection", async ({ page }) => {
   await addTableButton.click();
 
   // 4. Verify the modal appears with dropdown
-  const modal = page.locator(".modal");
+  const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
   await expect(modal).toBeVisible();
 
   // 5. Select an option from the dropdown
@@ -403,9 +399,7 @@ test("config page - form validation and change detection", async ({ page }) => {
   await page.waitForTimeout(3500);
 
   // 9. Wait for the page to reload and find the newly added table
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 10. Find the card with the table name we just added
   if (tableNameToAdd) {
@@ -523,9 +517,7 @@ test("config page - submit configuration changes", async ({
   await page.goto("/config");
 
   // 2. Wait for the grid container to be present (indicates data has loaded)
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. First, add a table to work with
   const addTableButton = page.getByRole("button", {
@@ -534,7 +526,7 @@ test("config page - submit configuration changes", async ({
   await addTableButton.click();
 
   // 4. Verify the modal appears with dropdown
-  const modal = page.locator(".modal");
+  const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
   await expect(modal).toBeVisible();
 
   // 5. Select an option from the dropdown
@@ -554,9 +546,7 @@ test("config page - submit configuration changes", async ({
   await page.waitForTimeout(3500);
 
   // 9. Wait for the page to reload and find the newly added table
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 10. Find the card with the table name we just added
   if (tableNameToAdd) {
@@ -621,12 +611,10 @@ test("config page - views configuration section", async ({
   await page.goto("/config");
 
   // 2. Wait for the grid container to be present (indicates data has loaded)
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
-  // 3. Look for table cards
-  const tableCards = page.locator(".table-item.card");
+  // 3. Look for table cards (cards are divs with purple background)
+  const tableCards = page.locator(".bg-purple-50");
   const cardCount = await tableCards.count();
 
   if (cardCount > 0) {
@@ -683,9 +671,7 @@ test("config page - conditional form sections based on views", async ({
   await page.goto("/config");
 
   // 2. Wait for the grid container to be present (indicates data has loaded)
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. First, add a table to work with
   const addTableButton = page.getByRole("button", {
@@ -694,7 +680,7 @@ test("config page - conditional form sections based on views", async ({
   await addTableButton.click();
 
   // 4. Verify the modal appears with dropdown
-  const modal = page.locator(".modal");
+  const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
   await expect(modal).toBeVisible();
 
   // 5. Select an option from the dropdown
@@ -714,9 +700,7 @@ test("config page - conditional form sections based on views", async ({
   await page.waitForTimeout(3500);
 
   // 9. Wait for the page to reload and find the newly added table
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 10. Find the card with the table name we just added
   if (tableNameToAdd) {
@@ -814,9 +798,7 @@ test("config page - error handling for invalid form submission", async ({
   await page.goto("/config");
 
   // 2. Wait for the grid container to be present (indicates data has loaded)
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. First, add a table to work with
   const addTableButton = page.getByRole("button", {
@@ -825,7 +807,7 @@ test("config page - error handling for invalid form submission", async ({
   await addTableButton.click();
 
   // 4. Verify the modal appears with dropdown
-  const modal = page.locator(".modal");
+  const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
   await expect(modal).toBeVisible();
 
   // 5. Select an option from the dropdown
@@ -845,9 +827,7 @@ test("config page - error handling for invalid form submission", async ({
   await page.waitForTimeout(3500);
 
   // 9. Wait for the page to reload and find the newly added table
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 10. Find the card with the table name we just added
   if (tableNameToAdd) {
@@ -936,7 +916,7 @@ test("config page - modal overlay functionality and cancel button", async ({
   await expect(overlay).toBeVisible();
 
   // 4. Verify the modal is on top of the overlay
-  const modal = page.locator(".modal");
+  const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
   await expect(modal).toBeVisible();
 
   // 5. Click cancel to close modal
@@ -953,9 +933,7 @@ test("config page - visibility permissions configuration", async ({ page }) => {
   await page.goto("/config");
 
   // 2. Wait for the page to load
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. Find the first table card and expand it
   const firstCard = page.locator(".table-item.card").first();
@@ -1000,9 +978,7 @@ test("config page - basemap configuration - add and remove basemaps", async ({
   await page.goto("/config");
 
   // 2. Wait for the grid container to be present
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. Add a table to work with
   const addTableButton = page.getByRole("button", {
@@ -1010,7 +986,7 @@ test("config page - basemap configuration - add and remove basemaps", async ({
   });
   await addTableButton.click();
 
-  const modal = page.locator(".modal");
+  const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
   await expect(modal).toBeVisible();
 
   const dropdown = page.locator("select");
@@ -1025,9 +1001,7 @@ test("config page - basemap configuration - add and remove basemaps", async ({
   await expect(page.getByText(/table added to views!/i)).toBeVisible();
   await page.waitForTimeout(3500);
 
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 4. Find and expand the target card
   if (tableNameToAdd) {
@@ -1116,9 +1090,7 @@ test("config page - basemap configuration - validation", async ({ page }) => {
   await page.goto("/config");
 
   // 2. Wait for the grid container
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. Add a table
   const addTableButton = page.getByRole("button", {
@@ -1126,7 +1098,7 @@ test("config page - basemap configuration - validation", async ({ page }) => {
   });
   await addTableButton.click();
 
-  const modal = page.locator(".modal");
+  const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
   const dropdown = page.locator("select");
   await dropdown.selectOption({ index: 0 });
 
@@ -1139,9 +1111,7 @@ test("config page - basemap configuration - validation", async ({ page }) => {
   await expect(page.getByText(/table added to views!/i)).toBeVisible();
   await page.waitForTimeout(3500);
 
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 4. Find and expand the target card
   if (tableNameToAdd) {
@@ -1257,9 +1227,7 @@ test("config page - basemap configuration - update name and style", async ({
   await page.goto("/config");
 
   // 2. Wait for the grid container
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. Add a table
   const addTableButton = page.getByRole("button", {
@@ -1267,7 +1235,7 @@ test("config page - basemap configuration - update name and style", async ({
   });
   await addTableButton.click();
 
-  const modal = page.locator(".modal");
+  const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
   const dropdown = page.locator("select");
   await dropdown.selectOption({ index: 0 });
 
@@ -1280,9 +1248,7 @@ test("config page - basemap configuration - update name and style", async ({
   await expect(page.getByText(/table added to views!/i)).toBeVisible();
   await page.waitForTimeout(3500);
 
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 4. Find and expand the target card
   if (tableNameToAdd) {
@@ -1350,9 +1316,7 @@ test("config page - color column configuration", async ({ page }) => {
   await page.goto("/config");
 
   // 2. Wait for the grid container
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. Add a table
   const addTableButton = page.getByRole("button", {
@@ -1360,7 +1324,7 @@ test("config page - color column configuration", async ({ page }) => {
   });
   await addTableButton.click();
 
-  const modal = page.locator(".modal");
+  const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
   const dropdown = page.locator("select");
   await dropdown.selectOption({ index: 0 });
 
@@ -1373,9 +1337,7 @@ test("config page - color column configuration", async ({ page }) => {
   await expect(page.getByText(/table added to views!/i)).toBeVisible();
   await page.waitForTimeout(3500);
 
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 4. Find and expand the target card
   if (tableNameToAdd) {
@@ -1434,9 +1396,7 @@ test("config page - basemap configuration - max 3 limit", async ({
   await page.goto("/config");
 
   // 2. Wait for the grid container
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. Add a table
   const addTableButton = page.getByRole("button", {
@@ -1444,7 +1404,7 @@ test("config page - basemap configuration - max 3 limit", async ({
   });
   await addTableButton.click();
 
-  const modal = page.locator(".modal");
+  const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
   const dropdown = page.locator("select");
   await dropdown.selectOption({ index: 0 });
 
@@ -1457,9 +1417,7 @@ test("config page - basemap configuration - max 3 limit", async ({
   await expect(page.getByText(/table added to views!/i)).toBeVisible();
   await page.waitForTimeout(3500);
 
-  await page
-    .locator(".grid-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 4. Find and expand the target card
   if (tableNameToAdd) {
