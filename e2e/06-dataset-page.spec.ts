@@ -8,9 +8,12 @@ test("dataset page - displays header, description, and view cards", async ({
   await page.waitForLoadState("networkidle");
 
   // 2. Wait for dataset cards to load
+  await page.waitForSelector("main", { timeout: 15000 });
   await expect(
-    page.getByRole("heading", { name: /available views/i }),
-  ).toBeVisible({ timeout: 10000 });
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
 
   // 3. Find the first "Open Project" button and click it
   const openProjectButton = page

@@ -11,13 +11,15 @@ test("config page - displays configuration dashboard with table cards", async ({
 
   // 2. Wait for ClientOnly component to render and page to load
   await page.waitForLoadState("networkidle");
+  // Wait for ConfigDashboard to render (it's wrapped in ClientOnly)
+  await page.waitForSelector("div.max-w-7xl", { timeout: 15000 });
   console.log("[TEST] Step 2: Waiting for page heading");
   // ConfigDashboard uses "datasetViewManagement" heading, not "available views: configuration"
   await expect(
     page.getByRole("heading", {
       name: /dataset view management|configuration/i,
     }),
-  ).toBeVisible({ timeout: 10000 });
+  ).toBeVisible({ timeout: 15000 });
   console.log("[TEST] Step 2: Page heading is visible");
 
   // 3. Verify the language picker is present
@@ -28,10 +30,14 @@ test("config page - displays configuration dashboard with table cards", async ({
   await expect(languageButton).toBeVisible();
   console.log("[TEST] Step 3: Language picker is visible");
 
-  // 4. Verify the add new table button is present
-  console.log("[TEST] Step 4: Checking add new table button");
+  // 4. Verify the add new dataset view button is present
+  console.log("[TEST] Step 4: Checking add new dataset view button");
+  // Button text changed from "Add new table" to "Add new dataset view"
   // Button is in flex justify-end section
-  const addTableButton = page.locator("div.flex.justify-end button").first();
+  const addTableButton = page
+    .locator("div.flex.justify-end button")
+    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
+    .first();
   await expect(addTableButton).toBeVisible({ timeout: 10000 });
   console.log("[TEST] Step 4: Add new table button is visible");
 
@@ -66,8 +72,10 @@ test("config page - add and remove table functionality", async ({
 
   // 2. Wait for page load and grid
   await page.waitForLoadState("networkidle");
+  // Wait for ClientOnly to render ConfigDashboard
+  await page.waitForSelector("div.max-w-7xl", { timeout: 15000 });
   console.log("[TEST] Step 2: Waiting for grid");
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 15000 });
   console.log("[TEST] Step 2: Grid container is present");
 
   // 3. Click the add new table button
@@ -143,7 +151,7 @@ test("config page - add and remove table functionality", async ({
       `[TEST] Step 15: Looking for dataset card: ${tableNameToAdd.trim()}`,
     );
     const targetCard = page.locator(
-      `.dataset-card:has(.dataset-name:has-text("${tableNameToAdd.trim()}"))`,
+      `.bg-purple-50:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible();
     console.log(
@@ -244,7 +252,7 @@ test("config page - edit dataset form", async ({
 
     // 6. Find the config card on the edit page (accordion is open by default)
     console.log("[TEST] Step 6: Looking for config card");
-    const firstCard = page.locator(".table-item.card").first();
+    const firstCard = page.locator(".bg-purple-50").first();
     await expect(firstCard).toBeVisible();
     console.log("[TEST] Step 6: Config card is visible");
 
@@ -337,31 +345,29 @@ test("config page - cancel add table modal", async ({
 test("config page - table card minimize/expand functionality", async ({
   authenticatedPageAsAdmin: page,
 }) => {
+  // NOTE: Cards no longer have minimize/expand - they link directly to edit pages
+  // This test now verifies that cards are clickable and link to edit pages
   // 1. Navigate to the config page
   await page.goto("/config");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("div.max-w-7xl", { timeout: 15000 });
 
-  // 2. Wait for the grid container to be present (indicates data has loaded)
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
+  // 2. Wait for the grid to be present (indicates data has loaded)
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 15000 });
 
-  // 3. Look for table cards (cards are divs with purple background)
+  // 3. Look for dataset cards (cards are divs with purple background)
   const tableCards = page.locator(".bg-purple-50");
   const cardCount = await tableCards.count();
 
   if (cardCount > 0) {
-    // 4. Click the hamburger button on the first card
+    // 4. Verify cards have "Edit Dataset" links
     const firstCard = tableCards.first();
-    const hamburgerButton = firstCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    const editLink = firstCard.getByRole("link", { name: /edit dataset/i });
+    await expect(editLink).toBeVisible();
 
-    // 5. Verify the card body is now visible (expanded)
-    const cardBody = firstCard.locator(".card-body");
-    await expect(cardBody).toBeVisible();
-
-    // 6. Click the hamburger button again to minimize
-    await hamburgerButton.click();
-
-    // 7. Verify the card body is hidden (minimized)
-    await expect(cardBody).not.toBeVisible();
+    // 5. Verify the link goes to a config edit page
+    const href = await editLink.getAttribute("href");
+    expect(href).toMatch(/\/config\/\w+/);
   }
 });
 
@@ -373,9 +379,12 @@ test("config page - form validation and change detection", async ({ page }) => {
   await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. First, add a table to work with
-  const addTableButton = page.getByRole("button", {
-    name: /\+ add new table/i,
-  });
+  // Button text changed from "Add new table" to "Add new dataset view"
+  const addTableButton = page
+    .locator("div.flex.justify-end button")
+    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
+    .first();
+  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
   // 4. Verify the modal appears with dropdown
@@ -404,13 +413,15 @@ test("config page - form validation and change detection", async ({ page }) => {
   // 10. Find the card with the table name we just added
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+      `.bg-purple-50:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible();
 
     // 11. Expand the target card
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // Cards no longer have hamburger buttons - navigate to edit page
+    const editLink = targetCard.getByRole("link", { name: /edit dataset/i });
+    await editLink.click();
+    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
 
     // 12. Wait for form content to be visible
     await targetCard
@@ -520,9 +531,12 @@ test("config page - submit configuration changes", async ({
   await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. First, add a table to work with
-  const addTableButton = page.getByRole("button", {
-    name: /\+ add new table/i,
-  });
+  // Button text changed from "Add new table" to "Add new dataset view"
+  const addTableButton = page
+    .locator("div.flex.justify-end button")
+    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
+    .first();
+  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
   // 4. Verify the modal appears with dropdown
@@ -551,13 +565,15 @@ test("config page - submit configuration changes", async ({
   // 10. Find the card with the table name we just added
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+      `.bg-purple-50:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible();
 
     // 11. Expand the target card
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // Cards no longer have hamburger buttons - navigate to edit page
+    const editLink = targetCard.getByRole("link", { name: /edit dataset/i });
+    await editLink.click();
+    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
 
     // 12. Find and modify a form field
     const mapboxTokenInput = targetCard
@@ -620,8 +636,11 @@ test("config page - views configuration section", async ({
   if (cardCount > 0) {
     // 4. Expand the first card
     const firstCard = tableCards.first();
-    const hamburgerButton = firstCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // Cards no longer have hamburger buttons - they link to edit pages
+    // Navigate to the edit page instead
+    const editLink = firstCard.getByRole("link", { name: /edit dataset/i });
+    await editLink.click();
+    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
 
     // 5. Look for views checkboxes
     const viewsCheckboxes = firstCard.locator('input[type="checkbox"]');
@@ -674,9 +693,12 @@ test("config page - conditional form sections based on views", async ({
   await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. First, add a table to work with
-  const addTableButton = page.getByRole("button", {
-    name: /\+ add new table/i,
-  });
+  // Button text changed from "Add new table" to "Add new dataset view"
+  const addTableButton = page
+    .locator("div.flex.justify-end button")
+    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
+    .first();
+  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
   // 4. Verify the modal appears with dropdown
@@ -705,13 +727,15 @@ test("config page - conditional form sections based on views", async ({
   // 10. Find the card with the table name we just added
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+      `.bg-purple-50:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible();
 
     // 11. Expand the target card
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // Cards no longer have hamburger buttons - navigate to edit page
+    const editLink = targetCard.getByRole("link", { name: /edit dataset/i });
+    await editLink.click();
+    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
 
     // 12. Check for different config sections
     const configSections = targetCard.locator(".config-section");
@@ -801,9 +825,12 @@ test("config page - error handling for invalid form submission", async ({
   await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. First, add a table to work with
-  const addTableButton = page.getByRole("button", {
-    name: /\+ add new table/i,
-  });
+  // Button text changed from "Add new table" to "Add new dataset view"
+  const addTableButton = page
+    .locator("div.flex.justify-end button")
+    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
+    .first();
+  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
   // 4. Verify the modal appears with dropdown
@@ -832,13 +859,15 @@ test("config page - error handling for invalid form submission", async ({
   // 10. Find the card with the table name we just added
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+      `.bg-purple-50:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible();
 
     // 11. Expand the target card
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // Cards no longer have hamburger buttons - navigate to edit page
+    const editLink = targetCard.getByRole("link", { name: /edit dataset/i });
+    await editLink.click();
+    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
 
     // 12. Find mapbox access token field
     const mapboxTokenInput = targetCard
@@ -906,9 +935,12 @@ test("config page - modal overlay functionality and cancel button", async ({
   await page.goto("/config");
 
   // 2. Click the add new table button to open modal
-  const addTableButton = page.getByRole("button", {
-    name: /\+ add new table/i,
-  });
+  // Button text changed from "Add new table" to "Add new dataset view"
+  const addTableButton = page
+    .locator("div.flex.justify-end button")
+    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
+    .first();
+  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
   // 3. Verify the overlay is present
@@ -981,9 +1013,12 @@ test("config page - basemap configuration - add and remove basemaps", async ({
   await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. Add a table to work with
-  const addTableButton = page.getByRole("button", {
-    name: /\+ add new table/i,
-  });
+  // Button text changed from "Add new table" to "Add new dataset view"
+  const addTableButton = page
+    .locator("div.flex.justify-end button")
+    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
+    .first();
+  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
   const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
@@ -1006,12 +1041,14 @@ test("config page - basemap configuration - add and remove basemaps", async ({
   // 4. Find and expand the target card
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+      `.bg-purple-50:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible();
 
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // Cards no longer have hamburger buttons - navigate to edit page
+    const editLink = targetCard.getByRole("link", { name: /edit dataset/i });
+    await editLink.click();
+    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
 
     // 5. Wait for map configuration section
     await targetCard
@@ -1093,9 +1130,12 @@ test("config page - basemap configuration - validation", async ({ page }) => {
   await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. Add a table
-  const addTableButton = page.getByRole("button", {
-    name: /\+ add new table/i,
-  });
+  // Button text changed from "Add new table" to "Add new dataset view"
+  const addTableButton = page
+    .locator("div.flex.justify-end button")
+    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
+    .first();
+  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
   const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
@@ -1116,10 +1156,12 @@ test("config page - basemap configuration - validation", async ({ page }) => {
   // 4. Find and expand the target card
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+      `.bg-purple-50:has-text("${tableNameToAdd.trim()}")`,
     );
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // Cards no longer have hamburger buttons - navigate to edit page
+    const editLink = targetCard.getByRole("link", { name: /edit dataset/i });
+    await editLink.click();
+    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
 
     await targetCard
       .locator(".config-section")
@@ -1230,9 +1272,12 @@ test("config page - basemap configuration - update name and style", async ({
   await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. Add a table
-  const addTableButton = page.getByRole("button", {
-    name: /\+ add new table/i,
-  });
+  // Button text changed from "Add new table" to "Add new dataset view"
+  const addTableButton = page
+    .locator("div.flex.justify-end button")
+    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
+    .first();
+  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
   const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
@@ -1253,10 +1298,12 @@ test("config page - basemap configuration - update name and style", async ({
   // 4. Find and expand the target card
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+      `.bg-purple-50:has-text("${tableNameToAdd.trim()}")`,
     );
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // Cards no longer have hamburger buttons - navigate to edit page
+    const editLink = targetCard.getByRole("link", { name: /edit dataset/i });
+    await editLink.click();
+    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
 
     await targetCard
       .locator(".config-section")
@@ -1319,9 +1366,12 @@ test("config page - color column configuration", async ({ page }) => {
   await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. Add a table
-  const addTableButton = page.getByRole("button", {
-    name: /\+ add new table/i,
-  });
+  // Button text changed from "Add new table" to "Add new dataset view"
+  const addTableButton = page
+    .locator("div.flex.justify-end button")
+    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
+    .first();
+  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
   const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
@@ -1342,10 +1392,12 @@ test("config page - color column configuration", async ({ page }) => {
   // 4. Find and expand the target card
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+      `.bg-purple-50:has-text("${tableNameToAdd.trim()}")`,
     );
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // Cards no longer have hamburger buttons - navigate to edit page
+    const editLink = targetCard.getByRole("link", { name: /edit dataset/i });
+    await editLink.click();
+    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
 
     await targetCard
       .locator(".config-section")
@@ -1399,9 +1451,12 @@ test("config page - basemap configuration - max 3 limit", async ({
   await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
 
   // 3. Add a table
-  const addTableButton = page.getByRole("button", {
-    name: /\+ add new table/i,
-  });
+  // Button text changed from "Add new table" to "Add new dataset view"
+  const addTableButton = page
+    .locator("div.flex.justify-end button")
+    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
+    .first();
+  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
   const modal = page.locator("div.fixed.inset-0.bg-black\\/50");
@@ -1422,10 +1477,12 @@ test("config page - basemap configuration - max 3 limit", async ({
   // 4. Find and expand the target card
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `.table-item.card:has(.table-name:has-text("${tableNameToAdd.trim()}"))`,
+      `.bg-purple-50:has-text("${tableNameToAdd.trim()}")`,
     );
-    const hamburgerButton = targetCard.locator("button.hamburger");
-    await hamburgerButton.click();
+    // Cards no longer have hamburger buttons - navigate to edit page
+    const editLink = targetCard.getByRole("link", { name: /edit dataset/i });
+    await editLink.click();
+    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
 
     await targetCard
       .locator(".config-section")

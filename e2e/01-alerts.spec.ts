@@ -7,12 +7,14 @@ test("alerts dashboard - layer visibility toggles", async ({
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // 2. Find an "Open Project" button to navigate to a dataset page
+  // 2. Wait for dataset cards to render first
+  await page.waitForSelector(".bg-purple-50", { timeout: 15000 });
+
+  // 3. Find an "Open Project" button to navigate to a dataset page
   const openProjectButton = page
-    .locator("a")
-    .filter({ hasText: /open project/i })
+    .getByRole("link", { name: /open project/i })
     .first();
-  await openProjectButton.waitFor({ state: "visible", timeout: 10000 });
+  await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
 
   // 3. Click to go to dataset page
   await openProjectButton.click();
@@ -316,12 +318,14 @@ test("alerts dashboard - LineString buffer click behavior", async ({
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // 2. Find an "Open Project" button to navigate to a dataset page
+  // 2. Wait for dataset cards to render first
+  await page.waitForSelector(".bg-purple-50", { timeout: 15000 });
+
+  // 3. Find an "Open Project" button to navigate to a dataset page
   const openProjectButton = page
-    .locator("a")
-    .filter({ hasText: /open project/i })
+    .getByRole("link", { name: /open project/i })
     .first();
-  await openProjectButton.waitFor({ state: "visible", timeout: 10000 });
+  await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
 
   // 3. Click to go to dataset page
   await openProjectButton.click();
@@ -433,12 +437,14 @@ test("alerts dashboard - geometry type specific interactions", async ({
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // 2. Find an "Open Project" button to navigate to a dataset page
+  // 2. Wait for dataset cards to render first
+  await page.waitForSelector(".bg-purple-50", { timeout: 15000 });
+
+  // 3. Find an "Open Project" button to navigate to a dataset page
   const openProjectButton = page
-    .locator("a")
-    .filter({ hasText: /open project/i })
+    .getByRole("link", { name: /open project/i })
     .first();
-  await openProjectButton.waitFor({ state: "visible", timeout: 10000 });
+  await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
 
   // 3. Click to go to dataset page
   await openProjectButton.click();

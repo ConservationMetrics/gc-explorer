@@ -21,14 +21,18 @@ test("index page - displays available views and alerts link", async ({
   await expect(guardianConnectorText).toBeVisible();
 
   // Check for community name in tab (should be visible in desktop view)
-  const communityNameTab = page.locator("button.tab-trigger");
-  await expect(communityNameTab).toBeVisible({ timeout: 5000 });
+  // tab-trigger is a NuxtLink, not a button
+  const communityNameTab = page.locator("a.tab-trigger, NuxtLink.tab-trigger");
+  await expect(communityNameTab.first()).toBeVisible({ timeout: 10000 });
 
   // 4. Wait for the page heading "Available Views" to become visible
-  await page.waitForLoadState("networkidle");
+  // Wait for the main content to load
+  await page.waitForSelector("main", { timeout: 15000 });
   await expect(
-    page.getByRole("heading", { name: /available views/i }),
-  ).toBeVisible({ timeout: 10000 });
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
 
   // 4. Verify at least one "Open Project" button is visible
   const openProjectButton = page
@@ -58,9 +62,12 @@ test("index page - language picker functionality", async ({
   await page.waitForLoadState("networkidle");
 
   // 2. Wait for the page heading to be visible first
+  await page.waitForSelector("main", { timeout: 15000 });
   await expect(
-    page.getByRole("heading", { name: /available views/i }),
-  ).toBeVisible({ timeout: 10000 });
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
 
   // 3. Wait for the language picker button to be visible
   const languageButton = page
@@ -111,9 +118,12 @@ test("index page - language switching to Portuguese changes heading", async ({
   await page.waitForLoadState("networkidle");
 
   // 2. Wait for the page heading to be visible first
+  await page.waitForSelector("main", { timeout: 15000 });
   await expect(
-    page.getByRole("heading", { name: /available views/i }),
-  ).toBeVisible({ timeout: 10000 });
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
 
   // 3. Wait for the language picker button to be visible
   const languageButton = page
