@@ -6,7 +6,22 @@ test("index page - displays available views and alerts link", async ({
   // 1. Navigate to the root of the application
   await page.goto("/");
 
-  // 2. Wait for the page heading "Available Views" to become visible first
+  // 2. Verify header elements are visible
+  // Check for Guardian Connector logo
+  const logo = page.locator('img[alt="Guardian Connector Explorer"]');
+  await expect(logo).toBeVisible();
+
+  // Check for Guardian Connector text in header
+  const guardianConnectorText = page
+    .getByRole("heading", { name: /guardian connector/i })
+    .first();
+  await expect(guardianConnectorText).toBeVisible();
+
+  // Check for community name in tab (should be visible in desktop view)
+  const communityNameTab = page.locator("button.tab-trigger");
+  await expect(communityNameTab).toBeVisible({ timeout: 5000 });
+
+  // 3. Wait for the page heading "Available Views" to become visible
   await expect(
     page.getByRole("heading", { name: /available views/i }),
   ).toBeVisible();
