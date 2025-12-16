@@ -19,6 +19,34 @@ import fs from "fs";
  * 6. Submit and wait for redirect back to /login or home page
  * 7. Save browser storage state (cookies, local storage) to JSON files
  *
+ * **Required Environment Variables:**
+ * - `E2E_AUTH0_SIGNEDIN_PASSWORD` - Password for SignedIn test account
+ * - `E2E_AUTH0_GUEST_PASSWORD` - Password for Guest test account
+ * - `E2E_AUTH0_MEMBER_PASSWORD` - Password for Member test account
+ * - `E2E_AUTH0_ADMIN_PASSWORD` - Password for Admin test account
+ * - `NUXT_PUBLIC_AUTH_STRATEGY="auth0"` - Must be set to enable Auth0 authentication
+ * - `NUXT_OAUTH_AUTH0_DOMAIN` - Auth0 domain
+ * - `NUXT_OAUTH_AUTH0_CLIENT_ID` - Auth0 application client ID
+ * - `NUXT_OAUTH_AUTH0_CLIENT_SECRET` - Auth0 application client secret
+ *
+ * **Test Accounts:**
+ * Uses predefined test accounts (see TEST_ACCOUNTS constant). Passwords must be
+ * provided via environment variables, typically stored in GitHub Secrets for CI.
+ *
+ * **Output:**
+ * Creates authentication state files in `playwright/.auth/`:
+ * - `signedin.json` - SignedIn role session
+ * - `guest.json` - Guest role session
+ * - `member.json` - Member role session
+ * - `admin.json` - Admin role session
+ *
+ * These files are loaded by fixtures in `e2e/fixtures/auth-storage.ts`.
+ *
+ * **Test File Usage:**
+ * - Tests 01-04 (`01-alerts.spec.ts`, `02-gallery.spec.ts`, `03-index.spec.ts`, `04-config.spec.ts`)
+ *   use Admin authentication via `authenticatedPageAsAdmin` fixture
+ * - Test 05 (`05-visibility.spec.ts`) uses role-specific authentication to test RBAC
+ *
  * @fileoverview E2E authentication setup using Auth0
  */
 

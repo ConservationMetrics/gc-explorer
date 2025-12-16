@@ -330,7 +330,8 @@ test("config page - cancel add table modal", async ({
   // 5. Verify the modal closes
   console.log("[TEST] Step 5: Checking modal is closed");
   await expect(modal).not.toBeVisible();
-<<<<<<< HEAD
+  console.log("[TEST] Step 5: Modal is closed");
+  console.log("[TEST] Test completed successfully");
 });
 
 test("config page - table card minimize/expand functionality", async ({
@@ -1529,9 +1530,4 @@ test("config page - basemap configuration - max 3 limit", async ({
     await expect(page.getByText(/table removed from views!/i)).toBeVisible();
     await page.waitForTimeout(3500);
   }
->>>>>>> ee05a41 (turn auth0 always on)
-=======
-  console.log("[TEST] Step 5: Modal is closed");
-  console.log("[TEST] Test completed successfully");
->>>>>>> 17f7b53 (more cleanup and consistency work)
 });
