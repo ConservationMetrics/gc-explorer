@@ -404,18 +404,42 @@ const prepareAlertsStatistics = (
   data: DataEntry[],
   metadata: AlertsMetadata[] | null,
 ): AlertsStatistics => {
-  // Handle empty data case
+  // Handle empty data case - but still use metadata if available
   if (data.length === 0) {
     const now = new Date();
     const currentDateStr = `${String(now.getMonth() + 1).padStart(2, "0")}-${now.getFullYear()}`;
     
+    // Extract information from metadata if available
+    let dataProviders: string[] = [];
+    let alertDetectionRange = "N/A";
+    let earliestDateStr = currentDateStr;
+    let latestDateStr = currentDateStr;
+    
+    if (metadata && metadata.length > 0) {
+      // Get data providers from metadata
+      dataProviders = Array.from(
+        new Set(metadata.map((item) => item.data_source).filter(Boolean))
+      );
+      
+      // Find earliest and latest dates from metadata
+      metadata.sort((a, b) =>
+        a.year === b.year ? a.month - b.month : a.year - b.year,
+      );
+      const earliestMetadata = metadata[0];
+      const latestMetadata = metadata[metadata.length - 1];
+      
+      earliestDateStr = `${String(earliestMetadata.month).padStart(2, "0")}-${earliestMetadata.year}`;
+      latestDateStr = `${String(latestMetadata.month).padStart(2, "0")}-${latestMetadata.year}`;
+      alertDetectionRange = `${earliestDateStr} to ${latestDateStr}`;
+    }
+    
     return {
       territory: "",
       typeOfAlerts: [],
-      dataProviders: [],
-      alertDetectionRange: "N/A",
+      dataProviders,
+      alertDetectionRange,
       allDates: [],
-      earliestAlertsDate: currentDateStr,
+      earliestAlertsDate: earliestDateStr,
       recentAlertsDate: "N/A",
       recentAlertsNumber: 0,
       alertsTotal: 0,
