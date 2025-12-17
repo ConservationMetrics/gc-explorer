@@ -41,7 +41,7 @@ test("dataset page - displays header, description, and view cards", async ({
     .first();
   await expect(guardianConnectorText).toBeVisible();
 
-  // 8. Verify dataset name is displayed (either in header image overlay or fallback header)
+  /* 8. Verify dataset name is displayed (either in header image overlay or fallback header) */
   const datasetName = page
     .locator("h1")
     .filter({ hasText: /seed_survey_data|bcmform_responses|fake_alerts/i });
@@ -81,7 +81,7 @@ test("dataset page - view cards link to correct pages", async ({
   await page.goto("/dataset/fake_alerts");
   await page.waitForLoadState("networkidle");
 
-  // 2. Wait for page to load - dataset name might be in h1 or in the header overlay
+  /* 2. Wait for page to load - dataset name might be in h1 or in the header overlay */
   await page.waitForTimeout(2000); // Give time for page to render
   const datasetName = page.locator("h1").filter({ hasText: /fake/i });
   const datasetNameCount = await datasetName.count();
@@ -126,8 +126,9 @@ test("dataset page - displays description when available", async ({
   const description = page.locator("p").filter({ hasText: /.+/ });
   const descriptionCount = await description.count();
 
-  // Description is optional, so we just verify the page structure is correct
-  // If description exists, it should be visible
+  /* Description is optional, so we just verify the page structure is correct
+   * If description exists, it should be visible
+   */
   if (descriptionCount > 0) {
     const firstDescription = description.first();
     const text = await firstDescription.textContent();
@@ -171,10 +172,10 @@ test("dataset page - handles missing dataset gracefully", async ({
   // 1. Navigate to a non-existent dataset
   await page.goto("/dataset/nonexistent_dataset");
 
-  // 2. Should redirect to index page or login (depending on auth)
+  /* 2. Should redirect to index page or login (depending on auth) */
   await page.waitForURL(/\/(|\?reason=unauthorized)/, { timeout: 10000 });
   const url = page.url();
-  // Either redirects to index or shows unauthorized
+  /* Either redirects to index or shows unauthorized */
   expect(url).toMatch(/\/(|\?reason=unauthorized)/);
 });
 
@@ -217,7 +218,7 @@ test("dataset page - displays header image or fallback header", async ({
   await page.goto("/dataset/fake_alerts");
   await page.waitForLoadState("networkidle");
 
-  // 2. Wait for page to load - dataset name might be in h1 or header overlay
+  /* 2. Wait for page to load - dataset name might be in h1 or header overlay */
   await page.waitForTimeout(2000);
   const datasetName = page.locator("h1").filter({ hasText: /fake/i });
   const datasetNameCount = await datasetName.count();
@@ -265,36 +266,57 @@ test("dataset page - shows fallback description message when no description", as
     await expect(datasetName.first()).toBeVisible({ timeout: 10000 });
   }
 
-  // 3. Check for description section
-  const descriptionSection = page.locator("div.max-w-7xl.mx-auto").filter({
-    hasText: /description|provided|contact|admin/i,
+  /* 3. Check for description section
+   * Description is in a div with mb-6 sm:mb-8 class, either:
+   * - A <p> tag with actual description text (if description exists)
+   * - A <div> with fallback message (if no description)
+   * This section is in either the header overlay (with image) or fallback header
+   *
+   * Look for the description container - it has mb-6 sm:mb-8 class
+   * The description area is always present, just the content varies
+   */
+  const descriptionContainer = page.locator("div.mb-6.sm\\:mb-8").first();
+  await expect(descriptionContainer).toBeVisible({ timeout: 15000 });
+
+  /* 4. Check what's in the description section
+   * Either there's a description paragraph OR a fallback message div
+   */
+  const descriptionParagraph = descriptionContainer
+    .locator("p.text-base, p.text-sm, p.text-lg")
+    .filter({ hasText: /.+/ });
+  const fallbackMessage = descriptionContainer.locator("div").filter({
+    hasText: /no description provided yet|contact.*admin|add description/i,
   });
 
-  // 4. Verify description section exists (description is in the main content area)
-  // Description might be in the header overlay or in the main content
-  const hasDescription =
-    (await page.locator("p").filter({ hasText: /.+/ }).count()) > 0;
-  const hasFallbackMessage =
-    (await page
-      .locator("div")
-      .filter({ hasText: /no description|contact.*admin|add description/i })
-      .count()) > 0;
-  expect(hasDescription || hasFallbackMessage).toBe(true);
+  const hasDescription = (await descriptionParagraph.count()) > 0;
+  const hasFallback = (await fallbackMessage.count()) > 0;
 
-  // 5. Check if fallback message is shown (either with admin link or contact admin message)
-  const fallbackMessage = page.locator("div").filter({
-    hasText: /no description provided yet|contact.*admin/i,
-  });
-  const fallbackCount = await fallbackMessage.count();
+  // One of these should exist - the description section is always rendered
+  expect(hasDescription || hasFallback).toBe(true);
 
-  // If no actual description exists, fallback should be shown
-  // Note: This test may need adjustment based on actual dataset configs
-  if (fallbackCount > 0) {
-    const messageText = await fallbackMessage.first().textContent();
+  // 5. Verify the content based on what's present
+  if (hasDescription) {
+    // If description exists, verify it's not empty and is visible
+    const descText = await descriptionParagraph.first().textContent();
+    expect(descText?.trim().length).toBeGreaterThan(0);
+    await expect(descriptionParagraph.first()).toBeVisible();
+  } else if (hasFallback) {
+    /* If fallback exists, verify it contains expected text
+     * For admins: should have "add description" link
+     * For non-admins: should have "contact admin" text
+     */
+    const fallbackText = await fallbackMessage.first().textContent();
     expect(
-      messageText?.toLowerCase().includes("no description") ||
-        messageText?.toLowerCase().includes("contact"),
+      fallbackText?.toLowerCase().includes("no description") ||
+        fallbackText?.toLowerCase().includes("contact") ||
+        fallbackText?.toLowerCase().includes("add description"),
     ).toBe(true);
+
+    // Verify it's styled as italic (fallback message uses italic class)
+    const isItalic = await fallbackMessage.first().evaluate((el) => {
+      return window.getComputedStyle(el).fontStyle === "italic";
+    });
+    expect(isItalic).toBe(true);
   }
 });
 
@@ -318,7 +340,7 @@ test("dataset page - description fallback shows admin link for admins", async ({
   // 3. Look for description section
   const descriptionSection = page.locator("div.max-w-7xl.mx-auto").nth(1);
 
-  // 4. Check if "Add description" link exists (for admins) or "contact admin" message (for non-admins)
+  /* 4. Check if "Add description" link exists (for admins) or "contact admin" message (for non-admins) */
   const addDescriptionLink = descriptionSection.locator("a").filter({
     hasText: /add description/i,
   });
@@ -329,8 +351,9 @@ test("dataset page - description fallback shows admin link for admins", async ({
   const hasAddLink = (await addDescriptionLink.count()) > 0;
   const hasContactMessage = (await contactAdminMessage.count()) > 0;
 
-  // In CI environment, admin link should be available
-  // In non-CI, depends on user role
+  /* In CI environment, admin link should be available
+   * In non-CI, depends on user role
+   */
   if (hasAddLink) {
     const href = await addDescriptionLink.getAttribute("href");
     expect(href).toMatch(/\/config\/fake_alerts/);

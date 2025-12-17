@@ -9,12 +9,13 @@ test("config page - displays configuration dashboard with table cards", async ({
   await page.goto("/config");
   await page.waitForLoadState("networkidle");
 
-  // 2. Wait for ClientOnly component to render and page to load
+  /* 2. Wait for ClientOnly component to render and page to load
+   * Wait for ConfigDashboard to render (it's wrapped in ClientOnly)
+   * ConfigDashboard uses "datasetViewManagement" heading, not "available views: configuration"
+   */
   await page.waitForLoadState("networkidle");
-  // Wait for ConfigDashboard to render (it's wrapped in ClientOnly)
   await page.waitForSelector("div.max-w-7xl", { timeout: 15000 });
   console.log("[TEST] Step 2: Waiting for page heading");
-  // ConfigDashboard uses "datasetViewManagement" heading, not "available views: configuration"
   await expect(
     page.getByRole("heading", {
       name: /dataset view management|configuration/i,
@@ -22,7 +23,7 @@ test("config page - displays configuration dashboard with table cards", async ({
   ).toBeVisible({ timeout: 15000 });
   console.log("[TEST] Step 2: Page heading is visible");
 
-  // 3. Verify the language picker is present (it's a globe icon button in AppHeader)
+  /* 3. Verify the language picker is present (it's a globe icon button in AppHeader) */
   console.log("[TEST] Step 3: Checking language picker");
   const languageButton = page
     .locator("button[title*='Language'], button[title*='language']")
@@ -35,10 +36,11 @@ test("config page - displays configuration dashboard with table cards", async ({
   await expect(languageButton).toBeVisible({ timeout: 15000 });
   console.log("[TEST] Step 3: Language picker is visible");
 
-  // 4. Verify the add new dataset view button is present
+  /* 4. Verify the add new dataset view button is present
+   * Button text changed from "Add new table" to "Add new dataset view"
+   * Button is in flex justify-end section
+   */
   console.log("[TEST] Step 4: Checking add new dataset view button");
-  // Button text changed from "Add new table" to "Add new dataset view"
-  // Button is in flex justify-end section
   const addTableButton = page
     .locator("div.flex.justify-end button")
     .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
@@ -46,8 +48,9 @@ test("config page - displays configuration dashboard with table cards", async ({
   await expect(addTableButton).toBeVisible({ timeout: 10000 });
   console.log("[TEST] Step 4: Add new table button is visible");
 
-  // 5. Wait for the grid to be present (indicates data has loaded)
-  // ConfigDashboard uses "grid" class, not "grid-container"
+  /* 5. Wait for the grid to be present (indicates data has loaded)
+   * ConfigDashboard uses "grid" class, not "grid-container"
+   */
   console.log("[TEST] Step 5: Waiting for grid");
   await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
   console.log("[TEST] Step 5: Grid is present");
@@ -75,17 +78,19 @@ test("config page - add and remove table functionality", async ({
   await page.goto("/config");
   await page.waitForLoadState("networkidle");
 
-  // 2. Wait for page load and grid
+  /* 2. Wait for page load and grid
+   * Wait for ClientOnly to render ConfigDashboard
+   */
   await page.waitForLoadState("networkidle");
-  // Wait for ClientOnly to render ConfigDashboard
   await page.waitForSelector("div.max-w-7xl", { timeout: 15000 });
   console.log("[TEST] Step 2: Waiting for grid");
   await page.locator(".grid").waitFor({ state: "attached", timeout: 15000 });
   console.log("[TEST] Step 2: Grid container is present");
 
-  // 3. Click the add new table button
+  /* 3. Click the add new table button
+   * Button is in flex justify-end section, has SVG plus icon
+   */
   console.log("[TEST] Step 3: Clicking add new table button");
-  // Button is in flex justify-end section, has SVG plus icon
   const addTableButton = page.locator("div.flex.justify-end button").first();
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
@@ -257,20 +262,21 @@ test("config page - edit dataset form", async ({
     await page.waitForURL("**/config/**", { timeout: 5000 });
     console.log("[TEST] Step 5: Navigation complete");
 
-    // 6. Wait for ClientOnly to render ConfigCard
+    /* 6. Wait for ClientOnly to render ConfigCard
+     * ConfigCard uses .bg-white.rounded-lg.shadow-sm, not .bg-purple-50
+     */
     await page.waitForSelector("div.max-w-7xl", { timeout: 15000 });
     console.log("[TEST] Step 6: Looking for config card");
-    // ConfigCard uses .bg-white.rounded-lg.shadow-sm, not .bg-purple-50
     const configCard = page.locator(".bg-white.rounded-lg.shadow-sm").first();
     await expect(configCard).toBeVisible({ timeout: 15000 });
     console.log("[TEST] Step 6: Config card is visible");
 
-    // 7. Wait for form content to be visible
+    /* 7. Wait for form content to be visible
+     * ConfigCard uses ConfigCollapsibleSection, wait for form instead
+     */
     console.log("[TEST] Step 7: Waiting for form content");
     await page.waitForSelector("form", { timeout: 15000 });
     const firstCard = configCard;
-    // ConfigCard uses ConfigCollapsibleSection, wait for form instead
-    await page.waitForSelector("form", { timeout: 15000 });
     console.log("[TEST] Step 7: Form content is visible");
 
     // 8. Verify submit button exists
@@ -753,6 +759,7 @@ test("config page - conditional form sections based on views", async ({
     // ConfigCard uses ConfigCollapsibleSection components, look for the form sections
     const configSections = page.locator(".bg-purple-50.rounded-lg.border");
     const sectionCount = await configSections.count();
+    console.log(`[TEST] Section count: ${sectionCount}`);
 
     // 13. Verify we're on the edit page (ConfigCard should be visible)
     // ConfigCard doesn't use .config-section, it uses ConfigCollapsibleSection

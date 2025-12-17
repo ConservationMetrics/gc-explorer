@@ -20,13 +20,15 @@ test("index page - displays available views and alerts link", async ({
     .first();
   await expect(guardianConnectorText).toBeVisible();
 
-  // Check for community name in tab (should be visible in desktop view)
-  // tab-trigger is a NuxtLink, not a button
+  /* Check for community name in tab (should be visible in desktop view)
+   * tab-trigger is a NuxtLink, not a button
+   */
   const communityNameTab = page.locator("a.tab-trigger, NuxtLink.tab-trigger");
   await expect(communityNameTab.first()).toBeVisible({ timeout: 10000 });
 
-  // 4. Wait for the page heading "Available Views" to become visible
-  // Wait for the main content to load
+  /* 4. Wait for the page heading "Available Views" to become visible
+   * Wait for the main content to load
+   */
   await page.waitForSelector("main", { timeout: 15000 });
   await expect(
     page.getByRole("heading", {
@@ -48,8 +50,9 @@ test("index page - displays available views and alerts link", async ({
   const href = await openProjectButton.getAttribute("href");
   expect(href).toMatch(/\/dataset\/\w+/);
 
-  // 7. Ensure at least one view pill (alerts, maps, or gallery) is visible
-  // This checks that the pills are rendered correctly
+  /* 7. Ensure at least one view pill (alerts, maps, or gallery) is visible
+   * This checks that the pills are rendered correctly
+   */
   const viewPills = page
     .locator("span")
     .filter({ hasText: /alerts|map|gallery/i });
@@ -72,8 +75,9 @@ test("index page - language picker functionality", async ({
     }),
   ).toBeVisible({ timeout: 15000 });
 
-  // 3. Wait for the language picker button to be visible (it's a globe icon button)
-  // The language picker is in AppHeader, look for the button with globe icon
+  /* 3. Wait for the language picker button to be visible (it's a globe icon button)
+   * The language picker is in AppHeader, look for the button with globe icon
+   */
   const languageButton = page
     .locator("button[title*='Language'], button[title*='language']")
     .or(
@@ -134,8 +138,9 @@ test("index page - language switching to Portuguese changes heading", async ({
     }),
   ).toBeVisible({ timeout: 15000 });
 
-  // 3. Wait for the language picker button to be visible (it's a globe icon button)
-  // The language picker is in AppHeader, look for the button with globe icon
+  /* 3. Wait for the language picker button to be visible (it's a globe icon button)
+   * The language picker is in AppHeader, look for the button with globe icon
+   */
   const languageButton = page
     .locator("button[title*='Language'], button[title*='language']")
     .or(
