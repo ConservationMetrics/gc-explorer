@@ -110,7 +110,6 @@ test("index page - language picker functionality", async ({
 
   // 8. Test language switching by clicking a different language
   const firstOption = languageOptions.first();
-  const firstOptionText = await firstOption.textContent();
 
   // Click the first option to switch language
   await firstOption.click();
