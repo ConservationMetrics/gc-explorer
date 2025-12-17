@@ -76,7 +76,7 @@ export default defineEventHandler(async (event: H3Event) => {
     };
 
     // Prepare alerts data for the alerts view
-    const changeDetectionData = prepareAlertData(mainData);
+    const changeDetectionData = prepareAlertData(mainData, table as string);
     const alertsGeojsonData = {
       mostRecentAlerts: transformToGeojson(
         changeDetectionData.mostRecentAlerts,

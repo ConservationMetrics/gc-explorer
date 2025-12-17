@@ -235,6 +235,7 @@ const prepareMapData = (
  */
 const prepareAlertData = (
   data: DataEntry[],
+  table: string,
 ): {
   mostRecentAlerts: DataEntry[];
   previousAlerts: DataEntry[];
@@ -307,9 +308,9 @@ const prepareAlertData = (
       satelliteLookup[item.sat_detect_prefix] || item.sat_detect_prefix;
 
     transformedItem["t0_url"] =
-      `alerts/${item.territory_id}/${item.year_detec}/${formattedMonth}/${item.alert_id}/images/${item.sat_viz_prefix}_T0_${item.alert_id}.jpg`;
+      `${table}/${item.territory_id}/${item.year_detec}/${formattedMonth}/${item.alert_id}/images/${item.sat_viz_prefix}_T0_${item.alert_id}.jpg`;
     transformedItem["t1_url"] =
-      `alerts/${item.territory_id}/${item.year_detec}/${formattedMonth}/${item.alert_id}/images/${item.sat_viz_prefix}_T1_${item.alert_id}.jpg`;
+      `${table}/${item.territory_id}/${item.year_detec}/${formattedMonth}/${item.alert_id}/images/${item.sat_viz_prefix}_T1_${item.alert_id}.jpg`;
     transformedItem["previewImagerySource"] =
       satelliteLookup[item.sat_viz_prefix] || item.sat_viz_prefix;
 
