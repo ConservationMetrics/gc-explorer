@@ -404,6 +404,28 @@ const prepareAlertsStatistics = (
   data: DataEntry[],
   metadata: AlertsMetadata[] | null,
 ): AlertsStatistics => {
+  // Handle empty data case
+  if (data.length === 0) {
+    const now = new Date();
+    const currentDateStr = `${String(now.getMonth() + 1).padStart(2, "0")}-${now.getFullYear()}`;
+    
+    return {
+      territory: "",
+      typeOfAlerts: [],
+      dataProviders: [],
+      alertDetectionRange: "N/A",
+      allDates: [],
+      earliestAlertsDate: currentDateStr,
+      recentAlertsDate: "N/A",
+      recentAlertsNumber: 0,
+      alertsTotal: 0,
+      alertsPerMonth: {},
+      hectaresTotal: null,
+      hectaresPerMonth: null,
+      twelveMonthsBefore: currentDateStr,
+    };
+  }
+
   const isGFW = data.some((item) => item.data_source === "Global Forest Watch");
 
   const territory = isGFW
