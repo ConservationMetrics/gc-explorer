@@ -34,22 +34,25 @@ test("index page - displays available views and alerts link", async ({
     }),
   ).toBeVisible({ timeout: 15000 });
 
-  // 4. Verify at least one "Open Project" button is visible
-  const openProjectButton = page
-    .locator("a")
-    .filter({ hasText: /open project/i })
-    .first();
-  await expect(openProjectButton).toBeVisible();
+  // 4. Wait for dataset cards to render
+  await page.waitForSelector(".grid", { timeout: 15000 });
+  await page.waitForSelector(".bg-purple-50", { timeout: 15000 });
 
-  // 5. Verify the "Open Project" button links to a dataset page
+  // 5. Verify at least one "Open Project" link is visible
+  const openProjectButton = page
+    .getByRole("link", { name: /open project/i })
+    .first();
+  await expect(openProjectButton).toBeVisible({ timeout: 15000 });
+
+  // 6. Verify the "Open Project" link goes to a dataset page
   const href = await openProjectButton.getAttribute("href");
   expect(href).toMatch(/\/dataset\/\w+/);
 
-  // 6. Ensure at least one view pill (alerts, maps, or gallery) is visible
+  // 7. Ensure at least one view pill (alerts, maps, or gallery) is visible
   // This checks that the pills are rendered correctly
   const viewPills = page
     .locator("span")
-    .filter({ hasText: /alerts|maps|gallery/i });
+    .filter({ hasText: /alerts|map|gallery/i });
   const pillCount = await viewPills.count();
   expect(pillCount).toBeGreaterThan(0);
 });
@@ -69,11 +72,17 @@ test("index page - language picker functionality", async ({
     }),
   ).toBeVisible({ timeout: 15000 });
 
-  // 3. Wait for the language picker button to be visible
+  // 3. Wait for the language picker button to be visible (it's a globe icon button)
+  // The language picker is in AppHeader, look for the button with globe icon
   const languageButton = page
-    .locator("button")
-    .filter({ hasText: /English|Español|Nederlands|Português/i });
-  await languageButton.waitFor({ state: "visible", timeout: 10000 });
+    .locator("button[title*='Language'], button[title*='language']")
+    .or(
+      page
+        .locator("button")
+        .filter({ has: page.locator("svg path[d*='M3.055']") }),
+    )
+    .first();
+  await languageButton.waitFor({ state: "visible", timeout: 15000 });
 
   // 4. Verify the button shows current language
   const buttonText = await languageButton.textContent();
@@ -125,11 +134,17 @@ test("index page - language switching to Portuguese changes heading", async ({
     }),
   ).toBeVisible({ timeout: 15000 });
 
-  // 3. Wait for the language picker button to be visible
+  // 3. Wait for the language picker button to be visible (it's a globe icon button)
+  // The language picker is in AppHeader, look for the button with globe icon
   const languageButton = page
-    .locator("button")
-    .filter({ hasText: /English|Español|Nederlands|Português/i });
-  await languageButton.waitFor({ state: "visible", timeout: 10000 });
+    .locator("button[title*='Language'], button[title*='language']")
+    .or(
+      page
+        .locator("button")
+        .filter({ has: page.locator("svg path[d*='M3.055']") }),
+    )
+    .first();
+  await languageButton.waitFor({ state: "visible", timeout: 15000 });
 
   // 4. Click the button to open dropdown
   await languageButton.click();

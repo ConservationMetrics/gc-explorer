@@ -7,10 +7,19 @@ test("alerts dashboard - layer visibility toggles", async ({
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // 2. Wait for dataset cards to render first
+  // 2. Wait for the main content and heading to be visible
+  await page.waitForSelector("main", { timeout: 15000 });
+  await expect(
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
+
+  // 3. Wait for dataset cards to render (they're in a grid)
+  await page.waitForSelector(".grid", { timeout: 15000 });
   await page.waitForSelector(".bg-purple-50", { timeout: 15000 });
 
-  // 3. Find an "Open Project" button to navigate to a dataset page
+  // 4. Find an "Open Project" link to navigate to a dataset page
   const openProjectButton = page
     .getByRole("link", { name: /open project/i })
     .first();
@@ -318,10 +327,19 @@ test("alerts dashboard - LineString buffer click behavior", async ({
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // 2. Wait for dataset cards to render first
+  // 2. Wait for the main content and heading to be visible
+  await page.waitForSelector("main", { timeout: 15000 });
+  await expect(
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
+
+  // 3. Wait for dataset cards to render (they're in a grid)
+  await page.waitForSelector(".grid", { timeout: 15000 });
   await page.waitForSelector(".bg-purple-50", { timeout: 15000 });
 
-  // 3. Find an "Open Project" button to navigate to a dataset page
+  // 4. Find an "Open Project" link to navigate to a dataset page
   const openProjectButton = page
     .getByRole("link", { name: /open project/i })
     .first();
@@ -437,10 +455,19 @@ test("alerts dashboard - geometry type specific interactions", async ({
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // 2. Wait for dataset cards to render first
+  // 2. Wait for the main content and heading to be visible
+  await page.waitForSelector("main", { timeout: 15000 });
+  await expect(
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
+
+  // 3. Wait for dataset cards to render (they're in a grid)
+  await page.waitForSelector(".grid", { timeout: 15000 });
   await page.waitForSelector(".bg-purple-50", { timeout: 15000 });
 
-  // 3. Find an "Open Project" button to navigate to a dataset page
+  // 4. Find an "Open Project" link to navigate to a dataset page
   const openProjectButton = page
     .getByRole("link", { name: /open project/i })
     .first();
