@@ -17,30 +17,47 @@ test("alerts dashboard - layer visibility toggles", async ({
 
   // 3. Wait for dataset cards to render (they're in a grid)
   await page.waitForSelector(".grid", { timeout: 15000 });
-  await page.waitForSelector(".bg-purple-50", { timeout: 15000 });
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
 
-  // 4. Find an "Open Project" link to navigate to a dataset page
-  const openProjectButton = page
-    .getByRole("link", { name: /open project/i })
-    .first();
+  // 4. Find a dataset card that has an "alerts" tag/pill
+  // Look for a card that contains a span with "alerts" test ID
+  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const cardCount = await datasetCards.count();
+  expect(cardCount).toBeGreaterThan(0);
+
+  // Find the first card that has an "alerts" tag
+  let alertsCard = null;
+  for (let i = 0; i < cardCount; i++) {
+    const card = datasetCards.nth(i);
+    const alertsTag = card.locator("[data-testid='view-tag-alerts']");
+    if ((await alertsTag.count()) > 0) {
+      alertsCard = card;
+      break;
+    }
+  }
+
+  expect(alertsCard).not.toBeNull();
+
+  // 5. Click "Open Dataset View" on the card with alerts tag
+  const openProjectButton = alertsCard!.locator(
+    "[data-testid='open-dataset-view-link']",
+  );
   await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
-
-  // 3. Click to go to dataset page
   await openProjectButton.click();
   await page.waitForLoadState("networkidle");
 
-  // 4. Find the alerts link on the dataset page (ViewCard with alerts)
+  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
   await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
-  // 3. Get the href first
+  // 7. Click the alerts link to navigate to the alerts page
   const href = await alertsLink.getAttribute("href");
   console.log("Alerts link href:", href);
+  await alertsLink.click();
 
-  // 4. Navigate directly to alerts page
-  await page.goto(href!);
-
-  // 5. Ensure the route change completed
+  // 8. Ensure the route change completed
   await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
   // Debug: Check if map container exists
@@ -337,19 +354,38 @@ test("alerts dashboard - LineString buffer click behavior", async ({
 
   // 3. Wait for dataset cards to render (they're in a grid)
   await page.waitForSelector(".grid", { timeout: 15000 });
-  await page.waitForSelector(".bg-purple-50", { timeout: 15000 });
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
 
-  // 4. Find an "Open Project" link to navigate to a dataset page
-  const openProjectButton = page
-    .getByRole("link", { name: /open project/i })
-    .first();
+  // 4. Find a dataset card that has an "alerts" tag/pill
+  // Look for a card that contains a span with "alerts" test ID
+  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const cardCount = await datasetCards.count();
+  expect(cardCount).toBeGreaterThan(0);
+
+  // Find the first card that has an "alerts" tag
+  let alertsCard = null;
+  for (let i = 0; i < cardCount; i++) {
+    const card = datasetCards.nth(i);
+    const alertsTag = card.locator("[data-testid='view-tag-alerts']");
+    if ((await alertsTag.count()) > 0) {
+      alertsCard = card;
+      break;
+    }
+  }
+
+  expect(alertsCard).not.toBeNull();
+
+  // 5. Click "Open Dataset View" on the card with alerts tag
+  const openProjectButton = alertsCard!.locator(
+    "[data-testid='open-dataset-view-link']",
+  );
   await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
-
-  // 3. Click to go to dataset page
   await openProjectButton.click();
   await page.waitForLoadState("networkidle");
 
-  // 4. Find the alerts link on the dataset page (ViewCard with alerts)
+  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
   await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
@@ -465,19 +501,38 @@ test("alerts dashboard - geometry type specific interactions", async ({
 
   // 3. Wait for dataset cards to render (they're in a grid)
   await page.waitForSelector(".grid", { timeout: 15000 });
-  await page.waitForSelector(".bg-purple-50", { timeout: 15000 });
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
 
-  // 4. Find an "Open Project" link to navigate to a dataset page
-  const openProjectButton = page
-    .getByRole("link", { name: /open project/i })
-    .first();
+  // 4. Find a dataset card that has an "alerts" tag/pill
+  // Look for a card that contains a span with "alerts" test ID
+  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const cardCount = await datasetCards.count();
+  expect(cardCount).toBeGreaterThan(0);
+
+  // Find the first card that has an "alerts" tag
+  let alertsCard = null;
+  for (let i = 0; i < cardCount; i++) {
+    const card = datasetCards.nth(i);
+    const alertsTag = card.locator("[data-testid='view-tag-alerts']");
+    if ((await alertsTag.count()) > 0) {
+      alertsCard = card;
+      break;
+    }
+  }
+
+  expect(alertsCard).not.toBeNull();
+
+  // 5. Click "Open Dataset View" on the card with alerts tag
+  const openProjectButton = alertsCard!.locator(
+    "[data-testid='open-dataset-view-link']",
+  );
   await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
-
-  // 3. Click to go to dataset page
   await openProjectButton.click();
   await page.waitForLoadState("networkidle");
 
-  // 4. Find the alerts link on the dataset page (ViewCard with alerts)
+  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
   await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
@@ -653,23 +708,59 @@ test("alerts dashboard - geometry type specific interactions", async ({
 test("alerts dashboard - cluster circles and centroid selection behavior", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // Navigate to alerts dashboard
+  // 1. Navigate to the index page first to get available tables
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // Find an "Open Project" button to navigate to a dataset page
-  const openProjectButton = page
-    .locator("a")
-    .filter({ hasText: /open project/i })
-    .first();
+  // 2. Wait for the main content and heading to be visible
+  await page.waitForSelector("main", { timeout: 15000 });
+  await expect(
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
+
+  // 3. Wait for dataset cards to render (they're in a grid)
+  await page.waitForSelector(".grid", { timeout: 15000 });
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  // 4. Find a dataset card that has an "alerts" tag/pill
+  // Look for a card that contains a span with "alerts" test ID
+  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const cardCount = await datasetCards.count();
+  expect(cardCount).toBeGreaterThan(0);
+
+  // Find the first card that has an "alerts" tag
+  let alertsCard = null;
+  for (let i = 0; i < cardCount; i++) {
+    const card = datasetCards.nth(i);
+    const alertsTag = card.locator("[data-testid='view-tag-alerts']");
+    if ((await alertsTag.count()) > 0) {
+      alertsCard = card;
+      break;
+    }
+  }
+
+  expect(alertsCard).not.toBeNull();
+
+  // 5. Click "Open Dataset View" on the card with alerts tag
+  const openProjectButton = alertsCard!.locator(
+    "[data-testid='open-dataset-view-link']",
+  );
   await openProjectButton.waitFor({ state: "visible", timeout: 10000 });
   await openProjectButton.click();
   await page.waitForLoadState("networkidle");
 
+  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
   await alertsLink.waitFor({ state: "visible", timeout: 10000 });
+
+  // 7. Click the alerts link to navigate to the alerts page
   const href = await alertsLink.getAttribute("href");
-  await page.goto(href!);
+  console.log("Alerts link href:", href);
+  await alertsLink.click();
   await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
   // Wait for map to load
