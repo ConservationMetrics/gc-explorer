@@ -76,6 +76,8 @@
   "iconColumn": "Coluna de Ícones",
   "iconColumnDescription": "Opcional: Especifique um nome de coluna (por exemplo, 'icon') que contenha nomes de arquivos de ícones (por exemplo, 'camp.png'). Quando definido e o caminho base dos ícones está configurado, os recursos de pontos podem ser exibidos como ícones em vez de círculos.",
   "ifYouAreZoomedOutAlertsWillBeShownAsA": "Se você estiver afastado, os alertas serão mostrados como um",
+  "imageNotFound": "Imagem não encontrada",
+  "loading": "Carregando...",
   "login": "Faça login",
   "loginButton": "Inscreva-se ou faça login",
   "loginError": "Ocorreu um erro ao tentar fazer login",

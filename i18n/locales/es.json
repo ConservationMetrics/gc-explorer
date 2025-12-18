@@ -76,6 +76,8 @@
   "iconColumn": "Columna de Iconos",
   "iconColumnDescription": "Opcional: Especifique un nombre de columna (por ejemplo, 'icon') que contenga nombres de archivos de iconos (por ejemplo, 'camp.png'). Cuando se establece y la ruta base de iconos está configurada, las características de puntos se pueden mostrar como iconos en lugar de círculos.",
   "ifYouAreZoomedOutAlertsWillBeShownAsA": "Si está alejado, las alertas se mostrarán como un",
+  "imageNotFound": "Imagen no encontrada",
+  "loading": "Cargando...",
   "login": "Iniciar sesión",
   "loginButton": "Regístrese o inicie sesión",
   "loginError": "Ocurrió un error al intentar iniciar sesión",
