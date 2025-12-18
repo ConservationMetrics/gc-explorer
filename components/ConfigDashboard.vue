@@ -145,6 +145,7 @@ watch(tableNameToAdd, (newVal) => {
       <div
         v-for="(config, tableName) in sortedViewsConfig"
         :key="tableName"
+        data-testid="config-dataset-card"
         class="bg-purple-50 rounded-lg p-4 sm:p-6 shadow-sm border border-purple-100 overflow-hidden flex flex-col h-full"
       >
         <div class="flex items-start mb-3">
@@ -193,6 +194,7 @@ watch(tableNameToAdd, (newVal) => {
                   .sort()
               : []"
             :key="view"
+            :data-testid="`config-view-tag-${view}`"
             class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full flex-shrink-0"
           >
             <svg
@@ -240,6 +242,7 @@ watch(tableNameToAdd, (newVal) => {
 
         <NuxtLink
           :to="`/config/${tableName}`"
+          data-testid="edit-dataset-view-link"
           class="mt-auto flex items-center justify-center gap-2 w-full text-center px-4 py-2 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200"
         >
           <svg
@@ -263,6 +266,7 @@ watch(tableNameToAdd, (newVal) => {
 
     <div class="flex justify-end mb-6">
       <button
+        data-testid="add-new-dataset-view-button"
         class="flex items-center gap-2 px-4 py-2 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200"
         @click="handleAddNewTable"
       >

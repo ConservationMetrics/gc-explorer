@@ -12,9 +12,6 @@ export const validatePermissions = async (
   event: H3Event,
   permission: RouteLevelPermission,
 ): Promise<void> => {
-  // Skip authentication checks in CI environment
-  if (process.env.CI) return;
-
   // Public access requires no authentication
   if (permission === "anyone") return;
 

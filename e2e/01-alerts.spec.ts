@@ -1,34 +1,75 @@
-import { expect, test } from "@playwright/test";
+import { test, expect } from "./fixtures/auth-storage";
 
-test("alerts dashboard - layer visibility toggles", async ({ page }) => {
+test("alerts dashboard - layer visibility toggles", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
+  await page.waitForLoadState("networkidle");
 
-  // 2. Wait until the index page has rendered the list of available views
-  // Find the first link that has an href starting with /alerts/
+  // 2. Wait for the main content and heading to be visible
+  await page.waitForSelector("main", { timeout: 15000 });
+  await expect(
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
+
+  // 3. Wait for dataset cards to render (they're in a grid)
+  await page.waitForSelector(".grid", { timeout: 15000 });
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  // 4. Find a dataset card that has an "alerts" tag/pill
+  // Look for a card that contains a span with "alerts" test ID
+  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const cardCount = await datasetCards.count();
+  expect(cardCount).toBeGreaterThan(0);
+
+  // Find the first card that has an "alerts" tag
+  let alertsCard = null;
+  for (let i = 0; i < cardCount; i++) {
+    const card = datasetCards.nth(i);
+    const alertsTag = card.locator("[data-testid='view-tag-alerts']");
+    if ((await alertsTag.count()) > 0) {
+      alertsCard = card;
+      break;
+    }
+  }
+
+  expect(alertsCard).not.toBeNull();
+
+  // 5. Click "Open Dataset View" on the card with alerts tag
+  const openProjectButton = alertsCard!.locator(
+    "[data-testid='open-dataset-view-link']",
+  );
+  await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
+  await openProjectButton.click();
+  await page.waitForLoadState("networkidle");
+
+  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 5000 });
+  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
-  // 3. Get the href first
+  // 7. Click the alerts link to navigate to the alerts page
   const href = await alertsLink.getAttribute("href");
-  console.log("🔍 Alerts link href:", href);
+  console.log("Alerts link href:", href);
+  await alertsLink.click();
 
-  // 4. Navigate directly to alerts page
-  await page.goto(href!);
-
-  // 5. Ensure the route change completed
+  // 8. Ensure the route change completed
   await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
   // Debug: Check if map container exists
   const mapContainer = page.locator("#map");
   const mapExists = await mapContainer.count();
-  console.log("🔍 Map container exists:", mapExists > 0);
+  console.log("Map container exists:", mapExists > 0);
 
   if (mapExists === 0) {
     // Debug: Log the page content to see what's actually there
     const alertsPageContent = await page.content();
     console.log(
-      "🔍 Alerts page HTML (first 2000 chars):",
+      "Alerts page HTML (first 2000 chars):",
       alertsPageContent.substring(0, 2000),
     );
 
@@ -71,13 +112,13 @@ test("alerts dashboard - layer visibility toggles", async ({ page }) => {
 
   // Debug: Check if map legend exists
   const legendExists = await mapLegend.count();
-  console.log("🔍 Map legend exists:", legendExists > 0);
+  console.log("Map legend exists:", legendExists > 0);
 
   if (legendExists === 0) {
     // Debug: Log the page content to see what's actually there
     const alertsPageContent = await page.content();
     console.log(
-      "🔍 Alerts page HTML (first 2000 chars):",
+      "Alerts page HTML (first 2000 chars):",
       alertsPageContent.substring(0, 2000),
     );
 
@@ -193,7 +234,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
       (layer: { visible: boolean }) => layer.visible,
     );
     expect(initiallyVisible.length).toBeGreaterThan(0);
-    console.log(`✅ ${initiallyVisible.length} layers initially visible`);
+    console.log(`${initiallyVisible.length} layers initially visible`);
 
     // Simulate the toggle function behavior by directly controlling map layers
     // This tests that the layer setup supports the grouped toggle functionality
@@ -256,7 +297,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
     });
 
     console.log(
-      `✅ ${alertType.name} all ${alertLayers.length} layers can be controlled as a group`,
+      `${alertType.name} all ${alertLayers.length} layers can be controlled as a group`,
     );
   }
 
@@ -293,20 +334,60 @@ test("alerts dashboard - legend can control all alert layer types", async ({
   );
 
   expect(geometrySpecificEntries).toHaveLength(0);
-  console.log(
-    "✅ Legend shows grouped entries, not individual geometry layers",
-  );
+  console.log("Legend shows grouped entries, not individual geometry layers");
 });
 
 test("alerts dashboard - LineString buffer click behavior", async ({
-  page,
+  authenticatedPageAsAdmin: page,
 }) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
+  await page.waitForLoadState("networkidle");
 
-  // 2. Wait until the index page has rendered the list of available views
+  // 2. Wait for the main content and heading to be visible
+  await page.waitForSelector("main", { timeout: 15000 });
+  await expect(
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
+
+  // 3. Wait for dataset cards to render (they're in a grid)
+  await page.waitForSelector(".grid", { timeout: 15000 });
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  // 4. Find a dataset card that has an "alerts" tag/pill
+  // Look for a card that contains a span with "alerts" test ID
+  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const cardCount = await datasetCards.count();
+  expect(cardCount).toBeGreaterThan(0);
+
+  // Find the first card that has an "alerts" tag
+  let alertsCard = null;
+  for (let i = 0; i < cardCount; i++) {
+    const card = datasetCards.nth(i);
+    const alertsTag = card.locator("[data-testid='view-tag-alerts']");
+    if ((await alertsTag.count()) > 0) {
+      alertsCard = card;
+      break;
+    }
+  }
+
+  expect(alertsCard).not.toBeNull();
+
+  // 5. Click "Open Dataset View" on the card with alerts tag
+  const openProjectButton = alertsCard!.locator(
+    "[data-testid='open-dataset-view-link']",
+  );
+  await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
+  await openProjectButton.click();
+  await page.waitForLoadState("networkidle");
+
+  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 5000 });
+  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
   // 3. Get the href first
   const href = await alertsLink.getAttribute("href");
@@ -404,14 +485,56 @@ test("alerts dashboard - LineString buffer click behavior", async ({
 });
 
 test("alerts dashboard - geometry type specific interactions", async ({
-  page,
+  authenticatedPageAsAdmin: page,
 }) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
+  await page.waitForLoadState("networkidle");
 
-  // 2. Wait until the index page has rendered the list of available views
+  // 2. Wait for the main content and heading to be visible
+  await page.waitForSelector("main", { timeout: 15000 });
+  await expect(
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
+
+  // 3. Wait for dataset cards to render (they're in a grid)
+  await page.waitForSelector(".grid", { timeout: 15000 });
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  // 4. Find a dataset card that has an "alerts" tag/pill
+  // Look for a card that contains a span with "alerts" test ID
+  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const cardCount = await datasetCards.count();
+  expect(cardCount).toBeGreaterThan(0);
+
+  // Find the first card that has an "alerts" tag
+  let alertsCard = null;
+  for (let i = 0; i < cardCount; i++) {
+    const card = datasetCards.nth(i);
+    const alertsTag = card.locator("[data-testid='view-tag-alerts']");
+    if ((await alertsTag.count()) > 0) {
+      alertsCard = card;
+      break;
+    }
+  }
+
+  expect(alertsCard).not.toBeNull();
+
+  // 5. Click "Open Dataset View" on the card with alerts tag
+  const openProjectButton = alertsCard!.locator(
+    "[data-testid='open-dataset-view-link']",
+  );
+  await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
+  await openProjectButton.click();
+  await page.waitForLoadState("networkidle");
+
+  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 5000 });
+  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
 
   // 3. Get the href first
   const href = await alertsLink.getAttribute("href");
@@ -583,14 +706,61 @@ test("alerts dashboard - geometry type specific interactions", async ({
 });
 
 test("alerts dashboard - cluster circles and centroid selection behavior", async ({
-  page,
+  authenticatedPageAsAdmin: page,
 }) => {
-  // Navigate to alerts dashboard
+  // 1. Navigate to the index page first to get available tables
   await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // 2. Wait for the main content and heading to be visible
+  await page.waitForSelector("main", { timeout: 15000 });
+  await expect(
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
+
+  // 3. Wait for dataset cards to render (they're in a grid)
+  await page.waitForSelector(".grid", { timeout: 15000 });
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  // 4. Find a dataset card that has an "alerts" tag/pill
+  // Look for a card that contains a span with "alerts" test ID
+  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const cardCount = await datasetCards.count();
+  expect(cardCount).toBeGreaterThan(0);
+
+  // Find the first card that has an "alerts" tag
+  let alertsCard = null;
+  for (let i = 0; i < cardCount; i++) {
+    const card = datasetCards.nth(i);
+    const alertsTag = card.locator("[data-testid='view-tag-alerts']");
+    if ((await alertsTag.count()) > 0) {
+      alertsCard = card;
+      break;
+    }
+  }
+
+  expect(alertsCard).not.toBeNull();
+
+  // 5. Click "Open Dataset View" on the card with alerts tag
+  const openProjectButton = alertsCard!.locator(
+    "[data-testid='open-dataset-view-link']",
+  );
+  await openProjectButton.waitFor({ state: "visible", timeout: 10000 });
+  await openProjectButton.click();
+  await page.waitForLoadState("networkidle");
+
+  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 5000 });
+  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
+
+  // 7. Click the alerts link to navigate to the alerts page
   const href = await alertsLink.getAttribute("href");
-  await page.goto(href!);
+  console.log("Alerts link href:", href);
+  await alertsLink.click();
   await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
   // Wait for map to load
@@ -626,7 +796,7 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
   });
 
   if (clusterFeatures.length > 0) {
-    console.log(`✅ Found ${clusterFeatures.length} cluster circles`);
+    console.log(`Found ${clusterFeatures.length} cluster circles`);
 
     // Test 2: Click on a centroid circle (Point geometry)
     const centroidFeatures = await page.evaluate(() => {
@@ -664,7 +834,7 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
         // Wait for sidebar
         await expect(page.getByText(/copy link to alert/i)).toBeVisible();
         await expect(page).toHaveURL(/\?alertId=/);
-        console.log("✅ Centroid circle click works");
+        console.log("Centroid circle click works");
       }
     }
   }
@@ -765,14 +935,14 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
         );
         // Verify that source data was actually updated (not just a check)
         expect(updatedSourceData.featureCount).toBeGreaterThanOrEqual(0);
-        console.log("✅ Clusters updated correctly when date range changed");
+        console.log("Clusters updated correctly when date range changed");
       } else {
-        console.log("⚠️ Could not verify source data update");
+        console.log("Could not verify source data update");
       }
     } else {
-      console.log("⚠️ Could not access date options, skipping date range test");
+      console.log("Could not access date options, skipping date range test");
     }
   } else {
-    console.log("⚠️ No initial source data found, skipping date range test");
+    console.log("No initial source data found, skipping date range test");
   }
 });

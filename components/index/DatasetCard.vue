@@ -56,6 +56,7 @@ const truncateDescription = (desc: string): string => {
 
 <template>
   <div
+    data-testid="dataset-card"
     class="bg-purple-50 rounded-lg p-4 sm:p-6 shadow-sm border border-purple-100 overflow-hidden flex flex-col h-full"
   >
     <div class="flex items-start mb-3">
@@ -98,6 +99,7 @@ const truncateDescription = (desc: string): string => {
               .sort()
           : []"
         :key="view"
+        :data-testid="`view-tag-${view}`"
         class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full flex-shrink-0"
       >
         <svg
@@ -156,6 +158,7 @@ const truncateDescription = (desc: string): string => {
 
     <NuxtLink
       :to="`/dataset/${String(tableName)}`"
+      data-testid="open-dataset-view-link"
       class="mt-auto block w-full text-center px-4 py-2 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200"
     >
       {{ $t("openProject") }}
