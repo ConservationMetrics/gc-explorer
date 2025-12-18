@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 
 /**
- * Playwright authentication setup file.
+ * Playwright authentication setup file in accordance to  https://playwright.dev/docs/auth documentation.
  *
  * Authenticates with Auth0 for each role (SignedIn, Guest, Member, Admin) and saves
  * the browser storage state to files. This runs before all tests as a setup project

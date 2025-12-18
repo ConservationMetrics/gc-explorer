@@ -64,7 +64,7 @@ if (process.env.CI && !hasAnyPassword) {
  * @returns {string} Absolute path to the authentication storage state JSON file
  * @throws {Error} If the auth file doesn't exist, with detailed error message
  */
-function getAuthFile(role: string): string {
+const getAuthFile = (role: string): string => {
   const authFile = path.join(authDir, `${role}.json`);
 
   // Log current working directory and absolute paths for debugging in Docker/GitHub Actions
@@ -120,7 +120,7 @@ function getAuthFile(role: string): string {
   const fileStats = fs.statSync(authFile);
   console.log(`[FIXTURE] Auth file size: ${fileStats.size} bytes`);
   return authFile;
-}
+};
 
 /**
  * Extended Playwright test object with authenticated page fixtures.
