@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { XCircle } from "lucide-vue-next";
 import type { AllowedFileExtensions } from "@/types/types";
+import { useIntersectionObserver } from "@/composables/useIntersectionObserver";
+import { useOptimizedImages } from "@/composables/useOptimizedImages";
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
@@ -28,56 +31,111 @@ const checkExtensions = (extensions: string[]) => {
   return extensions.includes(extension);
 };
 
-// Generate the full image URL for NuxtImg
-const imageUrl = computed(() => {
+// Generate the full image URL
+const rawImageUrl = computed(() => {
   return props.mediaBasePath + "/" + props.filePath;
 });
 
-// Generate placeholder URL
-const placeholderUrl = computed(() => {
-  // Create a simple placeholder based on the image dimensions
-  // You can replace this with a proper placeholder service
-  return `https://placehold.co/400x300/cccccc/666666?text=Loading...`;
+// Get optimized image URL using Nuxt Image
+const { getGalleryImageUrl } = useOptimizedImages();
+const optimizedImageUrl = computed(() => {
+  return getGalleryImageUrl(rawImageUrl.value);
 });
+
+// Image loading state
+const imageContainer = ref<HTMLElement | null>(null);
+const shouldLoadImage = ref(false);
+const imageError = ref(false);
+const imageLoaded = ref(false);
+
+// Use Intersection Observer for true lazy loading
+const { target } = useIntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting && !shouldLoadImage.value) {
+        shouldLoadImage.value = true;
+      }
+    });
+  },
+  {
+    rootMargin: "100px", // Start loading 100px before entering viewport
+    threshold: 0.01,
+  },
+);
+
+// Watch for when the container element is available
+watchEffect(() => {
+  if (imageContainer.value && isImage.value) {
+    target.value = imageContainer.value;
+  }
+});
+
+// Handle image load error (404 or other errors)
+const handleImageError = () => {
+  imageError.value = true;
+  imageLoaded.value = false;
+};
+
+// Handle successful image load
+const handleImageLoad = () => {
+  imageError.value = false;
+  imageLoaded.value = true;
+};
 </script>
 
 <template>
   <div>
-    <div v-if="isImage" class="mb-4">
+    <div v-if="isImage" ref="imageContainer" class="mb-4">
+      <!-- Error state: Show red X icon when image fails to load (404) -->
+      <div
+        v-if="shouldLoadImage && imageError"
+        class="w-full aspect-video rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center border-2 border-red-500"
+      >
+        <div
+          class="flex flex-col items-center justify-center gap-2 text-red-500"
+        >
+          <XCircle class="w-12 h-12" />
+          <span class="text-sm font-medium">{{
+            $t("imageNotFound") || "Image not found"
+          }}</span>
+        </div>
+      </div>
+
+      <!-- Loading state: Show placeholder while waiting to load or while loading -->
+      <div
+        v-else-if="
+          !shouldLoadImage || (shouldLoadImage && !imageLoaded && !imageError)
+        "
+        class="w-full aspect-video rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
+      >
+        <div class="text-gray-400 text-sm">
+          {{ $t("loading") || "Loading..." }}
+        </div>
+      </div>
+
+      <!-- Image container: Load and show image when in viewport -->
       <a
-        :href="imageUrl"
+        v-if="shouldLoadImage && !imageError"
+        :href="rawImageUrl"
         target="_blank"
         :data-lightbox="filePath"
         :data-title="filePath"
+        class="block"
+        :class="{ hidden: !imageLoaded }"
       >
-        <NuxtImg
-          v-slot="{ src, isLoaded, imgAttrs }"
-          :src="imageUrl"
+        <img
+          :src="optimizedImageUrl"
           alt="Image"
           class="w-full h-auto rounded-lg"
-          loading="lazy"
-          preset="gallery"
-          sizes="sm:100vw md:50vw lg:33vw xl:25vw"
-          :custom="true"
-        >
-          <!-- Show the actual image when loaded -->
-          <img
-            v-if="isLoaded"
-            v-bind="imgAttrs"
-            :src="src"
-            class="w-full h-auto rounded-lg"
-          />
-
-          <!-- Show a placeholder while loading -->
-          <img
-            v-else
-            :src="placeholderUrl"
-            alt="Loading placeholder"
-            class="w-full h-auto rounded-lg blur-sm scale-105"
-          />
-        </NuxtImg>
+          @load="handleImageLoad"
+          @error="handleImageError"
+        />
       </a>
-      <div v-if="filePath" class="text-center flex items-center justify-center">
+
+      <div
+        v-if="filePath"
+        class="text-center flex items-center justify-center mt-2"
+      >
         <span v-if="filePath.includes('t0.jpg')" class="italic">{{
           $t("before")
         }}</span>

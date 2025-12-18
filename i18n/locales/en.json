@@ -79,6 +79,8 @@
   "iconColumn": "Icon Column",
   "iconColumnDescription": "Optional: Specify a column name (e.g., 'icon') that contains icon filenames (e.g., 'camp.png'). When set and icons base path is configured, point features can be displayed as icons instead of circles.",
   "ifYouAreZoomedOutAlertsWillBeShownAsA": "If you are zoomed out, alerts will be shown as a",
+  "imageNotFound": "Image not found",
+  "loading": "Loading...",
   "login": "Log in",
   "loginButton": "Sign up or log in",
   "loginError": "An error occurred while trying to log in",
