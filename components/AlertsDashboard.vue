@@ -263,7 +263,8 @@ onMounted(() => {
       if (isOnlyLineStringData() !== true) {
         calculateHectares.value = true;
       }
-      showSlider.value = true;
+      // Only show slider if there are date options
+      showSlider.value = dateOptions.value && dateOptions.value.length > 0;
 
       // Check for alertId or mapeoDocId in URL and select the corresponding feature
       const alertId = route.query.alertId as string;
@@ -1090,6 +1091,11 @@ const convertDates = (start: string, end: string) => {
  */
 const getDateOptions = () => {
   let dates = props.alertsStatistics.allDates;
+
+  // Return empty array if no dates available
+  if (!dates || dates.length === 0) {
+    return [];
+  }
 
   if (dates.length > 12) {
     const last12Dates = dates.slice(-12);

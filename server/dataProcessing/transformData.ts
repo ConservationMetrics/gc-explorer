@@ -404,6 +404,73 @@ const prepareAlertsStatistics = (
   data: DataEntry[],
   metadata: AlertsMetadata[] | null,
 ): AlertsStatistics => {
+  // Extract data providers from metadata (reusable for empty data case)
+  const getDataProvidersFromMetadata = (): string[] => {
+    return metadata && metadata.length > 0
+      ? Array.from(
+          new Set(metadata.map((item) => item.data_source).filter(Boolean)),
+        )
+      : [];
+  };
+
+  // Extract date range from metadata (reusable for empty data case)
+  const getDateRangeFromMetadata = (): {
+    earliestDateStr: string;
+    latestDateStr: string;
+    earliestDate: Date;
+    latestDate: Date;
+  } | null => {
+    if (!metadata || metadata.length === 0) return null;
+
+    metadata.sort((a, b) =>
+      a.year === b.year ? a.month - b.month : a.year - b.year,
+    );
+    const earliestMetadata = metadata[0];
+    const latestMetadata = metadata[metadata.length - 1];
+
+    return {
+      earliestDate: new Date(
+        earliestMetadata.year,
+        earliestMetadata.month - 1,
+        1,
+      ),
+      latestDate: new Date(latestMetadata.year, latestMetadata.month - 1, 28),
+      earliestDateStr: `${String(earliestMetadata.month).padStart(2, "0")}-${earliestMetadata.year}`,
+      latestDateStr: `${String(latestMetadata.month).padStart(2, "0")}-${latestMetadata.year}`,
+    };
+  };
+
+  // Handle empty data case - but still use metadata if available
+  if (data.length === 0) {
+    const now = new Date();
+    const currentDateStr = `${String(now.getMonth() + 1).padStart(2, "0")}-${now.getFullYear()}`;
+
+    const dataProviders = getDataProvidersFromMetadata();
+    const metadataDateRange = getDateRangeFromMetadata();
+
+    const alertDetectionRange = metadataDateRange
+      ? `${metadataDateRange.earliestDateStr} to ${metadataDateRange.latestDateStr}`
+      : "N/A";
+    const earliestDateStr =
+      metadataDateRange?.earliestDateStr ?? currentDateStr;
+
+    return {
+      territory: "",
+      typeOfAlerts: [],
+      dataProviders,
+      alertDetectionRange,
+      allDates: [],
+      earliestAlertsDate: earliestDateStr,
+      recentAlertsDate: "N/A",
+      recentAlertsNumber: 0,
+      alertsTotal: 0,
+      alertsPerMonth: {},
+      hectaresTotal: null,
+      hectaresPerMonth: null,
+      twelveMonthsBefore: currentDateStr,
+    };
+  }
+
   const isGFW = data.some((item) => item.data_source === "Global Forest Watch");
 
   const territory = isGFW
@@ -421,11 +488,7 @@ const prepareAlertsStatistics = (
 
   const dataProviders = isGFW
     ? Array.from(new Set(data.map((item) => item.data_source).filter(Boolean)))
-    : metadata
-      ? Array.from(
-          new Set(metadata.map((item) => item.data_source).filter(Boolean)),
-        )
-      : [];
+    : getDataProvidersFromMetadata();
 
   // Create Date objects for sorting and comparisons
   const formattedDates = data.map((item) => {
@@ -443,23 +506,12 @@ const prepareAlertsStatistics = (
   let earliestDateStr, latestDateStr;
   let earliestDate: Date, latestDate: Date;
 
-  if (metadata && metadata.length > 0) {
-    // Find earliest and latest dates from metadata
-    metadata.sort((a, b) =>
-      a.year === b.year ? a.month - b.month : a.year - b.year,
-    );
-    const earliestMetadata = metadata[0];
-    const latestMetadata = metadata[metadata.length - 1];
-
-    earliestDate = new Date(
-      earliestMetadata.year,
-      earliestMetadata.month - 1,
-      1,
-    );
-    latestDate = new Date(latestMetadata.year, latestMetadata.month - 1, 28);
-
-    earliestDateStr = `${String(earliestMetadata.month).padStart(2, "0")}-${earliestMetadata.year}`;
-    latestDateStr = `${String(latestMetadata.month).padStart(2, "0")}-${latestMetadata.year}`;
+  const metadataDateRange = getDateRangeFromMetadata();
+  if (metadataDateRange) {
+    earliestDate = metadataDateRange.earliestDate;
+    latestDate = metadataDateRange.latestDate;
+    earliestDateStr = metadataDateRange.earliestDateStr;
+    latestDateStr = metadataDateRange.latestDateStr;
   } else {
     // If metadata is null, calculate earliest and latest dates from data
     earliestDate = formattedDates[0].date;
