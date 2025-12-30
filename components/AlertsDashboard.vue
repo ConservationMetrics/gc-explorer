@@ -21,12 +21,14 @@ import {
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
 import MapLegend from "@/components/shared/MapLegend.vue";
+import IncidentsSidebar from "@/components/shared/IncidentsSidebar.vue";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
   AlertsData,
   AlertsStatistics,
   AllowedFileExtensions,
+  AnnotatedCollection,
   Basemap,
   BasemapConfig,
   Dataset,
@@ -73,6 +75,99 @@ const route = useRoute();
 const router = useRouter();
 
 const isMapeo = ref(false);
+
+// Incidents state management
+const incidents = ref<AnnotatedCollection[]>([]);
+const showIncidentsSidebar = ref(false);
+const selectedSources = ref<
+  Array<{ source_table: string; source_id: string; notes?: string }>
+>([]);
+const isCreatingIncident = ref(false);
+const multiSelectMode = ref(false);
+const boundingBoxMode = ref(false);
+const isLoadingIncidents = ref(false);
+
+// Tooltip state
+const hoveredButton = ref<"incidents" | "boundingBox" | "multiSelect" | null>(
+  null,
+);
+
+// Bounding box state - store map state before zoom to restore it
+const mapStateBeforeBoxZoom = ref<{
+  center: [number, number];
+  zoom: number;
+  bearing: number;
+  pitch: number;
+} | null>(null);
+
+// Get API key from runtime config
+const config = useRuntimeConfig();
+const apiKey = config.public.appApiKey as string;
+
+/**
+ * Fetches incidents from the API
+ */
+const fetchIncidents = async () => {
+  isLoadingIncidents.value = true;
+  try {
+    const response = await $fetch<{
+      incidents: AnnotatedCollection[];
+      total: number;
+      limit: number;
+      offset: number;
+    }>("/api/incidents", {
+      headers: {
+        "x-api-key": apiKey,
+      },
+    });
+    incidents.value = response.incidents;
+  } catch (error) {
+    console.error("Error fetching incidents:", error);
+  } finally {
+    isLoadingIncidents.value = false;
+  }
+};
+
+/**
+ * Creates a new incident
+ */
+const createIncident = async (incidentData: {
+  name: string;
+  description?: string;
+  incident_type?: string;
+  responsible_party?: string;
+  impact_description?: string;
+  supporting_evidence?: Record<string, unknown>;
+}) => {
+  isCreatingIncident.value = true;
+  try {
+    const response = await $fetch<{ incident: AnnotatedCollection }>(
+      "/api/incidents",
+      {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "Content-Type": "application/json",
+        },
+        body: {
+          ...incidentData,
+          entries: selectedSources.value,
+        },
+      },
+    );
+
+    // Refresh incidents list
+    await fetchIncidents();
+    // Clear selected sources after successful creation
+    selectedSources.value = [];
+    return response.incident;
+  } catch (error) {
+    console.error("Error creating incident:", error);
+    throw error;
+  } finally {
+    isCreatingIncident.value = false;
+  }
+};
 
 /**
  * Selects and zooms to an alert feature based on its ID
@@ -274,6 +369,9 @@ onMounted(() => {
       } else if (mapeoDocId && props.mapeoData) {
         selectInitialMapeoFeature(mapeoDocId);
       }
+
+      // Load incidents on dashboard initialization
+      await fetchIncidents();
 
       controlsAdded = true;
     } else {
@@ -719,8 +817,18 @@ const addAlertsData = async () => {
                 );
               }
             } else {
-              // Only select non-cluster features
-              selectFeature(feature, layer.id);
+              // Check if multi-select mode is active and Ctrl/Cmd is pressed
+              const isMultiSelect =
+                multiSelectMode.value &&
+                (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
+
+              if (isMultiSelect) {
+                // Add to selected sources instead of selecting for sidebar
+                handleMultiSelectFeature(feature, layer.id);
+              } else {
+                // Normal selection behavior
+                selectFeature(feature, layer.id);
+              }
             }
           }
         },
@@ -855,7 +963,19 @@ const addMapeoData = () => {
       layerId,
       (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
-          selectFeature(e.features[0], layerId);
+          const feature = e.features[0];
+          // Check if multi-select mode is active and Ctrl/Cmd is pressed
+          const isMultiSelect =
+            multiSelectMode.value &&
+            (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
+
+          if (isMultiSelect) {
+            // Add to selected sources instead of selecting for sidebar
+            handleMultiSelectFeature(feature, layerId);
+          } else {
+            // Normal selection behavior
+            selectFeature(feature, layerId);
+          }
         }
       },
       { passive: true },
@@ -1973,8 +2093,304 @@ const calculateLineStringCentroid = (coordinates: number[][]) => {
   return midpoint.geometry.coordinates;
 };
 
+// ===========================================
+// === Incidents Management Functions ===
+// ===========================================
+
+/**
+ * Toggles the incidents sidebar visibility
+ */
+const toggleIncidentsSidebar = () => {
+  showIncidentsSidebar.value = !showIncidentsSidebar.value;
+};
+
+/**
+ * Toggles multi-select mode for selecting multiple features
+ */
+const toggleMultiSelectMode = () => {
+  multiSelectMode.value = !multiSelectMode.value;
+  boundingBoxMode.value = false; // Disable bounding box when multi-select is active
+};
+
+/**
+ * Toggles bounding box mode for selecting features within a drawn area
+ */
+const toggleBoundingBoxMode = () => {
+  boundingBoxMode.value = !boundingBoxMode.value;
+  multiSelectMode.value = false; // Disable multi-select when bounding box is active
+
+  if (boundingBoxMode.value) {
+    setupBoundingBoxHandlers();
+  } else {
+    removeBoundingBoxHandlers();
+  }
+};
+
+/**
+ * Sets up bounding box drawing handlers
+ */
+const setupBoundingBoxHandlers = () => {
+  if (!map.value) return;
+
+  // Store map state before box zoom starts
+  map.value.on("boxzoomstart", handleBoxZoomStart);
+  // Intercept box zoom end event to select features instead of zooming
+  map.value.on("boxzoomend", handleBoxZoomEnd);
+};
+
+/**
+ * Removes bounding box drawing handlers
+ */
+const removeBoundingBoxHandlers = () => {
+  if (!map.value) return;
+
+  map.value.off("boxzoomstart", handleBoxZoomStart);
+  map.value.off("boxzoomend", handleBoxZoomEnd);
+  mapStateBeforeBoxZoom.value = null;
+};
+
+/**
+ * Handles box zoom start - stores current map state to restore after selection
+ */
+const handleBoxZoomStart = () => {
+  if (!boundingBoxMode.value || !map.value) return;
+
+  // Store current map state
+  mapStateBeforeBoxZoom.value = {
+    center: map.value.getCenter().toArray() as [number, number],
+    zoom: map.value.getZoom(),
+    bearing: map.value.getBearing(),
+    pitch: map.value.getPitch(),
+  };
+};
+
+/**
+ * Handles box zoom end event - intercepts it to select features instead of zooming
+ */
+const handleBoxZoomEnd = (e: { boxZoomBounds: mapboxgl.LngLatBounds }) => {
+  if (!boundingBoxMode.value || !map.value) return;
+
+  // Get the bounding box from the box zoom event
+  const bounds = e.boxZoomBounds;
+  if (!bounds) return;
+
+  // Restore map state immediately to prevent zoom
+  if (mapStateBeforeBoxZoom.value) {
+    map.value.jumpTo({
+      center: mapStateBeforeBoxZoom.value.center,
+      zoom: mapStateBeforeBoxZoom.value.zoom,
+      bearing: mapStateBeforeBoxZoom.value.bearing,
+      pitch: mapStateBeforeBoxZoom.value.pitch,
+    });
+  }
+
+  // Wait for map to restore, then query features using geographic bounds
+  map.value.once("idle", () => {
+    // Get pixel coordinates of the bounds at the restored zoom level
+    const ne = bounds.getNorthEast();
+    const sw = bounds.getSouthWest();
+
+    const nePoint = map.value.project(ne);
+    const swPoint = map.value.project(sw);
+
+    // Create bbox in pixel coordinates for queryRenderedFeatures
+    const bbox: [number, number, number, number] = [
+      Math.min(swPoint.x, nePoint.x),
+      Math.min(swPoint.y, nePoint.y),
+      Math.max(swPoint.x, nePoint.x),
+      Math.max(swPoint.y, nePoint.y),
+    ];
+
+    // Select features within the bounding box (same logic as multi-select)
+    selectFeaturesInBoundingBox(bbox);
+
+    // Clear stored state
+    mapStateBeforeBoxZoom.value = null;
+  });
+};
+
+/**
+ * Selects features within the bounding box using pixel coordinates
+ */
+const selectFeaturesInBoundingBox = (
+  bbox: [number, number, number, number],
+) => {
+  if (!map.value) return;
+
+  // Query features in the bounding box from all alert and mapeo layers
+  const layersToQuery = [
+    "most-recent-alerts-point",
+    "most-recent-alerts-polygon",
+    "most-recent-alerts-linestring",
+    "most-recent-alerts-centroids",
+    "previous-alerts-point",
+    "previous-alerts-polygon",
+    "previous-alerts-linestring",
+    "previous-alerts-centroids",
+    "mapeo-data",
+  ].filter((layerId) => map.value.getLayer(layerId));
+
+  const features = map.value.queryRenderedFeatures(bbox, {
+    layers: layersToQuery,
+  });
+
+  // Filter out cluster features
+  const validFeatures = features.filter(
+    (f) =>
+      !f.properties?.cluster &&
+      f.properties?.cluster_id === undefined &&
+      f.layer?.id &&
+      !f.layer.id.includes("clusters") &&
+      !f.layer.id.includes("cluster-count"),
+  );
+
+  // Add all features to selected sources (same logic as multi-select)
+  validFeatures.forEach((feature) => {
+    if (feature.layer?.id) {
+      handleMultiSelectFeature(feature, feature.layer.id);
+    }
+  });
+};
+
+/**
+ * Adds a source to the selected sources list for incident creation
+ */
+const addSourceToSelection = (
+  sourceTable: string,
+  sourceId: string,
+  notes?: string,
+) => {
+  const existingIndex = selectedSources.value.findIndex(
+    (source) =>
+      source.source_table === sourceTable && source.source_id === sourceId,
+  );
+
+  if (existingIndex === -1) {
+    selectedSources.value.push({
+      source_table: sourceTable,
+      source_id: sourceId,
+      notes: notes,
+    });
+  }
+};
+
+/**
+ * Removes a source from the selected sources list
+ */
+const removeSourceFromSelection = (sourceTable: string, sourceId: string) => {
+  const index = selectedSources.value.findIndex(
+    (source) =>
+      source.source_table === sourceTable && source.source_id === sourceId,
+  );
+
+  if (index !== -1) {
+    selectedSources.value.splice(index, 1);
+  }
+};
+
+/**
+ * Clears all selected sources
+ */
+const clearSelectedSources = () => {
+  selectedSources.value = [];
+  // Clear visual highlighting
+  clearSourceHighlighting();
+};
+
+/**
+ * Handles multi-select feature selection
+ */
+const handleMultiSelectFeature = (feature: Feature, layerId: string) => {
+  if (!feature.properties) return;
+
+  // Determine source table and source ID
+  let sourceTable = "";
+  let sourceId = "";
+
+  // Determine source table from layer ID or route
+  // Get table name from route params (e.g., /alerts/fake_alerts -> fake_alerts)
+  const tableRaw = route.params.tablename;
+  const tableName = Array.isArray(tableRaw) ? tableRaw.join("/") : tableRaw;
+
+  if (
+    layerId.includes("most-recent-alerts") ||
+    layerId.includes("previous-alerts")
+  ) {
+    // For alerts, use the table name from route params
+    sourceTable = (tableName as string) || "";
+  } else if (layerId === "mapeo-data") {
+    // For mapeo, use the MAPEO_TABLE from config if available
+    // This should be passed as a prop or fetched, but for now use a default
+    sourceTable = "mapeo_data";
+  }
+
+  // Get source ID from feature properties
+  if (feature.properties.alertID) {
+    sourceId = feature.properties.alertID;
+  } else if (feature.properties.id) {
+    sourceId = feature.properties.id;
+  }
+
+  if (sourceTable && sourceId) {
+    addSourceToSelection(sourceTable, sourceId);
+    highlightSelectedSource(feature, layerId);
+
+    // Auto-open incidents sidebar if not already open
+    if (!showIncidentsSidebar.value) {
+      showIncidentsSidebar.value = true;
+    }
+  }
+};
+
+/**
+ * Highlights a selected source on the map
+ */
+const highlightedSources = ref<
+  Array<{ featureId: string | number; layerId: string }>
+>([]);
+
+const highlightSelectedSource = (feature: Feature, layerId: string) => {
+  const featureId = layerId.includes("-centroids")
+    ? feature.properties?.alertID
+    : feature.id;
+
+  if (featureId !== undefined && featureId !== null) {
+    // Add to highlighted sources
+    highlightedSources.value.push({
+      featureId,
+      layerId,
+    });
+
+    // Set feature state for visual highlighting
+    map.value.setFeatureState(
+      { source: layerId, id: featureId },
+      { selected: true },
+    );
+  }
+};
+
+/**
+ * Clears all source highlighting
+ */
+const clearSourceHighlighting = () => {
+  highlightedSources.value.forEach(({ featureId, layerId }) => {
+    try {
+      map.value.setFeatureState(
+        { source: layerId, id: featureId },
+        { selected: false },
+      );
+    } catch (error) {
+      // Ignore errors if layer/source doesn't exist
+      console.warn("Error clearing feature state:", error);
+    }
+  });
+  highlightedSources.value = [];
+};
+
 onBeforeUnmount(() => {
   if (map.value) {
+    // Clean up bounding box handlers
+    removeBoundingBoxHandlers();
     map.value.remove();
   }
 });
@@ -2025,6 +2441,113 @@ onBeforeUnmount(() => {
       :planet-api-key="planetApiKey"
       @basemap-selected="handleBasemapChange"
     />
+    <IncidentsSidebar
+      :incidents="incidents"
+      :selected-sources="selectedSources"
+      :is-loading="isLoadingIncidents"
+      :is-creating="isCreatingIncident"
+      :show="showIncidentsSidebar"
+      @close="toggleIncidentsSidebar"
+      @create-incident="createIncident"
+      @remove-source="removeSourceFromSelection"
+      @clear-sources="clearSelectedSources"
+    />
+    <!-- Incidents Controls -->
+    <div class="incidents-controls">
+      <div
+        class="incident-control-wrapper"
+        @mouseenter="hoveredButton = 'incidents'"
+        @mouseleave="hoveredButton = null"
+      >
+        <button
+          class="incident-control-btn"
+          :class="{ active: showIncidentsSidebar }"
+          @click="toggleIncidentsSidebar"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+        <div v-if="hoveredButton === 'incidents'" class="tooltip tooltip-left">
+          {{
+            showIncidentsSidebar
+              ? "Hide incidents sidebar"
+              : "View saved incidents and create new ones"
+          }}
+        </div>
+      </div>
+      <div
+        class="incident-control-wrapper"
+        @mouseenter="hoveredButton = 'boundingBox'"
+        @mouseleave="hoveredButton = null"
+      >
+        <button
+          class="incident-control-btn"
+          :class="{ active: boundingBoxMode }"
+          @click="toggleBoundingBoxMode"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+          </svg>
+        </button>
+        <div
+          v-if="hoveredButton === 'boundingBox'"
+          class="tooltip tooltip-left"
+        >
+          {{
+            boundingBoxMode
+              ? "Disable bounding box selection"
+              : "Select multiple features by drawing a box (Shift + drag)"
+          }}
+        </div>
+      </div>
+      <div
+        class="incident-control-wrapper"
+        @mouseenter="hoveredButton = 'multiSelect'"
+        @mouseleave="hoveredButton = null"
+      >
+        <button
+          class="incident-control-btn"
+          :class="{ active: multiSelectMode }"
+          @click="toggleMultiSelectMode"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+          </svg>
+        </button>
+        <div
+          v-if="hoveredButton === 'multiSelect'"
+          class="tooltip tooltip-left"
+        >
+          {{
+            multiSelectMode
+              ? "Disable multi-select mode"
+              : "Select multiple features one by one (hold Ctrl/Cmd and click features)"
+          }}
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -2066,5 +2589,82 @@ body {
   top: 10px;
   left: 10px;
   z-index: 10;
+}
+
+.incidents-controls {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.incident-control-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.incident-control-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: white;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+  color: #333;
+}
+
+.incident-control-btn:hover {
+  background: #f0f0f0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.incident-control-btn.active {
+  background: #4a90e2;
+  color: white;
+  border-color: #4a90e2;
+}
+
+.incident-control-btn.active:hover {
+  background: #357abd;
+}
+
+.tooltip {
+  position: absolute;
+  right: 50px;
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+  max-width: 250px;
+  white-space: normal;
+  line-height: 1.4;
+}
+
+.tooltip-left {
+  right: 50px;
+}
+
+.tooltip::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-left-color: rgba(0, 0, 0, 0.85);
 }
 </style>
