@@ -12,9 +12,6 @@ export const validatePermissions = async (
   event: H3Event,
   permission: RouteLevelPermission,
 ): Promise<void> => {
-  // Skip authentication checks in CI environment
-  if (process.env.CI) return;
-
   // Public access requires no authentication
   if (permission === "anyone") return;
 
@@ -28,13 +25,23 @@ export const validatePermissions = async (
     });
   }
 
-  // For signed-in permission, any authenticated user can access
-  if (permission === "signed-in") return;
+  // For guest permission, check user role
+  if (permission === "guest") {
+    const typedUser = session.user as User;
+    const userRole = typedUser?.userRole ?? Role.SignedIn;
+
+    if (userRole < Role.Guest) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: "Forbidden - Insufficient permissions",
+      });
+    }
+  }
 
   // For member permission, check user role
   if (permission === "member") {
     const typedUser = session.user as User;
-    const userRole = typedUser?.userRole || Role.Viewer;
+    const userRole = typedUser?.userRole ?? Role.SignedIn;
 
     if (userRole < Role.Member) {
       throw createError({
@@ -47,7 +54,7 @@ export const validatePermissions = async (
   // For admin permission, check user role
   if (permission === "admin") {
     const typedUser = session.user as User;
-    const userRole = typedUser?.userRole || Role.Viewer;
+    const userRole = typedUser?.userRole ?? Role.SignedIn;
 
     if (userRole < Role.Admin) {
       throw createError({

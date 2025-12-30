@@ -3,7 +3,6 @@ import murmurhash from "murmurhash";
 import {
   calculateCentroid,
   capitalizeFirstLetter,
-  formatDate,
   getRandomColor,
 } from "./helpers";
 
@@ -18,6 +17,7 @@ import type {
 import type {
   AlertsMetadata,
   AlertsPerMonth,
+  MapStatistics,
   AlertsStatistics,
   DataEntry,
 } from "@/types/types";
@@ -36,10 +36,19 @@ import type {
  *   joining items with commas.
  *
  * @param {DataEntry[]} data - An array of survey data entries to be transformed.
+ * @param {string} iconColumn - Optional icon column name to exclude from transformation
  * @returns {DataEntry[]} - A new array of data entries with transformed keys and values.
  */
-const transformSurveyData = (data: DataEntry[]): DataEntry[] => {
+const transformSurveyData = (
+  data: DataEntry[],
+  iconColumn?: string,
+): DataEntry[] => {
   const transformSurveyDataKey = (key: string): string => {
+    // Don't transform the icon column key
+    if (iconColumn && key === iconColumn) {
+      return key;
+    }
+
     let transformedKey = key
       .replace(/^g__/, "geo")
       .replace(/^p__/, "")
@@ -60,6 +69,8 @@ const transformSurveyData = (data: DataEntry[]): DataEntry[] => {
   ) => {
     if (value === null) return null;
     if (key === "g__coordinates") return value;
+    // Don't transform icon column values (filenames)
+    if (iconColumn && key === iconColumn) return value;
 
     let transformedValue = value;
     if (typeof transformedValue === "string") {
@@ -69,13 +80,16 @@ const transformSurveyData = (data: DataEntry[]): DataEntry[] => {
       if (key.toLowerCase().includes("category")) {
         transformedValue = transformedValue.replace(/-/g, " ");
       }
-      if (
-        key.toLowerCase().includes("created") ||
-        key.toLowerCase().includes("modified") ||
-        key.toLowerCase().includes("updated")
-      ) {
-        transformedValue = formatDate(transformedValue);
-      }
+      // TODO: For now this is a quick fix to ensure original timestamps are
+      // returned in file downloads. We need to rethink how we do data transformations
+      // so that file downloads return the original records, not transformed ones.
+      // if (
+      //   key.toLowerCase().includes("created") ||
+      //   key.toLowerCase().includes("modified") ||
+      //   key.toLowerCase().includes("updated")
+      // ) {
+      //   transformedValue = formatDate(transformedValue);
+      // }
       transformedValue =
         transformedValue.charAt(0).toUpperCase() + transformedValue.slice(1);
     }
@@ -95,7 +109,9 @@ const transformSurveyData = (data: DataEntry[]): DataEntry[] => {
   const transformedData = data.map((entry) => {
     const transformedEntry: DataEntry = {};
     Object.entries(entry).forEach(([key, value]) => {
-      const transformedKey = transformSurveyDataKey(key);
+      // Use original key for icon column, don't transform it
+      const transformedKey =
+        iconColumn && key === iconColumn ? key : transformSurveyDataKey(key);
       const transformedValue = transformSurveyDataValue(key, value);
       if (transformedValue !== null) {
         transformedEntry[transformedKey] = String(transformedValue);
@@ -219,6 +235,7 @@ const prepareMapData = (
  */
 const prepareAlertData = (
   data: DataEntry[],
+  table: string,
 ): {
   mostRecentAlerts: DataEntry[];
   previousAlerts: DataEntry[];
@@ -291,9 +308,9 @@ const prepareAlertData = (
       satelliteLookup[item.sat_detect_prefix] || item.sat_detect_prefix;
 
     transformedItem["t0_url"] =
-      `alerts/${item.territory_id}/${item.year_detec}/${formattedMonth}/${item.alert_id}/images/${item.sat_viz_prefix}_T0_${item.alert_id}.jpg`;
+      `${table}/${item.territory_id}/${item.year_detec}/${formattedMonth}/${item.alert_id}/images/${item.sat_viz_prefix}_T0_${item.alert_id}.jpg`;
     transformedItem["t1_url"] =
-      `alerts/${item.territory_id}/${item.year_detec}/${formattedMonth}/${item.alert_id}/images/${item.sat_viz_prefix}_T1_${item.alert_id}.jpg`;
+      `${table}/${item.territory_id}/${item.year_detec}/${formattedMonth}/${item.alert_id}/images/${item.sat_viz_prefix}_T1_${item.alert_id}.jpg`;
     transformedItem["previewImagerySource"] =
       satelliteLookup[item.sat_viz_prefix] || item.sat_viz_prefix;
 
@@ -738,10 +755,73 @@ const isValidGeolocation = (item: DataEntry): boolean => {
   );
 };
 
+/**
+ * Prepares statistical data for the map view introduction panel.
+ *
+ * This function processes map data to generate statistics for display.
+ * It calculates the total number of features, counts geometry types,
+ * and determines date ranges if the data contains valid dates.
+ *
+ * @param {DataEntry[]} data - An array of data entries representing map features.
+ * @returns {MapStatistics} An object containing various statistics for the map view.
+ */
+const prepareMapStatistics = (data: DataEntry[]): MapStatistics => {
+  if (!data || data.length === 0) {
+    return {
+      totalFeatures: 0,
+    };
+  }
+
+  // Calculate date range (look for date-related columns)
+  let dateRange: string | undefined;
+  const dateColumns = Object.keys(data[0] || {}).filter((key) => {
+    const lowerKey = key.toLowerCase();
+    return (
+      lowerKey.includes("date") ||
+      lowerKey.includes("time") ||
+      lowerKey.includes("created") ||
+      lowerKey.includes("modified") ||
+      lowerKey.includes("updated")
+    );
+  });
+
+  if (dateColumns.length > 0) {
+    const dates = data
+      .map((item) => {
+        for (const col of dateColumns) {
+          if (item[col]) {
+            const value = String(item[col]);
+            // Check if the value looks like a date (contains digits and common date separators)
+            // Pattern matches dates like: 2024-01-15, 01/15/2024, 3/9/2024, 2024, etc.
+            if (
+              /\d/.test(value) &&
+              (/[-/]/.test(value) || /^\d{4}$/.test(value))
+            ) {
+              return value;
+            }
+          }
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .sort();
+
+    if (dates.length > 0) {
+      dateRange = `${dates[0]} to ${dates[dates.length - 1]}`;
+    }
+  }
+
+  return {
+    totalFeatures: data.length,
+    dateRange,
+  };
+};
+
 export {
   transformSurveyData,
   prepareMapData,
   prepareAlertData,
   prepareAlertsStatistics,
+  prepareMapStatistics,
   transformToGeojson,
 };

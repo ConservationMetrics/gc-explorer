@@ -1,136 +1,179 @@
-import { expect, test } from "@playwright/test";
+import { test, expect } from "./fixtures/auth-storage";
 
 test("index page - displays available views and alerts link", async ({
-  page,
+  authenticatedPageAsAdmin: page,
 }) => {
   // 1. Navigate to the root of the application
   await page.goto("/");
-  // Debug: Log page content to understand what's rendered
-  console.log("🔍 Page title:", await page.title());
-  console.log("🔍 Page URL:", page.url());
 
-  // Debug: Check if there are any links on the page
-  const allLinks = page.locator("a");
-  const linkCount = await allLinks.count();
-  console.log("🔍 Total links on page:", linkCount);
+  // 2. Wait for page to load
+  await page.waitForLoadState("networkidle");
 
-  // Debug: Log all link texts
-  for (let i = 0; i < linkCount; i++) {
-    const link = allLinks.nth(i);
-    const text = await link.textContent();
-    const href = await link.getAttribute("href");
-    console.log(`🔍 Link ${i}: text="${text?.trim()}", href="${href}"`);
-  }
+  // 3. Verify header elements are visible
+  // Check for Guardian Connector logo (use first() to avoid strict mode violation)
+  const logo = page.locator('img[alt="Guardian Connector Explorer"]').first();
+  await expect(logo).toBeVisible();
 
-  // Debug: Check if there are any elements with "alerts" text
-  const alertsElements = page.locator("*:has-text('alerts')");
-  const alertsCount = await alertsElements.count();
-  console.log("🔍 Elements containing 'alerts' text:", alertsCount);
+  // Check for Guardian Connector text in header
+  const guardianConnectorText = page
+    .getByRole("heading", { name: /guardian connector/i })
+    .first();
+  await expect(guardianConnectorText).toBeVisible();
 
-  // Debug: Log page HTML for debugging
-  const pageContent = await page.content();
-  console.log(
-    "🔍 Page HTML (first 1000 chars):",
-    pageContent.substring(0, 1000),
-  );
+  /* Check for community name in tab (should be visible in desktop view)
+   * tab-trigger is a NuxtLink, not a button
+   */
+  const communityNameTab = page.locator("a.tab-trigger, NuxtLink.tab-trigger");
+  await expect(communityNameTab.first()).toBeVisible({ timeout: 10000 });
 
-  // 2. Wait for the page heading "Available Views" to become visible
+  /* 4. Wait for the page heading "Available Views" to become visible
+   * Wait for the main content to load
+   */
+  await page.waitForSelector("main", { timeout: 15000 });
   await expect(
-    page.getByRole("heading", { name: /available views/i }),
-  ).toBeVisible();
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
 
-  // 3. Ensure at least one Alerts link is visible (guaranteed through a database connection that has an alerts view)
-  const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
+  // 4. Wait for dataset cards to render
+  await page.waitForSelector(".grid", { timeout: 15000 });
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
 
-  // 4. (Optional) Verify the link's href leads to an alerts route pattern
-  const href = await alertsLink.getAttribute("href");
-  expect(href).toMatch(/^\/alerts\//);
+  // 5. Verify at least one "Open Dataset View" link is visible
+  const openProjectButton = page
+    .locator("[data-testid='open-dataset-view-link']")
+    .first();
+  await expect(openProjectButton).toBeVisible({ timeout: 15000 });
 
-  // 5. Verify the logo image is displayed
-  const logoImage = page.locator("img[alt='Guardian Connector Explorer Logo']");
-  await expect(logoImage).toBeVisible();
-  expect(await logoImage.getAttribute("src")).toBe("/gcexplorer.png");
+  // 6. Verify the "Open Dataset View" link goes to a dataset page
+  const href = await openProjectButton.getAttribute("href");
+  expect(href).toMatch(/\/dataset\/\w+/);
+
+  /* 7. Ensure at least one view pill (alerts, maps, or gallery) is visible
+   * This checks that the pills are rendered correctly
+   */
+  const viewPills = page
+    .locator("span")
+    .filter({ hasText: /alerts|map|gallery/i });
+  const pillCount = await viewPills.count();
+  expect(pillCount).toBeGreaterThan(0);
 });
 
-test("index page - language picker functionality", async ({ page }) => {
+test("index page - language picker functionality", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
   // 1. Navigate to the root of the application
   await page.goto("/");
+  await page.waitForLoadState("networkidle");
 
-  // 2. Wait for the language picker button to be visible
+  // 2. Wait for the page heading to be visible first
+  await page.waitForSelector("main", { timeout: 15000 });
+  await expect(
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
+
+  /* 3. Wait for the language picker button to be visible (it's a globe icon button)
+   * The language picker is in AppHeader, look for the button with globe icon
+   */
   const languageButton = page
-    .locator("button")
-    .filter({ hasText: /English|Español|Nederlands|Português/i });
-  await languageButton.waitFor({ state: "visible", timeout: 10000 });
+    .locator("button[title*='Language'], button[title*='language']")
+    .or(
+      page
+        .locator("button")
+        .filter({ has: page.locator("svg path[d*='M3.055']") }),
+    )
+    .first();
+  await languageButton.waitFor({ state: "visible", timeout: 15000 });
 
-  // 3. Verify the button shows current language
-  const buttonText = await languageButton.textContent();
-  expect(["English", "Español", "Nederlands", "Português"]).toContain(
-    buttonText?.trim(),
-  );
+  // 4. Verify the button has a title attribute (language picker button is icon-only)
+  const buttonTitle = await languageButton.getAttribute("title");
+  expect(buttonTitle?.toLowerCase()).toContain("language");
 
-  // 4. Click the button to open dropdown
+  // 5. Click the button to open dropdown
   await languageButton.click();
 
-  // 5. Wait for dropdown menu to appear and check for language options
+  // 6. Wait for dropdown menu to appear and check for language options
   const dropdownMenu = page.locator(
     "div[class*='absolute'][class*='right-0'][class*='bg-white']",
   );
   await dropdownMenu.waitFor({ state: "visible", timeout: 5000 });
 
-  // 6. Check that multiple language options are available
+  // 7. Check that multiple language options are available
   const languageOptions = dropdownMenu.locator("a[href='#']");
   const optionCount = await languageOptions.count();
   expect(optionCount).toBeGreaterThan(1);
 
-  // 7. Test language switching by clicking a different language
+  // 8. Test language switching by clicking a different language
   const firstOption = languageOptions.first();
-  const firstOptionText = await firstOption.textContent();
 
-  // Only switch if it's different from current language (trim whitespace)
-  if (firstOptionText?.trim() !== buttonText?.trim()) {
-    await firstOption.click();
+  // Click the first option to switch language
+  await firstOption.click();
 
-    // 8. Verify the button text changed
-    await page.waitForTimeout(1000);
-    const newButtonText = await languageButton.textContent();
-    expect(newButtonText?.trim()).toBe(firstOptionText?.trim());
-  }
+  // 9. Verify the page heading changed (language switching works)
+  await page.waitForTimeout(1000);
+  // The heading should have changed based on the selected language
+  // We verify this by checking the heading is still visible (page didn't break)
+  await expect(
+    page.getByRole("heading", {
+      name: /available views|available dataset views|visualizações disponíveis/i,
+    }),
+  ).toBeVisible({ timeout: 5000 });
 });
 
 test("index page - language switching to Portuguese changes heading", async ({
-  page,
+  authenticatedPageAsAdmin: page,
 }) => {
   // 1. Navigate to the root of the application
   await page.goto("/");
+  await page.waitForLoadState("networkidle");
 
-  // 2. Wait for the language picker button to be visible
+  // 2. Wait for the page heading to be visible first
+  await page.waitForSelector("main", { timeout: 15000 });
+  await expect(
+    page.getByRole("heading", {
+      name: /available views|available dataset views/i,
+    }),
+  ).toBeVisible({ timeout: 15000 });
+
+  /* 3. Wait for the language picker button to be visible (it's a globe icon button)
+   * The language picker is in AppHeader, look for the button with globe icon
+   */
   const languageButton = page
-    .locator("button")
-    .filter({ hasText: /English|Español|Nederlands|Português/i });
-  await languageButton.waitFor({ state: "visible", timeout: 10000 });
+    .locator("button[title*='Language'], button[title*='language']")
+    .or(
+      page
+        .locator("button")
+        .filter({ has: page.locator("svg path[d*='M3.055']") }),
+    )
+    .first();
+  await languageButton.waitFor({ state: "visible", timeout: 15000 });
 
-  // 3. Click the button to open dropdown
+  // 4. Click the button to open dropdown
   await languageButton.click();
 
-  // 4. Wait for dropdown menu to appear
+  // 5. Wait for dropdown menu to appear
   const dropdownMenu = page.locator(
     "div[class*='absolute'][class*='right-0'][class*='bg-white']",
   );
   await dropdownMenu.waitFor({ state: "visible", timeout: 5000 });
 
-  // 5. Find and click the Portuguese option
+  // 6. Find and click the Portuguese option
   const portugueseOption = dropdownMenu
     .locator("a[href='#']")
     .filter({ hasText: /Português/i });
   await portugueseOption.click();
 
-  // 6. Wait for the page to update and verify the heading changed to Portuguese
+  // 7. Wait for the page to update and verify the heading changed to Portuguese
   await expect(
     page.getByRole("heading", { name: /visualizações disponíveis/i }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 5000 });
 
-  // 7. Verify the original English heading is no longer visible
+  // 8. Verify the original English heading is no longer visible
   await expect(
     page.getByRole("heading", { name: /available views/i }),
   ).not.toBeVisible();

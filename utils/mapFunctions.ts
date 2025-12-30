@@ -62,6 +62,27 @@ export const changeMapStyle = (
   }
 };
 
+/** Applies or clears 3D terrain based on flags. Safe to call after style changes. */
+export const applyTerrain = (
+  map: mapboxgl.Map,
+  enable3d: boolean,
+  terrainExaggeration: number,
+) => {
+  if (enable3d) {
+    if (!map.getSource("mapbox-dem")) {
+      map.addSource("mapbox-dem", {
+        type: "raster-dem",
+        url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+        tileSize: 512,
+        maxzoom: 14,
+      });
+    }
+    map.setTerrain({ source: "mapbox-dem", exaggeration: terrainExaggeration });
+  } else {
+    map.setTerrain(null);
+  }
+};
+
 /** Retrieves mapbox layers for the legend based on provided layer IDs */
 const getMapboxLayersForLegend = (
   map: mapboxgl.Map,

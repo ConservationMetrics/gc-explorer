@@ -37,20 +37,11 @@ const emit = defineEmits(["dateRangeChanged"]);
         <div class="space-y-2 text-sm text-muted-foreground">
           <p class="italic">
             {{ $t("mostRecentAlertsShownIn") }}
-            <span class="text-red-500 font-medium">{{ $t("red") }}</span
+            <span class="text-red-500 font-bold">{{ $t("red") }}</span
             >,
             {{ $t("andPreviousAlertsShownIn") }}
-            <span class="text-orange-500 font-medium">{{ $t("orange") }}</span
+            <span class="text-orange-500 font-bold">{{ $t("orange") }}</span
             >.
-          </p>
-          <p class="italic inline-flex items-center whitespace-nowrap">
-            {{ $t("ifYouAreZoomedOutAlertsWillBeShownAsA") }}&nbsp;
-            <img
-              src="@/assets/icons/warning_red.png"
-              alt="Warning icon"
-              class="w-4 h-4 inline-block -mt-0.5 ml-0.5"
-              loading="eager"
-            />
           </p>
           <p class="italic">{{ $t("clickOnAlertsForMoreInfo") }}.</p>
         </div>
@@ -93,13 +84,13 @@ const emit = defineEmits(["dateRangeChanged"]);
               >{{ $t("recentAlertsNumber") }}:</span
             >
             <span class="text-sm text-muted-foreground">{{
-              props.alertsStatistics.recentAlertsNumber
+              $n(props.alertsStatistics.recentAlertsNumber)
             }}</span>
           </div>
           <div class="flex items-center gap-2">
             <span class="font-bold text-sm">{{ $t("alertsTotal") }}:</span>
             <span class="text-sm text-muted-foreground">{{
-              props.alertsStatistics.alertsTotal
+              $n(props.alertsStatistics.alertsTotal)
             }}</span>
           </div>
           <div
@@ -110,7 +101,7 @@ const emit = defineEmits(["dateRangeChanged"]);
           >
             <span class="font-bold text-sm">{{ $t("hectaresTotal") }}:</span>
             <span class="text-sm text-muted-foreground">{{
-              props.alertsStatistics.hectaresTotal
+              $n(Number(props.alertsStatistics.hectaresTotal))
             }}</span>
           </div>
         </div>

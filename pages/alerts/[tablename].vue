@@ -4,6 +4,8 @@ import { useI18n } from "vue-i18n";
 import { replaceUnderscoreWithSpace } from "@/utils/index";
 import { useIsPublic } from "@/utils/permissions";
 
+import type { BasemapConfig } from "@/types/types";
+
 // Extract the tablename from the route parameters
 const route = useRoute();
 const tableRaw = route.params.tablename;
@@ -22,8 +24,10 @@ const mapboxLongitude = ref(0);
 const mapboxPitch = ref(0);
 const mapboxProjection = ref();
 const mapboxStyle = ref();
+const mapboxBasemaps = ref<BasemapConfig[]>([]);
 const mapboxZoom = ref(0);
 const mapbox3d = ref(false);
+const mapbox3dTerrainExaggeration = ref(0);
 const mapeoData = ref();
 const mediaBasePath = ref();
 const mediaBasePathAlerts = ref();
@@ -53,8 +57,10 @@ if (data.value && !error.value) {
   mapboxPitch.value = data.value.mapboxPitch;
   mapboxProjection.value = data.value.mapboxProjection;
   mapboxStyle.value = data.value.mapboxStyle;
+  mapboxBasemaps.value = data.value.mapboxBasemaps || [];
   mapboxZoom.value = data.value.mapboxZoom;
   mapbox3d.value = data.value.mapbox3d;
+  mapbox3dTerrainExaggeration.value = data.value.mapbox3dTerrainExaggeration;
   mapeoData.value = data.value.mapeoData;
   mediaBasePath.value = data.value.mediaBasePath;
   mediaBasePathAlerts.value = data.value.mediaBasePathAlerts;
@@ -99,8 +105,10 @@ useHead({
         :mapbox-pitch="mapboxPitch"
         :mapbox-projection="mapboxProjection"
         :mapbox-style="mapboxStyle"
+        :mapbox-basemaps="mapboxBasemaps"
         :mapbox-zoom="mapboxZoom"
         :mapbox3d="mapbox3d"
+        :mapbox3d-terrain-exaggeration="mapbox3dTerrainExaggeration"
         :mapeo-data="mapeoData"
         :media-base-path="mediaBasePath"
         :media-base-path-alerts="mediaBasePathAlerts"

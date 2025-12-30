@@ -20,36 +20,45 @@ export interface Database {
   close?: () => Promise<void>;
 }
 
-export type RouteLevelPermission = "anyone" | "signed-in" | "member" | "admin";
+export type RouteLevelPermission = "anyone" | "guest" | "member" | "admin";
 
 export interface ViewConfig {
   ALERT_RESOURCES?: string;
+  COLOR_COLUMN?: string;
   EMBED_MEDIA?: string;
   FILTER_BY_COLUMN?: string;
   FILTER_OUT_VALUES_FROM_COLUMN?: string;
   FRONT_END_FILTERING?: string;
   FRONT_END_FILTER_COLUMN?: string;
   FRONT_END_FILTER_FIELD?: string;
+  ICON_COLUMN?: string;
   LOGO_URL?: string;
-  MAPBOX_3D?: string;
+  MAPBOX_3D?: boolean;
+  MAPBOX_3D_TERRAIN_EXAGGERATION?: number;
   MAPBOX_ACCESS_TOKEN?: string;
   MAPBOX_BEARING?: number;
   MAPBOX_CENTER_LATITUDE?: string;
   MAPBOX_CENTER_LONGITUDE?: string;
   MAPBOX_PITCH?: number;
   MAPBOX_PROJECTION?: string;
-  MAPBOX_STYLE?: string;
+  MAPBOX_STYLE?: string; // Deprecated: use MAPBOX_BASEMAPS instead
+  MAPBOX_BASEMAPS?: string; // JSON string of BasemapConfig[]
   MAPBOX_ZOOM?: number;
   MAPEO_CATEGORY_IDS?: string;
   MAPEO_TABLE?: string;
   MAP_LEGEND_LAYER_IDS?: string;
   MEDIA_BASE_PATH?: string;
   MEDIA_BASE_PATH_ALERTS?: string;
+  MEDIA_BASE_PATH_ICONS?: string;
+  MEDIA_COLUMN?: string;
   PLANET_API_KEY?: string;
   UNWANTED_COLUMNS?: string;
   UNWANTED_SUBSTRINGS?: string;
   VIEWS?: string;
   ROUTE_LEVEL_PERMISSION?: RouteLevelPermission; // Who can access this view: anyone, signed-in, member, or admin
+  DATASET_TABLE?: string; // Display name for the dataset/table (e.g., "Fake Alerts" instead of "fake_alerts")
+  VIEW_HEADER_IMAGE?: string; // Image source URL for the dataset card header background
+  VIEW_DESCRIPTION?: string; // Description of the dataset/table
 }
 
 export interface Views {
@@ -83,6 +92,19 @@ export interface Basemap {
   id: string;
   style?: string;
   url?: string;
+  monthYear?: string;
+}
+
+export interface BasemapConfig {
+  name: string;
+  style: string;
+  isDefault?: boolean;
+}
+
+export interface BasemapOption {
+  id: string;
+  name: string;
+  style?: string;
   monthYear?: string;
 }
 
@@ -138,9 +160,14 @@ export type AlertsStatistics = {
   twelveMonthsBefore: string;
 };
 
+export type MapStatistics = {
+  totalFeatures: number;
+  dateRange?: string;
+};
+
 export const Role = {
-  Public: 0, // Not signed in, no permissions
-  Viewer: 1, // Signed in but no special permissions
+  SignedIn: 0, // Signed in but no elevated access
+  Guest: 1, // Signed in with guest permissions (old "unrestricted")
   Member: 2, // Signed in with member permissions
   Admin: 3, // Signed in with admin permissions
 } as const;

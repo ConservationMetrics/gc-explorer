@@ -4,12 +4,13 @@ import { Role } from "~/types/types";
 
 // Following example: https://github.com/atinux/atidone/blob/main/app/middleware/auth.ts
 export default defineNuxtRouteMiddleware(async (to) => {
-  const { loggedIn, user } = useUserSession();
+  const session = useUserSession();
+  const { loggedIn, user } = session;
   const {
     public: { authStrategy },
   } = useRuntimeConfig();
   const router = useRouter();
-
+  console.log("[TEST] oauth.global middleware called", user, to.path);
   // In order to redirect the user back to the page they were on when unauthenticated, we need to store the redirect url in session storage
   // We use the window object to get where the user was before they were redirected to the login page
   // Store it in the session storage and in the Auth0 component we grab and redirect
@@ -39,7 +40,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
       const response = await $fetch<
         [
-          Record<string, { routeLevelPermission?: RouteLevelPermission }>,
+          Record<string, { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission }>,
           string[],
         ]
       >("/api/config", { headers });
@@ -48,7 +49,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
       // Extract the table name from the last part of the path
       const tableName = to.path.split("/").pop()!;
       const permission: RouteLevelPermission =
-        tableConfig?.[tableName]?.routeLevelPermission ?? "member";
+        tableConfig?.[tableName]?.ROUTE_LEVEL_PERMISSION ?? "anyone";
       // Public access: no login needed
       if (permission === "anyone") return;
 
@@ -60,19 +61,32 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
       // Authenticated from here on
       const typedUser = user.value as User;
-      const userRole = typedUser?.userRole ?? Role.Viewer;
+      const userRole = typedUser?.userRole ?? Role.SignedIn;
+      console.log("[TEST] Middleware checking permissions:", {
+        permission,
+        userRole,
+        path: to.path,
+      });
       // Role-based access control
       switch (permission) {
-        case "member":
-          if (userRole < Role.Member)
+        case "guest":
+          if (userRole < Role.Guest) {
+            console.log("[TEST] Guest permission denied for role:", userRole);
             return router.push("/?reason=unauthorized");
+          }
+          break;
+        case "member":
+          if (userRole < Role.Member) {
+            console.log("[TEST] Member permission denied for role:", userRole);
+            return router.push("/?reason=unauthorized");
+          }
           break;
         case "admin":
-          if (userRole < Role.Admin)
+          if (userRole < Role.Admin) {
+            console.log("[TEST] Admin permission denied for role:", userRole);
             return router.push("/?reason=unauthorized");
+          }
           break;
-        case "signed-in":
-          return; // any signed-in user is fine
       }
     } catch (error) {
       console.error("Error checking view permissions:", error);
@@ -91,10 +105,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Check role-based access for restricted routes
   if (authStrategy === "auth0" && loggedIn.value && user.value) {
     const typedUser = user.value as User;
-    const userRole = typedUser.userRole || Role.Viewer;
+    const userRole = typedUser.userRole ?? Role.SignedIn;
 
-    // Redirect non-Admins from config route
-    if (to.path === "/config" && userRole < Role.Admin) {
+    // Redirect non-Admins from config routes
+    if (to.path.startsWith("/config") && userRole < Role.Admin) {
       return router.push("/?reason=unauthorized");
     }
   }

@@ -7,6 +7,7 @@ import {
   prepareMapData,
   prepareAlertData,
   prepareAlertsStatistics,
+  prepareMapStatistics,
   transformToGeojson,
 } from "@/server/dataProcessing/transformData";
 import { isValidCoordinate } from "@/server/dataProcessing/helpers";
@@ -21,7 +22,12 @@ describe("transformSurveyData", () => {
       expect(item).not.toHaveProperty("g__coordinates");
       expect(item).toHaveProperty("geocoordinates");
       expect(item.category[0]).toBe(item.category[0].toUpperCase());
-      expect(item.created).toMatch(/^\d{1,2}\/\d{1,2}\/\d{4}$/);
+      // TODO: For now this expects original timestamps instead of formatted dates
+      // See comment in transformSurveyData function for more details.
+      expect(item.created).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      );
+      // expect(item.created).toMatch(/^\d{1,2}\/\d{1,2}\/\d{4}$/);
       expect(item.photos).toMatch(/^(\w+\.jpg(, )?)*\w+\.jpg$|^$/);
       expect(item).toHaveProperty("id");
     });
@@ -46,6 +52,38 @@ describe("prepareMapData", () => {
         expect(item["filter-color"]).toBe(randomColorForHouseCategory);
       }
     });
+  });
+});
+
+describe("prepareMapStatistics", () => {
+  it("should calculate map statistics from transformed mapeo data", () => {
+    const result = prepareMapStatistics(transformedMapeoData);
+
+    expect(result.totalFeatures).toBe(3);
+    expect(result.dateRange).toBe("3/9/2024 to 3/9/2024");
+  });
+
+  it("should return zero statistics for empty data", () => {
+    const result = prepareMapStatistics([]);
+
+    expect(result.totalFeatures).toBe(0);
+    expect(result.dateRange).toBeUndefined();
+  });
+
+  it("should not include non-date values in date range", () => {
+    const dataWithNonDateColumn = [
+      {
+        ID: "test123",
+        geocoordinates: "[-1.0, 1.0]",
+        geotype: "Point",
+        "date-field": "not-a-date-value",
+        category: "Test",
+      },
+    ];
+
+    const result = prepareMapStatistics(dataWithNonDateColumn);
+
+    expect(result.dateRange).toBeUndefined();
   });
 });
 

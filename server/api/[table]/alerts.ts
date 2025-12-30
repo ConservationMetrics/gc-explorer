@@ -20,6 +20,7 @@ import type {
   DataEntry,
   AlertsMetadata,
 } from "@/types/types";
+import { parseBasemaps } from "@/server/utils/basemaps";
 
 /**
  * Converts a Mapeo document ID (64-bit hex string) to a 32-bit integer
@@ -75,7 +76,7 @@ export default defineEventHandler(async (event: H3Event) => {
     };
 
     // Prepare alerts data for the alerts view
-    const changeDetectionData = prepareAlertData(mainData);
+    const changeDetectionData = prepareAlertData(mainData, table as string);
     const alertsGeojsonData = {
       mostRecentAlerts: transformToGeojson(
         changeDetectionData.mostRecentAlerts,
@@ -141,20 +142,27 @@ export default defineEventHandler(async (event: H3Event) => {
     // Prepare statistics data for the alerts view
     const alertsStatistics = prepareAlertsStatistics(mainData, metadata);
 
+    // Parse basemaps configuration
+    const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
+
     const response = {
       alertsData: alertsGeojsonData,
       alertsStatistics: alertsStatistics,
       allowedFileExtensions: allowedFileExtensions,
       logoUrl: viewsConfig[table].LOGO_URL,
       mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,
-      mapbox3d: viewsConfig[table].MAPBOX_3D === "YES",
+      mapbox3d: viewsConfig[table].MAPBOX_3D ?? false,
+      mapbox3dTerrainExaggeration: Number(
+        viewsConfig[table].MAPBOX_3D_TERRAIN_EXAGGERATION,
+      ),
       mapboxAccessToken: viewsConfig[table].MAPBOX_ACCESS_TOKEN,
       mapboxBearing: Number(viewsConfig[table].MAPBOX_BEARING),
       mapboxLatitude: Number(viewsConfig[table].MAPBOX_CENTER_LATITUDE),
       mapboxLongitude: Number(viewsConfig[table].MAPBOX_CENTER_LONGITUDE),
       mapboxPitch: Number(viewsConfig[table].MAPBOX_PITCH),
       mapboxProjection: viewsConfig[table].MAPBOX_PROJECTION,
-      mapboxStyle: viewsConfig[table].MAPBOX_STYLE,
+      mapboxStyle: defaultMapboxStyle,
+      mapboxBasemaps: basemaps,
       mapboxZoom: Number(viewsConfig[table].MAPBOX_ZOOM),
       mapeoData: mapeoData,
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,

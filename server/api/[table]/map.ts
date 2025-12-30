@@ -1,6 +1,7 @@
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import {
   prepareMapData,
+  prepareMapStatistics,
   transformSurveyData,
 } from "@/server/dataProcessing/transformData";
 import {
@@ -12,6 +13,7 @@ import { validatePermissions } from "@/utils/auth";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, ColumnEntry } from "@/types/types";
+import { parseBasemaps } from "@/server/utils/basemaps";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -49,28 +51,46 @@ export default defineEventHandler(async (event: H3Event) => {
     // Filter only data with valid geofields
     const filteredGeoData = filterGeoData(dataFilteredByValues);
     // Transform data that was collected using survey apps (e.g. KoBoToolbox, Mapeo)
-    const transformedData = transformSurveyData(filteredGeoData);
+    const transformedData = transformSurveyData(
+      filteredGeoData,
+      viewsConfig[table].ICON_COLUMN,
+    );
     // Process geodata
     const processedGeoData = prepareMapData(
       transformedData,
       viewsConfig[table].FRONT_END_FILTER_COLUMN,
     );
 
+    // Prepare statistics data for the map view
+    const mapStatistics = prepareMapStatistics(processedGeoData);
+
+    // Parse basemaps configuration
+    const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
+
     const response = {
       allowedFileExtensions: allowedFileExtensions,
+      colorColumn: viewsConfig[table].COLOR_COLUMN,
       data: processedGeoData,
       filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
+      iconColumn: viewsConfig[table].ICON_COLUMN,
       mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,
-      mapbox3d: viewsConfig[table].MAPBOX_3D === "YES",
+      mapStatistics: mapStatistics,
+      mapbox3d: viewsConfig[table].MAPBOX_3D ?? false,
+      mapbox3dTerrainExaggeration: Number(
+        viewsConfig[table].MAPBOX_3D_TERRAIN_EXAGGERATION,
+      ),
       mapboxAccessToken: viewsConfig[table].MAPBOX_ACCESS_TOKEN,
       mapboxBearing: Number(viewsConfig[table].MAPBOX_BEARING),
       mapboxLatitude: Number(viewsConfig[table].MAPBOX_CENTER_LATITUDE),
       mapboxLongitude: Number(viewsConfig[table].MAPBOX_CENTER_LONGITUDE),
       mapboxPitch: Number(viewsConfig[table].MAPBOX_PITCH),
       mapboxProjection: viewsConfig[table].MAPBOX_PROJECTION,
-      mapboxStyle: viewsConfig[table].MAPBOX_STYLE,
+      mapboxStyle: defaultMapboxStyle,
+      mapboxBasemaps: basemaps,
       mapboxZoom: Number(viewsConfig[table].MAPBOX_ZOOM),
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
+      mediaBasePathIcons: viewsConfig[table].MEDIA_BASE_PATH_ICONS,
+      mediaColumn: viewsConfig[table].MEDIA_COLUMN,
       planetApiKey: viewsConfig[table].PLANET_API_KEY,
       table: table,
       routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,

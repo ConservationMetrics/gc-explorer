@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     branches:
-      - 'main'
+      - "main"
   pull_request:
     branches:
-      - 'main'
+      - "main"
   release:
     types: [created]
 
@@ -20,7 +20,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
       - name: Install dependencies
         run: |
           npm install -g pnpm
@@ -49,7 +49,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
       - name: Install dependencies and run unit tests
         run: |
           npm install -g pnpm
@@ -68,7 +68,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
       - name: Install dependencies
         run: |
           npm install -g pnpm
@@ -80,8 +80,9 @@ jobs:
           cat > .env.test.playwright << EOF
           CI=true
           NUXT_PUBLIC_APP_API_KEY="8b7c78b7-c800-4cca-bc1b-da080338ff79"
-          NUXT_PUBLIC_AUTH_STRATEGY="none"
-          NUXT_SESSION_SECRET="your_super_long_secret_for_session_encryption"
+          NUXT_PUBLIC_AUTH_STRATEGY="auth0"
+          NUXT_SESSION_SECRET="${{ secrets.SESSION_SECRET }}"
+          NUXT_SESSION_PASSWORD="${{ secrets.SESSION_SECRET }}"
           NUXT_PORT=8080
           BASE_URL=http://localhost:8080
           MAPBOX_ACCESS_TOKEN=${{ secrets.MAPBOX_ACCESS_TOKEN }}
@@ -93,10 +94,19 @@ jobs:
           NUXT_DB_USER=testuser
           NUXT_DB_PASSWORD=testpassword
           NUXT_DATABASE=test_warehouse
+          # Auth0 OAuth configuration
+          NUXT_OAUTH_AUTH0_DOMAIN=${{ secrets.NUXT_OAUTH_AUTH0_DOMAIN }}
+          NUXT_OAUTH_AUTH0_CLIENT_ID=${{ secrets.NUXT_OAUTH_AUTH0_CLIENT_ID }}
+          NUXT_OAUTH_AUTH0_CLIENT_SECRET=${{ secrets.NUXT_OAUTH_AUTH0_CLIENT_SECRET }}
+          # Auth0 test account passwords for E2E tests
+          E2E_AUTH0_SIGNEDIN_PASSWORD=${{ secrets.E2E_AUTH0_SIGNEDIN_PASSWORD }}
+          E2E_AUTH0_GUEST_PASSWORD=${{ secrets.E2E_AUTH0_GUEST_PASSWORD }}
+          E2E_AUTH0_MEMBER_PASSWORD=${{ secrets.E2E_AUTH0_MEMBER_PASSWORD }}
+          E2E_AUTH0_ADMIN_PASSWORD=${{ secrets.E2E_AUTH0_ADMIN_PASSWORD }}
           EOF
       - name: Show .env.test.playwright (with secrets masked)
         run: |
-          sed -E 's/(NUXT_SESSION_SECRET|NUXT_PUBLIC_APP_API_KEY)=(.*)/\1=***/g' .env.test.playwright
+          sed -E 's/(NUXT_SESSION_SECRET|NUXT_SESSION_PASSWORD|NUXT_PUBLIC_APP_API_KEY|NUXT_OAUTH_AUTH0_DOMAIN|NUXT_OAUTH_AUTH0_CLIENT_ID|NUXT_OAUTH_AUTH0_CLIENT_SECRET|E2E_AUTH0_.*_PASSWORD)=(.*)/\1=***/g' .env.test.playwright
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to Docker Hub
@@ -113,10 +123,20 @@ jobs:
           export ImgTag=ci-test
           # Export environment variables for docker-compose
           export NUXT_PUBLIC_APP_API_KEY="${{ secrets.APP_API_KEY }}"
-          export NUXT_SESSION_SECRET="${{ secrets.NUXT_SESSION_SECRET }}"
+          export NUXT_SESSION_SECRET="${{ secrets.SESSION_SECRET }}"
+          export NUXT_SESSION_PASSWORD="${{ secrets.SESSION_SECRET }}"
           export MAPBOX_ACCESS_TOKEN="${{ secrets.MAPBOX_ACCESS_TOKEN }}"
           export MEDIA_BASE_PATH="${{ secrets.MEDIA_BASE_PATH }}"
           export PLANET_API_KEY="${{ secrets.PLANET_API_KEY }}"
+          # Auth0 OAuth configuration
+          export NUXT_OAUTH_AUTH0_DOMAIN="${{ secrets.NUXT_OAUTH_AUTH0_DOMAIN }}"
+          export NUXT_OAUTH_AUTH0_CLIENT_ID="${{ secrets.NUXT_OAUTH_AUTH0_CLIENT_ID }}"
+          export NUXT_OAUTH_AUTH0_CLIENT_SECRET="${{ secrets.NUXT_OAUTH_AUTH0_CLIENT_SECRET }}"
+          # Auth0 test account passwords for E2E tests
+          export E2E_AUTH0_SIGNEDIN_PASSWORD="${{ secrets.E2E_AUTH0_SIGNEDIN_PASSWORD }}"
+          export E2E_AUTH0_GUEST_PASSWORD="${{ secrets.E2E_AUTH0_GUEST_PASSWORD }}"
+          export E2E_AUTH0_MEMBER_PASSWORD="${{ secrets.E2E_AUTH0_MEMBER_PASSWORD }}"
+          export E2E_AUTH0_ADMIN_PASSWORD="${{ secrets.E2E_AUTH0_ADMIN_PASSWORD }}"
           # Start the services with environment variables
           docker compose -f docker-compose.tests.yml --env-file .env.test.playwright up -d database backend
           # Wait for the backend to be ready with proper health check
@@ -156,6 +176,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Generate date for image tag
+        id: imgtag_date
+        run: echo "DATE_FOR_IMGTAG=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -171,6 +194,7 @@ jobs:
           tags: |
             ${{ steps.meta.outputs.tags }}
             ${{ github.ref == 'refs/heads/main' && 'communityfirst/guardianconnector-explorer:latest' || '' }}
+            ${{ github.ref == 'refs/heads/main' && format('communityfirst/guardianconnector-explorer:{0}-{1}', steps.imgtag_date.outputs.DATE_FOR_IMGTAG, github.run_number) || '' }}
             communityfirst/guardianconnector-explorer:ci-test
           labels: ${{ steps.meta.outputs.labels }}
       - name: Docker Hub Description
@@ -180,4 +204,4 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: communityfirst/guardianconnector-explorer
-          short-description: 'A Nuxt app to explore GuardianConnector data in different views'
+          short-description: "A Nuxt app to explore GuardianConnector data in different views"

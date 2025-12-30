@@ -1,6 +1,12 @@
 import { eq, sql } from "drizzle-orm";
 
-import type { ColumnEntry, DataEntry, Views } from "@/types/types";
+import type {
+  ColumnEntry,
+  DataEntry,
+  Views,
+  ViewConfig,
+} from "@/types/types";
+import { CONFIG_LIMITS } from "@/utils";
 
 import { viewConfig } from "../db/schema";
 import { configDb, warehouseDb } from "../utils/db";
@@ -115,6 +121,9 @@ export const fetchConfig = async (): Promise<Views> => {
         FRONT_END_FILTER_COLUMN: "community",
         MEDIA_BASE_PATH: mediaBasePath,
         ROUTE_LEVEL_PERMISSION: "anyone",
+        DATASET_TABLE: undefined,
+        VIEW_HEADER_IMAGE: undefined,
+        VIEW_DESCRIPTION: undefined,
       },
       bcmform_responses: {
         VIEWS: "map,gallery",
@@ -129,6 +138,9 @@ export const fetchConfig = async (): Promise<Views> => {
         FRONT_END_FILTER_COLUMN: "community",
         MEDIA_BASE_PATH: mediaBasePath,
         ROUTE_LEVEL_PERMISSION: "member",
+        DATASET_TABLE: undefined,
+        VIEW_HEADER_IMAGE: undefined,
+        VIEW_DESCRIPTION: undefined,
       },
       fake_alerts: {
         VIEWS: "alerts",
@@ -144,7 +156,7 @@ export const fetchConfig = async (): Promise<Views> => {
         MAPBOX_ZOOM: 7,
         MAPBOX_PITCH: 0,
         MAPBOX_BEARING: 0,
-        MAPBOX_3D: "NO",
+        MAPBOX_3D: false,
         MAPEO_TABLE: "mapeo_data",
         MAPEO_CATEGORY_IDS: "threat",
         MAP_LEGEND_LAYER_IDS: "road-primary,aerialway",
@@ -152,6 +164,9 @@ export const fetchConfig = async (): Promise<Views> => {
         MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
         PLANET_API_KEY: planetApiKey,
         ROUTE_LEVEL_PERMISSION: "anyone",
+        DATASET_TABLE: undefined,
+        VIEW_HEADER_IMAGE: undefined,
+        VIEW_DESCRIPTION: undefined,
       },
     };
   }
@@ -193,6 +208,27 @@ export const updateConfig = async (
   config: unknown,
 ): Promise<void> => {
   try {
+    const typedConfig = config as ViewConfig;
+
+    // Validate character limits - check even if field exists as empty string
+    if (typedConfig.DATASET_TABLE) {
+      const datasetTableValue = String(typedConfig.DATASET_TABLE);
+      if (datasetTableValue.length > CONFIG_LIMITS.DATASET_TABLE) {
+        throw new Error(
+          `DATASET_TABLE must be at most ${CONFIG_LIMITS.DATASET_TABLE} characters (received ${datasetTableValue.length})`,
+        );
+      }
+    }
+
+    if (typedConfig.VIEW_DESCRIPTION) {
+      const viewDescriptionValue = String(typedConfig.VIEW_DESCRIPTION);
+      if (viewDescriptionValue.length > CONFIG_LIMITS.VIEW_DESCRIPTION) {
+        throw new Error(
+          `VIEW_DESCRIPTION must be at most ${CONFIG_LIMITS.VIEW_DESCRIPTION} characters (received ${viewDescriptionValue.length})`,
+        );
+      }
+    }
+
     const configString = JSON.stringify(config);
 
     await configDb
