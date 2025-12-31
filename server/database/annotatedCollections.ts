@@ -30,9 +30,7 @@ export const createAnnotatedCollection = async (
     notes?: string;
   }>,
 ): Promise<AnnotatedCollection> => {
-  // Use drizzle transaction API
   return await configDb.transaction(async (tx) => {
-    // Create the annotated parent collection first
     const [newCollection] = await tx
       .insert(annotatedCollections)
       .values({
@@ -44,7 +42,6 @@ export const createAnnotatedCollection = async (
       })
       .returning();
 
-    // Create incident-specific data if provided
     if (incidentData && collection.collection_type === "incident") {
       await tx.insert(incidents).values({
         collectionId: newCollection.id,
@@ -57,12 +54,9 @@ export const createAnnotatedCollection = async (
       });
     }
 
-    // Add entries if provided
     if (entries && entries.length > 0) {
       for (const entry of entries) {
-        // Fetch source data from the original table in the warehouse database
-        // Source tables are in warehouse, not config database
-        // Warehouse tables use _id as the primary key column
+        // Fetch source data from warehouse database (source tables use _id as primary key)
         const sourceResult = await warehouseDb.execute(sql`
           SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} LIMIT 1
         `);
@@ -280,9 +274,7 @@ export const addEntriesToCollection = async (
     const newEntries = [];
 
     for (const entry of entries) {
-      // Fetch source data from the original table in the warehouse database
-      // Source tables are in warehouse, not config database
-      // Warehouse tables use _id as the primary key column
+      // Fetch source data from warehouse database (source tables use _id as primary key)
       const sourceResult = await warehouseDb.execute(sql`
         SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} LIMIT 1
       `);
@@ -348,7 +340,6 @@ export const listAnnotatedCollections = async (filters?: {
   collections: AnnotatedCollection[];
   total: number;
 }> => {
-  // Build where conditions
   const whereConditions = [];
   if (filters?.collection_type) {
     whereConditions.push(
@@ -361,7 +352,6 @@ export const listAnnotatedCollections = async (filters?: {
     );
   }
 
-  // For status filtering, we need to join with incidents table
   if (filters?.status) {
     const collectionsResult = await configDb
       .select()
@@ -391,7 +381,6 @@ export const listAnnotatedCollections = async (filters?: {
 
     return { collections, total: countResult.count };
   } else {
-    // Simple query without status filtering
     const whereCondition =
       whereConditions.length > 0
         ? whereConditions.length === 1

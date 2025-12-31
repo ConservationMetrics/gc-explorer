@@ -100,6 +100,7 @@ const apiKey = config.public.appApiKey as string;
 
 /**
  * Fetches incidents from the API
+ * @returns Promise<void>
  */
 const fetchIncidents = async () => {
   isLoadingIncidents.value = true;
@@ -123,7 +124,9 @@ const fetchIncidents = async () => {
 };
 
 /**
- * Creates a new incident
+ * Creates a new incident with selected sources
+ * @param incidentData - Incident data including name, description, type, responsible party, impact, and evidence
+ * @returns Promise<void>
  */
 const createIncident = async (incidentData: {
   name: string;
@@ -2093,6 +2096,7 @@ const calculateLineStringCentroid = (coordinates: number[][]) => {
 
 /**
  * Toggles the incidents sidebar visibility
+ * @returns void
  */
 const toggleIncidentsSidebar = () => {
   showIncidentsSidebar.value = !showIncidentsSidebar.value;
@@ -2103,7 +2107,7 @@ const toggleIncidentsSidebar = () => {
  */
 const toggleMultiSelectMode = () => {
   multiSelectMode.value = !multiSelectMode.value;
-  boundingBoxMode.value = false; // Disable bounding box when multi-select is active
+  boundingBoxMode.value = false;
 };
 
 /**
@@ -2111,16 +2115,14 @@ const toggleMultiSelectMode = () => {
  */
 const toggleBoundingBoxMode = () => {
   boundingBoxMode.value = !boundingBoxMode.value;
-  multiSelectMode.value = false; // Disable multi-select when bounding box is active
+  multiSelectMode.value = false;
 
   if (boundingBoxMode.value) {
-    // Disable map rotation when bounding box mode is active
     if (map.value) {
       map.value.dragRotate.disable();
     }
     setupCustomBoundingBox();
   } else {
-    // Re-enable map rotation when bounding box mode is disabled
     if (map.value) {
       map.value.dragRotate.enable();
     }
@@ -2175,18 +2177,14 @@ const setupCustomBoundingBox = () => {
    * Handles mouse down event to start bounding box selection
    */
   const mouseDown = (e: MouseEvent) => {
-    // Continue only if Ctrl/Cmd key is pressed and left mouse button
     if (!((e.ctrlKey || e.metaKey) && e.button === 0)) return;
 
-    // Disable default drag panning
     map.value.dragPan.disable();
 
-    // Add event listeners
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
     document.addEventListener("keydown", onKeyDown);
 
-    // Capture the first xy coordinates
     start = mousePos(e);
   };
 
@@ -2196,10 +2194,8 @@ const setupCustomBoundingBox = () => {
   const onMouseMove = (e: MouseEvent) => {
     if (!start) return;
 
-    // Capture the ongoing xy coordinates
     current = mousePos(e);
 
-    // Create the box element if it doesn't exist
     if (!box) {
       box = document.createElement("div");
       box.classList.add("boxdraw");
@@ -2211,7 +2207,6 @@ const setupCustomBoundingBox = () => {
     const minY = Math.min(start.y, current.y);
     const maxY = Math.max(start.y, current.y);
 
-    // Adjust width and xy position of the box element
     const pos = `translate(${minX}px, ${minY}px)`;
     box.style.transform = pos;
     box.style.width = maxX - minX + "px";
@@ -2224,7 +2219,6 @@ const setupCustomBoundingBox = () => {
   const onMouseUp = (e: MouseEvent) => {
     if (!start) return;
 
-    // Capture xy coordinates
     finish([start, mousePos(e)]);
   };
 
@@ -2232,7 +2226,6 @@ const setupCustomBoundingBox = () => {
    * Handles key down to cancel selection on ESC
    */
   const onKeyDown = (e: KeyboardEvent) => {
-    // If the ESC key is pressed
     if (e.keyCode === 27) finish();
   };
 
@@ -2240,42 +2233,33 @@ const setupCustomBoundingBox = () => {
    * Finishes the bounding box selection and queries features
    */
   const finish = (bbox?: [mapboxgl.Point, mapboxgl.Point]) => {
-    // Remove event listeners
     document.removeEventListener("mousemove", onMouseMove);
     document.removeEventListener("keydown", onKeyDown);
     document.removeEventListener("mouseup", onMouseUp);
 
-    // Remove the box element
     if (box) {
       box.parentNode?.removeChild(box);
       box = null;
     }
 
-    // If bbox exists, query features within it
     if (bbox && map.value) {
-      // Convert mapboxgl.Point to pixel bbox format for queryRenderedFeatures
-      // Format: [[x1, y1], [x2, y2]]
+      // Convert mapboxgl.Point to pixel bbox format for queryRenderedFeatures: [[x1, y1], [x2, y2]]
       const pixelBbox: [[number, number], [number, number]] = [
         [Math.min(bbox[0].x, bbox[1].x), Math.min(bbox[0].y, bbox[1].y)],
         [Math.max(bbox[0].x, bbox[1].x), Math.max(bbox[0].y, bbox[1].y)],
       ];
 
-      // Select features within the bounding box
       selectFeaturesInBoundingBox(pixelBbox);
     }
 
-    // Re-enable drag panning
     map.value.dragPan.enable();
 
-    // Reset variables
     start = null;
     current = null;
   };
 
-  // Add mousedown event listener to canvas
   canvas.addEventListener("mousedown", mouseDown, true);
 
-  // Store cleanup function on map instance
   (
     map.value as mapboxgl.Map & { _boundingBoxCleanup?: () => void }
   )._boundingBoxCleanup = () => {
@@ -2307,7 +2291,6 @@ const removeBoundingBoxHandlers = () => {
       ._boundingBoxCleanup;
   }
 
-  // Re-enable map rotation when handlers are removed
   map.value.dragRotate.enable();
 };
 
@@ -2320,7 +2303,6 @@ const selectFeaturesInBoundingBox = (
 ) => {
   if (!map.value) return;
 
-  // Use the same robust layer checking as multi-select
   // Include centroids layers as they contain the alertID property
   const alertLayers = [
     "most-recent-alerts-polygon",
@@ -2337,7 +2319,6 @@ const selectFeaturesInBoundingBox = (
 
   const mapeoLayers = ["mapeo-data"];
 
-  // Query each layer individually with existence checks
   const allFeatures: Array<{
     properties?: {
       alertID?: string;
@@ -2348,14 +2329,12 @@ const selectFeaturesInBoundingBox = (
     layer?: { id?: string };
   }> = [];
 
-  // Query alert layers
   alertLayers.forEach((layerId) => {
     try {
       if (map.value.getLayer(layerId)) {
         const features = map.value.queryRenderedFeatures(bbox, {
           layers: [layerId],
         });
-        // Filter out cluster features
         const validFeatures = features.filter(
           (f) =>
             !f.properties?.cluster &&
@@ -2371,7 +2350,6 @@ const selectFeaturesInBoundingBox = (
     }
   });
 
-  // Query mapeo layers
   mapeoLayers.forEach((layerId) => {
     try {
       if (map.value.getLayer(layerId)) {
@@ -2388,7 +2366,6 @@ const selectFeaturesInBoundingBox = (
 
   console.log("Total features found in bounding box:", allFeatures.length);
 
-  // Add all features to selection using the same logic as multi-select
   allFeatures.forEach(
     (feature: {
       properties?: { alertID?: string; id?: string };
@@ -2399,7 +2376,6 @@ const selectFeaturesInBoundingBox = (
 
       if (!layerId) return;
 
-      // Use the same logic as other selection methods
       let sourceId: string | null = null;
       if (featureObject?.alertID) {
         sourceId = featureObject.alertID;
@@ -2419,7 +2395,6 @@ const selectFeaturesInBoundingBox = (
     },
   );
 
-  // Automatically open the incidents sidebar if we have selections
   if (selectedSources.value.length > 0) {
     showIncidentsSidebar.value = true;
   }
@@ -2427,6 +2402,9 @@ const selectFeaturesInBoundingBox = (
 
 /**
  * Adds a source to the selected sources list for incident creation
+ * @param sourceTable - The table name (e.g., "fake_alerts", "mapeo_data")
+ * @param sourceId - The unique identifier from the source table
+ * @param notes - Optional notes about the source
  */
 const addSourceToSelection = (
   sourceTable: string,
@@ -2449,6 +2427,8 @@ const addSourceToSelection = (
 
 /**
  * Removes a source from the selected sources list
+ * @param sourceTable - The table name of the source to remove
+ * @param sourceId - The unique identifier of the source to remove
  */
 const removeSourceFromSelection = (sourceTable: string, sourceId: string) => {
   const index = selectedSources.value.findIndex(
@@ -2466,21 +2446,21 @@ const removeSourceFromSelection = (sourceTable: string, sourceId: string) => {
  */
 const clearSelectedSources = () => {
   selectedSources.value = [];
-  // Clear visual highlighting
   clearSourceHighlighting();
 };
 
 /**
  * Handles multi-select feature selection
+ * Determines source table from layer ID and route params, extracts source ID from feature properties
+ * @param feature - The map feature to select
+ * @param layerId - The layer ID the feature belongs to
  */
 const handleMultiSelectFeature = (feature: Feature, layerId: string) => {
   if (!feature.properties) return;
 
-  // Determine source table and source ID
   let sourceTable = "";
   let sourceId = "";
 
-  // Determine source table from layer ID or route
   // Get table name from route params (e.g., /alerts/fake_alerts -> fake_alerts)
   const tableRaw = route.params.tablename;
   const tableName = Array.isArray(tableRaw) ? tableRaw.join("/") : tableRaw;
@@ -2489,15 +2469,11 @@ const handleMultiSelectFeature = (feature: Feature, layerId: string) => {
     layerId.includes("most-recent-alerts") ||
     layerId.includes("previous-alerts")
   ) {
-    // For alerts, use the table name from route params
     sourceTable = (tableName as string) || "";
   } else if (layerId === "mapeo-data") {
-    // For mapeo, use the MAPEO_TABLE from config if available
-    // This should be passed as a prop or fetched, but for now use a default
     sourceTable = "mapeo_data";
   }
 
-  // Get source ID from feature properties
   if (feature.properties.alertID) {
     sourceId = feature.properties.alertID;
   } else if (feature.properties.id) {
@@ -2508,7 +2484,6 @@ const handleMultiSelectFeature = (feature: Feature, layerId: string) => {
     addSourceToSelection(sourceTable, sourceId);
     highlightSelectedSource(feature, layerId);
 
-    // Auto-open incidents sidebar if not already open
     if (!showIncidentsSidebar.value) {
       showIncidentsSidebar.value = true;
     }
@@ -2516,7 +2491,9 @@ const handleMultiSelectFeature = (feature: Feature, layerId: string) => {
 };
 
 /**
- * Highlights a selected source on the map
+ * Highlights a selected source on the map using feature state
+ * @param feature - The map feature to highlight
+ * @param layerId - The layer ID the feature belongs to
  */
 const highlightedSources = ref<
   Array<{ featureId: string | number; layerId: string }>
@@ -2528,13 +2505,11 @@ const highlightSelectedSource = (feature: Feature, layerId: string) => {
     : feature.id;
 
   if (featureId !== undefined && featureId !== null) {
-    // Add to highlighted sources
     highlightedSources.value.push({
       featureId,
       layerId,
     });
 
-    // Set feature state for visual highlighting
     map.value.setFeatureState(
       { source: layerId, id: featureId },
       { selected: true },
@@ -2543,7 +2518,7 @@ const highlightSelectedSource = (feature: Feature, layerId: string) => {
 };
 
 /**
- * Clears all source highlighting
+ * Clears all source highlighting from the map
  */
 const clearSourceHighlighting = () => {
   highlightedSources.value.forEach(({ featureId, layerId }) => {
@@ -2562,7 +2537,6 @@ const clearSourceHighlighting = () => {
 
 onBeforeUnmount(() => {
   if (map.value) {
-    // Clean up bounding box handlers
     removeBoundingBoxHandlers();
     map.value.remove();
   }
