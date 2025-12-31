@@ -92,13 +92,7 @@ const hoveredButton = ref<"incidents" | "boundingBox" | "multiSelect" | null>(
   null,
 );
 
-// Bounding box state - store map state before zoom to restore it
-const mapStateBeforeBoxZoom = ref<{
-  center: [number, number];
-  zoom: number;
-  bearing: number;
-  pitch: number;
-} | null>(null);
+// Bounding box state (handled by setupCustomBoundingBox)
 
 // Get API key from runtime config
 const config = useRuntimeConfig();
@@ -2120,22 +2114,181 @@ const toggleBoundingBoxMode = () => {
   multiSelectMode.value = false; // Disable multi-select when bounding box is active
 
   if (boundingBoxMode.value) {
-    setupBoundingBoxHandlers();
+    // Disable map rotation when bounding box mode is active
+    if (map.value) {
+      map.value.dragRotate.disable();
+    }
+    setupCustomBoundingBox();
   } else {
+    // Re-enable map rotation when bounding box mode is disabled
+    if (map.value) {
+      map.value.dragRotate.enable();
+    }
     removeBoundingBoxHandlers();
   }
 };
 
 /**
- * Sets up bounding box drawing handlers
+ * Sets up custom bounding box selection (Ctrl/Cmd + drag)
+ * Creates a visual selection box and selects features within it
  */
-const setupBoundingBoxHandlers = () => {
+const setupCustomBoundingBox = () => {
   if (!map.value) return;
 
-  // Store map state before box zoom starts
-  map.value.on("boxzoomstart", handleBoxZoomStart);
-  // Intercept box zoom end event to select features instead of zooming
-  map.value.on("boxzoomend", handleBoxZoomEnd);
+  const canvas = map.value.getCanvasContainer();
+  let start: mapboxgl.Point | null = null;
+  let current: mapboxgl.Point | null = null;
+  let box: HTMLElement | null = null;
+
+  // Add CSS for the selection box
+  if (!document.getElementById("bounding-box-styles")) {
+    const style = document.createElement("style");
+    style.id = "bounding-box-styles";
+    style.textContent = `
+      .boxdraw {
+        background: rgba(56, 135, 190, 0.1);
+        border: 2px solid #3887be;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+        z-index: 1000;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  /**
+   * Returns the xy coordinates of the mouse position relative to the canvas
+   */
+  const mousePos = (e: MouseEvent) => {
+    const rect = canvas.getBoundingClientRect();
+    return new mapboxgl.Point(
+      e.clientX - rect.left - canvas.clientLeft,
+      e.clientY - rect.top - canvas.clientTop,
+    );
+  };
+
+  /**
+   * Handles mouse down event to start bounding box selection
+   */
+  const mouseDown = (e: MouseEvent) => {
+    // Continue only if Ctrl/Cmd key is pressed and left mouse button
+    if (!((e.ctrlKey || e.metaKey) && e.button === 0)) return;
+
+    // Disable default drag panning
+    map.value.dragPan.disable();
+
+    // Add event listeners
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("keydown", onKeyDown);
+
+    // Capture the first xy coordinates
+    start = mousePos(e);
+  };
+
+  /**
+   * Handles mouse move to draw the selection box
+   */
+  const onMouseMove = (e: MouseEvent) => {
+    if (!start) return;
+
+    // Capture the ongoing xy coordinates
+    current = mousePos(e);
+
+    // Create the box element if it doesn't exist
+    if (!box) {
+      box = document.createElement("div");
+      box.classList.add("boxdraw");
+      canvas.appendChild(box);
+    }
+
+    const minX = Math.min(start.x, current.x);
+    const maxX = Math.max(start.x, current.x);
+    const minY = Math.min(start.y, current.y);
+    const maxY = Math.max(start.y, current.y);
+
+    // Adjust width and xy position of the box element
+    const pos = `translate(${minX}px, ${minY}px)`;
+    box.style.transform = pos;
+    box.style.width = maxX - minX + "px";
+    box.style.height = maxY - minY + "px";
+  };
+
+  /**
+   * Handles mouse up to finish selection
+   */
+  const onMouseUp = (e: MouseEvent) => {
+    if (!start) return;
+
+    // Capture xy coordinates
+    finish([start, mousePos(e)]);
+  };
+
+  /**
+   * Handles key down to cancel selection on ESC
+   */
+  const onKeyDown = (e: KeyboardEvent) => {
+    // If the ESC key is pressed
+    if (e.keyCode === 27) finish();
+  };
+
+  /**
+   * Finishes the bounding box selection and queries features
+   */
+  const finish = (bbox?: [mapboxgl.Point, mapboxgl.Point]) => {
+    // Remove event listeners
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("keydown", onKeyDown);
+    document.removeEventListener("mouseup", onMouseUp);
+
+    // Remove the box element
+    if (box) {
+      box.parentNode?.removeChild(box);
+      box = null;
+    }
+
+    // If bbox exists, query features within it
+    if (bbox && map.value) {
+      // Convert mapboxgl.Point to pixel bbox format for queryRenderedFeatures
+      // Format: [[x1, y1], [x2, y2]]
+      const pixelBbox: [[number, number], [number, number]] = [
+        [Math.min(bbox[0].x, bbox[1].x), Math.min(bbox[0].y, bbox[1].y)],
+        [Math.max(bbox[0].x, bbox[1].x), Math.max(bbox[0].y, bbox[1].y)],
+      ];
+
+      // Select features within the bounding box
+      selectFeaturesInBoundingBox(pixelBbox);
+    }
+
+    // Re-enable drag panning
+    map.value.dragPan.enable();
+
+    // Reset variables
+    start = null;
+    current = null;
+  };
+
+  // Add mousedown event listener to canvas
+  canvas.addEventListener("mousedown", mouseDown, true);
+
+  // Store cleanup function on map instance
+  (
+    map.value as mapboxgl.Map & { _boundingBoxCleanup?: () => void }
+  )._boundingBoxCleanup = () => {
+    canvas.removeEventListener("mousedown", mouseDown, true);
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("keydown", onKeyDown);
+    document.removeEventListener("mouseup", onMouseUp);
+    if (box) {
+      box.parentNode?.removeChild(box);
+      box = null;
+    }
+    map.value.dragPan.enable();
+  };
 };
 
 /**
@@ -2144,112 +2297,132 @@ const setupBoundingBoxHandlers = () => {
 const removeBoundingBoxHandlers = () => {
   if (!map.value) return;
 
-  map.value.off("boxzoomstart", handleBoxZoomStart);
-  map.value.off("boxzoomend", handleBoxZoomEnd);
-  mapStateBeforeBoxZoom.value = null;
-};
-
-/**
- * Handles box zoom start - stores current map state to restore after selection
- */
-const handleBoxZoomStart = () => {
-  if (!boundingBoxMode.value || !map.value) return;
-
-  // Store current map state
-  mapStateBeforeBoxZoom.value = {
-    center: map.value.getCenter().toArray() as [number, number],
-    zoom: map.value.getZoom(),
-    bearing: map.value.getBearing(),
-    pitch: map.value.getPitch(),
-  };
-};
-
-/**
- * Handles box zoom end event - intercepts it to select features instead of zooming
- */
-const handleBoxZoomEnd = (e: { boxZoomBounds: mapboxgl.LngLatBounds }) => {
-  if (!boundingBoxMode.value || !map.value) return;
-
-  // Get the bounding box from the box zoom event
-  const bounds = e.boxZoomBounds;
-  if (!bounds) return;
-
-  // Restore map state immediately to prevent zoom
-  if (mapStateBeforeBoxZoom.value) {
-    map.value.jumpTo({
-      center: mapStateBeforeBoxZoom.value.center,
-      zoom: mapStateBeforeBoxZoom.value.zoom,
-      bearing: mapStateBeforeBoxZoom.value.bearing,
-      pitch: mapStateBeforeBoxZoom.value.pitch,
-    });
+  // Call cleanup function if it exists
+  const cleanup = (
+    map.value as mapboxgl.Map & { _boundingBoxCleanup?: () => void }
+  )._boundingBoxCleanup;
+  if (cleanup) {
+    cleanup();
+    delete (map.value as mapboxgl.Map & { _boundingBoxCleanup?: () => void })
+      ._boundingBoxCleanup;
   }
 
-  // Wait for map to restore, then query features using geographic bounds
-  map.value.once("idle", () => {
-    // Get pixel coordinates of the bounds at the restored zoom level
-    const ne = bounds.getNorthEast();
-    const sw = bounds.getSouthWest();
-
-    const nePoint = map.value.project(ne);
-    const swPoint = map.value.project(sw);
-
-    // Create bbox in pixel coordinates for queryRenderedFeatures
-    const bbox: [number, number, number, number] = [
-      Math.min(swPoint.x, nePoint.x),
-      Math.min(swPoint.y, nePoint.y),
-      Math.max(swPoint.x, nePoint.x),
-      Math.max(swPoint.y, nePoint.y),
-    ];
-
-    // Select features within the bounding box (same logic as multi-select)
-    selectFeaturesInBoundingBox(bbox);
-
-    // Clear stored state
-    mapStateBeforeBoxZoom.value = null;
-  });
+  // Re-enable map rotation when handlers are removed
+  map.value.dragRotate.enable();
 };
 
 /**
  * Selects features within the bounding box using pixel coordinates
+ * Uses the same robust layer checking as multi-select
  */
 const selectFeaturesInBoundingBox = (
-  bbox: [number, number, number, number],
+  bbox: [[number, number], [number, number]],
 ) => {
   if (!map.value) return;
 
-  // Query features in the bounding box from all alert and mapeo layers
-  const layersToQuery = [
-    "most-recent-alerts-point",
+  // Use the same robust layer checking as multi-select
+  // Include centroids layers as they contain the alertID property
+  const alertLayers = [
     "most-recent-alerts-polygon",
     "most-recent-alerts-linestring",
+    "most-recent-alerts-point",
+    "most-recent-alerts-symbol",
     "most-recent-alerts-centroids",
-    "previous-alerts-point",
     "previous-alerts-polygon",
     "previous-alerts-linestring",
+    "previous-alerts-point",
+    "previous-alerts-symbol",
     "previous-alerts-centroids",
-    "mapeo-data",
-  ].filter((layerId) => map.value.getLayer(layerId));
+  ];
 
-  const features = map.value.queryRenderedFeatures(bbox, {
-    layers: layersToQuery,
-  });
+  const mapeoLayers = ["mapeo-data"];
 
-  // Filter out cluster features
-  const validFeatures = features.filter(
-    (f) =>
-      !f.properties?.cluster &&
-      f.properties?.cluster_id === undefined &&
-      f.layer?.id &&
-      !f.layer.id.includes("clusters") &&
-      !f.layer.id.includes("cluster-count"),
-  );
+  // Query each layer individually with existence checks
+  const allFeatures: Array<{
+    properties?: {
+      alertID?: string;
+      id?: string;
+      cluster?: boolean;
+      cluster_id?: number;
+    };
+    layer?: { id?: string };
+  }> = [];
 
-  // Add all features to selected sources (same logic as multi-select)
-  validFeatures.forEach((feature) => {
-    if (feature.layer?.id) {
-      handleMultiSelectFeature(feature, feature.layer.id);
+  // Query alert layers
+  alertLayers.forEach((layerId) => {
+    try {
+      if (map.value.getLayer(layerId)) {
+        const features = map.value.queryRenderedFeatures(bbox, {
+          layers: [layerId],
+        });
+        // Filter out cluster features
+        const validFeatures = features.filter(
+          (f) =>
+            !f.properties?.cluster &&
+            f.properties?.cluster_id === undefined &&
+            !f.layer?.id?.includes("clusters") &&
+            !f.layer?.id?.includes("cluster-count"),
+        );
+        allFeatures.push(...validFeatures);
+        console.log(`Layer ${layerId}: found ${validFeatures.length} features`);
+      }
+    } catch (error) {
+      console.warn(`Error querying layer ${layerId}:`, error);
     }
   });
+
+  // Query mapeo layers
+  mapeoLayers.forEach((layerId) => {
+    try {
+      if (map.value.getLayer(layerId)) {
+        const features = map.value.queryRenderedFeatures(bbox, {
+          layers: [layerId],
+        });
+        allFeatures.push(...features);
+        console.log(`Layer ${layerId}: found ${features.length} features`);
+      }
+    } catch (error) {
+      console.warn(`Error querying layer ${layerId}:`, error);
+    }
+  });
+
+  console.log("Total features found in bounding box:", allFeatures.length);
+
+  // Add all features to selection using the same logic as multi-select
+  allFeatures.forEach(
+    (feature: {
+      properties?: { alertID?: string; id?: string };
+      layer?: { id?: string };
+    }) => {
+      const featureObject = feature.properties;
+      const layerId = feature.layer?.id;
+
+      if (!layerId) return;
+
+      // Use the same logic as other selection methods
+      let sourceId: string | null = null;
+      if (featureObject?.alertID) {
+        sourceId = featureObject.alertID;
+      } else if (featureObject?.id) {
+        sourceId = featureObject.id;
+      }
+
+      if (sourceId) {
+        handleMultiSelectFeature(feature as Feature, layerId);
+        console.log(`Selected source: ${sourceId} from layer ${layerId}`);
+      } else {
+        console.warn(
+          `No sourceId found for feature in layer ${layerId}:`,
+          featureObject,
+        );
+      }
+    },
+  );
+
+  // Automatically open the incidents sidebar if we have selections
+  if (selectedSources.value.length > 0) {
+    showIncidentsSidebar.value = true;
+  }
 };
 
 /**
@@ -2511,7 +2684,7 @@ onBeforeUnmount(() => {
           {{
             boundingBoxMode
               ? "Disable bounding box selection"
-              : "Select multiple features by drawing a box (Shift + drag)"
+              : "Select multiple features by drawing a box (Ctrl/Cmd + drag)"
           }}
         </div>
       </div>
