@@ -2176,14 +2176,14 @@ const setupCustomBoundingBox = () => {
   /**
    * Handles mouse down event to start bounding box selection
    */
-  const mouseDown = (e: MouseEvent) => {
+  const mouseDownForBoundingBox = (e: MouseEvent) => {
     if (!((e.ctrlKey || e.metaKey) && e.button === 0)) return;
 
     map.value.dragPan.disable();
 
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("mousemove", onMouseMoveDuringBoundingBox);
+    document.addEventListener("mouseup", onMouseUpDuringBoundingBox);
+    document.addEventListener("keydown", onKeyDownDuringBoundingBox);
 
     start = mousePos(e);
   };
@@ -2191,7 +2191,7 @@ const setupCustomBoundingBox = () => {
   /**
    * Handles mouse move to draw the selection box
    */
-  const onMouseMove = (e: MouseEvent) => {
+  const onMouseMoveDuringBoundingBox = (e: MouseEvent) => {
     if (!start) return;
 
     current = mousePos(e);
@@ -2214,28 +2214,28 @@ const setupCustomBoundingBox = () => {
   };
 
   /**
-   * Handles mouse up to finish selection
+   * Handles mouse up to finish bounding box selection
    */
-  const onMouseUp = (e: MouseEvent) => {
+  const onMouseUpDuringBoundingBox = (e: MouseEvent) => {
     if (!start) return;
 
-    finish([start, mousePos(e)]);
+    finishBoundingBox([start, mousePos(e)]);
   };
 
   /**
-   * Handles key down to cancel selection on ESC
+   * Handles key down to cancel bounding box selection on ESC
    */
-  const onKeyDown = (e: KeyboardEvent) => {
-    if (e.keyCode === 27) finish();
+  const onKeyDownDuringBoundingBox = (e: KeyboardEvent) => {
+    if (e.keyCode === 27) finishBoundingBox();
   };
 
   /**
    * Finishes the bounding box selection and queries features
    */
-  const finish = (bbox?: [mapboxgl.Point, mapboxgl.Point]) => {
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("keydown", onKeyDown);
-    document.removeEventListener("mouseup", onMouseUp);
+  const finishBoundingBox = (bbox?: [mapboxgl.Point, mapboxgl.Point]) => {
+    document.removeEventListener("mousemove", onMouseMoveDuringBoundingBox);
+    document.removeEventListener("keydown", onKeyDownDuringBoundingBox);
+    document.removeEventListener("mouseup", onMouseUpDuringBoundingBox);
 
     if (box) {
       box.parentNode?.removeChild(box);
@@ -2258,15 +2258,15 @@ const setupCustomBoundingBox = () => {
     current = null;
   };
 
-  canvas.addEventListener("mousedown", mouseDown, true);
+  canvas.addEventListener("mousedown", mouseDownForBoundingBox, true);
 
   (
     map.value as mapboxgl.Map & { _boundingBoxCleanup?: () => void }
   )._boundingBoxCleanup = () => {
-    canvas.removeEventListener("mousedown", mouseDown, true);
-    document.removeEventListener("mousemove", onMouseMove);
-    document.removeEventListener("keydown", onKeyDown);
-    document.removeEventListener("mouseup", onMouseUp);
+    canvas.removeEventListener("mousedown", mouseDownForBoundingBox, true);
+    document.removeEventListener("mousemove", onMouseMoveDuringBoundingBox);
+    document.removeEventListener("keydown", onKeyDownDuringBoundingBox);
+    document.removeEventListener("mouseup", onMouseUpDuringBoundingBox);
     if (box) {
       box.parentNode?.removeChild(box);
       box = null;
@@ -2336,14 +2336,19 @@ const selectFeaturesInBoundingBox = (
           layers: [layerId],
         });
         const validFeatures = features.filter(
-          (f) =>
+          (f: {
+            properties?: { cluster?: boolean; cluster_id?: number };
+            layer?: { id?: string };
+          }) =>
             !f.properties?.cluster &&
             f.properties?.cluster_id === undefined &&
             !f.layer?.id?.includes("clusters") &&
             !f.layer?.id?.includes("cluster-count"),
         );
         allFeatures.push(...validFeatures);
-        console.log(`Layer ${layerId}: found ${validFeatures.length} features`);
+        console.debug(
+          `Layer ${layerId}: found ${validFeatures.length} features`,
+        );
       }
     } catch (error) {
       console.warn(`Error querying layer ${layerId}:`, error);
@@ -2357,14 +2362,14 @@ const selectFeaturesInBoundingBox = (
           layers: [layerId],
         });
         allFeatures.push(...features);
-        console.log(`Layer ${layerId}: found ${features.length} features`);
+        console.debug(`Layer ${layerId}: found ${features.length} features`);
       }
     } catch (error) {
       console.warn(`Error querying layer ${layerId}:`, error);
     }
   });
 
-  console.log("Total features found in bounding box:", allFeatures.length);
+  console.debug("Total features found in bounding box:", allFeatures.length);
 
   allFeatures.forEach(
     (feature: {
@@ -2385,7 +2390,7 @@ const selectFeaturesInBoundingBox = (
 
       if (sourceId) {
         handleMultiSelectFeature(feature as Feature, layerId);
-        console.log(`Selected source: ${sourceId} from layer ${layerId}`);
+        console.debug(`Selected source: ${sourceId} from layer ${layerId}`);
       } else {
         console.warn(
           `No sourceId found for feature in layer ${layerId}:`,
@@ -2452,8 +2457,18 @@ const clearSelectedSources = () => {
 /**
  * Handles multi-select feature selection
  * Determines source table from layer ID and route params, extracts source ID from feature properties
+ *
+ * Source table determination logic:
+ * - For alert layers (containing "most-recent-alerts" or "previous-alerts"): Uses the table name from route params.
+ *   The route structure is /alerts/{tablename}, so route.params.tablename contains the table name (e.g., "fake_alerts").
+ * - For Mapeo layers (layerId === "mapeo-data"): Uses the hardcoded table name "mapeo_data".
+ *
+ * Source ID extraction:
+ * - For alerts: Uses feature.properties.alertID
+ * - For Mapeo: Uses feature.properties.id
+ *
  * @param feature - The map feature to select
- * @param layerId - The layer ID the feature belongs to
+ * @param layerId - The layer ID the feature belongs to (e.g., "most-recent-alerts-polygon", "mapeo-data")
  */
 const handleMultiSelectFeature = (feature: Feature, layerId: string) => {
   if (!feature.properties) return;
@@ -2492,6 +2507,7 @@ const handleMultiSelectFeature = (feature: Feature, layerId: string) => {
 
 /**
  * Highlights a selected source on the map using feature state
+ * Checks for duplicates before adding to prevent multiple highlights on the same feature
  * @param feature - The map feature to highlight
  * @param layerId - The layer ID the feature belongs to
  */
@@ -2505,15 +2521,23 @@ const highlightSelectedSource = (feature: Feature, layerId: string) => {
     : feature.id;
 
   if (featureId !== undefined && featureId !== null) {
-    highlightedSources.value.push({
-      featureId,
-      layerId,
-    });
-
-    map.value.setFeatureState(
-      { source: layerId, id: featureId },
-      { selected: true },
+    // Check if this feature is already highlighted
+    const existingIndex = highlightedSources.value.findIndex(
+      (highlighted) =>
+        highlighted.featureId === featureId && highlighted.layerId === layerId,
     );
+
+    if (existingIndex === -1) {
+      highlightedSources.value.push({
+        featureId,
+        layerId,
+      });
+
+      map.value.setFeatureState(
+        { source: layerId, id: featureId },
+        { selected: true },
+      );
+    }
   }
 };
 

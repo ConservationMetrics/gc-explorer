@@ -56,9 +56,12 @@ export const createAnnotatedCollection = async (
 
     if (entries && entries.length > 0) {
       for (const entry of entries) {
-        // Fetch source data from warehouse database (source tables use _id as primary key)
+        // Fetch source data from warehouse database
+        // Most warehouse tables (e.g., fake_alerts) use _id as primary key
+        // However, mapeo_data uses id as primary key, so we need to handle both cases
+        const idColumn = entry.source_table === "mapeo_data" ? "id" : "_id";
         const sourceResult = await warehouseDb.execute(sql`
-          SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} LIMIT 1
+          SELECT * FROM ${sql.identifier(entry.source_table)} WHERE ${sql.identifier(idColumn)} = ${entry.source_id} LIMIT 1
         `);
 
         await tx.insert(collectionEntries).values({
@@ -274,9 +277,12 @@ export const addEntriesToCollection = async (
     const newEntries = [];
 
     for (const entry of entries) {
-      // Fetch source data from warehouse database (source tables use _id as primary key)
+      // Fetch source data from warehouse database
+      // Most warehouse tables (e.g., fake_alerts) use _id as primary key
+      // However, mapeo_data uses id as primary key, so we need to handle both cases
+      const idColumn = entry.source_table === "mapeo_data" ? "id" : "_id";
       const sourceResult = await warehouseDb.execute(sql`
-        SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} LIMIT 1
+        SELECT * FROM ${sql.identifier(entry.source_table)} WHERE ${sql.identifier(idColumn)} = ${entry.source_id} LIMIT 1
       `);
 
       const [newEntry] = await tx
@@ -340,6 +346,7 @@ export const listAnnotatedCollections = async (filters?: {
   collections: AnnotatedCollection[];
   total: number;
 }> => {
+  // Build where conditions
   const whereConditions = [];
   if (filters?.collection_type) {
     whereConditions.push(
@@ -352,6 +359,7 @@ export const listAnnotatedCollections = async (filters?: {
     );
   }
 
+  // For status filtering, we need to join with incidents table
   if (filters?.status) {
     const collectionsResult = await configDb
       .select()
@@ -381,6 +389,7 @@ export const listAnnotatedCollections = async (filters?: {
 
     return { collections, total: countResult.count };
   } else {
+    // Simple query without status filtering
     const whereCondition =
       whereConditions.length > 0
         ? whereConditions.length === 1
