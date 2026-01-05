@@ -34,7 +34,10 @@ const emit = defineEmits(["dateRangeChanged"]);
             >: {{ props.alertsStatistics.territory }}</span
           >
         </h2>
-        <div class="space-y-2 text-sm text-muted-foreground">
+        <div
+          v-if="props.alertsStatistics.alertsTotal > 0"
+          class="space-y-2 text-sm text-muted-foreground"
+        >
           <p class="italic">
             {{ $t("mostRecentAlertsShownIn") }}
             <span class="text-red-500 font-bold">{{ $t("red") }}</span
@@ -124,7 +127,7 @@ const emit = defineEmits(["dateRangeChanged"]);
     </div>
 
     <div
-      v-if="props.alertsStatistics"
+      v-if="props.alertsStatistics && props.alertsStatistics.alertsTotal > 0"
       class="rounded-lg border bg-card text-card-foreground shadow-sm"
     >
       <div class="p-6">
