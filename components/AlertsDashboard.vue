@@ -2455,7 +2455,7 @@ const clearSelectedSources = () => {
 };
 
 /**
- * Handles multi-select feature selection
+ * Handles multi-select feature selection with toggle behavior
  * Determines source table from layer ID and route params, extracts source ID from feature properties
  *
  * Source table determination logic:
@@ -2467,7 +2467,9 @@ const clearSelectedSources = () => {
  * - For alerts: Uses feature.properties.alertID
  * - For Mapeo: Uses feature.properties.id
  *
- * @param feature - The map feature to select
+ * Toggle behavior: If the feature is already selected, it will be deselected. Otherwise, it will be selected.
+ *
+ * @param feature - The map feature to select/deselect
  * @param layerId - The layer ID the feature belongs to (e.g., "most-recent-alerts-polygon", "mapeo-data")
  */
 const handleMultiSelectFeature = (feature: Feature, layerId: string) => {
@@ -2496,11 +2498,24 @@ const handleMultiSelectFeature = (feature: Feature, layerId: string) => {
   }
 
   if (sourceTable && sourceId) {
-    addSourceToSelection(sourceTable, sourceId);
-    highlightSelectedSource(feature, layerId);
+    // Check if already selected
+    const isAlreadySelected = selectedSources.value.some(
+      (source) =>
+        source.source_table === sourceTable && source.source_id === sourceId,
+    );
 
-    if (!showIncidentsSidebar.value) {
-      showIncidentsSidebar.value = true;
+    if (isAlreadySelected) {
+      // Deselect: remove from selection and unhighlight
+      removeSourceFromSelection(sourceTable, sourceId);
+      unhighlightSelectedSource(feature, layerId);
+    } else {
+      // Select: add to selection and highlight
+      addSourceToSelection(sourceTable, sourceId);
+      highlightSelectedSource(feature, layerId);
+
+      if (!showIncidentsSidebar.value) {
+        showIncidentsSidebar.value = true;
+      }
     }
   }
 };
@@ -2537,6 +2552,39 @@ const highlightSelectedSource = (feature: Feature, layerId: string) => {
         { source: layerId, id: featureId },
         { selected: true },
       );
+    }
+  }
+};
+
+/**
+ * Unhighlights a specific selected source on the map
+ * @param feature - The map feature to unhighlight
+ * @param layerId - The layer ID the feature belongs to
+ */
+const unhighlightSelectedSource = (feature: Feature, layerId: string) => {
+  const featureId = layerId.includes("-centroids")
+    ? feature.properties?.alertID
+    : feature.id;
+
+  if (featureId !== undefined && featureId !== null) {
+    // Remove from highlighted sources array
+    const existingIndex = highlightedSources.value.findIndex(
+      (highlighted) =>
+        highlighted.featureId === featureId && highlighted.layerId === layerId,
+    );
+
+    if (existingIndex !== -1) {
+      highlightedSources.value.splice(existingIndex, 1);
+
+      try {
+        map.value.setFeatureState(
+          { source: layerId, id: featureId },
+          { selected: false },
+        );
+      } catch (error) {
+        // Ignore errors if layer/source doesn't exist
+        console.warn("Error unhighlighting feature state:", error);
+      }
     }
   }
 };

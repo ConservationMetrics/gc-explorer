@@ -202,14 +202,14 @@ const handleClose = () => {
       </div>
 
       <!-- Incidents List -->
-      <div class="incidents-list">
+      <!-- Hide saved incidents when creating a new incident or when sources are selected -->
+      <div
+        v-if="!showCreateForm && selectedSources.length === 0"
+        class="incidents-list"
+      >
         <div class="list-header">
           <h3>Saved Incidents ({{ incidents.length }})</h3>
-          <button
-            v-if="!showCreateForm"
-            class="create-btn"
-            @click="showCreateForm = true"
-          >
+          <button class="create-btn" @click="showCreateForm = true">
             + New Incident
           </button>
         </div>
@@ -242,6 +242,16 @@ const handleClose = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Show "New Incident" button when creating or when sources are selected but form is not shown -->
+      <div
+        v-if="!showCreateForm && selectedSources.length > 0"
+        class="new-incident-prompt"
+      >
+        <button class="create-btn" @click="showCreateForm = true">
+          + New Incident
+        </button>
       </div>
     </div>
   </div>
@@ -534,5 +544,15 @@ const handleClose = () => {
   font-size: 12px;
   color: #999;
   margin-top: 8px;
+}
+
+.new-incident-prompt {
+  margin-top: 24px;
+  text-align: center;
+  padding: 16px;
+}
+
+.new-incident-prompt .create-btn {
+  width: 100%;
 }
 </style>
