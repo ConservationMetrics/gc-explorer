@@ -58,6 +58,7 @@ export default defineEventHandler(async (event: H3Event) => {
       filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
       mediaColumn: viewsConfig[table].MEDIA_COLUMN,
+      timestampColumn: viewsConfig[table].TIMESTAMP_COLUMN,
       table: table,
       routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
     };

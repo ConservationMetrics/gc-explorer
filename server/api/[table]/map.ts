@@ -92,6 +92,7 @@ export default defineEventHandler(async (event: H3Event) => {
       mediaBasePathIcons: viewsConfig[table].MEDIA_BASE_PATH_ICONS,
       mediaColumn: viewsConfig[table].MEDIA_COLUMN,
       planetApiKey: viewsConfig[table].PLANET_API_KEY,
+      timestampColumn: viewsConfig[table].TIMESTAMP_COLUMN,
       table: table,
       routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
     };

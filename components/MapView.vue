@@ -12,6 +12,7 @@ import {
 } from "@/utils/mapFunctions";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
+import TimestampFilter from "@/components/shared/TimestampFilter.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
 import MapLegend from "@/components/shared/MapLegend.vue";
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
@@ -50,6 +51,7 @@ const props = defineProps<{
   mediaBasePathIcons?: string;
   mediaColumn?: string;
   planetApiKey?: string;
+  timestampColumn?: string;
 }>();
 
 const filteredData = ref([...props.mapData]);
@@ -61,6 +63,12 @@ const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showIcons = ref(false);
 const loadingIcons = ref(false);
+
+// Timestamp filtering state
+const timestampRange = ref<{ start: Date | null; end: Date | null }>({
+  start: null,
+  end: null,
+});
 
 // Check if icon toggle is available
 const canToggleIcons = computed(() => {
@@ -386,17 +394,61 @@ const prepareMapCanvasContent = async () => {
 };
 
 const processedData = ref([...props.mapData]);
+const columnFilterValues = ref<FilterValues>([]);
+
+/** Apply combined filters (column filter + timestamp filter) */
+const applyFilters = () => {
+  let result = [...processedData.value];
+
+  // Apply column filter if not "null"
+  if (
+    columnFilterValues.value.length > 0 &&
+    !columnFilterValues.value.includes("null")
+  ) {
+    result = result.filter((item) =>
+      columnFilterValues.value.includes(item[props.filterColumn]),
+    );
+  }
+
+  // Apply timestamp filter if column is specified
+  if (
+    props.timestampColumn &&
+    (timestampRange.value.start || timestampRange.value.end)
+  ) {
+    result = result.filter((item) => {
+      const itemTimestamp = item[props.timestampColumn!];
+      if (!itemTimestamp) return false;
+
+      const itemDate = new Date(itemTimestamp);
+      if (isNaN(itemDate.getTime())) return false;
+
+      if (timestampRange.value.start && itemDate < timestampRange.value.start) {
+        return false;
+      }
+      if (timestampRange.value.end && itemDate > timestampRange.value.end) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  filteredData.value = result;
+  // Only update map if it exists
+  if (map.value) {
+    addDataToMap();
+  }
+};
 
 /** Filter data based on selected values from DataFilter component */
 const filterValues = (values: FilterValues) => {
-  if (values.includes("null")) {
-    filteredData.value = [...processedData.value];
-  } else {
-    filteredData.value = processedData.value.filter((item) =>
-      values.includes(item[props.filterColumn]),
-    );
-  }
-  addDataToMap(); // Update the map data
+  columnFilterValues.value = values;
+  applyFilters();
+};
+
+/** Filter data based on timestamp range from TimestampFilter component */
+const filterByTimestamp = (range: { start: Date | null; end: Date | null }) => {
+  timestampRange.value = range;
+  applyFilters();
 };
 
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
@@ -512,6 +564,13 @@ onBeforeUnmount(() => {
       :show-colored-dot="true"
       @filter="filterValues"
     />
+    <TimestampFilter
+      v-if="timestampColumn"
+      class="timestamp-filter-position"
+      :data="mapData"
+      :timestamp-column="timestampColumn"
+      @filter="filterByTimestamp"
+    />
     <ViewSidebar
       :allowed-file-extensions="allowedFileExtensions"
       :feature="selectedFeature"
@@ -577,6 +636,13 @@ body {
   position: absolute;
   top: 10px;
   left: 10px;
+  z-index: 10;
+}
+
+.timestamp-filter-position {
+  position: absolute;
+  top: 150px;
+  right: 50px;
   z-index: 10;
 }
 </style>

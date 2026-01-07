@@ -54,7 +54,9 @@ const handleInput = (key: string, value: string): void => {
 <template>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <div v-for="key in keys" :key="key" class="space-y-2">
-      <template v-if="key === 'FRONT_END_FILTER_COLUMN'">
+      <template
+        v-if="key === 'FRONT_END_FILTER_COLUMN' || key === 'TIMESTAMP_COLUMN'"
+      >
         <label
           :for="`${tableName}-${key}`"
           class="block text-sm font-medium text-gray-700"

@@ -40,6 +40,7 @@ const alertKeys = computed(() => ["MAPEO_CATEGORY_IDS", "MAPEO_TABLE"]);
 const filterKeys = computed(() => [
   "FILTER_OUT_VALUES_FROM_COLUMN",
   "FRONT_END_FILTER_COLUMN",
+  "TIMESTAMP_COLUMN",
   "UNWANTED_COLUMNS",
   "UNWANTED_SUBSTRINGS",
 ]);

@@ -52,6 +52,7 @@ export interface ViewConfig {
   MEDIA_BASE_PATH_ICONS?: string;
   MEDIA_COLUMN?: string;
   PLANET_API_KEY?: string;
+  TIMESTAMP_COLUMN?: string;
   UNWANTED_COLUMNS?: string;
   UNWANTED_SUBSTRINGS?: string;
   VIEWS?: string;

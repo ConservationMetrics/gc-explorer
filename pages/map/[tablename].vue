@@ -34,6 +34,7 @@ const mediaBasePath = ref();
 const mediaBasePathIcons = ref();
 const mediaColumn = ref();
 const planetApiKey = ref();
+const timestampColumn = ref();
 
 const {
   public: { appApiKey },
@@ -69,6 +70,7 @@ if (data.value && !error.value) {
   mediaBasePathIcons.value = data.value.mediaBasePathIcons;
   mediaColumn.value = data.value.mediaColumn;
   planetApiKey.value = data.value.planetApiKey;
+  timestampColumn.value = data.value.timestampColumn;
 } else {
   console.error("Error fetching data:", error.value);
 }
@@ -119,6 +121,7 @@ useHead({
         :media-base-path-icons="mediaBasePathIcons"
         :media-column="mediaColumn"
         :planet-api-key="planetApiKey"
+        :timestamp-column="timestampColumn"
       />
     </ClientOnly>
   </div>

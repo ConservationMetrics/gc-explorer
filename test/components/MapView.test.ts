@@ -84,6 +84,7 @@ const globalConfig = {
   },
   stubs: {
     DataFilter: true,
+    TimestampFilter: true,
     ViewSidebar: true,
     MapLegend: true,
     BasemapSelector: true,
@@ -718,5 +719,243 @@ describe("MapView component", () => {
     await flushPromises();
 
     expect(vm.showIcons).toBe(true);
+  });
+
+  it("renders TimestampFilter when timestampColumn is provided", async () => {
+    const propsWithTimestamp = {
+      ...baseProps,
+      timestampColumn: "created_at",
+      mapData: [
+        {
+          id: "1",
+          geotype: "Point",
+          geocoordinates: "[0, 0]",
+          status: "active",
+          "filter-color": "#ff0000",
+          created_at: "2024-01-15T10:00:00Z",
+        },
+      ],
+    };
+
+    const wrapper = mount(MapView, {
+      props: propsWithTimestamp,
+      global: {
+        ...globalConfig,
+        stubs: {
+          ...globalConfig.stubs,
+          TimestampFilter: false,
+        },
+      },
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const timestampFilter = wrapper.findComponent({ name: "TimestampFilter" });
+    expect(timestampFilter.exists()).toBe(true);
+    expect(timestampFilter.props("timestampColumn")).toBe("created_at");
+  });
+
+  it("does not render TimestampFilter when timestampColumn is not provided", async () => {
+    const wrapper = mount(MapView, {
+      props: baseProps,
+      global: {
+        ...globalConfig,
+        stubs: {
+          ...globalConfig.stubs,
+          TimestampFilter: false,
+        },
+      },
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const timestampFilter = wrapper.findComponent({ name: "TimestampFilter" });
+    expect(timestampFilter.exists()).toBe(false);
+  });
+
+  it("filters data by timestamp range", async () => {
+    const propsWithTimestamp = {
+      ...baseProps,
+      timestampColumn: "created_at",
+      mapData: [
+        {
+          id: "1",
+          geotype: "Point",
+          geocoordinates: "[0, 0]",
+          status: "active",
+          "filter-color": "#ff0000",
+          created_at: "2024-01-15T10:00:00Z",
+        },
+        {
+          id: "2",
+          geotype: "Point",
+          geocoordinates: "[1, 1]",
+          status: "active",
+          "filter-color": "#00ff00",
+          created_at: "2024-06-20T14:30:00Z",
+        },
+        {
+          id: "3",
+          geotype: "Point",
+          geocoordinates: "[2, 2]",
+          status: "active",
+          "filter-color": "#0000ff",
+          created_at: "2024-12-01T08:00:00Z",
+        },
+      ],
+    };
+
+    const wrapper = mount(MapView, {
+      props: propsWithTimestamp,
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      filteredData: typeof propsWithTimestamp.mapData;
+      filterByTimestamp: (range: {
+        start: Date | null;
+        end: Date | null;
+      }) => void;
+    };
+
+    // Filter to only include dates between March and October 2024
+    vm.filterByTimestamp({
+      start: new Date("2024-03-01T00:00:00Z"),
+      end: new Date("2024-10-31T23:59:59Z"),
+    });
+    await flushPromises();
+
+    expect(vm.filteredData).toHaveLength(1);
+    expect(vm.filteredData[0].id).toBe("2");
+  });
+
+  it("combines column filter and timestamp filter", async () => {
+    const propsWithBothFilters = {
+      ...baseProps,
+      timestampColumn: "created_at",
+      mapData: [
+        {
+          id: "1",
+          geotype: "Point",
+          geocoordinates: "[0, 0]",
+          status: "active",
+          "filter-color": "#ff0000",
+          created_at: "2024-01-15T10:00:00Z",
+        },
+        {
+          id: "2",
+          geotype: "Point",
+          geocoordinates: "[1, 1]",
+          status: "inactive",
+          "filter-color": "#00ff00",
+          created_at: "2024-06-20T14:30:00Z",
+        },
+        {
+          id: "3",
+          geotype: "Point",
+          geocoordinates: "[2, 2]",
+          status: "active",
+          "filter-color": "#0000ff",
+          created_at: "2024-06-25T08:00:00Z",
+        },
+      ],
+    };
+
+    const wrapper = mount(MapView, {
+      props: propsWithBothFilters,
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      filteredData: typeof propsWithBothFilters.mapData;
+      filterValues: (values: string[]) => void;
+      filterByTimestamp: (range: {
+        start: Date | null;
+        end: Date | null;
+      }) => void;
+    };
+
+    // Apply column filter for "active" status
+    vm.filterValues(["active"]);
+    await flushPromises();
+
+    // Apply timestamp filter for June 2024
+    vm.filterByTimestamp({
+      start: new Date("2024-06-01T00:00:00Z"),
+      end: new Date("2024-06-30T23:59:59Z"),
+    });
+    await flushPromises();
+
+    // Should only include id: "3" (active AND in June)
+    expect(vm.filteredData).toHaveLength(1);
+    expect(vm.filteredData[0].id).toBe("3");
+  });
+
+  it("handles invalid timestamp values gracefully", async () => {
+    const propsWithInvalidTimestamps = {
+      ...baseProps,
+      timestampColumn: "created_at",
+      mapData: [
+        {
+          id: "1",
+          geotype: "Point",
+          geocoordinates: "[0, 0]",
+          status: "active",
+          "filter-color": "#ff0000",
+          created_at: "invalid-date",
+        },
+        {
+          id: "2",
+          geotype: "Point",
+          geocoordinates: "[1, 1]",
+          status: "active",
+          "filter-color": "#00ff00",
+          created_at: "2024-06-20T14:30:00Z",
+        },
+        {
+          id: "3",
+          geotype: "Point",
+          geocoordinates: "[2, 2]",
+          status: "active",
+          "filter-color": "#0000ff",
+          created_at: null,
+        },
+      ],
+    };
+
+    const wrapper = mount(MapView, {
+      props: propsWithInvalidTimestamps,
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      filteredData: typeof propsWithInvalidTimestamps.mapData;
+      filterByTimestamp: (range: {
+        start: Date | null;
+        end: Date | null;
+      }) => void;
+    };
+
+    // Filter with a date range
+    vm.filterByTimestamp({
+      start: new Date("2024-06-01T00:00:00Z"),
+      end: new Date("2024-06-30T23:59:59Z"),
+    });
+    await flushPromises();
+
+    // Should only include the item with valid timestamp
+    expect(vm.filteredData).toHaveLength(1);
+    expect(vm.filteredData[0].id).toBe("2");
   });
 });
