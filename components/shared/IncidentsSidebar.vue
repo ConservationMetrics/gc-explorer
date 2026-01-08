@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watch } from "vue";
 import type { AnnotatedCollection, CollectionEntry } from "@/types/types";
 
 const props = defineProps<{
@@ -11,6 +12,7 @@ const props = defineProps<{
   isLoading: boolean;
   isCreating: boolean;
   show: boolean;
+  openWithCreateForm?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -38,6 +40,17 @@ const formData = ref({
   impact_description: "",
   supporting_evidence: {} as Record<string, unknown>,
 });
+
+// Watch for openWithCreateForm prop to show form when sidebar opens
+watch(
+  () => [props.show, props.openWithCreateForm],
+  ([show, openWithCreateForm]) => {
+    if (show && openWithCreateForm) {
+      showCreateForm.value = true;
+    }
+  },
+  { immediate: true },
+);
 
 const incidentTypes = [
   "Deforestation",

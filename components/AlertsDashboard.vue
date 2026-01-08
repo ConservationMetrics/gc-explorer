@@ -22,6 +22,7 @@ import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
 import MapLegend from "@/components/shared/MapLegend.vue";
 import IncidentsSidebar from "@/components/shared/IncidentsSidebar.vue";
+import { Plus } from "lucide-vue-next";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
@@ -79,6 +80,7 @@ const isMapeo = ref(false);
 // Incidents state management
 const incidents = ref<AnnotatedCollection[]>([]);
 const showIncidentsSidebar = ref(false);
+const openSidebarWithCreateForm = ref(false);
 const selectedSources = ref<
   Array<{ source_table: string; source_id: string; notes?: string }>
 >([]);
@@ -88,9 +90,9 @@ const boundingBoxMode = ref(false);
 const isLoadingIncidents = ref(false);
 
 // Tooltip state
-const hoveredButton = ref<"incidents" | "boundingBox" | "multiSelect" | null>(
-  null,
-);
+const hoveredButton = ref<
+  "incidents" | "boundingBox" | "multiSelect" | "createIncident" | null
+>(null);
 
 // Bounding box state (handled by setupCustomBoundingBox)
 
@@ -157,6 +159,9 @@ const createIncident = async (incidentData: {
     await fetchIncidents();
     // Clear selected sources after successful creation
     selectedSources.value = [];
+    clearSourceHighlighting();
+    // Reset the create form flag
+    openSidebarWithCreateForm.value = false;
     return response.incident;
   } catch (error) {
     console.error("Error creating incident:", error);
@@ -2096,18 +2101,68 @@ const calculateLineStringCentroid = (coordinates: number[][]) => {
 
 /**
  * Toggles the incidents sidebar visibility
+ * Clears all selections when closing only if they were opened via "Create Incident" button
+ * If no sources are selected, it's safe to open (user is just viewing saved incidents)
  * @returns void
  */
 const toggleIncidentsSidebar = () => {
+  const wasOpen = showIncidentsSidebar.value;
+  const hadCreateFormOpen = openSidebarWithCreateForm.value;
+  const hasSelectedSources = selectedSources.value.length > 0;
+
+  // Toggle sidebar
   showIncidentsSidebar.value = !showIncidentsSidebar.value;
+
+  // Reset create form flag when toggling
+  if (!showIncidentsSidebar.value || !hadCreateFormOpen) {
+    openSidebarWithCreateForm.value = false;
+  }
+
+  // If closing the sidebar after opening with create form AND there are selected sources, clear all selections
+  // If no sources were selected, it's safe to open/close without clearing (just viewing saved incidents)
+  if (
+    wasOpen &&
+    !showIncidentsSidebar.value &&
+    hadCreateFormOpen &&
+    hasSelectedSources
+  ) {
+    clearSelectedSources();
+    clearSourceHighlighting();
+  }
+};
+
+/**
+ * Opens the incidents sidebar with the create form
+ * Only works if there are selected sources
+ * @returns void
+ */
+const openIncidentsSidebarWithCreateForm = () => {
+  if (selectedSources.value.length === 0) {
+    return; // Don't open if no sources selected
+  }
+  openSidebarWithCreateForm.value = true;
+  showIncidentsSidebar.value = true;
 };
 
 /**
  * Toggles multi-select mode for selecting multiple features
  */
+/**
+ * Toggles multi-select mode for selecting multiple features
+ * Cleans up bounding box handlers if they were active
+ */
 const toggleMultiSelectMode = () => {
+  const wasBoundingBoxActive = boundingBoxMode.value;
   multiSelectMode.value = !multiSelectMode.value;
   boundingBoxMode.value = false;
+
+  // If bounding box was active, clean up its handlers
+  if (wasBoundingBoxActive) {
+    if (map.value) {
+      map.value.dragRotate.enable();
+    }
+    removeBoundingBoxHandlers();
+  }
 };
 
 /**
@@ -2400,9 +2455,7 @@ const selectFeaturesInBoundingBox = (
     },
   );
 
-  if (selectedSources.value.length > 0) {
-    showIncidentsSidebar.value = true;
-  }
+  // Don't auto-open sidebar - user will click "Create Incident" button when ready
 };
 
 /**
@@ -2512,10 +2565,6 @@ const handleMultiSelectFeature = (feature: Feature, layerId: string) => {
       // Select: add to selection and highlight
       addSourceToSelection(sourceTable, sourceId);
       highlightSelectedSource(feature, layerId);
-
-      if (!showIncidentsSidebar.value) {
-        showIncidentsSidebar.value = true;
-      }
     }
   }
 };
@@ -2666,6 +2715,7 @@ onBeforeUnmount(() => {
       :is-loading="isLoadingIncidents"
       :is-creating="isCreatingIncident"
       :show="showIncidentsSidebar"
+      :open-with-create-form="openSidebarWithCreateForm"
       @close="toggleIncidentsSidebar"
       @create-incident="createIncident"
       @remove-source="removeSourceFromSelection"
@@ -2766,6 +2816,30 @@ onBeforeUnmount(() => {
           }}
         </div>
       </div>
+      <div
+        class="incident-control-wrapper"
+        @mouseenter="hoveredButton = 'createIncident'"
+        @mouseleave="hoveredButton = null"
+      >
+        <button
+          class="incident-control-btn"
+          :class="{ active: showIncidentsSidebar && openSidebarWithCreateForm }"
+          :disabled="selectedSources.length === 0"
+          @click="openIncidentsSidebarWithCreateForm"
+        >
+          <Plus :size="20" />
+        </button>
+        <div
+          v-if="hoveredButton === 'createIncident'"
+          class="tooltip tooltip-left"
+        >
+          {{
+            selectedSources.length === 0
+              ? "Select features first to create an incident"
+              : `Create incident with ${selectedSources.length} selected feature${selectedSources.length === 1 ? "" : "s"}`
+          }}
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -2855,6 +2929,17 @@ body {
 
 .incident-control-btn.active:hover {
   background: #357abd;
+}
+
+.incident-control-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+.incident-control-btn:disabled:hover {
+  background: #f5f5f5;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .tooltip {
