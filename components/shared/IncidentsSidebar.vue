@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { watch } from "vue";
+import { useI18n } from "vue-i18n";
 import type { AnnotatedCollection, CollectionEntry } from "@/types/types";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   incidents: AnnotatedCollection[];
@@ -53,13 +56,16 @@ watch(
 );
 
 const incidentTypes = [
-  "Deforestation",
-  "Illegal Logging",
-  "Mining",
-  "Poaching",
-  "Encroachment",
-  "Fire",
-  "Other",
+  { value: "Deforestation", label: t("incidents.incidentTypes.deforestation") },
+  {
+    value: "Illegal Logging",
+    label: t("incidents.incidentTypes.illegalLogging"),
+  },
+  { value: "Mining", label: t("incidents.incidentTypes.mining") },
+  { value: "Poaching", label: t("incidents.incidentTypes.poaching") },
+  { value: "Encroachment", label: t("incidents.incidentTypes.encroachment") },
+  { value: "Fire", label: t("incidents.incidentTypes.fire") },
+  { value: "Other", label: t("incidents.incidentTypes.other") },
 ];
 
 const handleSubmit = () => {
@@ -99,8 +105,12 @@ const handleClose = () => {
 <template>
   <div v-if="show" class="incidents-sidebar">
     <div class="sidebar-header">
-      <h2>Incidents</h2>
-      <button class="close-btn" @click="handleClose" title="Close">
+      <h2>{{ $t("incidents") }}</h2>
+      <button
+        class="close-btn"
+        @click="handleClose"
+        :title="$t('incidents.close')"
+      >
         <svg
           width="20"
           height="20"
@@ -117,7 +127,9 @@ const handleClose = () => {
     <div class="sidebar-content">
       <!-- Selected Sources Section -->
       <div v-if="selectedSources.length > 0" class="selected-sources">
-        <h3>Selected Sources ({{ selectedSources.length }})</h3>
+        <h3>
+          {{ $t("incidents.selectedSources") }} ({{ selectedSources.length }})
+        </h3>
         <div class="sources-list">
           <div
             v-for="(source, index) in selectedSources"
@@ -133,82 +145,96 @@ const handleClose = () => {
               @click="
                 emit('removeSource', source.source_table, source.source_id)
               "
-              title="Remove"
+              :title="$t('remove')"
             >
               ×
             </button>
           </div>
         </div>
         <button class="clear-btn" @click="emit('clearSources')">
-          Clear All
+          {{ $t("incidents.clearAll") }}
         </button>
       </div>
 
       <!-- Create Incident Form -->
       <div v-if="showCreateForm" class="create-form">
-        <h3>Create New Incident</h3>
+        <h3>{{ $t("incidents.createNewIncident") }}</h3>
         <form @submit.prevent="handleSubmit">
           <div class="form-group">
-            <label for="name">Name *</label>
+            <label for="name">{{ $t("incidents.name") }} *</label>
             <input
               id="name"
               v-model="formData.name"
               type="text"
               required
-              placeholder="Enter incident name"
+              :placeholder="$t('incidents.enterIncidentName')"
             />
           </div>
 
           <div class="form-group">
-            <label for="description">Description</label>
+            <label for="description">{{ $t("incidents.description") }}</label>
             <textarea
               id="description"
               v-model="formData.description"
               rows="3"
-              placeholder="Enter description"
+              :placeholder="$t('incidents.enterDescription')"
             />
           </div>
 
           <div class="form-group">
-            <label for="incident_type">Incident Type</label>
+            <label for="incident_type">{{
+              $t("incidents.incidentType")
+            }}</label>
             <select id="incident_type" v-model="formData.incident_type">
-              <option value="">Select type</option>
-              <option v-for="type in incidentTypes" :key="type" :value="type">
-                {{ type }}
+              <option value="">{{ $t("incidents.selectType") }}</option>
+              <option
+                v-for="type in incidentTypes"
+                :key="type.value"
+                :value="type.value"
+              >
+                {{ type.label }}
               </option>
             </select>
           </div>
 
           <div class="form-group">
-            <label for="responsible_party">Responsible Party</label>
+            <label for="responsible_party">{{
+              $t("incidents.responsibleParty")
+            }}</label>
             <input
               id="responsible_party"
               v-model="formData.responsible_party"
               type="text"
-              placeholder="Enter responsible party"
+              :placeholder="$t('incidents.enterResponsibleParty')"
             />
           </div>
 
           <div class="form-group">
-            <label for="impact_description">Impact Description</label>
+            <label for="impact_description">{{
+              $t("incidents.impactDescription")
+            }}</label>
             <textarea
               id="impact_description"
               v-model="formData.impact_description"
               rows="3"
-              placeholder="Describe the impact"
+              :placeholder="$t('incidents.describeImpact')"
             />
           </div>
 
           <div class="form-actions">
             <button type="submit" :disabled="isCreating" class="submit-btn">
-              {{ isCreating ? "Creating..." : "Create Incident" }}
+              {{
+                isCreating
+                  ? $t("incidents.creating")
+                  : $t("incidents.createIncident")
+              }}
             </button>
             <button
               type="button"
               @click="showCreateForm = false"
               class="cancel-btn"
             >
-              Cancel
+              {{ $t("cancel") }}
             </button>
           </div>
         </form>
@@ -221,16 +247,18 @@ const handleClose = () => {
         class="incidents-list"
       >
         <div class="list-header">
-          <h3>Saved Incidents ({{ incidents.length }})</h3>
+          <h3>{{ $t("incidents.savedIncidents") }} ({{ incidents.length }})</h3>
           <button class="create-btn" @click="showCreateForm = true">
-            + New Incident
+            {{ $t("incidents.newIncident") }}
           </button>
         </div>
 
-        <div v-if="isLoading" class="loading">Loading incidents...</div>
+        <div v-if="isLoading" class="loading">
+          {{ $t("incidents.loadingIncidents") }}
+        </div>
 
         <div v-else-if="incidents.length === 0" class="empty-state">
-          <p>No incidents yet. Create your first incident!</p>
+          <p>{{ $t("incidents.noIncidentsYet") }}</p>
         </div>
 
         <div v-else class="incidents-items">
@@ -248,10 +276,10 @@ const handleClose = () => {
             </p>
             <div class="incident-meta">
               <span
-                >Created:
+                >{{ $t("incidents.created") }}:
                 {{ new Date(incident.created_at).toLocaleDateString() }}</span
               >
-              <span>By: {{ incident.created_by }}</span>
+              <span>{{ $t("incidents.by") }}: {{ incident.created_by }}</span>
             </div>
           </div>
         </div>
@@ -263,7 +291,7 @@ const handleClose = () => {
         class="new-incident-prompt"
       >
         <button class="create-btn" @click="showCreateForm = true">
-          + New Incident
+          {{ $t("incidents.newIncident") }}
         </button>
       </div>
     </div>
