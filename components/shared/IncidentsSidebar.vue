@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watch } from "vue";
 import { useI18n } from "vue-i18n";
-import type { AnnotatedCollection, CollectionEntry } from "@/types/types";
+import type { AnnotatedCollection } from "@/types/types";
 
 const { t } = useI18n();
 
@@ -105,11 +105,17 @@ const handleClose = () => {
 <template>
   <div v-if="show" class="incidents-sidebar">
     <div class="sidebar-header">
-      <h2>{{ $t("incidents") }}</h2>
+      <h2>
+        {{
+          selectedSources.length > 0
+            ? $t("incidents.createNewIncident")
+            : $t("incidents.savedIncidents")
+        }}
+      </h2>
       <button
         class="close-btn"
-        @click="handleClose"
         :title="$t('incidents.close')"
+        @click="handleClose"
       >
         <svg
           width="20"
@@ -142,10 +148,10 @@ const handleClose = () => {
             </div>
             <button
               class="remove-btn"
+              :title="$t('remove')"
               @click="
                 emit('removeSource', source.source_table, source.source_id)
               "
-              :title="$t('remove')"
             >
               ×
             </button>
@@ -178,7 +184,7 @@ const handleClose = () => {
               v-model="formData.description"
               rows="3"
               :placeholder="$t('incidents.enterDescription')"
-            />
+            ></textarea>
           </div>
 
           <div class="form-group">
@@ -218,7 +224,7 @@ const handleClose = () => {
               v-model="formData.impact_description"
               rows="3"
               :placeholder="$t('incidents.describeImpact')"
-            />
+            ></textarea>
           </div>
 
           <div class="form-actions">
@@ -231,8 +237,8 @@ const handleClose = () => {
             </button>
             <button
               type="button"
-              @click="showCreateForm = false"
               class="cancel-btn"
+              @click="showCreateForm = false"
             >
               {{ $t("cancel") }}
             </button>
@@ -246,13 +252,6 @@ const handleClose = () => {
         v-if="!showCreateForm && selectedSources.length === 0"
         class="incidents-list"
       >
-        <div class="list-header">
-          <h3>{{ $t("incidents.savedIncidents") }} ({{ incidents.length }})</h3>
-          <button class="create-btn" @click="showCreateForm = true">
-            {{ $t("incidents.newIncident") }}
-          </button>
-        </div>
-
         <div v-if="isLoading" class="loading">
           {{ $t("incidents.loadingIncidents") }}
         </div>
@@ -285,13 +284,13 @@ const handleClose = () => {
         </div>
       </div>
 
-      <!-- Show "New Incident" button when creating or when sources are selected but form is not shown -->
+      <!-- Show "Create Incident" button when sources are selected but form is not shown -->
       <div
         v-if="!showCreateForm && selectedSources.length > 0"
         class="new-incident-prompt"
       >
         <button class="create-btn" @click="showCreateForm = true">
-          {{ $t("incidents.newIncident") }}
+          {{ $t("incidents.createNewIncident") }}
         </button>
       </div>
     </div>
