@@ -2747,8 +2747,8 @@ onBeforeUnmount(() => {
         <div v-if="hoveredButton === 'incidents'" class="tooltip tooltip-left">
           {{
             showIncidentsSidebar
-              ? "Hide incidents sidebar"
-              : "View saved incidents and create new ones"
+              ? t("incidents.hideSidebar")
+              : t("incidents.viewSavedIncidents")
           }}
         </div>
       </div>
@@ -2779,8 +2779,8 @@ onBeforeUnmount(() => {
         >
           {{
             boundingBoxMode
-              ? "Disable bounding box selection"
-              : "Select multiple features by drawing a box (Ctrl/Cmd + drag)"
+              ? t("incidents.disableBoundingBox")
+              : t("incidents.enableBoundingBox")
           }}
         </div>
       </div>
@@ -2811,8 +2811,8 @@ onBeforeUnmount(() => {
         >
           {{
             multiSelectMode
-              ? "Disable multi-select mode"
-              : "Select multiple features one by one (hold Ctrl/Cmd and click features)"
+              ? t("incidents.disableMultiSelect")
+              : t("incidents.enableMultiSelect")
           }}
         </div>
       </div>
@@ -2835,8 +2835,14 @@ onBeforeUnmount(() => {
         >
           {{
             selectedSources.length === 0
-              ? "Select features first to create an incident"
-              : `Create incident with ${selectedSources.length} selected feature${selectedSources.length === 1 ? "" : "s"}`
+              ? t("incidents.selectFeaturesFirst")
+              : selectedSources.length === 1
+                ? t("incidents.createIncidentWithFeatures", {
+                    count: selectedSources.length,
+                  })
+                : t("incidents.createIncidentWithFeaturesPlural", {
+                    count: selectedSources.length,
+                  })
           }}
         </div>
       </div>
