@@ -128,7 +128,7 @@ CREATE TABLE public.fake_alerts (
 --
 
 CREATE TABLE public.mapeo_data (
-    id text NOT NULL,
+    _id text NOT NULL,
     g__coordinates text,
     g__type text,
     p__created text,
@@ -137,7 +137,6 @@ CREATE TABLE public.mapeo_data (
     p__version text,
     p__categoryid text,
     p__notes text,
-    _id text,
     data_source text
 );
 
@@ -472,10 +471,10 @@ COPY public.fake_alerts (_id, g__coordinates, g__geodesic, g__type, _topic, aler
 -- Data for Name: mapeo_data; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.mapeo_data (id, g__coordinates, g__type, p__created, p__modified, p__photos, p__version, p__categoryid, p__notes, _id, data_source) FROM stdin;
-00431der43c0b0d0	[-77.206539, 38.752305]	Point	2022-09-11T18:33:21.059Z	2022-09-11T18:33:21.059Z	\N	23498sdvsdou234ev\n	natural_feature	This is a nice photo of a park	00431der43c0b0d0	mapeo
-0084cdc57c0b0280	[-77.754545, 38.042479]	Point	2021-10-11T18:33:21.059Z	2021-10-11T18:33:21.059Z	['53a3841fb6028ba608a085d36b1115d9.jpg']	78ab235883d998930cafd15978d18d7239c092c2bf31c394b311747cc3e6eb64@50	threat	Here is a photo of the threat!	0084cdc57c0b0280	mapeo
-08751e5b813597d7	[-76.263644, 39.287893]	Point	2023-06-08T11:47:57.932Z	2023-06-08T11:47:57.932Z	['10993fe1c049a225e64277f28787344e.jpg']	41811c656c7e1cb3162e3f756dc2d3073f05404f457800c5ac4bbec109a54c3b@74	threat	I think this is the recent threat that was reported on the dashboard.	08751e5b813597d7	mapeo
+COPY public.mapeo_data (_id, g__coordinates, g__type, p__created, p__modified, p__photos, p__version, p__categoryid, p__notes, data_source) FROM stdin;
+00431der43c0b0d0	[-77.206539, 38.752305]	Point	2022-09-11T18:33:21.059Z	2022-09-11T18:33:21.059Z	\N	23498sdvsdou234ev\n	natural_feature	This is a nice photo of a park	mapeo
+0084cdc57c0b0280	[-77.754545, 38.042479]	Point	2021-10-11T18:33:21.059Z	2021-10-11T18:33:21.059Z	['53a3841fb6028ba608a085d36b1115d9.jpg']	78ab235883d998930cafd15978d18d7239c092c2bf31c394b311747cc3e6eb64@50	threat	Here is a photo of the threat!	mapeo
+08751e5b813597d7	[-76.263644, 39.287893]	Point	2023-06-08T11:47:57.932Z	2023-06-08T11:47:57.932Z	['10993fe1c049a225e64277f28787344e.jpg']	41811c656c7e1cb3162e3f756dc2d3073f05404f457800c5ac4bbec109a54c3b@74	threat	I think this is the recent threat that was reported on the dashboard.	mapeo
 \.
 
 
@@ -715,7 +714,7 @@ ALTER TABLE ONLY public.fake_alerts
 --
 
 ALTER TABLE ONLY public.mapeo_data
-    ADD CONSTRAINT mapeo_data_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT mapeo_data_pkey PRIMARY KEY (_id);
 
 
 --

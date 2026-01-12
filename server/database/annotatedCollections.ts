@@ -57,11 +57,9 @@ export const createAnnotatedCollection = async (
     if (entries && entries.length > 0) {
       for (const entry of entries) {
         // Fetch source data from warehouse database
-        // Most warehouse tables (e.g., fake_alerts) use _id as primary key
-        // However, mapeo_data uses id as primary key, so we need to handle both cases
-        const idColumn = entry.source_table === "mapeo_data" ? "id" : "_id";
+        // All warehouse tables use _id as primary key
         const sourceResult = await warehouseDb.execute(sql`
-          SELECT * FROM ${sql.identifier(entry.source_table)} WHERE ${sql.identifier(idColumn)} = ${entry.source_id} LIMIT 1
+          SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} LIMIT 1
         `);
 
         await tx.insert(collectionEntries).values({
@@ -278,11 +276,9 @@ export const addEntriesToCollection = async (
 
     for (const entry of entries) {
       // Fetch source data from warehouse database
-      // Most warehouse tables (e.g., fake_alerts) use _id as primary key
-      // However, mapeo_data uses id as primary key, so we need to handle both cases
-      const idColumn = entry.source_table === "mapeo_data" ? "id" : "_id";
+      // All warehouse tables use _id as primary key
       const sourceResult = await warehouseDb.execute(sql`
-        SELECT * FROM ${sql.identifier(entry.source_table)} WHERE ${sql.identifier(idColumn)} = ${entry.source_id} LIMIT 1
+        SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} LIMIT 1
       `);
 
       const [newEntry] = await tx

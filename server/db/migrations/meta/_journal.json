@@ -15,6 +15,13 @@
       "when": 1704067200000,
       "tag": "0001_rename_config_to_view_config",
       "breakpoints": true
-    }
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768207769005,
+      "tag": "0002_standardize_mapeo_data_primary_key",
+      "breakpoints": true
+    }    
   ]
 }
