@@ -969,18 +969,6 @@ test("config page - conditional form sections based on views", async ({
     const successMessage = modalContent.filter({
       hasText: /table.*removed.*views|tabela.*removida/i,
     });
-    await expect(successMessage).toBeVisible({ timeout: 5000 });
-
-    // 19. Click confirm to remove
-    const confirmRemoveButton = page.getByRole("button", { name: /confirm/i });
-    await confirmRemoveButton.click();
-
-    // 20. Verify success message appears (message is in the same modal, updates after confirm)
-    // Wait for modal to update with success message
-    await page.waitForTimeout(1000); // Wait for modal message to update
-    const successMessage = page
-      .locator(".bg-white.rounded-lg.shadow-xl")
-      .filter({ hasText: /table.*removed.*views|tabela.*removida/i });
     await expect(successMessage).toBeVisible({ timeout: 10000 });
 
     // 21. Wait for navigation back to config dashboard
@@ -1162,18 +1150,11 @@ test("config page - error handling for invalid form submission", async ({
     const successMessage = modalContent.filter({
       hasText: /table.*removed.*views|tabela.*removida/i,
     });
-    await expect(successMessage).toBeVisible({ timeout: 5000 });
+    await expect(successMessage).toBeVisible({ timeout: 10000 });
 
-    // 22. Click confirm to remove
-    const confirmRemoveButton = page.getByRole("button", { name: /confirm/i });
-    await confirmRemoveButton.click();
-
-    // 23. Verify success message appears
-    await expect(page.getByText(/table removed from views/i)).toBeVisible();
-
-    // 24. Wait for navigation back to config dashboard
+    // 22. Wait for navigation back to config dashboard
     await page.waitForTimeout(3500);
-    await page.waitForURL("**/config", { timeout: 5000 });
+    await page.waitForURL("**/config", { timeout: 10000 });
   }
 });
 
