@@ -15,7 +15,7 @@ test("config page - displays configuration dashboard with table cards", async ({
   await expect(
     page.getByRole("heading", {
       name: /dataset view management/i,
-    })
+    }),
   ).toBeVisible({ timeout: 15000 });
 
   // 4. Verify breadcrumb link back to index
@@ -26,7 +26,7 @@ test("config page - displays configuration dashboard with table cards", async ({
 
   // 5. Verify the add new dataset view button is present
   const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']"
+    "[data-testid='add-new-dataset-view-button']",
   );
   await expect(addTableButton).toBeVisible({ timeout: 10000 });
 
@@ -63,7 +63,7 @@ test("config page - add new dataset view and edit it", async ({
 
   // 3. Click the add new dataset view button
   const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']"
+    "[data-testid='add-new-dataset-view-button']",
   );
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
@@ -93,7 +93,7 @@ test("config page - add new dataset view and edit it", async ({
     if (optionText && optionText.trim()) {
       // Check if this table is already configured
       const existingCard = page.locator(
-        `[data-testid='config-dataset-card']:has-text("${optionText.trim()}")`
+        `[data-testid='config-dataset-card']:has-text("${optionText.trim()}")`,
       );
       const exists = (await existingCard.count()) === 0;
       if (exists) {
@@ -130,13 +130,13 @@ test("config page - add new dataset view and edit it", async ({
   // 13. Find the dataset card with the table name we just added
   if (selectedTableName) {
     const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${selectedTableName.trim()}")`
+      `[data-testid='config-dataset-card']:has-text("${selectedTableName.trim()}")`,
     );
     await expect(targetCard).toBeVisible({ timeout: 10000 });
 
     // 14. Click "Edit dataset view" to navigate to edit page
     const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']"
+      "[data-testid='edit-dataset-view-link']",
     );
     await editLink.click();
 
@@ -155,7 +155,7 @@ test("config page - add new dataset view and edit it", async ({
     await expect(
       page.getByRole("heading", {
         name: new RegExp(`configuration.*${selectedTableName.trim()}`, "i"),
-      })
+      }),
     ).toBeVisible();
 
     // 18. Verify breadcrumb link back to config (use more specific selector to avoid header links)
@@ -172,7 +172,7 @@ test("config page - add new dataset view and edit it", async ({
 
     // 20. Find and modify a form field (Dataset display name)
     const datasetNameInput = page.locator(
-      'input[id*="DATASET_TABLE"], input[placeholder*="Dataset Display Name"]'
+      'input[id*="DATASET_TABLE"], input[placeholder*="Dataset Display Name"]',
     );
 
     if ((await datasetNameInput.count()) > 0) {
@@ -202,7 +202,7 @@ test("config page - add new dataset view and edit it", async ({
     } else {
       // If DATASET_TABLE input doesn't exist, try modifying VIEW_DESCRIPTION
       const descriptionInput = page.locator(
-        'textarea[id*="VIEW_DESCRIPTION"], textarea[placeholder*="description"]'
+        'textarea[id*="VIEW_DESCRIPTION"], textarea[placeholder*="description"]',
       );
 
       if ((await descriptionInput.count()) > 0) {
@@ -224,7 +224,7 @@ test("config page - add new dataset view and edit it", async ({
     await configBreadcrumb.click();
     await page.waitForURL("**/config", { timeout: 5000 });
     await expect(
-      page.getByRole("heading", { name: /dataset view management/i })
+      page.getByRole("heading", { name: /dataset view management/i }),
     ).toBeVisible();
   }
 });
@@ -256,7 +256,7 @@ test("config page - navigate to dataset edit page", async ({
 
   // 6. Click the "Edit dataset view" button
   const editButton = firstCard.locator(
-    "[data-testid='edit-dataset-view-link']"
+    "[data-testid='edit-dataset-view-link']",
   );
   await editButton.click();
 
@@ -271,7 +271,7 @@ test("config page - navigate to dataset edit page", async ({
 
   // 9. Verify page heading shows configuration and dataset name
   await expect(
-    page.getByRole("heading", { name: /configuration/i })
+    page.getByRole("heading", { name: /configuration/i }),
   ).toBeVisible();
 
   // 10. Verify breadcrumb link back to config (use more specific selector to avoid header links)
@@ -468,7 +468,7 @@ test("config page - form validation and change detection", async ({
 
   // 3. Add a table to work with
   const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']"
+    "[data-testid='add-new-dataset-view-button']",
   );
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
@@ -499,13 +499,13 @@ test("config page - form validation and change detection", async ({
   // 10. Find the card with the table name we just added
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`
+      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible({ timeout: 10000 });
 
     // 11. Navigate to edit page
     const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']"
+      "[data-testid='edit-dataset-view-link']",
     );
     await editLink.click();
     await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
@@ -521,7 +521,7 @@ test("config page - form validation and change detection", async ({
 
     // 14. Test mapbox3d checkbox and terrain exaggeration slider (if map config exists)
     const mapbox3dCheckbox = page.locator(
-      'input[type="checkbox"][id*="MAPBOX_3D"]'
+      'input[type="checkbox"][id*="MAPBOX_3D"]',
     );
 
     const has3dMapConfig = (await mapbox3dCheckbox.count()) > 0;
@@ -554,7 +554,7 @@ test("config page - form validation and change detection", async ({
 
     // 15. Find and modify a form field (dataset display name - safer than mapbox token)
     const datasetNameInput = page.locator(
-      'input[id*="DATASET_TABLE"], input[placeholder*="Dataset Display Name"]'
+      'input[id*="DATASET_TABLE"], input[placeholder*="Dataset Display Name"]',
     );
 
     if ((await datasetNameInput.count()) > 0) {
@@ -622,7 +622,7 @@ test("config page - submit configuration changes", async ({
 
   // 3. Add a table to work with
   const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']"
+    "[data-testid='add-new-dataset-view-button']",
   );
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
@@ -653,13 +653,13 @@ test("config page - submit configuration changes", async ({
   // 10. Find the card with the table name we just added
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`
+      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible({ timeout: 10000 });
 
     // 11. Navigate to edit page
     const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']"
+      "[data-testid='edit-dataset-view-link']",
     );
     await editLink.click();
     await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
@@ -670,7 +670,7 @@ test("config page - submit configuration changes", async ({
 
     // 13. Find and modify a form field (dataset display name - safer than mapbox token)
     const datasetNameInput = page.locator(
-      'input[id*="DATASET_TABLE"], input[placeholder*="Dataset Display Name"]'
+      'input[id*="DATASET_TABLE"], input[placeholder*="Dataset Display Name"]',
     );
 
     if ((await datasetNameInput.count()) > 0) {
@@ -710,7 +710,7 @@ test("config page - submit configuration changes", async ({
         await page.waitForTimeout(500);
 
         const submitButton = page.locator(
-          "[data-testid='config-submit-button']"
+          "[data-testid='config-submit-button']",
         );
         await submitButton.click();
         const savedModal = page
@@ -784,8 +784,8 @@ test("config page - views configuration section", async ({
       .locator('input[type="checkbox"]')
       .or(
         page.locator(
-          `input[type="checkbox"][id*="${(await firstLabel.textContent())?.toLowerCase()}"]`
-        )
+          `input[type="checkbox"][id*="${(await firstLabel.textContent())?.toLowerCase()}"]`,
+        ),
       );
 
     if ((await firstCheckbox.count()) > 0) {
@@ -799,7 +799,7 @@ test("config page - views configuration section", async ({
       // 10. Verify the state changed
       await expect(firstCheckbox.first()).toHaveJSProperty(
         "checked",
-        !isChecked
+        !isChecked,
       );
 
       // 11. Check if submit button is enabled
@@ -869,13 +869,13 @@ test("config page - conditional form sections based on views", async ({
   // 10. Find the card with the table name we just added
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`
+      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible();
 
     // 11. Navigate to edit page
     const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']"
+      "[data-testid='edit-dataset-view-link']",
     );
     await editLink.click();
     await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
@@ -942,7 +942,7 @@ test("config page - language switching functionality", async ({
     .or(
       page
         .locator("button")
-        .filter({ has: page.locator("svg path[d*='M3.055']") })
+        .filter({ has: page.locator("svg path[d*='M3.055']") }),
     )
     .first();
   await languageButton.waitFor({ state: "visible", timeout: 15000 });
@@ -952,7 +952,7 @@ test("config page - language switching functionality", async ({
 
   // 4. Wait for dropdown menu to appear
   const dropdownMenu = page.locator(
-    "div[class*='absolute'][class*='right-0'][class*='bg-white']"
+    "div[class*='absolute'][class*='right-0'][class*='bg-white']",
   );
   await dropdownMenu.waitFor({ state: "visible", timeout: 5000 });
 
@@ -974,7 +974,7 @@ test("config page - language switching functionality", async ({
   await expect(
     page.getByRole("heading", {
       name: /dataset view management|configuration|gestão de visualizações de conjunto de dados/i,
-    })
+    }),
   ).toBeVisible({ timeout: 5000 });
 });
 
@@ -990,7 +990,7 @@ test("config page - error handling for invalid form submission", async ({
 
   // 3. Add a table to work with
   const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']"
+    "[data-testid='add-new-dataset-view-button']",
   );
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
@@ -1021,13 +1021,13 @@ test("config page - error handling for invalid form submission", async ({
   // 10. Find the card with the table name we just added
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`
+      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible({ timeout: 10000 });
 
     // 11. Navigate to edit page
     const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']"
+      "[data-testid='edit-dataset-view-link']",
     );
     await editLink.click();
     await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
@@ -1048,7 +1048,7 @@ test("config page - error handling for invalid form submission", async ({
 
     // 14. Find mapbox access token field
     const mapboxTokenInput = page.locator(
-      'input[id*="MAPBOX_ACCESS_TOKEN"], input[placeholder*="Mapbox"]'
+      'input[id*="MAPBOX_ACCESS_TOKEN"], input[placeholder*="Mapbox"]',
     );
 
     if ((await mapboxTokenInput.count()) > 0) {
@@ -1068,7 +1068,7 @@ test("config page - error handling for invalid form submission", async ({
       // 18. Test valid token format that matches pattern
       await mapboxTokenInput.clear();
       await mapboxTokenInput.fill(
-        "pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjbGV4YW1wbGUifQ.example"
+        "pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjbGV4YW1wbGUifQ.example",
       );
       await page.waitForTimeout(500);
 
@@ -1191,7 +1191,7 @@ test("config page - basemap configuration - add and remove basemaps", async ({
 
   // 3. Add a table to work with
   const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']"
+    "[data-testid='add-new-dataset-view-button']",
   );
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
@@ -1216,12 +1216,12 @@ test("config page - basemap configuration - add and remove basemaps", async ({
   // 4. Find the card and navigate to edit page
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`
+      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible({ timeout: 10000 });
 
     const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']"
+      "[data-testid='edit-dataset-view-link']",
     );
     await editLink.click();
     await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
@@ -1252,7 +1252,7 @@ test("config page - basemap configuration - add and remove basemaps", async ({
 
     // 8. Look for basemap configuration section
     const basemapLabel = page.locator(
-      'label:has-text("Mapbox Background Map(s)")'
+      'label:has-text("Mapbox Background Map(s)")',
     );
     const hasBasemapConfig = (await basemapLabel.count()) > 0;
 
@@ -1264,7 +1264,7 @@ test("config page - basemap configuration - add and remove basemaps", async ({
 
       // 10. Find and click add basemap button
       const addBasemapButton = page.locator(
-        "[data-testid='basemap-add-button']"
+        "[data-testid='basemap-add-button']",
       );
 
       if ((await addBasemapButton.count()) > 0) {
@@ -1284,7 +1284,7 @@ test("config page - basemap configuration - add and remove basemaps", async ({
 
         // 13. Find remove buttons (should be visible for non-first basemaps)
         const removeButtons = page.locator(
-          "[data-testid^='basemap-remove-button-']"
+          "[data-testid^='basemap-remove-button-']",
         );
 
         if ((await removeButtons.count()) > 0) {
@@ -1301,7 +1301,7 @@ test("config page - basemap configuration - add and remove basemaps", async ({
 
     // 16. Clean up: remove the table we added
     const removeTableButton = page.locator(
-      "[data-testid='config-remove-button']"
+      "[data-testid='config-remove-button']",
     );
     await removeTableButton.click();
     await expect(modal).toBeVisible({ timeout: 5000 });
@@ -1325,7 +1325,7 @@ test("config page - basemap configuration - validation", async ({
 
   // 3. Add a table
   const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']"
+    "[data-testid='add-new-dataset-view-button']",
   );
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
@@ -1348,12 +1348,12 @@ test("config page - basemap configuration - validation", async ({
   // 4. Find the card and navigate to edit page
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`
+      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible({ timeout: 10000 });
 
     const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']"
+      "[data-testid='edit-dataset-view-link']",
     );
     await editLink.click();
     await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
@@ -1384,14 +1384,14 @@ test("config page - basemap configuration - validation", async ({
 
     // 8. Check for basemap configuration
     const basemapLabel = page.locator(
-      'label:has-text("Mapbox Background Map(s)")'
+      'label:has-text("Mapbox Background Map(s)")',
     );
     const hasBasemapConfig = (await basemapLabel.count()) > 0;
 
     if (hasBasemapConfig) {
       // 9. Add a second basemap
       const addBasemapButton = page.locator(
-        "[data-testid='basemap-add-button']"
+        "[data-testid='basemap-add-button']",
       );
 
       if ((await addBasemapButton.count()) > 0) {
@@ -1447,7 +1447,7 @@ test("config page - basemap configuration - validation", async ({
 
     // 18. Clean up
     const removeTableButton = page.locator(
-      "[data-testid='config-remove-button']"
+      "[data-testid='config-remove-button']",
     );
     await removeTableButton.click();
     await expect(modal).toBeVisible({ timeout: 5000 });
@@ -1471,7 +1471,7 @@ test("config page - basemap configuration - update name and style", async ({
 
   // 3. Add a table
   const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']"
+    "[data-testid='add-new-dataset-view-button']",
   );
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
@@ -1494,12 +1494,12 @@ test("config page - basemap configuration - update name and style", async ({
   // 4. Find the card and navigate to edit page
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`
+      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible({ timeout: 10000 });
 
     const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']"
+      "[data-testid='edit-dataset-view-link']",
     );
     await editLink.click();
     await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
@@ -1530,7 +1530,7 @@ test("config page - basemap configuration - update name and style", async ({
 
     // 8. Check for basemap configuration
     const basemapLabel = page.locator(
-      'label:has-text("Mapbox Background Map(s)")'
+      'label:has-text("Mapbox Background Map(s)")',
     );
     const hasBasemapConfig = (await basemapLabel.count()) > 0;
 
@@ -1558,7 +1558,7 @@ test("config page - basemap configuration - update name and style", async ({
 
         // 14. Verify submit button is enabled (change detected)
         const submitButton = page.locator(
-          "[data-testid='config-submit-button']"
+          "[data-testid='config-submit-button']",
         );
         await expect(submitButton).toBeEnabled();
       }
@@ -1566,7 +1566,7 @@ test("config page - basemap configuration - update name and style", async ({
 
     // 15. Clean up
     const removeTableButton = page.locator(
-      "[data-testid='config-remove-button']"
+      "[data-testid='config-remove-button']",
     );
     await removeTableButton.click();
     await expect(modal).toBeVisible({ timeout: 5000 });
@@ -1590,7 +1590,7 @@ test("config page - color column configuration", async ({
 
   // 3. Add a table
   const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']"
+    "[data-testid='add-new-dataset-view-button']",
   );
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
@@ -1613,12 +1613,12 @@ test("config page - color column configuration", async ({
   // 4. Find the card and navigate to edit page
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`
+      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
     );
     await expect(targetCard).toBeVisible({ timeout: 10000 });
 
     const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']"
+      "[data-testid='edit-dataset-view-link']",
     );
     await editLink.click();
     await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
@@ -1670,7 +1670,7 @@ test("config page - color column configuration", async ({
 
     // 13. Clean up
     const removeTableButton = page.locator(
-      "[data-testid='config-remove-button']"
+      "[data-testid='config-remove-button']",
     );
     await removeTableButton.click();
     await expect(modal).toBeVisible({ timeout: 5000 });
@@ -1718,11 +1718,11 @@ test("config page - basemap configuration - max 3 limit", async ({
   // 4. Find and expand the target card
   if (tableNameToAdd) {
     const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`
+      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
     );
     // Cards no longer have hamburger buttons - navigate to edit page
     const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']"
+      "[data-testid='edit-dataset-view-link']",
     );
     await editLink.click();
     await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
@@ -1734,7 +1734,7 @@ test("config page - basemap configuration - max 3 limit", async ({
     // 5. Check for basemap configuration
     // On edit page now, use page.locator
     const basemapLabel = page.locator(
-      'label:has-text("Mapbox Background Map(s)"), label:has-text("Basemap")'
+      'label:has-text("Mapbox Background Map(s)"), label:has-text("Basemap")',
     );
     const hasBasemapConfig = (await basemapLabel.count()) > 0;
 
@@ -1770,7 +1770,7 @@ test("config page - basemap configuration - max 3 limit", async ({
 
       // 11. Remove one basemap
       const removeButtons = page.locator(
-        "button:has-text('Remove'), button.remove-button"
+        "button:has-text('Remove'), button.remove-button",
       );
       if ((await removeButtons.count()) > 0) {
         await removeButtons.first().click();
