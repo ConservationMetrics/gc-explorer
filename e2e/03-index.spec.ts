@@ -33,7 +33,7 @@ test("index page - displays available views and navigation flow", async ({
   await expect(
     page.getByRole("heading", {
       name: /available dataset views/i,
-    }),
+    })
   ).toBeVisible({ timeout: 15000 });
 
   // 5. Wait for dataset cards to render
@@ -84,7 +84,7 @@ test("index page - language picker functionality", async ({
   await expect(
     page.getByRole("heading", {
       name: /available dataset views/i,
-    }),
+    })
   ).toBeVisible({ timeout: 15000 });
 
   /* 3. Wait for the language picker button to be visible (it's a globe icon button)
@@ -102,7 +102,7 @@ test("index page - language picker functionality", async ({
 
   // 6. Wait for dropdown menu to appear and check for language options
   const dropdownMenu = page.locator(
-    ".language-picker-container div[class*='absolute']",
+    ".language-picker-container div[class*='absolute']"
   );
   await dropdownMenu.waitFor({ state: "visible", timeout: 5000 });
 
@@ -123,7 +123,7 @@ test("index page - language picker functionality", async ({
   await expect(
     page.getByRole("heading", {
       name: /available dataset views|visualizações disponíveis|datasetweergaven beschikbaar|visualizaciones disponibles/i,
-    }),
+    })
   ).toBeVisible({ timeout: 5000 });
 });
 
@@ -139,7 +139,7 @@ test("index page - language switching to Portuguese changes heading", async ({
   await expect(
     page.getByRole("heading", {
       name: /available dataset views/i,
-    }),
+    })
   ).toBeVisible({ timeout: 15000 });
 
   /* 3. Wait for the language picker button to be visible (it's a globe icon button)
@@ -153,7 +153,7 @@ test("index page - language switching to Portuguese changes heading", async ({
 
   // 5. Wait for dropdown menu to appear
   const dropdownMenu = page.locator(
-    ".language-picker-container div[class*='absolute']",
+    ".language-picker-container div[class*='absolute']"
   );
   await dropdownMenu.waitFor({ state: "visible", timeout: 5000 });
 
@@ -170,7 +170,9 @@ test("index page - language switching to Portuguese changes heading", async ({
     // 7. Wait for the page to update and verify the heading changed to Portuguese
     await page.waitForTimeout(1000); // Wait for locale change
     await expect(
-      page.getByRole("heading", { name: /visualizações disponíveis/i }),
+      page.getByRole("heading", {
+        name: /visualizações de conjuntos de dados disponíveis/i,
+      })
     ).toBeVisible({ timeout: 5000 });
 
     // 8. Verify the original English heading is no longer visible (or replaced)
