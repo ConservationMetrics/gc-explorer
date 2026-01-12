@@ -69,18 +69,22 @@ test("config page - add new dataset view and edit it", async ({
   await addTableButton.click();
 
   // 4. Verify the modal appears with dropdown
-  const addModal = page.locator("div.fixed.inset-0.bg-black\\/50");
+  const addModal = page.locator("[data-testid='config-modal']");
   await expect(addModal).toBeVisible();
 
   // 5. Verify the modal message
-  await expect(page.getByText(/select table to add:/i)).toBeVisible();
+  const modalMessage = page.locator("[data-testid='config-modal-message']");
+  await expect(modalMessage).toBeVisible();
+  await expect(modalMessage.getByText(/select table to add:/i)).toBeVisible();
 
   // 6. Verify the dropdown is present
-  const dropdown = page.locator("select");
+  const dropdown = page.locator("[data-testid='config-modal-table-select']");
   await expect(dropdown).toBeVisible();
 
   // 7. Verify the confirm button is initially disabled
-  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  const confirmButton = page.locator(
+    "[data-testid='config-modal-confirm-button']",
+  );
   await expect(confirmButton).toBeDisabled();
 
   // 8. Select an option from the dropdown (skip first if it's already configured)
@@ -187,17 +191,22 @@ test("config page - add new dataset view and edit it", async ({
       // 23. Click submit to save changes
       await submitButton.click();
 
-      // 24. Verify success modal appears (wait for modal container, then text)
-      const modalContainer = page.locator(
-        ".fixed.inset-0.z-50.flex.items-center.justify-center",
+      // 24. Verify success modal appears
+      const savedModal = page.locator("[data-testid='saved-modal']");
+      await expect(savedModal).toBeVisible({ timeout: 10000 });
+      const savedModalContent = page.locator(
+        "[data-testid='saved-modal-content']",
       );
-      await expect(modalContainer).toBeVisible({ timeout: 10000 });
-      const successModal = page.locator("h2").filter({ hasText: /saved/i });
-      await expect(successModal).toBeVisible({ timeout: 5000 });
+      await expect(savedModalContent).toBeVisible();
+      const successText = savedModalContent
+        .locator("h2")
+        .filter({ hasText: /saved/i });
+      await expect(successText).toBeVisible({ timeout: 5000 });
 
       // 25. Wait for success modal to close
       await page.waitForTimeout(2500);
-      await expect(successModal).not.toBeVisible();
+      const savedModalAfterClose = page.locator("[data-testid='saved-modal']");
+      await expect(savedModalAfterClose).not.toBeVisible();
 
       // 26. Verify submit button is disabled again (changes saved)
       await expect(submitButton).toBeDisabled();
@@ -476,7 +485,7 @@ test("config page - form validation and change detection", async ({
   await addTableButton.click();
 
   // 4. Verify the modal appears with dropdown
-  const addModal = page.locator("div.fixed.inset-0.bg-black\\/50");
+  const addModal = page.locator("[data-testid='config-modal']");
   await expect(addModal).toBeVisible();
 
   // 5. Select an option from the dropdown
@@ -648,7 +657,7 @@ test("config page - submit configuration changes", async ({
   await addTableButton.click();
 
   // 4. Verify the modal appears with dropdown
-  const addModal = page.locator("div.fixed.inset-0.bg-black\\/50");
+  const addModal = page.locator("[data-testid='config-modal']");
   await expect(addModal).toBeVisible();
 
   // 5. Select an option from the dropdown
@@ -704,13 +713,17 @@ test("config page - submit configuration changes", async ({
       await expect(submitButton).toBeEnabled();
       await submitButton.click();
 
-      // 16. Verify success modal appears (check for "Saved!" text or modal container)
-      const savedModal = page
-        .locator("text=Saved!")
-        .or(page.locator("h2").filter({ hasText: /saved/i }));
-      await expect(savedModal).toBeVisible({
-        timeout: 10000,
-      });
+      // 16. Verify success modal appears
+      const savedModal = page.locator("[data-testid='saved-modal']");
+      await expect(savedModal).toBeVisible({ timeout: 10000 });
+      const savedModalContent = page.locator(
+        "[data-testid='saved-modal-content']",
+      );
+      await expect(savedModalContent).toBeVisible();
+      const successText = savedModalContent
+        .locator("h2")
+        .filter({ hasText: /saved/i });
+      await expect(successText).toBeVisible({ timeout: 5000 });
 
       // 17. Wait for success modal to close
       await page.waitForTimeout(2500);
@@ -882,7 +895,7 @@ test("config page - conditional form sections based on views", async ({
   await addTableButton.click();
 
   // 4. Verify the modal appears with dropdown
-  const addModal = page.locator("div.fixed.inset-0.bg-black\\/50");
+  const addModal = page.locator("[data-testid='config-modal']");
   await expect(addModal).toBeVisible();
 
   // 5. Select an option from the dropdown
@@ -1043,7 +1056,7 @@ test("config page - error handling for invalid form submission", async ({
   await addTableButton.click();
 
   // 4. Verify the modal appears with dropdown
-  const addModal = page.locator("div.fixed.inset-0.bg-black\\/50");
+  const addModal = page.locator("[data-testid='config-modal']");
   await expect(addModal).toBeVisible();
 
   // 5. Select an option from the dropdown
@@ -1183,7 +1196,9 @@ test("config page - modal overlay functionality and cancel button", async ({
   await expect(modalContent).toBeVisible();
 
   // 5. Click cancel to close modal
-  const cancelButton = page.getByRole("button", { name: /cancel/i });
+  const cancelButton = page.locator(
+    "[data-testid='config-modal-cancel-button']",
+  );
   await cancelButton.click();
 
   // 6. Verify modal is hidden
@@ -1429,15 +1444,18 @@ test("config page - basemap configuration - validation", async ({
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
-  const addModal = page.locator("div.fixed.inset-0.bg-black\\/50");
+  const addModal = page.locator("[data-testid='config-modal']");
   await expect(addModal).toBeVisible();
-  const dropdown = page.locator("select");
+  const dropdown = page.locator("[data-testid='config-modal-table-select']");
   await dropdown.selectOption({ index: 0 });
 
   const selectedOption = dropdown.locator("option:checked");
   const tableNameToAdd = await selectedOption.textContent();
 
-  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  const confirmButton = page.locator(
+    "[data-testid='config-modal-confirm-button']",
+  );
+  await expect(confirmButton).toBeEnabled();
   await confirmButton.click();
 
   await expect(page.getByText(/table added to views!/i)).toBeVisible();
@@ -1599,15 +1617,18 @@ test("config page - basemap configuration - update name and style", async ({
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
-  const addModal = page.locator("div.fixed.inset-0.bg-black\\/50");
+  const addModal = page.locator("[data-testid='config-modal']");
   await expect(addModal).toBeVisible();
-  const dropdown = page.locator("select");
+  const dropdown = page.locator("[data-testid='config-modal-table-select']");
   await dropdown.selectOption({ index: 0 });
 
   const selectedOption = dropdown.locator("option:checked");
   const tableNameToAdd = await selectedOption.textContent();
 
-  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  const confirmButton = page.locator(
+    "[data-testid='config-modal-confirm-button']",
+  );
+  await expect(confirmButton).toBeEnabled();
   await confirmButton.click();
 
   await expect(page.getByText(/table added to views!/i)).toBeVisible();
@@ -1742,15 +1763,18 @@ test("config page - color column configuration", async ({
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
-  const addModal = page.locator("div.fixed.inset-0.bg-black\\/50");
+  const addModal = page.locator("[data-testid='config-modal']");
   await expect(addModal).toBeVisible();
-  const dropdown = page.locator("select");
+  const dropdown = page.locator("[data-testid='config-modal-table-select']");
   await dropdown.selectOption({ index: 0 });
 
   const selectedOption = dropdown.locator("option:checked");
   const tableNameToAdd = await selectedOption.textContent();
 
-  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  const confirmButton = page.locator(
+    "[data-testid='config-modal-confirm-button']",
+  );
+  await expect(confirmButton).toBeEnabled();
   await confirmButton.click();
 
   await expect(page.getByText(/table added to views!/i)).toBeVisible();
@@ -1871,15 +1895,18 @@ test("config page - basemap configuration - max 3 limit", async ({
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
 
-  const addModal = page.locator("div.fixed.inset-0.bg-black\\/50");
+  const addModal = page.locator("[data-testid='config-modal']");
   await expect(addModal).toBeVisible();
-  const dropdown = page.locator("select");
+  const dropdown = page.locator("[data-testid='config-modal-table-select']");
   await dropdown.selectOption({ index: 0 });
 
   const selectedOption = dropdown.locator("option:checked");
   const tableNameToAdd = await selectedOption.textContent();
 
-  const confirmButton = page.getByRole("button", { name: /confirm/i });
+  const confirmButton = page.locator(
+    "[data-testid='config-modal-confirm-button']",
+  );
+  await expect(confirmButton).toBeEnabled();
   await confirmButton.click();
 
   await expect(page.getByText(/table added to views!/i)).toBeVisible();
@@ -1963,12 +1990,14 @@ test("config page - basemap configuration - max 3 limit", async ({
     await removeTableButton.click();
 
     // Verify the confirmation modal appears
-    const confirmationModal = page.locator(".fixed.inset-0.bg-black\\/50");
+    const confirmationModal = page.locator(
+      "[data-testid='remove-confirmation-modal']",
+    );
     await expect(confirmationModal).toBeVisible({ timeout: 5000 });
 
     // Verify the modal shows the confirmation message
-    const modalContent = confirmationModal.locator(
-      ".bg-white.rounded-lg.shadow-xl",
+    const modalContent = page.locator(
+      "[data-testid='remove-confirmation-modal-content']",
     );
     await expect(modalContent).toBeVisible();
     await expect(modalContent.getByText(/are you sure/i)).toBeVisible();
@@ -1980,14 +2009,17 @@ test("config page - basemap configuration - max 3 limit", async ({
     await confirmRemoveButton.click();
 
     // Wait for modal buttons to disappear and success message to appear
-    await page.waitForTimeout(500);
-    await expect(confirmRemoveButton).not.toBeVisible({ timeout: 2000 });
+    await page.waitForTimeout(1000); // Wait for DOM update
+    await expect(confirmRemoveButton).not.toBeVisible({ timeout: 3000 });
 
-    // Verify success message appears in the modal
-    const successMessage = modalContent.filter({
-      hasText: /table.*removed.*views|tabela.*removida/i,
-    });
-    await expect(successMessage).toBeVisible({ timeout: 10000 });
+    // Verify success message appears in the modal (message is updated in the same modal)
+    const successMessage = page.locator(
+      "[data-testid='remove-confirmation-modal-message']",
+    );
+    await expect(successMessage).toBeVisible({ timeout: 5000 });
+    await expect(
+      successMessage.getByText(/table.*removed.*views|tabela.*removida/i),
+    ).toBeVisible({ timeout: 5000 });
     await page.waitForTimeout(3500);
     await page.waitForURL("**/config", { timeout: 10000 });
   }
