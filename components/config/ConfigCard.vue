@@ -263,6 +263,7 @@ const handleSubmit = () => {
         <div class="flex flex-wrap gap-3 mt-6 pt-6 border-t border-gray-200">
           <button
             type="submit"
+            data-testid="config-submit-button"
             :disabled="!isChanged || !isFormValid"
             class="flex items-center gap-2 px-6 py-3 font-medium rounded-lg transition-colors duration-200"
             :class="{
@@ -290,6 +291,7 @@ const handleSubmit = () => {
           </button>
           <button
             type="button"
+            data-testid="config-remove-button"
             class="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors duration-200"
             @click="$emit('removeTableFromConfig', tableName)"
           >

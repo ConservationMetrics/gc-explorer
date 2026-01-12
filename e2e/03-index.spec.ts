@@ -168,14 +168,19 @@ test("index page - language switching to Portuguese changes heading", async ({
     await portugueseOption.click();
 
     // 7. Wait for the page to update and verify the heading changed to Portuguese
+    await page.waitForTimeout(1000); // Wait for locale change
     await expect(
       page.getByRole("heading", { name: /visualizações disponíveis/i }),
     ).toBeVisible({ timeout: 5000 });
 
-    // 8. Verify the original English heading is no longer visible
-    await expect(
-      page.getByRole("heading", { name: /available dataset views/i }),
-    ).not.toBeVisible();
+    // 8. Verify the original English heading is no longer visible (or replaced)
+    // The heading should now be in Portuguese, so English version shouldn't exist
+    const englishHeading = page.getByRole("heading", {
+      name: /available dataset views/i,
+    });
+    const englishCount = await englishHeading.count();
+    // Either the heading changed or there's only one heading now
+    expect(englishCount).toBe(0);
   } else {
     // If Portuguese is not available, just verify language switching works
     const firstOption = dropdownMenu.locator("a[href='#']").first();

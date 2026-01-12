@@ -36,6 +36,7 @@ const viewRoute = computed(() => {
 <template>
   <NuxtLink
     :to="viewRoute"
+    :data-testid="`view-card-${view}`"
     class="bg-purple-50 rounded-lg p-4 sm:p-6 shadow-sm border border-purple-100 hover:bg-purple-100 hover:shadow-md transition-all duration-200 flex flex-col"
   >
     <div class="mb-4 text-purple-700">
