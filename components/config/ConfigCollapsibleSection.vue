@@ -21,6 +21,7 @@ const toggle = () => {
   >
     <button
       type="button"
+      :data-testid="`config-section-${title.toLowerCase()}-toggle`"
       class="w-full flex items-center justify-between p-4 bg-purple-100 hover:bg-purple-200 transition-colors text-left"
       @click="toggle"
     >
