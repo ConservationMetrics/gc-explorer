@@ -21,7 +21,7 @@ import {
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
 import MapLegend from "@/components/shared/MapLegend.vue";
-import IncidentsSidebar from "@/components/shared/IncidentsSidebar.vue";
+import IncidentsSidebar from "@/components/alerts/IncidentsSidebar.vue";
 import { Plus } from "lucide-vue-next";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
