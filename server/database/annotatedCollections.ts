@@ -4,7 +4,7 @@ import type {
   Incident,
   CollectionEntry,
 } from "@/types/types";
-import { configDb } from "../utils/db";
+import { configDb, warehouseDb } from "../utils/db";
 import {
   annotatedCollections,
   incidents,
@@ -30,11 +30,8 @@ export const createAnnotatedCollection = async (
     notes?: string;
   }>,
 ): Promise<AnnotatedCollection> => {
-  try {
-    await configDb.execute(sql`BEGIN`);
-
-    // Create the annotated parent collection first
-    const [newCollection] = await configDb
+  return await configDb.transaction(async (tx) => {
+    const [newCollection] = await tx
       .insert(annotatedCollections)
       .values({
         name: collection.name,
@@ -45,9 +42,8 @@ export const createAnnotatedCollection = async (
       })
       .returning();
 
-    // Create incident-specific data if provided
     if (incidentData && collection.collection_type === "incident") {
-      await configDb.insert(incidents).values({
+      await tx.insert(incidents).values({
         collectionId: newCollection.id,
         incidentType: incidentData.incident_type,
         responsibleParty: incidentData.responsible_party,
@@ -58,15 +54,15 @@ export const createAnnotatedCollection = async (
       });
     }
 
-    // Add entries if provided
     if (entries && entries.length > 0) {
       for (const entry of entries) {
-        // Fetch source data from the original table
-        const sourceResult = await configDb.execute(sql`
-          SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} OR id = ${entry.source_id} LIMIT 1
+        // Fetch source data from warehouse database
+        // All warehouse tables use _id as primary key
+        const sourceResult = await warehouseDb.execute(sql`
+          SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} LIMIT 1
         `);
 
-        await configDb.insert(collectionEntries).values({
+        await tx.insert(collectionEntries).values({
           collectionId: newCollection.id,
           sourceTable: entry.source_table,
           sourceId: entry.source_id,
@@ -76,8 +72,6 @@ export const createAnnotatedCollection = async (
         });
       }
     }
-
-    await configDb.execute(sql`COMMIT`);
 
     return {
       id: newCollection.id,
@@ -89,10 +83,7 @@ export const createAnnotatedCollection = async (
       updated_at: newCollection.updatedAt?.toISOString() || "",
       metadata: newCollection.metadata || {},
     } as AnnotatedCollection;
-  } catch (error) {
-    await configDb.execute(sql`ROLLBACK`);
-    throw error;
-  }
+  });
 };
 
 /**
@@ -182,77 +173,83 @@ export const updateAnnotatedCollection = async (
   updates: Partial<AnnotatedCollection>,
   incidentUpdates?: Partial<Incident>,
 ): Promise<AnnotatedCollection> => {
-  try {
-    await configDb.execute(sql`BEGIN`);
+  // Update main collection
+  const collectionUpdateData: Partial<
+    typeof annotatedCollections.$inferInsert
+  > = {};
+  if (updates.name !== undefined) collectionUpdateData.name = updates.name;
+  if (updates.description !== undefined)
+    collectionUpdateData.description = updates.description;
+  if (updates.metadata !== undefined)
+    collectionUpdateData.metadata = updates.metadata;
 
-    // Update main collection
-    const collectionUpdateData: Partial<
-      typeof annotatedCollections.$inferInsert
-    > = {};
-    if (updates.name !== undefined) collectionUpdateData.name = updates.name;
-    if (updates.description !== undefined)
-      collectionUpdateData.description = updates.description;
-    if (updates.metadata !== undefined)
-      collectionUpdateData.metadata = updates.metadata;
+  if (Object.keys(collectionUpdateData).length === 0 && !incidentUpdates) {
+    throw new Error("No fields to update");
+  }
+
+  return await configDb.transaction(async (tx) => {
+    let updatedCollection;
 
     if (Object.keys(collectionUpdateData).length > 0) {
-      const [updatedCollection] = await configDb
+      const [result] = await tx
         .update(annotatedCollections)
         .set(collectionUpdateData)
         .where(eq(annotatedCollections.id, collectionId))
         .returning();
 
-      if (!updatedCollection) {
+      if (!result) {
         throw new Error("Collection not found");
       }
-
-      // Update incident data if provided
-      if (incidentUpdates) {
-        const incidentUpdateData: Partial<typeof incidents.$inferInsert> = {};
-        if (incidentUpdates.incident_type !== undefined)
-          incidentUpdateData.incidentType = incidentUpdates.incident_type;
-        if (incidentUpdates.responsible_party !== undefined)
-          incidentUpdateData.responsibleParty =
-            incidentUpdates.responsible_party;
-        if (incidentUpdates.impact_description !== undefined)
-          incidentUpdateData.impactDescription =
-            incidentUpdates.impact_description;
-        if (incidentUpdates.status !== undefined)
-          incidentUpdateData.status = incidentUpdates.status;
-        if (incidentUpdates.is_active !== undefined)
-          incidentUpdateData.isActive = incidentUpdates.is_active;
-        if (incidentUpdates.supporting_evidence !== undefined)
-          incidentUpdateData.supportingEvidence =
-            incidentUpdates.supporting_evidence;
-
-        if (Object.keys(incidentUpdateData).length > 0) {
-          await configDb
-            .update(incidents)
-            .set(incidentUpdateData)
-            .where(eq(incidents.collectionId, collectionId));
-        }
-      }
-
-      await configDb.execute(sql`COMMIT`);
-
-      return {
-        id: updatedCollection.id,
-        name: updatedCollection.name,
-        description: updatedCollection.description,
-        collection_type: updatedCollection.collectionType,
-        created_by: updatedCollection.createdBy,
-        created_at: updatedCollection.createdAt?.toISOString() || "",
-        updated_at: updatedCollection.updatedAt?.toISOString() || "",
-        metadata: updatedCollection.metadata || {},
-      } as AnnotatedCollection;
+      updatedCollection = result;
     } else {
-      await configDb.execute(sql`ROLLBACK`);
-      throw new Error("No fields to update");
+      // If only incident updates, fetch the collection
+      const [result] = await tx
+        .select()
+        .from(annotatedCollections)
+        .where(eq(annotatedCollections.id, collectionId));
+      if (!result) {
+        throw new Error("Collection not found");
+      }
+      updatedCollection = result;
     }
-  } catch (error) {
-    await configDb.execute(sql`ROLLBACK`);
-    throw error;
-  }
+
+    // Update incident data if provided
+    if (incidentUpdates) {
+      const incidentUpdateData: Partial<typeof incidents.$inferInsert> = {};
+      if (incidentUpdates.incident_type !== undefined)
+        incidentUpdateData.incidentType = incidentUpdates.incident_type;
+      if (incidentUpdates.responsible_party !== undefined)
+        incidentUpdateData.responsibleParty = incidentUpdates.responsible_party;
+      if (incidentUpdates.impact_description !== undefined)
+        incidentUpdateData.impactDescription =
+          incidentUpdates.impact_description;
+      if (incidentUpdates.status !== undefined)
+        incidentUpdateData.status = incidentUpdates.status;
+      if (incidentUpdates.is_active !== undefined)
+        incidentUpdateData.isActive = incidentUpdates.is_active;
+      if (incidentUpdates.supporting_evidence !== undefined)
+        incidentUpdateData.supportingEvidence =
+          incidentUpdates.supporting_evidence;
+
+      if (Object.keys(incidentUpdateData).length > 0) {
+        await tx
+          .update(incidents)
+          .set(incidentUpdateData)
+          .where(eq(incidents.collectionId, collectionId));
+      }
+    }
+
+    return {
+      id: updatedCollection.id,
+      name: updatedCollection.name,
+      description: updatedCollection.description,
+      collection_type: updatedCollection.collectionType,
+      created_by: updatedCollection.createdBy,
+      created_at: updatedCollection.createdAt?.toISOString() || "",
+      updated_at: updatedCollection.updatedAt?.toISOString() || "",
+      metadata: updatedCollection.metadata || {},
+    } as AnnotatedCollection;
+  });
 };
 
 /**
@@ -274,18 +271,17 @@ export const addEntriesToCollection = async (
   }>,
   addedBy: string,
 ): Promise<CollectionEntry[]> => {
-  try {
-    await configDb.execute(sql`BEGIN`);
-
+  return await configDb.transaction(async (tx) => {
     const newEntries = [];
 
     for (const entry of entries) {
-      // Fetch source data from the original table
-      const sourceResult = await configDb.execute(sql`
-        SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} OR id = ${entry.source_id} LIMIT 1
+      // Fetch source data from warehouse database
+      // All warehouse tables use _id as primary key
+      const sourceResult = await warehouseDb.execute(sql`
+        SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} LIMIT 1
       `);
 
-      const [newEntry] = await configDb
+      const [newEntry] = await tx
         .insert(collectionEntries)
         .values({
           collectionId: collectionId,
@@ -309,12 +305,8 @@ export const addEntriesToCollection = async (
       } as CollectionEntry);
     }
 
-    await configDb.execute(sql`COMMIT`);
     return newEntries;
-  } catch (error) {
-    await configDb.execute(sql`ROLLBACK`);
-    throw error;
-  }
+  });
 };
 
 /**
