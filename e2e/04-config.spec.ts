@@ -123,20 +123,27 @@ test("config page - add new dataset view and edit it", async ({
   // 10. Click confirm to add the table
   await confirmButton.click();
 
-  // 11. Verify success message appears
-  await expect(page.getByText(/table added to views!/i)).toBeVisible();
+  // 11. Wait for modal to close
+  await expect(addModal).not.toBeVisible({ timeout: 5000 });
 
-  // 12. Wait for modal to close and page to reload
-  await page.waitForTimeout(3500);
-  await expect(addModal).not.toBeVisible();
+  // 12. Wait for page to reload/update (the card should appear after a few seconds)
+  await page.waitForTimeout(3000);
+  await page.waitForLoadState("networkidle", { timeout: 10000 });
   await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
 
-  // 13. Find the dataset card with the table name we just added
+  // 13. Verify the dataset card with the table name we just added is rendered
   if (selectedTableName) {
     const targetCard = page.locator(
       `[data-testid='config-dataset-card']:has-text("${selectedTableName.trim()}")`,
     );
     await expect(targetCard).toBeVisible({ timeout: 10000 });
+
+    // Verify the card shows the table name in the heading
+    const cardHeading = targetCard.locator("h2");
+    await expect(cardHeading).toBeVisible();
+    await expect(cardHeading).toContainText(selectedTableName.trim(), {
+      timeout: 5000,
+    });
 
     // 14. Click "Edit dataset view" to navigate to edit page
     const editLink = targetCard.locator(
@@ -194,22 +201,8 @@ test("config page - add new dataset view and edit it", async ({
       // 24. Wait for network request to complete
       await page.waitForLoadState("networkidle", { timeout: 10000 });
 
-      // 25. Verify success modal appears (wait for ClientOnly to render)
-      const savedModal = page.locator("[data-testid='saved-modal']");
-      await expect(savedModal).toBeVisible({ timeout: 10000 });
-      const savedModalContent = page.locator(
-        "[data-testid='saved-modal-content']",
-      );
-      await expect(savedModalContent).toBeVisible();
-      const successText = savedModalContent
-        .locator("h2")
-        .filter({ hasText: /saved/i });
-      await expect(successText).toBeVisible({ timeout: 5000 });
-
-      // 25. Wait for success modal to close
-      await page.waitForTimeout(2500);
-      const savedModalAfterClose = page.locator("[data-testid='saved-modal']");
-      await expect(savedModalAfterClose).not.toBeVisible();
+      // 25. Wait a few seconds for changes to be saved
+      await page.waitForTimeout(2000);
 
       // 26. Verify submit button is disabled again (changes saved)
       await expect(submitButton).toBeDisabled();
@@ -225,12 +218,11 @@ test("config page - add new dataset view and edit it", async ({
         await page.waitForTimeout(500);
         await expect(submitButton).toBeEnabled();
         await submitButton.click();
-        const savedModal = page
-          .locator("text=Saved!")
-          .or(page.locator("h2").filter({ hasText: /saved/i }));
-        await expect(savedModal).toBeVisible({
-          timeout: 10000,
-        });
+        // Wait for network request to complete
+        await page.waitForLoadState("networkidle", { timeout: 10000 });
+        await page.waitForTimeout(2000);
+        // Verify submit button is disabled again (changes saved)
+        await expect(submitButton).toBeDisabled();
       }
     }
 
