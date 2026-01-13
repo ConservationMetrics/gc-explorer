@@ -790,15 +790,15 @@ test("config page - submit configuration changes", async ({
       "[data-testid='edit-dataset-view-link']",
     );
     await editLink.click();
-    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
+    await page.waitForURL(/\/config\/\w+/, { timeout: 2000 });
     await page.waitForLoadState("networkidle");
 
     // 12. Wait for form to be visible
-    await page.waitForSelector("form", { timeout: 15000 });
+    await page.waitForSelector("form", { timeout: 2000 });
 
     // 13. Find and modify a form field (dataset display name - safer than mapbox token)
     const datasetNameInput = page.locator(
-      'input[id*="DATASET_TABLE"], input[placeholder*="Dataset Display Name"]',
+      'input[id*="DATASET_TABLE"], input[placeholder*="e.g., My Mapping Data"]',
     );
 
     if ((await datasetNameInput.count()) > 0) {
