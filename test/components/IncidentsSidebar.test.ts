@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
-import { ref, nextTick } from "vue";
+import { nextTick } from "vue";
 import IncidentsSidebar from "@/components/alerts/IncidentsSidebar.vue";
 import type { AnnotatedCollection } from "@/types/types";
 
@@ -19,6 +19,7 @@ describe("IncidentsSidebar component", () => {
       description: "Test description 1",
       collection_type: "incident",
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       created_by: "test-user",
       metadata: {},
     },
@@ -28,6 +29,7 @@ describe("IncidentsSidebar component", () => {
       description: "Test description 2",
       collection_type: "incident",
       created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       created_by: "test-user",
       metadata: {},
     },
