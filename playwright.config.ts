@@ -35,13 +35,13 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         baseURL: "http://localhost:8080",
-        headless: true,
+        headless: false,
       },
       dependencies: ["setup"],
     },
   ],
   use: {
     baseURL: "http://localhost:8080",
-    headless: true,
+    headless: false,
   },
 });

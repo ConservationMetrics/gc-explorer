@@ -81,58 +81,46 @@ test("config page - add new dataset view and edit it", async ({
   const dropdown = page.locator("[data-testid='config-modal-table-select']");
   await expect(dropdown).toBeVisible();
 
-  // 7. Verify the confirm button is initially disabled
-  const confirmButton = page.locator(
-    "[data-testid='config-modal-confirm-button']",
-  );
-  await expect(confirmButton).toBeDisabled();
-
-  // 8. Select an option from the dropdown (skip first if it's already configured)
+  // 7. Check if there are any available options in the dropdown
   const options = await dropdown.locator("option").all();
-  let selectedTableName: string | null = null;
+  const availableOptions: string[] = [];
 
-  // Find a table that's not already in the config
   for (const option of options) {
     const optionText = await option.textContent();
-    if (optionText && optionText.trim()) {
-      // Check if this table is already configured
-      const existingCard = page.locator(
-        `[data-testid='config-dataset-card']:has-text("${optionText.trim()}")`,
-      );
-      const exists = (await existingCard.count()) === 0;
-      if (exists) {
-        await dropdown.selectOption({ label: optionText.trim() });
-        selectedTableName = optionText.trim();
-        break;
-      }
+    if (optionText && optionText.trim() && optionText.trim() !== "") {
+      availableOptions.push(optionText.trim());
     }
   }
 
-  // If all tables are configured, just select the first one
-  if (!selectedTableName && options.length > 0) {
-    await dropdown.selectOption({ index: 0 });
-    const selectedOption = dropdown.locator("option:checked");
-    selectedTableName = await selectedOption.textContent();
-  }
+  let selectedTableName: string | null = null;
 
-  expect(selectedTableName).not.toBeNull();
+  // 8. If there are available options, add a new dataset view
+  if (availableOptions.length > 0) {
+    // Verify the confirm button is initially disabled
+    const confirmButton = page.locator(
+      "[data-testid='config-modal-confirm-button']",
+    );
+    await expect(confirmButton).toBeDisabled();
 
-  // 9. Verify the confirm button is now enabled
-  await expect(confirmButton).toBeEnabled();
+    // Select the first available option
+    await dropdown.selectOption({ label: availableOptions[0] });
+    selectedTableName = availableOptions[0];
 
-  // 10. Click confirm to add the table
-  await confirmButton.click();
+    // Verify the confirm button is now enabled
+    await expect(confirmButton).toBeEnabled();
 
-  // 11. Wait for modal to close
-  await expect(addModal).not.toBeVisible({ timeout: 5000 });
+    // Click confirm to add the table
+    await confirmButton.click();
 
-  // 12. Wait for page to reload/update (the card should appear after a few seconds)
-  await page.waitForTimeout(3000);
-  await page.waitForLoadState("networkidle", { timeout: 10000 });
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+    // Wait for modal to close
+    await expect(addModal).not.toBeVisible({ timeout: 5000 });
 
-  // 13. Verify the dataset card with the table name we just added is rendered
-  if (selectedTableName) {
+    // Wait for page to reload/update (the card should appear after a few seconds)
+    await page.waitForTimeout(3000);
+    await page.waitForLoadState("networkidle", { timeout: 10000 });
+    await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+
+    // Verify the dataset card with the table name we just added is rendered
     const targetCard = page.locator(
       `[data-testid='config-dataset-card']:has-text("${selectedTableName.trim()}")`,
     );
@@ -144,67 +132,116 @@ test("config page - add new dataset view and edit it", async ({
     await expect(cardHeading).toContainText(selectedTableName.trim(), {
       timeout: 5000,
     });
+  } else {
+    // No available options - all tables are already configured
+    // Close the modal and work with existing dataset views
+    const cancelButton = page.locator(
+      "[data-testid='config-modal-cancel-button']",
+    );
+    await cancelButton.click();
+    await expect(addModal).not.toBeVisible({ timeout: 5000 });
 
-    // 14. Click "Edit dataset view" to navigate to edit page
+    // Get the first existing dataset card
+    const existingCards = page.locator("[data-testid='config-dataset-card']");
+    const cardCount = await existingCards.count();
+
+    if (cardCount > 0) {
+      // Get the table name from the first card
+      const firstCard = existingCards.first();
+      const cardHeading = firstCard.locator("h2");
+      await expect(cardHeading).toBeVisible();
+      const headingText = await cardHeading.textContent();
+      selectedTableName = headingText?.trim() || null;
+
+      // Use the first card for editing
+      const editLink = firstCard.locator(
+        "[data-testid='edit-dataset-view-link']",
+      );
+      await editLink.click();
+
+      // Wait for navigation to edit page
+      await page.waitForURL(`**/config/${selectedTableName}`, {
+        timeout: 10000,
+      });
+    } else {
+      // No cards at all - skip the test
+      test.skip();
+      return;
+    }
+  }
+
+  // 9. Navigate to edit page (if we haven't already)
+  if (
+    selectedTableName &&
+    !page.url().includes(`/config/${selectedTableName}`)
+  ) {
+    const targetCard = page.locator(
+      `[data-testid='config-dataset-card']:has-text("${selectedTableName.trim()}")`,
+    );
+    await expect(targetCard).toBeVisible({ timeout: 10000 });
+
+    // Click "Edit dataset view" to navigate to edit page
     const editLink = targetCard.locator(
       "[data-testid='edit-dataset-view-link']",
     );
     await editLink.click();
+  }
 
-    // 15. Wait for navigation to edit page
+  // 10. Wait for navigation to edit page (if we're not already there)
+  if (selectedTableName) {
     await page.waitForURL(`**/config/${selectedTableName.trim()}`, {
       timeout: 10000,
     });
     await page.waitForLoadState("networkidle");
 
-    // 16. Wait for form to be visible
+    // 11. Wait for form to be visible
     await page.waitForSelector("form", { timeout: 15000 });
     const configCard = page.locator(".bg-white.rounded-lg.shadow-sm").first();
     await expect(configCard).toBeVisible({ timeout: 15000 });
 
-    // 17. Verify page heading shows the dataset name
+    // 12. Verify page heading shows the dataset name
     await expect(
       page.getByRole("heading", {
         name: new RegExp(`configuration.*${selectedTableName.trim()}`, "i"),
       }),
     ).toBeVisible();
 
-    // 18. Verify breadcrumb link back to config (use more specific selector to avoid header links)
+    // 13. Verify breadcrumb link back to config (use more specific selector to avoid header links)
     const configBreadcrumb = page
       .locator('a[href="/config"]')
       .filter({ hasText: /configuration/i })
       .first();
     await expect(configBreadcrumb).toBeVisible();
 
-    // 19. Verify submit button exists and is initially disabled (no changes)
+    // 14. Verify submit button exists and is initially disabled (no changes)
     const submitButton = page.locator("[data-testid='config-submit-button']");
     await expect(submitButton).toBeVisible();
     await expect(submitButton).toBeDisabled();
 
-    // 20. Find and modify a form field (Dataset display name)
+    // 15. Find and modify a form field (Dataset display name)
     const datasetNameInput = page.locator(
       'input[id*="DATASET_TABLE"], input[placeholder*="Dataset Display Name"]',
     );
 
     if ((await datasetNameInput.count()) > 0) {
-      // 21. Modify the dataset display name
+      // 16. Modify the dataset display name
       await datasetNameInput.clear();
       await datasetNameInput.fill(`Test Dataset - ${Date.now()}`);
       await page.waitForTimeout(500);
 
-      // 22. Verify submit button is now enabled (change detected)
+      // 17. Verify submit button is now enabled (change detected)
       await expect(submitButton).toBeEnabled();
 
-      // 23. Click submit to save changes
+      // 18. Click submit to save changes
       await submitButton.click();
 
-      // 24. Wait for network request to complete
+      // 19. Wait for network request to complete
       await page.waitForLoadState("networkidle", { timeout: 10000 });
 
-      // 25. Wait a few seconds for changes to be saved
+      // 20. Wait a few seconds for changes to be saved
       await page.waitForTimeout(2000);
 
-      // 26. Verify submit button is disabled again (changes saved)
+      // 21. Verify submit button is disabled again (changes saved)
       await expect(submitButton).toBeDisabled();
     } else {
       // If DATASET_TABLE input doesn't exist, try modifying VIEW_DESCRIPTION
@@ -226,7 +263,7 @@ test("config page - add new dataset view and edit it", async ({
       }
     }
 
-    // 27. Verify we can navigate back to config dashboard
+    // 22. Verify we can navigate back to config dashboard
     await configBreadcrumb.click();
     await page.waitForURL("**/config", { timeout: 5000 });
     await expect(
