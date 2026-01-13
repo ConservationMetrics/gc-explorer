@@ -812,12 +812,7 @@ test("config page - submit configuration changes", async ({
       await expect(submitButton).toBeEnabled();
       await submitButton.click();
 
-      // 16. Wait for network request to complete
-      await page.waitForLoadState("networkidle", { timeout: 10000 });
-
-      // 17. Verify success modal appears (wait for ClientOnly to render)
-      const savedModal = page.locator("[data-testid='saved-modal']");
-      await expect(savedModal).toBeVisible({ timeout: 10000 });
+      // 16. Verify success modal appears (wait for ClientOnly to render)
       const savedModalContent = page.locator(
         "[data-testid='saved-modal-content']",
       );
