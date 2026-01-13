@@ -9,12 +9,18 @@ import {
   onBeforeUnmount,
   nextTick,
 } from "vue";
-// Note: vue-i18n is mocked via module alias in vitest.config.ts
-// pointing to /test/helpers/vueI18nMock.ts
+import { createI18n } from "vue-i18n";
 
 import * as mapboxMock from "@/test/helpers/mapboxMock";
 
 import AlertsDashboard from "@/components/AlertsDashboard.vue";
+
+// Create i18n instance for template $t support
+const i18n = createI18n({
+  legacy: false,
+  locale: "en",
+  messages: { en: {} },
+});
 
 // Re-usable minimal props object
 const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
@@ -60,6 +66,15 @@ const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
   planetApiKey: "",
 };
 
+// Mock Nuxt composables - needs to be before component import
+const mockFetch = vi.fn();
+const mockUseRuntimeConfig = () => ({
+  public: {
+    appApiKey: "test-api-key",
+  },
+});
+
+// Make Vue reactivity functions and Nuxt composables available globally (for auto-imports)
 Object.assign(globalThis, {
   ref,
   reactive,
@@ -68,6 +83,8 @@ Object.assign(globalThis, {
   onMounted,
   onBeforeUnmount,
   nextTick,
+  useRuntimeConfig: mockUseRuntimeConfig,
+  $fetch: mockFetch,
 });
 
 // Mock vue-router for route & router injections
@@ -78,32 +95,48 @@ vi.mock("vue-router", () => ({
   useRouter: () => mockRouter,
 }));
 
-// Mock Nuxt useRuntimeConfig
+// Mock Nuxt composables via #imports
 vi.mock("#imports", () => ({
-  useRuntimeConfig: () => ({
-    public: {
-      appApiKey: "test-api-key",
-    },
-  }),
+  useRuntimeConfig: mockUseRuntimeConfig,
+  $fetch: mockFetch,
 }));
 
 describe("AlertsDashboard component", () => {
   beforeEach(() => {
     mapboxMock.reset();
     document.body.innerHTML = '<div id="map"></div>';
+    // Mock $fetch to return empty incidents by default
+    mockFetch.mockResolvedValue({
+      incidents: [],
+      total: 0,
+      limit: 10,
+      offset: 0,
+    });
   });
 
-  it("initialises Mapbox and adds controls", async () => {
-    const wrapper = mount(AlertsDashboard, {
-      props: baseProps,
+  // Helper to mount with i18n mocks
+  const mountComponent = (props = baseProps, options: any = {}) => {
+    return mount(AlertsDashboard, {
+      props,
       global: {
+        plugins: [i18n, ...(options.plugins || [])],
         stubs: {
           ViewSidebar: true,
           MapLegend: true,
           BasemapSelector: true,
+          ...options.stubs,
         },
+        mocks: {
+          $t: (key: string) => key,
+          ...options.mocks,
+        },
+        ...options,
       },
     });
+  };
+
+  it("initialises Mapbox and adds controls", async () => {
+    const wrapper = mountComponent();
 
     // Trigger component's onMounted -> map 'load' event
     mapboxMock.fireLoad();
@@ -123,17 +156,12 @@ describe("AlertsDashboard component", () => {
       properties: { alertID: "alert1", YYYYMM: "202401" },
     });
 
-    const wrapper = mount(AlertsDashboard, {
-      props,
-      global: {
-        stubs: {
-          ViewSidebar: {
-            props: ["showSidebar", "feature"],
-            template:
-              "<div v-if='showSidebar'>Sidebar {{ feature?.alertID }}</div>",
-          },
-          MapLegend: true,
-          BasemapSelector: true,
+    const wrapper = mountComponent(props, {
+      stubs: {
+        ViewSidebar: {
+          props: ["showSidebar", "feature"],
+          template:
+            "<div v-if='showSidebar'>Sidebar {{ feature?.alertID }}</div>",
         },
       },
     });
@@ -159,16 +187,7 @@ describe("AlertsDashboard component", () => {
   it("adds 3D terrain when mapbox3d is true", async () => {
     const propsWithTerrain = { ...baseProps, mapbox3d: true };
 
-    mount(AlertsDashboard, {
-      props: propsWithTerrain,
-      global: {
-        stubs: {
-          ViewSidebar: true,
-          MapLegend: true,
-          BasemapSelector: true,
-        },
-      },
-    });
+    mountComponent(propsWithTerrain);
 
     mapboxMock.fireLoad();
     await flushPromises();
@@ -192,16 +211,7 @@ describe("AlertsDashboard component", () => {
       mapbox3dTerrainExaggeration: 3.0,
     };
 
-    mount(AlertsDashboard, {
-      props: propsWithCustomExaggeration,
-      global: {
-        stubs: {
-          ViewSidebar: true,
-          MapLegend: true,
-          BasemapSelector: true,
-        },
-      },
-    });
+    mountComponent(propsWithCustomExaggeration);
 
     mapboxMock.fireLoad();
     await flushPromises();
@@ -217,6 +227,7 @@ describe("AlertsDashboard component", () => {
       const wrapper = mount(AlertsDashboard, {
         props: baseProps,
         global: {
+          plugins: [i18n],
           stubs: {
             ViewSidebar: true,
             MapLegend: true,
@@ -237,6 +248,7 @@ describe("AlertsDashboard component", () => {
       const wrapper = mount(AlertsDashboard, {
         props: baseProps,
         global: {
+          plugins: [i18n],
           stubs: {
             ViewSidebar: true,
             MapLegend: true,
@@ -267,6 +279,7 @@ describe("AlertsDashboard component", () => {
       const wrapper = mount(AlertsDashboard, {
         props: baseProps,
         global: {
+          plugins: [i18n],
           stubs: {
             ViewSidebar: true,
             MapLegend: true,
@@ -305,6 +318,7 @@ describe("AlertsDashboard component", () => {
       const wrapper = mount(AlertsDashboard, {
         props: baseProps,
         global: {
+          plugins: [i18n],
           stubs: {
             ViewSidebar: true,
             MapLegend: true,
@@ -336,6 +350,7 @@ describe("AlertsDashboard component", () => {
       const wrapper = mount(AlertsDashboard, {
         props: baseProps,
         global: {
+          plugins: [i18n],
           stubs: {
             ViewSidebar: true,
             MapLegend: true,
@@ -384,6 +399,7 @@ describe("AlertsDashboard component", () => {
       const wrapper = mount(AlertsDashboard, {
         props: baseProps,
         global: {
+          plugins: [i18n],
           stubs: {
             ViewSidebar: true,
             MapLegend: true,
@@ -408,6 +424,7 @@ describe("AlertsDashboard component", () => {
       const wrapper = mount(AlertsDashboard, {
         props: baseProps,
         global: {
+          plugins: [i18n],
           stubs: {
             ViewSidebar: true,
             MapLegend: true,
@@ -444,6 +461,7 @@ describe("AlertsDashboard component", () => {
       const wrapper = mount(AlertsDashboard, {
         props: baseProps,
         global: {
+          plugins: [i18n],
           stubs: {
             ViewSidebar: true,
             MapLegend: true,
