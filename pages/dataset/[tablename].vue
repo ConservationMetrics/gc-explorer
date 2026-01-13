@@ -180,6 +180,7 @@ useHead({
 
       <div
         v-if="headerImage"
+        data-testid="dataset-header-with-image"
         class="relative w-5/6 mx-auto overflow-hidden rounded-xl"
       >
         <div class="relative h-64 sm:h-80 md:h-96">
@@ -244,6 +245,7 @@ useHead({
 
           <div v-if="enabledViews.length > 0">
             <div
+              data-testid="view-cards-container"
               class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
             >
               <ViewCard
@@ -268,6 +270,7 @@ useHead({
 
       <div
         v-else
+        data-testid="dataset-header-fallback"
         class="w-5/6 mx-auto bg-gradient-to-r from-purple-100 to-purple-50 rounded-xl overflow-hidden mt-4"
       >
         <div class="p-6 sm:p-8">
@@ -321,6 +324,7 @@ useHead({
 
           <div v-if="enabledViews.length > 0">
             <div
+              data-testid="view-cards-container"
               class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
             >
               <ViewCard
