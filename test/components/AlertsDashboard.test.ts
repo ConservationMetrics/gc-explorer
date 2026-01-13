@@ -78,6 +78,15 @@ vi.mock("vue-router", () => ({
   useRouter: () => mockRouter,
 }));
 
+// Mock Nuxt useRuntimeConfig
+vi.mock("#imports", () => ({
+  useRuntimeConfig: () => ({
+    public: {
+      appApiKey: "test-api-key",
+    },
+  }),
+}));
+
 describe("AlertsDashboard component", () => {
   beforeEach(() => {
     mapboxMock.reset();
