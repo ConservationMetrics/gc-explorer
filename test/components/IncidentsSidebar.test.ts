@@ -4,7 +4,7 @@ import { nextTick } from "vue";
 import IncidentsSidebar from "@/components/alerts/IncidentsSidebar.vue";
 import type { AnnotatedCollection } from "@/types/types";
 
-// Mock vue-i18n
+// Mock vue-i18n for testing
 vi.mock("vue-i18n", () => ({
   useI18n: () => ({
     t: (key: string) => key,
