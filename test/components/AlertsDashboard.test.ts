@@ -115,7 +115,14 @@ describe("AlertsDashboard component", () => {
   });
 
   // Helper to mount with i18n mocks
-  const mountComponent = (props = baseProps, options: any = {}) => {
+  const mountComponent = (
+    props = baseProps,
+    options: {
+      plugins?: unknown[];
+      stubs?: Record<string, unknown>;
+      mocks?: Record<string, unknown>;
+    } = {},
+  ) => {
     return mount(AlertsDashboard, {
       props,
       global: {
@@ -130,7 +137,6 @@ describe("AlertsDashboard component", () => {
           $t: (key: string) => key,
           ...options.mocks,
         },
-        ...options,
       },
     });
   };
