@@ -17,6 +17,7 @@ const toggle = () => {
 
 <template>
   <div
+    data-testid="config-section-collapsible"
     class="bg-purple-50 rounded-lg border border-purple-200 mb-4 overflow-hidden"
   >
     <button

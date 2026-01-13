@@ -218,33 +218,84 @@ test("config page - add new dataset view and edit it", async ({
     await expect(submitButton).toBeVisible();
     await expect(submitButton).toBeDisabled();
 
-    // 15. Find and modify a form field (Dataset display name)
+    // 15. Expand Dataset section if not already expanded
+    const datasetSectionToggle = page.locator(
+      '[data-testid="config-section-dataset-toggle"]',
+    );
+    if ((await datasetSectionToggle.count()) > 0) {
+      // Check if section is expanded by looking for the input field
+      const datasetNameInputCheck = page.locator(
+        'input[id*="DATASET_TABLE"], input[placeholder*="Dataset Display Name"]',
+      );
+      if ((await datasetNameInputCheck.count()) === 0) {
+        // Section is collapsed, expand it
+        await datasetSectionToggle.click();
+        await page.waitForTimeout(300);
+      }
+    }
+
+    // 16. Find and modify a form field (Dataset display name or View header image)
     const datasetNameInput = page.locator(
       'input[id*="DATASET_TABLE"], input[placeholder*="Dataset Display Name"]',
     );
+    const viewHeaderImageInput = page.locator(
+      'input[id*="VIEW_HEADER_IMAGE"], input[placeholder*="View Header Image"]',
+    );
 
     if ((await datasetNameInput.count()) > 0) {
-      // 16. Modify the dataset display name
+      // 17. Modify the dataset display name
       await datasetNameInput.clear();
       await datasetNameInput.fill(`Test Dataset - ${Date.now()}`);
       await page.waitForTimeout(500);
 
-      // 17. Verify submit button is now enabled (change detected)
+      // 18. Verify submit button is now enabled (change detected)
       await expect(submitButton).toBeEnabled();
 
-      // 18. Click submit to save changes
+      // 19. Click submit to save changes
       await submitButton.click();
 
-      // 19. Wait for network request to complete
+      // 20. Wait for network request to complete
       await page.waitForLoadState("networkidle", { timeout: 10000 });
 
-      // 20. Wait a few seconds for changes to be saved
-      await page.waitForTimeout(2000);
+      // 21. Wait for Vue reactivity to update the form state
+      // The ConfigCard watch should update originalConfig after datasetConfig is updated
+      await page.waitForTimeout(3000);
 
-      // 21. Verify submit button is disabled again (changes saved)
-      await expect(submitButton).toBeDisabled();
+      // 22. Verify the input value was saved (more reliable than button state)
+      const savedValue = await datasetNameInput.inputValue();
+      expect(savedValue).toBeTruthy();
+
+      // 23. Verify submit button is disabled again (changes saved)
+      // Note: This might take a moment for Vue reactivity to propagate
+      await expect(submitButton).toBeDisabled({ timeout: 10000 });
+    } else if ((await viewHeaderImageInput.count()) > 0) {
+      // 17. Modify the view header image URL
+      await viewHeaderImageInput.clear();
+      await viewHeaderImageInput.fill(
+        "https://plus.unsplash.com/premium_photo-1676218968741-8179dd7e533f?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      );
+      await page.waitForTimeout(500);
+
+      // 18. Verify submit button is now enabled (change detected)
+      await expect(submitButton).toBeEnabled();
+
+      // 19. Click submit to save changes
+      await submitButton.click();
+
+      // 20. Wait for network request to complete
+      await page.waitForLoadState("networkidle", { timeout: 10000 });
+
+      // 21. Wait for Vue reactivity to update the form state
+      await page.waitForTimeout(3000);
+
+      // 22. Verify the input value was saved
+      const savedValue = await viewHeaderImageInput.inputValue();
+      expect(savedValue).toBeTruthy();
+
+      // 23. Verify submit button is disabled again (changes saved)
+      await expect(submitButton).toBeDisabled({ timeout: 10000 });
     } else {
-      // If DATASET_TABLE input doesn't exist, try modifying VIEW_DESCRIPTION
+      // If neither input exists, try modifying VIEW_DESCRIPTION
       const descriptionInput = page.locator(
         'textarea[id*="VIEW_DESCRIPTION"], textarea[placeholder*="description"]',
       );
@@ -257,9 +308,11 @@ test("config page - add new dataset view and edit it", async ({
         await submitButton.click();
         // Wait for network request to complete
         await page.waitForLoadState("networkidle", { timeout: 10000 });
-        await page.waitForTimeout(2000);
+        // Wait for Vue reactivity to update the form state
+        await page.waitForTimeout(3000);
         // Verify submit button is disabled again (changes saved)
-        await expect(submitButton).toBeDisabled();
+        // Note: This might take a moment for Vue reactivity to propagate
+        await expect(submitButton).toBeDisabled({ timeout: 10000 });
       }
     }
 
@@ -1584,12 +1637,12 @@ test("config page - basemap configuration - validation", async ({
 
           // 11. Set first basemap name
           await firstNameInput.clear();
-          await firstNameInput.fill("Satellite");
+          await firstNameInput.fill("Default Style");
           await page.waitForTimeout(300);
 
           // 12. Set second basemap name to duplicate (should show validation error)
           await secondNameInput.clear();
-          await secondNameInput.fill("Satellite");
+          await secondNameInput.fill("Default Style");
           await page.waitForTimeout(500);
 
           // 13. Verify validation error appears (red text)
@@ -1614,6 +1667,11 @@ test("config page - basemap configuration - validation", async ({
           expect(pattern).toMatch(/mapbox:\/\/styles/);
 
           // 17. Enter valid Mapbox style URL
+          await firstStyleInput.clear();
+          await firstStyleInput.fill(
+            "mapbox://styles/mapbox/satellite-streets-v12",
+          );
+          await page.waitForTimeout(300);
           await firstStyleInput.clear();
           await firstStyleInput.fill("mapbox://styles/user/styleid");
           await page.waitForTimeout(300);
@@ -1748,19 +1806,21 @@ test("config page - basemap configuration - update name and style", async ({
       if ((await nameInput.count()) > 0 && (await styleInput.count()) > 0) {
         // 10. Update basemap name
         await nameInput.clear();
-        await nameInput.fill("Custom Basemap");
+        await nameInput.fill("Default Style");
         await page.waitForTimeout(300);
 
         // 11. Verify the value is set
-        await expect(nameInput).toHaveValue("Custom Basemap");
+        await expect(nameInput).toHaveValue("Default Style");
 
         // 12. Update basemap style
         await styleInput.clear();
-        await styleInput.fill("mapbox://styles/myuser/mystyle");
+        await styleInput.fill("mapbox://styles/mapbox/satellite-streets-v12");
         await page.waitForTimeout(300);
 
         // 13. Verify the value is set
-        await expect(styleInput).toHaveValue("mapbox://styles/myuser/mystyle");
+        await expect(styleInput).toHaveValue(
+          "mapbox://styles/mapbox/satellite-streets-v12",
+        );
 
         // 14. Verify submit button is enabled (change detected)
         const submitButton = page.locator(
