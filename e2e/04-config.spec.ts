@@ -735,49 +735,6 @@ test("config page - form validation and change detection", async ({
         await expect(submitButton).toBeEnabled();
       }
     }
-
-    // 19. Clean up: remove the table we added
-    // Find the "Remove dataset view" button at the bottom of the form
-    const removeTableButton = page.locator(
-      "[data-testid='config-remove-button']",
-    );
-    await removeTableButton.click();
-
-    // Verify the confirmation modal appears
-    const confirmationModal = page.locator(
-      "[data-testid='remove-confirmation-modal']",
-    );
-    await expect(confirmationModal).toBeVisible({ timeout: 5000 });
-
-    // Verify the modal shows the confirmation message
-    const modalContent = confirmationModal.locator(
-      ".bg-white.rounded-lg.shadow-xl",
-    );
-    await expect(modalContent).toBeVisible();
-    await expect(modalContent.getByText(/are you sure/i)).toBeVisible();
-
-    // Click confirm to remove
-    const confirmRemoveButton = modalContent.getByRole("button", {
-      name: /confirm/i,
-    });
-    await confirmRemoveButton.click();
-
-    // Wait for modal buttons to disappear and success message to appear
-    await page.waitForTimeout(1000); // Wait for DOM update
-    await expect(confirmRemoveButton).not.toBeVisible({ timeout: 3000 });
-
-    // Verify success message appears in the modal (message element is updated)
-    const successMessage = page.locator(
-      "[data-testid='remove-confirmation-modal-message']",
-    );
-    await expect(successMessage).toBeVisible({ timeout: 5000 });
-    await expect(
-      successMessage.getByText(/table.*removed.*views|tabela.*removida/i),
-    ).toBeVisible({ timeout: 5000 });
-
-    // 23. Wait for navigation back to config dashboard
-    await page.waitForTimeout(3500);
-    await page.waitForURL("**/config", { timeout: 5000 });
   }
 });
 
@@ -896,49 +853,6 @@ test("config page - submit configuration changes", async ({
         });
       }
     }
-
-    // 19. Clean up: remove the table we added
-    // Find the "Remove dataset view" button at the bottom of the form
-    const removeTableButton = page.locator(
-      "[data-testid='config-remove-button']",
-    );
-    await removeTableButton.click();
-
-    // Verify the confirmation modal appears
-    const confirmationModal = page.locator(
-      "[data-testid='remove-confirmation-modal']",
-    );
-    await expect(confirmationModal).toBeVisible({ timeout: 5000 });
-
-    // Verify the modal shows the confirmation message
-    const modalContent = confirmationModal.locator(
-      ".bg-white.rounded-lg.shadow-xl",
-    );
-    await expect(modalContent).toBeVisible();
-    await expect(modalContent.getByText(/are you sure/i)).toBeVisible();
-
-    // Click confirm to remove
-    const confirmRemoveButton = modalContent.getByRole("button", {
-      name: /confirm/i,
-    });
-    await confirmRemoveButton.click();
-
-    // Wait for modal buttons to disappear and success message to appear
-    await page.waitForTimeout(1000); // Wait for DOM update
-    await expect(confirmRemoveButton).not.toBeVisible({ timeout: 3000 });
-
-    // Verify success message appears in the modal (message element is updated)
-    const successMessage = page.locator(
-      "[data-testid='remove-confirmation-modal-message']",
-    );
-    await expect(successMessage).toBeVisible({ timeout: 5000 });
-    await expect(
-      successMessage.getByText(/table.*removed.*views|tabela.*removida/i),
-    ).toBeVisible({ timeout: 5000 });
-
-    // 23. Wait for navigation back to config dashboard
-    await page.waitForTimeout(3500);
-    await page.waitForURL("**/config", { timeout: 5000 });
   }
 });
 
@@ -1101,44 +1015,6 @@ test("config page - conditional form sections based on views", async ({
     // 16. Verify Views section is visible (should be open by default)
     const viewsSection = page.locator("*").filter({ hasText: /^Views$/i });
     await expect(viewsSection.first()).toBeVisible();
-
-    // 17. Clean up: remove the table we added
-    const removeButton = page
-      .locator("button")
-      .filter({ hasText: /remove.*dataset.*view|remove.*table/i });
-    await removeButton.click();
-
-    // 18. Verify the confirmation modal appears
-    const confirmationModal = page.locator(".fixed.inset-0.bg-black\\/50");
-    await expect(confirmationModal).toBeVisible({ timeout: 5000 });
-
-    const modalContent = confirmationModal.locator(
-      ".bg-white.rounded-lg.shadow-xl",
-    );
-    await expect(modalContent).toBeVisible();
-    await expect(modalContent.getByText(/are you sure/i)).toBeVisible();
-
-    const confirmRemoveButton = modalContent.getByRole("button", {
-      name: /confirm/i,
-    });
-    await confirmRemoveButton.click();
-
-    // Wait for modal buttons to disappear and success message to appear
-    await page.waitForTimeout(1000); // Wait for DOM update
-    await expect(confirmRemoveButton).not.toBeVisible({ timeout: 3000 });
-
-    // Verify success message appears in the modal (message element is updated)
-    const successMessage = page.locator(
-      "[data-testid='remove-confirmation-modal-message']",
-    );
-    await expect(successMessage).toBeVisible({ timeout: 5000 });
-    await expect(
-      successMessage.getByText(/table.*removed.*views|tabela.*removida/i),
-    ).toBeVisible({ timeout: 5000 });
-
-    // 21. Wait for navigation back to config dashboard
-    await page.waitForTimeout(3500);
-    await page.waitForURL("**/config", { timeout: 10000 });
   }
 });
 
@@ -1287,44 +1163,6 @@ test("config page - error handling for invalid form submission", async ({
       // 19. Verify submit button is now enabled with valid format
       await expect(submitButton).toBeEnabled();
     }
-
-    // 20. Clean up: remove the table we added
-    const removeButton = page
-      .locator("button")
-      .filter({ hasText: /remove.*dataset.*view|remove.*table/i });
-    await removeButton.click();
-
-    // 21. Verify the confirmation modal appears
-    const confirmationModal = page.locator(".fixed.inset-0.bg-black\\/50");
-    await expect(confirmationModal).toBeVisible({ timeout: 5000 });
-
-    const modalContent = confirmationModal.locator(
-      ".bg-white.rounded-lg.shadow-xl",
-    );
-    await expect(modalContent).toBeVisible();
-    await expect(modalContent.getByText(/are you sure/i)).toBeVisible();
-
-    const confirmRemoveButton = modalContent.getByRole("button", {
-      name: /confirm/i,
-    });
-    await confirmRemoveButton.click();
-
-    // Wait for modal buttons to disappear and success message to appear
-    await page.waitForTimeout(1000); // Wait for DOM update
-    await expect(confirmRemoveButton).not.toBeVisible({ timeout: 3000 });
-
-    // Verify success message appears in the modal (message element is updated)
-    const successMessage = page.locator(
-      "[data-testid='remove-confirmation-modal-message']",
-    );
-    await expect(successMessage).toBeVisible({ timeout: 5000 });
-    await expect(
-      successMessage.getByText(/table.*removed.*views|tabela.*removida/i),
-    ).toBeVisible({ timeout: 5000 });
-
-    // 22. Wait for navigation back to config dashboard
-    await page.waitForTimeout(3500);
-    await page.waitForURL("**/config", { timeout: 10000 });
   }
 });
 
@@ -1546,44 +1384,6 @@ test("config page - basemap configuration - add and remove basemaps", async ({
         }
       }
     }
-
-    // 16. Clean up: remove the table we added
-    const removeTableButton = page.locator(
-      "[data-testid='config-remove-button']",
-    );
-    await removeTableButton.click();
-
-    // Verify the confirmation modal appears
-    const confirmationModal = page.locator(
-      "[data-testid='remove-confirmation-modal']",
-    );
-    await expect(confirmationModal).toBeVisible({ timeout: 5000 });
-
-    // Verify the modal shows the confirmation message
-    const modalContent = confirmationModal.locator(
-      ".bg-white.rounded-lg.shadow-xl",
-    );
-    await expect(modalContent).toBeVisible();
-    await expect(modalContent.getByText(/are you sure/i)).toBeVisible();
-
-    // Click confirm to remove
-    const confirmRemoveButton = modalContent.getByRole("button", {
-      name: /confirm/i,
-    });
-    await confirmRemoveButton.click();
-
-    // Wait for modal buttons to disappear and success message to appear
-    // Wait for modal buttons to disappear and success message to appear
-    await page.waitForTimeout(1000); // Wait for DOM update
-    await expect(confirmRemoveButton).not.toBeVisible({ timeout: 3000 });
-
-    // Verify success message appears in the modal
-    const successMessage = modalContent.filter({
-      hasText: /table.*removed.*views|tabela.*removida/i,
-    });
-    await expect(successMessage).toBeVisible({ timeout: 5000 });
-    await page.waitForTimeout(3500);
-    await page.waitForURL("**/config", { timeout: 5000 });
   }
 });
 
@@ -1727,44 +1527,6 @@ test("config page - basemap configuration - validation", async ({
         }
       }
     }
-
-    // 18. Clean up
-    const removeTableButton = page.locator(
-      "[data-testid='config-remove-button']",
-    );
-    await removeTableButton.click();
-
-    // Verify the confirmation modal appears
-    const confirmationModal = page.locator(
-      "[data-testid='remove-confirmation-modal']",
-    );
-    await expect(confirmationModal).toBeVisible({ timeout: 5000 });
-
-    // Verify the modal shows the confirmation message
-    const modalContent = confirmationModal.locator(
-      ".bg-white.rounded-lg.shadow-xl",
-    );
-    await expect(modalContent).toBeVisible();
-    await expect(modalContent.getByText(/are you sure/i)).toBeVisible();
-
-    // Click confirm to remove
-    const confirmRemoveButton = modalContent.getByRole("button", {
-      name: /confirm/i,
-    });
-    await confirmRemoveButton.click();
-
-    // Wait for modal buttons to disappear and success message to appear
-    // Wait for modal buttons to disappear and success message to appear
-    await page.waitForTimeout(1000); // Wait for DOM update
-    await expect(confirmRemoveButton).not.toBeVisible({ timeout: 3000 });
-
-    // Verify success message appears in the modal
-    const successMessage = modalContent.filter({
-      hasText: /table.*removed.*views|tabela.*removida/i,
-    });
-    await expect(successMessage).toBeVisible({ timeout: 5000 });
-    await page.waitForTimeout(3500);
-    await page.waitForURL("**/config", { timeout: 5000 });
   }
 });
 
@@ -1878,44 +1640,6 @@ test("config page - basemap configuration - update name and style", async ({
         await expect(submitButton).toBeEnabled();
       }
     }
-
-    // 15. Clean up
-    const removeTableButton = page.locator(
-      "[data-testid='config-remove-button']",
-    );
-    await removeTableButton.click();
-
-    // Verify the confirmation modal appears
-    const confirmationModal = page.locator(
-      "[data-testid='remove-confirmation-modal']",
-    );
-    await expect(confirmationModal).toBeVisible({ timeout: 5000 });
-
-    // Verify the modal shows the confirmation message
-    const modalContent = confirmationModal.locator(
-      ".bg-white.rounded-lg.shadow-xl",
-    );
-    await expect(modalContent).toBeVisible();
-    await expect(modalContent.getByText(/are you sure/i)).toBeVisible();
-
-    // Click confirm to remove
-    const confirmRemoveButton = modalContent.getByRole("button", {
-      name: /confirm/i,
-    });
-    await confirmRemoveButton.click();
-
-    // Wait for modal buttons to disappear and success message to appear
-    // Wait for modal buttons to disappear and success message to appear
-    await page.waitForTimeout(1000); // Wait for DOM update
-    await expect(confirmRemoveButton).not.toBeVisible({ timeout: 3000 });
-
-    // Verify success message appears in the modal
-    const successMessage = modalContent.filter({
-      hasText: /table.*removed.*views|tabela.*removida/i,
-    });
-    await expect(successMessage).toBeVisible({ timeout: 5000 });
-    await page.waitForTimeout(3500);
-    await page.waitForURL("**/config", { timeout: 5000 });
   }
 });
 
@@ -2012,44 +1736,6 @@ test("config page - color column configuration", async ({
       const submitButton = page.locator("[data-testid='config-submit-button']");
       await expect(submitButton).toBeEnabled();
     }
-
-    // 13. Clean up
-    const removeTableButton = page.locator(
-      "[data-testid='config-remove-button']",
-    );
-    await removeTableButton.click();
-
-    // Verify the confirmation modal appears
-    const confirmationModal = page.locator(
-      "[data-testid='remove-confirmation-modal']",
-    );
-    await expect(confirmationModal).toBeVisible({ timeout: 5000 });
-
-    // Verify the modal shows the confirmation message
-    const modalContent = confirmationModal.locator(
-      ".bg-white.rounded-lg.shadow-xl",
-    );
-    await expect(modalContent).toBeVisible();
-    await expect(modalContent.getByText(/are you sure/i)).toBeVisible();
-
-    // Click confirm to remove
-    const confirmRemoveButton = modalContent.getByRole("button", {
-      name: /confirm/i,
-    });
-    await confirmRemoveButton.click();
-
-    // Wait for modal buttons to disappear and success message to appear
-    // Wait for modal buttons to disappear and success message to appear
-    await page.waitForTimeout(1000); // Wait for DOM update
-    await expect(confirmRemoveButton).not.toBeVisible({ timeout: 3000 });
-
-    // Verify success message appears in the modal
-    const successMessage = modalContent.filter({
-      hasText: /table.*removed.*views|tabela.*removida/i,
-    });
-    await expect(successMessage).toBeVisible({ timeout: 5000 });
-    await page.waitForTimeout(3500);
-    await page.waitForURL("**/config", { timeout: 5000 });
   }
 });
 
@@ -2158,45 +1844,5 @@ test("config page - basemap configuration - max 3 limit", async ({
         await expect(addBasemapButton).toBeEnabled();
       }
     }
-
-    // 14. Clean up: remove the table we added
-    const removeTableButton = page.locator(
-      "[data-testid='config-remove-button']",
-    );
-    await removeTableButton.click();
-
-    // Verify the confirmation modal appears
-    const confirmationModal = page.locator(
-      "[data-testid='remove-confirmation-modal']",
-    );
-    await expect(confirmationModal).toBeVisible({ timeout: 5000 });
-
-    // Verify the modal shows the confirmation message
-    const modalContent = page.locator(
-      "[data-testid='remove-confirmation-modal-content']",
-    );
-    await expect(modalContent).toBeVisible();
-    await expect(modalContent.getByText(/are you sure/i)).toBeVisible();
-
-    // Click confirm to remove
-    const confirmRemoveButton = modalContent.getByRole("button", {
-      name: /confirm/i,
-    });
-    await confirmRemoveButton.click();
-
-    // Wait for modal buttons to disappear and success message to appear
-    await page.waitForTimeout(1000); // Wait for DOM update
-    await expect(confirmRemoveButton).not.toBeVisible({ timeout: 3000 });
-
-    // Verify success message appears in the modal (message is updated in the same modal)
-    const successMessage = page.locator(
-      "[data-testid='remove-confirmation-modal-message']",
-    );
-    await expect(successMessage).toBeVisible({ timeout: 5000 });
-    await expect(
-      successMessage.getByText(/table.*removed.*views|tabela.*removida/i),
-    ).toBeVisible({ timeout: 5000 });
-    await page.waitForTimeout(3500);
-    await page.waitForURL("**/config", { timeout: 10000 });
   }
 });
