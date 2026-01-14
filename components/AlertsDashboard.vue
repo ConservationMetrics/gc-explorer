@@ -2730,6 +2730,7 @@ onBeforeUnmount(() => {
       >
         <button
           class="incident-control-btn"
+          data-testid="incidents-view-button"
           :class="{ active: showIncidentsSidebar }"
           @click="toggleIncidentsSidebar"
         >
@@ -2759,6 +2760,7 @@ onBeforeUnmount(() => {
       >
         <button
           class="incident-control-btn"
+          data-testid="incidents-bbox-button"
           :class="{ active: boundingBoxMode }"
           @click="toggleBoundingBoxMode"
         >
@@ -2791,6 +2793,7 @@ onBeforeUnmount(() => {
       >
         <button
           class="incident-control-btn"
+          data-testid="incidents-multiselect-button"
           :class="{ active: multiSelectMode }"
           @click="toggleMultiSelectMode"
         >
@@ -2823,6 +2826,7 @@ onBeforeUnmount(() => {
       >
         <button
           class="incident-control-btn"
+          data-testid="incidents-create-button"
           :class="{ active: showIncidentsSidebar && openSidebarWithCreateForm }"
           :disabled="selectedSources.length === 0"
           @click="openIncidentsSidebarWithCreateForm"

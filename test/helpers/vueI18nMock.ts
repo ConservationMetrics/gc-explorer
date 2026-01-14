@@ -6,16 +6,20 @@
    that components expect, including useI18n() composable and createI18n() factory function. */
 
 import { vi } from "vitest";
+import type { App } from "vue";
+
+// Mock translation function
+const mockT = (key: string, ...args: unknown[]) => {
+  // Simple translation that returns the key, or interpolates if args provided
+  if (args.length > 0) {
+    return `${key} ${args.join(" ")}`;
+  }
+  return key;
+};
 
 // Mock useI18n composable
 export const useI18n = vi.fn(() => ({
-  t: (key: string, ...args: unknown[]) => {
-    // Simple translation that returns the key, or interpolates if args provided
-    if (args.length > 0) {
-      return `${key} ${args.join(" ")}`;
-    }
-    return key;
-  },
+  t: mockT,
   locale: { value: "en" },
   locales: { value: ["en"] },
   d: (date: Date, _format?: string) => date.toLocaleDateString(),
@@ -24,11 +28,16 @@ export const useI18n = vi.fn(() => ({
   tm: (key: string) => ({ [key]: key }), // Return object with key
 }));
 
-// Mock createI18n factory function
+// Mock createI18n factory function - returns a proper Vue plugin
 export const createI18n = vi.fn(() => ({
-  install: vi.fn(),
+  install(app: App) {
+    // Provide $t to all components via globalProperties
+    app.config.globalProperties.$t = mockT;
+    app.config.globalProperties.$d = (date: Date) => date.toLocaleDateString();
+    app.config.globalProperties.$n = (num: number) => num.toLocaleString();
+  },
   global: {
-    t: (key: string) => key,
+    t: mockT,
     locale: { value: "en" },
     locales: { value: ["en"] },
   },
