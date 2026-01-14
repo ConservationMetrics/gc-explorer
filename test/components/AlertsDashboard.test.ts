@@ -271,9 +271,9 @@ describe("AlertsDashboard component", () => {
       mapboxMock.fireLoad();
       await flushPromises();
 
-      const viewIncidentsButton = wrapper
-        .find(".incidents-controls")
-        .findAll("button")[0];
+      const viewIncidentsButton = wrapper.find(
+        '[data-testid="incidents-view-button"]',
+      );
       await viewIncidentsButton.trigger("click");
       await flushPromises();
 
@@ -298,9 +298,9 @@ describe("AlertsDashboard component", () => {
       mapboxMock.fireLoad();
       await flushPromises();
 
-      const multiSelectButton = wrapper
-        .find(".incidents-controls")
-        .findAll("button")[1];
+      const multiSelectButton = wrapper.find(
+        '[data-testid="incidents-multiselect-button"]',
+      );
 
       // Initially not active
       expect(multiSelectButton.classes()).not.toContain("active");
@@ -337,9 +337,9 @@ describe("AlertsDashboard component", () => {
       mapboxMock.fireLoad();
       await flushPromises();
 
-      const boundingBoxButton = wrapper
-        .find(".incidents-controls")
-        .findAll("button")[2];
+      const boundingBoxButton = wrapper.find(
+        '[data-testid="incidents-bbox-button"]',
+      );
 
       // Initially not active
       expect(boundingBoxButton.classes()).not.toContain("active");
@@ -384,9 +384,9 @@ describe("AlertsDashboard component", () => {
       vm.selectedSources = [{ source_table: "mapeo_data", source_id: "test1" }];
       await flushPromises();
 
-      const createButton = wrapper
-        .find(".incidents-controls")
-        .findAll("button")[3]; // Create button is the last one
+      const createButton = wrapper.find(
+        '[data-testid="incidents-create-button"]',
+      );
 
       // Button should not be disabled when sources are selected
       expect(createButton.attributes("disabled")).toBeUndefined();
@@ -418,9 +418,9 @@ describe("AlertsDashboard component", () => {
       mapboxMock.fireLoad();
       await flushPromises();
 
-      const createButton = wrapper
-        .find(".incidents-controls")
-        .findAll("button")[3];
+      const createButton = wrapper.find(
+        '[data-testid="incidents-create-button"]',
+      );
 
       // Button should be disabled when no sources are selected
       expect(createButton.attributes("disabled")).toBeDefined();
@@ -443,12 +443,12 @@ describe("AlertsDashboard component", () => {
       mapboxMock.fireLoad();
       await flushPromises();
 
-      const multiSelectButton = wrapper
-        .find(".incidents-controls")
-        .findAll("button")[1];
-      const boundingBoxButton = wrapper
-        .find(".incidents-controls")
-        .findAll("button")[2];
+      const multiSelectButton = wrapper.find(
+        '[data-testid="incidents-multiselect-button"]',
+      );
+      const boundingBoxButton = wrapper.find(
+        '[data-testid="incidents-bbox-button"]',
+      );
 
       // Enable multi-select
       await multiSelectButton.trigger("click");
@@ -480,12 +480,12 @@ describe("AlertsDashboard component", () => {
       mapboxMock.fireLoad();
       await flushPromises();
 
-      const multiSelectButton = wrapper
-        .find(".incidents-controls")
-        .findAll("button")[1];
-      const boundingBoxButton = wrapper
-        .find(".incidents-controls")
-        .findAll("button")[2];
+      const multiSelectButton = wrapper.find(
+        '[data-testid="incidents-multiselect-button"]',
+      );
+      const boundingBoxButton = wrapper.find(
+        '[data-testid="incidents-bbox-button"]',
+      );
 
       // Enable bounding box
       await boundingBoxButton.trigger("click");

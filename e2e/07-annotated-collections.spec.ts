@@ -80,10 +80,7 @@ test("annotated collections - view saved incidents sidebar", async ({
   await navigateToAlertsDashboard(page);
 
   // Find the checkmark button (view incidents button)
-  const viewIncidentsButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .first();
+  const viewIncidentsButton = page.getByTestId("incidents-view-button");
 
   // Click to open sidebar
   await viewIncidentsButton.click();
@@ -110,10 +107,7 @@ test("annotated collections - multi-select mode and create incident", async ({
   await navigateToAlertsDashboard(page);
 
   // Find and click multi-select button (second button in incidents-controls)
-  const multiSelectButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .nth(1); // Multi-select is the second button
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
 
   await multiSelectButton.click();
 
@@ -146,15 +140,14 @@ test("annotated collections - multi-select mode and create incident", async ({
     const viewport = page.viewportSize();
     if (viewport) {
       // Click near center of map where features might be
-      await page.mouse.click(viewport.width / 2, viewport.height / 2);
+      await page.mouse.click(viewport.width / 2, viewport.height / 2, {
+        modifiers: ["Control"],
+      });
       await page.waitForTimeout(500);
 
       // Verify that a feature was selected (check if selectedSources count increased)
       // We can't directly check the Vue state, but we can check if the create button becomes enabled
-      const createButton = page
-        .locator(".incidents-controls")
-        .locator("button")
-        .last(); // Create button is the last button
+      const createButton = page.getByTestId("incidents-create-button");
 
       // The button should not be disabled if we have selections
       const _isDisabled = await createButton.getAttribute("disabled");
@@ -174,10 +167,7 @@ test("annotated collections - bounding box selection", async ({
   await navigateToAlertsDashboard(page);
 
   // Find and click bounding box button (third button in incidents-controls)
-  const boundingBoxButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .nth(2); // Bounding box is the third button
+  const boundingBoxButton = page.getByTestId("incidents-bbox-button");
 
   await boundingBoxButton.click();
 
@@ -187,32 +177,54 @@ test("annotated collections - bounding box selection", async ({
   // Wait for map to be ready
   await page.waitForTimeout(1000);
 
-  const viewport = page.viewportSize();
-  if (viewport) {
-    // Simulate Ctrl+drag to create bounding box
-    const startX = viewport.width / 2 - 50;
-    const startY = viewport.height / 2 - 50;
-    const endX = viewport.width / 2 + 50;
-    const endY = viewport.height / 2 + 50;
+  // Find a real feature, then draw a bbox around it (avoids guessing)
+  const featureLocation = await page.evaluate(() => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    if (!map) return null;
 
-    // Mouse down with Ctrl key
-    await page.keyboard.down("Control");
-    await page.mouse.move(startX, startY);
-    await page.mouse.down();
-    await page.mouse.move(endX, endY);
-    await page.mouse.up();
-    await page.keyboard.up("Control");
+    const layers = [
+      "most-recent-alerts-point",
+      "most-recent-alerts-centroids",
+      "previous-alerts-point",
+      "previous-alerts-centroids",
+      "mapeo-data",
+    ].filter((layer) => map.getLayer(layer));
 
-    await page.waitForTimeout(500);
+    const features = map.queryRenderedFeatures(undefined, { layers });
+    if (features.length === 0) return null;
 
-    // Verify bounding box selection worked (check if create button is enabled)
-    const createButton = page
-      .locator(".incidents-controls")
-      .locator("button")
-      .last();
-    const _isDisabled = await createButton.getAttribute("disabled");
-    // Button should be enabled if features were selected
+    const feature = features[0];
+    let coords;
+    if (feature.geometry.type === "Point") {
+      coords = feature.geometry.coordinates;
+    } else {
+      return null;
+    }
+
+    const point = map.project(coords);
+    return { x: point.x, y: point.y };
+  });
+
+  if (!featureLocation) {
+    test.skip();
+    return;
   }
+
+  const startX = featureLocation.x - 30;
+  const startY = featureLocation.y - 30;
+  const endX = featureLocation.x + 30;
+  const endY = featureLocation.y + 30;
+
+  await page.keyboard.down("Control");
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(endX, endY);
+  await page.mouse.up();
+  await page.keyboard.up("Control");
+
+  const createButton = page.getByTestId("incidents-create-button");
+  await expect(createButton).toBeEnabled({ timeout: 5000 });
 
   // Disable bounding box mode
   await boundingBoxButton.click();
@@ -225,10 +237,7 @@ test("annotated collections - create incident flow", async ({
   await navigateToAlertsDashboard(page);
 
   // Enable multi-select mode
-  const multiSelectButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .nth(1);
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
   await multiSelectButton.click();
   await page.waitForTimeout(500);
 
@@ -249,7 +258,7 @@ test("annotated collections - create incident flow", async ({
       "previous-alerts-polygon",
       "previous-alerts-linestring",
       "previous-alerts-centroids",
-      "mapeo-data-point",
+      "mapeo-data",
     ].filter((layer) => map.getLayer(layer));
 
     const features = map.queryRenderedFeatures(undefined, { layers });
@@ -289,14 +298,13 @@ test("annotated collections - create incident flow", async ({
   }
 
   // Click on the feature location
-  await page.mouse.click(featureClicked.x, featureClicked.y);
+  await page.mouse.click(featureClicked.x, featureClicked.y, {
+    modifiers: ["Control"],
+  });
   await page.waitForTimeout(500);
 
   // Verify that a feature was selected by checking if create button is enabled
-  const createButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .last();
+  const createButton = page.getByTestId("incidents-create-button");
 
   // Wait for the button to become enabled (feature selection may take a moment)
   await expect(createButton).toBeEnabled({ timeout: 5000 });
@@ -337,10 +345,7 @@ test("annotated collections - create incident flow", async ({
 
   // Verify the incident was created by checking if it appears in saved incidents
   // Open the view incidents sidebar
-  const viewIncidentsButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .first();
+  const viewIncidentsButton = page.getByTestId("incidents-view-button");
   await viewIncidentsButton.click();
 
   await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
@@ -357,10 +362,7 @@ test("annotated collections - toggle selection with ctrl+click", async ({
   await navigateToAlertsDashboard(page);
 
   // Enable multi-select mode
-  const multiSelectButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .nth(1);
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
   await multiSelectButton.click();
   await page.waitForTimeout(500);
 
@@ -375,7 +377,7 @@ test("annotated collections - toggle selection with ctrl+click", async ({
       "most-recent-alerts-centroids",
       "previous-alerts-point",
       "previous-alerts-centroids",
-      "mapeo-data-point",
+      "mapeo-data",
     ].filter((layer) => map.getLayer(layer));
 
     const features = map.queryRenderedFeatures(undefined, { layers });
@@ -400,14 +402,13 @@ test("annotated collections - toggle selection with ctrl+click", async ({
   }
 
   // First click to select
-  await page.mouse.click(featureLocation.x, featureLocation.y);
+  await page.mouse.click(featureLocation.x, featureLocation.y, {
+    modifiers: ["Control"],
+  });
   await page.waitForTimeout(500);
 
   // Verify feature was selected
-  const createButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .last();
+  const createButton = page.getByTestId("incidents-create-button");
   await expect(createButton).toBeEnabled({ timeout: 5000 });
 
   // Ctrl+click on the same location to deselect
@@ -428,10 +429,7 @@ test("annotated collections - remove individual source from selection", async ({
   await navigateToAlertsDashboard(page);
 
   // Enable multi-select mode
-  const multiSelectButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .nth(1);
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
   await multiSelectButton.click();
   await page.waitForTimeout(500);
 
@@ -446,7 +444,7 @@ test("annotated collections - remove individual source from selection", async ({
       "most-recent-alerts-centroids",
       "previous-alerts-point",
       "previous-alerts-centroids",
-      "mapeo-data-point",
+      "mapeo-data",
     ].filter((layer) => map.getLayer(layer));
 
     const features = map.queryRenderedFeatures(undefined, { layers });
@@ -466,14 +464,13 @@ test("annotated collections - remove individual source from selection", async ({
   }
 
   // Select a feature
-  await page.mouse.click(featureLocation.x, featureLocation.y);
+  await page.mouse.click(featureLocation.x, featureLocation.y, {
+    modifiers: ["Control"],
+  });
   await page.waitForTimeout(500);
 
   // Open create incident sidebar
-  const createButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .last();
+  const createButton = page.getByTestId("incidents-create-button");
   await expect(createButton).toBeEnabled({ timeout: 5000 });
   await createButton.click();
 
@@ -501,10 +498,7 @@ test("annotated collections - clear all sources", async ({
   await navigateToAlertsDashboard(page);
 
   // Enable multi-select mode
-  const multiSelectButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .nth(1);
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
   await multiSelectButton.click();
   await page.waitForTimeout(500);
 
@@ -519,7 +513,7 @@ test("annotated collections - clear all sources", async ({
       "most-recent-alerts-centroids",
       "previous-alerts-point",
       "previous-alerts-centroids",
-      "mapeo-data-point",
+      "mapeo-data",
     ].filter((layer) => map.getLayer(layer));
 
     const features = map.queryRenderedFeatures(undefined, { layers });
@@ -541,15 +535,12 @@ test("annotated collections - clear all sources", async ({
 
   // Select features
   for (const loc of featureLocations) {
-    await page.mouse.click(loc.x, loc.y);
+    await page.mouse.click(loc.x, loc.y, { modifiers: ["Control"] });
     await page.waitForTimeout(300);
   }
 
   // Open create incident sidebar
-  const createButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .last();
+  const createButton = page.getByTestId("incidents-create-button");
   await expect(createButton).toBeEnabled({ timeout: 5000 });
   await createButton.click();
 
@@ -573,10 +564,7 @@ test("annotated collections - close sidebar clears selections when opened via cr
   await navigateToAlertsDashboard(page);
 
   // Enable multi-select mode
-  const multiSelectButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .nth(1);
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
   await multiSelectButton.click();
   await page.waitForTimeout(500);
 
@@ -591,7 +579,7 @@ test("annotated collections - close sidebar clears selections when opened via cr
       "most-recent-alerts-centroids",
       "previous-alerts-point",
       "previous-alerts-centroids",
-      "mapeo-data-point",
+      "mapeo-data",
     ].filter((layer) => map.getLayer(layer));
 
     const features = map.queryRenderedFeatures(undefined, { layers });
@@ -611,14 +599,13 @@ test("annotated collections - close sidebar clears selections when opened via cr
   }
 
   // Select a feature
-  await page.mouse.click(featureLocation.x, featureLocation.y);
+  await page.mouse.click(featureLocation.x, featureLocation.y, {
+    modifiers: ["Control"],
+  });
   await page.waitForTimeout(500);
 
   // Open create incident sidebar
-  const createButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .last();
+  const createButton = page.getByTestId("incidents-create-button");
   await expect(createButton).toBeEnabled({ timeout: 5000 });
   await createButton.click();
 
@@ -634,10 +621,7 @@ test("annotated collections - close sidebar clears selections when opened via cr
   await expect(page.locator(".incidents-sidebar")).not.toBeVisible();
 
   // Verify selections were cleared (create button should be disabled)
-  const createButtonAfterClose = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .last();
+  const createButtonAfterClose = page.getByTestId("incidents-create-button");
   const isDisabled = await createButtonAfterClose.getAttribute("disabled");
   expect(isDisabled).not.toBeNull();
 });
@@ -648,10 +632,7 @@ test("annotated collections - view incidents sidebar does not clear selections",
   await navigateToAlertsDashboard(page);
 
   // Enable multi-select mode
-  const multiSelectButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .nth(1);
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
   await multiSelectButton.click();
   await page.waitForTimeout(500);
 
@@ -666,7 +647,7 @@ test("annotated collections - view incidents sidebar does not clear selections",
       "most-recent-alerts-centroids",
       "previous-alerts-point",
       "previous-alerts-centroids",
-      "mapeo-data-point",
+      "mapeo-data",
     ].filter((layer) => map.getLayer(layer));
 
     const features = map.queryRenderedFeatures(undefined, { layers });
@@ -686,21 +667,17 @@ test("annotated collections - view incidents sidebar does not clear selections",
   }
 
   // Select a feature
-  await page.mouse.click(featureLocation.x, featureLocation.y);
+  await page.mouse.click(featureLocation.x, featureLocation.y, {
+    modifiers: ["Control"],
+  });
   await page.waitForTimeout(500);
 
   // Verify feature was selected
-  const createButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .last();
+  const createButton = page.getByTestId("incidents-create-button");
   await expect(createButton).toBeEnabled({ timeout: 5000 });
 
   // Open view incidents sidebar (checkmark button)
-  const viewIncidentsButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .first();
+  const viewIncidentsButton = page.getByTestId("incidents-view-button");
   await viewIncidentsButton.click();
 
   await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
