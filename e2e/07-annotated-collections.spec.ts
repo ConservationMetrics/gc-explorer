@@ -461,12 +461,6 @@ test("annotated collections - remove individual source from selection", async ({
     return;
   }
 
-  const clickPoint = await projectLngLatToPagePoint(page, lngLat);
-  if (!clickPoint) {
-    test.skip();
-    return;
-  }
-
   // Select a feature
   await page.mouse.click(clickPoint.x, clickPoint.y, {
     modifiers: [selectionModifierKey],
