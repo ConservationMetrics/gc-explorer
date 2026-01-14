@@ -49,7 +49,7 @@ async function getSelectableFeatureLngLat(page: Page): Promise<LngLat | null> {
   });
 }
 
-async function getSelectableFeatureLngLats(
+async function _getSelectableFeatureLngLats(
   page: Page,
   count: number,
 ): Promise<LngLat[]> {
