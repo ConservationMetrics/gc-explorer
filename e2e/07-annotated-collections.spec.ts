@@ -232,19 +232,76 @@ test("annotated collections - create incident flow", async ({
   await multiSelectButton.click();
   await page.waitForTimeout(500);
 
-  // Try to select a feature by clicking on the map
-  const viewport = page.viewportSize();
-  if (viewport) {
-    // Click on map to select a feature
-    await page.mouse.click(viewport.width / 2, viewport.height / 2);
-    await page.waitForTimeout(500);
+  // Find and click on an actual feature on the map
+  // First, get the coordinates of a feature from the map
+  const featureClicked = await page.evaluate(async () => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    if (!map) return false;
+
+    // Query for any alert or mapeo features on the map
+    const layers = [
+      "most-recent-alerts-point",
+      "most-recent-alerts-polygon",
+      "most-recent-alerts-linestring",
+      "most-recent-alerts-centroids",
+      "previous-alerts-point",
+      "previous-alerts-polygon",
+      "previous-alerts-linestring",
+      "previous-alerts-centroids",
+      "mapeo-data-point",
+    ].filter((layer) => map.getLayer(layer));
+
+    const features = map.queryRenderedFeatures(undefined, { layers });
+
+    if (features.length === 0) return false;
+
+    // Get the first feature and find its screen coordinates
+    const feature = features[0];
+    let coords: [number, number];
+
+    if (feature.geometry.type === "Point") {
+      coords = feature.geometry.coordinates as [number, number];
+    } else if (feature.geometry.type === "Polygon") {
+      // Use centroid of first coordinate
+      const ring = feature.geometry.coordinates[0] as [number, number][];
+      const sumX = ring.reduce((acc, c) => acc + c[0], 0);
+      const sumY = ring.reduce((acc, c) => acc + c[1], 0);
+      coords = [sumX / ring.length, sumY / ring.length];
+    } else if (feature.geometry.type === "LineString") {
+      // Use midpoint
+      const line = feature.geometry.coordinates as [number, number][];
+      const mid = Math.floor(line.length / 2);
+      coords = line[mid];
+    } else {
+      return false;
+    }
+
+    // Convert to screen coordinates
+    const point = map.project(coords);
+    return { x: point.x, y: point.y };
+  });
+
+  if (!featureClicked) {
+    // Skip test if no features are available on the map
+    test.skip();
+    return;
   }
 
-  // Click the create incident button (+ button)
+  // Click on the feature location
+  await page.mouse.click(featureClicked.x, featureClicked.y);
+  await page.waitForTimeout(500);
+
+  // Verify that a feature was selected by checking if create button is enabled
   const createButton = page
     .locator(".incidents-controls")
     .locator("button")
     .last();
+
+  // Wait for the button to become enabled (feature selection may take a moment)
+  await expect(createButton).toBeEnabled({ timeout: 5000 });
+
+  // Click the create incident button (+ button)
   await createButton.click();
 
   // Wait for sidebar to open with create form
@@ -307,27 +364,62 @@ test("annotated collections - toggle selection with ctrl+click", async ({
   await multiSelectButton.click();
   await page.waitForTimeout(500);
 
-  const viewport = page.viewportSize();
-  if (viewport) {
-    // First click to select
-    await page.mouse.click(viewport.width / 2, viewport.height / 2);
-    await page.waitForTimeout(500);
+  // Find an actual feature on the map
+  const featureLocation = await page.evaluate(async () => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    if (!map) return null;
 
-    // Ctrl+click on the same location to deselect
-    await page.keyboard.down("Control");
-    await page.mouse.click(viewport.width / 2, viewport.height / 2);
-    await page.keyboard.up("Control");
-    await page.waitForTimeout(500);
+    const layers = [
+      "most-recent-alerts-point",
+      "most-recent-alerts-centroids",
+      "previous-alerts-point",
+      "previous-alerts-centroids",
+      "mapeo-data-point",
+    ].filter((layer) => map.getLayer(layer));
 
-    // Verify selection was toggled (create button should be disabled again)
-    const createButton = page
-      .locator(".incidents-controls")
-      .locator("button")
-      .last();
-    const isDisabled = await createButton.getAttribute("disabled");
-    // After deselecting, button should be disabled
-    expect(isDisabled).not.toBeNull();
+    const features = map.queryRenderedFeatures(undefined, { layers });
+    if (features.length === 0) return null;
+
+    const feature = features[0];
+    let coords: [number, number];
+
+    if (feature.geometry.type === "Point") {
+      coords = feature.geometry.coordinates as [number, number];
+    } else {
+      return null;
+    }
+
+    const point = map.project(coords);
+    return { x: point.x, y: point.y };
+  });
+
+  if (!featureLocation) {
+    test.skip();
+    return;
   }
+
+  // First click to select
+  await page.mouse.click(featureLocation.x, featureLocation.y);
+  await page.waitForTimeout(500);
+
+  // Verify feature was selected
+  const createButton = page
+    .locator(".incidents-controls")
+    .locator("button")
+    .last();
+  await expect(createButton).toBeEnabled({ timeout: 5000 });
+
+  // Ctrl+click on the same location to deselect
+  await page.keyboard.down("Control");
+  await page.mouse.click(featureLocation.x, featureLocation.y);
+  await page.keyboard.up("Control");
+  await page.waitForTimeout(500);
+
+  // Verify selection was toggled (create button should be disabled again)
+  const isDisabled = await createButton.getAttribute("disabled");
+  // After deselecting, button should be disabled
+  expect(isDisabled).not.toBeNull();
 });
 
 test("annotated collections - remove individual source from selection", async ({
@@ -343,18 +435,46 @@ test("annotated collections - remove individual source from selection", async ({
   await multiSelectButton.click();
   await page.waitForTimeout(500);
 
-  const viewport = page.viewportSize();
-  if (viewport) {
-    // Select a feature
-    await page.mouse.click(viewport.width / 2, viewport.height / 2);
-    await page.waitForTimeout(500);
+  // Find an actual feature on the map
+  const featureLocation = await page.evaluate(async () => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    if (!map) return null;
+
+    const layers = [
+      "most-recent-alerts-point",
+      "most-recent-alerts-centroids",
+      "previous-alerts-point",
+      "previous-alerts-centroids",
+      "mapeo-data-point",
+    ].filter((layer) => map.getLayer(layer));
+
+    const features = map.queryRenderedFeatures(undefined, { layers });
+    if (features.length === 0) return null;
+
+    const feature = features[0];
+    if (feature.geometry.type === "Point") {
+      const point = map.project(feature.geometry.coordinates);
+      return { x: point.x, y: point.y };
+    }
+    return null;
+  });
+
+  if (!featureLocation) {
+    test.skip();
+    return;
   }
+
+  // Select a feature
+  await page.mouse.click(featureLocation.x, featureLocation.y);
+  await page.waitForTimeout(500);
 
   // Open create incident sidebar
   const createButton = page
     .locator(".incidents-controls")
     .locator("button")
     .last();
+  await expect(createButton).toBeEnabled({ timeout: 5000 });
   await createButton.click();
 
   await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
@@ -388,13 +508,41 @@ test("annotated collections - clear all sources", async ({
   await multiSelectButton.click();
   await page.waitForTimeout(500);
 
-  const viewport = page.viewportSize();
-  if (viewport) {
-    // Select multiple features by clicking different locations
-    await page.mouse.click(viewport.width / 2 - 20, viewport.height / 2);
-    await page.waitForTimeout(200);
-    await page.mouse.click(viewport.width / 2 + 20, viewport.height / 2);
-    await page.waitForTimeout(200);
+  // Find actual features on the map to select
+  const featureLocations = await page.evaluate(async () => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    if (!map) return [];
+
+    const layers = [
+      "most-recent-alerts-point",
+      "most-recent-alerts-centroids",
+      "previous-alerts-point",
+      "previous-alerts-centroids",
+      "mapeo-data-point",
+    ].filter((layer) => map.getLayer(layer));
+
+    const features = map.queryRenderedFeatures(undefined, { layers });
+    const locations: Array<{ x: number; y: number }> = [];
+
+    for (const feature of features.slice(0, 2)) {
+      if (feature.geometry.type === "Point") {
+        const point = map.project(feature.geometry.coordinates);
+        locations.push({ x: point.x, y: point.y });
+      }
+    }
+    return locations;
+  });
+
+  if (featureLocations.length === 0) {
+    test.skip();
+    return;
+  }
+
+  // Select features
+  for (const loc of featureLocations) {
+    await page.mouse.click(loc.x, loc.y);
+    await page.waitForTimeout(300);
   }
 
   // Open create incident sidebar
@@ -402,6 +550,7 @@ test("annotated collections - clear all sources", async ({
     .locator(".incidents-controls")
     .locator("button")
     .last();
+  await expect(createButton).toBeEnabled({ timeout: 5000 });
   await createButton.click();
 
   await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
@@ -431,18 +580,46 @@ test("annotated collections - close sidebar clears selections when opened via cr
   await multiSelectButton.click();
   await page.waitForTimeout(500);
 
-  const viewport = page.viewportSize();
-  if (viewport) {
-    // Select a feature
-    await page.mouse.click(viewport.width / 2, viewport.height / 2);
-    await page.waitForTimeout(500);
+  // Find an actual feature on the map
+  const featureLocation = await page.evaluate(async () => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    if (!map) return null;
+
+    const layers = [
+      "most-recent-alerts-point",
+      "most-recent-alerts-centroids",
+      "previous-alerts-point",
+      "previous-alerts-centroids",
+      "mapeo-data-point",
+    ].filter((layer) => map.getLayer(layer));
+
+    const features = map.queryRenderedFeatures(undefined, { layers });
+    if (features.length === 0) return null;
+
+    const feature = features[0];
+    if (feature.geometry.type === "Point") {
+      const point = map.project(feature.geometry.coordinates);
+      return { x: point.x, y: point.y };
+    }
+    return null;
+  });
+
+  if (!featureLocation) {
+    test.skip();
+    return;
   }
+
+  // Select a feature
+  await page.mouse.click(featureLocation.x, featureLocation.y);
+  await page.waitForTimeout(500);
 
   // Open create incident sidebar
   const createButton = page
     .locator(".incidents-controls")
     .locator("button")
     .last();
+  await expect(createButton).toBeEnabled({ timeout: 5000 });
   await createButton.click();
 
   await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
@@ -478,12 +655,46 @@ test("annotated collections - view incidents sidebar does not clear selections",
   await multiSelectButton.click();
   await page.waitForTimeout(500);
 
-  const viewport = page.viewportSize();
-  if (viewport) {
-    // Select a feature
-    await page.mouse.click(viewport.width / 2, viewport.height / 2);
-    await page.waitForTimeout(500);
+  // Find an actual feature on the map
+  const featureLocation = await page.evaluate(async () => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    if (!map) return null;
+
+    const layers = [
+      "most-recent-alerts-point",
+      "most-recent-alerts-centroids",
+      "previous-alerts-point",
+      "previous-alerts-centroids",
+      "mapeo-data-point",
+    ].filter((layer) => map.getLayer(layer));
+
+    const features = map.queryRenderedFeatures(undefined, { layers });
+    if (features.length === 0) return null;
+
+    const feature = features[0];
+    if (feature.geometry.type === "Point") {
+      const point = map.project(feature.geometry.coordinates);
+      return { x: point.x, y: point.y };
+    }
+    return null;
+  });
+
+  if (!featureLocation) {
+    test.skip();
+    return;
   }
+
+  // Select a feature
+  await page.mouse.click(featureLocation.x, featureLocation.y);
+  await page.waitForTimeout(500);
+
+  // Verify feature was selected
+  const createButton = page
+    .locator(".incidents-controls")
+    .locator("button")
+    .last();
+  await expect(createButton).toBeEnabled({ timeout: 5000 });
 
   // Open view incidents sidebar (checkmark button)
   const viewIncidentsButton = page
@@ -506,10 +717,6 @@ test("annotated collections - view incidents sidebar does not clear selections",
   await page.waitForTimeout(500);
 
   // Verify selections were NOT cleared (create button should still be enabled)
-  const createButton = page
-    .locator(".incidents-controls")
-    .locator("button")
-    .last();
   const isDisabled = await createButton.getAttribute("disabled");
   // Button should be enabled because selections were preserved
   expect(isDisabled).toBeNull();
