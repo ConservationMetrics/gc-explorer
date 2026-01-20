@@ -32,7 +32,9 @@ import type {
   AnnotatedCollection,
   Basemap,
   BasemapConfig,
+  CollectionEntry,
   Dataset,
+  Incident,
   MapLegendItem,
 } from "@/types/types";
 import type { Feature, Geometry } from "geojson";
@@ -79,6 +81,10 @@ const isMapeo = ref(false);
 
 // Incidents state management
 const incidents = ref<AnnotatedCollection[]>([]);
+const incidentsTotal = ref(0);
+const incidentsLimit = ref(20);
+const isLoadingMoreIncidents = ref(false);
+
 const showIncidentsSidebar = ref(false);
 const openSidebarWithCreateForm = ref(false);
 const selectedSources = ref<
@@ -88,6 +94,12 @@ const isCreatingIncident = ref(false);
 const multiSelectMode = ref(false);
 const boundingBoxMode = ref(false);
 const isLoadingIncidents = ref(false);
+
+// Selected incident detail view state
+const selectedIncident = ref<AnnotatedCollection | null>(null);
+const selectedIncidentData = ref<Incident | null>(null);
+const selectedIncidentEntries = ref<CollectionEntry[]>([]);
+const isLoadingSelectedIncident = ref(false);
 
 // Tooltip state
 const hoveredButton = ref<
@@ -101,11 +113,20 @@ const config = useRuntimeConfig();
 const apiKey = config.public.appApiKey as string;
 
 /**
- * Fetches incidents from the API
- * @returns Promise<void>
+ * Fetches incidents from the API (paginated)
  */
-const fetchIncidents = async () => {
-  isLoadingIncidents.value = true;
+const fetchIncidents = async (
+  options: { offset?: number; append?: boolean } = {},
+) => {
+  const offset = options.offset ?? 0;
+  const append = options.append ?? false;
+
+  if (append) {
+    isLoadingMoreIncidents.value = true;
+  } else {
+    isLoadingIncidents.value = true;
+  }
+
   try {
     const response = await $fetch<{
       incidents: AnnotatedCollection[];
@@ -113,15 +134,148 @@ const fetchIncidents = async () => {
       limit: number;
       offset: number;
     }>("/api/incidents", {
+      query: {
+        limit: incidentsLimit.value,
+        offset,
+      },
       headers: {
         "x-api-key": apiKey,
       },
     });
-    incidents.value = response.incidents;
+
+    incidentsTotal.value = response.total;
+    incidentsLimit.value = response.limit;
+
+    incidents.value = append
+      ? [...incidents.value, ...response.incidents]
+      : response.incidents;
   } catch (error) {
     console.error("Error fetching incidents:", error);
   } finally {
-    isLoadingIncidents.value = false;
+    if (append) {
+      isLoadingMoreIncidents.value = false;
+    } else {
+      isLoadingIncidents.value = false;
+    }
+  }
+};
+
+const hasMoreIncidents = computed(
+  () => incidents.value.length < incidentsTotal.value,
+);
+
+const loadMoreIncidents = async () => {
+  if (isLoadingIncidents.value || isLoadingMoreIncidents.value) {
+    return;
+  }
+
+  if (!hasMoreIncidents.value) {
+    return;
+  }
+
+  await fetchIncidents({ offset: incidents.value.length, append: true });
+};
+
+/**
+ * Clears selected incident detail view and its map highlighting
+ */
+const clearSelectedIncident = () => {
+  selectedIncident.value = null;
+  selectedIncidentData.value = null;
+  selectedIncidentEntries.value = [];
+  clearSourceHighlighting();
+};
+
+/**
+ * Small in-memory cache to avoid refetching incident details repeatedly.
+ * (Also used for hover-prefetch.)
+ */
+type IncidentDetailsResponse = {
+  incident: AnnotatedCollection;
+  incidentData?: Incident;
+  entries: CollectionEntry[];
+};
+
+const incidentDetailsCache = new Map<string, IncidentDetailsResponse>();
+const incidentDetailsInFlight = new Map<
+  string,
+  Promise<IncidentDetailsResponse>
+>();
+
+const getIncidentDetails = async (
+  incidentId: string,
+): Promise<IncidentDetailsResponse> => {
+  const cached = incidentDetailsCache.get(incidentId);
+  if (cached) {
+    return cached;
+  }
+
+  const inFlight = incidentDetailsInFlight.get(incidentId);
+  if (inFlight) {
+    return inFlight;
+  }
+
+  const promise = $fetch<IncidentDetailsResponse>(
+    `/api/incidents/${incidentId}`,
+    {
+      headers: {
+        "x-api-key": apiKey,
+      },
+    },
+  )
+    .then((response) => {
+      incidentDetailsCache.set(incidentId, response);
+      incidentDetailsInFlight.delete(incidentId);
+      return response;
+    })
+    .catch((error) => {
+      incidentDetailsInFlight.delete(incidentId);
+      throw error;
+    });
+
+  incidentDetailsInFlight.set(incidentId, promise);
+  return promise;
+};
+
+let incidentPrefetchTimeout: ReturnType<typeof setTimeout> | null = null;
+const scheduleIncidentPrefetch = (incidentId: string) => {
+  if (incidentPrefetchTimeout) {
+    clearTimeout(incidentPrefetchTimeout);
+  }
+
+  incidentPrefetchTimeout = setTimeout(() => {
+    void getIncidentDetails(incidentId).catch(() => {
+      // Best-effort prefetch only.
+    });
+  }, 400);
+};
+
+/**
+ * Opens a saved incident in the sidebar and highlights its entries on the map
+ */
+const openIncidentDetails = async (incidentId: string) => {
+  isLoadingSelectedIncident.value = true;
+
+  try {
+    const response = await getIncidentDetails(incidentId);
+
+    // Ensure create form state is reset when viewing an existing incident
+    openSidebarWithCreateForm.value = false;
+    showIncidentsSidebar.value = true;
+
+    selectedIncident.value = response.incident;
+    selectedIncidentData.value = response.incidentData || null;
+    selectedIncidentEntries.value = response.entries || [];
+
+    // Viewing a saved incident should not be mixed with create-selection mode
+    selectedSources.value = [];
+
+    clearSourceHighlighting();
+    highlightIncidentEntries(response.entries || []);
+  } catch (error) {
+    console.error("Error fetching incident details:", error);
+  } finally {
+    isLoadingSelectedIncident.value = false;
   }
 };
 
@@ -2109,6 +2263,7 @@ const toggleIncidentsSidebar = () => {
   const wasOpen = showIncidentsSidebar.value;
   const hadCreateFormOpen = openSidebarWithCreateForm.value;
   const hasSelectedSources = selectedSources.value.length > 0;
+  const hadIncidentDetailOpen = selectedIncident.value !== null;
 
   // Toggle sidebar
   showIncidentsSidebar.value = !showIncidentsSidebar.value;
@@ -2129,6 +2284,11 @@ const toggleIncidentsSidebar = () => {
     clearSelectedSources();
     clearSourceHighlighting();
   }
+
+  // If closing from an incident detail view, clear that view and its highlighting
+  if (wasOpen && !showIncidentsSidebar.value && hadIncidentDetailOpen) {
+    clearSelectedIncident();
+  }
 };
 
 /**
@@ -2140,6 +2300,12 @@ const openIncidentsSidebarWithCreateForm = () => {
   if (selectedSources.value.length === 0) {
     return; // Don't open if no sources selected
   }
+
+  // Make sure we are not in detail view
+  selectedIncident.value = null;
+  selectedIncidentData.value = null;
+  selectedIncidentEntries.value = [];
+
   openSidebarWithCreateForm.value = true;
   showIncidentsSidebar.value = true;
 };
@@ -2656,7 +2822,83 @@ const clearSourceHighlighting = () => {
   highlightedSources.value = [];
 };
 
+/**
+ * Highlights all entries of a saved incident on the map.
+ * Uses querySourceFeatures so it works even if features are off-screen.
+ */
+const highlightIncidentEntries = (entries: CollectionEntry[]) => {
+  if (!map.value) return;
+  if (!entries || entries.length === 0) return;
+
+  const tableRaw = route.params.tablename;
+  const currentAlertsTable = Array.isArray(tableRaw)
+    ? tableRaw.join("/")
+    : (tableRaw as string | undefined);
+
+  const alertLayers = [
+    "most-recent-alerts-polygon",
+    "most-recent-alerts-linestring",
+    "most-recent-alerts-point",
+    "most-recent-alerts-centroids",
+    "previous-alerts-polygon",
+    "previous-alerts-linestring",
+    "previous-alerts-point",
+    "previous-alerts-centroids",
+  ];
+
+  const foundFeatures: Feature[] = [];
+
+  entries.forEach((entry) => {
+    // If the entry refers to a different alerts table than the current route,
+    // the map won't have that data loaded; still try best-effort highlighting.
+    if (
+      entry.source_table !== "mapeo_data" &&
+      currentAlertsTable &&
+      entry.source_table !== currentAlertsTable
+    ) {
+      console.warn(
+        "Incident entry source_table does not match current route:",
+        entry.source_table,
+        currentAlertsTable,
+      );
+    }
+
+    const candidateSources =
+      entry.source_table === "mapeo_data" ? ["mapeo-data"] : alertLayers;
+
+    const filter: unknown[] =
+      entry.source_table === "mapeo_data"
+        ? ["==", ["get", "id"], entry.source_id]
+        : ["==", ["get", "alertID"], entry.source_id];
+
+    for (const sourceId of candidateSources) {
+      try {
+        if (!map.value.getSource(sourceId)) continue;
+
+        const matches = map.value.querySourceFeatures(sourceId, {
+          filter,
+        });
+
+        if (matches.length > 0) {
+          const feature = matches[0] as unknown as Feature;
+          highlightSelectedSource(feature, sourceId);
+          foundFeatures.push(feature);
+          break;
+        }
+      } catch (error) {
+        // Ignore errors for missing sources
+        console.warn("Error highlighting incident entry:", error);
+      }
+    }
+  });
+};
+
 onBeforeUnmount(() => {
+  if (incidentPrefetchTimeout) {
+    clearTimeout(incidentPrefetchTimeout);
+    incidentPrefetchTimeout = null;
+  }
+
   if (map.value) {
     removeBoundingBoxHandlers();
     map.value.remove();
@@ -2711,12 +2953,22 @@ onBeforeUnmount(() => {
     />
     <IncidentsSidebar
       :incidents="incidents"
+      :incidents-total="incidentsTotal"
+      :is-loading-more="isLoadingMoreIncidents"
+      :selected-incident="selectedIncident"
+      :selected-incident-data="selectedIncidentData"
+      :selected-incident-entries="selectedIncidentEntries"
+      :is-loading-selected-incident="isLoadingSelectedIncident"
       :selected-sources="selectedSources"
       :is-loading="isLoadingIncidents"
       :is-creating="isCreatingIncident"
       :show="showIncidentsSidebar"
       :open-with-create-form="openSidebarWithCreateForm"
       @close="toggleIncidentsSidebar"
+      @back-to-incidents-list="clearSelectedIncident"
+      @select-incident="openIncidentDetails"
+      @hover-incident="scheduleIncidentPrefetch"
+      @load-more-incidents="loadMoreIncidents"
       @create-incident="createIncident"
       @remove-source="removeSourceFromSelection"
       @clear-sources="clearSelectedSources"
