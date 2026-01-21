@@ -1550,7 +1550,6 @@ const resetToInitialState = () => {
   });
 };
 
-
 onBeforeUnmount(() => {
   if (map.value) {
     removeBoundingBoxHandlers();

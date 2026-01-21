@@ -367,7 +367,10 @@ export function useFeatureSelection(
       layerId.includes("-centroids"); // Centroids are Points but represent Polygons/LineStrings
 
     if (isPolygonLinestring) {
-      const companionLayer = getCompanionLayerId(layerId, featureObject.alertID);
+      const companionLayer = getCompanionLayerId(
+        layerId,
+        featureObject.alertID,
+      );
       if (companionLayer && map.value.getSource(companionLayer)) {
         let companionFeatureId;
 

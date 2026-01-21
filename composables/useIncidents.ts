@@ -18,11 +18,27 @@ type IncidentDetailsResponse = {
   entries: CollectionEntry[];
 };
 
-export function useIncidents(
+/**
+ * Composable for managing incidents functionality in the alerts dashboard.
+ *
+ * Handles all incidents-related state and operations including:
+ * - Fetching and paginating incidents list from the API
+ * - Creating new incidents with selected map features
+ * - Managing incident detail views and caching
+ * - Multi-select and bounding box selection modes for feature selection
+ * - Highlighting selected features on the map
+ * - Managing incidents sidebar visibility and state
+ *
+ * @param map - Ref to the Mapbox map instance for feature highlighting and selection
+ * @param route - Vue Router route object for accessing route parameters (e.g., table name)
+ * @param apiKey - API key for authenticating requests to the incidents API
+ * @returns Object containing all incidents state and functions
+ */
+export const useIncidents = (
   map: Ref<mapboxgl.Map | undefined>,
   route: RouteLocationNormalizedLoaded,
   apiKey: string,
-) {
+) => {
   // Incidents state management
   const incidents = ref<AnnotatedCollection[]>([]);
   const incidentsTotal = ref(0);
@@ -687,7 +703,7 @@ export function useIncidents(
    *
    * Source ID extraction:
    * - For alerts: Uses feature.properties.alertID
-   * - For Mapeo: Uses feature.properties.id
+   * - For Mapeo: Uses feature.properties._id (with fallback to feature.properties.id for backward compatibility)
    *
    * Toggle behavior: If the feature is already selected, it will be deselected. Otherwise, it will be selected.
    *
@@ -715,7 +731,18 @@ export function useIncidents(
 
     if (feature.properties.alertID) {
       sourceId = feature.properties.alertID;
+    } else if (feature.properties._id) {
+      // Mapeo features use _id as primary key (migrated from id)
+      // After migration 0002_standardize_mapeo_data_primary_key.sql, the mapeo_data table
+      // uses _id as its primary key instead of id. However, we maintain backward compatibility
+      // by checking for id as a fallback because migrations have not yet been run on all partner
+      // VMs. Once all environments have been migrated and we can guarantee no data uses the old
+      // id column, we can remove the fallback check.
+      sourceId = feature.properties._id;
     } else if (feature.properties.id) {
+      // TODO: Remove this fallback once migration 0002_standardize_mapeo_data_primary_key.sql
+      // has been run on all partner VMs and we can guarantee no data uses the old id column.
+      // This fallback exists for backward compatibility during the migration period.
       sourceId = feature.properties.id;
     }
 
@@ -948,4 +975,4 @@ export function useIncidents(
     clearSourceHighlighting,
     highlightIncidentEntries,
   };
-}
+};
