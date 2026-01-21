@@ -625,8 +625,6 @@ export function useIncidents(
         }
       },
     );
-
-    // Don't auto-open sidebar - user will click "Create Incident" button when ready
   };
 
   /**
