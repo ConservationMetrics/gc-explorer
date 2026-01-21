@@ -1,12 +1,22 @@
 <script setup lang="ts">
-import { watch } from "vue";
+import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import type { AnnotatedCollection } from "@/types/types";
+import type {
+  AnnotatedCollection,
+  CollectionEntry,
+  Incident,
+} from "@/types/types";
 
 const { t } = useI18n();
 
 const props = defineProps<{
   incidents: AnnotatedCollection[];
+  incidentsTotal?: number;
+  isLoadingMore?: boolean;
+  selectedIncident?: AnnotatedCollection | null;
+  selectedIncidentData?: Incident | null;
+  selectedIncidentEntries?: CollectionEntry[];
+  isLoadingSelectedIncident?: boolean;
   selectedSources: Array<{
     source_table: string;
     source_id: string;
@@ -20,6 +30,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
+  backToIncidentsList: [];
+  selectIncident: [incidentId: string];
+  hoverIncident: [incidentId: string];
+  loadMoreIncidents: [];
   createIncident: [
     data: {
       name: string;
@@ -68,6 +82,13 @@ const incidentTypes = [
   { value: "Other", label: t("incidents.incidentTypes.other") },
 ];
 
+const hasMoreIncidents = computed(() => {
+  const total = props.incidentsTotal ?? props.incidents.length;
+  return props.incidents.length < total;
+});
+
+const isLoadingMore = computed(() => props.isLoadingMore === true);
+
 const handleSubmit = () => {
   if (!formData.value.name.trim()) {
     return;
@@ -96,6 +117,11 @@ const handleSubmit = () => {
   showCreateForm.value = false;
 };
 
+const handleBackToList = () => {
+  showCreateForm.value = false;
+  emit("backToIncidentsList");
+};
+
 const handleClose = () => {
   showCreateForm.value = false;
   emit("close");
@@ -105,13 +131,34 @@ const handleClose = () => {
 <template>
   <div v-if="show" class="incidents-sidebar">
     <div class="sidebar-header">
-      <h2>
-        {{
-          selectedSources.length > 0
-            ? $t("incidents.createNewIncident")
-            : $t("incidents.savedIncidents")
-        }}
-      </h2>
+      <div class="header-left">
+        <button
+          v-if="selectedIncident"
+          class="back-btn"
+          :title="$t('incidents.backToIncidents')"
+          @click="handleBackToList"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+        <h2>
+          {{
+            selectedIncident
+              ? selectedIncident.name
+              : selectedSources.length > 0
+                ? $t("incidents.createNewIncident")
+                : $t("incidents.savedIncidents")
+          }}
+        </h2>
+      </div>
       <button
         class="close-btn"
         :title="$t('incidents.close')"
@@ -131,168 +178,290 @@ const handleClose = () => {
     </div>
 
     <div class="sidebar-content">
-      <!-- Selected Sources Section -->
-      <div v-if="selectedSources.length > 0" class="selected-sources">
-        <h3>
-          {{ $t("incidents.selectedSources") }} ({{ selectedSources.length }})
-        </h3>
-        <div class="sources-list">
-          <div
-            v-for="(source, index) in selectedSources"
-            :key="`${source.source_table}-${source.source_id}-${index}`"
-            class="source-item"
-          >
-            <div class="source-info">
-              <span class="source-table">{{ source.source_table }}</span>
-              <span class="source-id">{{ source.source_id }}</span>
+      <div v-if="selectedIncident" class="incident-detail">
+        <div v-if="isLoadingSelectedIncident" class="loading">
+          {{ $t("incidents.loadingIncident") }}
+        </div>
+
+        <template v-else>
+          <div class="detail-meta">
+            <div class="meta-row">
+              <span class="meta-label">{{ $t("incidents.type") }}:</span>
+              <span class="meta-value">{{
+                selectedIncident.collection_type
+              }}</span>
             </div>
-            <button
-              class="remove-btn"
-              :title="$t('remove')"
-              @click="
-                emit('removeSource', source.source_table, source.source_id)
+            <div class="meta-row">
+              <span class="meta-label">{{ $t("incidents.created") }}:</span>
+              <span class="meta-value">
+                {{ new Date(selectedIncident.created_at).toLocaleDateString() }}
+              </span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">{{ $t("incidents.by") }}:</span>
+              <span class="meta-value">{{ selectedIncident.created_by }}</span>
+            </div>
+          </div>
+
+          <p v-if="selectedIncident.description" class="incident-description">
+            {{ selectedIncident.description }}
+          </p>
+
+          <div v-if="selectedIncidentData" class="incident-extra">
+            <div v-if="selectedIncidentData.status" class="meta-row">
+              <span class="meta-label">{{ $t("incidents.status") }}:</span>
+              <span class="meta-value">{{ selectedIncidentData.status }}</span>
+            </div>
+            <div v-if="selectedIncidentData.incident_type" class="meta-row">
+              <span class="meta-label"
+                >{{ $t("incidents.incidentType") }}:</span
+              >
+              <span class="meta-value">{{
+                selectedIncidentData.incident_type
+              }}</span>
+            </div>
+            <div v-if="selectedIncidentData.responsible_party" class="meta-row">
+              <span class="meta-label"
+                >{{ $t("incidents.responsibleParty") }}:</span
+              >
+              <span class="meta-value">{{
+                selectedIncidentData.responsible_party
+              }}</span>
+            </div>
+            <div
+              v-if="selectedIncidentData.impact_description"
+              class="meta-row"
+            >
+              <span class="meta-label"
+                >{{ $t("incidents.impactDescription") }}:</span
+              >
+              <span class="meta-value">{{
+                selectedIncidentData.impact_description
+              }}</span>
+            </div>
+          </div>
+
+          <div class="entries-section">
+            <h3>
+              {{ $t("incidents.entries") }}
+              ({{ selectedIncidentEntries?.length || 0 }})
+            </h3>
+
+            <div
+              v-if="
+                !selectedIncidentEntries || selectedIncidentEntries.length === 0
               "
+              class="empty-state"
             >
-              ×
-            </button>
-          </div>
-        </div>
-        <button class="clear-btn" @click="emit('clearSources')">
-          {{ $t("incidents.clearAll") }}
-        </button>
-      </div>
-
-      <!-- Create Incident Form -->
-      <div v-if="showCreateForm" class="create-form">
-        <h3>{{ $t("incidents.createNewIncident") }}</h3>
-        <form @submit.prevent="handleSubmit">
-          <div class="form-group">
-            <label for="name">{{ $t("incidents.name") }} *</label>
-            <input
-              id="name"
-              v-model="formData.name"
-              type="text"
-              required
-              :placeholder="$t('incidents.enterIncidentName')"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="description">{{ $t("incidents.description") }}</label>
-            <textarea
-              id="description"
-              v-model="formData.description"
-              rows="3"
-              :placeholder="$t('incidents.enterDescription')"
-            ></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="incident_type">{{
-              $t("incidents.incidentType")
-            }}</label>
-            <select id="incident_type" v-model="formData.incident_type">
-              <option value="">{{ $t("incidents.selectType") }}</option>
-              <option
-                v-for="type in incidentTypes"
-                :key="type.value"
-                :value="type.value"
-              >
-                {{ type.label }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="responsible_party">{{
-              $t("incidents.responsibleParty")
-            }}</label>
-            <input
-              id="responsible_party"
-              v-model="formData.responsible_party"
-              type="text"
-              :placeholder="$t('incidents.enterResponsibleParty')"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="impact_description">{{
-              $t("incidents.impactDescription")
-            }}</label>
-            <textarea
-              id="impact_description"
-              v-model="formData.impact_description"
-              rows="3"
-              :placeholder="$t('incidents.describeImpact')"
-            ></textarea>
-          </div>
-
-          <div class="form-actions">
-            <button type="submit" :disabled="isCreating" class="submit-btn">
-              {{
-                isCreating
-                  ? $t("incidents.creating")
-                  : $t("incidents.createIncident")
-              }}
-            </button>
-            <button
-              type="button"
-              class="cancel-btn"
-              @click="showCreateForm = false"
-            >
-              {{ $t("cancel") }}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <!-- Incidents List -->
-      <!-- Hide saved incidents when creating a new incident or when sources are selected -->
-      <div
-        v-if="!showCreateForm && selectedSources.length === 0"
-        class="incidents-list"
-      >
-        <div v-if="isLoading" class="loading">
-          {{ $t("incidents.loadingIncidents") }}
-        </div>
-
-        <div v-else-if="incidents.length === 0" class="empty-state">
-          <p>{{ $t("incidents.noIncidentsYet") }}</p>
-        </div>
-
-        <div v-else class="incidents-items">
-          <div
-            v-for="incident in incidents"
-            :key="incident.id"
-            class="incident-item"
-          >
-            <div class="incident-header">
-              <h4>{{ incident.name }}</h4>
-              <span class="incident-type">{{ incident.collection_type }}</span>
+              <p>{{ $t("incidents.noEntries") }}</p>
             </div>
-            <p v-if="incident.description" class="incident-description">
-              {{ incident.description }}
-            </p>
-            <div class="incident-meta">
-              <span
-                >{{ $t("incidents.created") }}:
-                {{ new Date(incident.created_at).toLocaleDateString() }}</span
+
+            <div v-else class="sources-list">
+              <div
+                v-for="entry in selectedIncidentEntries"
+                :key="entry.id"
+                class="source-item"
               >
-              <span>{{ $t("incidents.by") }}: {{ incident.created_by }}</span>
+                <div class="source-info">
+                  <span class="source-table">{{ entry.source_table }}</span>
+                  <span class="source-id">{{ entry.source_id }}</span>
+                  <span v-if="entry.notes" class="source-notes">
+                    {{ entry.notes }}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </template>
       </div>
 
-      <!-- Show "Create Incident" button when sources are selected but form is not shown -->
-      <div
-        v-if="!showCreateForm && selectedSources.length > 0"
-        class="new-incident-prompt"
-      >
-        <button class="create-btn" @click="showCreateForm = true">
-          {{ $t("incidents.createNewIncident") }}
-        </button>
-      </div>
+      <template v-else>
+        <!-- Selected Sources Section -->
+        <div v-if="selectedSources.length > 0" class="selected-sources">
+          <h3>
+            {{ $t("incidents.selectedSources") }} ({{ selectedSources.length }})
+          </h3>
+          <div class="sources-list">
+            <div
+              v-for="(source, index) in selectedSources"
+              :key="`${source.source_table}-${source.source_id}-${index}`"
+              class="source-item"
+            >
+              <div class="source-info">
+                <span class="source-table">{{ source.source_table }}</span>
+                <span class="source-id">{{ source.source_id }}</span>
+              </div>
+              <button
+                class="remove-btn"
+                :title="$t('remove')"
+                @click="
+                  emit('removeSource', source.source_table, source.source_id)
+                "
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          <button class="clear-btn" @click="emit('clearSources')">
+            {{ $t("incidents.clearAll") }}
+          </button>
+        </div>
+
+        <!-- Create Incident Form -->
+        <div v-if="showCreateForm" class="create-form">
+          <h3>{{ $t("incidents.createNewIncident") }}</h3>
+          <form @submit.prevent="handleSubmit">
+            <div class="form-group">
+              <label for="name">{{ $t("incidents.name") }} *</label>
+              <input
+                id="name"
+                v-model="formData.name"
+                type="text"
+                required
+                :placeholder="$t('incidents.enterIncidentName')"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="description">{{ $t("incidents.description") }}</label>
+              <textarea
+                id="description"
+                v-model="formData.description"
+                rows="3"
+                :placeholder="$t('incidents.enterDescription')"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="incident_type">{{
+                $t("incidents.incidentType")
+              }}</label>
+              <select id="incident_type" v-model="formData.incident_type">
+                <option value="">{{ $t("incidents.selectType") }}</option>
+                <option
+                  v-for="type in incidentTypes"
+                  :key="type.value"
+                  :value="type.value"
+                >
+                  {{ type.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="responsible_party">{{
+                $t("incidents.responsibleParty")
+              }}</label>
+              <input
+                id="responsible_party"
+                v-model="formData.responsible_party"
+                type="text"
+                :placeholder="$t('incidents.enterResponsibleParty')"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="impact_description">{{
+                $t("incidents.impactDescription")
+              }}</label>
+              <textarea
+                id="impact_description"
+                v-model="formData.impact_description"
+                rows="3"
+                :placeholder="$t('incidents.describeImpact')"
+              ></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" :disabled="isCreating" class="submit-btn">
+                {{
+                  isCreating
+                    ? $t("incidents.creating")
+                    : $t("incidents.createIncident")
+                }}
+              </button>
+              <button
+                type="button"
+                class="cancel-btn"
+                @click="showCreateForm = false"
+              >
+                {{ $t("cancel") }}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Incidents List -->
+        <!-- Hide saved incidents when creating a new incident or when sources are selected -->
+        <div
+          v-if="!showCreateForm && selectedSources.length === 0"
+          class="incidents-list"
+        >
+          <div v-if="isLoading" class="loading">
+            {{ $t("incidents.loadingIncidents") }}
+          </div>
+
+          <div v-else-if="incidents.length === 0" class="empty-state">
+            <p>{{ $t("incidents.noIncidentsYet") }}</p>
+          </div>
+
+          <div v-else class="incidents-items">
+            <div
+              v-for="incident in incidents"
+              :key="incident.id"
+              class="incident-item"
+              role="button"
+              tabindex="0"
+              @mouseenter="emit('hoverIncident', incident.id)"
+              @focus="emit('hoverIncident', incident.id)"
+              @click="emit('selectIncident', incident.id)"
+              @keydown.enter="emit('selectIncident', incident.id)"
+            >
+              <div class="incident-header">
+                <h4>{{ incident.name }}</h4>
+                <span class="incident-type">{{
+                  incident.collection_type
+                }}</span>
+              </div>
+              <p v-if="incident.description" class="incident-description">
+                {{ incident.description }}
+              </p>
+              <div class="incident-meta">
+                <span
+                  >{{ $t("incidents.created") }}:
+                  {{ new Date(incident.created_at).toLocaleDateString() }}</span
+                >
+                <span>{{ $t("incidents.by") }}: {{ incident.created_by }}</span>
+              </div>
+            </div>
+
+            <div v-if="hasMoreIncidents" class="load-more">
+              <button
+                class="load-more-btn"
+                type="button"
+                :disabled="isLoading || isLoadingMore"
+                @click="emit('loadMoreIncidents')"
+              >
+                {{
+                  isLoadingMore
+                    ? $t("incidents.loadingMore")
+                    : $t("incidents.loadMore")
+                }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Show "Create Incident" button when sources are selected but form is not shown -->
+        <div
+          v-if="!showCreateForm && selectedSources.length > 0"
+          class="new-incident-prompt"
+        >
+          <button class="create-btn" @click="showCreateForm = true">
+            {{ $t("incidents.createNewIncident") }}
+          </button>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -318,6 +487,27 @@ const handleClose = () => {
   align-items: center;
   padding: 16px;
   border-bottom: 1px solid #e0e0e0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-btn:hover {
+  color: #333;
 }
 
 .sidebar-header h2 {
@@ -544,11 +734,76 @@ const handleClose = () => {
   gap: 12px;
 }
 
+.load-more {
+  margin-top: 8px;
+}
+
+.load-more-btn {
+  width: 100%;
+  padding: 10px;
+  background: #f0f0f0;
+  color: #333;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.load-more-btn:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.load-more-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .incident-item {
   padding: 12px;
   background: #f9f9f9;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
+  cursor: pointer;
+}
+
+.incident-item:hover {
+  background: #f0f0f0;
+}
+
+.incident-item:focus {
+  outline: 2px solid #4a90e2;
+  outline-offset: 2px;
+}
+
+.detail-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.meta-row {
+  display: flex;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.meta-label {
+  font-weight: 600;
+  color: #333;
+}
+
+.meta-value {
+  color: #666;
+}
+
+.entries-section {
+  margin-top: 16px;
+}
+
+.source-notes {
+  font-size: 12px;
+  color: #666;
 }
 
 .incident-header {
