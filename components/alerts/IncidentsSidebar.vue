@@ -79,7 +79,7 @@ watch(
   { immediate: true },
 );
 
-const incidentTypes = [
+const incidentTypes = computed(() => [
   { value: "Deforestation", label: t("incidents.incidentTypes.deforestation") },
   {
     value: "Illegal Logging",
@@ -90,7 +90,7 @@ const incidentTypes = [
   { value: "Encroachment", label: t("incidents.incidentTypes.encroachment") },
   { value: "Fire", label: t("incidents.incidentTypes.fire") },
   { value: "Other", label: t("incidents.incidentTypes.other") },
-];
+]);
 
 const hasMoreIncidents = computed(() => {
   const total = props.incidentsTotal ?? props.incidents.length;
@@ -240,12 +240,14 @@ const handleClose = () => {
               <span class="meta-label">{{ $t("incidents.status") }}:</span>
               <span class="meta-value">{{ selectedIncidentData.status }}</span>
             </div>
-            <div v-if="selectedIncidentData.incident_type" class="meta-row">
+            <div v-if="selectedIncidentData?.incident_type" class="meta-row">
               <span class="meta-label"
                 >{{ $t("incidents.incidentType") }}:</span
               >
               <span class="meta-value">{{
-                selectedIncidentData.incident_type
+                incidentTypes.find(
+                  (type) => type.value === selectedIncidentData?.incident_type,
+                )?.label || selectedIncidentData?.incident_type
               }}</span>
             </div>
             <div v-if="selectedIncidentData.responsible_party" class="meta-row">
