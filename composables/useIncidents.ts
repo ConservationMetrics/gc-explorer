@@ -146,12 +146,18 @@ export const useIncidents = (
 
   /**
    * Clears selected incident detail view and its map highlighting
+   * Also removes incidentId from URL query params when going back to incidents list
    */
   const clearSelectedIncident = () => {
     selectedIncident.value = null;
     selectedIncidentData.value = null;
     selectedIncidentEntries.value = [];
     clearSourceHighlighting();
+
+    // Remove incidentId from URL when going back to incidents list
+    const query = { ...route.query };
+    delete query.incidentId;
+    router.replace({ query });
   };
 
   const getIncidentDetails = async (

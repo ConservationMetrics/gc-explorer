@@ -7,7 +7,22 @@ import type {
   Incident,
 } from "@/types/types";
 
-const { t } = useI18n();
+const { t, te } = useI18n();
+
+// Helper function to get translated incident type label
+const getIncidentTypeLabel = (value: string | undefined): string => {
+  if (!value) return "";
+  // Convert "Illegal Logging" -> "illegalLogging" to match translation keys
+  const key = value
+    .toLowerCase()
+    .split(/\s+/)
+    .map((word, index) =>
+      index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1),
+    )
+    .join("");
+  const translationKey = `incidents.incidentTypes.${key}`;
+  return te(translationKey) ? t(translationKey) : value;
+};
 
 const props = defineProps<{
   incidents: AnnotatedCollection[];
@@ -217,9 +232,7 @@ const handleClose = () => {
                 >{{ $t("incidents.incidentType") }}:</span
               >
               <span class="meta-value">{{
-                incidentTypes.find(
-                  (type) => type.value === selectedIncidentData?.incident_type,
-                )?.label || selectedIncidentData?.incident_type
+                getIncidentTypeLabel(selectedIncidentData.incident_type)
               }}</span>
             </div>
             <div v-if="selectedIncidentData.responsible_party" class="meta-row">
