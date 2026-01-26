@@ -391,6 +391,9 @@ export default oauthAuth0EventHandler({
           auth0: user.email,
           roles: userRoles,
           userRole,
+          // Store name/nickname from auth0 user if available
+          name: (user.name as string) || undefined,
+          nickname: (user.nickname as string) || undefined,
         },
         loggedInAt: Date.now(),
       });
