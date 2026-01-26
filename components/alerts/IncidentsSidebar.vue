@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { Copy, Check } from "lucide-vue-next";
 import type {
   AnnotatedCollection,
   CollectionEntry,
@@ -49,6 +50,7 @@ const emit = defineEmits<{
 }>();
 
 const showCreateForm = ref(false);
+const showCopied = ref(false);
 const formData = ref({
   name: "",
   description: "",
@@ -57,6 +59,14 @@ const formData = ref({
   impact_description: "",
   supporting_evidence: {} as Record<string, unknown>,
 });
+
+const copyLink = () => {
+  navigator.clipboard.writeText(window.location.href);
+  showCopied.value = true;
+  setTimeout(() => {
+    showCopied.value = false;
+  }, 2000);
+};
 
 // Watch for openWithCreateForm prop to show form when sidebar opens
 watch(
@@ -206,6 +216,24 @@ const handleClose = () => {
           <p v-if="selectedIncident.description" class="incident-description">
             {{ selectedIncident.description }}
           </p>
+
+          <!-- Copy link section -->
+          <div class="copy-link-section">
+            <button
+              class="copy-link-button"
+              data-testid="copy-incident-link-button"
+              @click="copyLink"
+            >
+              <component
+                :is="showCopied ? Check : Copy"
+                class="copy-link-icon"
+                :class="{ 'text-green-500': showCopied }"
+              />
+              <span>{{
+                showCopied ? $t("copied") : $t("incidents.copyLink")
+              }}</span>
+            </button>
+          </div>
 
           <div v-if="selectedIncidentData" class="incident-extra">
             <div v-if="selectedIncidentData.status" class="meta-row">
@@ -795,6 +823,34 @@ const handleClose = () => {
 
 .meta-value {
   color: #666;
+}
+
+.copy-link-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.copy-link-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: #666;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.copy-link-button:hover {
+  color: #333;
+}
+
+.copy-link-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .entries-section {

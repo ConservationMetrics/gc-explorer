@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, ref } from "vue";
-import type { RouteLocationNormalizedLoaded } from "vue-router";
+import type { RouteLocationNormalizedLoaded, Router } from "vue-router";
 import mapboxgl from "mapbox-gl";
 import type { Feature } from "geojson";
 import type {
@@ -31,12 +31,14 @@ type IncidentDetailsResponse = {
  *
  * @param map - Ref to the Mapbox map instance for feature highlighting and selection
  * @param route - Vue Router route object for accessing route parameters (e.g., table name)
+ * @param router - Vue Router instance for programmatic navigation and query param management
  * @param apiKey - API key for authenticating requests to the incidents API
  * @returns Object containing all incidents state and functions
  */
 export const useIncidents = (
   map: Ref<mapboxgl.Map | undefined>,
   route: RouteLocationNormalizedLoaded,
+  router: Router,
   apiKey: string,
 ) => {
   // Incidents state management
@@ -223,6 +225,11 @@ export const useIncidents = (
 
       clearSourceHighlighting();
       highlightIncidentEntries(response.entries || []);
+
+      // Add incidentId to URL query params for shareable links
+      const query = { ...route.query };
+      query.incidentId = incidentId;
+      router.replace({ query });
     } catch (error) {
       console.error("Error fetching incident details:", error);
     } finally {
@@ -290,6 +297,13 @@ export const useIncidents = (
 
     // Toggle sidebar
     showIncidentsSidebar.value = !showIncidentsSidebar.value;
+
+    // Remove incidentId from URL when closing sidebar
+    if (wasOpen && !showIncidentsSidebar.value) {
+      const query = { ...route.query };
+      delete query.incidentId;
+      router.replace({ query });
+    }
 
     // Reset create form flag when toggling
     if (!showIncidentsSidebar.value || !hadCreateFormOpen) {
