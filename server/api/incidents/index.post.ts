@@ -12,15 +12,12 @@ export default defineEventHandler(async (event) => {
 
   // Add user info to the request body
   const body = await readBody(event);
-  // Use user's name/nickname from auth0 if available, otherwise fall back to email
-  // The session user object may have additional auth0 fields like name or nickname
+  // Use auth0 email for created_by (auth0 field contains the user's email)
   const user = session.user as {
-    email: string;
-    name?: string;
-    nickname?: string;
+    auth0: string;
     [key: string]: unknown;
   };
-  body.created_by = (user.name || user.nickname || user.email) as string;
+  body.created_by = user.auth0;
 
   const result = await handleCreateCollection(event, "incident");
 

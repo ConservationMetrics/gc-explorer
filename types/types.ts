@@ -180,8 +180,6 @@ export interface User {
   auth0: string;
   roles?: Array<{ id: string; name: string; description: string }>;
   userRole?: Role;
-  name?: string;
-  nickname?: string;
 }
 export interface ToastEmits {
   (e: "close"): void;
