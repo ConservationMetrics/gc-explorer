@@ -981,22 +981,25 @@ export const useIncidents = (
       if (map.value!.getLayer(clustersLayer)) {
         const clusterId = incidentClusterIds.value.get(source);
 
-        // Update cluster color based on whether this cluster contains selected features
-        const paintExpression: mapboxgl.ExpressionSpecification =
-          clusterId !== undefined
-            ? [
-                "case",
-                ["==", ["get", "cluster_id"], clusterId],
-                "#FFFF00", // Yellow if this cluster contains selected features
-                color, // Default color otherwise
-              ]
-            : ([color] as mapboxgl.ExpressionSpecification); // No cluster selected for this source, use default color
-
-        map.value!.setPaintProperty(
-          clustersLayer,
-          "circle-color",
-          paintExpression,
-        );
+        // If no cluster is selected for this source, reset to default color
+        // Otherwise, use conditional expression to highlight the selected cluster
+        if (clusterId === undefined) {
+          // Explicitly reset to default color when no cluster is selected
+          map.value!.setPaintProperty(clustersLayer, "circle-color", color);
+        } else {
+          // Use conditional expression to highlight the selected cluster
+          const paintExpression: mapboxgl.ExpressionSpecification = [
+            "case",
+            ["==", ["get", "cluster_id"], clusterId],
+            "#FFFF00", // Yellow if this cluster contains selected features
+            color, // Default color otherwise
+          ];
+          map.value!.setPaintProperty(
+            clustersLayer,
+            "circle-color",
+            paintExpression,
+          );
+        }
       }
     });
   };
@@ -1247,7 +1250,15 @@ export const useIncidents = (
     // Set up zoom listener to re-highlight clusters when zoom changes
     // This ensures clusters are highlighted even if features are de-clustered when zooming in
     const onZoomEnd = () => {
-      highlightIncidentEntries(entries);
+      // Only re-highlight if there's still a selected incident
+      // This prevents re-highlighting after the incident sidebar is closed
+      if (selectedIncident.value && selectedIncidentEntries.value.length > 0) {
+        highlightIncidentEntries(selectedIncidentEntries.value);
+      } else {
+        // If no incident is selected, ensure cluster highlighting is cleared
+        incidentClusterIds.value.clear();
+        updateIncidentClusterHighlight();
+      }
     };
 
     map.value.off("zoomend", onZoomEnd);
