@@ -73,6 +73,9 @@ export const useIncidents = (
     Array<{ featureId: string | number; layerId: string }>
   >([]);
 
+  // Cluster highlighting state for bounding box selections
+  const incidentClusterIds = ref<Map<string, number | string>>(new Map()); // Map of sourceName -> clusterId
+
   // Incident details cache
   const incidentDetailsCache = new Map<string, IncidentDetailsResponse>();
   const incidentDetailsInFlight = new Map<
@@ -155,6 +158,10 @@ export const useIncidents = (
     selectedIncidentData.value = null;
     selectedIncidentEntries.value = [];
     clearSourceHighlighting();
+
+    // Clear cluster highlighting
+    incidentClusterIds.value.clear();
+    updateIncidentClusterHighlight();
 
     // Remove incidentId from URL when going back to incidents list
     const query = { ...route.query };
@@ -495,7 +502,9 @@ export const useIncidents = (
     /**
      * Finishes the bounding box selection and queries features
      */
-    const finishBoundingBox = (bbox?: [mapboxgl.Point, mapboxgl.Point]) => {
+    const finishBoundingBox = async (
+      bbox?: [mapboxgl.Point, mapboxgl.Point],
+    ) => {
       document.removeEventListener("mousemove", onMouseMoveDuringBoundingBox);
       document.removeEventListener("keydown", onKeyDownDuringBoundingBox);
       document.removeEventListener("mouseup", onMouseUpDuringBoundingBox);
@@ -512,7 +521,7 @@ export const useIncidents = (
           [Math.max(bbox[0].x, bbox[1].x), Math.max(bbox[0].y, bbox[1].y)],
         ];
 
-        selectFeaturesInBoundingBox(pixelBbox);
+        await selectFeaturesInBoundingBox(pixelBbox);
       }
 
       map.value!.dragPan.enable();
@@ -559,9 +568,9 @@ export const useIncidents = (
 
   /**
    * Selects features within the bounding box using pixel coordinates
-   * Uses the same robust layer checking as multi-select
+   * Handles both individual features and clusters (expands clusters to get all leaves)
    */
-  const selectFeaturesInBoundingBox = (
+  const selectFeaturesInBoundingBox = async (
     bbox: [[number, number], [number, number]],
   ) => {
     if (!map.value) return;
@@ -580,6 +589,14 @@ export const useIncidents = (
       "previous-alerts-centroids",
     ];
 
+    // Cluster layers to check separately
+    const clusterLayers = [
+      "most-recent-alerts-point-clusters",
+      "most-recent-alerts-centroids-clusters",
+      "previous-alerts-point-clusters",
+      "previous-alerts-centroids-clusters",
+    ];
+
     const mapeoLayers = ["mapeo-data"];
 
     const allFeatures: Array<{
@@ -592,6 +609,7 @@ export const useIncidents = (
       layer?: { id?: string };
     }> = [];
 
+    // First, get individual (non-clustered) features
     alertLayers.forEach((layerId) => {
       try {
         if (map.value!.getLayer(layerId)) {
@@ -609,7 +627,7 @@ export const useIncidents = (
           );
           allFeatures.push(...(validFeatures as typeof allFeatures));
           console.debug(
-            `Layer ${layerId}: found ${validFeatures.length} features`,
+            `Layer ${layerId}: found ${validFeatures.length} individual features`,
           );
         }
       } catch (error) {
@@ -617,6 +635,78 @@ export const useIncidents = (
       }
     });
 
+    // Check for clusters in the bounding box and expand them
+    for (const clusterLayerId of clusterLayers) {
+      try {
+        if (!map.value!.getLayer(clusterLayerId)) continue;
+
+        const clusterFeatures = map.value!.queryRenderedFeatures(bbox, {
+          layers: [clusterLayerId],
+        });
+
+        // Determine the source name from cluster layer ID
+        const sourceName = clusterLayerId.replace("-clusters", "");
+        const sourceObj = map.value!.getSource(
+          sourceName,
+        ) as mapboxgl.GeoJSONSource | null;
+
+        if (!sourceObj) continue;
+
+        console.debug(
+          `Found ${clusterFeatures.length} clusters in ${clusterLayerId}`,
+        );
+
+        // For each cluster, get all its leaves (individual features)
+        for (const clusterFeature of clusterFeatures) {
+          const clusterId = clusterFeature.properties?.cluster_id;
+          if (clusterId === undefined) continue;
+
+          try {
+            // Get ALL leaves in the cluster
+            const leaves: Feature[] = await new Promise((resolve, reject) => {
+              sourceObj.getClusterLeaves(
+                clusterId,
+                Infinity, // Get ALL leaves
+                0,
+                (err, features) => {
+                  if (err) {
+                    reject(err);
+                  } else {
+                    resolve(features as Feature[]);
+                  }
+                },
+              );
+            });
+
+            console.debug(
+              `Cluster ${clusterId} in ${sourceName} contains ${leaves.length} features`,
+            );
+
+            // Add all leaves to the selection
+            leaves.forEach((leaf) => {
+              // Create a feature object that matches the expected structure
+              const leafFeature = {
+                properties: leaf.properties,
+                layer: { id: sourceName }, // Use source name as layer ID
+              };
+              allFeatures.push(leafFeature as (typeof allFeatures)[0]);
+            });
+
+            // Store cluster ID for highlighting
+            incidentClusterIds.value.set(sourceName, clusterId);
+          } catch (error) {
+            console.warn(
+              `Error getting cluster leaves for cluster ${clusterId}:`,
+              error,
+            );
+          }
+        }
+      } catch (error) {
+        console.warn(`Error querying cluster layer ${clusterLayerId}:`, error);
+      }
+    }
+
+    // Handle mapeo layers
     mapeoLayers.forEach((layerId) => {
       try {
         if (map.value!.getLayer(layerId)) {
@@ -633,9 +723,10 @@ export const useIncidents = (
 
     console.debug("Total features found in bounding box:", allFeatures.length);
 
+    // Process all features (both individual and from clusters)
     allFeatures.forEach(
       (feature: {
-        properties?: { alertID?: string; id?: string };
+        properties?: { alertID?: string; id?: string; _id?: string };
         layer?: { id?: string };
       }) => {
         const featureObject = feature.properties;
@@ -646,12 +737,28 @@ export const useIncidents = (
         let sourceId: string | null = null;
         if (featureObject?.alertID) {
           sourceId = featureObject.alertID;
+        } else if (featureObject?._id) {
+          // Mapeo features use _id (migrated from id)
+          sourceId = featureObject._id;
         } else if (featureObject?.id) {
+          // Fallback for backward compatibility
           sourceId = featureObject.id;
         }
 
         if (sourceId) {
-          handleMultiSelectFeature(feature as Feature, layerId);
+          // Create a proper Feature object for handleMultiSelectFeature
+          const featureForSelection: Feature = {
+            type: "Feature",
+            id:
+              featureObject?.alertID || featureObject?._id || featureObject?.id,
+            geometry: (feature as Feature).geometry || {
+              type: "Point",
+              coordinates: [0, 0],
+            },
+            properties: featureObject || {},
+          };
+
+          handleMultiSelectFeature(featureForSelection, layerId);
           console.debug(`Selected source: ${sourceId} from layer ${layerId}`);
         } else {
           console.warn(
@@ -661,6 +768,9 @@ export const useIncidents = (
         }
       },
     );
+
+    // Update cluster highlighting after processing all features
+    updateIncidentClusterHighlight();
   };
 
   /**
@@ -857,6 +967,61 @@ export const useIncidents = (
   };
 
   /**
+   * Updates cluster layer styling to highlight clusters containing selected features.
+   * Uses the same pattern as useFeatureSelection.ts updateClusterHighlight()
+   */
+  const updateIncidentClusterHighlight = () => {
+    if (!map.value) return;
+
+    // List of all cluster layer IDs that need updating
+    const clusterLayers = [
+      {
+        clustersLayer: "most-recent-alerts-centroids-clusters",
+        source: "most-recent-alerts-centroids",
+        color: "#FF0000",
+      },
+      {
+        clustersLayer: "most-recent-alerts-point-clusters",
+        source: "most-recent-alerts-point",
+        color: "#FF0000",
+      },
+      {
+        clustersLayer: "previous-alerts-centroids-clusters",
+        source: "previous-alerts-centroids",
+        color: "#FD8D3C",
+      },
+      {
+        clustersLayer: "previous-alerts-point-clusters",
+        source: "previous-alerts-point",
+        color: "#FD8D3C",
+      },
+    ];
+
+    clusterLayers.forEach(({ clustersLayer, source, color }) => {
+      if (map.value!.getLayer(clustersLayer)) {
+        const clusterId = incidentClusterIds.value.get(source);
+
+        // Update cluster color based on whether this cluster contains selected features
+        const paintExpression: mapboxgl.ExpressionSpecification =
+          clusterId !== undefined
+            ? [
+                "case",
+                ["==", ["get", "cluster_id"], clusterId],
+                "#FFFF00", // Yellow if this cluster contains selected features
+                color, // Default color otherwise
+              ]
+            : ([color] as mapboxgl.ExpressionSpecification); // No cluster selected for this source, use default color
+
+        map.value!.setPaintProperty(
+          clustersLayer,
+          "circle-color",
+          paintExpression,
+        );
+      }
+    });
+  };
+
+  /**
    * Clears all source highlighting from the map
    */
   const clearSourceHighlighting = () => {
@@ -874,13 +1039,98 @@ export const useIncidents = (
       }
     });
     highlightedSources.value = [];
+
+    // Clear cluster highlighting
+    incidentClusterIds.value.clear();
+    updateIncidentClusterHighlight();
+  };
+
+  /**
+   * Highlights a cluster containing the specified alertID.
+   * This is used when incident entries are part of clusters.
+   */
+  const highlightClusterForAlertId = async (
+    alertId: string,
+    sourceName: string,
+  ) => {
+    if (!map.value) return;
+
+    const clusterLayerName = `${sourceName}-clusters`;
+    if (!map.value.getLayer(clusterLayerName)) return;
+
+    const sourceObj = map.value.getSource(
+      sourceName,
+    ) as mapboxgl.GeoJSONSource | null;
+    if (!sourceObj) return;
+
+    // Get all visible cluster features (query entire viewport)
+    // Use empty array to query all rendered features in viewport
+    const clusterFeatures = (
+      map.value.queryRenderedFeatures as (
+        geometry?:
+          | mapboxgl.PointLike
+          | [mapboxgl.PointLike, mapboxgl.PointLike],
+        options?: { layers?: string[]; filter?: mapboxgl.FilterSpecification },
+      ) => mapboxgl.MapboxGeoJSONFeature[]
+    )(undefined, {
+      layers: [clusterLayerName],
+    });
+
+    // Find which cluster contains this alertID
+    for (const clusterFeature of clusterFeatures) {
+      const clusterId = clusterFeature.properties?.cluster_id;
+      if (clusterId === undefined) continue;
+
+      try {
+        // Get the leaves (individual points) of this cluster
+        const leaves: Feature[] = await new Promise((resolve, reject) => {
+          sourceObj.getClusterLeaves(
+            clusterId,
+            Infinity,
+            0,
+            (err, features) => {
+              if (err) {
+                reject(err);
+              } else {
+                resolve(features as Feature[]);
+              }
+            },
+          );
+        });
+
+        // Check if any leaf matches our alertID
+        const containsAlert = leaves.some(
+          (leaf) => leaf.properties?.alertID === alertId,
+        );
+
+        if (containsAlert) {
+          // Highlight the cluster using paint properties
+          const paintExpression: mapboxgl.ExpressionSpecification = [
+            "case",
+            ["==", ["get", "cluster_id"], clusterId],
+            "#FFFF00", // Yellow for selected cluster
+            sourceName.includes("most-recent") ? "#FF0000" : "#FD8D3C", // Default color
+          ];
+
+          map.value.setPaintProperty(
+            clusterLayerName,
+            "circle-color",
+            paintExpression,
+          );
+          break;
+        }
+      } catch {
+        continue;
+      }
+    }
   };
 
   /**
    * Highlights all entries of a saved incident on the map.
    * Uses querySourceFeatures so it works even if features are off-screen.
+   * Also handles cluster highlighting when features are clustered.
    */
-  const highlightIncidentEntries = (entries: CollectionEntry[]) => {
+  const highlightIncidentEntries = async (entries: CollectionEntry[]) => {
     if (!map.value) return;
     if (!entries || entries.length === 0) return;
 
@@ -902,7 +1152,8 @@ export const useIncidents = (
 
     const foundFeatures: Feature[] = [];
 
-    entries.forEach((entry) => {
+    // Process entries and highlight features
+    for (const entry of entries) {
       // If the entry refers to a different alerts table than the current route,
       // the map won't have that data loaded; still try best-effort highlighting.
       if (
@@ -925,6 +1176,8 @@ export const useIncidents = (
           ? ["==", ["get", "id"], entry.source_id]
           : ["==", ["get", "alertID"], entry.source_id];
 
+      let found = false;
+
       for (const sourceId of candidateSources) {
         try {
           if (!map.value!.getSource(sourceId)) continue;
@@ -935,8 +1188,58 @@ export const useIncidents = (
 
           if (matches.length > 0) {
             const feature = matches[0] as unknown as Feature;
-            highlightSelectedSource(feature, sourceId);
+
+            // Check if this is a cluster feature
+            const isCluster =
+              feature.properties?.cluster === true ||
+              feature.properties?.cluster_id !== undefined;
+
+            if (isCluster) {
+              // If it's a cluster, highlight the cluster
+              // For alert entries, we need to find which cluster contains this alertID
+              if (entry.source_table !== "mapeo_data" && entry.source_id) {
+                // Determine the centroids source for cluster checking
+                const centroidsSource = sourceId.includes("most-recent")
+                  ? "most-recent-alerts-centroids"
+                  : sourceId.includes("previous")
+                    ? "previous-alerts-centroids"
+                    : sourceId.includes("point")
+                      ? sourceId
+                      : null;
+
+                if (centroidsSource) {
+                  await highlightClusterForAlertId(
+                    entry.source_id,
+                    centroidsSource,
+                  );
+                }
+              }
+            } else {
+              // Regular feature - highlight it normally
+              highlightSelectedSource(feature, sourceId);
+
+              // Also check if this feature is part of a cluster at current zoom
+              // (it might be de-clustered when zoomed in, but we still want to highlight the cluster if zoomed out)
+              if (entry.source_table !== "mapeo_data" && entry.source_id) {
+                const centroidsSource = sourceId.includes("most-recent")
+                  ? "most-recent-alerts-centroids"
+                  : sourceId.includes("previous")
+                    ? "previous-alerts-centroids"
+                    : sourceId.includes("point")
+                      ? sourceId
+                      : null;
+
+                if (centroidsSource) {
+                  await highlightClusterForAlertId(
+                    entry.source_id,
+                    centroidsSource,
+                  );
+                }
+              }
+            }
+
             foundFeatures.push(feature);
+            found = true;
             break;
           }
         } catch (error) {
@@ -944,7 +1247,31 @@ export const useIncidents = (
           console.warn("Error highlighting incident entry:", error);
         }
       }
-    });
+
+      // If we didn't find the feature in any source, it might be clustered
+      // Try checking clusters directly
+      if (!found && entry.source_table !== "mapeo_data" && entry.source_id) {
+        const centroidsSources = [
+          "most-recent-alerts-centroids",
+          "previous-alerts-centroids",
+        ];
+
+        for (const centroidsSource of centroidsSources) {
+          if (map.value!.getSource(centroidsSource)) {
+            await highlightClusterForAlertId(entry.source_id, centroidsSource);
+          }
+        }
+      }
+    }
+
+    // Set up zoom listener to re-highlight clusters when zoom changes
+    // This ensures clusters are highlighted even if features are de-clustered when zooming in
+    const onZoomEnd = () => {
+      highlightIncidentEntries(entries);
+    };
+
+    map.value.off("zoomend", onZoomEnd);
+    map.value.on("zoomend", onZoomEnd);
   };
 
   // Cleanup on unmount

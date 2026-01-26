@@ -94,18 +94,44 @@ watch(
   { immediate: true },
 );
 
-const incidentTypes = computed(() => [
-  { value: "Deforestation", label: t("incidents.incidentTypes.deforestation") },
-  {
-    value: "Illegal Logging",
-    label: t("incidents.incidentTypes.illegalLogging"),
-  },
-  { value: "Mining", label: t("incidents.incidentTypes.mining") },
-  { value: "Poaching", label: t("incidents.incidentTypes.poaching") },
-  { value: "Encroachment", label: t("incidents.incidentTypes.encroachment") },
-  { value: "Fire", label: t("incidents.incidentTypes.fire") },
-  { value: "Other", label: t("incidents.incidentTypes.other") },
-]);
+// Helper function to safely get nested translation for incident types
+// Vue i18n with Nuxt supports nested objects accessed via dot notation
+const getIncidentTypeTranslation = (key: string): string => {
+  const translationKey = `incidents.incidentTypes.${key}`;
+  // Check if translation exists
+  if (te(translationKey)) {
+    const translated = t(translationKey);
+    // Vue i18n returns the key if translation not found, so check for that
+    // Also check if it's the full path (some i18n configs return full path when not found)
+    if (
+      translated &&
+      translated !== translationKey &&
+      !translated.startsWith("incidents.incidentTypes.")
+    ) {
+      return translated;
+    }
+  }
+  // Fallback: convert camelCase to Title Case (e.g., "illegalLogging" -> "Illegal Logging")
+  return key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1");
+};
+
+const incidentTypes = computed(() => {
+  // Use camelCase keys that match the locale structure
+  const types = [
+    { value: "Deforestation", key: "deforestation" },
+    { value: "Illegal Logging", key: "illegalLogging" },
+    { value: "Mining", key: "mining" },
+    { value: "Poaching", key: "poaching" },
+    { value: "Encroachment", key: "encroachment" },
+    { value: "Fire", key: "fire" },
+    { value: "Other", key: "other" },
+  ];
+
+  return types.map((type) => ({
+    value: type.value,
+    label: getIncidentTypeTranslation(type.key),
+  }));
+});
 
 const hasMoreIncidents = computed(() => {
   const total = props.incidentsTotal ?? props.incidents.length;
