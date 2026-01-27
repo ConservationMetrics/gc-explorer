@@ -395,6 +395,111 @@ test("annotated collections - create incident flow", async ({
   ).toBeVisible({ timeout: 5000 });
 });
 
+test("annotated collections - incident created_by attribution", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await navigateToAlertsDashboard(page);
+
+  // Enable multi-select mode
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
+  await multiSelectButton.click();
+  await page.waitForTimeout(500);
+
+  // Find a polygon feature and Cmd/Ctrl+click it
+  const lngLat = await getSelectableFeatureLngLat(page);
+
+  if (!lngLat) {
+    test.skip();
+    return;
+  }
+
+  const clickPoint = await projectLngLatToPagePoint(page, lngLat);
+  if (!clickPoint) {
+    test.skip();
+    return;
+  }
+
+  await page.mouse.click(clickPoint.x, clickPoint.y, {
+    modifiers: [selectionModifierKey],
+  });
+
+  // Verify that a feature was selected
+  const createButton = page.getByTestId("incidents-create-button");
+  await expect(createButton).toBeEnabled({ timeout: 5000 });
+
+  // Click the create incident button
+  await createButton.click();
+
+  // Wait for sidebar to open with create form
+  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
+  await expect(
+    page.getByRole("heading", { name: /create new incident/i }),
+  ).toBeVisible();
+
+  // Fill out the incident form
+  const nameInput = page.locator('input[id="name"]');
+  await nameInput.fill("Auth0 Attribution Test Incident");
+
+  const descriptionTextarea = page.locator('textarea[id="description"]');
+  await descriptionTextarea.fill(
+    "Test incident to verify created_by attribution",
+  );
+
+  // Select incident type
+  const typeSelect = page.locator('select[id="incident_type"]');
+  await typeSelect.selectOption("Deforestation");
+
+  // Submit the form
+  const submitButton = page.locator(".submit-btn");
+  await submitButton.click();
+
+  // Wait for the incident to be created
+  await page.waitForTimeout(2000);
+
+  // Open the view incidents sidebar
+  const viewIncidentsButton = page.getByTestId("incidents-view-button");
+  await viewIncidentsButton.click();
+
+  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
+
+  // Click on the incident we just created to view its details
+  await expect(
+    page.getByText("Auth0 Attribution Test Incident", { exact: false }),
+  ).toBeVisible({ timeout: 5000 });
+  await page.getByText("Auth0 Attribution Test Incident").click();
+
+  // Wait for incident details to load
+  await page.waitForTimeout(1000);
+
+  // Verify that the "By:" field exists and is displayed
+  const byLabel = page.locator("text=/By:/i");
+  await expect(byLabel).toBeVisible({ timeout: 5000 });
+
+  // Get the created_by value from the meta-value element next to "By:"
+  const byValue = await page.evaluate(() => {
+    const metaRows = Array.from(document.querySelectorAll(".meta-row"));
+    for (const row of metaRows) {
+      const label = row.querySelector(".meta-label");
+      const value = row.querySelector(".meta-value");
+      if (label && value && label.textContent?.toLowerCase().includes("by:")) {
+        return value.textContent?.trim() || null;
+      }
+    }
+    return null;
+  });
+
+  // Verify that created_by is not "system" and is not empty
+  expect(byValue).toBeTruthy();
+  expect(byValue).not.toBe("system");
+  expect(byValue).not.toBe("");
+
+  // If Auth0 is enabled, verify it's an email address (contains @)
+  // This is a reasonable check since user.auth0 is the email
+  if (byValue && byValue.includes("@")) {
+    expect(byValue).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+  }
+});
+
 test("annotated collections - toggle selection with ctrl+click", async ({
   authenticatedPageAsAdmin: page,
 }) => {
