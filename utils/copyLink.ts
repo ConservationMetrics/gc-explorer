@@ -1,5 +1,13 @@
 import { ref } from "vue";
-import { copyLinkToClipboard } from "./copyLinkHelpers";
+
+/**
+ * Utility function to copy the current page URL to clipboard
+ * Returns a promise that resolves when the copy operation completes
+ * @returns Promise<void>
+ */
+const copyLinkToClipboard = async (): Promise<void> => {
+  await navigator.clipboard.writeText(window.location.href);
+};
 
 /**
  * Composable for copying the current page URL to clipboard.
