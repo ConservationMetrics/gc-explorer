@@ -88,7 +88,12 @@ export const handleCreateCollection = async (
       name: body.name,
       description: body.description || "",
       collection_type: collectionType,
-      created_by: body.created_by || "system",
+      // Only set created_by if provided and not empty (when auth0 is available)
+      // Otherwise leave it undefined (will be null in database)
+      created_by:
+        body.created_by && body.created_by.trim() !== ""
+          ? body.created_by
+          : undefined,
       metadata: body.metadata || {},
     };
 

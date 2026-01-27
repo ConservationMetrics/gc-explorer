@@ -14,7 +14,7 @@ export const annotatedCollections = pgTable("annotated_collections", {
   name: text("name").notNull(),
   description: text("description"),
   collectionType: text("collection_type").notNull(),
-  createdBy: text("created_by").notNull(),
+  createdBy: text("created_by"), // Optional: only set when auth0 is available
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
   metadata: jsonb("metadata").default({}),
