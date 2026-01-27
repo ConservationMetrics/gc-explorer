@@ -2,7 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Copy, Check } from "lucide-vue-next";
-import { copyLinkToClipboard } from "@/utils/copyLink";
+import { useCopyLink } from "@/utils/copyLink";
 import type {
   AnnotatedCollection,
   CollectionEntry,
@@ -51,7 +51,7 @@ const emit = defineEmits<{
 }>();
 
 const showCreateForm = ref(false);
-const showCopied = ref(false);
+const { showCopied, copyLink } = useCopyLink();
 const formData = ref({
   name: "",
   description: "",
@@ -60,14 +60,6 @@ const formData = ref({
   impact_description: "",
   supporting_evidence: {} as Record<string, unknown>,
 });
-
-const copyLink = async () => {
-  await copyLinkToClipboard();
-  showCopied.value = true;
-  setTimeout(() => {
-    showCopied.value = false;
-  }, 2000);
-};
 
 // Watch for openWithCreateForm prop to show form when sidebar opens
 watch(
