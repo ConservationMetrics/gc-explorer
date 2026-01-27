@@ -153,6 +153,10 @@ export const useIncidents = (
     selectedIncident.value = null;
     selectedIncidentData.value = null;
     selectedIncidentEntries.value = [];
+    // Remove incidentId from URL when going back to incidents list
+    const query = { ...route.query };
+    delete query.incidentId;
+    router.replace({ query });
     clearSourceHighlighting();
   };
 
