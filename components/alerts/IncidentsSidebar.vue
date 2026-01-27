@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { Copy, Check } from "lucide-vue-next";
+import { copyLinkToClipboard } from "@/utils/copyLink";
 import type {
   AnnotatedCollection,
   CollectionEntry,
@@ -60,8 +61,8 @@ const formData = ref({
   supporting_evidence: {} as Record<string, unknown>,
 });
 
-const copyLink = () => {
-  navigator.clipboard.writeText(window.location.href);
+const copyLink = async () => {
+  await copyLinkToClipboard();
   showCopied.value = true;
   setTimeout(() => {
     showCopied.value = false;
@@ -217,24 +218,6 @@ const handleClose = () => {
             {{ selectedIncident.description }}
           </p>
 
-          <!-- Copy link section -->
-          <div class="copy-link-section">
-            <button
-              class="copy-link-button"
-              data-testid="copy-incident-link-button"
-              @click="copyLink"
-            >
-              <component
-                :is="showCopied ? Check : Copy"
-                class="copy-link-icon"
-                :class="{ 'text-green-500': showCopied }"
-              />
-              <span>{{
-                showCopied ? $t("copied") : $t("incidents.copyLink")
-              }}</span>
-            </button>
-          </div>
-
           <div v-if="selectedIncidentData" class="incident-extra">
             <div v-if="selectedIncidentData.status" class="meta-row">
               <span class="meta-label">{{ $t("incidents.status") }}:</span>
@@ -267,6 +250,27 @@ const handleClose = () => {
                 selectedIncidentData.impact_description
               }}</span>
             </div>
+          </div>
+
+          <!-- Copy link section -->
+          <div
+            class="mt-6 pt-4 border-t border-gray-200"
+            data-testid="copy-link-section"
+          >
+            <button
+              class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
+              data-testid="copy-incident-link-button"
+              @click="copyLink"
+            >
+              <component
+                :is="showCopied ? Check : Copy"
+                class="w-4 h-4"
+                :class="{ 'text-green-500': showCopied }"
+              />
+              <span>{{
+                showCopied ? $t("copied") : $t("incidents.copyLink")
+              }}</span>
+            </button>
           </div>
 
           <div class="entries-section">
@@ -823,34 +827,6 @@ const handleClose = () => {
 
 .meta-value {
   color: #666;
-}
-
-.copy-link-section {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #e0e0e0;
-}
-
-.copy-link-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  font-size: 14px;
-  color: #666;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.copy-link-button:hover {
-  color: #333;
-}
-
-.copy-link-icon {
-  width: 16px;
-  height: 16px;
 }
 
 .entries-section {
