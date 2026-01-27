@@ -542,3 +542,189 @@ test("annotated collections - view incidents sidebar does not clear selections",
   // Button should be enabled because selections were preserved
   expect(isDisabled).toBeNull();
 });
+
+test("annotated collections - cluster highlighting when viewing incident details", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await navigateToAlertsDashboard(page);
+
+  // First, create an incident so we have one to view
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
+  await multiSelectButton.click();
+  await page.waitForTimeout(500);
+
+  const lngLat = await getSelectableFeatureLngLat(page);
+  if (!lngLat) {
+    test.skip();
+    return;
+  }
+
+  const clickPoint = await projectLngLatToPagePoint(page, lngLat);
+  if (!clickPoint) {
+    test.skip();
+    return;
+  }
+
+  await page.mouse.click(clickPoint.x, clickPoint.y, {
+    modifiers: [selectionModifierKey],
+  });
+
+  const createButton = page.getByTestId("incidents-create-button");
+  await expect(createButton).toBeEnabled({ timeout: 5000 });
+  await createButton.click();
+
+  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
+  await expect(
+    page.getByRole("heading", { name: /create new incident/i }),
+  ).toBeVisible();
+
+  const nameInput = page.locator('input[id="name"]');
+  await nameInput.fill("Cluster Highlight Test Incident");
+
+  const descriptionTextarea = page.locator('textarea[id="description"]');
+  await descriptionTextarea.fill("Test incident for cluster highlighting");
+
+  const typeSelect = page.locator('select[id="incident_type"]');
+  await typeSelect.selectOption("Deforestation");
+
+  const submitButton = page.locator(".submit-btn");
+  await submitButton.click();
+  await page.waitForTimeout(2000);
+
+  // Now open the incidents sidebar to view saved incidents
+  const viewIncidentsButton = page.getByTestId("incidents-view-button");
+  await viewIncidentsButton.click();
+  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
+
+  // Click on the incident we just created to view its details
+  await expect(
+    page.getByText("Cluster Highlight Test Incident", { exact: false }),
+  ).toBeVisible({ timeout: 5000 });
+  await page.getByText("Cluster Highlight Test Incident").click();
+
+  // Wait for incident details to load
+  await page.waitForTimeout(1000);
+
+  // Check that clusters are highlighted yellow by checking the map's paint properties
+  // We'll verify this by checking if cluster layers have the yellow color expression
+  const hasYellowClusterHighlight = await page.evaluate(() => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    if (!map) return false;
+
+    const clusterLayers = [
+      "most-recent-alerts-centroids-clusters",
+      "most-recent-alerts-point-clusters",
+      "previous-alerts-centroids-clusters",
+      "previous-alerts-point-clusters",
+    ];
+
+    // Check if any cluster layer has a yellow highlight expression
+    for (const layerId of clusterLayers) {
+      const layer = map.getLayer(layerId);
+      if (!layer) continue;
+
+      const paintProps = map.getPaintProperty(layerId, "circle-color");
+      if (!paintProps) continue;
+
+      // Check if the paint property is an expression that includes yellow (#FFFF00)
+      const paintStr = JSON.stringify(paintProps);
+      if (paintStr.includes("#FFFF00") || paintStr.includes("FFFF00")) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  // Verify cluster highlighting is present
+  expect(hasYellowClusterHighlight).toBe(true);
+
+  // Now test that highlighting persists when zooming
+  // Zoom out to see if clusters merge and highlighting persists
+  await page.evaluate(() => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    if (map) {
+      const currentZoom = map.getZoom();
+      map.zoomTo(currentZoom - 2, { duration: 500 });
+    }
+  });
+
+  // Wait for zoom to complete
+  await page.waitForTimeout(1000);
+
+  // Verify cluster highlighting still exists after zoom
+  const hasYellowClusterHighlightAfterZoom = await page.evaluate(() => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    if (!map) return false;
+
+    const clusterLayers = [
+      "most-recent-alerts-centroids-clusters",
+      "most-recent-alerts-point-clusters",
+      "previous-alerts-centroids-clusters",
+      "previous-alerts-point-clusters",
+    ];
+
+    for (const layerId of clusterLayers) {
+      const layer = map.getLayer(layerId);
+      if (!layer) continue;
+
+      const paintProps = map.getPaintProperty(layerId, "circle-color");
+      if (!paintProps) continue;
+
+      const paintStr = JSON.stringify(paintProps);
+      if (paintStr.includes("#FFFF00") || paintStr.includes("FFFF00")) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  expect(hasYellowClusterHighlightAfterZoom).toBe(true);
+
+  // Zoom in to test highlighting at a different zoom level
+  await page.evaluate(() => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    if (map) {
+      const currentZoom = map.getZoom();
+      map.zoomTo(currentZoom + 1, { duration: 500 });
+    }
+  });
+
+  await page.waitForTimeout(1000);
+
+  // Verify cluster highlighting still exists after zooming in
+  const hasYellowClusterHighlightAfterZoomIn = await page.evaluate(() => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    if (!map) return false;
+
+    const clusterLayers = [
+      "most-recent-alerts-centroids-clusters",
+      "most-recent-alerts-point-clusters",
+      "previous-alerts-centroids-clusters",
+      "previous-alerts-point-clusters",
+    ];
+
+    for (const layerId of clusterLayers) {
+      const layer = map.getLayer(layerId);
+      if (!layer) continue;
+
+      const paintProps = map.getPaintProperty(layerId, "circle-color");
+      if (!paintProps) continue;
+
+      const paintStr = JSON.stringify(paintProps);
+      if (paintStr.includes("#FFFF00") || paintStr.includes("FFFF00")) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  expect(hasYellowClusterHighlightAfterZoomIn).toBe(true);
+});

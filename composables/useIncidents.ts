@@ -620,6 +620,8 @@ export const useIncidents = (
       try {
         if (!map.value!.getLayer(clusterLayerId)) continue;
 
+        // Query clusters that intersect the bounding box
+        // Then get ALL leaves from those clusters (not just leaves in bbox)
         const clusterFeatures = map.value!.queryRenderedFeatures(bbox, {
           layers: [clusterLayerId],
         });
@@ -1031,6 +1033,14 @@ export const useIncidents = (
   /**
    * Highlights a cluster containing the specified alertID.
    * This is used when incident entries are part of clusters.
+   *
+   * Note: This only works when clusters are visible (zoomed out, zoom < clusterMaxZoom).
+   * When zoomed in, clusters break down into individual features and aren't rendered,
+   * so we can't find them. However, if we previously found a cluster ID, it will be
+   * preserved in incidentClusterIds so it shows when zooming back out.
+   *
+   * When zooming out, clusters merge and get new IDs, so this function is called again
+   * to find the new merged cluster that contains the alertID.
    */
   const highlightClusterForAlertId = async (
     alertId: string,
@@ -1047,7 +1057,11 @@ export const useIncidents = (
     if (!sourceObj) return;
 
     // Get all visible cluster features (query entire viewport)
-    // Use empty array to query all rendered features in viewport
+    // Note: queryRenderedFeatures only finds clusters that are currently rendered.
+    // When zoomed in (zoom >= clusterMaxZoom), clusters break down and aren't rendered,
+    // so this will return an empty array. That's okay - we'll preserve any previously
+    // found cluster IDs so they show when zooming back out.
+    // When zooming out, clusters merge and get new IDs, so we need to re-find them.
     const clusterFeatures = (
       map.value.queryRenderedFeatures as (
         geometry?:
@@ -1060,6 +1074,8 @@ export const useIncidents = (
     });
 
     // Find which cluster contains this alertID
+    // Check ALL visible clusters (don't break early) to handle cases where clusters merge
+    let foundCluster = false;
     for (const clusterFeature of clusterFeatures) {
       const clusterId = clusterFeature.properties?.cluster_id;
       if (clusterId === undefined) continue;
@@ -1087,24 +1103,141 @@ export const useIncidents = (
         );
 
         if (containsAlert) {
-          // Highlight the cluster using paint properties
-          const paintExpression: mapboxgl.ExpressionSpecification = [
-            "case",
-            ["==", ["get", "cluster_id"], clusterId],
-            "#FFFF00", // Yellow for selected cluster
-            sourceName.includes("most-recent") ? "#FF0000" : "#FD8D3C", // Default color
-          ];
-
-          map.value.setPaintProperty(
-            clusterLayerName,
-            "circle-color",
-            paintExpression,
-          );
-          break;
+          // Store the cluster ID so updateIncidentClusterHighlight can use it
+          // This will be the current merged cluster at this zoom level
+          incidentClusterIds.value.set(sourceName, clusterId);
+          foundCluster = true;
+          // Don't break - continue checking in case there are multiple clusters
+          // (though typically an alertID should only be in one cluster)
         }
       } catch {
         continue;
       }
+    }
+
+    // Update highlighting after checking all clusters
+    if (foundCluster) {
+      updateIncidentClusterHighlight();
+    }
+    // If no cluster found (e.g., zoomed in where clusters aren't rendered),
+    // we don't clear incidentClusterIds - this preserves the cluster ID so it
+    // shows when zooming back out (similar to useFeatureSelection behavior)
+  };
+
+  /**
+   * Handles incident cluster highlighting when zoom changes.
+   * This should be called from the zoom listener in AlertsDashboard.vue.
+   * Re-finds merged clusters when zooming out (clusters merge and get new IDs).
+   *
+   * Works for both:
+   * 1. Selected incidents (viewing incident details)
+   * 2. Highlighted sources from bounding box/multi-select
+   */
+  const handleIncidentClusterZoom = async () => {
+    console.log("handleIncidentClusterZoom");
+    if (!map.value) return;
+
+    // Check if we have clusters to re-highlight
+    const hasClusterIds = incidentClusterIds.value.size > 0;
+    const hasSelectedIncident =
+      selectedIncident.value && selectedIncidentEntries.value.length > 0;
+    const hasHighlightedSources = highlightedSources.value.length > 0;
+
+    console.log("selectedIncident", selectedIncident.value);
+    console.log("selectedIncidentEntries", selectedIncidentEntries.value);
+    console.log("highlightedSources", highlightedSources.value);
+    console.log("incidentClusterIds", incidentClusterIds.value);
+
+    // If we have a selected incident, use that (for viewing incident details)
+    if (hasSelectedIncident) {
+      console.log(
+        "Re-highlighting incident clusters on zoom (from selected incident)",
+        incidentClusterIds.value,
+      );
+      // Clear old cluster IDs before re-finding (clusters may have merged with new IDs)
+      incidentClusterIds.value.clear();
+      // Small delay to ensure clusters have rendered after zoom
+      setTimeout(() => {
+        highlightIncidentEntries(selectedIncidentEntries.value);
+      }, 100);
+      return;
+    }
+
+    // If we have highlighted sources (from bounding box/multi-select), re-find clusters for those
+    if (hasHighlightedSources && hasClusterIds) {
+      console.log(
+        "Re-highlighting incident clusters on zoom (from highlighted sources)",
+        incidentClusterIds.value,
+      );
+
+      // Clear old cluster IDs - they're invalid after zoom (clusters merge/get new IDs)
+      const sourcesToCheck = new Set<string>();
+
+      // Collect all sources that had clusters
+      incidentClusterIds.value.forEach((_, sourceName) => {
+        sourcesToCheck.add(sourceName);
+      });
+
+      incidentClusterIds.value.clear();
+
+      // Re-find clusters for each highlighted source
+      // Group highlighted sources by their source layer
+      const sourcesByLayer = new Map<string, string[]>(); // layerId -> alertIDs
+
+      highlightedSources.value.forEach(({ featureId, layerId }) => {
+        // Determine which cluster source to check based on layerId
+        let clusterSourceName: string | null = null;
+
+        if (layerId.includes("-point")) {
+          clusterSourceName = layerId;
+        } else if (layerId.includes("-centroids")) {
+          clusterSourceName = layerId;
+        } else if (
+          layerId.includes("-polygon") ||
+          layerId.includes("-linestring")
+        ) {
+          // For geometry layers, check the corresponding centroids layer
+          const prefix = layerId.replace(
+            /-polygon|-linestring|-multipolygon/i,
+            "",
+          );
+          clusterSourceName = `${prefix}-centroids`;
+        }
+
+        if (clusterSourceName && sourcesToCheck.has(clusterSourceName)) {
+          if (!sourcesByLayer.has(clusterSourceName)) {
+            sourcesByLayer.set(clusterSourceName, []);
+          }
+          // featureId is the alertID for centroids, or we need to get it from the feature
+          const alertId =
+            typeof featureId === "string" ? featureId : String(featureId);
+          sourcesByLayer.get(clusterSourceName)!.push(alertId);
+        }
+      });
+
+      // Re-find clusters for each source
+      const rehighlightPromises: Promise<void>[] = [];
+      sourcesByLayer.forEach((alertIds, sourceName) => {
+        // Re-find cluster for the first alertID in each source (they should all be in the same cluster)
+        if (alertIds.length > 0) {
+          rehighlightPromises.push(
+            highlightClusterForAlertId(alertIds[0], sourceName),
+          );
+        }
+      });
+
+      // Small delay to ensure clusters have rendered after zoom
+      setTimeout(async () => {
+        await Promise.all(rehighlightPromises);
+        updateIncidentClusterHighlight();
+      }, 100);
+      return;
+    }
+
+    // If no sources to highlight, clear cluster highlighting
+    if (!hasClusterIds && !hasHighlightedSources) {
+      incidentClusterIds.value.clear();
+      updateIncidentClusterHighlight();
     }
   };
 
@@ -1247,22 +1380,7 @@ export const useIncidents = (
       }
     }
 
-    // Set up zoom listener to re-highlight clusters when zoom changes
-    // This ensures clusters are highlighted even if features are de-clustered when zooming in
-    const onZoomEnd = () => {
-      // Only re-highlight if there's still a selected incident
-      // This prevents re-highlighting after the incident sidebar is closed
-      if (selectedIncident.value && selectedIncidentEntries.value.length > 0) {
-        highlightIncidentEntries(selectedIncidentEntries.value);
-      } else {
-        // If no incident is selected, ensure cluster highlighting is cleared
-        incidentClusterIds.value.clear();
-        updateIncidentClusterHighlight();
-      }
-    };
-
-    map.value.off("zoomend", onZoomEnd);
-    map.value.on("zoomend", onZoomEnd);
+    // Note: Zoom listener is set up in AlertsDashboard.vue to call handleIncidentClusterZoom
   };
 
   // Cleanup on unmount
@@ -1312,5 +1430,6 @@ export const useIncidents = (
     unhighlightSelectedSource,
     clearSourceHighlighting,
     highlightIncidentEntries,
+    handleIncidentClusterZoom,
   };
 };
