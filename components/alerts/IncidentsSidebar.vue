@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import {
+  titleToSnakeCase,
+  snakeToTitleCase,
+  titleToCamelCase,
+} from "@/utils/index";
 import type {
   AnnotatedCollection,
   CollectionEntry,
@@ -27,20 +32,19 @@ const getIncidentTypeTranslation = (key: string): string => {
     }
   }
   // Fallback: convert camelCase to Title Case (e.g., "illegalLogging" -> "Illegal Logging")
+  // First try snake_case conversion, then camelCase conversion
+  if (key.includes("_")) {
+    return snakeToTitleCase(key);
+  }
+  // Convert camelCase: add space before capital letters, then capitalize first letter
   return key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1");
 };
 
 // Helper function to get translated incident type label (for detail view)
 const getIncidentTypeLabel = (value: string | undefined): string => {
   if (!value) return "";
-  // Convert "Illegal Logging" -> "illegalLogging" to match translation keys
-  const key = value
-    .toLowerCase()
-    .split(/\s+/)
-    .map((word, index) =>
-      index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1),
-    )
-    .join("");
+  // Convert "Illegal Logging" -> "illegalLogging" to match translation keys (camelCase)
+  const key = titleToCamelCase(value);
   const translationKey = `incidents.incidentTypes.${key}`;
   return te(translationKey) ? t(translationKey) : value;
 };
