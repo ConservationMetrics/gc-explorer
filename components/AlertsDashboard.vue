@@ -835,8 +835,6 @@ const addAlertsData = async () => {
 
   // Update cluster highlighting when zoom/pan changes
   map.value.on("zoomend", () => {
-    console.log("ZOOM END FIRED in AlertsDashboard.vue");
-
     // Re-highlight cluster if a feature is selected (after a brief delay)
     if (
       selectedFeature.value &&
