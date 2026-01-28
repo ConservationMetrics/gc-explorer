@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import {
+  titleToSnakeCase,
+  snakeToTitleCase,
+  titleToCamelCase,
+} from "@/utils/index";
 import { Copy, Check } from "lucide-vue-next";
 import { useCopyLink } from "@/utils/copyLink";
 import type {
@@ -9,7 +14,42 @@ import type {
   Incident,
 } from "@/types/types";
 
-const { t } = useI18n();
+const { t, te } = useI18n();
+
+// Helper function to safely get nested translation for incident types
+// Vue i18n with Nuxt supports nested objects accessed via dot notation
+const getIncidentTypeTranslation = (key: string): string => {
+  const translationKey = `incidents.incidentTypes.${key}`;
+  // Check if translation exists
+  if (te(translationKey)) {
+    const translated = t(translationKey);
+    // Vue i18n returns the key if translation not found, so check for that
+    // Also check if it's the full path (some i18n configs return full path when not found)
+    if (
+      translated &&
+      translated !== translationKey &&
+      !translated.startsWith("incidents.incidentTypes.")
+    ) {
+      return translated;
+    }
+  }
+  // Fallback: convert camelCase to Title Case (e.g., "illegalLogging" -> "Illegal Logging")
+  // First try snake_case conversion, then camelCase conversion
+  if (key.includes("_")) {
+    return snakeToTitleCase(key);
+  }
+  // Convert camelCase: add space before capital letters, then capitalize first letter
+  return key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1");
+};
+
+// Helper function to get translated incident type label (for detail view)
+const getIncidentTypeLabel = (value: string | undefined): string => {
+  if (!value) return "";
+  // Convert "Illegal Logging" -> "illegalLogging" to match translation keys (camelCase)
+  const key = titleToCamelCase(value);
+  const translationKey = `incidents.incidentTypes.${key}`;
+  return te(translationKey) ? t(translationKey) : value;
+};
 
 const props = defineProps<{
   incidents: AnnotatedCollection[];
@@ -72,18 +112,23 @@ watch(
   { immediate: true },
 );
 
-const incidentTypes = [
-  { value: "Deforestation", label: t("incidents.incidentTypes.deforestation") },
-  {
-    value: "Illegal Logging",
-    label: t("incidents.incidentTypes.illegalLogging"),
-  },
-  { value: "Mining", label: t("incidents.incidentTypes.mining") },
-  { value: "Poaching", label: t("incidents.incidentTypes.poaching") },
-  { value: "Encroachment", label: t("incidents.incidentTypes.encroachment") },
-  { value: "Fire", label: t("incidents.incidentTypes.fire") },
-  { value: "Other", label: t("incidents.incidentTypes.other") },
-];
+const incidentTypes = computed(() => {
+  // Use camelCase keys that match the locale structure
+  const types = [
+    { value: "Deforestation", key: "deforestation" },
+    { value: "Illegal Logging", key: "illegalLogging" },
+    { value: "Mining", key: "mining" },
+    { value: "Poaching", key: "poaching" },
+    { value: "Encroachment", key: "encroachment" },
+    { value: "Fire", key: "fire" },
+    { value: "Other", key: "other" },
+  ];
+
+  return types.map((type) => ({
+    value: type.value,
+    label: getIncidentTypeTranslation(type.key),
+  }));
+});
 
 const hasMoreIncidents = computed(() => {
   const total = props.incidentsTotal ?? props.incidents.length;
@@ -215,12 +260,12 @@ const handleClose = () => {
               <span class="meta-label">{{ $t("incidents.status") }}:</span>
               <span class="meta-value">{{ selectedIncidentData.status }}</span>
             </div>
-            <div v-if="selectedIncidentData.incident_type" class="meta-row">
+            <div v-if="selectedIncidentData?.incident_type" class="meta-row">
               <span class="meta-label"
                 >{{ $t("incidents.incidentType") }}:</span
               >
               <span class="meta-value">{{
-                selectedIncidentData.incident_type
+                getIncidentTypeLabel(selectedIncidentData.incident_type)
               }}</span>
             </div>
             <div v-if="selectedIncidentData.responsible_party" class="meta-row">
