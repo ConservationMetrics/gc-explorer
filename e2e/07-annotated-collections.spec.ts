@@ -95,9 +95,7 @@ async function navigateToAlertsDashboard(page: Page) {
 
   expect(alertsCard).not.toBeNull();
 
-  await alertsCard!
-    .locator("[data-testid='open-dataset-view-link']")
-    .click();
+  await alertsCard!.locator("[data-testid='open-dataset-view-link']").click();
 
   await page.waitForLoadState("networkidle");
 
@@ -194,9 +192,9 @@ test("annotated collections - cluster highlighting when viewing incident details
       "previous-alerts-centroids-clusters",
       "previous-alerts-point-clusters",
     ].some((layer) =>
-      JSON.stringify(map.getPaintProperty(layer, "circle-color") ?? "").includes(
-        "FFFF00",
-      ),
+      JSON.stringify(
+        map.getPaintProperty(layer, "circle-color") ?? "",
+      ).includes("FFFF00"),
     );
   });
 
@@ -227,9 +225,7 @@ test("annotated collections - incident created_by attribution", async ({
   await page.getByTestId("incidents-create-button").click();
 
   await page.getByLabel("Name").fill("Auth0 Attribution Test Incident");
-  await page
-    .getByLabel("Description")
-    .fill("Verify created_by attribution");
+  await page.getByLabel("Description").fill("Verify created_by attribution");
   await page.getByLabel("Incident Type").selectOption("Deforestation");
   await page.locator(".submit-btn").click();
 
@@ -291,7 +287,5 @@ test("annotated collections - shareable incident link URL parameter", async ({
   expect(url).toContain("incidentId=");
 
   await page.goto(url);
-  await expect(
-    page.getByText("Shareable Link Test Incident"),
-  ).toBeVisible();
+  await expect(page.getByText("Shareable Link Test Incident")).toBeVisible();
 });
