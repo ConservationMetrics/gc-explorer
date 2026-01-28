@@ -84,6 +84,7 @@
   "incidents.by": "By",
   "incidents.clearAll": "Clear All",
   "incidents.close": "Close",
+  "incidents.copyLink": "Copy link to incident",
   "incidents.backToIncidents": "Back to saved incidents",
   "incidents.loadingIncident": "Loading incident...",
   "incidents.type": "Type",

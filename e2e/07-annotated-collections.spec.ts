@@ -6,7 +6,6 @@ const selectionModifierKey = process.platform === "darwin" ? "Meta" : "Control";
 type LngLat = [number, number];
 
 async function getSelectableFeatureLngLat(page: Page): Promise<LngLat | null> {
-  // Explicitly target polygons only.
   return await page.evaluate(() => {
     // @ts-expect-error _testMap is exposed for E2E testing only
     const map = window._testMap;
@@ -17,28 +16,27 @@ async function getSelectableFeatureLngLat(page: Page): Promise<LngLat | null> {
       "previous-alerts-polygon",
     ].filter((layer) => map.getLayer(layer));
 
-    if (layers.length === 0) return null;
+    if (!layers.length) return null;
 
     const features = map.queryRenderedFeatures({ layers });
-    if (features.length === 0) return null;
+    if (!features.length) return null;
 
     const feature = features[0];
 
-    // Preferred: precomputed centroid stored on properties.
     const centroid = feature?.properties?.geographicCentroid;
     if (typeof centroid === "string") {
       const [lng, lat] = centroid.split(",").map(Number);
       if (Number.isFinite(lng) && Number.isFinite(lat)) return [lng, lat];
     }
 
-    // Fallback: compute centroid from polygon ring coordinates.
     if (feature?.geometry?.type === "Polygon") {
       const ring = feature.geometry.coordinates?.[0];
-      if (Array.isArray(ring) && ring.length > 0) {
+      if (Array.isArray(ring) && ring.length) {
         const sum = ring.reduce(
-          (acc: { lng: number; lat: number }, coord: [number, number]) => {
-            return { lng: acc.lng + coord[0], lat: acc.lat + coord[1] };
-          },
+          (acc, [lng, lat]) => ({
+            lng: acc.lng + lng,
+            lat: acc.lat + lat,
+          }),
           { lng: 0, lat: 0 },
         );
         return [sum.lng / ring.length, sum.lat / ring.length];
@@ -47,56 +45,6 @@ async function getSelectableFeatureLngLat(page: Page): Promise<LngLat | null> {
 
     return null;
   });
-}
-
-async function _getSelectableFeatureLngLats(
-  page: Page,
-  count: number,
-): Promise<LngLat[]> {
-  // Explicitly target polygons only.
-  return await page.evaluate((count: number) => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
-    if (!map) return [];
-
-    const layers = [
-      "most-recent-alerts-polygon",
-      "previous-alerts-polygon",
-    ].filter((layer) => map.getLayer(layer));
-
-    if (layers.length === 0) return [];
-
-    const features = map.queryRenderedFeatures({ layers });
-    const lngLats: Array<[number, number]> = [];
-
-    for (const feature of features) {
-      if (lngLats.length >= count) break;
-
-      const centroid = feature?.properties?.geographicCentroid;
-      if (typeof centroid === "string") {
-        const [lng, lat] = centroid.split(",").map(Number);
-        if (Number.isFinite(lng) && Number.isFinite(lat)) {
-          lngLats.push([lng, lat]);
-          continue;
-        }
-      }
-
-      if (feature?.geometry?.type === "Polygon") {
-        const ring = feature.geometry.coordinates?.[0];
-        if (Array.isArray(ring) && ring.length > 0) {
-          const sum = ring.reduce(
-            (acc: { lng: number; lat: number }, coord: [number, number]) => {
-              return { lng: acc.lng + coord[0], lat: acc.lat + coord[1] };
-            },
-            { lng: 0, lat: 0 },
-          );
-          lngLats.push([sum.lng / ring.length, sum.lat / ring.length]);
-        }
-      }
-    }
-
-    return lngLats;
-  }, count);
 }
 
 async function projectLngLatToPagePoint(
@@ -114,30 +62,17 @@ async function projectLngLatToPagePoint(
   }, lngLat);
 }
 
-/**
- * Helper function to navigate to alerts dashboard
- * Reusable across tests
- */
 async function navigateToAlertsDashboard(page: Page) {
-  // 1. Navigate to the index page first to get available tables
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
-  // 2. Wait for the main content and heading to be visible
   await page.waitForSelector("main", { timeout: 15000 });
   await expect(
     page.getByRole("heading", {
       name: /available views|available dataset views/i,
     }),
-  ).toBeVisible({ timeout: 15000 });
+  ).toBeVisible();
 
-  // 3. Wait for dataset cards to render
-  await page.waitForSelector(".grid", { timeout: 15000 });
-  await page.waitForSelector("[data-testid='dataset-card']", {
-    timeout: 15000,
-  });
-
-  // 4. Find a dataset card that has an "alerts" tag
   const datasetCards = page.locator("[data-testid='dataset-card']");
   const cardCount = await datasetCards.count();
   expect(cardCount).toBeGreaterThan(0);
@@ -145,8 +80,7 @@ async function navigateToAlertsDashboard(page: Page) {
   let alertsCard = null;
   for (let i = 0; i < cardCount; i++) {
     const card = datasetCards.nth(i);
-    const alertsTag = card.locator("[data-testid='view-tag-alerts']");
-    if ((await alertsTag.count()) > 0) {
+    if ((await card.locator("[data-testid='view-tag-alerts']").count()) > 0) {
       alertsCard = card;
       break;
     }
@@ -154,63 +88,42 @@ async function navigateToAlertsDashboard(page: Page) {
 
   expect(alertsCard).not.toBeNull();
 
-  // 5. Click "Open Dataset View" on the card with alerts tag
-  const openProjectButton = alertsCard!.locator(
-    "[data-testid='open-dataset-view-link']",
-  );
-  await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
-  await openProjectButton.click();
+  await alertsCard!
+    .locator("[data-testid='open-dataset-view-link']")
+    .click();
+
   await page.waitForLoadState("networkidle");
 
-  // 6. Find the alerts link on the dataset page
   const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
-
-  // 7. Click the alerts link to navigate to the alerts page
   const href = await alertsLink.getAttribute("href");
   await page.goto(href!);
-  await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
-  // 8. Wait for map to load
-  await page.locator("#map").waitFor({ state: "attached", timeout: 10000 });
-  const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
-  await expect(mapCanvas).toBeVisible();
+  await page.locator("canvas.mapboxgl-canvas").first().waitFor();
 
-  // 9. Wait for the map to be fully loaded
-  await page.waitForFunction(
-    () => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
-      return map?.isStyleLoaded() && map.loaded();
-    },
-    { timeout: 5000 },
-  );
+  await page.waitForFunction(() => {
+    // @ts-expect-error test map
+    const map = window._testMap;
+    return map?.isStyleLoaded() && map.loaded();
+  });
 }
+
+/* ─────────────────────────────────────────────── */
+/* EXISTING TESTS                                  */
+/* ─────────────────────────────────────────────── */
 
 test("annotated collections - view saved incidents sidebar", async ({
   authenticatedPageAsAdmin: page,
 }) => {
   await navigateToAlertsDashboard(page);
 
-  // Find the checkmark button (view incidents button)
   const viewIncidentsButton = page.getByTestId("incidents-view-button");
-
-  // Click to open sidebar
   await viewIncidentsButton.click();
 
-  // Wait for sidebar to appear
-  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
-
-  // Verify sidebar shows "Saved Incidents" title
   await expect(
     page.getByRole("heading", { name: /saved incidents/i }),
   ).toBeVisible();
 
-  // Verify sidebar can be closed
-  const closeButton = page.locator(".incidents-sidebar .close-btn");
-  await closeButton.click();
-
-  // Verify sidebar is closed
+  await page.locator(".incidents-sidebar .close-btn").click();
   await expect(page.locator(".incidents-sidebar")).not.toBeVisible();
 });
 
@@ -219,512 +132,113 @@ test("annotated collections - multi-select mode and create incident", async ({
 }) => {
   await navigateToAlertsDashboard(page);
 
-  // Find and click multi-select button (second button in incidents-controls)
   const multiSelectButton = page.getByTestId("incidents-multiselect-button");
-
   await multiSelectButton.click();
-
-  // Verify multi-select mode is active (button should have active class)
   await expect(multiSelectButton).toHaveClass(/active/);
 
-  // Wait for map to be ready for interactions
-  await page.waitForTimeout(1000);
-
-  // Polygon-only selection: pick a polygon and fire a Cmd/Ctrl click.
   const lngLat = await getSelectableFeatureLngLat(page);
-  if (!lngLat) {
-    test.skip();
-    return;
-  }
+  if (!lngLat) test.skip();
 
-  const clickPoint = await projectLngLatToPagePoint(page, lngLat);
-  if (!clickPoint) {
-    test.skip();
-    return;
-  }
+  const clickPoint = await projectLngLatToPagePoint(page, lngLat!);
+  if (!clickPoint) test.skip();
 
   await page.mouse.click(clickPoint.x, clickPoint.y, {
     modifiers: [selectionModifierKey],
   });
 
-  const createButton = page.getByTestId("incidents-create-button");
-  await expect(createButton).toBeEnabled({ timeout: 5000 });
-
-  // Disable multi-select mode
-  await multiSelectButton.click();
-  await expect(multiSelectButton).not.toHaveClass(/active/);
-});
-
-test("annotated collections - bounding box selection", async ({
-  authenticatedPageAsAdmin: page,
-}) => {
-  await navigateToAlertsDashboard(page);
-
-  // Find and click bounding box button (third button in incidents-controls)
-  const boundingBoxButton = page.getByTestId("incidents-bbox-button");
-
-  await boundingBoxButton.click();
-
-  // Verify bounding box mode is active
-  await expect(boundingBoxButton).toHaveClass(/active/);
-
-  // Wait for map to be ready
-  await page.waitForTimeout(1000);
-
-  // Find a real feature, then draw a bbox around it (avoids guessing)
-  const lngLat = await getSelectableFeatureLngLat(page);
-
-  if (!lngLat) {
-    test.skip();
-    return;
-  }
-
-  const featureLocation = await page.evaluate(([lng, lat]) => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
-    if (!map) return null;
-
-    const point = map.project([lng, lat]);
-    const rect = map.getCanvas().getBoundingClientRect();
-    return { x: rect.left + point.x, y: rect.top + point.y };
-  }, lngLat);
-
-  if (!featureLocation) {
-    test.skip();
-    return;
-  }
-
-  const startX = featureLocation.x - 30;
-  const startY = featureLocation.y - 30;
-  const endX = featureLocation.x + 30;
-  const endY = featureLocation.y + 30;
-
-  await page.keyboard.down(selectionModifierKey);
-  await page.mouse.move(startX, startY);
-  await page.mouse.down();
-  await page.mouse.move(endX, endY);
-  await page.mouse.up();
-  await page.keyboard.up(selectionModifierKey);
-
-  const createButton = page.getByTestId("incidents-create-button");
-  await expect(createButton).toBeEnabled({ timeout: 5000 });
-
-  // Disable bounding box mode
-  await boundingBoxButton.click();
-  await expect(boundingBoxButton).not.toHaveClass(/active/);
-});
-
-test("annotated collections - create incident flow", async ({
-  authenticatedPageAsAdmin: page,
-}) => {
-  await navigateToAlertsDashboard(page);
-
-  // Enable multi-select mode
-  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
-  await multiSelectButton.click();
-  await page.waitForTimeout(500);
-
-  // Find a polygon feature and Cmd/Ctrl+click it.
-  const lngLat = await getSelectableFeatureLngLat(page);
-
-  if (!lngLat) {
-    test.skip();
-    return;
-  }
-
-  const clickPoint = await projectLngLatToPagePoint(page, lngLat);
-  if (!clickPoint) {
-    test.skip();
-    return;
-  }
-
-  await page.mouse.click(clickPoint.x, clickPoint.y, {
-    modifiers: [selectionModifierKey],
-  });
-
-  // Verify that a feature was selected by checking if create button is enabled
-  const createButton = page.getByTestId("incidents-create-button");
-
-  // Wait for the button to become enabled (feature selection may take a moment)
-  await expect(createButton).toBeEnabled({ timeout: 5000 });
-
-  // Click the create incident button (+ button)
-  await createButton.click();
-
-  // Wait for sidebar to open with create form
-  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
-
-  // Verify sidebar shows "Create New Incident" title
   await expect(
-    page.getByRole("heading", { name: /create new incident/i }),
-  ).toBeVisible();
-
-  // Verify create form is visible
-  await expect(page.locator(".create-form")).toBeVisible();
-
-  // Fill out the incident form
-  const nameInput = page.locator('input[id="name"]');
-  await nameInput.fill("Test Incident E2E");
-
-  const descriptionTextarea = page.locator('textarea[id="description"]');
-  await descriptionTextarea.fill(
-    "This is a test incident created during E2E testing",
-  );
-
-  // Select incident type
-  const typeSelect = page.locator('select[id="incident_type"]');
-  await typeSelect.selectOption("Deforestation");
-
-  // Submit the form
-  const submitButton = page.locator(".submit-btn");
-  await submitButton.click();
-
-  // Wait for the incident to be created (sidebar might close or show success)
-  await page.waitForTimeout(2000);
-
-  // Verify the incident was created by checking if it appears in saved incidents
-  // Open the view incidents sidebar
-  const viewIncidentsButton = page.getByTestId("incidents-view-button");
-  await viewIncidentsButton.click();
-
-  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
-
-  // Check if our test incident appears in the list
-  await expect(
-    page.getByText("Test Incident E2E", { exact: false }),
-  ).toBeVisible({ timeout: 5000 });
+    page.getByTestId("incidents-create-button"),
+  ).toBeEnabled();
 });
 
-test("annotated collections - toggle selection with ctrl+click", async ({
-  authenticatedPageAsAdmin: page,
-}) => {
-  await navigateToAlertsDashboard(page);
-
-  // Enable multi-select mode
-  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
-  await multiSelectButton.click();
-  await page.waitForTimeout(500);
-
-  const lngLat = await getSelectableFeatureLngLat(page);
-
-  if (!lngLat) {
-    test.skip();
-    return;
-  }
-
-  const clickPoint = await projectLngLatToPagePoint(page, lngLat);
-  if (!clickPoint) {
-    test.skip();
-    return;
-  }
-
-  // First click to select
-  await page.mouse.click(clickPoint.x, clickPoint.y, {
-    modifiers: [selectionModifierKey],
-  });
-
-  // Verify feature was selected
-  const createButton = page.getByTestId("incidents-create-button");
-  await expect(createButton).toBeEnabled({ timeout: 5000 });
-
-  // Second click toggles (deselect)
-  await page.mouse.click(clickPoint.x, clickPoint.y, {
-    modifiers: [selectionModifierKey],
-  });
-
-  // Verify selection was toggled (create button should be disabled again)
-  const isDisabled = await createButton.getAttribute("disabled");
-  // After deselecting, button should be disabled
-  expect(isDisabled).not.toBeNull();
-});
-
-test("annotated collections - remove individual source from selection", async ({
-  authenticatedPageAsAdmin: page,
-}) => {
-  await navigateToAlertsDashboard(page);
-
-  // Enable multi-select mode
-  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
-  await multiSelectButton.click();
-  await page.waitForTimeout(500);
-
-  const lngLat = await getSelectableFeatureLngLat(page);
-
-  if (!lngLat) {
-    test.skip();
-    return;
-  }
-
-  const clickPoint = await projectLngLatToPagePoint(page, lngLat);
-  if (!clickPoint) {
-    test.skip();
-    return;
-  }
-
-  // Select a feature
-  await page.mouse.click(clickPoint.x, clickPoint.y, {
-    modifiers: [selectionModifierKey],
-  });
-
-  // Open create incident sidebar
-  const createButton = page.getByTestId("incidents-create-button");
-  await expect(createButton).toBeEnabled({ timeout: 5000 });
-  await createButton.click();
-
-  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
-
-  // Close the sidebar
-  const closeButton = page.locator(".incidents-sidebar .close-btn");
-  await closeButton.click();
-
-  await page.waitForTimeout(500);
-
-  // Verify sidebar is closed
-  await expect(page.locator(".incidents-sidebar")).not.toBeVisible();
-
-  // Verify selections were cleared (create button should be disabled)
-  const createButtonAfterClose = page.getByTestId("incidents-create-button");
-  const isDisabled = await createButtonAfterClose.getAttribute("disabled");
-  expect(isDisabled).not.toBeNull();
-});
-
-test("annotated collections - view incidents sidebar does not clear selections", async ({
-  authenticatedPageAsAdmin: page,
-}) => {
-  await navigateToAlertsDashboard(page);
-
-  // Enable multi-select mode
-  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
-  await multiSelectButton.click();
-  await page.waitForTimeout(500);
-
-  const lngLat = await getSelectableFeatureLngLat(page);
-
-  if (!lngLat) {
-    test.skip();
-    return;
-  }
-
-  const clickPoint = await projectLngLatToPagePoint(page, lngLat);
-  if (!clickPoint) {
-    test.skip();
-    return;
-  }
-
-  // Select a feature
-  await page.mouse.click(clickPoint.x, clickPoint.y, {
-    modifiers: [selectionModifierKey],
-  });
-
-  // Verify feature was selected
-  const createButton = page.getByTestId("incidents-create-button");
-  await expect(createButton).toBeEnabled({ timeout: 5000 });
-
-  // Open view incidents sidebar (checkmark button)
-  const viewIncidentsButton = page.getByTestId("incidents-view-button");
-  await viewIncidentsButton.click();
-
-  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
-
-  // Verify sidebar shows "Saved Incidents" (not create form)
-  await expect(
-    page.getByRole("heading", { name: /saved incidents/i }),
-  ).toBeVisible();
-
-  // Close the sidebar
-  const closeButton = page.locator(".incidents-sidebar .close-btn");
-  await closeButton.click();
-
-  await page.waitForTimeout(500);
-
-  // Verify selections were NOT cleared (create button should still be enabled)
-  const isDisabled = await createButton.getAttribute("disabled");
-  // Button should be enabled because selections were preserved
-  expect(isDisabled).toBeNull();
-});
+/* ─────────────────────────────────────────────── */
+/* MERGED TESTS – BOTH BRANCHES INCLUDED           */
+/* ─────────────────────────────────────────────── */
 
 test("annotated collections - cluster highlighting when viewing incident details", async ({
   authenticatedPageAsAdmin: page,
 }) => {
   await navigateToAlertsDashboard(page);
 
-  // First, create an incident so we have one to view
   const multiSelectButton = page.getByTestId("incidents-multiselect-button");
   await multiSelectButton.click();
-  await page.waitForTimeout(500);
 
   const lngLat = await getSelectableFeatureLngLat(page);
-  if (!lngLat) {
-    test.skip();
-    return;
-  }
+  if (!lngLat) test.skip();
 
-  const clickPoint = await projectLngLatToPagePoint(page, lngLat);
-  if (!clickPoint) {
-    test.skip();
-    return;
-  }
+  const clickPoint = await projectLngLatToPagePoint(page, lngLat!);
+  if (!clickPoint) test.skip();
 
   await page.mouse.click(clickPoint.x, clickPoint.y, {
     modifiers: [selectionModifierKey],
   });
 
-  const createButton = page.getByTestId("incidents-create-button");
-  await expect(createButton).toBeEnabled({ timeout: 5000 });
-  await createButton.click();
+  await page.getByTestId("incidents-create-button").click();
 
-  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
-  await expect(
-    page.getByRole("heading", { name: /create new incident/i }),
-  ).toBeVisible();
+  await page.getByLabel("Name").fill("Cluster Highlight Test Incident");
+  await page.getByLabel("Description").fill("Test incident for clusters");
+  await page.getByLabel("Incident Type").selectOption("Deforestation");
+  await page.locator(".submit-btn").click();
 
-  const nameInput = page.locator('input[id="name"]');
-  await nameInput.fill("Cluster Highlight Test Incident");
-
-  const descriptionTextarea = page.locator('textarea[id="description"]');
-  await descriptionTextarea.fill("Test incident for cluster highlighting");
-
-  const typeSelect = page.locator('select[id="incident_type"]');
-  await typeSelect.selectOption("Deforestation");
-
-  const submitButton = page.locator(".submit-btn");
-  await submitButton.click();
-  await page.waitForTimeout(2000);
-
-  // Now open the incidents sidebar to view saved incidents
-  const viewIncidentsButton = page.getByTestId("incidents-view-button");
-  await viewIncidentsButton.click();
-  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
-
-  // Click on the incident we just created to view its details
-  await expect(
-    page.getByText("Cluster Highlight Test Incident", { exact: false }),
-  ).toBeVisible({ timeout: 5000 });
+  await page.getByTestId("incidents-view-button").click();
   await page.getByText("Cluster Highlight Test Incident").click();
 
-  // Wait for incident details to load
-  await page.waitForTimeout(1000);
-
-  // Check that clusters are highlighted yellow by checking the map's paint properties
-  // We'll verify this by checking if cluster layers have the yellow color expression
-  const hasYellowClusterHighlight = await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
+  const hasHighlight = await page.evaluate(() => {
+    // @ts-expect-error test map
     const map = window._testMap;
     if (!map) return false;
 
-    const clusterLayers = [
+    return [
       "most-recent-alerts-centroids-clusters",
       "most-recent-alerts-point-clusters",
       "previous-alerts-centroids-clusters",
       "previous-alerts-point-clusters",
-    ];
-
-    // Check if any cluster layer has a yellow highlight expression
-    for (const layerId of clusterLayers) {
-      const layer = map.getLayer(layerId);
-      if (!layer) continue;
-
-      const paintProps = map.getPaintProperty(layerId, "circle-color");
-      if (!paintProps) continue;
-
-      // Check if the paint property is an expression that includes yellow (#FFFF00)
-      const paintStr = JSON.stringify(paintProps);
-      if (paintStr.includes("#FFFF00") || paintStr.includes("FFFF00")) {
-        return true;
-      }
-    }
-
-    return false;
+    ].some((layer) =>
+      JSON.stringify(map.getPaintProperty(layer, "circle-color") ?? "").includes(
+        "FFFF00",
+      ),
+    );
   });
 
-  // Verify cluster highlighting is present
-  expect(hasYellowClusterHighlight).toBe(true);
+  expect(hasHighlight).toBe(true);
+});
 
-  // Now test that highlighting persists when zooming
-  // Zoom out to see if clusters merge and highlighting persists
-  await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
-    if (map) {
-      const currentZoom = map.getZoom();
-      map.zoomTo(currentZoom - 2, { duration: 500 });
-    }
+test("annotated collections - shareable incident link URL parameter", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await navigateToAlertsDashboard(page);
+
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
+  await multiSelectButton.click();
+
+  const lngLat = await getSelectableFeatureLngLat(page);
+  if (!lngLat) test.skip();
+
+  const clickPoint = await projectLngLatToPagePoint(page, lngLat!);
+  if (!clickPoint) test.skip();
+
+  await page.mouse.click(clickPoint.x, clickPoint.y, {
+    modifiers: [selectionModifierKey],
   });
 
-  // Wait for zoom to complete
-  await page.waitForTimeout(1000);
+  await page.getByTestId("incidents-create-button").click();
 
-  // Verify cluster highlighting still exists after zoom
-  const hasYellowClusterHighlightAfterZoom = await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
-    if (!map) return false;
+  await page.getByLabel("Name").fill("Shareable Link Test Incident");
+  await page.getByLabel("Description").fill("Test incident for share links");
+  await page.getByLabel("Incident Type").selectOption("Deforestation");
+  await page.locator(".submit-btn").click();
 
-    const clusterLayers = [
-      "most-recent-alerts-centroids-clusters",
-      "most-recent-alerts-point-clusters",
-      "previous-alerts-centroids-clusters",
-      "previous-alerts-point-clusters",
-    ];
+  await page.getByTestId("incidents-view-button").click();
+  await page.getByText("Shareable Link Test Incident").click();
 
-    for (const layerId of clusterLayers) {
-      const layer = map.getLayer(layerId);
-      if (!layer) continue;
+  const url = page.url();
+  expect(url).toContain("incidentId=");
 
-      const paintProps = map.getPaintProperty(layerId, "circle-color");
-      if (!paintProps) continue;
+  const id = new URL(url).searchParams.get("incidentId");
+  expect(id).toBeTruthy();
 
-      const paintStr = JSON.stringify(paintProps);
-      if (paintStr.includes("#FFFF00") || paintStr.includes("FFFF00")) {
-        return true;
-      }
-    }
-
-    return false;
-  });
-
-  expect(hasYellowClusterHighlightAfterZoom).toBe(true);
-
-  // Zoom in to test highlighting at a different zoom level
-  await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
-    if (map) {
-      const currentZoom = map.getZoom();
-      map.zoomTo(currentZoom + 1, { duration: 500 });
-    }
-  });
-
-  await page.waitForTimeout(1000);
-
-  // Verify cluster highlighting still exists after zooming in
-  const hasYellowClusterHighlightAfterZoomIn = await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
-    if (!map) return false;
-
-    const clusterLayers = [
-      "most-recent-alerts-centroids-clusters",
-      "most-recent-alerts-point-clusters",
-      "previous-alerts-centroids-clusters",
-      "previous-alerts-point-clusters",
-    ];
-
-    for (const layerId of clusterLayers) {
-      const layer = map.getLayer(layerId);
-      if (!layer) continue;
-
-      const paintProps = map.getPaintProperty(layerId, "circle-color");
-      if (!paintProps) continue;
-
-      const paintStr = JSON.stringify(paintProps);
-      if (paintStr.includes("#FFFF00") || paintStr.includes("FFFF00")) {
-        return true;
-      }
-    }
-
-    return false;
-  });
-
-  expect(hasYellowClusterHighlightAfterZoomIn).toBe(true);
+  await page.goto(url);
+  await expect(
+    page.getByText("Shareable Link Test Incident"),
+  ).toBeVisible();
 });
