@@ -542,3 +542,175 @@ test("annotated collections - view incidents sidebar does not clear selections",
   // Button should be enabled because selections were preserved
   expect(isDisabled).toBeNull();
 });
+
+test("annotated collections - shareable incident link URL parameter", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await navigateToAlertsDashboard(page);
+
+  // First, create an incident so we have one to view
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
+  await multiSelectButton.click();
+  await page.waitForTimeout(500);
+
+  const lngLat = await getSelectableFeatureLngLat(page);
+  if (!lngLat) {
+    test.skip();
+    return;
+  }
+
+  const clickPoint = await projectLngLatToPagePoint(page, lngLat);
+  if (!clickPoint) {
+    test.skip();
+    return;
+  }
+
+  await page.mouse.click(clickPoint.x, clickPoint.y, {
+    modifiers: [selectionModifierKey],
+  });
+
+  const createButton = page.getByTestId("incidents-create-button");
+  await expect(createButton).toBeEnabled({ timeout: 5000 });
+  await createButton.click();
+
+  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
+  await expect(
+    page.getByRole("heading", { name: /create new incident/i }),
+  ).toBeVisible();
+
+  const nameInput = page.locator('input[id="name"]');
+  await nameInput.fill("Shareable Link Test Incident");
+
+  const descriptionTextarea = page.locator('textarea[id="description"]');
+  await descriptionTextarea.fill("Test incident for shareable links");
+
+  const typeSelect = page.locator('select[id="incident_type"]');
+  await typeSelect.selectOption("Deforestation");
+
+  const submitButton = page.locator(".submit-btn");
+  await submitButton.click();
+  await page.waitForTimeout(2000);
+
+  // Now open the incidents sidebar to view saved incidents
+  const viewIncidentsButton = page.getByTestId("incidents-view-button");
+  await viewIncidentsButton.click();
+  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
+
+  // Get the current URL before clicking on the incident
+  const urlBefore = page.url();
+  expect(urlBefore).not.toContain("incidentId=");
+
+  // Click on the incident we just created to view its details
+  await expect(
+    page.getByText("Shareable Link Test Incident", { exact: false }),
+  ).toBeVisible({ timeout: 5000 });
+  await page.getByText("Shareable Link Test Incident").click();
+
+  // Wait for incident details to load
+  await page.waitForTimeout(1000);
+
+  // Verify that the URL now contains the incidentId parameter
+  const urlAfter = page.url();
+  expect(urlAfter).toContain("incidentId=");
+
+  // Extract the incidentId from the URL
+  const urlObj = new URL(urlAfter);
+  const incidentId = urlObj.searchParams.get("incidentId");
+  expect(incidentId).toBeTruthy();
+  expect(incidentId).not.toBe("");
+
+  // Verify that navigating directly to the URL with incidentId opens the incident
+  await page.goto(urlAfter);
+  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
+  await expect(
+    page.getByText("Shareable Link Test Incident", { exact: false }),
+  ).toBeVisible({ timeout: 5000 });
+});
+
+test("annotated collections - copy incident link to clipboard", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await navigateToAlertsDashboard(page);
+
+  // First, create an incident so we have one to view
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
+  await multiSelectButton.click();
+  await page.waitForTimeout(500);
+
+  const lngLat = await getSelectableFeatureLngLat(page);
+  if (!lngLat) {
+    test.skip();
+    return;
+  }
+
+  const clickPoint = await projectLngLatToPagePoint(page, lngLat);
+  if (!clickPoint) {
+    test.skip();
+    return;
+  }
+
+  await page.mouse.click(clickPoint.x, clickPoint.y, {
+    modifiers: [selectionModifierKey],
+  });
+
+  const createButton = page.getByTestId("incidents-create-button");
+  await expect(createButton).toBeEnabled({ timeout: 5000 });
+  await createButton.click();
+
+  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
+  await expect(
+    page.getByRole("heading", { name: /create new incident/i }),
+  ).toBeVisible();
+
+  const nameInput = page.locator('input[id="name"]');
+  await nameInput.fill("Copy Link Test Incident");
+
+  const descriptionTextarea = page.locator('textarea[id="description"]');
+  await descriptionTextarea.fill("Test incident for copy link");
+
+  const typeSelect = page.locator('select[id="incident_type"]');
+  await typeSelect.selectOption("Deforestation");
+
+  const submitButton = page.locator(".submit-btn");
+  await submitButton.click();
+  await page.waitForTimeout(2000);
+
+  // Now open the incidents sidebar to view saved incidents
+  const viewIncidentsButton = page.getByTestId("incidents-view-button");
+  await viewIncidentsButton.click();
+  await page.waitForSelector(".incidents-sidebar", { timeout: 5000 });
+
+  // Click on the incident we just created to view its details
+  await expect(
+    page.getByText("Copy Link Test Incident", { exact: false }),
+  ).toBeVisible({ timeout: 5000 });
+  await page.getByText("Copy Link Test Incident").click();
+
+  // Wait for incident details to load
+  await page.waitForTimeout(1000);
+
+  // Grant clipboard permissions (required for clipboard API in tests)
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+
+  // Get the current URL (which should contain incidentId)
+  const currentUrl = page.url();
+  expect(currentUrl).toContain("incidentId=");
+
+  // Click the copy link button
+  const copyLinkButton = page.getByTestId("copy-incident-link-button");
+  await copyLinkButton.click();
+
+  // Wait a moment for the copy operation
+  await page.waitForTimeout(500);
+
+  // Verify the button shows "Copied" state
+  await expect(copyLinkButton).toContainText(/copied/i, { timeout: 2000 });
+
+  // Verify the clipboard contains the URL
+  const clipboardText = await page.evaluate(async () => {
+    return await navigator.clipboard.readText();
+  });
+
+  expect(clipboardText).toBe(currentUrl);
+  expect(clipboardText).toContain("incidentId=");
+});

@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { Copy, Check } from "lucide-vue-next";
+import { useCopyLink } from "@/utils/copyLink";
 import type {
   AnnotatedCollection,
   CollectionEntry,
@@ -49,6 +51,7 @@ const emit = defineEmits<{
 }>();
 
 const showCreateForm = ref(false);
+const { showCopied, copyLink } = useCopyLink();
 const formData = ref({
   name: "",
   description: "",
@@ -239,6 +242,27 @@ const handleClose = () => {
                 selectedIncidentData.impact_description
               }}</span>
             </div>
+          </div>
+
+          <!-- Copy link section -->
+          <div
+            class="mt-6 pt-4 border-t border-gray-200"
+            data-testid="copy-link-section"
+          >
+            <button
+              class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
+              data-testid="copy-incident-link-button"
+              @click="copyLink"
+            >
+              <component
+                :is="showCopied ? Check : Copy"
+                class="w-4 h-4"
+                :class="{ 'text-green-500': showCopied }"
+              />
+              <span>{{
+                showCopied ? $t("copied") : $t("incidents.copyLink")
+              }}</span>
+            </button>
           </div>
 
           <div class="entries-section">

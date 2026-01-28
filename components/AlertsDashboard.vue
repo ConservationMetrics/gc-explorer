@@ -112,7 +112,7 @@ const {
   removeSourceFromSelection,
   clearSelectedSources,
   handleMultiSelectFeature,
-} = useIncidents(map, route, apiKey);
+} = useIncidents(map, route, router, apiKey);
 
 // Use feature selection composable
 const {
@@ -339,6 +339,12 @@ onMounted(() => {
 
       // Load incidents on dashboard initialization
       await fetchIncidents();
+
+      // Check for incidentId in URL and open that incident if it exists
+      const incidentId = route.query.incidentId as string;
+      if (incidentId) {
+        openIncidentDetails(incidentId);
+      }
 
       controlsAdded = true;
     } else {
