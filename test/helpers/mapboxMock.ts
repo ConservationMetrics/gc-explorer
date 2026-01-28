@@ -47,6 +47,17 @@ export const mockMap = {
   flyTo: vi.fn(),
   fitBounds: vi.fn(),
   remove: vi.fn(),
+  dragRotate: {
+    enable: vi.fn(),
+    disable: vi.fn(),
+  },
+  dragPan: {
+    enable: vi.fn(),
+    disable: vi.fn(),
+  },
+  getCanvasContainer: vi.fn(() => document.createElement("div")),
+  project: vi.fn(() => ({ x: 0, y: 0 })),
+  fire: vi.fn(),
 };
 
 export const Map = vi.fn(() => mockMap);

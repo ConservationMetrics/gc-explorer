@@ -5,8 +5,29 @@
     {
       "idx": 0,
       "version": "7",
+      "when": 1759829184093,
+      "tag": "0000_petite_dakota_north",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
       "when": 1704067200000,
       "tag": "0001_rename_config_to_view_config",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768207769005,
+      "tag": "0002_standardize_mapeo_data_primary_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1738000000000,
+      "tag": "0003_make_created_by_optional",
       "breakpoints": true
     }
   ]
