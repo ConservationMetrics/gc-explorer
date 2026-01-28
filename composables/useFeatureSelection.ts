@@ -1,7 +1,6 @@
 import { ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
 import type { RouteLocationNormalizedLoaded, Router } from "vue-router";
-import mapboxgl from "mapbox-gl";
+import type mapboxgl from "mapbox-gl";
 import { along, length, lineString } from "@turf/turf";
 import type { Feature } from "geojson";
 import type { AlertsData } from "@/types/types";

@@ -106,7 +106,7 @@ async function navigateToAlertsDashboard(page: Page) {
   await page.locator("canvas.mapboxgl-canvas").waitFor();
 
   await page.waitForFunction(() => {
-    // @ts-expect-error test map
+    // @ts-expect-error _testMap is exposed for E2E testing only
     const map = window._testMap;
     return map?.isStyleLoaded() && map.loaded();
   });
@@ -182,7 +182,7 @@ test("annotated collections - cluster highlighting when viewing incident details
   await page.getByText("Cluster Highlight Test Incident").click();
 
   const hasHighlight = await page.evaluate(() => {
-    // @ts-expect-error test map
+    // @ts-expect-error _testMap is exposed for E2E testing only
     const map = window._testMap;
     if (!map) return false;
 

@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  titleToSnakeCase,
-  snakeToTitleCase,
-  titleToCamelCase,
-} from "@/utils/index";
+import { snakeToTitleCase, titleToCamelCase } from "@/utils/index";
 import { Copy, Check } from "lucide-vue-next";
 import { useCopyLink } from "@/utils/copyLink";
 import type {
