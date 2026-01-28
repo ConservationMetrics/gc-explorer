@@ -3,6 +3,7 @@ import MediaFile from "@/components/shared/MediaFile.vue";
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import { Copy, Check } from "lucide-vue-next";
 import AlertTooltip from "@/components/alerts/AlertTooltip.vue";
+import { useCopyLink } from "@/utils/copyLink";
 
 import type {
   AllowedFileExtensions,
@@ -23,15 +24,7 @@ const props = defineProps<{
   mediaBasePathAlerts?: string;
 }>();
 
-const showCopied = ref(false);
-
-const copyLink = () => {
-  navigator.clipboard.writeText(window.location.href);
-  showCopied.value = true;
-  setTimeout(() => {
-    showCopied.value = false;
-  }, 2000);
-};
+const { showCopied, copyLink } = useCopyLink();
 
 /** Sort feature object by key */
 const sortedFeature = computed(() => {
