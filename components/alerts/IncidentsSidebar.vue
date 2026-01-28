@@ -245,7 +245,7 @@ const handleClose = () => {
                 {{ new Date(selectedIncident.created_at).toLocaleDateString() }}
               </span>
             </div>
-            <div class="meta-row">
+            <div v-if="selectedIncident.created_by" class="meta-row">
               <span class="meta-label">{{ $t("incidents.by") }}:</span>
               <span class="meta-value">{{ selectedIncident.created_by }}</span>
             </div>
@@ -500,7 +500,9 @@ const handleClose = () => {
                   >{{ $t("incidents.created") }}:
                   {{ new Date(incident.created_at).toLocaleDateString() }}</span
                 >
-                <span>{{ $t("incidents.by") }}: {{ incident.created_by }}</span>
+                <span v-if="incident.created_by"
+                  >{{ $t("incidents.by") }}: {{ incident.created_by }}</span
+                >
               </div>
             </div>
 

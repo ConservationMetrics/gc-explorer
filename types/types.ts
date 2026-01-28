@@ -205,7 +205,7 @@ export interface AnnotatedCollection {
   name: string;
   description?: string;
   collection_type: "incident" | "wildlife_sighting" | "research_plot";
-  created_by: string;
+  created_by?: string; // Optional: only set when auth0 is available
   created_at: string;
   updated_at: string;
   metadata: Record<string, string | number | boolean>;
