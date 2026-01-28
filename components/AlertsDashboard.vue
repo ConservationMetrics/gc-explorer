@@ -112,6 +112,7 @@ const {
   removeSourceFromSelection,
   clearSelectedSources,
   handleMultiSelectFeature,
+  handleIncidentClusterZoom,
 } = useIncidents(map, route, router, apiKey);
 
 // Use feature selection composable
