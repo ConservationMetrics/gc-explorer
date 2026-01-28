@@ -852,6 +852,9 @@ const addAlertsData = async () => {
         }
       }, 100);
     }
+
+    // Also handle incident cluster highlighting if there's a selected incident
+    handleIncidentClusterZoom();
   });
 };
 
