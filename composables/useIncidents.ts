@@ -384,9 +384,7 @@ export const useIncidents = (
     multiSelectMode.value = false;
 
     if (boundingBoxMode.value) {
-      console.log("Enabling bounding box mode");
       if (map.value) {
-        console.log("Disabling drag rotate");
         map.value.dragRotate.disable();
       }
       setupCustomBoundingBox();
@@ -1152,7 +1150,6 @@ export const useIncidents = (
    * 2. Highlighted sources from bounding box/multi-select
    */
   const handleIncidentClusterZoom = async () => {
-    console.log("handleIncidentClusterZoom");
     if (!map.value) return;
 
     // Check if we have clusters to re-highlight
@@ -1160,18 +1157,8 @@ export const useIncidents = (
     const hasSelectedIncident =
       selectedIncident.value && selectedIncidentEntries.value.length > 0;
     const hasHighlightedSources = highlightedSources.value.length > 0;
-
-    console.log("selectedIncident", selectedIncident.value);
-    console.log("selectedIncidentEntries", selectedIncidentEntries.value);
-    console.log("highlightedSources", highlightedSources.value);
-    console.log("incidentClusterIds", incidentClusterIds.value);
-
     // If we have a selected incident, use that (for viewing incident details)
     if (hasSelectedIncident) {
-      console.log(
-        "Re-highlighting incident clusters on zoom (from selected incident)",
-        incidentClusterIds.value,
-      );
       // Clear old cluster IDs before re-finding (clusters may have merged with new IDs)
       incidentClusterIds.value.clear();
       // Small delay to ensure clusters have rendered after zoom
@@ -1183,11 +1170,6 @@ export const useIncidents = (
 
     // If we have highlighted sources (from bounding box/multi-select), re-find clusters for those
     if (hasHighlightedSources && hasClusterIds) {
-      console.log(
-        "Re-highlighting incident clusters on zoom (from highlighted sources)",
-        incidentClusterIds.value,
-      );
-
       // Clear old cluster IDs - they're invalid after zoom (clusters merge/get new IDs)
       const sourcesToCheck = new Set<string>();
 
