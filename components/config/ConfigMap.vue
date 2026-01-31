@@ -219,10 +219,11 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
         <p class="text-sm text-gray-500 mb-4">
           {{ $t("basemapsDescription") }}
         </p>
-        <div class="space-y-4">
+        <div class="space-y-4" data-testid="basemaps-container">
           <div
             v-for="(basemap, index) in basemaps"
             :key="index"
+            :data-testid="`basemap-item-${index}`"
             class="p-4 border-2 rounded-lg transition-colors"
             :class="
               index === 0
@@ -288,6 +289,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
               <button
                 v-if="index !== 0"
                 type="button"
+                :data-testid="`basemap-remove-button-${index}`"
                 class="flex-shrink-0 px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                 @click="removeBasemap(index)"
               >
@@ -297,6 +299,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
           </div>
           <button
             type="button"
+            data-testid="basemap-add-button"
             class="w-full px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="!canAddBasemap"
             @click="addBasemap"

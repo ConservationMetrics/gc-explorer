@@ -194,10 +194,21 @@ useHead({
       </div>
       <div
         v-if="showModal"
+        data-testid="remove-confirmation-modal"
         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
       >
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-          <p class="mb-4 text-gray-700">{{ modalMessage }}</p>
+        <div
+          data-testid="remove-confirmation-modal-content"
+          class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+        >
+          <!-- eslint-disable vue/no-v-html -->
+          <!-- This is intentional to allow HTML rendering in the modal message -->
+          <p
+            data-testid="remove-confirmation-modal-message"
+            class="mb-4 text-gray-700"
+            v-html="modalMessage"
+          ></p>
+          <!-- eslint-enable vue/no-v-html -->
           <div v-if="showModalButtons" class="flex gap-3 justify-end">
             <button
               class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
@@ -220,10 +231,12 @@ useHead({
     <ClientOnly>
       <div
         v-if="showSavedModal"
+        data-testid="saved-modal"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
         @click="showSavedModal = false"
       >
         <div
+          data-testid="saved-modal-content"
           class="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4 text-center"
           @click.stop
         >

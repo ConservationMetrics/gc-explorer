@@ -10,7 +10,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     public: { authStrategy },
   } = useRuntimeConfig();
   const router = useRouter();
-  console.log("[TEST] oauth.global middleware called", user, to.path);
+
   // In order to redirect the user back to the page they were on when unauthenticated, we need to store the redirect url in session storage
   // We use the window object to get where the user was before they were redirected to the login page
   // Store it in the session storage and in the Auth0 component we grab and redirect

@@ -338,7 +338,8 @@ onMounted(() => {
       if (isOnlyLineStringData() !== true) {
         calculateHectares.value = true;
       }
-      showSlider.value = true;
+      // Only show slider if there are date options
+      showSlider.value = dateOptions.value && dateOptions.value.length > 0;
 
       // Check for alertId or mapeoDocId in URL and select the corresponding feature
       const alertId = route.query.alertId as string;

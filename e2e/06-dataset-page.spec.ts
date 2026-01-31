@@ -11,7 +11,7 @@ test("dataset page - displays header, description, and view cards", async ({
   await page.waitForSelector("main", { timeout: 15000 });
   await expect(
     page.getByRole("heading", {
-      name: /available views|available dataset views/i,
+      name: /available dataset views/i,
     }),
   ).toBeVisible({ timeout: 15000 });
 
@@ -30,11 +30,9 @@ test("dataset page - displays header, description, and view cards", async ({
 
   // 5. Wait for navigation to dataset page
   await page.waitForURL(/\/dataset\/\w+/, { timeout: 15000 });
-
-  // 6. Wait for dataset page to load
   await page.waitForLoadState("networkidle");
 
-  // 7. Verify AppHeader is visible (use first() to avoid strict mode violation)
+  // 6. Verify AppHeader is visible
   const logo = page.locator('img[alt="Guardian Connector Explorer"]').first();
   await expect(logo).toBeVisible();
 
@@ -43,19 +41,23 @@ test("dataset page - displays header, description, and view cards", async ({
     .first();
   await expect(guardianConnectorText).toBeVisible();
 
-  /* 8. Verify dataset name is displayed (either in header image overlay or fallback header) */
-  const datasetName = page
-    .locator("h1")
-    .filter({ hasText: /seed_survey_data|bcmform_responses|fake_alerts/i });
-  const datasetNameCount = await datasetName.count();
-  if (datasetNameCount > 0) {
-    await expect(datasetName.first()).toBeVisible({ timeout: 15000 });
-  }
+  // 7. Verify breadcrumb link back to index
+  const breadcrumbLink = page.locator('a[href="/"]').filter({
+    hasText: /available dataset views/i,
+  });
+  await expect(breadcrumbLink).toBeVisible();
+
+  // 8. Verify dataset name is displayed (either in header image overlay or fallback header)
+  const datasetName = page.locator("h1");
+  await expect(datasetName.first()).toBeVisible({ timeout: 15000 });
 
   // 9. Verify at least one view card is visible (map, gallery, or alerts)
-  const viewCards = page.locator(
-    "a[href*='/map/'], a[href*='/gallery/'], a[href*='/alerts/']",
+  const viewCardsContainer = page.locator(
+    "[data-testid='view-cards-container']",
   );
+  await expect(viewCardsContainer).toBeVisible();
+
+  const viewCards = page.locator("[data-testid^='view-card-']");
   const cardCount = await viewCards.count();
   expect(cardCount).toBeGreaterThan(0);
 
@@ -64,14 +66,14 @@ test("dataset page - displays header, description, and view cards", async ({
   await expect(firstCard).toBeVisible();
 
   // Check for icon (SVG)
-  const icon = firstCard.locator("svg");
+  const icon = firstCard.locator("svg").first();
   await expect(icon).toBeVisible();
 
-  // Check for title
+  // Check for title (h3)
   const cardTitle = firstCard.locator("h3");
   await expect(cardTitle).toBeVisible();
 
-  // Check for arrow icon
+  // Check for arrow icon (last SVG in card)
   const arrowIcon = firstCard.locator("svg").last();
   await expect(arrowIcon).toBeVisible();
 });
@@ -92,7 +94,7 @@ test("dataset page - view cards link to correct pages", async ({
   }
 
   // 3. Find the alerts view card and verify it links to /alerts/fake_alerts
-  const alertsCard = page.locator("a[href='/alerts/fake_alerts']");
+  const alertsCard = page.locator("[data-testid='view-card-alerts']");
   await expect(alertsCard).toBeVisible();
 
   // 4. Click the alerts card
@@ -112,7 +114,7 @@ test("dataset page - displays description when available", async ({
 
   // 2. Wait for page to load
   await expect(
-    page.getByRole("heading", { name: /available views/i }),
+    page.getByRole("heading", { name: /available dataset views/i }),
   ).toBeVisible({ timeout: 10000 });
 
   // 3. Click first "Open Dataset View" link
@@ -122,19 +124,36 @@ test("dataset page - displays description when available", async ({
   await openProjectButton.click();
 
   // 4. Wait for dataset page to load
-  await page.waitForURL(/\/dataset\/\w+/);
+  await page.waitForURL(/\/dataset\/\w+/, { timeout: 10000 });
+  await page.waitForLoadState("networkidle");
 
-  // 5. Check if description is present (it may or may not be configured)
-  const description = page.locator("p").filter({ hasText: /.+/ });
+  // 5. Wait for main content to be visible
+  await page.waitForSelector("main", { timeout: 10000 });
+
+  // 6. Check if description is present (it may or may not be configured)
+  // Description can be in a <p> tag or in the fallback message div
+  const description = page
+    .locator("p")
+    .filter({ hasText: /.+/ })
+    .filter({ hasNotText: /no description/i });
   const descriptionCount = await description.count();
 
+  // 7. Check for fallback message if no description
+  const fallbackMessage = page.locator("*").filter({
+    hasText: /no description provided yet/i,
+  });
+  const hasFallback = (await fallbackMessage.count()) > 0;
+
   /* Description is optional, so we just verify the page structure is correct
-   * If description exists, it should be visible
+   * Either description exists OR fallback message exists
    */
+  expect(descriptionCount > 0 || hasFallback).toBe(true);
+
   if (descriptionCount > 0) {
     const firstDescription = description.first();
     const text = await firstDescription.textContent();
     expect(text?.trim().length).toBeGreaterThan(0);
+    await expect(firstDescription).toBeVisible();
   }
 });
 
@@ -154,12 +173,12 @@ test("dataset page - only shows enabled views", async ({
   }
 
   // 3. Verify only alerts view card is shown (fake_alerts only has alerts enabled)
-  const alertsCard = page.locator("a[href='/alerts/fake_alerts']");
+  const alertsCard = page.locator("[data-testid='view-card-alerts']");
   await expect(alertsCard).toBeVisible();
 
   // 4. Verify map and gallery cards are NOT shown for this dataset
-  const mapCard = page.locator("a[href='/map/fake_alerts']");
-  const galleryCard = page.locator("a[href='/gallery/fake_alerts']");
+  const mapCard = page.locator("[data-testid='view-card-map']");
+  const galleryCard = page.locator("[data-testid='view-card-gallery']");
 
   const mapCardCount = await mapCard.count();
   const galleryCardCount = await galleryCard.count();
@@ -190,22 +209,31 @@ test("dataset page - index page pills are smaller and not clickable", async ({
 
   // 2. Wait for page to load
   await expect(
-    page.getByRole("heading", { name: /available views/i }),
+    page.getByRole("heading", { name: /available dataset views/i }),
   ).toBeVisible({ timeout: 10000 });
 
-  // 3. Find view pills (they should be spans, not links)
-  const pills = page.locator("span").filter({ hasText: /map|gallery|alerts/i });
+  // 3. Wait for dataset cards to render
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  // 4. Find view pills using test ID (they should be spans, not links)
+  const pills = page.locator("[data-testid^='view-tag-']");
   const pillCount = await pills.count();
   expect(pillCount).toBeGreaterThan(0);
 
-  // 4. Verify pills are smaller (text-xs class)
+  // 5. Verify pills are smaller (text-xs class)
   const firstPill = pills.first();
   const classes = await firstPill.getAttribute("class");
   expect(classes).toContain("text-xs");
 
-  // 5. Verify "Open Dataset View" link is visible and clickable
+  // 6. Verify pills are spans (not clickable links)
+  const tagName = await firstPill.evaluate((el) => el.tagName.toLowerCase());
+  expect(tagName).toBe("span");
+
+  // 7. Verify "Open Dataset View" link is visible and clickable
   const openProjectButton = page
-    .getByRole("link", { name: /open dataset view/i })
+    .locator("[data-testid='open-dataset-view-link']")
     .first();
   await expect(openProjectButton).toBeVisible();
 
@@ -229,10 +257,14 @@ test("dataset page - displays header image or fallback header", async ({
   }
 
   // 3. Check if header image exists or fallback header is shown
-  const headerImage = page.locator("img[alt*='fake']");
-  const fallbackHeader = page.locator("div.bg-gradient-to-r.from-purple-100");
+  const headerWithImage = page.locator(
+    "[data-testid='dataset-header-with-image']",
+  );
+  const fallbackHeader = page.locator(
+    "[data-testid='dataset-header-fallback']",
+  );
 
-  const hasHeaderImage = (await headerImage.count()) > 0;
+  const hasHeaderImage = (await headerWithImage.count()) > 0;
   const hasFallbackHeader = (await fallbackHeader.count()) > 0;
 
   // Either header image or fallback header should be present

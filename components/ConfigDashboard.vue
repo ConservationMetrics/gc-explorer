@@ -289,13 +289,20 @@ watch(tableNameToAdd, (newVal) => {
     </div>
     <div
       v-if="showModal"
+      data-testid="config-modal"
       class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
     >
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <p class="mb-4 text-gray-700">{{ modalMessage }}</p>
+      <div
+        data-testid="config-modal-content"
+        class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+      >
+        <p data-testid="config-modal-message" class="mb-4 text-gray-700">
+          {{ modalMessage }}
+        </p>
         <div v-if="showModalDropdown" class="mb-4">
           <select
             v-model="tableNameToAdd"
+            data-testid="config-modal-table-select"
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           >
             <option v-for="table in tableNames" :key="table" :value="table">
@@ -305,6 +312,7 @@ watch(tableNameToAdd, (newVal) => {
         </div>
         <div v-if="showModalButtons" class="flex gap-3 justify-end">
           <button
+            data-testid="config-modal-confirm-button"
             :disabled="confirmButtonDisabled"
             class="px-4 py-2 font-medium rounded-lg transition-colors"
             :class="{
@@ -320,6 +328,7 @@ watch(tableNameToAdd, (newVal) => {
             {{ $t("confirm") }}
           </button>
           <button
+            data-testid="config-modal-cancel-button"
             class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
             @click="handleCancelButton"
           >
