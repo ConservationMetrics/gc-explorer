@@ -2,23 +2,35 @@ import { ref } from "vue";
 
 /**
  * Utility function to copy the current page URL to clipboard
- * Returns a promise that resolves when the copy operation completes
+ * Optionally excludes specified query parameters from the URL
+ * @param excludeParams - Array of query parameter names to exclude from the URL
  * @returns Promise<void>
  */
-const copyLinkToClipboard = async (): Promise<void> => {
-  await navigator.clipboard.writeText(window.location.href);
+const copyLinkToClipboard = async (excludeParams?: string[]): Promise<void> => {
+  let url = window.location.href;
+
+  if (excludeParams && excludeParams.length > 0) {
+    const urlObj = new URL(url);
+    excludeParams.forEach((param) => {
+      urlObj.searchParams.delete(param);
+    });
+    url = urlObj.toString();
+  }
+
+  await navigator.clipboard.writeText(url);
 };
 
 /**
  * Composable for copying the current page URL to clipboard.
  * Manages a `showCopied` ref to indicate success.
+ * @param excludeParams - Optional array of query parameter names to exclude from the copied URL
  * @returns {object} An object containing the `showCopied` ref and the `copyLink` function.
  */
-export const useCopyLink = () => {
+export const useCopyLink = (excludeParams?: string[]) => {
   const showCopied = ref(false);
 
   const copyLink = async () => {
-    await copyLinkToClipboard();
+    await copyLinkToClipboard(excludeParams);
     showCopied.value = true;
     setTimeout(() => {
       showCopied.value = false;

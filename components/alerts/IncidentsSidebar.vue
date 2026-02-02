@@ -87,7 +87,7 @@ const emit = defineEmits<{
 }>();
 
 const showCreateForm = ref(false);
-const { showCopied, copyLink } = useCopyLink();
+const { showCopied, copyLink } = useCopyLink(["alertId", "mapeoDocId"]);
 const formData = ref({
   name: "",
   description: "",
