@@ -1,4 +1,4 @@
-import { sql, eq, and } from "drizzle-orm";
+import { sql, eq, and, desc } from "drizzle-orm";
 import type {
   AnnotatedCollection,
   Incident,
@@ -362,7 +362,7 @@ export const listAnnotatedCollections = async (filters?: {
       .from(annotatedCollections)
       .leftJoin(incidents, eq(annotatedCollections.id, incidents.collectionId))
       .where(eq(incidents.status, filters.status))
-      .orderBy(annotatedCollections.createdAt)
+      .orderBy(desc(annotatedCollections.createdAt))
       .limit(filters?.limit || 20)
       .offset(filters?.offset || 0);
 
@@ -402,7 +402,7 @@ export const listAnnotatedCollections = async (filters?: {
       .select()
       .from(annotatedCollections)
       .where(whereCondition)
-      .orderBy(annotatedCollections.createdAt)
+      .orderBy(desc(annotatedCollections.createdAt))
       .limit(filters?.limit || 20)
       .offset(filters?.offset || 0);
 
