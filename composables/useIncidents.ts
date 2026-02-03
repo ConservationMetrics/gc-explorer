@@ -73,8 +73,8 @@ export const useIncidents = (
     Array<{ featureId: string | number; layerId: string }>
   >([]);
 
-  // Cluster highlighting state for bounding box selections
-  const incidentClusterIds = ref<Map<string, number | string>>(new Map()); // Map of sourceName -> clusterId
+  // Cluster highlighting state: multiple clusters per source (e.g. bbox over many clusters)
+  const incidentClusterIds = ref<Map<string, Set<number | string>>>(new Map()); // sourceName -> Set of clusterIds
 
   // Incident details cache
   const incidentDetailsCache = new Map<string, IncidentDetailsResponse>();
@@ -690,8 +690,11 @@ export const useIncidents = (
               allFeatures.push(leafFeature as (typeof allFeatures)[0]);
             });
 
-            // Store cluster ID for highlighting
-            incidentClusterIds.value.set(sourceName, clusterId);
+            // Add cluster ID to set so multiple clusters can be highlighted per source
+            if (!incidentClusterIds.value.has(sourceName)) {
+              incidentClusterIds.value.set(sourceName, new Set());
+            }
+            incidentClusterIds.value.get(sourceName)!.add(clusterId);
           } catch (error) {
             console.warn(
               `Error getting cluster leaves for cluster ${clusterId}:`,
@@ -997,18 +1000,17 @@ export const useIncidents = (
 
     clusterLayers.forEach(({ clustersLayer, source, color }) => {
       if (map.value!.getLayer(clustersLayer)) {
-        const clusterId = incidentClusterIds.value.get(source);
+        const clusterIdSet = incidentClusterIds.value.get(source);
 
-        // If no cluster is selected for this source, reset to default color
-        // Otherwise, use conditional expression to highlight the selected cluster
-        if (clusterId === undefined) {
-          // Explicitly reset to default color when no cluster is selected
+        // If no clusters selected for this source, reset to default color
+        if (!clusterIdSet || clusterIdSet.size === 0) {
           map.value!.setPaintProperty(clustersLayer, "circle-color", color);
         } else {
-          // Use conditional expression to highlight the selected cluster
+          // Highlight any cluster whose ID is in the set (persists across zoom)
+          const idsArray = Array.from(clusterIdSet);
           const paintExpression: mapboxgl.ExpressionSpecification = [
             "case",
-            ["==", ["get", "cluster_id"], clusterId],
+            ["in", ["get", "cluster_id"], ["literal", idsArray]],
             "#FFFF00", // Yellow if this cluster contains selected features
             color, // Default color otherwise
           ];
@@ -1119,12 +1121,13 @@ export const useIncidents = (
         );
 
         if (containsAlert) {
-          // Store the cluster ID so updateIncidentClusterHighlight can use it
-          // This will be the current merged cluster at this zoom level
-          incidentClusterIds.value.set(sourceName, clusterId);
+          // Add cluster ID to set so multiple clusters stay highlighted across zoom
+          if (!incidentClusterIds.value.has(sourceName)) {
+            incidentClusterIds.value.set(sourceName, new Set());
+          }
+          incidentClusterIds.value.get(sourceName)!.add(clusterId);
           foundCluster = true;
-          // Don't break - continue checking in case there are multiple clusters
-          // (though typically an alertID should only be in one cluster)
+          // Don't break - same alert can appear in cluster leaves if duplicated
         }
       } catch {
         continue;
@@ -1168,24 +1171,15 @@ export const useIncidents = (
       return;
     }
 
-    // If we have highlighted sources (from bounding box/multi-select), re-find clusters for those
-    if (hasHighlightedSources && hasClusterIds) {
-      // Clear old cluster IDs - they're invalid after zoom (clusters merge/get new IDs)
-      const sourcesToCheck = new Set<string>();
-
-      // Collect all sources that had clusters
-      incidentClusterIds.value.forEach((_, sourceName) => {
-        sourcesToCheck.add(sourceName);
-      });
-
+    // If we have highlighted sources (from bounding box/multi-select), re-find clusters so selection persists across zoom
+    if (hasHighlightedSources) {
+      // Clear old cluster IDs - they're invalid after zoom (clusters merge and get new IDs)
       incidentClusterIds.value.clear();
 
-      // Re-find clusters for each highlighted source
-      // Group highlighted sources by their source layer
-      const sourcesByLayer = new Map<string, string[]>(); // layerId -> alertIDs
+      // Group highlighted sources by cluster source layer (point/centroids)
+      const sourcesByLayer = new Map<string, string[]>(); // sourceName -> alertIDs
 
       highlightedSources.value.forEach(({ featureId, layerId }) => {
-        // Determine which cluster source to check based on layerId
         let clusterSourceName: string | null = null;
 
         if (layerId.includes("-point")) {
@@ -1196,7 +1190,6 @@ export const useIncidents = (
           layerId.includes("-polygon") ||
           layerId.includes("-linestring")
         ) {
-          // For geometry layers, check the corresponding centroids layer
           const prefix = layerId.replace(
             /-polygon|-linestring|-multipolygon/i,
             "",
@@ -1204,24 +1197,22 @@ export const useIncidents = (
           clusterSourceName = `${prefix}-centroids`;
         }
 
-        if (clusterSourceName && sourcesToCheck.has(clusterSourceName)) {
+        if (clusterSourceName) {
           if (!sourcesByLayer.has(clusterSourceName)) {
             sourcesByLayer.set(clusterSourceName, []);
           }
-          // featureId is the alertID for centroids, or we need to get it from the feature
           const alertId =
             typeof featureId === "string" ? featureId : String(featureId);
           sourcesByLayer.get(clusterSourceName)!.push(alertId);
         }
       });
 
-      // Re-find clusters for each source
+      // Re-find clusters for each source: every cluster that contains any selected point must stay highlighted
       const rehighlightPromises: Promise<void>[] = [];
       sourcesByLayer.forEach((alertIds, sourceName) => {
-        // Re-find cluster for the first alertID in each source (they should all be in the same cluster)
-        if (alertIds.length > 0) {
+        for (const alertId of alertIds) {
           rehighlightPromises.push(
-            highlightClusterForAlertId(alertIds[0], sourceName),
+            highlightClusterForAlertId(alertId, sourceName),
           );
         }
       });
