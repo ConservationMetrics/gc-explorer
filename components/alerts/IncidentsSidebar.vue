@@ -137,6 +137,10 @@ const handleSubmit = () => {
   if (!formData.value.name.trim()) {
     return;
   }
+  // Prevent creating an incident without selected alerts (no entries)
+  if (props.selectedSources.length === 0) {
+    return;
+  }
 
   emit("createIncident", {
     name: formData.value.name,
@@ -438,7 +442,11 @@ const handleClose = () => {
             </div>
 
             <div class="form-actions">
-              <button type="submit" :disabled="isCreating" class="submit-btn">
+              <button
+                type="submit"
+                :disabled="isCreating || selectedSources.length === 0"
+                class="submit-btn"
+              >
                 {{
                   isCreating
                     ? $t("incidents.creating")

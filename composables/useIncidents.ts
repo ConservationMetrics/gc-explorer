@@ -261,6 +261,11 @@ export const useIncidents = (
     impact_description?: string;
     supporting_evidence?: Record<string, unknown>;
   }) => {
+    if (selectedSources.value.length === 0) {
+      throw new Error(
+        "Cannot create incident without selected alerts. Select at least one alert.",
+      );
+    }
     isCreatingIncident.value = true;
     try {
       const response = await $fetch<{ incident: AnnotatedCollection }>(
