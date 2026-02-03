@@ -237,8 +237,10 @@ export const useIncidents = (
       clearSourceHighlighting();
       highlightIncidentEntries(response.entries || []);
 
-      // Add incidentId to URL query params for shareable links
+      // Add incidentId to URL; remove alert/mapeo params so address bar matches "copy link to incident"
       const query = { ...route.query };
+      delete query.alertId;
+      delete query.mapeoDocId;
       query.incidentId = incidentId;
       router.replace({ query });
     } catch (error) {

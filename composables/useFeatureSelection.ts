@@ -287,13 +287,11 @@ export function useFeatureSelection(
       ? featureObject.alertID
       : feature.id;
 
-    // Update URL with alertId or mapeoDocId
+    // Update URL with alertId or mapeoDocId; remove incidentId so address bar matches "copy link to alert"
     const query = { ...route.query };
-    // Remove any existing feature IDs first
     delete query.alertId;
     delete query.mapeoDocId;
-
-    // Add the new feature ID
+    delete query.incidentId;
     if (featureObject.alertID) {
       query.alertId = featureObject.alertID;
       isMapeo.value = false;
@@ -301,7 +299,6 @@ export function useFeatureSelection(
       query.mapeoDocId = featureObject.id;
       isMapeo.value = true;
     }
-
     router.replace({ query });
 
     // Reset the previously selected feature (on both geometry and centroid layers if applicable)
