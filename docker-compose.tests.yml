@@ -61,19 +61,39 @@ services:
         docker-entrypoint.sh postgres &
         # Wait for postgres to be ready
         until pg_isready -U testuser -d test_warehouse; do sleep 1; done
+        # Create guardianconnector database
+        echo '🔍 Creating guardianconnector database...'
+        psql -U testuser -d test_warehouse -c 'CREATE DATABASE guardianconnector;' || echo 'guardianconnector database may already exist'
+        # Initialize guardianconnector database with our schema
+        echo '🔍 Initializing guardianconnector database...'
+        psql -U testuser -d guardianconnector -f /docker-entrypoint-initdb.d/guardianconnector.sql
         # Log the database state
         echo '🔍 Database initialization complete'
-        echo '🔍 Available tables:'
+        echo '🔍 Available databases:'
+        psql -U testuser -d test_warehouse -c '\\l'
+        echo '🔍 test_warehouse tables:'
         psql -U testuser -d test_warehouse -c "\\dt"
+        echo '🔍 guardianconnector tables:'
+        psql -U testuser -d guardianconnector -c "\\dt"
         echo '🔍 Table row counts:'
         psql -U testuser -d test_warehouse -c 'SELECT schemaname, tablename, n_tup_ins as rows FROM pg_stat_user_tables ORDER BY tablename;'
         echo '🔍 Available tables and their contents:'
+        echo '🔍 test_warehouse tables:'
         echo '🔍 bcmform_responses table (first 3 rows):'
         psql -U testuser -d test_warehouse -c 'SELECT * FROM bcmform_responses LIMIT 3;' || echo 'bcmform_responses table does not exist'
         echo '🔍 fake_alerts table (first 3 rows):'
         psql -U testuser -d test_warehouse -c 'SELECT * FROM fake_alerts LIMIT 3;' || echo 'fake_alerts table does not exist'
         echo '🔍 mapeo_data table (first 3 rows):'
         psql -U testuser -d test_warehouse -c 'SELECT * FROM mapeo_data LIMIT 3;' || echo 'mapeo_data table does not exist'
+        echo '🔍 guardianconnector tables:'
+        echo '🔍 view_config table (first 3 rows):'
+        psql -U testuser -d guardianconnector -c 'SELECT * FROM view_config LIMIT 3;' || echo 'view_config table does not exist'
+        echo '🔍 annotated_collections table (first 3 rows):'
+        psql -U testuser -d guardianconnector -c 'SELECT * FROM annotated_collections LIMIT 3;' || echo 'annotated_collections table does not exist'
+        echo '🔍 incidents table (first 3 rows):'
+        psql -U testuser -d guardianconnector -c 'SELECT * FROM incidents LIMIT 3;' || echo 'incidents table does not exist'
+        echo '🔍 collection_entries table (first 3 rows):'
+        psql -U testuser -d guardianconnector -c 'SELECT * FROM collection_entries LIMIT 3;' || echo 'collection_entries table does not exist'
         # Keep the container running
         wait
       "

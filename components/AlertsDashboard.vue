@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import { along, bbox, length, lineString } from "@turf/turf";
+import { bbox } from "@turf/turf";
 
 // @ts-expect-error - mapbox-gl-ruler-control does not have types
 import rulerControl from "mapbox-gl-ruler-control";
@@ -14,13 +15,17 @@ import {
   changeMapStyle,
   applyTerrain,
   prepareMapLegendLayers,
-  prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
 } from "@/utils/mapFunctions";
 
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
 import MapLegend from "@/components/shared/MapLegend.vue";
+import IncidentsSidebar from "@/components/alerts/IncidentsSidebar.vue";
+import IncidentsControls from "@/components/alerts/IncidentsControls.vue";
+import { useIncidents } from "@/composables/useIncidents";
+import { useFeatureSelection } from "@/composables/useFeatureSelection";
+import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
@@ -73,6 +78,76 @@ const route = useRoute();
 const router = useRouter();
 
 const isMapeo = ref(false);
+
+// Get API key from runtime config
+const config = useRuntimeConfig();
+const apiKey = config.public.appApiKey as string;
+
+// Use incidents composable
+const {
+  incidents,
+  incidentsTotal,
+  isLoadingMoreIncidents,
+  showIncidentsSidebar,
+  openSidebarWithCreateForm,
+  selectedSources,
+  isCreatingIncident,
+  multiSelectMode,
+  boundingBoxMode,
+  isLoadingIncidents,
+  selectedIncident,
+  selectedIncidentData,
+  selectedIncidentEntries,
+  isLoadingSelectedIncident,
+  hoveredButton,
+  fetchIncidents,
+  loadMoreIncidents,
+  clearSelectedIncident,
+  scheduleIncidentPrefetch,
+  openIncidentDetails,
+  createIncident,
+  toggleIncidentsSidebar,
+  openIncidentsSidebarWithCreateForm,
+  toggleMultiSelectMode,
+  toggleBoundingBoxMode,
+  removeBoundingBoxHandlers,
+  removeSourceFromSelection,
+  clearSelectedSources,
+  handleMultiSelectFeature,
+  handleIncidentClusterZoom,
+} = useIncidents(map, route, router, apiKey);
+
+// Use feature selection composable
+const {
+  imageCaption,
+  imageUrl,
+  isAlert,
+  selectedFeature,
+  selectedFeatureSource,
+  selectedFeatureGeometry,
+  highlightClusterContainingFeature,
+  selectFeature,
+  resetSelectedFeature,
+  calculateLineStringCentroid,
+} = useFeatureSelection(
+  map,
+  route,
+  router,
+  localAlertsData,
+  showSidebar,
+  showIntroPanel,
+  isMapeo,
+);
+
+// Use alerts date filter composable
+const { filteredData, getDateOptions, handleDateRangeChanged, resetDateRange } =
+  useAlertsDateFilter(
+    map,
+    toRef(props, "alertsData"),
+    toRef(props, "alertsStatistics"),
+    localAlertsData,
+    t,
+  );
 
 /**
  * Selects and zooms to an alert feature based on its ID
@@ -274,6 +349,15 @@ onMounted(() => {
         selectInitialAlertFeature(alertId);
       } else if (mapeoDocId && props.mapeoData) {
         selectInitialMapeoFeature(mapeoDocId);
+      }
+
+      // Load incidents on dashboard initialization
+      await fetchIncidents();
+
+      // Check for incidentId in URL and open that incident if it exists
+      const incidentId = route.query.incidentId as string;
+      if (incidentId) {
+        openIncidentDetails(incidentId);
       }
 
       controlsAdded = true;
@@ -720,8 +804,18 @@ const addAlertsData = async () => {
                 );
               }
             } else {
-              // Only select non-cluster features
-              selectFeature(feature, layer.id);
+              // Check if multi-select mode is active and Ctrl/Cmd is pressed
+              const isMultiSelect =
+                multiSelectMode.value &&
+                (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
+
+              if (isMultiSelect) {
+                // Add to selected sources instead of selecting for sidebar
+                handleMultiSelectFeature(feature, layer.id);
+              } else {
+                // Normal selection behavior
+                selectFeature(feature, layer.id);
+              }
             }
           }
         },
@@ -767,9 +861,14 @@ const addAlertsData = async () => {
       selectedFeatureSource.value
     ) {
       setTimeout(() => {
-        highlightClusterContainingFeature(selectedFeatureSource.value);
+        if (selectedFeatureSource.value) {
+          highlightClusterContainingFeature(selectedFeatureSource.value);
+        }
       }, 100);
     }
+
+    // Also handle incident cluster highlighting if there's a selected incident
+    handleIncidentClusterZoom();
   });
 };
 
@@ -856,7 +955,19 @@ const addMapeoData = () => {
       layerId,
       (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
-          selectFeature(e.features[0], layerId);
+          const feature = e.features[0];
+          // Check if multi-select mode is active and Ctrl/Cmd is pressed
+          const isMultiSelect =
+            multiSelectMode.value &&
+            (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
+
+          if (isMultiSelect) {
+            // Add to selected sources instead of selecting for sidebar
+            handleMultiSelectFeature(feature, layerId);
+          } else {
+            // Normal selection behavior
+            selectFeature(feature, layerId);
+          }
         }
       },
       { passive: true },
@@ -1060,720 +1171,15 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
 // === Sidebar Content ====
 // ========================
 
-const selectedDateRange = ref();
-/**
- * Converts date strings from "MM-YYYY" format to "YYYYMM" format for comparison.
- * If the start or end date is "earlier", it substitutes with the earliest or twelve months before date.
- */
-const convertDates = (start: string, end: string) => {
-  const convertToDate = (dateStr: string) => {
-    const [month, year] = dateStr.split("-").map(Number);
-    return (year * 100 + month).toString();
-  };
-
-  if (start === t("earlier")) {
-    start = props.alertsStatistics.earliestAlertsDate;
-  }
-
-  if (end === t("earlier")) {
-    end = props.alertsStatistics.twelveMonthsBefore;
-  }
-
-  const startDate = convertToDate(start);
-  const endDate = convertToDate(end);
-
-  return [startDate, endDate];
-};
-
-/**
- * Retrieves date options for selection, replacing earlier dates with "Earlier" if there are more than 12 dates.
- * @returns {string[]} - An array of date options.
- */
-const getDateOptions = () => {
-  let dates = props.alertsStatistics.allDates;
-
-  // Return empty array if no dates available
-  if (!dates || dates.length === 0) {
-    return [];
-  }
-
-  if (dates.length > 12) {
-    const last12Dates = dates.slice(-12);
-    dates = [t("earlier"), ...last12Dates];
-  }
-
-  return dates;
-};
-
-/**
- * Handles changes in the selected date range, updating map layers to show features within the new range.
- * @param {[string, string]} newRange - The new date range as an array of start and end dates.
- */
-const handleDateRangeChanged = (newRange: [string, string]) => {
-  // Extract start and end dates from newRange
-  let [start, end] = newRange;
-
-  if (start === t("earlier")) {
-    start = props.alertsStatistics.earliestAlertsDate;
-  }
-
-  if (end === t("earlier")) {
-    end = props.alertsStatistics.twelveMonthsBefore;
-  }
-
-  // Update the selected date range first so filteredData is computed correctly
-  selectedDateRange.value = newRange;
-
-  // Update the layers to only show features within the selected date range
-  nextTick(() => {
-    // Update source data for all alert sources so clusters reflect filtered data
-    const sourceIds = [
-      "most-recent-alerts-point",
-      "most-recent-alerts-polygon",
-      "most-recent-alerts-linestring",
-      "most-recent-alerts-centroids",
-      "previous-alerts-point",
-      "previous-alerts-polygon",
-      "previous-alerts-linestring",
-      "previous-alerts-centroids",
-    ];
-
-    sourceIds.forEach((sourceId) => {
-      const source = map.value.getSource(sourceId) as mapboxgl.GeoJSONSource;
-      if (!source) return;
-
-      const isMostRecent = sourceId.startsWith("most-recent-alerts");
-      const filteredFeatures = isMostRecent
-        ? filteredData.value.mostRecentAlerts.features
-        : filteredData.value.previousAlerts.features;
-
-      if (sourceId.endsWith("-point")) {
-        // Point source: filter by Point geometry type
-        const pointFeatures = filteredFeatures.filter(
-          (f) => f.geometry.type === "Point",
-        );
-        source.setData({
-          type: "FeatureCollection",
-          features: pointFeatures,
-        });
-      } else if (sourceId.endsWith("-polygon")) {
-        // Polygon source: filter by Polygon/MultiPolygon geometry type
-        const polygonFeatures = filteredFeatures.filter(
-          (f) =>
-            f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon",
-        );
-        source.setData({
-          type: "FeatureCollection",
-          features: polygonFeatures,
-        });
-      } else if (sourceId.endsWith("-linestring")) {
-        // LineString source: filter by LineString geometry type
-        const linestringFeatures = filteredFeatures.filter(
-          (f) => f.geometry.type === "LineString",
-        );
-        source.setData({
-          type: "FeatureCollection",
-          features: linestringFeatures,
-        });
-      } else if (sourceId.endsWith("-centroids")) {
-        // Centroid source: create Point features from geographicCentroid
-        const centroidFeatures = filteredFeatures
-          .filter(
-            (f) =>
-              f.properties?.geographicCentroid && f.geometry.type !== "Point",
-          )
-          .map((feature) => ({
-            type: "Feature" as const,
-            geometry: {
-              type: "Point" as const,
-              coordinates: feature.properties?.geographicCentroid
-                .split(",")
-                .map(Number)
-                .reverse(),
-            },
-            properties: {
-              ...feature.properties,
-            },
-          }));
-        source.setData({
-          type: "FeatureCollection",
-          features: centroidFeatures,
-        });
-      }
-    });
-
-    // Update layer filters for non-clustered features (still needed for unclustered points/centroids)
-    map.value.getStyle().layers.forEach((layer: Layer) => {
-      if (
-        (layer.id.startsWith("most-recent-alerts") ||
-          layer.id.startsWith("previous-alerts")) &&
-        // Don't apply filters to cluster layers - they don't have feature properties
-        !layer.id.includes("-cluster")
-      ) {
-        // For point and centroid layers, only need cluster exclusion filter
-        // (date filtering is handled by source data update above)
-        if (layer.id.endsWith("-point") || layer.id.endsWith("-centroids")) {
-          map.value.setFilter(layer.id, ["!", ["has", "point_count"]]);
-        } else {
-          // For polygon/linestring layers, remove filters (source data handles filtering)
-          map.value.setFilter(layer.id, null);
-        }
-      }
-    });
-
-    // Update localAlertsData to match the data with the selected date range
-    localAlertsData.value = filteredData.value;
-  });
-};
-
 /* Closes the sidebar and resets the selected feature. */
 const handleSidebarClose = () => {
   showSidebar.value = false;
   resetSelectedFeature();
 };
 
-/**
- * Computes filtered data based on the selected date range.
- * If no date range is selected, returns the full alerts data.
- * @returns {Object} - The filtered alerts data.
- */
-const filteredData = computed(() => {
-  if (!selectedDateRange.value) {
-    return props.alertsData;
-  }
-
-  const [start, end] = selectedDateRange.value;
-  const [startDate, endDate] = convertDates(start, end);
-
-  const filterFeatures = (features: Feature[]) => {
-    return features.filter((feature) => {
-      const monthDetected = feature.properties
-        ? feature.properties["YYYYMM"]
-        : null;
-      return monthDetected >= startDate && monthDetected <= endDate;
-    });
-  };
-
-  return {
-    mostRecentAlerts: {
-      ...props.alertsData.mostRecentAlerts,
-      features: filterFeatures(props.alertsData.mostRecentAlerts.features),
-    },
-    previousAlerts: {
-      ...props.alertsData.previousAlerts,
-      features: filterFeatures(props.alertsData.previousAlerts.features),
-    },
-  };
-});
-
 // ===========================================
 // === Methods for selecting and resetting ===
 // ===========================================
-
-const imageCaption = ref();
-const imageUrl = ref();
-const isAlert = ref(false);
-const selectedFeature = ref();
-const selectedFeatureId = ref();
-const selectedFeatureSource = ref();
-const selectedFeatureGeometry = ref(); // Store geometry separately for cluster highlighting
-const selectedClusterId = ref<number | string | null>(null);
-const selectedClusterSource = ref<string | null>(null);
-
-/**
- * Gets the companion layer ID for polygon/linestring features.
- * Companion layers are geometry ↔ centroid pairs that represent the same features at different zoom levels.
- * @param layerId - The current layer ID
- * @param featureAlertId - Optional alertID to help determine the correct geometry type for centroids
- * @returns The companion layer ID, or null if no companion exists
- */
-const getCompanionLayerId = (
-  layerId: string,
-  featureAlertId?: string,
-): string | null => {
-  // Map geometry layers to their centroid companions
-  if (
-    layerId.includes("-polygon") ||
-    layerId.includes("-linestring") ||
-    layerId.includes("-multipolygon")
-  ) {
-    const prefix = layerId.replace(/-polygon|-linestring|-multipolygon/i, "");
-    return `${prefix}-centroids`;
-  }
-
-  // Map centroid layers to their geometry companions
-  // Need to determine which geometry type by checking the original feature
-  if (layerId.includes("-centroids") && featureAlertId) {
-    const prefix = layerId.replace("-centroids", "");
-    const possibleLayers = [
-      `${prefix}-polygon`,
-      `${prefix}-linestring`,
-      `${prefix}-multipolygon`,
-    ];
-
-    // Check each possible geometry source to find which one has this feature
-    for (const possibleLayer of possibleLayers) {
-      const source = map.value.getSource(
-        possibleLayer,
-      ) as mapboxgl.GeoJSONSource;
-      if (source && source.type === "geojson") {
-        const sourceData = (
-          source as mapboxgl.GeoJSONSource & {
-            _data?: { features?: Feature[] };
-          }
-        )._data;
-        if (sourceData?.features) {
-          const hasFeature = sourceData.features.some(
-            (f) => f.properties?.alertID === featureAlertId,
-          );
-          if (hasFeature) {
-            return possibleLayer;
-          }
-        }
-      }
-    }
-  }
-
-  return null;
-};
-
-/**
- * Updates cluster layer styling to highlight the selected cluster.
- * Uses setPaintProperty with a data-driven expression since clusters don't have stable feature IDs.
- */
-const updateClusterHighlight = () => {
-  if (!map.value) return;
-
-  // List of all cluster layer IDs that need updating
-  const clusterLayers = [
-    {
-      clustersLayer: "most-recent-alerts-centroids-clusters",
-      source: "most-recent-alerts-centroids",
-      color: "#FF0000",
-    },
-    {
-      clustersLayer: "most-recent-alerts-point-clusters",
-      source: "most-recent-alerts-point",
-      color: "#FF0000",
-    },
-    {
-      clustersLayer: "previous-alerts-centroids-clusters",
-      source: "previous-alerts-centroids",
-      color: "#FD8D3C",
-    },
-    {
-      clustersLayer: "previous-alerts-point-clusters",
-      source: "previous-alerts-point",
-      color: "#FD8D3C",
-    },
-  ];
-
-  clusterLayers.forEach(({ clustersLayer, source, color }) => {
-    if (map.value.getLayer(clustersLayer)) {
-      // Update cluster color based on whether this cluster is selected
-      const paintExpression =
-        selectedClusterId.value !== null &&
-        selectedClusterSource.value === source
-          ? [
-              "case",
-              ["==", ["get", "cluster_id"], selectedClusterId.value],
-              "#FFFF00", // Yellow if this is the selected cluster
-              color, // Default color otherwise
-            ]
-          : color; // No cluster selected, use default color
-
-      map.value.setPaintProperty(
-        clustersLayer,
-        "circle-color",
-        paintExpression,
-      );
-    }
-  });
-};
-
-/**
- * Highlights a cluster that contains the selected feature (if any).
- * This makes the cluster turn yellow when zoomed out.
- */
-const highlightClusterContainingFeature = async (selectedLayerId: string) => {
-  if (!selectedFeatureGeometry.value || !selectedFeature.value) {
-    return;
-  }
-
-  // Get the alertID of the selected feature
-  const selectedAlertId = selectedFeature.value.alertID;
-  if (!selectedAlertId) {
-    return; // Can't match without an ID
-  }
-
-  // Track the previous cluster to avoid redundant updates
-  const prevClusterId = selectedClusterId.value;
-  const prevClusterSource = selectedClusterSource.value;
-
-  // Determine which cluster layer to check (only check the one source we need)
-  let clusterLayerName: string;
-  let sourceName: string;
-
-  if (selectedLayerId.includes("-point")) {
-    sourceName = selectedLayerId;
-    clusterLayerName = `${selectedLayerId}-clusters`;
-  } else if (selectedLayerId.includes("-centroids")) {
-    sourceName = selectedLayerId;
-    clusterLayerName = `${selectedLayerId}-clusters`;
-  } else {
-    // For other geometry types, check the corresponding centroids layer
-    const prefix = selectedLayerId.replace(
-      /-polygon|-linestring|-multipolygon/i,
-      "",
-    );
-    sourceName = `${prefix}-centroids`;
-    clusterLayerName = `${prefix}-centroids-clusters`;
-  }
-
-  const sourceObj = map.value.getSource(sourceName) as mapboxgl.GeoJSONSource;
-  if (!sourceObj) return;
-
-  // Get all visible cluster features for this layer
-  const clusterFeatures = map.value.queryRenderedFeatures(undefined, {
-    layers: [clusterLayerName].filter((id) => map.value.getLayer(id)),
-  });
-
-  // Find which cluster contains the selected feature
-  let foundClusterId: number | string | null = null;
-  let foundClusterSource: string | null = null;
-
-  // Check each cluster to see if it contains our selected feature
-  for (const clusterFeature of clusterFeatures) {
-    const clusterId = clusterFeature.properties?.cluster_id;
-    if (clusterId === undefined) continue;
-
-    try {
-      // Get the leaves (individual points) of this cluster
-      const leaves: Feature[] = await new Promise((resolve, reject) => {
-        sourceObj.getClusterLeaves(
-          clusterId,
-          Infinity, // Get ALL leaves in the cluster (no limit)
-          0,
-          (err, features) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve(features as Feature[]);
-            }
-          },
-        );
-      });
-
-      // Check if any leaf matches our selected feature
-      const containsSelected = leaves.some(
-        (leaf) => leaf.properties?.alertID === selectedAlertId,
-      );
-
-      if (containsSelected) {
-        foundClusterId = clusterId;
-        foundClusterSource = sourceName;
-        break; // Stop searching
-      }
-    } catch {
-      continue;
-    }
-  }
-
-  // Only update if we found a NEW different cluster
-  // Don't reset if we simply didn't find any clusters (they might be hidden at current zoom)
-  if (
-    foundClusterId !== null &&
-    foundClusterId !== undefined &&
-    foundClusterSource
-  ) {
-    // We found a cluster - update if it's different from the previous one
-    if (
-      foundClusterId !== prevClusterId ||
-      foundClusterSource !== prevClusterSource
-    ) {
-      // Update the selected cluster refs
-      selectedClusterId.value = foundClusterId;
-      selectedClusterSource.value = foundClusterSource;
-
-      // Update cluster styling using paint properties (clusters don't have stable feature IDs)
-      updateClusterHighlight();
-    }
-  }
-  // If no cluster found, keep the previous cluster highlighted so it shows when zooming back out
-};
-
-/**
- * Selects a feature on the map, updating the component state and UI.
- * Resets any previously selected feature and highlights the new one.
- * Updates the sidebar with feature details and manages image URLs.
- *
- * @param {Feature} feature - The feature to be selected.
- * @param {string} layerId - The ID of the layer containing the feature.
- */
-const selectFeature = (feature: Feature, layerId: string) => {
-  if (!feature.properties) {
-    return;
-  }
-
-  // Prevent cluster features from being displayed in sidebar
-  if (
-    feature.properties.cluster ||
-    feature.properties.cluster_id !== undefined
-  ) {
-    return;
-  }
-
-  const featureObject = feature.properties;
-
-  const featureGeojson = {
-    type: feature.type,
-    geometry: feature.geometry,
-    properties: feature.properties,
-  };
-
-  // For centroid layers, use alertID as the feature ID (due to promoteId)
-  // For other layers, use feature.id
-  const featureId = layerId.includes("-centroids")
-    ? featureObject.alertID
-    : feature.id;
-
-  // Update URL with alertId or mapeoDocId
-  const query = { ...route.query };
-  // Remove any existing feature IDs first
-  delete query.alertId;
-  delete query.mapeoDocId;
-
-  // Add the new feature ID
-  if (featureObject.alertID) {
-    query.alertId = featureObject.alertID;
-    isMapeo.value = false;
-  } else if (featureObject.id) {
-    query.mapeoDocId = featureObject.id;
-    isMapeo.value = true;
-  }
-
-  router.replace({ query });
-
-  // Reset the previously selected feature (on both geometry and centroid layers if applicable)
-  if (selectedFeatureId.value !== null && selectedFeatureSource.value) {
-    map.value.setFeatureState(
-      {
-        source: selectedFeatureSource.value,
-        id: selectedFeatureId.value,
-      },
-      { selected: false },
-    );
-
-    // Also reset on the companion layer (centroid ↔ geometry)
-    const companionLayer = getCompanionLayerId(
-      selectedFeatureSource.value,
-      selectedFeature.value?.alertID,
-    );
-    if (companionLayer && map.value.getSource(companionLayer)) {
-      let companionFeatureId;
-
-      if (companionLayer.includes("-centroids")) {
-        // Centroid layers use promoteId: "alertID"
-        companionFeatureId = selectedFeature.value?.alertID;
-      } else {
-        // Geometry layers use feature.id - need to look up the actual feature
-        const source = map.value.getSource(
-          companionLayer,
-        ) as mapboxgl.GeoJSONSource;
-        const sourceData = (
-          source as mapboxgl.GeoJSONSource & {
-            _data?: { features?: Feature[] };
-          }
-        )._data;
-        const companionFeature = sourceData?.features?.find(
-          (f) => f.properties?.alertID === selectedFeature.value?.alertID,
-        );
-        companionFeatureId = companionFeature?.id;
-      }
-
-      if (companionFeatureId !== undefined && companionFeatureId !== null) {
-        map.value.setFeatureState(
-          { source: companionLayer, id: companionFeatureId },
-          { selected: false },
-        );
-      }
-    }
-  }
-
-  // Set new feature state on the current layer
-  map.value.setFeatureState(
-    { source: layerId, id: featureId },
-    { selected: true },
-  );
-
-  // For polygon/linestring features (or their centroid representations),
-  // also set state on companion layer so selection persists across zoom thresholds
-  const geometryType = feature.geometry.type;
-  const isPolygonLinestring =
-    geometryType === "Polygon" ||
-    geometryType === "LineString" ||
-    geometryType === "MultiPolygon" ||
-    layerId.includes("-centroids"); // Centroids are Points but represent Polygons/LineStrings
-
-  if (isPolygonLinestring) {
-    const companionLayer = getCompanionLayerId(layerId, featureObject.alertID);
-    if (companionLayer && map.value.getSource(companionLayer)) {
-      let companionFeatureId;
-
-      if (companionLayer.includes("-centroids")) {
-        // Centroid layers use promoteId: "alertID"
-        companionFeatureId = featureObject.alertID;
-      } else {
-        // Geometry layers use feature.id - need to look up the actual feature
-        const source = map.value.getSource(
-          companionLayer,
-        ) as mapboxgl.GeoJSONSource;
-        const sourceData = (
-          source as mapboxgl.GeoJSONSource & {
-            _data?: { features?: Feature[] };
-          }
-        )._data;
-        const companionFeature = sourceData?.features?.find(
-          (f) => f.properties?.alertID === featureObject.alertID,
-        );
-        companionFeatureId = companionFeature?.id;
-      }
-
-      if (companionFeatureId !== undefined && companionFeatureId !== null) {
-        map.value.setFeatureState(
-          { source: companionLayer, id: companionFeatureId },
-          { selected: true },
-        );
-      }
-    }
-  }
-
-  delete featureObject["YYYYMM"];
-
-  // Update component state
-  localAlertsData.value = featureGeojson;
-  selectedFeature.value = featureObject; // Store properties for sidebar
-  selectedFeatureGeometry.value = feature.geometry; // Store geometry for cluster highlighting
-  selectedFeatureId.value = featureId;
-  selectedFeatureSource.value = layerId;
-  showSidebar.value = true;
-  showIntroPanel.value = false;
-
-  if (featureObject["alertID"]) {
-    isAlert.value = true;
-
-    // Highlight any cluster that contains this feature (after a brief delay - in order to let clusters render after selection).
-    setTimeout(() => {
-      highlightClusterContainingFeature(layerId);
-    }, 100);
-  } else {
-    isAlert.value = false;
-
-    // If a Mapeo feature is selected, clear any cluster highlights
-    if (selectedClusterId.value !== null) {
-      selectedClusterId.value = null;
-      selectedClusterSource.value = null;
-      updateClusterHighlight();
-    }
-  }
-
-  // The following code handles deletions or rewrites of certain properties
-  // for the selected feature to prepare it for display in the sidebar.
-
-  // Columns that may or may not exist, depending on views config
-  imageUrl.value = [];
-  if (featureObject.t0_url) {
-    imageUrl.value.push(featureObject.t0_url);
-  }
-  if (featureObject.t1_url) {
-    imageUrl.value.push(featureObject.t1_url);
-  }
-  if (featureObject["photos"]) {
-    const photos = featureObject["photos"].split(",");
-    photos.forEach((photo: string) => imageUrl.value.push(photo.trim()));
-  }
-
-  delete featureObject["t0_url"];
-  delete featureObject["t1_url"];
-  delete featureObject["filter-color"];
-  delete featureObject["normalizedId"];
-
-  // Rewrite coordinates string from [long, lat] to lat, long, removing brackets
-  if (featureObject.geocoordinates) {
-    featureObject.geocoordinates = prepareCoordinatesForSelectedFeature(
-      featureObject.geocoordinates,
-    );
-  }
-};
-
-/**
- * Resets the currently selected feature, clearing its state and UI highlights.
- */
-const resetSelectedFeature = () => {
-  if (selectedFeatureId.value === null || !selectedFeatureSource.value) {
-    return;
-  }
-
-  // Reset feature state on the current layer
-  map.value.setFeatureState(
-    { source: selectedFeatureSource.value, id: selectedFeatureId.value },
-    { selected: false },
-  );
-
-  // Also reset on the companion layer (centroid ↔ geometry) if applicable
-  const companionLayer = getCompanionLayerId(
-    selectedFeatureSource.value,
-    selectedFeature.value?.alertID,
-  );
-  if (companionLayer && map.value.getSource(companionLayer)) {
-    let companionFeatureId;
-
-    if (companionLayer.includes("-centroids")) {
-      // Centroid layers use promoteId: "alertID"
-      companionFeatureId = selectedFeature.value?.alertID;
-    } else {
-      // Geometry layers use feature.id - need to look up the actual feature
-      const source = map.value.getSource(
-        companionLayer,
-      ) as mapboxgl.GeoJSONSource;
-      const sourceData = (
-        source as mapboxgl.GeoJSONSource & {
-          _data?: { features?: Feature[] };
-        }
-      )._data;
-      const companionFeature = sourceData?.features?.find(
-        (f) => f.properties?.alertID === selectedFeature.value?.alertID,
-      );
-      companionFeatureId = companionFeature?.id;
-    }
-
-    if (companionFeatureId !== undefined && companionFeatureId !== null) {
-      map.value.setFeatureState(
-        { source: companionLayer, id: companionFeatureId },
-        { selected: false },
-      );
-    }
-  }
-
-  // Reset cluster highlight
-  if (selectedClusterId.value !== null && selectedClusterSource.value) {
-    selectedClusterId.value = null;
-    selectedClusterSource.value = null;
-    updateClusterHighlight(); // Update styling using paint properties
-  }
-
-  localAlertsData.value = props.alertsData;
-  selectedFeature.value = null;
-  selectedFeatureGeometry.value = null;
-  selectedFeatureId.value = null;
-  selectedFeatureSource.value = null;
-
-  // Remove alertId and isRecent from URL when resetting
-  const query = { ...route.query };
-  delete query.alertId;
-  delete query.isRecent;
-  router.replace({ query });
-};
 
 /**
  * Resets the map and UI to their initial states, clearing selections and filters.
@@ -1786,7 +1192,7 @@ const resetToInitialState = () => {
   showIntroPanel.value = true;
   imageUrl.value = [];
   imageCaption.value = null;
-  selectedDateRange.value = null;
+  resetDateRange();
 
   // Reset source data for all alert sources to original data
   const sourceIds = [
@@ -1972,15 +1378,9 @@ const resetToInitialState = () => {
   });
 };
 
-const calculateLineStringCentroid = (coordinates: number[][]) => {
-  const line = lineString(coordinates);
-  const lineLength = length(line, { units: "kilometers" });
-  const midpoint = along(line, lineLength / 2, { units: "kilometers" });
-  return midpoint.geometry.coordinates;
-};
-
 onBeforeUnmount(() => {
   if (map.value) {
+    removeBoundingBoxHandlers();
     map.value.remove();
   }
 });
@@ -1991,7 +1391,7 @@ onBeforeUnmount(() => {
     <div id="map"></div>
     <button
       v-if="!showSidebar"
-      class="reset-button bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
+      class="absolute top-2.5 left-2.5 z-10 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
       @click="resetToInitialState"
     >
       {{ $t("resetDashboard") }}
@@ -2031,6 +1431,44 @@ onBeforeUnmount(() => {
       :planet-api-key="planetApiKey"
       @basemap-selected="handleBasemapChange"
     />
+    <IncidentsSidebar
+      :incidents="incidents"
+      :incidents-total="incidentsTotal"
+      :is-loading-more="isLoadingMoreIncidents"
+      :selected-incident="selectedIncident"
+      :selected-incident-data="selectedIncidentData"
+      :selected-incident-entries="selectedIncidentEntries"
+      :is-loading-selected-incident="isLoadingSelectedIncident"
+      :selected-sources="selectedSources"
+      :is-loading="isLoadingIncidents"
+      :is-creating="isCreatingIncident"
+      :show="showIncidentsSidebar"
+      :open-with-create-form="openSidebarWithCreateForm"
+      @close="toggleIncidentsSidebar"
+      @back-to-incidents-list="clearSelectedIncident"
+      @select-incident="openIncidentDetails"
+      @hover-incident="scheduleIncidentPrefetch"
+      @load-more-incidents="loadMoreIncidents"
+      @create-incident="createIncident"
+      @remove-source="removeSourceFromSelection"
+      @clear-sources="clearSelectedSources"
+    />
+    <IncidentsControls
+      :show-incidents-sidebar="showIncidentsSidebar"
+      :open-sidebar-with-create-form="openSidebarWithCreateForm"
+      :bounding-box-mode="boundingBoxMode"
+      :multi-select-mode="multiSelectMode"
+      :selected-sources-length="selectedSources.length"
+      :hovered-button="hoveredButton"
+      @toggle-incidents-sidebar="toggleIncidentsSidebar"
+      @toggle-bounding-box-mode="toggleBoundingBoxMode"
+      @toggle-multi-select-mode="toggleMultiSelectMode"
+      @open-incidents-sidebar-with-create-form="
+        openIncidentsSidebarWithCreateForm
+      "
+      @hover-button="(button) => (hoveredButton = button)"
+      @clear-hover="hoveredButton = null"
+    />
   </div>
 </template>
 
@@ -2065,12 +1503,5 @@ body {
   width: 100%;
   display: block;
   margin-top: 5px;
-}
-
-.reset-button {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 10;
 }
 </style>
