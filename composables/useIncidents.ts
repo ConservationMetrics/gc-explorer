@@ -237,8 +237,10 @@ export const useIncidents = (
       clearSourceHighlighting();
       highlightIncidentEntries(response.entries || []);
 
-      // Add incidentId to URL query params for shareable links
+      // Add incidentId to URL; remove alert/mapeo params so address bar matches "copy link to incident"
       const query = { ...route.query };
+      delete query.alertId;
+      delete query.mapeoDocId;
       query.incidentId = incidentId;
       router.replace({ query });
     } catch (error) {
@@ -261,6 +263,11 @@ export const useIncidents = (
     impact_description?: string;
     supporting_evidence?: Record<string, unknown>;
   }) => {
+    if (selectedSources.value.length === 0) {
+      throw new Error(
+        "Cannot create incident without selected alerts. Select at least one alert.",
+      );
+    }
     isCreatingIncident.value = true;
     try {
       const response = await $fetch<{ incident: AnnotatedCollection }>(

@@ -24,7 +24,10 @@ const props = defineProps<{
   mediaBasePathAlerts?: string;
 }>();
 
-const { showCopied, copyLink } = useCopyLink();
+// Symmetric copy-link: "Copy link to alert" excludes incidentId (alerts dashboard only)
+const { showCopied, copyLink } = useCopyLink(
+  props.isAlertsDashboard ? ["incidentId"] : undefined,
+);
 
 /** Sort feature object by key */
 const sortedFeature = computed(() => {
