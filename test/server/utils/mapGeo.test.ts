@@ -87,7 +87,10 @@ describe("getFilterColorForValue", () => {
 
 describe("filterOutUnwantedValues", () => {
   it("returns all rows when filterByColumn or filterOutValues is missing", () => {
-    const rows = [{ _id: "1", type: "A" }, { _id: "2", type: "B" }];
+    const rows = [
+      { _id: "1", type: "A" },
+      { _id: "2", type: "B" },
+    ];
     expect(filterOutUnwantedValues(rows, undefined, "x")).toBe(rows);
     expect(filterOutUnwantedValues(rows, "type", undefined)).toBe(rows);
   });

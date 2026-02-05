@@ -27,11 +27,7 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   try {
-    const timings: Record<string, number> = {};
-    const startTotal = performance.now();
-
     const viewsConfig = await fetchConfig();
-    timings.fetchConfig = performance.now() - startTotal;
 
     const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
@@ -45,9 +41,7 @@ export default defineEventHandler(async (event: H3Event) => {
       });
     }
 
-    const startFetch = performance.now();
     const rows = await fetchMapGeo(table, config);
-    timings.fetchMapGeo = performance.now() - startFetch;
 
     const filteredByValues = filterOutUnwantedValues(
       rows,
@@ -56,20 +50,10 @@ export default defineEventHandler(async (event: H3Event) => {
     );
     const validGeoRows = filteredByValues.filter(isValidGeoRow);
 
-    const startBuild = performance.now();
     const featureCollection = buildMapFeatureCollection(validGeoRows, config);
     const mapStatistics = { totalFeatures: featureCollection.features.length };
-    timings.buildGeoJSON = performance.now() - startBuild;
 
     const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
-
-    timings.total = performance.now() - startTotal;
-    if (process.env.NODE_ENV !== "production") {
-      console.log(
-        `[map] /api/${table}/map timings (ms):`,
-        JSON.stringify(timings),
-      );
-    }
 
     return {
       allowedFileExtensions: allowedFileExtensions,
