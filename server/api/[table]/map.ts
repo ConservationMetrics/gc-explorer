@@ -1,20 +1,86 @@
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import {
-  prepareMapData,
-  prepareMapStatistics,
-  transformSurveyData,
-} from "@/server/dataProcessing/transformData";
-import {
   filterUnwantedKeys,
   filterOutUnwantedValues,
   filterGeoData,
-} from "@/server/dataProcessing/filterData";
+} from "@/utils/dataProcessing/filterData";
+import { prepareMapStatistics } from "@/utils/dataProcessing/transformData";
+import { getRandomColor } from "@/utils/dataProcessing/helpers";
 import { validatePermissions } from "@/utils/auth";
 
 import type { H3Event } from "h3";
-import type { AllowedFileExtensions, ColumnEntry } from "@/types/types";
+import type {
+  AllowedFileExtensions,
+  ColumnEntry,
+  DataEntry,
+} from "@/types/types";
+import type { Feature, FeatureCollection } from "geojson";
 import { parseBasemaps } from "@/server/utils/basemaps";
 
+/**
+ * Builds minimal GeoJSON FeatureCollection from raw data entries.
+ * Only includes _id, geometry, and config-driven styling/filter columns.
+ */
+function toMinimalGeoJSON(
+  data: DataEntry[],
+  colorColumn?: string,
+  iconColumn?: string,
+  filterColumn?: string,
+): FeatureCollection {
+  const colorMap = new Map<string, string>();
+  const features: Feature[] = data.map((entry) => {
+    const properties: Record<string, string> = { _id: entry._id };
+
+    if (colorColumn && entry[colorColumn] !== undefined) {
+      properties[colorColumn] = String(entry[colorColumn]);
+    }
+    if (iconColumn && entry[iconColumn] !== undefined) {
+      properties[iconColumn] = String(entry[iconColumn]);
+    }
+    if (
+      filterColumn &&
+      filterColumn !== colorColumn &&
+      filterColumn !== iconColumn &&
+      entry[filterColumn] !== undefined
+    ) {
+      properties[filterColumn] = String(entry[filterColumn]);
+      const val = String(entry[filterColumn]);
+      if (!colorMap.has(val)) colorMap.set(val, getRandomColor());
+      properties["filter-color"] = colorMap.get(val)!;
+    } else {
+      properties["filter-color"] = "#3333FF";
+    }
+
+    let coordinates: unknown = [];
+    try {
+      coordinates = JSON.parse(entry.g__coordinates ?? "[]");
+    } catch {
+      console.warn(
+        `Failed to parse coordinates for record ${entry._id}:`,
+        entry.g__coordinates,
+      );
+    }
+
+    return {
+      type: "Feature" as const,
+      id: entry._id,
+      geometry: {
+        type: (entry.g__type ?? "Point") as "Point" | "LineString" | "Polygon",
+        coordinates,
+      },
+      properties,
+    };
+  });
+
+  return { type: "FeatureCollection", features };
+}
+
+/**
+ * GET /api/[table]/map
+ *
+ * Returns minimal GeoJSON for map rendering (geometry + _id + styling columns).
+ * Full record details are fetched on demand via GET /api/[table]/[recordId].
+ */
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
 
@@ -27,54 +93,42 @@ export default defineEventHandler(async (event: H3Event) => {
   try {
     const viewsConfig = await fetchConfig();
 
-    // Check visibility permissions
     const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "member";
-
-    // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
     const { mainData, columnsData } = await fetchData(table);
 
-    // Filter data to remove unwanted columns and substrings
     const filteredData = filterUnwantedKeys(
       mainData,
       columnsData as ColumnEntry[],
       viewsConfig[table].UNWANTED_COLUMNS,
       viewsConfig[table].UNWANTED_SUBSTRINGS,
     );
-    // Filter data to remove unwanted values per chosen column
     const dataFilteredByValues = filterOutUnwantedValues(
       filteredData,
       viewsConfig[table].FILTER_BY_COLUMN,
       viewsConfig[table].FILTER_OUT_VALUES_FROM_COLUMN,
     );
-    // Filter only data with valid geofields
     const filteredGeoData = filterGeoData(dataFilteredByValues);
-    // Transform data that was collected using survey apps (e.g. KoBoToolbox, Mapeo)
-    const transformedData = transformSurveyData(
+
+    const geoJsonData = toMinimalGeoJSON(
       filteredGeoData,
+      viewsConfig[table].COLOR_COLUMN,
       viewsConfig[table].ICON_COLUMN,
-    );
-    // Process geodata
-    const processedGeoData = prepareMapData(
-      transformedData,
       viewsConfig[table].FRONT_END_FILTER_COLUMN,
     );
 
-    // Prepare statistics data for the map view
-    const mapStatistics = prepareMapStatistics(processedGeoData);
-
-    // Parse basemaps configuration
+    const mapStatistics = prepareMapStatistics(filteredGeoData);
     const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
 
-    const response = {
+    return {
       allowedFileExtensions: allowedFileExtensions,
       colorColumn: viewsConfig[table].COLOR_COLUMN,
-      data: processedGeoData,
+      data: geoJsonData,
       filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
       iconColumn: viewsConfig[table].ICON_COLUMN,
       mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,
-      mapStatistics: mapStatistics,
+      mapStatistics,
       mapbox3d: viewsConfig[table].MAPBOX_3D ?? false,
       mapbox3dTerrainExaggeration: Number(
         viewsConfig[table].MAPBOX_3D_TERRAIN_EXAGGERATION,
@@ -95,8 +149,6 @@ export default defineEventHandler(async (event: H3Event) => {
       table: table,
       routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
     };
-
-    return response;
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error fetching data on API side:", error.message);

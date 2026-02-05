@@ -17,11 +17,12 @@ import MapLegend from "@/components/shared/MapLegend.vue";
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
+import type { Feature } from "geojson";
 import type {
   AllowedFileExtensions,
   Basemap,
   BasemapConfig,
-  Dataset,
+  DataEntry,
   FilterValues,
   MapLegendItem,
   MapStatistics,
@@ -45,14 +46,14 @@ const props = defineProps<{
   mapboxZoom: number;
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
-  mapData: Dataset;
+  mapData: { type: "FeatureCollection"; features: Feature[] };
   mediaBasePath?: string;
   mediaBasePathIcons?: string;
   mediaColumn?: string;
   planetApiKey?: string;
 }>();
 
-const filteredData = ref([...props.mapData]);
+const filteredData = ref<Feature[]>([...props.mapData.features]);
 const map = ref();
 const selectedFeature = ref();
 const selectedFeatureOriginal = ref();
@@ -62,10 +63,14 @@ const showIntroPanel = ref(true);
 const showIcons = ref(false);
 const loadingIcons = ref(false);
 
-// Check if icon toggle is available
 const canToggleIcons = computed(() => {
   return !!(props.iconColumn && props.mediaBasePathIcons);
 });
+
+/** DataFilter expects array of entries with filterColumn/colorColumn; derive from FeatureCollection. */
+const mapDataForFilter = computed(() =>
+  props.mapData.features.map((f) => ({ ...f.properties })),
+);
 
 onMounted(() => {
   mapboxgl.accessToken = props.mapboxAccessToken;
@@ -142,19 +147,9 @@ const addDataToMap = () => {
     }
   }
 
-  // Create a GeoJSON source with all the features
   const geoJsonSource = {
-    type: "FeatureCollection",
-    features: filteredData.value.map((feature) => ({
-      type: "Feature",
-      geometry: {
-        type: feature.geotype,
-        coordinates: JSON.parse(feature.geocoordinates),
-      },
-      properties: {
-        feature,
-      },
-    })),
+    type: "FeatureCollection" as const,
+    features: filteredData.value,
   };
 
   // Add the source to the map
@@ -183,31 +178,21 @@ const addDataToMap = () => {
       showIcons.value && props.iconColumn && props.mediaBasePathIcons;
 
     if (useIcons) {
-      // Add symbol layer for icons
       map.value.addLayer({
         id: "data-layer-point",
         type: "symbol",
         source: "data-source",
         filter: ["==", "$type", "Point"],
         layout: {
-          "icon-image": [
-            "concat",
-            "icon-",
-            ["get", props.iconColumn, ["get", "feature"]],
-          ],
+          "icon-image": ["concat", "icon-", ["get", props.iconColumn]],
           "icon-size": 1.0,
           "icon-allow-overlap": true,
         },
       });
     } else {
-      // Use colorColumn if specified, otherwise fall back to filter-color
       const colorExpression = props.colorColumn
-        ? [
-            "coalesce",
-            ["get", props.colorColumn, ["get", "feature"]],
-            ["get", "filter-color", ["get", "feature"]],
-          ]
-        : ["get", "filter-color", ["get", "feature"]];
+        ? ["coalesce", ["get", props.colorColumn], ["get", "filter-color"]]
+        : ["get", "filter-color"];
 
       map.value.addLayer({
         id: "data-layer-point",
@@ -224,16 +209,10 @@ const addDataToMap = () => {
     }
   }
 
-  // Add a layer for LineString features if present
   if (hasLineStringFeatures && !map.value.getLayer("data-layer-linestring")) {
-    // Use colorColumn if specified, otherwise fall back to filter-color
     const colorExpression = props.colorColumn
-      ? [
-          "coalesce",
-          ["get", props.colorColumn, ["get", "feature"]],
-          ["get", "filter-color", ["get", "feature"]],
-        ]
-      : ["get", "filter-color", ["get", "feature"]];
+      ? ["coalesce", ["get", props.colorColumn], ["get", "filter-color"]]
+      : ["get", "filter-color"];
 
     map.value.addLayer({
       id: "data-layer-linestring",
@@ -247,16 +226,10 @@ const addDataToMap = () => {
     });
   }
 
-  // Add a layer for Polygon features if present
   if (hasPolygonFeatures && !map.value.getLayer("data-layer-polygon")) {
-    // Use colorColumn if specified, otherwise fall back to filter-color
     const colorExpression = props.colorColumn
-      ? [
-          "coalesce",
-          ["get", props.colorColumn, ["get", "feature"]],
-          ["get", "filter-color", ["get", "feature"]],
-        ]
-      : ["get", "filter-color", ["get", "feature"]];
+      ? ["coalesce", ["get", props.colorColumn], ["get", "filter-color"]]
+      : ["get", "filter-color"];
 
     map.value.addLayer({
       id: "data-layer-polygon",
@@ -304,6 +277,7 @@ const addDataToMap = () => {
             featureObject = JSON.parse(featureObject);
           }
 
+<<<<<<< HEAD
           // Create GeoJSON Feature for download
           const featureGeojson = {
             type: e.features[0].type,
@@ -330,6 +304,38 @@ const addDataToMap = () => {
           showSidebar.value = true;
           showIntroPanel.value = false;
         }
+=======
+        const recordId = e.features[0].properties._id;
+        if (!recordId) return;
+
+        isLoadingRecord.value = true;
+        showSidebar.value = true;
+        showIntroPanel.value = false;
+
+        const rawRecord = await fetchRecord(recordId);
+        isLoadingRecord.value = false;
+
+        if (!rawRecord) return;
+
+        const transformed = transformSurveyData(
+          [rawRecord],
+          props.iconColumn,
+        )[0];
+        const displayFeature = JSON.parse(JSON.stringify(transformed));
+        delete displayFeature["filter-color"];
+        if (displayFeature.geocoordinates) {
+          displayFeature.geocoordinates = prepareCoordinatesForSelectedFeature(
+            displayFeature.geocoordinates,
+          );
+        }
+
+        selectedFeature.value = displayFeature;
+        selectedFeatureOriginal.value = {
+          type: e.features[0].type,
+          geometry: e.features[0].geometry,
+          properties: { ...displayFeature },
+        };
+>>>>>>> 182a14e (Subissue 267: minimal GET api/[table]/map, map view uses it for initial load)
       },
       { passive: true },
     );
@@ -340,10 +346,9 @@ const addDataToMap = () => {
 const loadIconImages = async () => {
   if (!props.iconColumn || !props.mediaBasePathIcons || !map.value) return;
 
-  // Get unique icon filenames from data
   const iconFilenames = new Set<string>();
-  filteredData.value.forEach((item) => {
-    const iconFilename = item[props.iconColumn!];
+  filteredData.value.forEach((feature) => {
+    const iconFilename = feature.properties?.[props.iconColumn!];
     if (iconFilename && typeof iconFilename === "string") {
       iconFilenames.add(iconFilename);
     }
@@ -385,18 +390,18 @@ const prepareMapCanvasContent = async () => {
   prepareMapLegendContent();
 };
 
-const processedData = ref([...props.mapData]);
+const processedData = ref<Feature[]>([...props.mapData.features]);
 
 /** Filter data based on selected values from DataFilter component */
 const filterValues = (values: FilterValues) => {
   if (values.includes("null")) {
     filteredData.value = [...processedData.value];
   } else {
-    filteredData.value = processedData.value.filter((item) =>
-      values.includes(item[props.filterColumn]),
+    filteredData.value = processedData.value.filter((feature) =>
+      values.includes(feature.properties?.[props.filterColumn]),
     );
   }
-  addDataToMap(); // Update the map data
+  addDataToMap();
 };
 
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
@@ -506,7 +511,7 @@ onBeforeUnmount(() => {
     </button>
     <DataFilter
       v-if="filterColumn"
-      :data="mapData"
+      :data="mapDataForFilter"
       :filter-column="filterColumn"
       :color-column="colorColumn"
       :show-colored-dot="true"
@@ -524,7 +529,7 @@ onBeforeUnmount(() => {
         )
       "
       :is-alerts-dashboard="false"
-      :map-data="mapData"
+      :map-data="mapDataForFilter"
       :map-statistics="mapStatistics"
       :media-base-path="mediaBasePath"
       :show-intro-panel="showIntroPanel"
