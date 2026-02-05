@@ -28,6 +28,7 @@ export const useRuntimeConfig = vi.fn(() => ({
   public: {
     authStrategy: "auth0",
     baseUrl: "http://localhost:8080",
+    appApiKey: "test-key",
   },
 }));
 

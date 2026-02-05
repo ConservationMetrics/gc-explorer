@@ -10,6 +10,7 @@ import {
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
 } from "@/utils/mapFunctions";
+import { transformSurveyData } from "@/utils/dataProcessing/transformData";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
@@ -21,6 +22,7 @@ import type {
   AllowedFileExtensions,
   Basemap,
   BasemapConfig,
+  DataEntry,
   Dataset,
   FilterValues,
   MapLegendItem,
@@ -50,6 +52,7 @@ const props = defineProps<{
   mediaBasePathIcons?: string;
   mediaColumn?: string;
   planetApiKey?: string;
+  table: string;
 }>();
 
 const filteredData = ref([...props.mapData]);
@@ -61,6 +64,31 @@ const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showIcons = ref(false);
 const loadingIcons = ref(false);
+const isLoadingRecord = ref(false);
+
+const {
+  public: { appApiKey },
+} = useRuntimeConfig();
+const recordCache = new Map<string, DataEntry>();
+
+const fetchRecord = async (recordId: string): Promise<DataEntry | null> => {
+  if (recordCache.has(recordId)) {
+    return recordCache.get(recordId)!;
+  }
+  try {
+    const response = await $fetch<DataEntry>(
+      `/api/${props.table}/${recordId}`,
+      {
+        headers: { "x-api-key": appApiKey as string },
+      },
+    );
+    recordCache.set(recordId, response);
+    return response;
+  } catch (error) {
+    console.error(`Failed to fetch record ${recordId}:`, error);
+    return null;
+  }
+};
 
 // Check if icon toggle is available
 const canToggleIcons = computed(() => {
@@ -296,40 +324,68 @@ const addDataToMap = () => {
     map.value.on(
       "click",
       layerId,
-      (e: MapMouseEvent) => {
-        if (e.features && e.features.length > 0 && e.features[0].properties) {
-          // Parse the feature if it's a string (Mapbox may serialize it)
-          let featureObject = e.features[0].properties.feature;
-          if (typeof featureObject === "string") {
-            featureObject = JSON.parse(featureObject);
-          }
+      async (e: MapMouseEvent) => {
+        if (!e.features || e.features.length === 0 || !e.features[0].properties)
+          return;
 
-          // Create GeoJSON Feature for download
-          const featureGeojson = {
-            type: e.features[0].type,
-            geometry: e.features[0].geometry,
-            properties: { ...featureObject },
-          };
-          // Remove filter-color from properties
-          delete featureGeojson.properties["filter-color"];
+        let featureObject = e.features[0].properties.feature;
+        if (typeof featureObject === "string") {
+          featureObject = JSON.parse(featureObject);
+        }
 
-          // Create display feature with formatted coordinates
-          const displayFeature = JSON.parse(JSON.stringify(featureObject));
-          delete displayFeature["filter-color"];
-
-          // Rewrite coordinates string from [long, lat] to lat, long, removing brackets for display
-          if (displayFeature.geocoordinates) {
-            displayFeature.geocoordinates =
-              prepareCoordinatesForSelectedFeature(
-                displayFeature.geocoordinates,
-              );
-          }
-
-          selectedFeature.value = displayFeature;
-          selectedFeatureOriginal.value = featureGeojson;
+        const recordId =
+          featureObject._id ?? featureObject[" id"] ?? featureObject.id;
+        if (!recordId) {
           showSidebar.value = true;
           showIntroPanel.value = false;
+          const displayFeature = JSON.parse(JSON.stringify(featureObject));
+          delete displayFeature["filter-color"];
+          selectedFeature.value = displayFeature;
+          selectedFeatureOriginal.value = {
+            type: e.features[0].type,
+            geometry: e.features[0].geometry,
+            properties: { ...displayFeature },
+          };
+          return;
         }
+
+        isLoadingRecord.value = true;
+        showSidebar.value = true;
+        showIntroPanel.value = false;
+
+        const rawRecord = await fetchRecord(recordId);
+        isLoadingRecord.value = false;
+
+        if (!rawRecord) {
+          const displayFeature = JSON.parse(JSON.stringify(featureObject));
+          delete displayFeature["filter-color"];
+          selectedFeature.value = displayFeature;
+          selectedFeatureOriginal.value = {
+            type: e.features[0].type,
+            geometry: e.features[0].geometry,
+            properties: { ...displayFeature },
+          };
+          return;
+        }
+
+        const transformed = transformSurveyData(
+          [rawRecord],
+          props.iconColumn,
+        )[0];
+        const displayFeature = JSON.parse(JSON.stringify(transformed));
+        delete displayFeature["filter-color"];
+        if (displayFeature.geocoordinates) {
+          displayFeature.geocoordinates = prepareCoordinatesForSelectedFeature(
+            displayFeature.geocoordinates,
+          );
+        }
+
+        selectedFeature.value = displayFeature;
+        selectedFeatureOriginal.value = {
+          type: e.features[0].type,
+          geometry: e.features[0].geometry,
+          properties: { ...displayFeature },
+        };
       },
       { passive: true },
     );

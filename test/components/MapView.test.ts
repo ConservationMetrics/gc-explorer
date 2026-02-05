@@ -56,8 +56,11 @@ const baseProps: InstanceType<typeof MapView>["$props"] = {
   ],
   mediaBasePath: "/media",
   planetApiKey: "",
+  table: "test_table",
 };
 
+const mockUseRuntimeConfig = () => ({ public: { appApiKey: "test-key" } });
+vi.stubGlobal("useRuntimeConfig", mockUseRuntimeConfig);
 Object.assign(globalThis, {
   ref,
   reactive,
@@ -66,6 +69,7 @@ Object.assign(globalThis, {
   onMounted,
   onBeforeUnmount,
   nextTick,
+  useRuntimeConfig: mockUseRuntimeConfig,
 });
 
 // Mock vue-router for route & router injections
@@ -74,6 +78,10 @@ const mockRouter = { replace: vi.fn(), push: vi.fn() };
 vi.mock("vue-router", () => ({
   useRoute: () => mockRoute.value,
   useRouter: () => mockRouter,
+}));
+
+vi.mock("#imports", () => ({
+  useRuntimeConfig: () => ({ public: { appApiKey: "test-key" } }),
 }));
 
 // Shared global config for all tests
