@@ -3,6 +3,14 @@ import { useI18n } from "vue-i18n";
 
 import { replaceUnderscoreWithSpace } from "@/utils/index";
 import { useIsPublic } from "@/utils/permissions";
+import {
+  filterUnwantedKeys,
+  filterOutUnwantedValues,
+  filterDataByExtension,
+} from "@/utils/dataProcessing/filterData";
+import { transformSurveyData } from "@/utils/dataProcessing/transformData";
+
+import type { ColumnEntry } from "@/types/types";
 
 // Extract the tablename from the route parameters
 const route = useRoute();
@@ -28,10 +36,31 @@ const { data, error } = await useFetch(`/api/${table}/gallery`, {
 });
 
 if (data.value && !error.value) {
+  const rawData = data.value.data ?? [];
+  const columns = (data.value.columns ?? []) as ColumnEntry[];
+
+  const filteredKeys = filterUnwantedKeys(
+    rawData,
+    columns,
+    data.value.unwantedColumns,
+    data.value.unwantedSubstrings,
+  );
+  const filteredValues = filterOutUnwantedValues(
+    filteredKeys,
+    data.value.filterByColumn,
+    data.value.filterOutValuesFromColumn,
+  );
+  const withFilesOnly = filterDataByExtension(
+    filteredValues,
+    data.value.allowedFileExtensions,
+    data.value.mediaColumn,
+  );
+  const transformed = transformSurveyData(withFilesOnly);
+
   allowedFileExtensions.value = data.value.allowedFileExtensions;
   dataFetched.value = true;
   filterColumn.value = data.value.filterColumn;
-  galleryData.value = data.value.data;
+  galleryData.value = transformed;
   mediaBasePath.value = data.value.mediaBasePath;
   mediaColumn.value = data.value.mediaColumn;
 } else {

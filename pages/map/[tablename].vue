@@ -3,8 +3,18 @@ import { useI18n } from "vue-i18n";
 
 import { replaceUnderscoreWithSpace } from "@/utils/index";
 import { useIsPublic } from "@/utils/permissions";
+import {
+  filterUnwantedKeys,
+  filterOutUnwantedValues,
+  filterGeoData,
+} from "@/utils/dataProcessing/filterData";
+import {
+  transformSurveyData,
+  prepareMapData,
+  prepareMapStatistics,
+} from "@/utils/dataProcessing/transformData";
 
-import type { BasemapConfig } from "@/types/types";
+import type { BasemapConfig, ColumnEntry } from "@/types/types";
 
 // Extract the tablename from the route parameters
 const route = useRoute();
@@ -46,13 +56,32 @@ const { data, error } = await useFetch(`/api/${table}/map`, {
 });
 
 if (data.value && !error.value) {
+  const rawData = data.value.data ?? [];
+  const columns = (data.value.columns ?? []) as ColumnEntry[];
+
+  const filteredKeys = filterUnwantedKeys(
+    rawData,
+    columns,
+    data.value.unwantedColumns,
+    data.value.unwantedSubstrings,
+  );
+  const filteredValues = filterOutUnwantedValues(
+    filteredKeys,
+    data.value.filterByColumn,
+    data.value.filterOutValuesFromColumn,
+  );
+  const filteredGeo = filterGeoData(filteredValues);
+  const transformed = transformSurveyData(filteredGeo, data.value.iconColumn);
+  const processedMapData = prepareMapData(transformed, data.value.filterColumn);
+  const stats = prepareMapStatistics(processedMapData);
+
   allowedFileExtensions.value = data.value.allowedFileExtensions;
   colorColumn.value = data.value.colorColumn;
   dataFetched.value = true;
   filterColumn.value = data.value.filterColumn;
   iconColumn.value = data.value.iconColumn;
   mapLegendLayerIds.value = data.value.mapLegendLayerIds;
-  mapStatistics.value = data.value.mapStatistics;
+  mapStatistics.value = stats;
   mapboxAccessToken.value = data.value.mapboxAccessToken;
   mapboxBearing.value = data.value.mapboxBearing;
   mapboxLatitude.value = data.value.mapboxLatitude;
@@ -64,7 +93,7 @@ if (data.value && !error.value) {
   mapboxZoom.value = data.value.mapboxZoom;
   mapbox3d.value = data.value.mapbox3d;
   mapbox3dTerrainExaggeration.value = data.value.mapbox3dTerrainExaggeration;
-  mapData.value = data.value.data;
+  mapData.value = processedMapData;
   mediaBasePath.value = data.value.mediaBasePath;
   mediaBasePathIcons.value = data.value.mediaBasePathIcons;
   mediaColumn.value = data.value.mediaColumn;
