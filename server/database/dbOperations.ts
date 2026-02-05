@@ -6,6 +6,14 @@ import { CONFIG_LIMITS } from "@/utils";
 import { viewConfig } from "../db/schema";
 import { configDb, warehouseDb } from "../utils/db";
 
+const VALID_IDENTIFIER = /^[a-zA-Z0-9_]+$/;
+
+function sanitizeColumnName(name: string): string | null {
+  const trimmed = name?.trim();
+  if (!trimmed || !VALID_IDENTIFIER.test(trimmed)) return null;
+  return trimmed;
+}
+
 const checkTableExists = async (
   table: string | undefined,
 ): Promise<boolean> => {
@@ -75,6 +83,58 @@ export const fetchData = async (
   console.log("Successfully fetched data from", table, "!");
 
   return { mainData, columnsData, metadata };
+};
+
+/**
+ * Fetches only the minimal columns needed for the map view: _id, g__type,
+ * g__coordinates, and config-driven color/icon/filter columns.
+ * Used by GET /api/[table]/map to return a small payload and GeoJSON FeatureCollection.
+ */
+export const fetchMapGeo = async (
+  table: string | undefined,
+  config: ViewConfig | undefined,
+): Promise<Record<string, unknown>[]> => {
+  if (!table) return [];
+
+  const mainDataExists = await checkTableExists(table);
+  if (!mainDataExists) {
+    throw new Error("Main table does not exist");
+  }
+
+  const requiredColumns = ["_id", "g__type", "g__coordinates"];
+  const optionalColumns = [
+    config?.COLOR_COLUMN,
+    config?.ICON_COLUMN,
+    config?.FRONT_END_FILTER_COLUMN,
+    config?.FILTER_BY_COLUMN,
+    config?.FILTER_OUT_VALUES_FROM_COLUMN,
+  ].filter((c): c is string => typeof c === "string" && c.length > 0);
+
+  const allColumnNames = [
+    ...requiredColumns,
+    ...optionalColumns.filter((c) => !requiredColumns.includes(c)),
+  ];
+  const safeColumns = allColumnNames
+    .map(sanitizeColumnName)
+    .filter((c): c is string => c != null);
+  const uniqueColumns = [...new Set(safeColumns)];
+
+  if (uniqueColumns.length === 0) return [];
+
+  const cleanTableName = table.replace(/"/g, "");
+  const quotedTable = `"${cleanTableName.replace(/"/g, '""')}"`;
+  const quotedColumns = uniqueColumns
+    .map((c) => `"${c.replace(/"/g, '""')}"`)
+    .join(", ");
+  const rawSql = `SELECT ${quotedColumns} FROM ${quotedTable}`;
+
+  try {
+    const result = await warehouseDb.execute(sql.raw(rawSql));
+    return (result ?? []) as Record<string, unknown>[];
+  } catch (error) {
+    console.error("Error fetching map geo from", table, error);
+    throw error;
+  }
 };
 
 export const fetchTableNames = async (): Promise<string[]> => {
