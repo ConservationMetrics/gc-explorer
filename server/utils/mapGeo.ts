@@ -71,9 +71,10 @@ function isValidCoordinates(
 }
 
 /** Returns true if the row has valid _id, g__type and g__coordinates for map display. */
-export function isValidGeoRow(
-  row: Record<string, unknown>,
-): row is Record<string, unknown> & {
+export function isValidGeoRow(row: Record<string, unknown>): row is Record<
+  string,
+  unknown
+> & {
   _id: string;
   g__type: string;
   g__coordinates: string;
@@ -129,7 +130,10 @@ export function filterOutUnwantedValues(
 ): Record<string, unknown>[] {
   if (!filterByColumn || !filterOutValues) return rows;
   const toRemove = new Set(
-    filterOutValues.split(",").map((v) => v.trim()).filter(Boolean),
+    filterOutValues
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean),
   );
   return rows.filter((row) => {
     const val = row[filterByColumn];
@@ -143,7 +147,11 @@ export function filterOutUnwantedValues(
  * so MapView can read properties._id and style by color/icon/filter without change.
  */
 export function buildMapFeatureCollection(
-  rows: (Record<string, unknown> & { _id: string; g__type: string; g__coordinates: string })[],
+  rows: (Record<string, unknown> & {
+    _id: string;
+    g__type: string;
+    g__coordinates: string;
+  })[],
   config: ViewConfig,
 ): FeatureCollection {
   const colorColumn = config.COLOR_COLUMN;
