@@ -9,8 +9,8 @@ import {
   prepareAlertsStatistics,
   prepareMapStatistics,
   transformToGeojson,
-} from "@/server/dataProcessing/transformData";
-import { isValidCoordinate } from "@/server/dataProcessing/helpers";
+} from "@/utils/dataProcessing/transformData";
+import { isValidCoordinate } from "@/utils/dataProcessing/helpers";
 import { mapeoData, transformedMapeoData } from "../fixtures/mapeoData";
 import { alertsData, alertsMetadata } from "../fixtures/alertsData";
 

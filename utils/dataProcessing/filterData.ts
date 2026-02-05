@@ -8,24 +8,6 @@ import type {
 
 /**
  * Filters out unwanted columns and substrings from the provided data entries.
- *
- * This function utilizes SQL column mapping if available to determine which columns
- * should be excluded from the dataset. It processes the data based on a list of unwanted
- * column names and substrings, which can be specified as comma-separated strings.
- *
- * @param {DataEntry[]} data - The dataset to be filtered, represented as an array of data entries.
- * @param {ColumnEntry[] | null} columns - An optional array of column entries that provide
- *                                         a mapping between original column names and their
- *                                         corresponding SQL column names. If null, filtering
- *                                         is based on the keys of the data entries.
- * @param {string | undefined} unwantedColumnsList - A comma-separated string of column names
- *                                                   that should be removed from the dataset.
- * @param {string | undefined} unwantedSubstringsList - A comma-separated string of substrings.
- *                                                      Any column name containing one of these
- *                                                      substrings will be removed from the dataset.
- *
- * @returns {DataEntry[]} - A new array of data entries with the unwanted columns and substrings
- *                          filtered out.
  */
 export const filterUnwantedKeys = (
   data: DataEntry[],
@@ -56,7 +38,7 @@ export const filterUnwantedKeys = (
 
   let filteredSqlColumns: Set<string>;
 
-  if (columns) {
+  if (columns && columns.length > 0) {
     const columnMapping: { [key: string]: string } = {};
     columns.forEach((column) => {
       columnMapping[column.original_column] = column.sql_column;
@@ -80,7 +62,7 @@ export const filterUnwantedKeys = (
         (sqlColumn) => !unwantedSqlColumns.has(sqlColumn),
       ),
     );
-  } else {
+  } else if (data.length > 0) {
     filteredSqlColumns = new Set(
       Object.keys(data[0]).filter(
         (key) =>
@@ -88,6 +70,8 @@ export const filterUnwantedKeys = (
           !unwantedSubstrings.some((sub) => key.includes(sub)),
       ),
     );
+  } else {
+    return [];
   }
 
   const filteredData = data.map((item) =>

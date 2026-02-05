@@ -3,8 +3,20 @@ import { useI18n } from "vue-i18n";
 
 import { replaceUnderscoreWithSpace } from "@/utils/index";
 import { useIsPublic } from "@/utils/permissions";
+import {
+  filterUnwantedKeys,
+  filterGeoData,
+} from "@/utils/dataProcessing/filterData";
+import {
+  prepareAlertData,
+  prepareAlertsStatistics,
+  prepareMapData,
+  transformSurveyData,
+  transformToGeojson,
+} from "@/utils/dataProcessing/transformData";
+import { generateMapboxIdFromMapeoFeatureId } from "@/utils/dataProcessing/helpers";
 
-import type { BasemapConfig } from "@/types/types";
+import type { BasemapConfig, ColumnEntry, DataEntry } from "@/types/types";
 
 // Extract the tablename from the route parameters
 const route = useRoute();
@@ -44,8 +56,51 @@ const { data, error } = await useFetch(`/api/${table}/alerts`, {
 });
 
 if (data.value && !error.value) {
-  alertsData.value = data.value.alertsData;
-  alertsStatistics.value = data.value.alertsStatistics;
+  const mainData = (data.value.mainData ?? []) as DataEntry[];
+  const metadata = data.value.metadata ?? null;
+
+  const changeDetectionData = prepareAlertData(mainData, table);
+  alertsData.value = {
+    mostRecentAlerts: transformToGeojson(changeDetectionData.mostRecentAlerts),
+    previousAlerts: transformToGeojson(changeDetectionData.previousAlerts),
+  };
+  alertsStatistics.value = prepareAlertsStatistics(mainData, metadata);
+
+  let processedMapeo: DataEntry[] | null = null;
+  if (data.value.mapeoData && data.value.mapeoCategoryIds) {
+    const rawMapeo = data.value.mapeoData as DataEntry[];
+    const columns = (data.value.mapeoColumns ?? []) as ColumnEntry[];
+    const filteredMapeo = filterUnwantedKeys(
+      rawMapeo,
+      columns,
+      data.value.unwantedColumns,
+      data.value.unwantedSubstrings,
+    );
+    const byCategory = filteredMapeo.filter((row: DataEntry) =>
+      Object.keys(row).some(
+        (key) =>
+          key.includes("category") &&
+          data.value.mapeoCategoryIds.split(",").includes(row[key]),
+      ),
+    );
+    const geoMapeo = filterGeoData(byCategory);
+    const transformedMapeo = transformSurveyData(geoMapeo);
+    const withMapData = prepareMapData(
+      transformedMapeo,
+      data.value.filterColumn,
+    );
+    processedMapeo = withMapData.map((item: DataEntry) => {
+      if (
+        item.id &&
+        typeof item.id === "string" &&
+        item.id.match(/^[0-9a-fA-F]{16}$/)
+      ) {
+        item.normalizedId = generateMapboxIdFromMapeoFeatureId(item.id);
+      }
+      return item;
+    });
+  }
+
   allowedFileExtensions.value = data.value.allowedFileExtensions;
   dataFetched.value = true;
   logoUrl.value = data.value.logoUrl;
@@ -61,7 +116,7 @@ if (data.value && !error.value) {
   mapboxZoom.value = data.value.mapboxZoom;
   mapbox3d.value = data.value.mapbox3d;
   mapbox3dTerrainExaggeration.value = data.value.mapbox3dTerrainExaggeration;
-  mapeoData.value = data.value.mapeoData;
+  mapeoData.value = processedMapeo;
   mediaBasePath.value = data.value.mediaBasePath;
   mediaBasePathAlerts.value = data.value.mediaBasePathAlerts;
   planetApiKey.value = data.value.planetApiKey;

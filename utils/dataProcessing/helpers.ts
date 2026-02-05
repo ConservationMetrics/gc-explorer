@@ -1,3 +1,5 @@
+import murmurhash from "murmurhash";
+
 /** Generates a random hex color code. */
 export const getRandomColor = () => {
   const letters = "0123456789ABCDEF";
@@ -148,4 +150,21 @@ export const formatDate = (date: string): string => {
     ).toLocaleDateString();
   }
   return date;
+};
+
+/**
+ * Converts a Mapeo document ID (64-bit hex string) to a 32-bit integer
+ * using MurmurHash for Mapbox feature state management.
+ */
+export const generateMapboxIdFromMapeoFeatureId = (mapeoId: string): number => {
+  if (
+    !mapeoId ||
+    typeof mapeoId !== "string" ||
+    !mapeoId.match(/^[0-9a-fA-F]{16}$/)
+  ) {
+    throw new Error(
+      `Invalid Mapeo ID format: ${mapeoId}. Expected 16-character hex string.`,
+    );
+  }
+  return murmurhash.v3(mapeoId);
 };
