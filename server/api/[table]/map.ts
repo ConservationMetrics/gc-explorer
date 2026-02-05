@@ -1,85 +1,21 @@
-import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import { fetchConfig, fetchMapGeo } from "@/server/database/dbOperations";
 import {
-  filterUnwantedKeys,
+  isValidGeoRow,
   filterOutUnwantedValues,
-  filterGeoData,
-} from "@/utils/dataProcessing/filterData";
-import { prepareMapStatistics } from "@/utils/dataProcessing/transformData";
-import { getRandomColor } from "@/utils/dataProcessing/helpers";
+  buildMapFeatureCollection,
+} from "@/server/utils/mapGeo";
 import { validatePermissions } from "@/utils/auth";
 
 import type { H3Event } from "h3";
-import type {
-  AllowedFileExtensions,
-  ColumnEntry,
-  DataEntry,
-} from "@/types/types";
-import type { Feature, FeatureCollection } from "geojson";
+import type { AllowedFileExtensions } from "@/types/types";
 import { parseBasemaps } from "@/server/utils/basemaps";
-
-/**
- * Builds minimal GeoJSON FeatureCollection from raw data entries.
- * Only includes _id, geometry, and config-driven styling/filter columns.
- */
-function toMinimalGeoJSON(
-  data: DataEntry[],
-  colorColumn?: string,
-  iconColumn?: string,
-  filterColumn?: string,
-): FeatureCollection {
-  const colorMap = new Map<string, string>();
-  const features: Feature[] = data.map((entry) => {
-    const properties: Record<string, string> = { _id: entry._id };
-
-    if (colorColumn && entry[colorColumn] !== undefined) {
-      properties[colorColumn] = String(entry[colorColumn]);
-    }
-    if (iconColumn && entry[iconColumn] !== undefined) {
-      properties[iconColumn] = String(entry[iconColumn]);
-    }
-    if (
-      filterColumn &&
-      filterColumn !== colorColumn &&
-      filterColumn !== iconColumn &&
-      entry[filterColumn] !== undefined
-    ) {
-      properties[filterColumn] = String(entry[filterColumn]);
-      const val = String(entry[filterColumn]);
-      if (!colorMap.has(val)) colorMap.set(val, getRandomColor());
-      properties["filter-color"] = colorMap.get(val)!;
-    } else {
-      properties["filter-color"] = "#3333FF";
-    }
-
-    let coordinates: unknown = [];
-    try {
-      coordinates = JSON.parse(entry.g__coordinates ?? "[]");
-    } catch {
-      console.warn(
-        `Failed to parse coordinates for record ${entry._id}:`,
-        entry.g__coordinates,
-      );
-    }
-
-    return {
-      type: "Feature" as const,
-      id: entry._id,
-      geometry: {
-        type: (entry.g__type ?? "Point") as "Point" | "LineString" | "Polygon",
-        coordinates,
-      },
-      properties,
-    };
-  });
-
-  return { type: "FeatureCollection", features };
-}
 
 /**
  * GET /api/[table]/map
  *
- * Returns minimal GeoJSON for map rendering (geometry + _id + styling columns).
- * Full record details are fetched on demand via GET /api/[table]/[recordId].
+ * Returns minimal GeoJSON FeatureCollection for map rendering: _id, g__type,
+ * g__coordinates, and config-driven COLOR_COLUMN / ICON_COLUMN. Filtering is
+ * done on the server. Full records are fetched on demand via GET /api/[table]/[recordId].
  */
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -91,63 +27,77 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   try {
+    const timings: Record<string, number> = {};
+    const startTotal = performance.now();
+
     const viewsConfig = await fetchConfig();
+    timings.fetchConfig = performance.now() - startTotal;
 
     const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
 
-    const { mainData, columnsData } = await fetchData(table);
+    const config = viewsConfig[table];
+    if (!config) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Not Found",
+        message: `Table '${table}' not found`,
+      });
+    }
 
-    const filteredData = filterUnwantedKeys(
-      mainData,
-      columnsData as ColumnEntry[],
-      viewsConfig[table].UNWANTED_COLUMNS,
-      viewsConfig[table].UNWANTED_SUBSTRINGS,
-    );
-    const dataFilteredByValues = filterOutUnwantedValues(
-      filteredData,
-      viewsConfig[table].FILTER_BY_COLUMN,
-      viewsConfig[table].FILTER_OUT_VALUES_FROM_COLUMN,
-    );
-    const filteredGeoData = filterGeoData(dataFilteredByValues);
+    const startFetch = performance.now();
+    const rows = await fetchMapGeo(table, config);
+    timings.fetchMapGeo = performance.now() - startFetch;
 
-    const geoJsonData = toMinimalGeoJSON(
-      filteredGeoData,
-      viewsConfig[table].COLOR_COLUMN,
-      viewsConfig[table].ICON_COLUMN,
-      viewsConfig[table].FRONT_END_FILTER_COLUMN,
+    const filteredByValues = filterOutUnwantedValues(
+      rows,
+      config.FILTER_BY_COLUMN,
+      config.FILTER_OUT_VALUES_FROM_COLUMN,
     );
+    const validGeoRows = filteredByValues.filter(isValidGeoRow);
 
-    const mapStatistics = prepareMapStatistics(filteredGeoData);
+    const startBuild = performance.now();
+    const featureCollection = buildMapFeatureCollection(validGeoRows, config);
+    const mapStatistics = { totalFeatures: featureCollection.features.length };
+    timings.buildGeoJSON = performance.now() - startBuild;
+
     const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
+
+    timings.total = performance.now() - startTotal;
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `[map] /api/${table}/map timings (ms):`,
+        JSON.stringify(timings),
+      );
+    }
 
     return {
       allowedFileExtensions: allowedFileExtensions,
-      colorColumn: viewsConfig[table].COLOR_COLUMN,
-      data: geoJsonData,
-      filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
-      iconColumn: viewsConfig[table].ICON_COLUMN,
-      mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,
+      colorColumn: config.COLOR_COLUMN,
+      data: featureCollection,
+      filterColumn: config.FRONT_END_FILTER_COLUMN,
+      iconColumn: config.ICON_COLUMN,
+      mapLegendLayerIds: config.MAP_LEGEND_LAYER_IDS,
       mapStatistics,
-      mapbox3d: viewsConfig[table].MAPBOX_3D ?? false,
+      mapbox3d: config.MAPBOX_3D ?? false,
       mapbox3dTerrainExaggeration: Number(
-        viewsConfig[table].MAPBOX_3D_TERRAIN_EXAGGERATION,
+        config.MAPBOX_3D_TERRAIN_EXAGGERATION,
       ),
-      mapboxAccessToken: viewsConfig[table].MAPBOX_ACCESS_TOKEN,
-      mapboxBearing: Number(viewsConfig[table].MAPBOX_BEARING),
-      mapboxLatitude: Number(viewsConfig[table].MAPBOX_CENTER_LATITUDE),
-      mapboxLongitude: Number(viewsConfig[table].MAPBOX_CENTER_LONGITUDE),
-      mapboxPitch: Number(viewsConfig[table].MAPBOX_PITCH),
-      mapboxProjection: viewsConfig[table].MAPBOX_PROJECTION,
+      mapboxAccessToken: config.MAPBOX_ACCESS_TOKEN,
+      mapboxBearing: Number(config.MAPBOX_BEARING),
+      mapboxLatitude: Number(config.MAPBOX_CENTER_LATITUDE),
+      mapboxLongitude: Number(config.MAPBOX_CENTER_LONGITUDE),
+      mapboxPitch: Number(config.MAPBOX_PITCH),
+      mapboxProjection: config.MAPBOX_PROJECTION,
       mapboxStyle: defaultMapboxStyle,
       mapboxBasemaps: basemaps,
-      mapboxZoom: Number(viewsConfig[table].MAPBOX_ZOOM),
-      mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
-      mediaBasePathIcons: viewsConfig[table].MEDIA_BASE_PATH_ICONS,
-      mediaColumn: viewsConfig[table].MEDIA_COLUMN,
-      planetApiKey: viewsConfig[table].PLANET_API_KEY,
+      mapboxZoom: Number(config.MAPBOX_ZOOM),
+      mediaBasePath: config.MEDIA_BASE_PATH,
+      mediaBasePathIcons: config.MEDIA_BASE_PATH_ICONS,
+      mediaColumn: config.MEDIA_COLUMN,
+      planetApiKey: config.PLANET_API_KEY,
       table: table,
-      routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
+      routeLevelPermission: config.ROUTE_LEVEL_PERMISSION,
     };
   } catch (error) {
     if (error instanceof Error) {
