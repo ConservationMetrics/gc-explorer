@@ -192,6 +192,63 @@ describe("MapView component", () => {
     );
   });
 
+  it("accepts GeoJSON FeatureCollection as mapData and normalizes for map and filter", async () => {
+    const featureCollectionMapData = {
+      type: "FeatureCollection" as const,
+      features: [
+        {
+          type: "Feature" as const,
+          id: "id-1",
+          geometry: { type: "Point" as const, coordinates: [0, 0] },
+          properties: {
+            _id: "id-1",
+            status: "active",
+            "filter-color": "#ff0000",
+          },
+        },
+        {
+          type: "Feature" as const,
+          id: "id-2",
+          geometry: {
+            type: "Polygon" as const,
+            coordinates: [
+              [
+                [0, 0],
+                [1, 1],
+                [1, 0],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {
+            _id: "id-2",
+            status: "inactive",
+            "filter-color": "#00ff00",
+          },
+        },
+      ],
+    };
+
+    mount(MapView, {
+      props: { ...baseProps, mapData: featureCollectionMapData },
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    expect(mapboxMock.mockMap.addSource).toHaveBeenCalledWith(
+      "data-source",
+      expect.objectContaining({
+        type: "geojson",
+        data: expect.objectContaining({
+          type: "FeatureCollection",
+          features: expect.any(Array),
+        }),
+      }),
+    );
+  });
+
   it("adds layers for Polygon features", async () => {
     mount(MapView, {
       props: baseProps,

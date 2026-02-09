@@ -21,11 +21,13 @@ import type {
   AllowedFileExtensions,
   Basemap,
   BasemapConfig,
+  DataEntry,
   Dataset,
   FilterValues,
   MapLegendItem,
   MapStatistics,
 } from "@/types/types";
+import type { FeatureCollection } from "geojson";
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
@@ -45,14 +47,56 @@ const props = defineProps<{
   mapboxZoom: number;
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
-  mapData: Dataset;
+  mapData: Dataset | FeatureCollection;
   mediaBasePath?: string;
   mediaBasePathIcons?: string;
   mediaColumn?: string;
   planetApiKey?: string;
 }>();
 
-const filteredData = ref([...props.mapData]);
+/**
+ * Normalizes mapData to a Dataset (array of DataEntry) for internal use.
+ * If the API returns a GeoJSON FeatureCollection (minimal map endpoint), convert
+ * each feature to the shape expected by addDataToMap and DataFilter (geotype,
+ * geocoordinates, _id, and properties). Otherwise pass through the array as-is.
+ */
+const mapDataAsArray = computed((): DataEntry[] => {
+  const data = props.mapData;
+  if (
+    data &&
+    typeof data === "object" &&
+    "type" in data &&
+    data.type === "FeatureCollection" &&
+    Array.isArray(data.features)
+  ) {
+    return data.features.map((f) => {
+      const props_ = (f.properties ?? {}) as Record<string, string>;
+      const geom = f.geometry;
+      const coords =
+        geom && "coordinates" in geom ? JSON.stringify(geom.coordinates) : "[]";
+      const type = geom && "type" in geom ? geom.type : "Point";
+      return {
+        ...props_,
+        geotype: type,
+        geocoordinates: coords,
+        _id: f.id != null ? String(f.id) : props_._id,
+      } as DataEntry;
+    });
+  }
+  return Array.isArray(data) ? [...(data as Dataset)] : [];
+});
+
+const filteredData = ref<DataEntry[]>([]);
+const processedData = ref<DataEntry[]>([]);
+
+watch(
+  mapDataAsArray,
+  (arr) => {
+    processedData.value = [...arr];
+    filteredData.value = [...arr];
+  },
+  { immediate: true },
+);
 const map = ref();
 const selectedFeature = ref();
 const selectedFeatureOriginal = ref();
@@ -385,8 +429,6 @@ const prepareMapCanvasContent = async () => {
   prepareMapLegendContent();
 };
 
-const processedData = ref([...props.mapData]);
-
 /** Filter data based on selected values from DataFilter component */
 const filterValues = (values: FilterValues) => {
   if (values.includes("null")) {
@@ -506,7 +548,7 @@ onBeforeUnmount(() => {
     </button>
     <DataFilter
       v-if="filterColumn"
-      :data="mapData"
+      :data="processedData"
       :filter-column="filterColumn"
       :color-column="colorColumn"
       :show-colored-dot="true"
@@ -524,7 +566,7 @@ onBeforeUnmount(() => {
         )
       "
       :is-alerts-dashboard="false"
-      :map-data="mapData"
+      :map-data="processedData"
       :map-statistics="mapStatistics"
       :media-base-path="mediaBasePath"
       :show-intro-panel="showIntroPanel"
