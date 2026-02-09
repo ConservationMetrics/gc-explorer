@@ -59,7 +59,7 @@ const getTableColumnNames = async (
       WHERE table_schema = 'public' AND table_name = ${cleanTableName}
     `);
     return new Set(
-      (result as { column_name: string }[]).map((row) => row.column_name),
+      (result as unknown as { column_name: string }[]).map((row) => row.column_name),
     );
   } catch (error) {
     console.error("Error fetching table column names:", error);
