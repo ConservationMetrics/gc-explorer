@@ -30,6 +30,7 @@ import type {
 import type { FeatureCollection } from "geojson";
 
 const props = defineProps<{
+  table?: string;
   allowedFileExtensions: AllowedFileExtensions;
   colorColumn?: string;
   filterColumn: string;
@@ -105,6 +106,8 @@ const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showIcons = ref(false);
 const loadingIcons = ref(false);
+const loadingFeature = ref(false);
+const featureLoadError = ref<string | null>(null);
 
 // Check if icon toggle is available
 const canToggleIcons = computed(() => {
@@ -340,39 +343,76 @@ const addDataToMap = () => {
     map.value.on(
       "click",
       layerId,
-      (e: MapMouseEvent) => {
+      async (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0 && e.features[0].properties) {
-          // Parse the feature if it's a string (Mapbox may serialize it)
           let featureObject = e.features[0].properties.feature;
           if (typeof featureObject === "string") {
             featureObject = JSON.parse(featureObject);
           }
-
-          // Create GeoJSON Feature for download
-          const featureGeojson = {
-            type: e.features[0].type,
-            geometry: e.features[0].geometry,
-            properties: { ...featureObject },
-          };
-          // Remove filter-color from properties
-          delete featureGeojson.properties["filter-color"];
-
-          // Create display feature with formatted coordinates
-          const displayFeature = JSON.parse(JSON.stringify(featureObject));
-          delete displayFeature["filter-color"];
-
-          // Rewrite coordinates string from [long, lat] to lat, long, removing brackets for display
-          if (displayFeature.geocoordinates) {
-            displayFeature.geocoordinates =
-              prepareCoordinatesForSelectedFeature(
-                displayFeature.geocoordinates,
+          const recordId = featureObject?._id ?? featureObject?.id;
+          if (props.table && recordId != null) {
+            loadingFeature.value = true;
+            featureLoadError.value = null;
+            showSidebar.value = true;
+            showIntroPanel.value = false;
+            try {
+              const config = useRuntimeConfig();
+              const headers: Record<string, string> = {};
+              if (config.public?.appApiKey) {
+                headers["x-api-key"] = config.public.appApiKey;
+              }
+              const raw = await $fetch<Record<string, unknown>>(
+                `/api/${props.table}/${encodeURIComponent(String(recordId))}`,
+                { headers },
               );
+              selectedFeature.value = raw as DataEntry;
+              const gType = raw?.g__type as string | undefined;
+              const gCoords = raw?.g__coordinates;
+              const coords =
+                typeof gCoords === "string"
+                  ? JSON.parse(gCoords as string)
+                  : gCoords;
+              selectedFeatureOriginal.value = {
+                type: "Feature",
+                geometry: {
+                  type: (gType ?? "Point") as
+                    | "Point"
+                    | "LineString"
+                    | "Polygon",
+                  coordinates: coords ?? [],
+                },
+                properties: { ...raw },
+              };
+            } catch (err) {
+              featureLoadError.value =
+                err && typeof err === "object" && "statusMessage" in err
+                  ? String((err as { statusMessage: string }).statusMessage)
+                  : "Failed to load record";
+              selectedFeature.value = null;
+              selectedFeatureOriginal.value = null;
+            } finally {
+              loadingFeature.value = false;
+            }
+          } else {
+            const featureGeojson = {
+              type: e.features[0].type,
+              geometry: e.features[0].geometry,
+              properties: { ...featureObject },
+            };
+            delete featureGeojson.properties["filter-color"];
+            const displayFeature = JSON.parse(JSON.stringify(featureObject));
+            delete displayFeature["filter-color"];
+            if (displayFeature.geocoordinates) {
+              displayFeature.geocoordinates =
+                prepareCoordinatesForSelectedFeature(
+                  displayFeature.geocoordinates,
+                );
+            }
+            selectedFeature.value = displayFeature;
+            selectedFeatureOriginal.value = featureGeojson;
+            showSidebar.value = true;
+            showIntroPanel.value = false;
           }
-
-          selectedFeature.value = displayFeature;
-          selectedFeatureOriginal.value = featureGeojson;
-          showSidebar.value = true;
-          showIntroPanel.value = false;
         }
       },
       { passive: true },
@@ -480,6 +520,7 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
 const resetToInitialState = () => {
   selectedFeature.value = null;
   selectedFeatureOriginal.value = null;
+  featureLoadError.value = null;
   showSidebar.value = true;
   showIntroPanel.value = true;
 
@@ -497,6 +538,7 @@ const handleSidebarClose = () => {
   showSidebar.value = false;
   selectedFeature.value = null;
   selectedFeatureOriginal.value = null;
+  featureLoadError.value = null;
   showIntroPanel.value = true;
 };
 
@@ -574,6 +616,8 @@ onBeforeUnmount(() => {
       :show-icons="showIcons"
       :can-toggle-icons="canToggleIcons"
       :loading-icons="loadingIcons"
+      :loading-feature="loadingFeature"
+      :feature-load-error="featureLoadError"
       @close="handleSidebarClose"
       @toggle-icons="handleToggleIcons"
     />

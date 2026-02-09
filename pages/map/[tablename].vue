@@ -97,6 +97,7 @@ useHead({
     <ClientOnly>
       <MapView
         v-if="dataFetched"
+        :table="table"
         :allowed-file-extensions="allowedFileExtensions"
         :color-column="colorColumn"
         :filter-column="filterColumn"

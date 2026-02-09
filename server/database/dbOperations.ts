@@ -59,7 +59,9 @@ const getTableColumnNames = async (
       WHERE table_schema = 'public' AND table_name = ${cleanTableName}
     `);
     return new Set(
-      (result as unknown as { column_name: string }[]).map((row) => row.column_name),
+      (result as unknown as { column_name: string }[]).map(
+        (row) => row.column_name,
+      ),
     );
   } catch (error) {
     console.error("Error fetching table column names:", error);
@@ -192,6 +194,32 @@ export const fetchMapData = async (
   };
 
   return { mapRows, columnsData, resolvedColumns };
+};
+
+/**
+ * Fetches a single raw record by _id from a warehouse table.
+ * Used for on-demand full record load (e.g. when a user clicks a map feature).
+ *
+ * @param {string | undefined} table - The warehouse table name.
+ * @param {string} recordId - The value of the _id column for the record.
+ * @returns {Promise<DataEntry | null>} The raw row as an object, or null if not found.
+ * @throws {Error} If the table does not exist.
+ */
+export const fetchRecordById = async (
+  table: string | undefined,
+  recordId: string,
+): Promise<DataEntry | null> => {
+  if (!table || !recordId) return null;
+  const tableExists = await checkTableExists(table);
+  if (!tableExists) {
+    throw new Error("Main table does not exist");
+  }
+  const cleanTableName = table.replace(/"/g, "");
+  const result = await warehouseDb.execute(sql`
+    SELECT * FROM ${sql.identifier(cleanTableName)} WHERE _id = ${recordId} LIMIT 1
+  `);
+  const row = (result as DataEntry[])?.[0];
+  return row ?? null;
 };
 
 export const fetchData = async (
