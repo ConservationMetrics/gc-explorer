@@ -1,5 +1,7 @@
 import "./setupGlobals";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import recordHandler from "@/server/api/[table]/[recordId].get";
+import * as dbOperations from "@/server/database/dbOperations";
 
 vi.stubGlobal("useRuntimeConfig", () => ({
   public: { allowedFileExtensions: { audio: [], image: [], video: [] } },
@@ -13,9 +15,6 @@ vi.mock("@/server/database/dbOperations", () => ({
 vi.mock("@/utils/auth", () => ({
   validatePermissions: vi.fn().mockResolvedValue(undefined),
 }));
-
-import recordHandler from "@/server/api/[table]/[recordId].get";
-import * as dbOperations from "@/server/database/dbOperations";
 
 function createMockEvent(table: string, recordId: string) {
   return {
