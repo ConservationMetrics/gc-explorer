@@ -1,5 +1,8 @@
-/** Generates a random hex color code. */
-export const getRandomColor = () => {
+/**
+ * Generates a random hex color code (e.g. "#A3F2B1").
+ * @returns A 6-digit hex color string including the leading "#".
+ */
+export const getRandomColor = (): string => {
   const letters = "0123456789ABCDEF";
   let color = "#";
   for (let i = 0; i < 6; i++) {
@@ -8,7 +11,11 @@ export const getRandomColor = () => {
   return color;
 };
 
-/** Capitalizes the first letter of each word in a string. */
+/**
+ * Capitalizes the first letter of each word in a string.
+ * @param string - Input string (e.g. "hello world").
+ * @returns String with each word capitalized (e.g. "Hello World").
+ */
 export const capitalizeFirstLetter = (string: string): string => {
   return string
     .split(" ")
@@ -16,12 +23,21 @@ export const capitalizeFirstLetter = (string: string): string => {
     .join(" ");
 };
 
-/** Checks if a number is a valid geographic coordinate. */
+/**
+ * Checks if a number is a valid geographic longitude/latitude value.
+ * @param coord - Numeric value to check.
+ * @returns True if coord is in [-180, 180] and not NaN.
+ */
 export const isValidCoordinate = (coord: number): boolean => {
   return coord != null && !isNaN(coord) && coord >= -180 && coord <= 180;
 };
 
-/** Determines if an object contains valid coordinate data. */
+/**
+ * Determines if an object contains valid coordinate data under any key whose name
+ * includes "coordinates" (case-insensitive). Supports JSON arrays and CSV-style strings.
+ * @param obj - Object with string/number/null values (e.g. record properties).
+ * @returns True if at least one coordinates-like key has parseable, valid coordinates.
+ */
 export const hasValidCoordinates = (
   obj: Record<string, string | number | null>,
 ): boolean => {
@@ -78,7 +94,12 @@ export const hasValidCoordinates = (
   });
 };
 
-/** Calculates the centroid of given coordinates, according to their type. */
+/**
+ * Calculates the centroid (average lat/lng) of a GeoJSON-style coordinate string.
+ * Supports Point, LineString, Polygon, and MultiPolygon.
+ * @param coords - JSON string of coordinates (e.g. "[lng, lat]" or "[[lng, lat], ...]").
+ * @returns Centroid as "lat, lng" (6 decimal places), or "" if format is invalid.
+ */
 export const calculateCentroid = (coords: string): string => {
   type Coordinate = [number, number];
   type LineString = Coordinate[];
@@ -137,7 +158,11 @@ export const calculateCentroid = (coords: string): string => {
   return `${avgLat}, ${avgLng}`;
 };
 
-/** Formats a date string to a locale date string. */
+/**
+ * Formats an ISO-like date string to a locale date string.
+ * @param date - Date string (e.g. "2024-01-15T12:00:00.000Z").
+ * @returns Locale-formatted date string, or the original string if it doesn't match expected format.
+ */
 export const formatDate = (date: string): string => {
   // First let's ensure the date is in the correct format
   const dateRegex = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).*/;

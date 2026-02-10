@@ -10,6 +10,7 @@ import {
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
 } from "@/utils/mapFunctions";
+import { transformSurveyData } from "@/utils/dataProcessing/transformData";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
@@ -365,7 +366,13 @@ const addDataToMap = () => {
                 `/api/${props.table}/${encodeURIComponent(String(recordId))}`,
                 { headers },
               );
-              selectedFeature.value = raw as DataEntry;
+              // Transform once when fetched (cached for this selection) for display;
+              // download uses raw via selectedFeatureOriginal below.
+              const forDisplay = transformSurveyData(
+                [raw as DataEntry],
+                props.iconColumn,
+              )[0];
+              selectedFeature.value = forDisplay;
               const gType = raw?.g__type as string | undefined;
               const gCoords = raw?.g__coordinates;
               const coords =

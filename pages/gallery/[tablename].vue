@@ -3,6 +3,8 @@ import { useI18n } from "vue-i18n";
 
 import { replaceUnderscoreWithSpace } from "@/utils/index";
 import { useIsPublic } from "@/utils/permissions";
+import { transformSurveyData } from "@/utils/dataProcessing/transformData";
+import type { DataEntry } from "@/types/types";
 
 // Extract the tablename from the route parameters
 const route = useRoute();
@@ -31,7 +33,11 @@ if (data.value && !error.value) {
   allowedFileExtensions.value = data.value.allowedFileExtensions;
   dataFetched.value = true;
   filterColumn.value = data.value.filterColumn;
-  galleryData.value = data.value.data;
+  // API returns raw data; transform for display (human-readable keys/values).
+  galleryData.value = transformSurveyData(
+    (data.value.data ?? []) as DataEntry[],
+    data.value.mediaColumn,
+  );
   mediaBasePath.value = data.value.mediaBasePath;
   mediaColumn.value = data.value.mediaColumn;
 } else {

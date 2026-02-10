@@ -14,6 +14,7 @@ import type { Feature } from "geojson";
 
 const props = defineProps<{
   allowedFileExtensions?: AllowedFileExtensions;
+  /** Display record; expected to be client-transformed (e.g. via transformSurveyData) for human-readable keys/values. */
   feature: DataEntry;
   featureGeojson?: Feature | AlertsData;
   filePaths?: Array<string>;

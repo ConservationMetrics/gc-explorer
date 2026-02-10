@@ -1,5 +1,4 @@
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
-import { transformSurveyData } from "@/server/dataProcessing/transformData";
 import {
   filterDataByExtension,
   filterUnwantedKeys,
@@ -49,12 +48,10 @@ export default defineEventHandler(async (event: H3Event) => {
       allowedFileExtensions,
       viewsConfig[table].MEDIA_COLUMN,
     );
-    // Transform data that was collected using survey apps (e.g. KoBoToolbox, Mapeo)
-    const transformedData = transformSurveyData(dataWithFilesOnly);
-
+    // Return raw data; client applies transformSurveyData for display (see gallery page).
     const response = {
       allowedFileExtensions: allowedFileExtensions,
-      data: transformedData,
+      data: dataWithFilesOnly,
       filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
       mediaColumn: viewsConfig[table].MEDIA_COLUMN,

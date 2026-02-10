@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { calculateCentroid } from "@/server/dataProcessing/helpers";
+import { calculateCentroid } from "@/utils/dataProcessing/helpers";
 
 describe("calculateCentroid", () => {
   it("returns centroid for Point", () => {

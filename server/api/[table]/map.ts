@@ -3,7 +3,7 @@ import {
   filterOutUnwantedValues,
   filterGeoData,
 } from "@/server/dataProcessing/filterData";
-import { getRandomColor } from "@/server/dataProcessing/helpers";
+import { getRandomColor } from "@/utils/dataProcessing/helpers";
 import { validatePermissions } from "@/utils/auth";
 import { parseBasemaps } from "@/server/utils/basemaps";
 

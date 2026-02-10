@@ -7,7 +7,7 @@ import {
   transformToGeojson,
   prepareMapData,
   transformSurveyData,
-} from "@/server/dataProcessing/transformData";
+} from "@/utils/dataProcessing/transformData";
 import {
   filterUnwantedKeys,
   filterGeoData,

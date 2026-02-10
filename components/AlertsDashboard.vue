@@ -26,6 +26,7 @@ import IncidentsControls from "@/components/alerts/IncidentsControls.vue";
 import { useIncidents } from "@/composables/useIncidents";
 import { useFeatureSelection } from "@/composables/useFeatureSelection";
 import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
+import { transformSurveyData } from "@/utils/dataProcessing/transformData";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
