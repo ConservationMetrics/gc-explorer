@@ -1,3 +1,5 @@
+import { vi } from "vitest";
+
 /**
  * Defines Nuxt/h3 globals so server API handlers can be loaded in Vitest without a Nuxt context.
  */
@@ -8,6 +10,7 @@ const g = globalThis as unknown as {
     statusCode?: number;
     statusMessage?: string;
   }) => Error;
+  readBody?: (event: unknown) => Promise<unknown>;
 };
 g.defineEventHandler = (fn: (e: unknown) => unknown) => fn;
 g.createError = (opts) =>
@@ -15,3 +18,4 @@ g.createError = (opts) =>
 g.sendError = (_event, error) => {
   throw error;
 };
+g.readBody = vi.fn().mockResolvedValue(null);
