@@ -21,11 +21,12 @@ import type {
   AllowedFileExtensions,
   Basemap,
   BasemapConfig,
-  Dataset,
+  DataEntry,
   FilterValues,
   MapLegendItem,
   MapStatistics,
 } from "@/types/types";
+import type { Feature, FeatureCollection } from "geojson";
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
@@ -45,14 +46,76 @@ const props = defineProps<{
   mapboxZoom: number;
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
-  mapData: Dataset;
+  mapData: FeatureCollection;
   mediaBasePath?: string;
   mediaBasePathIcons?: string;
   mediaColumn?: string;
   planetApiKey?: string;
 }>();
 
-const filteredData = ref([...props.mapData]);
+/**
+ * Converts mapData (FeatureCollection) to a Dataset-shaped array for DataFilter and ViewSidebar.
+ * Fails loudly if mapData is not a valid FeatureCollection.
+ */
+const mapDataAsArray = computed((): DataEntry[] => {
+  const data = props.mapData;
+  if (
+    !data ||
+    typeof data !== "object" ||
+    (data as { type?: string }).type !== "FeatureCollection" ||
+    !Array.isArray((data as FeatureCollection).features)
+  ) {
+    throw new Error(
+      "MapView: mapData must be a GeoJSON FeatureCollection. Got: " +
+        (data == null ? String(data) : typeof data),
+    );
+  }
+  const fc = data as FeatureCollection;
+  return fc.features.map((f) => featureToDataEntry(f));
+});
+
+/** Converts one GeoJSON Feature to DataEntry for sidebar/DataFilter. */
+const featureToDataEntry = (f: Feature): DataEntry => {
+  const props_ = (f.properties ?? {}) as Record<string, string>;
+  const geom = f.geometry;
+  const coords =
+    geom && "coordinates" in geom ? JSON.stringify(geom.coordinates) : "[]";
+  const type = geom && "type" in geom ? geom.type : "Point";
+  return {
+    ...props_,
+    geotype: type,
+    geocoordinates: coords,
+    _id: f.id != null ? String(f.id) : props_._id,
+  } as DataEntry;
+};
+
+/** Current filter selection from DataFilter; "null" or empty means show all. */
+const selectedFilterValues = ref<FilterValues | null>(null);
+
+/** Features to display on the map (filtered by DataFilter when applicable). */
+const displayedFeatures = computed((): Feature[] => {
+  const fc = props.mapData;
+  if (!fc?.features?.length) return [];
+  const vals = selectedFilterValues.value;
+  if (vals == null || (Array.isArray(vals) && vals.includes("null"))) {
+    return fc.features;
+  }
+  const filterCol = props.filterColumn;
+  return fc.features.filter((f) => {
+    const v = (f.properties ?? {})[filterCol];
+    return vals.includes(v);
+  });
+});
+
+const processedData = ref<DataEntry[]>([]);
+
+watch(
+  mapDataAsArray,
+  (arr) => {
+    processedData.value = [...arr];
+  },
+  { immediate: true },
+);
 const map = ref();
 const selectedFeature = ref();
 const selectedFeatureOriginal = ref();
@@ -142,17 +205,16 @@ const addDataToMap = () => {
     }
   }
 
-  // Create a GeoJSON source with all the features
+  // Use GeoJSON features directly; add .feature for sidebar/layer expressions
   const geoJsonSource = {
     type: "FeatureCollection",
-    features: filteredData.value.map((feature) => ({
-      type: "Feature",
-      geometry: {
-        type: feature.geotype,
-        coordinates: JSON.parse(feature.geocoordinates),
-      },
+    features: displayedFeatures.value.map((f) => ({
+      type: f.type,
+      id: f.id,
+      geometry: f.geometry,
       properties: {
-        feature,
+        ...(f.properties ?? {}),
+        feature: featureToDataEntry(f),
       },
     })),
   };
@@ -340,10 +402,9 @@ const addDataToMap = () => {
 const loadIconImages = async () => {
   if (!props.iconColumn || !props.mediaBasePathIcons || !map.value) return;
 
-  // Get unique icon filenames from data
   const iconFilenames = new Set<string>();
-  filteredData.value.forEach((item) => {
-    const iconFilename = item[props.iconColumn!];
+  displayedFeatures.value.forEach((f) => {
+    const iconFilename = (f.properties ?? {})[props.iconColumn!];
     if (iconFilename && typeof iconFilename === "string") {
       iconFilenames.add(iconFilename);
     }
@@ -385,18 +446,10 @@ const prepareMapCanvasContent = async () => {
   prepareMapLegendContent();
 };
 
-const processedData = ref([...props.mapData]);
-
 /** Filter data based on selected values from DataFilter component */
 const filterValues = (values: FilterValues) => {
-  if (values.includes("null")) {
-    filteredData.value = [...processedData.value];
-  } else {
-    filteredData.value = processedData.value.filter((item) =>
-      values.includes(item[props.filterColumn]),
-    );
-  }
-  addDataToMap(); // Update the map data
+  selectedFilterValues.value = values;
+  addDataToMap();
 };
 
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
@@ -506,7 +559,7 @@ onBeforeUnmount(() => {
     </button>
     <DataFilter
       v-if="filterColumn"
-      :data="mapData"
+      :data="processedData"
       :filter-column="filterColumn"
       :color-column="colorColumn"
       :show-colored-dot="true"
@@ -524,7 +577,7 @@ onBeforeUnmount(() => {
         )
       "
       :is-alerts-dashboard="false"
-      :map-data="mapData"
+      :map-data="processedData"
       :map-statistics="mapStatistics"
       :media-base-path="mediaBasePath"
       :show-intro-panel="showIntroPanel"

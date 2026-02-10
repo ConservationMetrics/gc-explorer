@@ -1,19 +1,10 @@
-import { fetchConfig, fetchData } from "@/server/database/dbOperations";
-import {
-  prepareMapData,
-  prepareMapStatistics,
-  transformSurveyData,
-} from "@/server/dataProcessing/transformData";
-import {
-  filterUnwantedKeys,
-  filterOutUnwantedValues,
-  filterGeoData,
-} from "@/server/dataProcessing/filterData";
+import { fetchConfig, fetchMapData } from "@/server/database/dbOperations";
+import { buildMapFeatureCollection } from "@/server/utils/formatSpatialData";
 import { validatePermissions } from "@/utils/auth";
+import { parseBasemaps } from "@/server/utils/basemaps";
 
 import type { H3Event } from "h3";
-import type { AllowedFileExtensions, ColumnEntry } from "@/types/types";
-import { parseBasemaps } from "@/server/utils/basemaps";
+import type { AllowedFileExtensions } from "@/types/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -27,73 +18,66 @@ export default defineEventHandler(async (event: H3Event) => {
   try {
     const viewsConfig = await fetchConfig();
 
-    // Check visibility permissions
     const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "member";
-
-    // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData, columnsData } = await fetchData(table);
+    const config = viewsConfig[table];
+    if (!config) {
+      return sendError(
+        event,
+        createError({
+          statusCode: 404,
+          statusMessage: "Table config not found",
+        }),
+      );
+    }
 
-    // Filter data to remove unwanted columns and substrings
-    const filteredData = filterUnwantedKeys(
-      mainData,
-      columnsData as ColumnEntry[],
-      viewsConfig[table].UNWANTED_COLUMNS,
-      viewsConfig[table].UNWANTED_SUBSTRINGS,
-    );
-    // Filter data to remove unwanted values per chosen column
-    const dataFilteredByValues = filterOutUnwantedValues(
-      filteredData,
-      viewsConfig[table].FILTER_BY_COLUMN,
-      viewsConfig[table].FILTER_OUT_VALUES_FROM_COLUMN,
-    );
-    // Filter only data with valid geofields
-    const filteredGeoData = filterGeoData(dataFilteredByValues);
-    // Transform data that was collected using survey apps (e.g. KoBoToolbox, Mapeo)
-    const transformedData = transformSurveyData(
-      filteredGeoData,
-      viewsConfig[table].ICON_COLUMN,
-    );
-    // Process geodata
-    const processedGeoData = prepareMapData(
-      transformedData,
-      viewsConfig[table].FRONT_END_FILTER_COLUMN,
+    const fetchResult: Awaited<ReturnType<typeof fetchMapData>> =
+      await fetchMapData(table, config);
+    const { mapRows, resolvedColumns } = fetchResult;
+
+    const { featureCollection, totalFeatures } = buildMapFeatureCollection(
+      mapRows as Record<string, unknown>[],
+      config,
+      resolvedColumns,
+      resolvedColumns.filterByColumn,
+      config.FILTER_OUT_VALUES_FROM_COLUMN,
     );
 
-    // Prepare statistics data for the map view
-    const mapStatistics = prepareMapStatistics(processedGeoData);
+    const mapStatistics = {
+      totalFeatures,
+      dateRange: undefined as string | undefined,
+    };
 
-    // Parse basemaps configuration
     const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
 
     const response = {
       allowedFileExtensions: allowedFileExtensions,
-      colorColumn: viewsConfig[table].COLOR_COLUMN,
-      data: processedGeoData,
-      filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
-      iconColumn: viewsConfig[table].ICON_COLUMN,
-      mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,
-      mapStatistics: mapStatistics,
-      mapbox3d: viewsConfig[table].MAPBOX_3D ?? false,
+      colorColumn: config.COLOR_COLUMN,
+      data: featureCollection,
+      filterColumn: config.FRONT_END_FILTER_COLUMN,
+      iconColumn: config.ICON_COLUMN,
+      mapLegendLayerIds: config.MAP_LEGEND_LAYER_IDS,
+      mapStatistics,
+      mapbox3d: config.MAPBOX_3D ?? false,
       mapbox3dTerrainExaggeration: Number(
-        viewsConfig[table].MAPBOX_3D_TERRAIN_EXAGGERATION,
+        config.MAPBOX_3D_TERRAIN_EXAGGERATION,
       ),
-      mapboxAccessToken: viewsConfig[table].MAPBOX_ACCESS_TOKEN,
-      mapboxBearing: Number(viewsConfig[table].MAPBOX_BEARING),
-      mapboxLatitude: Number(viewsConfig[table].MAPBOX_CENTER_LATITUDE),
-      mapboxLongitude: Number(viewsConfig[table].MAPBOX_CENTER_LONGITUDE),
-      mapboxPitch: Number(viewsConfig[table].MAPBOX_PITCH),
-      mapboxProjection: viewsConfig[table].MAPBOX_PROJECTION,
+      mapboxAccessToken: config.MAPBOX_ACCESS_TOKEN,
+      mapboxBearing: Number(config.MAPBOX_BEARING),
+      mapboxLatitude: Number(config.MAPBOX_CENTER_LATITUDE),
+      mapboxLongitude: Number(config.MAPBOX_CENTER_LONGITUDE),
+      mapboxPitch: Number(config.MAPBOX_PITCH),
+      mapboxProjection: config.MAPBOX_PROJECTION,
       mapboxStyle: defaultMapboxStyle,
       mapboxBasemaps: basemaps,
-      mapboxZoom: Number(viewsConfig[table].MAPBOX_ZOOM),
-      mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
-      mediaBasePathIcons: viewsConfig[table].MEDIA_BASE_PATH_ICONS,
-      mediaColumn: viewsConfig[table].MEDIA_COLUMN,
-      planetApiKey: viewsConfig[table].PLANET_API_KEY,
-      table: table,
-      routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
+      mapboxZoom: Number(config.MAPBOX_ZOOM),
+      mediaBasePath: config.MEDIA_BASE_PATH,
+      mediaBasePathIcons: config.MEDIA_BASE_PATH_ICONS,
+      mediaColumn: config.MEDIA_COLUMN,
+      planetApiKey: config.PLANET_API_KEY,
+      table,
+      routeLevelPermission: config.ROUTE_LEVEL_PERMISSION,
     };
 
     return response;
@@ -101,9 +85,8 @@ export default defineEventHandler(async (event: H3Event) => {
     if (error instanceof Error) {
       console.error("Error fetching data on API side:", error.message);
       return sendError(event, new Error(error.message));
-    } else {
-      console.error("Unknown error fetching data on API side:", error);
-      return sendError(event, new Error("An unknown error occurred"));
     }
+    console.error("Unknown error fetching data on API side:", error);
+    return sendError(event, new Error("An unknown error occurred"));
   }
 });

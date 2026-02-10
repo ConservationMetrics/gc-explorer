@@ -1,24 +1,24 @@
 import murmurhash from "murmurhash";
 
-import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import {
+  fetchConfig,
+  fetchData,
+  fetchMapData,
+} from "@/server/database/dbOperations";
 import {
   prepareAlertData,
   prepareAlertsStatistics,
   transformToGeojson,
-  prepareMapData,
-  transformSurveyData,
 } from "@/server/dataProcessing/transformData";
-import {
-  filterUnwantedKeys,
-  filterGeoData,
-} from "@/server/dataProcessing/filterData";
+import { buildMapFeatureCollection } from "@/server/utils/formatSpatialData";
 import { validatePermissions } from "@/utils/auth";
 
 import type { H3Event } from "h3";
 import type {
   AllowedFileExtensions,
-  DataEntry,
   AlertsMetadata,
+  DataEntry,
+  ViewConfig,
 } from "@/types/types";
 import { parseBasemaps } from "@/server/utils/basemaps";
 
@@ -38,7 +38,6 @@ import { parseBasemaps } from "@/server/utils/basemaps";
  * @throws {Error} - If the input is not a valid 16-character hex string
  */
 const generateMapboxIdFromMapeoFeatureId = (mapeoId: string): number => {
-  // Validate that this is actually a Mapeo ID format
   if (
     !mapeoId ||
     typeof mapeoId !== "string" ||
@@ -91,52 +90,66 @@ export default defineEventHandler(async (event: H3Event) => {
     let mapeoData = null;
 
     if (mapeoTable && mapeoCategoryIds) {
-      // Fetch Mapeo data
-      const rawMapeoData = await fetchData(mapeoTable);
+      // Always use minimal fetch + shared spatial payload (config optional when Mapeo table has no view config).
+      const mapeoConfig = viewsConfig[mapeoTable] ?? undefined;
+      const fetchResult = await fetchMapData(mapeoTable, mapeoConfig);
+      const { mapRows, resolvedColumns } = fetchResult;
+      const categoryCol =
+        resolvedColumns.filterColumn ?? resolvedColumns.filterByColumn;
+      const allowedCategoryIds = mapeoCategoryIds
+        .split(",")
+        .map((s) => s.trim());
+      const rowsInCategory =
+        categoryCol != null
+          ? (mapRows as Record<string, unknown>[]).filter((row) =>
+              allowedCategoryIds.includes(
+                String(row[categoryCol] ?? "").trim(),
+              ),
+            )
+          : (mapRows as Record<string, unknown>[]);
 
-      // Filter data to remove unwanted columns and substrings
-      const filteredMapeoData = filterUnwantedKeys(
-        rawMapeoData.mainData,
-        rawMapeoData.columnsData,
-        viewsConfig[table].UNWANTED_COLUMNS,
-        viewsConfig[table].UNWANTED_SUBSTRINGS,
+      // When no view config for Mapeo table, use minimal config for buildMapFeatureCollection (filter column only).
+      const configForBuild: ViewConfig =
+        mapeoConfig ??
+        (categoryCol
+          ? {
+              FRONT_END_FILTER_COLUMN: categoryCol,
+              FILTER_BY_COLUMN: categoryCol,
+            }
+          : {});
+      const { featureCollection } = buildMapFeatureCollection(
+        rowsInCategory,
+        configForBuild,
+        resolvedColumns,
+        resolvedColumns.filterByColumn,
+        mapeoConfig?.FILTER_OUT_VALUES_FROM_COLUMN,
       );
 
-      // Filter Mapeo data to only show data where category matches any values in mapeoCategoryIds (a comma-separated string of values)
-      const filteredMapeoDataByCategory = filteredMapeoData.filter(
-        (row: DataEntry) => {
-          return Object.keys(row).some(
-            (key) =>
-              key.includes("category") &&
-              mapeoCategoryIds.split(",").includes(row[key]),
-          );
-        },
-      );
-
-      // Filter only data with valid geofields
-      const filteredMapeoGeoData = filterGeoData(filteredMapeoDataByCategory);
-      // Transform data that was collected using survey apps (e.g. KoBoToolbox, Mapeo)
-      const transformedMapeoData = transformSurveyData(filteredMapeoGeoData);
-      // Process geodata
-      const processedMapeoData = prepareMapData(
-        transformedMapeoData,
-        viewsConfig[table].FRONT_END_FILTER_COLUMN,
-      );
-
-      // Add normalized IDs for Mapeo features to ensure Mapbox compatibility
-      // This is done here because we know we're dealing with Mapeo data specifically
-      const mapeoDataWithNormalizedIds = processedMapeoData.map((item) => {
+      // Add normalized IDs for Mapbox feature state; convert FeatureCollection to mapeoData shape expected by AlertsDashboard.
+      mapeoData = featureCollection.features.map((f) => {
+        const props = (f.properties ?? {}) as Record<string, unknown>;
+        const id = f.id ?? props._id;
         if (
-          item.id &&
-          typeof item.id === "string" &&
-          item.id.match(/^[0-9a-fA-F]{16}$/)
+          id != null &&
+          typeof id === "string" &&
+          id.match(/^[0-9a-fA-F]{16}$/)
         ) {
-          item.normalizedId = generateMapboxIdFromMapeoFeatureId(item.id);
+          props.normalizedId = generateMapboxIdFromMapeoFeatureId(id);
         }
-        return item;
+        const geom = f.geometry;
+        const coords =
+          geom && "coordinates" in geom
+            ? JSON.stringify(geom.coordinates)
+            : "[]";
+        const type = geom && "type" in geom ? geom.type : "Point";
+        return {
+          ...props,
+          id: id ?? props._id,
+          geotype: type,
+          geocoordinates: coords,
+          "filter-color": props["filter-color"],
+        };
       });
-
-      mapeoData = mapeoDataWithNormalizedIds;
     }
 
     // Prepare statistics data for the alerts view

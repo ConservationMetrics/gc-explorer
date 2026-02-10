@@ -874,13 +874,13 @@ const addAlertsData = async () => {
 
 /**
  * Adds (optional) Mapeo data to the map by creating a GeoJSON source and a layer for Point features.
- * It also sets up event listeners for user interactions with the Mapeo data features.
+ * Expects mapeoData as Dataset (array with geotype, geocoordinates); if the API later returns
+ * a FeatureCollection, we could pass it through directly like MapView to avoid conversion.
  */
 const addMapeoData = () => {
   if (!props.mapeoData) {
     return;
   }
-  // Create a GeoJSON source with all the features
   const geoJsonSource = {
     type: "FeatureCollection",
     features: props.mapeoData.map((feature) => ({

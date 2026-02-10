@@ -40,6 +40,182 @@ const fetchDataFromTable = async (
   }
 };
 
+/**
+ * Returns the set of column names for a warehouse table from information_schema.
+ * Used to build minimal SELECT lists (e.g. for map view) and avoid selecting missing columns.
+ *
+ * @param {string | undefined} table - The warehouse table name (unquoted).
+ * @returns {Promise<Set<string>>} Set of column names in the table.
+ */
+const getTableColumnNames = async (
+  table: string | undefined,
+): Promise<Set<string>> => {
+  if (!table) return new Set();
+  try {
+    const cleanTableName = table.replace(/"/g, "");
+    const result = await warehouseDb.execute(sql`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = ${cleanTableName}
+    `);
+    return new Set(
+      (result as unknown as { column_name: string }[]).map((row) => row.column_name),
+    );
+  } catch (error) {
+    console.error("Error fetching table column names:", error);
+    return new Set();
+  }
+};
+
+/**
+ * Resolves a config column name to the actual SQL column name for the warehouse table.
+ * If the config value is already a table column, returns it; otherwise looks up via
+ * the table's __columns mapping (original_column -> sql_column).
+ *
+ * @param {string | undefined} configColumnName - Value from view config (e.g. COLOR_COLUMN).
+ * @param {ColumnEntry[] | null} columnsData - Rows from the table's __columns mapping.
+ * @param {Set<string>} tableColumnNames - Valid column names in the warehouse table.
+ * @returns {string | null} SQL column name to use, or null if not found.
+ */
+const resolveMapColumn = (
+  configColumnName: string | undefined,
+  columnsData: ColumnEntry[] | null,
+  tableColumnNames: Set<string>,
+): string | null => {
+  if (!configColumnName) return null;
+  if (tableColumnNames.has(configColumnName)) return configColumnName;
+  if (columnsData) {
+    const byOriginal = columnsData.find(
+      (c) => c.original_column === configColumnName,
+    );
+    if (byOriginal && tableColumnNames.has(byOriginal.sql_column)) {
+      return byOriginal.sql_column;
+    }
+    const bySql = columnsData.find((c) => c.sql_column === configColumnName);
+    if (bySql && tableColumnNames.has(bySql.sql_column))
+      return bySql.sql_column;
+  }
+  return null;
+};
+
+/** Resolved SQL column names for map styling and filtering. */
+export type MapResolvedColumns = {
+  colorColumn: string | null;
+  iconColumn: string | null;
+  filterColumn: string | null;
+  filterByColumn: string | null;
+};
+
+/**
+ * Fetches only the minimal columns needed for the map view: _id, geometry fields,
+ * and optional styling/filter columns from config. Reduces payload and DB load vs fetchData.
+ * When config is omitted (e.g. Mapeo table has no view config), selects only required
+ * columns plus any table column whose name contains "category" for category filtering.
+ *
+ * @param table - The warehouse table name.
+ * @param config - Optional view config for this table. When undefined, only required + category-like columns are selected.
+ * @returns Map rows, column metadata, and resolved SQL column names for styling/filter.
+ * @throws If the main table does not exist.
+ */
+export const fetchMapData = async (
+  table: string | undefined,
+  config?: ViewConfig | null,
+): Promise<{
+  mapRows: DataEntry[];
+  columnsData: ColumnEntry[] | null;
+  resolvedColumns: MapResolvedColumns;
+}> => {
+  if (!table) {
+    throw new Error("Table name is required");
+  }
+  const mainDataExists = await checkTableExists(table);
+  if (!mainDataExists) {
+    throw new Error("Main table does not exist");
+  }
+
+  const tableColumnNames = await getTableColumnNames(table);
+  const required = ["_id", "g__type", "g__coordinates"];
+  for (const col of required) {
+    if (!tableColumnNames.has(col)) {
+      throw new Error(`Main table is missing required column for map: ${col}`);
+    }
+  }
+
+  const columnsTable = `"${table}__columns"`;
+  const columnsTableExists = await checkTableExists(columnsTable);
+  let columnsData: ColumnEntry[] | null = null;
+  if (columnsTableExists) {
+    columnsData = (await fetchDataFromTable(columnsTable)) as ColumnEntry[];
+  }
+
+  const selectColumns: string[] = [...required];
+  let filterColumnResolved: string | null = null;
+  let filterByColumnResolved: string | null = null;
+
+  if (config) {
+    const optionalConfigColumns = [
+      config.COLOR_COLUMN,
+      config.ICON_COLUMN,
+      config.FRONT_END_FILTER_COLUMN,
+      config.FILTER_BY_COLUMN,
+    ].filter(Boolean) as string[];
+    for (const configCol of optionalConfigColumns) {
+      const resolved = resolveMapColumn(
+        configCol,
+        columnsData,
+        tableColumnNames,
+      );
+      if (resolved && !selectColumns.includes(resolved)) {
+        selectColumns.push(resolved);
+      }
+    }
+    filterColumnResolved = resolveMapColumn(
+      config.FRONT_END_FILTER_COLUMN,
+      columnsData,
+      tableColumnNames,
+    );
+    filterByColumnResolved = resolveMapColumn(
+      config.FILTER_BY_COLUMN,
+      columnsData,
+      tableColumnNames,
+    );
+  } else {
+    // No view config (e.g. Mapeo table): add any column name containing "category" for category filtering.
+    const categoryLike = [...tableColumnNames].filter((name) =>
+      name.toLowerCase().includes("category"),
+    );
+    for (const col of categoryLike) {
+      if (!selectColumns.includes(col)) {
+        selectColumns.push(col);
+      }
+    }
+    const firstCategoryCol = categoryLike[0] ?? null;
+    filterColumnResolved = firstCategoryCol;
+    filterByColumnResolved = firstCategoryCol;
+  }
+
+  const cleanTableName = table.replace(/"/g, "");
+  const identifiers = selectColumns.map((c) => sql.identifier(c));
+  const selectList = sql.join(identifiers, sql`, `);
+  const result = await warehouseDb.execute(sql`
+    SELECT ${selectList} FROM ${sql.identifier(cleanTableName)}
+  `);
+  const mapRows = (result || []) as DataEntry[];
+
+  const resolvedColumns: MapResolvedColumns = {
+    colorColumn: config
+      ? resolveMapColumn(config.COLOR_COLUMN, columnsData, tableColumnNames)
+      : null,
+    iconColumn: config
+      ? resolveMapColumn(config.ICON_COLUMN, columnsData, tableColumnNames)
+      : null,
+    filterColumn: filterColumnResolved,
+    filterByColumn: filterByColumnResolved,
+  };
+
+  return { mapRows, columnsData, resolvedColumns };
+};
+
 export const fetchData = async (
   table: string | undefined,
 ): Promise<{
