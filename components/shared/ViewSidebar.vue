@@ -38,6 +38,8 @@ const props = defineProps<{
   showIntroPanel?: boolean;
   showSidebar?: boolean;
   showSlider?: boolean;
+  loadingFeature?: boolean;
+  featureLoadError?: string | null;
 }>();
 
 const isScrollable = ref(false);
@@ -143,6 +145,16 @@ onBeforeUnmount(() => {
           :loading-icons="loadingIcons"
           @toggle-icons="emit('toggle-icons')"
         />
+        <div v-else-if="loadingFeature" class="text-muted-foreground p-4">
+          {{ $t("loading") }}…
+        </div>
+        <div
+          v-else-if="featureLoadError"
+          class="text-destructive p-4"
+          data-testid="feature-load-error"
+        >
+          {{ featureLoadError }}
+        </div>
         <DataFeature
           v-if="feature"
           :allowed-file-extensions="allowedFileExtensions"

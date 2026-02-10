@@ -34,6 +34,7 @@ import type {
   AllowedFileExtensions,
   Basemap,
   BasemapConfig,
+  DataEntry,
   Dataset,
   MapLegendItem,
 } from "@/types/types";
@@ -59,9 +60,24 @@ const props = defineProps<{
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
   mapeoData: Dataset | null;
+  mapeoTable?: string;
   mediaBasePath: string | undefined;
   mediaBasePathAlerts: string | undefined;
   planetApiKey: string | undefined;
+  table: string;
+  /** Sidebar record data (page fetches; component does not call API). */
+  sidebarDisplayFeature?: Record<string, unknown> | null;
+  sidebarLoadingFeature?: boolean;
+  sidebarFeatureLoadError?: string | null;
+  sidebarSelectedFeatureOriginal?: Feature | null;
+}>();
+
+const emit = defineEmits<{
+  /** Page should fetch this record and pass back via sidebarDisplayFeature etc. */
+  "request-record": [
+    { table: string; recordId: string; feature?: Record<string, unknown> } | null,
+  ];
+  "reset-legend-visibility": [];
 }>();
 
 const localAlertsData = ref<Feature | AlertsData>(props.alertsData);
@@ -79,7 +95,6 @@ const router = useRouter();
 
 const isMapeo = ref(false);
 
-// Get API key from runtime config
 const config = useRuntimeConfig();
 const apiKey = config.public.appApiKey as string;
 
@@ -137,6 +152,37 @@ const {
   showSidebar,
   showIntroPanel,
   isMapeo,
+);
+
+/** Feature to pass to ViewSidebar (page-provided record or layer feature). */
+const sidebarFeature = computed(
+  (): DataEntry | undefined =>
+    (props.sidebarDisplayFeature ?? selectedFeature.value) as DataEntry | undefined,
+);
+
+watch(
+  [selectedFeature, selectedFeatureSource],
+  ([feature, source]) => {
+    if (!feature || !source) {
+      emit("request-record", null);
+      return;
+    }
+    const isMapeoLayer = source === "mapeo-data";
+    const tableForFetch = isMapeoLayer ? props.mapeoTable : props.table;
+    const recordId = isMapeoLayer
+      ? (feature.id ?? feature._id)
+      : feature.alertID;
+    if (!tableForFetch || recordId == null || String(recordId).trim() === "") {
+      emit("request-record", null);
+      return;
+    }
+    emit("request-record", {
+      table: tableForFetch,
+      recordId: String(recordId),
+      feature: feature as Record<string, unknown>,
+    });
+  },
+  { immediate: true },
 );
 
 // Use alerts date filter composable
@@ -367,8 +413,6 @@ onMounted(() => {
     }
   });
 });
-
-const emit = defineEmits(["reset-legend-visibility"]);
 
 // ====================
 // === Map Content ====
@@ -1401,13 +1445,15 @@ onBeforeUnmount(() => {
       :allowed-file-extensions="allowedFileExtensions"
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
-      :feature="selectedFeature"
-      :feature-geojson="localAlertsData"
+      :feature="sidebarFeature"
+      :feature-geojson="(sidebarSelectedFeatureOriginal ?? localAlertsData)"
+      :feature-load-error="sidebarFeatureLoadError"
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
       :is-alert="isAlert"
       :is-mapeo="isMapeo"
       :is-alerts-dashboard="true"
+      :loading-feature="sidebarLoadingFeature"
       :local-alerts-data="localAlertsData"
       :logo-url="logoUrl"
       :media-base-path="mediaBasePath"
