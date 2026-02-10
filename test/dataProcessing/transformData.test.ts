@@ -9,19 +9,12 @@ import {
   prepareAlertsStatistics,
   prepareMapStatistics,
   transformToGeojson,
-} from "@/server/dataProcessing/transformData";
-import { transformSurveyData as transformSurveyDataFromUtils } from "@/utils/dataProcessing/transformData";
-import { isValidCoordinate } from "@/server/dataProcessing/helpers";
+} from "@/utils/dataProcessing/transformData";
+import { isValidCoordinate } from "@/utils/dataProcessing/helpers";
 import { mapeoData, transformedMapeoData } from "../fixtures/mapeoData";
 import { alertsData, alertsMetadata } from "../fixtures/alertsData";
 
 describe("transformSurveyData", () => {
-  it("should produce same result from shared utils (client-importable)", () => {
-    const fromServer = transformSurveyData(mapeoData);
-    const fromUtils = transformSurveyDataFromUtils(mapeoData);
-    expect(fromUtils).toEqual(fromServer);
-  });
-
   it("should transform survey data keys and values", () => {
     const result = transformSurveyData(mapeoData);
 

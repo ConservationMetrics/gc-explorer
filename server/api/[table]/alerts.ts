@@ -7,7 +7,7 @@ import {
   transformToGeojson,
   prepareMapData,
   transformSurveyData,
-} from "@/server/dataProcessing/transformData";
+} from "@/utils/dataProcessing/transformData";
 import {
   filterUnwantedKeys,
   filterGeoData,
@@ -165,6 +165,7 @@ export default defineEventHandler(async (event: H3Event) => {
       mapboxBasemaps: basemaps,
       mapboxZoom: Number(viewsConfig[table].MAPBOX_ZOOM),
       mapeoData: mapeoData,
+      mapeoTable: mapeoTable ?? undefined,
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
       mediaBasePathAlerts: viewsConfig[table].MEDIA_BASE_PATH_ALERTS,
       planetApiKey: viewsConfig[table].PLANET_API_KEY,

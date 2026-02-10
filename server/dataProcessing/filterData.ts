@@ -1,4 +1,4 @@
-import { hasValidCoordinates } from "./helpers";
+import { hasValidCoordinates } from "@/utils/dataProcessing/helpers";
 
 import type {
   ColumnEntry,
