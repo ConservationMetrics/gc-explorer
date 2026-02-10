@@ -46,7 +46,6 @@ const props = defineProps<{
   mapboxZoom: number;
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
-  /** GeoJSON FeatureCollection from the map API (minimal map endpoint). */
   mapData: FeatureCollection;
   mediaBasePath?: string;
   mediaBasePathIcons?: string;
