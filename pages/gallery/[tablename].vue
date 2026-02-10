@@ -33,13 +33,13 @@ if (data.value && !error.value) {
   allowedFileExtensions.value = data.value.allowedFileExtensions;
   dataFetched.value = true;
   filterColumn.value = data.value.filterColumn;
-  const rawList = (data.value.data ?? []) as DataEntry[];
-  mediaBasePath.value = data.value.mediaBasePath;
-  mediaColumn.value = data.value.mediaColumn;
+  // API returns raw data; transform for display (human-readable keys/values).
   galleryData.value = transformSurveyData(
-    rawList,
+    (data.value.data ?? []) as DataEntry[],
     data.value.mediaColumn,
   );
+  mediaBasePath.value = data.value.mediaBasePath;
+  mediaColumn.value = data.value.mediaColumn;
 } else {
   console.error("Error fetching data:", error.value);
 }
