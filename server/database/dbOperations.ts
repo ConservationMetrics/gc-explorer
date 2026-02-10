@@ -222,6 +222,50 @@ export const fetchRecordById = async (
   return row ?? null;
 };
 
+/** Max number of IDs allowed in a single bulk records request. */
+export const BULK_RECORDS_MAX_IDS = 100;
+
+/**
+ * Fetches raw records by _id from a warehouse table. Returns results in the same order as the requested ids; missing records are omitted (or we could use null placeholders - AC says "preserves request order or explicit mapping". We preserve order and use null for missing).
+ *
+ * @param table - The warehouse table name.
+ * @param ids - Array of _id values to fetch.
+ * @returns Array of raw rows in request order; null for missing ids.
+ * @throws If table does not exist or ids length exceeds BULK_RECORDS_MAX_IDS.
+ */
+export const fetchRecordsByIds = async (
+  table: string | undefined,
+  ids: string[],
+): Promise<(DataEntry | null)[]> => {
+  if (!table) throw new Error("Table name is required");
+  if (ids.length > BULK_RECORDS_MAX_IDS)
+    throw new Error(
+      `Too many IDs: ${ids.length} exceeds maximum ${BULK_RECORDS_MAX_IDS}`,
+    );
+  const tableExists = await checkTableExists(table);
+  if (!tableExists) throw new Error("Main table does not exist");
+  if (ids.length === 0) return [];
+
+  const cleanTableName = table.replace(/"/g, "");
+  const uniqueIds = [...new Set(ids)];
+  const inList = sql.join(
+    uniqueIds.map((id) => sql`${id}`),
+    sql`, `,
+  );
+  const result = await warehouseDb.execute(sql`
+    SELECT * FROM ${sql.identifier(cleanTableName)}
+    WHERE _id IN (${inList})
+  `);
+  const rows = (result || []) as DataEntry[];
+  const byId = new Map<string, DataEntry>();
+  for (const row of rows) {
+    const id =
+      row._id != null ? String(row._id) : row.id != null ? String(row.id) : "";
+    if (id) byId.set(id, row);
+  }
+  return ids.map((id) => byId.get(id) ?? null);
+};
+
 export const fetchData = async (
   table: string | undefined,
 ): Promise<{
