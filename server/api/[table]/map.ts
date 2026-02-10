@@ -1,5 +1,5 @@
 import { fetchConfig, fetchMapData } from "@/server/database/dbOperations";
-import { buildMapFeatureCollection } from "@/server/utils/spatialPayload";
+import { buildMapFeatureCollection } from "@/server/utils/formatSpatialData";
 import { validatePermissions } from "@/utils/auth";
 import { parseBasemaps } from "@/server/utils/basemaps";
 

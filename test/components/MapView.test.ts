@@ -298,17 +298,16 @@ describe("MapView component", () => {
     mapboxMock.fireLoad();
     await flushPromises();
 
-    // Simulate filter change by calling the component method directly
     const vm = wrapper.vm as unknown as {
-      filteredData: Array<Record<string, unknown>>;
+      displayedFeatures: Array<{ properties?: Record<string, unknown> }>;
       filterValues: (values: string[]) => void;
     };
 
     vm.filterValues(["active"]);
     await flushPromises();
 
-    expect(vm.filteredData).toHaveLength(1);
-    expect(vm.filteredData[0].status).toBe("active");
+    expect(vm.displayedFeatures).toHaveLength(1);
+    expect(vm.displayedFeatures[0].properties?.status).toBe("active");
   });
 
   it("shows all data when 'null' is in filter values", async () => {
@@ -325,9 +324,9 @@ describe("MapView component", () => {
     await flushPromises();
 
     const vm = wrapper.vm as unknown as {
-      filteredData: Array<Record<string, unknown>>;
+      displayedFeatures: unknown[];
     };
-    expect(vm.filteredData).toHaveLength(2);
+    expect(vm.displayedFeatures).toHaveLength(2);
   });
 
   it("selects a feature and opens sidebar when clicked", async () => {

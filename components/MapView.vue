@@ -26,7 +26,7 @@ import type {
   MapLegendItem,
   MapStatistics,
 } from "@/types/types";
-import type { FeatureCollection } from "geojson";
+import type { Feature, FeatureCollection } from "geojson";
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
@@ -54,7 +54,7 @@ const props = defineProps<{
 }>();
 
 /**
- * Converts mapData (FeatureCollection) to a Dataset-shaped array for addDataToMap and DataFilter.
+ * Converts mapData (FeatureCollection) to a Dataset-shaped array for DataFilter and ViewSidebar.
  * Fails loudly if mapData is not a valid FeatureCollection.
  */
 const mapDataAsArray = computed((): DataEntry[] => {
@@ -71,29 +71,48 @@ const mapDataAsArray = computed((): DataEntry[] => {
     );
   }
   const fc = data as FeatureCollection;
-  return fc.features.map((f) => {
-    const props_ = (f.properties ?? {}) as Record<string, string>;
-    const geom = f.geometry;
-    const coords =
-      geom && "coordinates" in geom ? JSON.stringify(geom.coordinates) : "[]";
-    const type = geom && "type" in geom ? geom.type : "Point";
-    return {
-      ...props_,
-      geotype: type,
-      geocoordinates: coords,
-      _id: f.id != null ? String(f.id) : props_._id,
-    } as DataEntry;
+  return fc.features.map((f) => featureToDataEntry(f));
+});
+
+/** Converts one GeoJSON Feature to DataEntry for sidebar/DataFilter. */
+const featureToDataEntry = (f: Feature): DataEntry => {
+  const props_ = (f.properties ?? {}) as Record<string, string>;
+  const geom = f.geometry;
+  const coords =
+    geom && "coordinates" in geom ? JSON.stringify(geom.coordinates) : "[]";
+  const type = geom && "type" in geom ? geom.type : "Point";
+  return {
+    ...props_,
+    geotype: type,
+    geocoordinates: coords,
+    _id: f.id != null ? String(f.id) : props_._id,
+  } as DataEntry;
+};
+
+/** Current filter selection from DataFilter; "null" or empty means show all. */
+const selectedFilterValues = ref<FilterValues | null>(null);
+
+/** Features to display on the map (filtered by DataFilter when applicable). */
+const displayedFeatures = computed((): Feature[] => {
+  const fc = props.mapData;
+  if (!fc?.features?.length) return [];
+  const vals = selectedFilterValues.value;
+  if (vals == null || (Array.isArray(vals) && vals.includes("null"))) {
+    return fc.features;
+  }
+  const filterCol = props.filterColumn;
+  return fc.features.filter((f) => {
+    const v = (f.properties ?? {})[filterCol];
+    return vals.includes(v);
   });
 });
 
-const filteredData = ref<DataEntry[]>([]);
 const processedData = ref<DataEntry[]>([]);
 
 watch(
   mapDataAsArray,
   (arr) => {
     processedData.value = [...arr];
-    filteredData.value = [...arr];
   },
   { immediate: true },
 );
@@ -186,17 +205,16 @@ const addDataToMap = () => {
     }
   }
 
-  // Create a GeoJSON source with all the features
+  // Use GeoJSON features directly; add .feature for sidebar/layer expressions
   const geoJsonSource = {
     type: "FeatureCollection",
-    features: filteredData.value.map((feature) => ({
-      type: "Feature",
-      geometry: {
-        type: feature.geotype,
-        coordinates: JSON.parse(feature.geocoordinates),
-      },
+    features: displayedFeatures.value.map((f) => ({
+      type: f.type,
+      id: f.id,
+      geometry: f.geometry,
       properties: {
-        feature,
+        ...(f.properties ?? {}),
+        feature: featureToDataEntry(f),
       },
     })),
   };
@@ -384,10 +402,9 @@ const addDataToMap = () => {
 const loadIconImages = async () => {
   if (!props.iconColumn || !props.mediaBasePathIcons || !map.value) return;
 
-  // Get unique icon filenames from data
   const iconFilenames = new Set<string>();
-  filteredData.value.forEach((item) => {
-    const iconFilename = item[props.iconColumn!];
+  displayedFeatures.value.forEach((f) => {
+    const iconFilename = (f.properties ?? {})[props.iconColumn!];
     if (iconFilename && typeof iconFilename === "string") {
       iconFilenames.add(iconFilename);
     }
@@ -431,14 +448,8 @@ const prepareMapCanvasContent = async () => {
 
 /** Filter data based on selected values from DataFilter component */
 const filterValues = (values: FilterValues) => {
-  if (values.includes("null")) {
-    filteredData.value = [...processedData.value];
-  } else {
-    filteredData.value = processedData.value.filter((item) =>
-      values.includes(item[props.filterColumn]),
-    );
-  }
-  addDataToMap(); // Update the map data
+  selectedFilterValues.value = values;
+  addDataToMap();
 };
 
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });

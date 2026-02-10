@@ -10,7 +10,7 @@ import {
   prepareAlertsStatistics,
   transformToGeojson,
 } from "@/server/dataProcessing/transformData";
-import { buildMapFeatureCollection } from "@/server/utils/spatialPayload";
+import { buildMapFeatureCollection } from "@/server/utils/formatSpatialData";
 import { validatePermissions } from "@/utils/auth";
 
 import type { H3Event } from "h3";
