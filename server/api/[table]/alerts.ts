@@ -1,6 +1,10 @@
 import murmurhash from "murmurhash";
 
-import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import {
+  fetchConfig,
+  fetchData,
+  fetchMapData,
+} from "@/server/database/dbOperations";
 import {
   prepareAlertData,
   prepareAlertsStatistics,
@@ -12,6 +16,7 @@ import {
   filterUnwantedKeys,
   filterGeoData,
 } from "@/server/dataProcessing/filterData";
+import { buildMapFeatureCollection } from "@/server/utils/spatialPayload";
 import { validatePermissions } from "@/utils/auth";
 
 import type { H3Event } from "h3";
@@ -38,7 +43,6 @@ import { parseBasemaps } from "@/server/utils/basemaps";
  * @throws {Error} - If the input is not a valid 16-character hex string
  */
 const generateMapboxIdFromMapeoFeatureId = (mapeoId: string): number => {
-  // Validate that this is actually a Mapeo ID format
   if (
     !mapeoId ||
     typeof mapeoId !== "string" ||
@@ -91,52 +95,95 @@ export default defineEventHandler(async (event: H3Event) => {
     let mapeoData = null;
 
     if (mapeoTable && mapeoCategoryIds) {
-      // Fetch Mapeo data
-      const rawMapeoData = await fetchData(mapeoTable);
+      const mapeoConfig = viewsConfig[mapeoTable];
 
-      // Filter data to remove unwanted columns and substrings
-      const filteredMapeoData = filterUnwantedKeys(
-        rawMapeoData.mainData,
-        rawMapeoData.columnsData,
-        viewsConfig[table].UNWANTED_COLUMNS,
-        viewsConfig[table].UNWANTED_SUBSTRINGS,
-      );
+      if (mapeoConfig) {
+        // Use minimal map fetch + shared spatial payload (same as map endpoint) to reduce payload and processing.
+        const fetchResult = await fetchMapData(mapeoTable, mapeoConfig);
+        const { mapRows, resolvedColumns } = fetchResult;
+        const categoryCol =
+          resolvedColumns.filterColumn ?? resolvedColumns.filterByColumn;
+        const allowedCategoryIds = mapeoCategoryIds
+          .split(",")
+          .map((s) => s.trim());
+        const rowsInCategory =
+          categoryCol != null
+            ? (mapRows as Record<string, unknown>[]).filter((row) =>
+                allowedCategoryIds.includes(
+                  String(row[categoryCol] ?? "").trim(),
+                ),
+              )
+            : (mapRows as Record<string, unknown>[]);
 
-      // Filter Mapeo data to only show data where category matches any values in mapeoCategoryIds (a comma-separated string of values)
-      const filteredMapeoDataByCategory = filteredMapeoData.filter(
-        (row: DataEntry) => {
-          return Object.keys(row).some(
-            (key) =>
-              key.includes("category") &&
-              mapeoCategoryIds.split(",").includes(row[key]),
-          );
-        },
-      );
+        const { featureCollection } = buildMapFeatureCollection(
+          rowsInCategory,
+          mapeoConfig,
+          resolvedColumns,
+          resolvedColumns.filterByColumn,
+          mapeoConfig.FILTER_OUT_VALUES_FROM_COLUMN,
+        );
 
-      // Filter only data with valid geofields
-      const filteredMapeoGeoData = filterGeoData(filteredMapeoDataByCategory);
-      // Transform data that was collected using survey apps (e.g. KoBoToolbox, Mapeo)
-      const transformedMapeoData = transformSurveyData(filteredMapeoGeoData);
-      // Process geodata
-      const processedMapeoData = prepareMapData(
-        transformedMapeoData,
-        viewsConfig[table].FRONT_END_FILTER_COLUMN,
-      );
-
-      // Add normalized IDs for Mapeo features to ensure Mapbox compatibility
-      // This is done here because we know we're dealing with Mapeo data specifically
-      const mapeoDataWithNormalizedIds = processedMapeoData.map((item) => {
-        if (
-          item.id &&
-          typeof item.id === "string" &&
-          item.id.match(/^[0-9a-fA-F]{16}$/)
-        ) {
-          item.normalizedId = generateMapboxIdFromMapeoFeatureId(item.id);
-        }
-        return item;
-      });
-
-      mapeoData = mapeoDataWithNormalizedIds;
+        // Add normalized IDs for Mapbox feature state; convert FeatureCollection to mapeoData shape expected by AlertsDashboard.
+        mapeoData = featureCollection.features.map((f) => {
+          const props = (f.properties ?? {}) as Record<string, unknown>;
+          const id = f.id ?? props._id;
+          if (
+            id != null &&
+            typeof id === "string" &&
+            id.match(/^[0-9a-fA-F]{16}$/)
+          ) {
+            props.normalizedId = generateMapboxIdFromMapeoFeatureId(id);
+          }
+          const geom = f.geometry;
+          const coords =
+            geom && "coordinates" in geom
+              ? JSON.stringify(geom.coordinates)
+              : "[]";
+          const type = geom && "type" in geom ? geom.type : "Point";
+          return {
+            ...props,
+            id: id ?? props._id,
+            geotype: type,
+            geocoordinates: coords,
+            "filter-color": props["filter-color"],
+          };
+        });
+      } else {
+        // Fallback: no view config for Mapeo table; use full fetch + transform.
+        const rawMapeoData = await fetchData(mapeoTable);
+        const filteredMapeoData = filterUnwantedKeys(
+          rawMapeoData.mainData,
+          rawMapeoData.columnsData,
+          viewsConfig[table].UNWANTED_COLUMNS,
+          viewsConfig[table].UNWANTED_SUBSTRINGS,
+        );
+        const filteredMapeoDataByCategory = filteredMapeoData.filter(
+          (row: DataEntry) => {
+            return Object.keys(row).some(
+              (key) =>
+                key.includes("category") &&
+                mapeoCategoryIds.split(",").includes(row[key]),
+            );
+          },
+        );
+        const filteredMapeoGeoData = filterGeoData(filteredMapeoDataByCategory);
+        const transformedMapeoData = transformSurveyData(filteredMapeoGeoData);
+        const processedMapeoData = prepareMapData(
+          transformedMapeoData,
+          viewsConfig[table].FRONT_END_FILTER_COLUMN,
+        );
+        const mapeoDataWithNormalizedIds = processedMapeoData.map((item) => {
+          if (
+            item.id &&
+            typeof item.id === "string" &&
+            item.id.match(/^[0-9a-fA-F]{16}$/)
+          ) {
+            item.normalizedId = generateMapboxIdFromMapeoFeatureId(item.id);
+          }
+          return item;
+        });
+        mapeoData = mapeoDataWithNormalizedIds;
+      }
     }
 
     // Prepare statistics data for the alerts view

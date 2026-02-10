@@ -22,7 +22,6 @@ import type {
   Basemap,
   BasemapConfig,
   DataEntry,
-  Dataset,
   FilterValues,
   MapLegendItem,
   MapStatistics,
@@ -47,7 +46,8 @@ const props = defineProps<{
   mapboxZoom: number;
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
-  mapData: Dataset | FeatureCollection;
+  /** GeoJSON FeatureCollection from the map API (minimal map endpoint). */
+  mapData: FeatureCollection;
   mediaBasePath?: string;
   mediaBasePathIcons?: string;
   mediaColumn?: string;
@@ -55,35 +55,36 @@ const props = defineProps<{
 }>();
 
 /**
- * Normalizes mapData to a Dataset (array of DataEntry) for internal use.
- * If the API returns a GeoJSON FeatureCollection (minimal map endpoint), convert
- * each feature to the shape expected by addDataToMap and DataFilter (geotype,
- * geocoordinates, _id, and properties). Otherwise pass through the array as-is.
+ * Converts mapData (FeatureCollection) to a Dataset-shaped array for addDataToMap and DataFilter.
+ * Fails loudly if mapData is not a valid FeatureCollection.
  */
 const mapDataAsArray = computed((): DataEntry[] => {
   const data = props.mapData;
   if (
-    data &&
-    typeof data === "object" &&
-    "type" in data &&
-    data.type === "FeatureCollection" &&
-    Array.isArray(data.features)
+    !data ||
+    typeof data !== "object" ||
+    (data as { type?: string }).type !== "FeatureCollection" ||
+    !Array.isArray((data as FeatureCollection).features)
   ) {
-    return data.features.map((f) => {
-      const props_ = (f.properties ?? {}) as Record<string, string>;
-      const geom = f.geometry;
-      const coords =
-        geom && "coordinates" in geom ? JSON.stringify(geom.coordinates) : "[]";
-      const type = geom && "type" in geom ? geom.type : "Point";
-      return {
-        ...props_,
-        geotype: type,
-        geocoordinates: coords,
-        _id: f.id != null ? String(f.id) : props_._id,
-      } as DataEntry;
-    });
+    throw new Error(
+      "MapView: mapData must be a GeoJSON FeatureCollection. Got: " +
+        (data == null ? String(data) : typeof data),
+    );
   }
-  return Array.isArray(data) ? [...(data as Dataset)] : [];
+  const fc = data as FeatureCollection;
+  return fc.features.map((f) => {
+    const props_ = (f.properties ?? {}) as Record<string, string>;
+    const geom = f.geometry;
+    const coords =
+      geom && "coordinates" in geom ? JSON.stringify(geom.coordinates) : "[]";
+    const type = geom && "type" in geom ? geom.type : "Point";
+    return {
+      ...props_,
+      geotype: type,
+      geocoordinates: coords,
+      _id: f.id != null ? String(f.id) : props_._id,
+    } as DataEntry;
+  });
 });
 
 const filteredData = ref<DataEntry[]>([]);

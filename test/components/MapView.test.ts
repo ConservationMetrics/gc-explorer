@@ -16,6 +16,43 @@ import * as mapboxMock from "@/test/helpers/mapboxMock";
 
 import MapView from "@/components/MapView.vue";
 
+/** Default FeatureCollection for tests (MapView expects FeatureCollection only). */
+const defaultMapDataFC = {
+  type: "FeatureCollection" as const,
+  features: [
+    {
+      type: "Feature" as const,
+      id: "1",
+      geometry: { type: "Point" as const, coordinates: [0, 0] },
+      properties: {
+        _id: "1",
+        status: "active",
+        "filter-color": "#ff0000",
+      },
+    },
+    {
+      type: "Feature" as const,
+      id: "2",
+      geometry: {
+        type: "Polygon" as const,
+        coordinates: [
+          [
+            [0, 0],
+            [1, 1],
+            [1, 0],
+            [0, 0],
+          ],
+        ],
+      },
+      properties: {
+        _id: "2",
+        status: "inactive",
+        "filter-color": "#00ff00",
+      },
+    },
+  ],
+};
+
 // Re-usable minimal props object
 const baseProps: InstanceType<typeof MapView>["$props"] = {
   allowedFileExtensions: {
@@ -38,22 +75,7 @@ const baseProps: InstanceType<typeof MapView>["$props"] = {
   mapboxZoom: 10,
   mapbox3d: false,
   mapbox3dTerrainExaggeration: 1.5,
-  mapData: [
-    {
-      id: "1",
-      geotype: "Point",
-      geocoordinates: "[0, 0]",
-      status: "active",
-      "filter-color": "#ff0000",
-    },
-    {
-      id: "2",
-      geotype: "Polygon",
-      geocoordinates: "[[[0,0],[1,1],[1,0],[0,0]]]",
-      status: "inactive",
-      "filter-color": "#00ff00",
-    },
-  ],
+  mapData: defaultMapDataFC,
   mediaBasePath: "/media",
   planetApiKey: "",
 };
@@ -278,7 +300,7 @@ describe("MapView component", () => {
 
     // Simulate filter change by calling the component method directly
     const vm = wrapper.vm as unknown as {
-      filteredData: typeof baseProps.mapData;
+      filteredData: Array<Record<string, unknown>>;
       filterValues: (values: string[]) => void;
     };
 
@@ -303,7 +325,7 @@ describe("MapView component", () => {
     await flushPromises();
 
     const vm = wrapper.vm as unknown as {
-      filteredData: typeof baseProps.mapData;
+      filteredData: Array<Record<string, unknown>>;
     };
     expect(vm.filteredData).toHaveLength(2);
   });
@@ -478,16 +500,22 @@ describe("MapView component", () => {
     const propsWithColorColumn = {
       ...baseProps,
       colorColumn: "color",
-      mapData: [
-        {
-          id: "1",
-          geotype: "Point",
-          geocoordinates: "[0, 0]",
-          status: "active",
-          color: "#B209B2",
-          "filter-color": "#ff0000",
-        },
-      ],
+      mapData: {
+        type: "FeatureCollection" as const,
+        features: [
+          {
+            type: "Feature" as const,
+            id: "1",
+            geometry: { type: "Point" as const, coordinates: [0, 0] },
+            properties: {
+              _id: "1",
+              status: "active",
+              color: "#B209B2",
+              "filter-color": "#ff0000",
+            },
+          },
+        ],
+      },
     };
 
     mount(MapView, {
@@ -513,15 +541,21 @@ describe("MapView component", () => {
     const propsWithoutColorColumn = {
       ...baseProps,
       colorColumn: undefined,
-      mapData: [
-        {
-          id: "1",
-          geotype: "Point",
-          geocoordinates: "[0, 0]",
-          status: "active",
-          "filter-color": "#ff0000",
-        },
-      ],
+      mapData: {
+        type: "FeatureCollection" as const,
+        features: [
+          {
+            type: "Feature" as const,
+            id: "1",
+            geometry: { type: "Point" as const, coordinates: [0, 0] },
+            properties: {
+              _id: "1",
+              status: "active",
+              "filter-color": "#ff0000",
+            },
+          },
+        ],
+      },
     };
 
     mount(MapView, {
@@ -634,16 +668,22 @@ describe("MapView component", () => {
       ...baseProps,
       iconColumn: "icon",
       mediaBasePathIcons: "https://example.com/icons",
-      mapData: [
-        {
-          id: "1",
-          geotype: "Point",
-          geocoordinates: "[0, 0]",
-          status: "active",
-          icon: "camp.png",
-          "filter-color": "#ff0000",
-        },
-      ],
+      mapData: {
+        type: "FeatureCollection" as const,
+        features: [
+          {
+            type: "Feature" as const,
+            id: "1",
+            geometry: { type: "Point" as const, coordinates: [0, 0] },
+            properties: {
+              _id: "1",
+              status: "active",
+              icon: "camp.png",
+              "filter-color": "#ff0000",
+            },
+          },
+        ],
+      },
     };
 
     const wrapper = mount(MapView, {
