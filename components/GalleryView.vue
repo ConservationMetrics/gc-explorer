@@ -18,7 +18,13 @@ const props = defineProps<{
   galleryData: Dataset;
   mediaBasePath: string;
   mediaColumn?: string;
+  table?: string;
 }>();
+
+const emit = defineEmits<{
+  "select-feature": [DataEntry];
+}>();
+
 const filteredData = ref(props.galleryData);
 
 // Pagination per page
@@ -65,6 +71,10 @@ const featureWithPreparedCoordinates = (feature: DataEntry): DataEntry => {
   };
   return result as unknown as DataEntry;
 };
+
+const onCardClick = (feature: DataEntry) => {
+  emit("select-feature", feature);
+};
 </script>
 
 <template>
@@ -84,17 +94,26 @@ const featureWithPreparedCoordinates = (feature: DataEntry): DataEntry => {
         @filter="filterValues"
       />
     </div>
-    <DataFeature
+    <div
       v-for="(feature, index) in paginatedData"
       :key="index"
-      :allowed-file-extensions="allowedFileExtensions"
-      :feature="featureWithPreparedCoordinates(feature)"
-      :file-paths="
-        getFilePathsWithExtension(feature, allowedFileExtensions, mediaColumn)
-      "
-      :media-base-path="mediaBasePath"
-      :data-testid="`gallery-item-${index}`"
-    />
+      role="button"
+      tabindex="0"
+      class="cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      data-testid="gallery-item-wrapper"
+      @click="table ? onCardClick(feature) : undefined"
+      @keydown.enter="table ? onCardClick(feature) : undefined"
+    >
+      <DataFeature
+        :allowed-file-extensions="allowedFileExtensions"
+        :feature="featureWithPreparedCoordinates(feature)"
+        :file-paths="
+          getFilePathsWithExtension(feature, allowedFileExtensions, mediaColumn)
+        "
+        :media-base-path="mediaBasePath"
+        :data-testid="`gallery-item-${index}`"
+      />
+    </div>
     <!-- Hidden element to track pagination state for testing -->
     <div
       data-testid="pagination-info"

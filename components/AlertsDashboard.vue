@@ -34,6 +34,7 @@ import type {
   AllowedFileExtensions,
   Basemap,
   BasemapConfig,
+  DataEntry,
   Dataset,
   MapLegendItem,
 } from "@/types/types";
@@ -59,9 +60,11 @@ const props = defineProps<{
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
   mapeoData: Dataset | null;
+  mapeoTable?: string;
   mediaBasePath: string | undefined;
   mediaBasePathAlerts: string | undefined;
   planetApiKey: string | undefined;
+  table: string;
 }>();
 
 const localAlertsData = ref<Feature | AlertsData>(props.alertsData);
@@ -73,6 +76,9 @@ const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showSidebar = ref(true);
 const showSlider = ref(false);
+const loadingFeature = ref(false);
+const featureLoadError = ref<string | null>(null);
+const selectedFeatureOriginal = ref<Feature | null>(null);
 
 const route = useRoute();
 const router = useRouter();
@@ -137,6 +143,65 @@ const {
   showSidebar,
   showIntroPanel,
   isMapeo,
+);
+
+/** Fetched raw record for sidebar (replaces layer props when we have table + recordId). */
+const displayFeature = ref<Record<string, unknown> | null>(null);
+
+watch(
+  [selectedFeature, selectedFeatureSource],
+  async ([feature, source]) => {
+    if (!feature || !source) {
+      displayFeature.value = null;
+      selectedFeatureOriginal.value = null;
+      featureLoadError.value = null;
+      return;
+    }
+    const isMapeoLayer = source === "mapeo-data";
+    const tableForFetch = isMapeoLayer ? props.mapeoTable : props.table;
+    const recordId = isMapeoLayer
+      ? (feature.id ?? feature._id)
+      : feature.alertID;
+    if (!tableForFetch || recordId == null || String(recordId).trim() === "") {
+      displayFeature.value = feature as Record<string, unknown>;
+      selectedFeatureOriginal.value = null;
+      return;
+    }
+    loadingFeature.value = true;
+    featureLoadError.value = null;
+    displayFeature.value = feature as Record<string, unknown>;
+    try {
+      const headers: Record<string, string> = {};
+      if (apiKey) headers["x-api-key"] = apiKey;
+      const raw = await $fetch<Record<string, unknown>>(
+        `/api/${encodeURIComponent(tableForFetch)}/${encodeURIComponent(String(recordId))}`,
+        { headers },
+      );
+      displayFeature.value = raw;
+      const gType = raw?.g__type as string | undefined;
+      const gCoords = raw?.g__coordinates;
+      const coords =
+        typeof gCoords === "string" ? JSON.parse(gCoords as string) : gCoords;
+      selectedFeatureOriginal.value = {
+        type: "Feature",
+        geometry: {
+          type: (gType ?? "Point") as "Point" | "LineString" | "Polygon",
+          coordinates: coords ?? [],
+        },
+        properties: { ...raw },
+      } as Feature;
+    } catch (err) {
+      featureLoadError.value =
+        err && typeof err === "object" && "statusMessage" in err
+          ? String((err as { statusMessage: string }).statusMessage)
+          : "Failed to load record";
+      displayFeature.value = feature as Record<string, unknown>;
+      selectedFeatureOriginal.value = null;
+    } finally {
+      loadingFeature.value = false;
+    }
+  },
+  { immediate: true },
 );
 
 // Use alerts date filter composable
@@ -1401,13 +1466,15 @@ onBeforeUnmount(() => {
       :allowed-file-extensions="allowedFileExtensions"
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
-      :feature="selectedFeature"
-      :feature-geojson="localAlertsData"
+      :feature="(displayFeature ?? selectedFeature) as DataEntry | undefined"
+      :feature-geojson="selectedFeatureOriginal ?? localAlertsData"
+      :feature-load-error="featureLoadError"
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
       :is-alert="isAlert"
       :is-mapeo="isMapeo"
       :is-alerts-dashboard="true"
+      :loading-feature="loadingFeature"
       :local-alerts-data="localAlertsData"
       :logo-url="logoUrl"
       :media-base-path="mediaBasePath"
