@@ -148,6 +148,12 @@ const {
 /** Fetched raw record for sidebar (replaces layer props when we have table + recordId). */
 const displayFeature = ref<Record<string, unknown> | null>(null);
 
+/** Feature to pass to ViewSidebar (avoid `|` in template to prevent "Filters are deprecated" warning). */
+const sidebarFeature = computed(
+  (): DataEntry | undefined =>
+    (displayFeature.value ?? selectedFeature.value) as DataEntry | undefined,
+);
+
 watch(
   [selectedFeature, selectedFeatureSource],
   async ([feature, source]) => {
@@ -1466,7 +1472,7 @@ onBeforeUnmount(() => {
       :allowed-file-extensions="allowedFileExtensions"
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
-      :feature="(displayFeature ?? selectedFeature) as DataEntry | undefined"
+      :feature="sidebarFeature"
       :feature-geojson="selectedFeatureOriginal ?? localAlertsData"
       :feature-load-error="featureLoadError"
       :file-paths="imageUrl"
