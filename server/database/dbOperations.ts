@@ -109,15 +109,17 @@ export type MapResolvedColumns = {
 /**
  * Fetches only the minimal columns needed for the map view: _id, geometry fields,
  * and optional styling/filter columns from config. Reduces payload and DB load vs fetchData.
+ * When config is omitted (e.g. Mapeo table has no view config), selects only required
+ * columns plus any table column whose name contains "category" for category filtering.
  *
- * @param {string | undefined} table - The warehouse table name.
- * @param {ViewConfig} config - View config for this table (COLOR_COLUMN, ICON_COLUMN, FRONT_END_FILTER_COLUMN, etc.).
- * @returns {Promise<{ mapRows: DataEntry[]; columnsData: ColumnEntry[] | null; resolvedColumns: MapResolvedColumns }>} Map rows, column metadata, and resolved SQL column names for styling/filter.
- * @throws {Error} If the main table does not exist.
+ * @param table - The warehouse table name.
+ * @param config - Optional view config for this table. When undefined, only required + category-like columns are selected.
+ * @returns Map rows, column metadata, and resolved SQL column names for styling/filter.
+ * @throws If the main table does not exist.
  */
 export const fetchMapData = async (
   table: string | undefined,
-  config: ViewConfig,
+  config?: ViewConfig | null,
 ): Promise<{
   mapRows: DataEntry[];
   columnsData: ColumnEntry[] | null;
@@ -147,17 +149,49 @@ export const fetchMapData = async (
   }
 
   const selectColumns: string[] = [...required];
-  const optionalConfigColumns = [
-    config.COLOR_COLUMN,
-    config.ICON_COLUMN,
-    config.FRONT_END_FILTER_COLUMN,
-    config.FILTER_BY_COLUMN,
-  ].filter(Boolean) as string[];
-  for (const configCol of optionalConfigColumns) {
-    const resolved = resolveMapColumn(configCol, columnsData, tableColumnNames);
-    if (resolved && !selectColumns.includes(resolved)) {
-      selectColumns.push(resolved);
+  let filterColumnResolved: string | null = null;
+  let filterByColumnResolved: string | null = null;
+
+  if (config) {
+    const optionalConfigColumns = [
+      config.COLOR_COLUMN,
+      config.ICON_COLUMN,
+      config.FRONT_END_FILTER_COLUMN,
+      config.FILTER_BY_COLUMN,
+    ].filter(Boolean) as string[];
+    for (const configCol of optionalConfigColumns) {
+      const resolved = resolveMapColumn(
+        configCol,
+        columnsData,
+        tableColumnNames,
+      );
+      if (resolved && !selectColumns.includes(resolved)) {
+        selectColumns.push(resolved);
+      }
     }
+    filterColumnResolved = resolveMapColumn(
+      config.FRONT_END_FILTER_COLUMN,
+      columnsData,
+      tableColumnNames,
+    );
+    filterByColumnResolved = resolveMapColumn(
+      config.FILTER_BY_COLUMN,
+      columnsData,
+      tableColumnNames,
+    );
+  } else {
+    // No view config (e.g. Mapeo table): add any column name containing "category" for category filtering.
+    const categoryLike = [...tableColumnNames].filter((name) =>
+      name.toLowerCase().includes("category"),
+    );
+    for (const col of categoryLike) {
+      if (!selectColumns.includes(col)) {
+        selectColumns.push(col);
+      }
+    }
+    const firstCategoryCol = categoryLike[0] ?? null;
+    filterColumnResolved = firstCategoryCol;
+    filterByColumnResolved = firstCategoryCol;
   }
 
   const cleanTableName = table.replace(/"/g, "");
@@ -168,27 +202,15 @@ export const fetchMapData = async (
   `);
   const mapRows = (result || []) as DataEntry[];
 
-  const resolvedColumns = {
-    colorColumn: resolveMapColumn(
-      config.COLOR_COLUMN,
-      columnsData,
-      tableColumnNames,
-    ),
-    iconColumn: resolveMapColumn(
-      config.ICON_COLUMN,
-      columnsData,
-      tableColumnNames,
-    ),
-    filterColumn: resolveMapColumn(
-      config.FRONT_END_FILTER_COLUMN,
-      columnsData,
-      tableColumnNames,
-    ),
-    filterByColumn: resolveMapColumn(
-      config.FILTER_BY_COLUMN,
-      columnsData,
-      tableColumnNames,
-    ),
+  const resolvedColumns: MapResolvedColumns = {
+    colorColumn: config
+      ? resolveMapColumn(config.COLOR_COLUMN, columnsData, tableColumnNames)
+      : null,
+    iconColumn: config
+      ? resolveMapColumn(config.ICON_COLUMN, columnsData, tableColumnNames)
+      : null,
+    filterColumn: filterColumnResolved,
+    filterByColumn: filterByColumnResolved,
   };
 
   return { mapRows, columnsData, resolvedColumns };

@@ -9,21 +9,16 @@ import {
   prepareAlertData,
   prepareAlertsStatistics,
   transformToGeojson,
-  prepareMapData,
-  transformSurveyData,
 } from "@/server/dataProcessing/transformData";
-import {
-  filterUnwantedKeys,
-  filterGeoData,
-} from "@/server/dataProcessing/filterData";
 import { buildMapFeatureCollection } from "@/server/utils/spatialPayload";
 import { validatePermissions } from "@/utils/auth";
 
 import type { H3Event } from "h3";
 import type {
   AllowedFileExtensions,
-  DataEntry,
   AlertsMetadata,
+  DataEntry,
+  ViewConfig,
 } from "@/types/types";
 import { parseBasemaps } from "@/server/utils/basemaps";
 
@@ -95,95 +90,66 @@ export default defineEventHandler(async (event: H3Event) => {
     let mapeoData = null;
 
     if (mapeoTable && mapeoCategoryIds) {
-      const mapeoConfig = viewsConfig[mapeoTable];
+      // Always use minimal fetch + shared spatial payload (config optional when Mapeo table has no view config).
+      const mapeoConfig = viewsConfig[mapeoTable] ?? undefined;
+      const fetchResult = await fetchMapData(mapeoTable, mapeoConfig);
+      const { mapRows, resolvedColumns } = fetchResult;
+      const categoryCol =
+        resolvedColumns.filterColumn ?? resolvedColumns.filterByColumn;
+      const allowedCategoryIds = mapeoCategoryIds
+        .split(",")
+        .map((s) => s.trim());
+      const rowsInCategory =
+        categoryCol != null
+          ? (mapRows as Record<string, unknown>[]).filter((row) =>
+              allowedCategoryIds.includes(
+                String(row[categoryCol] ?? "").trim(),
+              ),
+            )
+          : (mapRows as Record<string, unknown>[]);
 
-      if (mapeoConfig) {
-        // Use minimal map fetch + shared spatial payload (same as map endpoint) to reduce payload and processing.
-        const fetchResult = await fetchMapData(mapeoTable, mapeoConfig);
-        const { mapRows, resolvedColumns } = fetchResult;
-        const categoryCol =
-          resolvedColumns.filterColumn ?? resolvedColumns.filterByColumn;
-        const allowedCategoryIds = mapeoCategoryIds
-          .split(",")
-          .map((s) => s.trim());
-        const rowsInCategory =
-          categoryCol != null
-            ? (mapRows as Record<string, unknown>[]).filter((row) =>
-                allowedCategoryIds.includes(
-                  String(row[categoryCol] ?? "").trim(),
-                ),
-              )
-            : (mapRows as Record<string, unknown>[]);
+      // When no view config for Mapeo table, use minimal config for buildMapFeatureCollection (filter column only).
+      const configForBuild: ViewConfig =
+        mapeoConfig ??
+        (categoryCol
+          ? {
+              FRONT_END_FILTER_COLUMN: categoryCol,
+              FILTER_BY_COLUMN: categoryCol,
+            }
+          : {});
+      const { featureCollection } = buildMapFeatureCollection(
+        rowsInCategory,
+        configForBuild,
+        resolvedColumns,
+        resolvedColumns.filterByColumn,
+        mapeoConfig?.FILTER_OUT_VALUES_FROM_COLUMN,
+      );
 
-        const { featureCollection } = buildMapFeatureCollection(
-          rowsInCategory,
-          mapeoConfig,
-          resolvedColumns,
-          resolvedColumns.filterByColumn,
-          mapeoConfig.FILTER_OUT_VALUES_FROM_COLUMN,
-        );
-
-        // Add normalized IDs for Mapbox feature state; convert FeatureCollection to mapeoData shape expected by AlertsDashboard.
-        mapeoData = featureCollection.features.map((f) => {
-          const props = (f.properties ?? {}) as Record<string, unknown>;
-          const id = f.id ?? props._id;
-          if (
-            id != null &&
-            typeof id === "string" &&
-            id.match(/^[0-9a-fA-F]{16}$/)
-          ) {
-            props.normalizedId = generateMapboxIdFromMapeoFeatureId(id);
-          }
-          const geom = f.geometry;
-          const coords =
-            geom && "coordinates" in geom
-              ? JSON.stringify(geom.coordinates)
-              : "[]";
-          const type = geom && "type" in geom ? geom.type : "Point";
-          return {
-            ...props,
-            id: id ?? props._id,
-            geotype: type,
-            geocoordinates: coords,
-            "filter-color": props["filter-color"],
-          };
-        });
-      } else {
-        // Fallback: no view config for Mapeo table; use full fetch + transform.
-        const rawMapeoData = await fetchData(mapeoTable);
-        const filteredMapeoData = filterUnwantedKeys(
-          rawMapeoData.mainData,
-          rawMapeoData.columnsData,
-          viewsConfig[table].UNWANTED_COLUMNS,
-          viewsConfig[table].UNWANTED_SUBSTRINGS,
-        );
-        const filteredMapeoDataByCategory = filteredMapeoData.filter(
-          (row: DataEntry) => {
-            return Object.keys(row).some(
-              (key) =>
-                key.includes("category") &&
-                mapeoCategoryIds.split(",").includes(row[key]),
-            );
-          },
-        );
-        const filteredMapeoGeoData = filterGeoData(filteredMapeoDataByCategory);
-        const transformedMapeoData = transformSurveyData(filteredMapeoGeoData);
-        const processedMapeoData = prepareMapData(
-          transformedMapeoData,
-          viewsConfig[table].FRONT_END_FILTER_COLUMN,
-        );
-        const mapeoDataWithNormalizedIds = processedMapeoData.map((item) => {
-          if (
-            item.id &&
-            typeof item.id === "string" &&
-            item.id.match(/^[0-9a-fA-F]{16}$/)
-          ) {
-            item.normalizedId = generateMapboxIdFromMapeoFeatureId(item.id);
-          }
-          return item;
-        });
-        mapeoData = mapeoDataWithNormalizedIds;
-      }
+      // Add normalized IDs for Mapbox feature state; convert FeatureCollection to mapeoData shape expected by AlertsDashboard.
+      mapeoData = featureCollection.features.map((f) => {
+        const props = (f.properties ?? {}) as Record<string, unknown>;
+        const id = f.id ?? props._id;
+        if (
+          id != null &&
+          typeof id === "string" &&
+          id.match(/^[0-9a-fA-F]{16}$/)
+        ) {
+          props.normalizedId = generateMapboxIdFromMapeoFeatureId(id);
+        }
+        const geom = f.geometry;
+        const coords =
+          geom && "coordinates" in geom
+            ? JSON.stringify(geom.coordinates)
+            : "[]";
+        const type = geom && "type" in geom ? geom.type : "Point";
+        return {
+          ...props,
+          id: id ?? props._id,
+          geotype: type,
+          geocoordinates: coords,
+          "filter-color": props["filter-color"],
+        };
+      });
     }
 
     // Prepare statistics data for the alerts view
