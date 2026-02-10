@@ -11,6 +11,7 @@ import {
   toggleLayerVisibility as utilsToggleLayerVisibility,
 } from "@/utils/mapFunctions";
 import { transformSurveyData } from "@/utils/dataProcessing/transformData";
+import { useRecordFetch } from "@/composables/useRecordFetch";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
@@ -29,6 +30,8 @@ import type {
   MapStatistics,
 } from "@/types/types";
 import type { FeatureCollection } from "geojson";
+
+const { getRecord } = useRecordFetch();
 
 const props = defineProps<{
   table?: string;
@@ -357,15 +360,13 @@ const addDataToMap = () => {
             showSidebar.value = true;
             showIntroPanel.value = false;
             try {
-              const config = useRuntimeConfig();
-              const headers: Record<string, string> = {};
-              if (config.public?.appApiKey) {
-                headers["x-api-key"] = config.public.appApiKey;
+              const raw = await getRecord(props.table, String(recordId));
+              if (raw == null) {
+                featureLoadError.value = "Record not found";
+                selectedFeature.value = null;
+                selectedFeatureOriginal.value = null;
+                return;
               }
-              const raw = await $fetch<Record<string, unknown>>(
-                `/api/${props.table}/${encodeURIComponent(String(recordId))}`,
-                { headers },
-              );
               // Transform once when fetched (cached for this selection) for display;
               // download uses raw via selectedFeatureOriginal below.
               const forDisplay = transformSurveyData(
