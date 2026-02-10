@@ -66,6 +66,19 @@ const props = defineProps<{
   mediaBasePathAlerts: string | undefined;
   planetApiKey: string | undefined;
   table: string;
+  /** Sidebar record data (page fetches; component does not call API). */
+  sidebarDisplayFeature?: Record<string, unknown> | null;
+  sidebarLoadingFeature?: boolean;
+  sidebarFeatureLoadError?: string | null;
+  sidebarSelectedFeatureOriginal?: Feature | null;
+}>();
+
+const emit = defineEmits<{
+  /** Page should fetch this record and pass back via sidebarDisplayFeature etc. */
+  "request-record": [
+    { table: string; recordId: string; feature?: Record<string, unknown> } | null,
+  ];
+  "reset-legend-visibility": [];
 }>();
 
 const localAlertsData = ref<Feature | AlertsData>(props.alertsData);
@@ -77,16 +90,12 @@ const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showSidebar = ref(true);
 const showSlider = ref(false);
-const loadingFeature = ref(false);
-const featureLoadError = ref<string | null>(null);
-const selectedFeatureOriginal = ref<Feature | null>(null);
 
 const route = useRoute();
 const router = useRouter();
 
 const isMapeo = ref(false);
 
-// Get API key from runtime config
 const config = useRuntimeConfig();
 const apiKey = config.public.appApiKey as string;
 
@@ -146,16 +155,17 @@ const {
   isMapeo,
 );
 
-/** Fetched raw record for sidebar; transformed for display via sidebarFeature. */
-const displayFeature = ref<Record<string, unknown> | null>(null);
+/** Feature to pass to ViewSidebar (page-provided record or layer feature). */
+const sidebarFeature = computed(
+  (): DataEntry | undefined =>
+    (props.sidebarDisplayFeature ?? selectedFeature.value) as DataEntry | undefined,
+);
 
 watch(
   [selectedFeature, selectedFeatureSource],
-  async ([feature, source]) => {
+  ([feature, source]) => {
     if (!feature || !source) {
-      displayFeature.value = null;
-      selectedFeatureOriginal.value = null;
-      featureLoadError.value = null;
+      emit("request-record", null);
       return;
     }
     const isMapeoLayer = source === "mapeo-data";
@@ -164,57 +174,16 @@ watch(
       ? (feature.id ?? feature._id)
       : feature.alertID;
     if (!tableForFetch || recordId == null || String(recordId).trim() === "") {
-      displayFeature.value = feature as Record<string, unknown>;
-      selectedFeatureOriginal.value = null;
+      emit("request-record", null);
       return;
     }
-    loadingFeature.value = true;
-    featureLoadError.value = null;
-    displayFeature.value = feature as Record<string, unknown>;
-    try {
-      const headers: Record<string, string> = {};
-      if (apiKey) headers["x-api-key"] = apiKey;
-      const raw = await $fetch<Record<string, unknown>>(
-        `/api/${encodeURIComponent(tableForFetch)}/${encodeURIComponent(String(recordId))}`,
-        { headers },
-      );
-      // Transform raw for display; download uses selectedFeatureOriginal (raw GeoJSON) below.
-      const forDisplay = transformSurveyData(
-        [raw as DataEntry],
-        undefined,
-      )[0];
-      displayFeature.value = forDisplay as unknown as Record<string, unknown>;
-      const gType = raw?.g__type as string | undefined;
-      const gCoords = raw?.g__coordinates;
-      const coords =
-        typeof gCoords === "string"
-          ? JSON.parse(gCoords as string)
-          : gCoords;
-      selectedFeatureOriginal.value = {
-        type: "Feature",
-        geometry: {
-          type: (gType ?? "Point") as "Point" | "LineString" | "Polygon",
-          coordinates: coords ?? [],
-        },
-        properties: { ...raw },
-      } as Feature;
-    } catch (err) {
-      featureLoadError.value =
-        err && typeof err === "object" && "statusMessage" in err
-          ? String((err as { statusMessage: string }).statusMessage)
-          : "Failed to load record";
-      displayFeature.value = feature as Record<string, unknown>;
-      selectedFeatureOriginal.value = null;
-    } finally {
-      loadingFeature.value = false;
-    }
+    emit("request-record", {
+      table: tableForFetch,
+      recordId: String(recordId),
+      feature: feature as Record<string, unknown>,
+    });
   },
   { immediate: true },
-);
-
-const sidebarFeature = computed(
-  (): DataEntry | undefined =>
-    (displayFeature.value ?? selectedFeature.value) as DataEntry | undefined,
 );
 
 // Use alerts date filter composable
@@ -445,8 +414,6 @@ onMounted(() => {
     }
   });
 });
-
-const emit = defineEmits(["reset-legend-visibility"]);
 
 // ====================
 // === Map Content ====
@@ -1480,14 +1447,14 @@ onBeforeUnmount(() => {
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
       :feature="sidebarFeature"
-      :feature-geojson="selectedFeatureOriginal ?? localAlertsData"
-      :feature-load-error="featureLoadError"
+      :feature-geojson="(sidebarSelectedFeatureOriginal ?? localAlertsData)"
+      :feature-load-error="sidebarFeatureLoadError"
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
       :is-alert="isAlert"
       :is-mapeo="isMapeo"
       :is-alerts-dashboard="true"
-      :loading-feature="loadingFeature"
+      :loading-feature="sidebarLoadingFeature"
       :local-alerts-data="localAlertsData"
       :logo-url="logoUrl"
       :media-base-path="mediaBasePath"

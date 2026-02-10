@@ -5,6 +5,7 @@ import { replaceUnderscoreWithSpace } from "@/utils/index";
 import { useIsPublic } from "@/utils/permissions";
 
 import type { BasemapConfig } from "@/types/types";
+import type { Feature } from "geojson";
 
 // Extract the tablename from the route parameters
 const route = useRoute();
@@ -34,6 +35,12 @@ const mediaBasePath = ref();
 const mediaBasePathAlerts = ref();
 const planetApiKey = ref();
 
+/** Sidebar record state (page fetches; component does not call API). */
+const sidebarDisplayFeature = ref<Record<string, unknown> | null>(null);
+const sidebarLoadingFeature = ref(false);
+const sidebarFeatureLoadError = ref<string | null>(null);
+const sidebarSelectedFeatureOriginal = ref<Feature | null>(null);
+
 const {
   public: { appApiKey },
 } = useRuntimeConfig();
@@ -43,6 +50,58 @@ const headers = {
 const { data, error } = await useFetch(`/api/${table}/alerts`, {
   headers,
 });
+
+/** Fetch a single record for the sidebar when the dashboard requests it. */
+const onRequestRecord = async (
+  payload: {
+    table: string;
+    recordId: string;
+    feature?: Record<string, unknown>;
+  } | null,
+) => {
+  if (!payload) {
+    sidebarDisplayFeature.value = null;
+    sidebarLoadingFeature.value = false;
+    sidebarFeatureLoadError.value = null;
+    sidebarSelectedFeatureOriginal.value = null;
+    return;
+  }
+  const { table: tableForFetch, recordId } = payload;
+  sidebarLoadingFeature.value = true;
+  sidebarFeatureLoadError.value = null;
+  sidebarDisplayFeature.value = payload.feature ?? null;
+  sidebarSelectedFeatureOriginal.value = null;
+  try {
+    const fetchHeaders: Record<string, string> = {};
+    if (appApiKey) fetchHeaders["x-api-key"] = appApiKey;
+    const raw = await $fetch<Record<string, unknown>>(
+      `/api/${encodeURIComponent(tableForFetch)}/${encodeURIComponent(String(recordId))}`,
+      { headers: fetchHeaders },
+    );
+    sidebarDisplayFeature.value = raw;
+    const gType = raw?.g__type as string | undefined;
+    const gCoords = raw?.g__coordinates;
+    const coords =
+      typeof gCoords === "string" ? JSON.parse(gCoords as string) : gCoords;
+    sidebarSelectedFeatureOriginal.value = {
+      type: "Feature",
+      geometry: {
+        type: (gType ?? "Point") as "Point" | "LineString" | "Polygon",
+        coordinates: coords ?? [],
+      },
+      properties: { ...raw },
+    } as Feature;
+  } catch (err) {
+    sidebarFeatureLoadError.value =
+      err && typeof err === "object" && "statusMessage" in err
+        ? String((err as { statusMessage: string }).statusMessage)
+        : "Failed to load record";
+    sidebarDisplayFeature.value = payload.feature ?? null;
+    sidebarSelectedFeatureOriginal.value = null;
+  } finally {
+    sidebarLoadingFeature.value = false;
+  }
+};
 
 if (data.value && !error.value) {
   alertsData.value = data.value.alertsData;
@@ -117,6 +176,11 @@ useHead({
         :media-base-path="mediaBasePath"
         :media-base-path-alerts="mediaBasePathAlerts"
         :planet-api-key="planetApiKey"
+        :sidebar-display-feature="sidebarDisplayFeature"
+        :sidebar-loading-feature="sidebarLoadingFeature"
+        :sidebar-feature-load-error="sidebarFeatureLoadError"
+        :sidebar-selected-feature-original="sidebarSelectedFeatureOriginal"
+        @request-record="onRequestRecord"
       />
     </ClientOnly>
   </div>

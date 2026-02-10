@@ -21,10 +21,6 @@ const props = defineProps<{
   table?: string;
 }>();
 
-const emit = defineEmits<{
-  "select-feature": [DataEntry];
-}>();
-
 const filteredData = ref(props.galleryData);
 
 // Pagination per page
@@ -72,39 +68,32 @@ const featureWithPreparedCoordinates = (feature: DataEntry): DataEntry => {
   return result as unknown as DataEntry;
 };
 
-const onCardClick = (feature: DataEntry) => {
-  emit("select-feature", feature);
-};
 </script>
 
 <template>
-  <div
-    id="galleryContainer"
-    data-testid="gallery-container"
-    class="gallery p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-  >
+  <div>
     <div
-      v-if="filterColumn"
-      class="sticky top-10 right-10 z-10"
-      data-testid="filter-container"
+      id="galleryContainer"
+      data-testid="gallery-container"
+      class="gallery p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
     >
-      <DataFilter
-        :data="galleryData"
-        :filter-column="filterColumn"
-        @filter="filterValues"
-      />
-    </div>
-    <div
-      v-for="(feature, index) in paginatedData"
-      :key="index"
-      role="button"
-      tabindex="0"
-      class="cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-      data-testid="gallery-item-wrapper"
-      @click="table ? onCardClick(feature) : undefined"
-      @keydown.enter="table ? onCardClick(feature) : undefined"
-    >
-      <DataFeature
+      <div
+        v-if="filterColumn"
+        class="sticky top-10 right-10 z-10"
+        data-testid="filter-container"
+      >
+        <DataFilter
+          :data="galleryData"
+          :filter-column="filterColumn"
+          @filter="filterValues"
+        />
+      </div>
+      <div
+        v-for="(feature, index) in paginatedData"
+        :key="index"
+        data-testid="gallery-item-wrapper"
+      >
+        <DataFeature
         :allowed-file-extensions="allowedFileExtensions"
         :feature="featureWithPreparedCoordinates(feature)"
         :file-paths="
@@ -112,16 +101,17 @@ const onCardClick = (feature: DataEntry) => {
         "
         :media-base-path="mediaBasePath"
         :data-testid="`gallery-item-${index}`"
-      />
+        />
+      </div>
+      <!-- Hidden element to track pagination state for testing -->
+      <div
+        data-testid="pagination-info"
+        :data-current-page="currentPage"
+        :data-items-per-page="itemsPerPage"
+        :data-total-items="filteredData.length"
+        :data-paginated-count="paginatedData.length"
+        class="hidden"
+      ></div>
     </div>
-    <!-- Hidden element to track pagination state for testing -->
-    <div
-      data-testid="pagination-info"
-      :data-current-page="currentPage"
-      :data-items-per-page="itemsPerPage"
-      :data-total-items="filteredData.length"
-      :data-paginated-count="paginatedData.length"
-      class="hidden"
-    ></div>
   </div>
 </template>
