@@ -26,6 +26,7 @@ import IncidentsControls from "@/components/alerts/IncidentsControls.vue";
 import { useIncidents } from "@/composables/useIncidents";
 import { useFeatureSelection } from "@/composables/useFeatureSelection";
 import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
+import { useRecordFetch } from "@/composables/useRecordFetch";
 import { transformSurveyData } from "@/utils/dataProcessing/transformData";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
@@ -89,6 +90,8 @@ const isMapeo = ref(false);
 // Get API key from runtime config
 const config = useRuntimeConfig();
 const apiKey = config.public.appApiKey as string;
+
+const { getRecord } = useRecordFetch();
 
 // Use incidents composable
 const {
@@ -172,12 +175,13 @@ watch(
     featureLoadError.value = null;
     displayFeature.value = feature as Record<string, unknown>;
     try {
-      const headers: Record<string, string> = {};
-      if (apiKey) headers["x-api-key"] = apiKey;
-      const raw = await $fetch<Record<string, unknown>>(
-        `/api/${encodeURIComponent(tableForFetch)}/${encodeURIComponent(String(recordId))}`,
-        { headers },
-      );
+      const raw = await getRecord(tableForFetch, String(recordId));
+      if (raw == null) {
+        featureLoadError.value = "Record not found";
+        displayFeature.value = feature as Record<string, unknown>;
+        selectedFeatureOriginal.value = null;
+        return;
+      }
       // Transform raw for display; download uses selectedFeatureOriginal (raw GeoJSON) below.
       const forDisplay = transformSurveyData(
         [raw as DataEntry],
