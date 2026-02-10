@@ -29,48 +29,17 @@ const { data, error } = await useFetch(`/api/${table}/gallery`, {
   headers,
 });
 
-const rawGalleryList = ref<DataEntry[]>([]);
-
 if (data.value && !error.value) {
   allowedFileExtensions.value = data.value.allowedFileExtensions;
   dataFetched.value = true;
   filterColumn.value = data.value.filterColumn;
   const rawList = (data.value.data ?? []) as DataEntry[];
-  rawGalleryList.value = rawList;
   mediaBasePath.value = data.value.mediaBasePath;
   mediaColumn.value = data.value.mediaColumn;
-  // Batch load first page via bulk records endpoint (270).
-  const firstPageSize = 100;
-  const firstIds = rawList
-    .slice(0, firstPageSize)
-    .map((r) => String(r._id ?? r.id))
-    .filter(Boolean);
-  if (firstIds.length > 0) {
-    try {
-      const res = await $fetch<{ records: (DataEntry | null)[] }>(
-        `/api/${table}/records`,
-        {
-          method: "POST",
-          body: { ids: firstIds },
-          headers: { "x-api-key": appApiKey },
-        },
-      );
-      const records = (res.records ?? []).filter(
-        (r): r is DataEntry => r != null,
-      );
-      galleryData.value = transformSurveyData(
-        records,
-        data.value.mediaColumn,
-      );
-    } catch {
-      galleryData.value = transformSurveyData(
-        rawList.slice(0, firstPageSize),
-        data.value.mediaColumn,
-      );
-    }
-  } else {
-    galleryData.value = [];
-  }
+  galleryData.value = transformSurveyData(
+    rawList,
+    data.value.mediaColumn,
+  );
 } else {
   console.error("Error fetching data:", error.value);
 }
