@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toRef } from "vue";
+import { computed, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 
@@ -115,7 +115,7 @@ const {
   clearSelectedSources,
   handleMultiSelectFeature,
   handleIncidentClusterZoom,
-} = useIncidents(map, route, router, apiKey);
+} = useIncidents(map, route, router, apiKey, toRef(props, "mapLegendLayerIds"));
 
 // Use feature selection composable
 const {
@@ -360,6 +360,8 @@ onMounted(() => {
         openIncidentDetails(incidentId);
       }
 
+      map.value.on("click", handleAdditionalLayerMultiSelect);
+
       controlsAdded = true;
     } else {
       // On style changes (not initial load), just prepare canvas content
@@ -379,6 +381,68 @@ const featuresUnderCursor = ref(0);
 const hasLineStrings = ref(false);
 const hasPoints = ref(false);
 const mapeoDataColor = ref();
+const MAPEO_INTERACTIVE_LAYER_IDS = ["mapeo-data"];
+const additionalSelectableLayerIds = computed(() =>
+  (props.mapLegendLayerIds || "")
+    .split(",")
+    .map((layerId) => layerId.trim())
+    .filter(Boolean),
+);
+const hasActiveSelection = computed(
+  () => selectedSources.value.length > 0 || !!selectedFeature.value,
+);
+
+const handleClearSourcesAndCloseSidebar = () => {
+  clearSelectedSources();
+  if (showIncidentsSidebar.value) {
+    toggleIncidentsSidebar();
+  }
+};
+
+const handleExplicitDeselect = () => {
+  if (selectedFeature.value) {
+    resetSelectedFeature();
+  }
+  if (selectedSources.value.length > 0) {
+    clearSelectedSources();
+  }
+};
+
+const handleAdditionalLayerMultiSelect = (e: MapMouseEvent) => {
+  if (
+    !multiSelectMode.value ||
+    additionalSelectableLayerIds.value.length === 0
+  ) {
+    return;
+  }
+
+  const availableLayers = additionalSelectableLayerIds.value.filter((layerId) =>
+    map.value.getLayer(layerId),
+  );
+
+  if (availableLayers.length === 0) {
+    return;
+  }
+
+  const features = map.value.queryRenderedFeatures(e.point, {
+    layers: availableLayers,
+  });
+
+  const selectableFeature = features.find(
+    (feature: mapboxgl.MapboxGeoJSONFeature) =>
+      !feature.properties?.cluster &&
+      feature.properties?.cluster_id === undefined &&
+      (feature.properties?.alertID ||
+        feature.properties?._id ||
+        feature.properties?.id ||
+        feature.properties?.source_id ||
+        feature.properties?.sourceId),
+  );
+
+  if (selectableFeature) {
+    handleMultiSelectFeature(selectableFeature, selectableFeature.layer.id);
+  }
+};
 
 /**
  * Adds alert data to the map by creating GeoJSON sources and layers for recent and previous alerts.
@@ -804,12 +868,7 @@ const addAlertsData = async () => {
                 );
               }
             } else {
-              // Check if multi-select mode is active and Ctrl/Cmd is pressed
-              const isMultiSelect =
-                multiSelectMode.value &&
-                (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
-
-              if (isMultiSelect) {
+              if (multiSelectMode.value) {
                 // Add to selected sources instead of selecting for sidebar
                 handleMultiSelectFeature(feature, layer.id);
               } else {
@@ -916,7 +975,6 @@ const addMapeoData = () => {
       paint: {
         "circle-radius": 6,
         "circle-color": [
-          // Use filter-color for fallback if selected is false
           "case",
           ["boolean", ["feature-state", "selected"], false],
           "#FFFF00",
@@ -928,8 +986,11 @@ const addMapeoData = () => {
     });
   }
 
-  // Add event listeners
-  ["mapeo-data"].forEach((layerId) => {
+  const interactiveLayers = MAPEO_INTERACTIVE_LAYER_IDS.filter((layerId) =>
+    map.value.getLayer(layerId),
+  );
+
+  interactiveLayers.forEach((layerId) => {
     map.value.on(
       "mouseenter",
       layerId,
@@ -956,16 +1017,9 @@ const addMapeoData = () => {
       (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
           const feature = e.features[0];
-          // Check if multi-select mode is active and Ctrl/Cmd is pressed
-          const isMultiSelect =
-            multiSelectMode.value &&
-            (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
-
-          if (isMultiSelect) {
-            // Add to selected sources instead of selecting for sidebar
+          if (multiSelectMode.value) {
             handleMultiSelectFeature(feature, layerId);
           } else {
-            // Normal selection behavior
             selectFeature(feature, layerId);
           }
         }
@@ -1004,7 +1058,27 @@ const isOnlyLineStringData = () => {
  * around LineString features.
  */
 const handleBufferClick = (e: MapMouseEvent) => {
-  const pixelBuffer = 10;
+  const directHitLayers = [
+    "most-recent-alerts-point",
+    "previous-alerts-point",
+    "most-recent-alerts-polygon",
+    "previous-alerts-polygon",
+    "most-recent-alerts-centroids",
+    "previous-alerts-centroids",
+    ...MAPEO_INTERACTIVE_LAYER_IDS,
+  ].filter((layerId) => map.value.getLayer(layerId));
+
+  if (directHitLayers.length > 0) {
+    const directHits = map.value.queryRenderedFeatures(e.point, {
+      layers: directHitLayers,
+    });
+
+    if (directHits.length > 0) {
+      return;
+    }
+  }
+
+  const pixelBuffer = 6;
   const bbox = [
     [e.point.x - pixelBuffer, e.point.y - pixelBuffer],
     [e.point.x + pixelBuffer, e.point.y + pixelBuffer],
@@ -1017,7 +1091,11 @@ const handleBufferClick = (e: MapMouseEvent) => {
   if (features.length > 0) {
     const firstFeature = features[0];
     const layerId = firstFeature.layer.id;
-    selectFeature(firstFeature, layerId);
+    if (multiSelectMode.value) {
+      handleMultiSelectFeature(firstFeature, layerId);
+    } else {
+      selectFeature(firstFeature, layerId);
+    }
   }
 };
 
@@ -1159,6 +1237,16 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
             visibility,
           );
         }
+      }
+    });
+  } else if (item.id === "mapeo-data") {
+    MAPEO_INTERACTIVE_LAYER_IDS.forEach((layerId) => {
+      if (map.value.getLayer(layerId)) {
+        map.value.setLayoutProperty(layerId, "visibility", visibility);
+      }
+      const strokeLayerId = `${layerId}-stroke`;
+      if (map.value.getLayer(strokeLayerId)) {
+        map.value.setLayoutProperty(strokeLayerId, "visibility", visibility);
       }
     });
   } else {
@@ -1368,6 +1456,20 @@ const resetToInitialState = () => {
             }
           }
         });
+      } else if (item.id === "mapeo-data") {
+        MAPEO_INTERACTIVE_LAYER_IDS.forEach((layerId) => {
+          if (map.value.getLayer(layerId)) {
+            map.value.setLayoutProperty(layerId, "visibility", visibility);
+          }
+          const strokeLayerId = `${layerId}-stroke`;
+          if (map.value.getLayer(strokeLayerId)) {
+            map.value.setLayoutProperty(
+              strokeLayerId,
+              "visibility",
+              visibility,
+            );
+          }
+        });
       } else {
         // Handle individual layers (mapeo-data, etc.)
         utilsToggleLayerVisibility(map.value, item);
@@ -1451,13 +1553,14 @@ onBeforeUnmount(() => {
       @load-more-incidents="loadMoreIncidents"
       @create-incident="createIncident"
       @remove-source="removeSourceFromSelection"
-      @clear-sources="clearSelectedSources"
+      @clear-sources="handleClearSourcesAndCloseSidebar"
     />
     <IncidentsControls
       :show-incidents-sidebar="showIncidentsSidebar"
       :open-sidebar-with-create-form="openSidebarWithCreateForm"
       :bounding-box-mode="boundingBoxMode"
       :multi-select-mode="multiSelectMode"
+      :has-active-selection="hasActiveSelection"
       :selected-sources-length="selectedSources.length"
       :hovered-button="hoveredButton"
       @toggle-incidents-sidebar="toggleIncidentsSidebar"
@@ -1466,6 +1569,7 @@ onBeforeUnmount(() => {
       @open-incidents-sidebar-with-create-form="
         openIncidentsSidebarWithCreateForm
       "
+      @clear-selection="handleExplicitDeselect"
       @hover-button="(button) => (hoveredButton = button)"
       @clear-hover="hoveredButton = null"
     />

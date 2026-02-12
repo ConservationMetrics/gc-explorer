@@ -132,6 +132,22 @@ const hasMoreIncidents = computed(() => {
 });
 
 const isLoadingMore = computed(() => props.isLoadingMore === true);
+const selectedSourceSummary = computed(() => {
+  const summary = {
+    alerts: 0,
+    mapeoData: 0,
+  };
+
+  props.selectedSources.forEach((source) => {
+    if (source.source_table === "mapeo_data") {
+      summary.mapeoData += 1;
+    } else {
+      summary.alerts += 1;
+    }
+  });
+
+  return summary;
+});
 
 const handleSubmit = () => {
   if (!formData.value.name.trim()) {
@@ -350,26 +366,21 @@ const handleClose = () => {
           <h3>
             {{ $t("incidents.selectedSources") }} ({{ selectedSources.length }})
           </h3>
-          <div class="sources-list">
-            <div
-              v-for="(source, index) in selectedSources"
-              :key="`${source.source_table}-${source.source_id}-${index}`"
-              class="source-item"
-            >
-              <div class="source-info">
-                <span class="source-table">{{ source.source_table }}</span>
-                <span class="source-id">{{ source.source_id }}</span>
-              </div>
-              <button
-                class="remove-btn"
-                :title="$t('remove')"
-                @click="
-                  emit('removeSource', source.source_table, source.source_id)
-                "
-              >
-                ×
-              </button>
-            </div>
+          <div class="selected-sources-summary">
+            <p>
+              {{
+                $t("incidents.selectedAlertsCount", {
+                  count: selectedSourceSummary.alerts,
+                })
+              }}
+            </p>
+            <p>
+              {{
+                $t("incidents.selectedMapeoCount", {
+                  count: selectedSourceSummary.mapeoData,
+                })
+              }}
+            </p>
           </div>
           <button class="clear-btn" @click="emit('clearSources')">
             {{ $t("incidents.clearAll") }}
@@ -622,6 +633,17 @@ const handleClose = () => {
   margin: 0 0 12px 0;
   font-size: 16px;
   font-weight: 600;
+}
+
+.selected-sources-summary {
+  margin-bottom: 12px;
+  color: #444;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.selected-sources-summary p {
+  margin: 0 0 6px;
 }
 
 .sources-list {
