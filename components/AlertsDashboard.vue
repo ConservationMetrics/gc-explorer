@@ -387,7 +387,6 @@ const MAPEO_INTERACTIVE_LAYER_IDS = [
   "mapeo-data-polygon",
   "mapeo-data-multipolygon",
   "mapeo-data-linestring",
-  "mapeo-data-multilinestring",
 ];
 const additionalSelectableLayerIds = computed(() =>
   (props.mapLegendLayerIds || "")
@@ -452,8 +451,8 @@ const handleAdditionalLayerMultiSelect = (e: MapMouseEvent) => {
 const getMapeoLayerIdForGeometryType = (geometryType: string) => {
   if (geometryType === "Polygon") return "mapeo-data-polygon";
   if (geometryType === "MultiPolygon") return "mapeo-data-multipolygon";
-  if (geometryType === "LineString") return "mapeo-data-linestring";
-  if (geometryType === "MultiLineString") return "mapeo-data-multilinestring";
+  if (geometryType === "LineString" || geometryType === "MultiLineString")
+    return "mapeo-data-linestring";
   return "mapeo-data";
 };
 
@@ -1065,8 +1064,11 @@ const addMapeoData = () => {
   };
 
   addMapeoLayer("mapeo-data", ["Point", "MultiPoint"], "circle");
-  addMapeoLayer("mapeo-data-linestring", ["LineString"], "line");
-  addMapeoLayer("mapeo-data-multilinestring", ["MultiLineString"], "line");
+  addMapeoLayer(
+    "mapeo-data-linestring",
+    ["LineString", "MultiLineString"],
+    "line",
+  );
   addMapeoLayer("mapeo-data-polygon", ["Polygon"], "fill");
   addMapeoLayer("mapeo-data-multipolygon", ["MultiPolygon"], "fill");
 

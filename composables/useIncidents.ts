@@ -76,7 +76,12 @@ export const useIncidents = (
 
   // Highlighted sources tracking
   const highlightedSources = ref<
-    Array<{ featureId: string | number; layerId: string }>
+    Array<{
+      featureId: string | number;
+      layerId: string;
+      sourceId: string;
+      sourceLayer?: string;
+    }>
   >([]);
 
   // Cluster highlighting state: multiple clusters per source (e.g. bbox over many clusters)
@@ -104,6 +109,29 @@ export const useIncidents = (
       (layerId.endsWith("-stroke") &&
         additionalLayerIds.includes(layerId.replace(/-stroke$/i, "")))
     );
+  };
+
+  const resolveFeatureStateTarget = (feature: Feature, layerId: string) => {
+    if (!map.value) return null;
+
+    const mapLayer = map.value.getLayer(layerId) as
+      | (mapboxgl.AnyLayer & { source?: string; "source-layer"?: string })
+      | undefined;
+
+    const sourceId = mapLayer?.source || layerId;
+    const sourceLayer = mapLayer?.["source-layer"];
+    const featureId = layerId.includes("-centroids")
+      ? feature.properties?.alertID
+      : (feature.id ??
+        feature.properties?.alertID ??
+        feature.properties?._id ??
+        feature.properties?.id);
+
+    if (featureId === undefined || featureId === null || !sourceId) {
+      return null;
+    }
+
+    return { sourceId, sourceLayer, featureId };
   };
 
   /**
@@ -626,7 +654,6 @@ export const useIncidents = (
       "mapeo-data-polygon",
       "mapeo-data-multipolygon",
       "mapeo-data-linestring",
-      "mapeo-data-multilinestring",
     ];
 
     const additionalLayers = getAdditionalSelectableLayerIds();
@@ -921,29 +948,29 @@ export const useIncidents = (
   const highlightSelectedSource = (feature: Feature, layerId: string) => {
     if (!map.value) return;
 
-    const featureId = layerId.includes("-centroids")
-      ? feature.properties?.alertID
-      : feature.id;
+    const featureStateTarget = resolveFeatureStateTarget(feature, layerId);
+    if (!featureStateTarget) return;
 
-    if (featureId !== undefined && featureId !== null) {
-      // Check if this feature is already highlighted
-      const existingIndex = highlightedSources.value.findIndex(
-        (highlighted) =>
-          highlighted.featureId === featureId &&
-          highlighted.layerId === layerId,
-      );
+    const { featureId, sourceId, sourceLayer } = featureStateTarget;
 
-      if (existingIndex === -1) {
-        highlightedSources.value.push({
-          featureId,
-          layerId,
-        });
+    // Check if this feature is already highlighted
+    const existingIndex = highlightedSources.value.findIndex(
+      (highlighted) =>
+        highlighted.featureId === featureId && highlighted.layerId === layerId,
+    );
 
-        map.value.setFeatureState(
-          { source: layerId, id: featureId },
-          { selected: true },
-        );
-      }
+    if (existingIndex === -1) {
+      highlightedSources.value.push({
+        featureId,
+        layerId,
+        sourceId,
+        sourceLayer,
+      });
+
+      const target = sourceLayer
+        ? { source: sourceId, sourceLayer, id: featureId }
+        : { source: sourceId, id: featureId };
+      map.value.setFeatureState(target, { selected: true });
     }
   };
 
@@ -955,30 +982,37 @@ export const useIncidents = (
   const unhighlightSelectedSource = (feature: Feature, layerId: string) => {
     if (!map.value) return;
 
-    const featureId = layerId.includes("-centroids")
-      ? feature.properties?.alertID
-      : feature.id;
+    const featureStateTarget = resolveFeatureStateTarget(feature, layerId);
+    if (!featureStateTarget) return;
 
-    if (featureId !== undefined && featureId !== null) {
-      // Remove from highlighted sources array
-      const existingIndex = highlightedSources.value.findIndex(
-        (highlighted) =>
-          highlighted.featureId === featureId &&
-          highlighted.layerId === layerId,
+    const { featureId } = featureStateTarget;
+    // Remove from highlighted sources array
+    const existingIndex = highlightedSources.value.findIndex(
+      (highlighted) =>
+        highlighted.featureId === featureId && highlighted.layerId === layerId,
+    );
+
+    if (existingIndex !== -1) {
+      const [existingHighlight] = highlightedSources.value.splice(
+        existingIndex,
+        1,
       );
 
-      if (existingIndex !== -1) {
-        highlightedSources.value.splice(existingIndex, 1);
-
-        try {
-          map.value!.setFeatureState(
-            { source: layerId, id: featureId },
-            { selected: false },
-          );
-        } catch (error) {
-          // Ignore errors if layer/source doesn't exist
-          console.warn("Error unhighlighting feature state:", error);
-        }
+      try {
+        const target = existingHighlight.sourceLayer
+          ? {
+              source: existingHighlight.sourceId,
+              sourceLayer: existingHighlight.sourceLayer,
+              id: existingHighlight.featureId,
+            }
+          : {
+              source: existingHighlight.sourceId,
+              id: existingHighlight.featureId,
+            };
+        map.value!.setFeatureState(target, { selected: false });
+      } catch (error) {
+        // Ignore errors if layer/source doesn't exist
+        console.warn("Error unhighlighting feature state:", error);
       }
     }
   };
@@ -1046,12 +1080,12 @@ export const useIncidents = (
   const clearSourceHighlighting = () => {
     if (!map.value) return;
 
-    highlightedSources.value.forEach(({ featureId, layerId }) => {
+    highlightedSources.value.forEach(({ featureId, sourceId, sourceLayer }) => {
       try {
-        map.value!.setFeatureState(
-          { source: layerId, id: featureId },
-          { selected: false },
-        );
+        const target = sourceLayer
+          ? { source: sourceId, sourceLayer, id: featureId }
+          : { source: sourceId, id: featureId };
+        map.value!.setFeatureState(target, { selected: false });
       } catch (error) {
         // Ignore errors if layer/source doesn't exist
         console.warn("Error clearing feature state:", error);
