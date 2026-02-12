@@ -40,6 +40,7 @@ export const useIncidents = (
   route: RouteLocationNormalizedLoaded,
   router: Router,
   apiKey: string,
+  mapLegendLayerIds?: Ref<string | undefined>,
 ) => {
   // Incidents state management
   const incidents = ref<AnnotatedCollection[]>([]);
@@ -89,6 +90,21 @@ export const useIncidents = (
   >();
 
   let incidentPrefetchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  const getAdditionalSelectableLayerIds = () =>
+    (mapLegendLayerIds?.value || "")
+      .split(",")
+      .map((layerId) => layerId.trim())
+      .filter(Boolean);
+
+  const isAdditionalSelectableLayer = (layerId: string) => {
+    const additionalLayerIds = getAdditionalSelectableLayerIds();
+    return (
+      additionalLayerIds.includes(layerId) ||
+      (layerId.endsWith("-stroke") &&
+        additionalLayerIds.includes(layerId.replace(/-stroke$/i, "")))
+    );
+  };
 
   /**
    * Fetches incidents from the API (paginated)
@@ -613,6 +629,8 @@ export const useIncidents = (
       "mapeo-data-multilinestring",
     ];
 
+    const additionalLayers = getAdditionalSelectableLayerIds();
+
     const allFeatures: Array<{
       properties?: {
         alertID?: string;
@@ -624,7 +642,7 @@ export const useIncidents = (
     }> = [];
 
     // First, get individual (non-clustered) features
-    alertLayers.forEach((layerId) => {
+    [...alertLayers, ...mapeoLayers, ...additionalLayers].forEach((layerId) => {
       try {
         if (map.value!.getLayer(layerId)) {
           const features = map.value!.queryRenderedFeatures(bbox, {
@@ -724,21 +742,6 @@ export const useIncidents = (
         console.warn(`Error querying cluster layer ${clusterLayerId}:`, error);
       }
     }
-
-    // Handle mapeo layers
-    mapeoLayers.forEach((layerId) => {
-      try {
-        if (map.value!.getLayer(layerId)) {
-          const features = map.value!.queryRenderedFeatures(bbox, {
-            layers: [layerId],
-          });
-          allFeatures.push(...(features as typeof allFeatures));
-          console.debug(`Layer ${layerId}: found ${features.length} features`);
-        }
-      } catch (error) {
-        console.warn(`Error querying layer ${layerId}:`, error);
-      }
-    });
 
     console.debug("Total features found in bounding box:", allFeatures.length);
 
@@ -874,6 +877,8 @@ export const useIncidents = (
       sourceTable = (tableName as string) || "";
     } else if (layerId.startsWith("mapeo-data")) {
       sourceTable = "mapeo_data";
+    } else if (isAdditionalSelectableLayer(layerId)) {
+      sourceTable = (tableName as string) || "";
     }
 
     if (feature.properties.alertID) {

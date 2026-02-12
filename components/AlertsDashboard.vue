@@ -115,7 +115,7 @@ const {
   clearSelectedSources,
   handleMultiSelectFeature,
   handleIncidentClusterZoom,
-} = useIncidents(map, route, router, apiKey);
+} = useIncidents(map, route, router, apiKey, toRef(props, "mapLegendLayerIds"));
 
 // Use feature selection composable
 const {
@@ -361,6 +361,8 @@ onMounted(() => {
         openIncidentDetails(incidentId);
       }
 
+      map.value.on("click", handleAdditionalLayerMultiSelect);
+
       controlsAdded = true;
     } else {
       // On style changes (not initial load), just prepare canvas content
@@ -387,6 +389,12 @@ const MAPEO_INTERACTIVE_LAYER_IDS = [
   "mapeo-data-linestring",
   "mapeo-data-multilinestring",
 ];
+const additionalSelectableLayerIds = computed(() =>
+  (props.mapLegendLayerIds || "")
+    .split(",")
+    .map((layerId) => layerId.trim())
+    .filter(Boolean),
+);
 const hasActiveSelection = computed(
   () => selectedSources.value.length > 0 || !!selectedFeature.value,
 );
@@ -404,6 +412,40 @@ const handleExplicitDeselect = () => {
   }
   if (selectedSources.value.length > 0) {
     clearSelectedSources();
+  }
+};
+
+const handleAdditionalLayerMultiSelect = (e: MapMouseEvent) => {
+  if (
+    !multiSelectMode.value ||
+    additionalSelectableLayerIds.value.length === 0
+  ) {
+    return;
+  }
+
+  const availableLayers = additionalSelectableLayerIds.value.filter((layerId) =>
+    map.value.getLayer(layerId),
+  );
+
+  if (availableLayers.length === 0) {
+    return;
+  }
+
+  const features = map.value.queryRenderedFeatures(e.point, {
+    layers: availableLayers,
+  });
+
+  const selectableFeature = features.find(
+    (feature: mapboxgl.MapboxGeoJSONFeature) =>
+      !feature.properties?.cluster &&
+      feature.properties?.cluster_id === undefined &&
+      (feature.properties?.alertID ||
+        feature.properties?._id ||
+        feature.properties?.id),
+  );
+
+  if (selectableFeature) {
+    handleMultiSelectFeature(selectableFeature, selectableFeature.layer.id);
   }
 };
 
