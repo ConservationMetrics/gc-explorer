@@ -159,7 +159,7 @@ const emit = defineEmits<{
 <style scoped>
 .incidents-controls {
   position: absolute;
-  top: calc(50% - 12px);
+  top: calc(50% - 20px);
   transform: translateY(-50%);
   right: 10px;
   z-index: 10;

@@ -130,9 +130,9 @@ watch(
 .map-legend {
   position: absolute;
   bottom: 30px;
-  right: 62px;
-  width: min(320px, calc(100vw - 92px));
-  max-height: min(52vh, 380px);
+  right: 10px;
+  width: min(300px, calc(100vw - 20px));
+  max-height: min(38vh, 260px);
   background-color: #fff;
   padding: 16px;
   line-height: 18px;
@@ -272,10 +272,10 @@ watch(
 
 @media (max-width: 900px) {
   .map-legend {
-    right: 58px;
-    width: min(280px, calc(100vw - 86px));
-    max-height: min(44vh, 320px);
-    bottom: 18px;
+    right: 10px;
+    width: min(250px, calc(100vw - 20px));
+    max-height: min(32vh, 220px);
+    bottom: 16px;
   }
 }
 </style>
