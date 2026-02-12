@@ -65,7 +65,12 @@ export const useIncidents = (
 
   // Tooltip state
   const hoveredButton = ref<
-    "incidents" | "boundingBox" | "multiSelect" | "createIncident" | null
+    | "incidents"
+    | "boundingBox"
+    | "multiSelect"
+    | "createIncident"
+    | "deselect"
+    | null
   >(null);
 
   // Highlighted sources tracking
@@ -831,7 +836,7 @@ export const useIncidents = (
   };
 
   /**
-   * Handles multi-select feature selection with toggle behavior
+   * Handles multi-select feature selection
    * Determines source table from layer ID and route params, extracts source ID from feature properties
    *
    * Source table determination logic:
@@ -842,8 +847,6 @@ export const useIncidents = (
    * Source ID extraction:
    * - For alerts: Uses feature.properties.alertID
    * - For Mapeo: Uses feature.properties._id (with fallback to feature.properties.id for backward compatibility)
-   *
-   * Toggle behavior: If the feature is already selected, it will be deselected. Otherwise, it will be selected.
    *
    * @param feature - The map feature to select/deselect
    * @param layerId - The layer ID the feature belongs to (e.g., "most-recent-alerts-polygon", "mapeo-data")
@@ -885,18 +888,13 @@ export const useIncidents = (
     }
 
     if (sourceTable && sourceId) {
-      // Check if already selected
       const isAlreadySelected = selectedSources.value.some(
         (source) =>
           source.source_table === sourceTable && source.source_id === sourceId,
       );
 
-      if (isAlreadySelected) {
-        // Deselect: remove from selection and unhighlight
-        removeSourceFromSelection(sourceTable, sourceId);
-        unhighlightSelectedSource(feature, layerId);
-      } else {
-        // Select: add to selection and highlight
+      // Don't toggle-off on click/box. Deselect is explicit via controls.
+      if (!isAlreadySelected) {
         addSourceToSelection(sourceTable, sourceId);
         highlightSelectedSource(feature, layerId);
       }
