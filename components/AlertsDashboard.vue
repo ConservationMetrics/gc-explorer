@@ -839,12 +839,7 @@ const addAlertsData = async () => {
                 );
               }
             } else {
-              // Check if multi-select mode is active and Ctrl/Cmd is pressed
-              const isMultiSelect =
-                multiSelectMode.value &&
-                (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
-
-              if (isMultiSelect) {
+              if (multiSelectMode.value) {
                 // Add to selected sources instead of selecting for sidebar
                 handleMultiSelectFeature(feature, layer.id);
               } else {
@@ -1064,11 +1059,7 @@ const addMapeoData = () => {
       (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
           const feature = e.features[0];
-          const isMultiSelect =
-            multiSelectMode.value &&
-            (e.originalEvent.ctrlKey || e.originalEvent.metaKey);
-
-          if (isMultiSelect) {
+          if (multiSelectMode.value) {
             handleMultiSelectFeature(feature, layerId);
           } else {
             selectFeature(feature, layerId);
@@ -1142,7 +1133,11 @@ const handleBufferClick = (e: MapMouseEvent) => {
   if (features.length > 0) {
     const firstFeature = features[0];
     const layerId = firstFeature.layer.id;
-    selectFeature(firstFeature, layerId);
+    if (multiSelectMode.value) {
+      handleMultiSelectFeature(firstFeature, layerId);
+    } else {
+      selectFeature(firstFeature, layerId);
+    }
   }
 };
 

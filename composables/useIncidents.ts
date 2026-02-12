@@ -409,7 +409,7 @@ export const useIncidents = (
   };
 
   /**
-   * Sets up custom bounding box selection (Ctrl/Cmd + drag)
+   * Sets up custom bounding box selection while bbox mode is active
    * Creates a visual selection box and selects features within it
    */
   const setupCustomBoundingBox = () => {
@@ -455,7 +455,7 @@ export const useIncidents = (
      * Handles mouse down event to start bounding box selection
      */
     const mouseDownForBoundingBox = (e: MouseEvent) => {
-      if (!((e.ctrlKey || e.metaKey) && e.button === 0)) return;
+      if (e.button !== 0) return;
 
       map.value!.dragPan.disable();
 
