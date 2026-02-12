@@ -1,7 +1,7 @@
 import { computed, onBeforeUnmount, ref } from "vue";
 import type { RouteLocationNormalizedLoaded, Router } from "vue-router";
 import mapboxgl from "mapbox-gl";
-import type { Feature } from "geojson";
+import type { Feature, Geometry } from "geojson";
 import type {
   AnnotatedCollection,
   CollectionEntry,
@@ -128,6 +128,8 @@ export const useIncidents = (
       : (feature.id ??
         feature.properties?.alertID ??
         feature.properties?._id ??
+        feature.properties?.source_id ??
+        feature.properties?.sourceId ??
         feature.properties?.id);
 
     if (featureId === undefined || featureId === null || !sourceId) {
@@ -764,9 +766,15 @@ export const useIncidents = (
     const additionalLayers = getAdditionalSelectableLayerIds();
 
     const allFeatures: Array<{
+      id?: string | number;
+      type?: "Feature";
+      geometry?: Geometry;
       properties?: {
         alertID?: string;
         id?: string;
+        _id?: string;
+        source_id?: string;
+        sourceId?: string;
         cluster?: boolean;
         cluster_id?: number;
       };
@@ -852,6 +860,9 @@ export const useIncidents = (
             leaves.forEach((leaf) => {
               // Create a feature object that matches the expected structure
               const leafFeature = {
+                type: "Feature" as const,
+                id: leaf.id,
+                geometry: leaf.geometry as Geometry,
                 properties: leaf.properties,
                 layer: { id: sourceName }, // Use source name as layer ID
               };
@@ -880,7 +891,13 @@ export const useIncidents = (
     // Process all features (both individual and from clusters)
     allFeatures.forEach(
       (feature: {
-        properties?: { alertID?: string; id?: string; _id?: string };
+        properties?: {
+          alertID?: string;
+          id?: string;
+          _id?: string;
+          source_id?: string;
+          sourceId?: string;
+        };
         layer?: { id?: string };
       }) => {
         const featureObject = feature.properties;
@@ -897,22 +914,14 @@ export const useIncidents = (
         } else if (featureObject?.id) {
           // Fallback for backward compatibility
           sourceId = featureObject.id;
+        } else if (featureObject?.source_id) {
+          sourceId = featureObject.source_id;
+        } else if (featureObject?.sourceId) {
+          sourceId = featureObject.sourceId;
         }
 
-        if (sourceId) {
-          // Create a proper Feature object for handleMultiSelectFeature
-          const featureForSelection: Feature = {
-            type: "Feature",
-            id:
-              featureObject?.alertID || featureObject?._id || featureObject?.id,
-            geometry: (feature as Feature).geometry || {
-              type: "Point",
-              coordinates: [0, 0],
-            },
-            properties: featureObject || {},
-          };
-
-          handleMultiSelectFeature(featureForSelection, layerId);
+        if (sourceId && featureObject) {
+          handleMultiSelectFeature(feature as Feature, layerId);
           console.debug(`Selected source: ${sourceId} from layer ${layerId}`);
         } else {
           console.warn(
@@ -1028,6 +1037,10 @@ export const useIncidents = (
       // has been run on all partner VMs and we can guarantee no data uses the old id column.
       // This fallback exists for backward compatibility during the migration period.
       sourceId = feature.properties.id;
+    } else if (feature.properties.source_id) {
+      sourceId = feature.properties.source_id;
+    } else if (feature.properties.sourceId) {
+      sourceId = feature.properties.sourceId;
     }
 
     if (sourceTable && sourceId) {
@@ -1060,14 +1073,20 @@ export const useIncidents = (
           ? "alertID"
           : feature.properties?._id
             ? "_id"
-            : feature.properties?.id
-              ? "id"
-              : undefined;
+            : feature.properties?.source_id
+              ? "source_id"
+              : feature.properties?.sourceId
+                ? "sourceId"
+                : feature.properties?.id
+                  ? "id"
+                  : undefined;
       const selectorType = selectorProperty ? "property" : "id";
       const selectorValue =
         feature.id ??
         feature.properties?.alertID ??
         feature.properties?._id ??
+        feature.properties?.source_id ??
+        feature.properties?.sourceId ??
         feature.properties?.id;
 
       if (selectorValue === undefined || selectorValue === null) {
@@ -1136,6 +1155,8 @@ export const useIncidents = (
         feature.id ??
         feature.properties?.alertID ??
         feature.properties?._id ??
+        feature.properties?.source_id ??
+        feature.properties?.sourceId ??
         feature.properties?.id;
       if (selectorValue === undefined || selectorValue === null) return;
 

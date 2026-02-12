@@ -434,7 +434,9 @@ const handleAdditionalLayerMultiSelect = (e: MapMouseEvent) => {
       feature.properties?.cluster_id === undefined &&
       (feature.properties?.alertID ||
         feature.properties?._id ||
-        feature.properties?.id),
+        feature.properties?.id ||
+        feature.properties?.source_id ||
+        feature.properties?.sourceId),
   );
 
   if (selectableFeature) {
