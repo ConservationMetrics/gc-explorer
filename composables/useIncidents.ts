@@ -81,6 +81,9 @@ export const useIncidents = (
       layerId: string;
       sourceId: string;
       sourceLayer?: string;
+      selectionMode: "featureState" | "overlay";
+      selectorType: "id" | "property";
+      selectorProperty?: string;
     }>
   >([]);
 
@@ -132,6 +135,113 @@ export const useIncidents = (
     }
 
     return { sourceId, sourceLayer, featureId };
+  };
+
+  const getOverlayLayerId = (layerId: string) =>
+    `${layerId}-incident-selected-overlay`;
+
+  const ensureOverlayLayer = (layerId: string) => {
+    if (!map.value) return;
+
+    const mapLayer = map.value.getLayer(layerId) as
+      | (mapboxgl.AnyLayer & { source?: string; "source-layer"?: string })
+      | undefined;
+    if (!mapLayer?.source) return;
+
+    const overlayLayerId = getOverlayLayerId(layerId);
+    if (map.value.getLayer(overlayLayerId)) return;
+
+    const sourceLayer = mapLayer["source-layer"];
+    const baseLayer = {
+      id: overlayLayerId,
+      source: mapLayer.source,
+      filter: ["==", 1, 0] as mapboxgl.FilterSpecification,
+      ...(sourceLayer ? { "source-layer": sourceLayer } : {}),
+    };
+
+    if (mapLayer.type === "fill") {
+      map.value.addLayer({
+        ...baseLayer,
+        type: "fill",
+        paint: {
+          "fill-color": "#FFFF00",
+          "fill-opacity": 0.45,
+        },
+      });
+      return;
+    }
+
+    if (mapLayer.type === "circle") {
+      map.value.addLayer({
+        ...baseLayer,
+        type: "circle",
+        paint: {
+          "circle-color": "#FFFF00",
+          "circle-radius": 7,
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 1.5,
+        },
+      });
+      return;
+    }
+
+    map.value.addLayer({
+      ...baseLayer,
+      type: "line",
+      paint: {
+        "line-color": "#FFFF00",
+        "line-width": 4,
+      },
+    });
+  };
+
+  const updateOverlayFilter = (layerId: string) => {
+    if (!map.value) return;
+
+    const overlayLayerId = getOverlayLayerId(layerId);
+    if (!map.value.getLayer(overlayLayerId)) {
+      return;
+    }
+
+    const selectedForLayer = highlightedSources.value.filter(
+      (highlighted) =>
+        highlighted.layerId === layerId &&
+        highlighted.selectionMode === "overlay",
+    );
+
+    if (selectedForLayer.length === 0) {
+      map.value.setFilter(overlayLayerId, ["==", 1, 0]);
+      return;
+    }
+
+    const idValues = selectedForLayer
+      .filter((item) => item.selectorType === "id")
+      .map((item) => item.featureId);
+    const propertyGroups = new Map<string, Array<string | number>>();
+    selectedForLayer
+      .filter(
+        (item): item is typeof item & { selectorProperty: string } =>
+          item.selectorType === "property" && !!item.selectorProperty,
+      )
+      .forEach((item) => {
+        const values = propertyGroups.get(item.selectorProperty) || [];
+        values.push(item.featureId);
+        propertyGroups.set(item.selectorProperty, values);
+      });
+
+    const conditions: mapboxgl.ExpressionSpecification[] = [];
+    if (idValues.length > 0) {
+      conditions.push(["in", ["id"], ["literal", idValues]]);
+    }
+    propertyGroups.forEach((values, key) => {
+      conditions.push(["in", ["get", key], ["literal", values]]);
+    });
+
+    const overlayFilter: mapboxgl.FilterSpecification =
+      conditions.length === 1
+        ? (conditions[0] as mapboxgl.FilterSpecification)
+        : (["any", ...conditions] as mapboxgl.FilterSpecification);
+    map.value.setFilter(overlayLayerId, overlayFilter);
   };
 
   /**
@@ -943,6 +1053,48 @@ export const useIncidents = (
   const highlightSelectedSource = (feature: Feature, layerId: string) => {
     if (!map.value) return;
 
+    if (isAdditionalSelectableLayer(layerId)) {
+      const selectorProperty = feature.id
+        ? undefined
+        : feature.properties?.alertID
+          ? "alertID"
+          : feature.properties?._id
+            ? "_id"
+            : feature.properties?.id
+              ? "id"
+              : undefined;
+      const selectorType = selectorProperty ? "property" : "id";
+      const selectorValue =
+        feature.id ??
+        feature.properties?.alertID ??
+        feature.properties?._id ??
+        feature.properties?.id;
+
+      if (selectorValue === undefined || selectorValue === null) {
+        return;
+      }
+
+      const existingIndex = highlightedSources.value.findIndex(
+        (highlighted) =>
+          highlighted.featureId === selectorValue &&
+          highlighted.layerId === layerId,
+      );
+      if (existingIndex !== -1) return;
+
+      highlightedSources.value.push({
+        featureId: selectorValue,
+        layerId,
+        sourceId: layerId,
+        selectionMode: "overlay",
+        selectorType,
+        selectorProperty,
+      });
+
+      ensureOverlayLayer(layerId);
+      updateOverlayFilter(layerId);
+      return;
+    }
+
     const featureStateTarget = resolveFeatureStateTarget(feature, layerId);
     if (!featureStateTarget) return;
 
@@ -960,6 +1112,8 @@ export const useIncidents = (
         layerId,
         sourceId,
         sourceLayer,
+        selectionMode: "featureState",
+        selectorType: "id",
       });
 
       const target = sourceLayer
@@ -976,6 +1130,26 @@ export const useIncidents = (
    */
   const unhighlightSelectedSource = (feature: Feature, layerId: string) => {
     if (!map.value) return;
+
+    if (isAdditionalSelectableLayer(layerId)) {
+      const selectorValue =
+        feature.id ??
+        feature.properties?.alertID ??
+        feature.properties?._id ??
+        feature.properties?.id;
+      if (selectorValue === undefined || selectorValue === null) return;
+
+      const existingIndex = highlightedSources.value.findIndex(
+        (highlighted) =>
+          highlighted.featureId === selectorValue &&
+          highlighted.layerId === layerId,
+      );
+      if (existingIndex !== -1) {
+        highlightedSources.value.splice(existingIndex, 1);
+        updateOverlayFilter(layerId);
+      }
+      return;
+    }
 
     const featureStateTarget = resolveFeatureStateTarget(feature, layerId);
     if (!featureStateTarget) return;
@@ -1075,18 +1249,29 @@ export const useIncidents = (
   const clearSourceHighlighting = () => {
     if (!map.value) return;
 
-    highlightedSources.value.forEach(({ featureId, sourceId, sourceLayer }) => {
-      try {
-        const target = sourceLayer
-          ? { source: sourceId, sourceLayer, id: featureId }
-          : { source: sourceId, id: featureId };
-        map.value!.setFeatureState(target, { selected: false });
-      } catch (error) {
-        // Ignore errors if layer/source doesn't exist
-        console.warn("Error clearing feature state:", error);
-      }
-    });
+    const overlayLayerIdsToReset = new Set<string>();
+    highlightedSources.value.forEach(
+      ({ featureId, sourceId, sourceLayer, selectionMode, layerId }) => {
+        if (selectionMode === "overlay") {
+          overlayLayerIdsToReset.add(layerId);
+          return;
+        }
+
+        try {
+          const target = sourceLayer
+            ? { source: sourceId, sourceLayer, id: featureId }
+            : { source: sourceId, id: featureId };
+          map.value!.setFeatureState(target, { selected: false });
+        } catch (error) {
+          // Ignore errors if layer/source doesn't exist
+          console.warn("Error clearing feature state:", error);
+        }
+      },
+    );
     highlightedSources.value = [];
+    overlayLayerIdsToReset.forEach((layerId) => {
+      updateOverlayFilter(layerId);
+    });
 
     // Clear cluster highlighting
     incidentClusterIds.value.clear();
