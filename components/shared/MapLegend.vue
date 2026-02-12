@@ -132,10 +132,13 @@ watch(
   bottom: 30px;
   right: 10px;
   max-width: 450px;
+  max-height: min(65vh, 520px);
   background-color: #fff;
   padding: 20px;
   line-height: 18px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   z-index: 1000;
 }
 
@@ -243,7 +246,9 @@ watch(
 }
 
 .legend-content {
-  overflow: hidden;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .slide-enter-active,
@@ -265,9 +270,11 @@ watch(
   opacity: 1;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .map-legend {
-    display: none;
+    max-width: min(360px, calc(100vw - 20px));
+    max-height: min(50vh, 360px);
+    bottom: 20px;
   }
 }
 </style>
