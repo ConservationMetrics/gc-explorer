@@ -605,7 +605,13 @@ export const useIncidents = (
       "previous-alerts-centroids-clusters",
     ];
 
-    const mapeoLayers = ["mapeo-data"];
+    const mapeoLayers = [
+      "mapeo-data",
+      "mapeo-data-polygon",
+      "mapeo-data-multipolygon",
+      "mapeo-data-linestring",
+      "mapeo-data-multilinestring",
+    ];
 
     const allFeatures: Array<{
       properties?: {
@@ -866,7 +872,7 @@ export const useIncidents = (
       layerId.includes("previous-alerts")
     ) {
       sourceTable = (tableName as string) || "";
-    } else if (layerId === "mapeo-data") {
+    } else if (layerId.startsWith("mapeo-data")) {
       sourceTable = "mapeo_data";
     }
 
@@ -1281,11 +1287,23 @@ export const useIncidents = (
       }
 
       const candidateSources =
-        entry.source_table === "mapeo_data" ? ["mapeo-data"] : alertLayers;
+        entry.source_table === "mapeo_data"
+          ? [
+              "mapeo-data",
+              "mapeo-data-polygon",
+              "mapeo-data-multipolygon",
+              "mapeo-data-linestring",
+              "mapeo-data-multilinestring",
+            ]
+          : alertLayers;
 
       const filter: mapboxgl.ExpressionSpecification =
         entry.source_table === "mapeo_data"
-          ? ["==", ["get", "id"], entry.source_id]
+          ? [
+              "any",
+              ["==", ["get", "_id"], entry.source_id],
+              ["==", ["get", "id"], entry.source_id],
+            ]
           : ["==", ["get", "alertID"], entry.source_id];
 
       let found = false;
