@@ -130,11 +130,11 @@ watch(
 .map-legend {
   position: absolute;
   bottom: 30px;
-  right: 10px;
-  max-width: 450px;
-  max-height: min(65vh, 520px);
+  right: 62px;
+  width: min(320px, calc(100vw - 92px));
+  max-height: min(52vh, 380px);
   background-color: #fff;
-  padding: 20px;
+  padding: 16px;
   line-height: 18px;
   display: flex;
   flex-direction: column;
@@ -272,9 +272,10 @@ watch(
 
 @media (max-width: 900px) {
   .map-legend {
-    max-width: min(360px, calc(100vw - 20px));
-    max-height: min(50vh, 360px);
-    bottom: 20px;
+    right: 58px;
+    width: min(280px, calc(100vw - 86px));
+    max-height: min(44vh, 320px);
+    bottom: 18px;
   }
 }
 </style>
