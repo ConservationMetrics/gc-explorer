@@ -649,12 +649,7 @@ export const useIncidents = (
       "previous-alerts-centroids-clusters",
     ];
 
-    const mapeoLayers = [
-      "mapeo-data",
-      "mapeo-data-polygon",
-      "mapeo-data-multipolygon",
-      "mapeo-data-linestring",
-    ];
+    const mapeoLayers = ["mapeo-data"];
 
     const additionalLayers = getAdditionalSelectableLayerIds();
 
@@ -1326,15 +1321,7 @@ export const useIncidents = (
       }
 
       const candidateSources =
-        entry.source_table === "mapeo_data"
-          ? [
-              "mapeo-data",
-              "mapeo-data-polygon",
-              "mapeo-data-multipolygon",
-              "mapeo-data-linestring",
-              "mapeo-data-multilinestring",
-            ]
-          : alertLayers;
+        entry.source_table === "mapeo_data" ? ["mapeo-data"] : alertLayers;
 
       const filter: mapboxgl.ExpressionSpecification =
         entry.source_table === "mapeo_data"

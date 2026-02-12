@@ -255,8 +255,7 @@ const selectInitialMapeoFeature = (mapeoDocId: string) => {
       },
     };
 
-    const layerId = getMapeoLayerIdForGeometryType(feature.geometry.type);
-    selectFeature(feature, layerId);
+    selectFeature(feature, "mapeo-data");
     isMapeo.value = true;
 
     // Zoom to the feature
@@ -382,12 +381,7 @@ const featuresUnderCursor = ref(0);
 const hasLineStrings = ref(false);
 const hasPoints = ref(false);
 const mapeoDataColor = ref();
-const MAPEO_INTERACTIVE_LAYER_IDS = [
-  "mapeo-data",
-  "mapeo-data-polygon",
-  "mapeo-data-multipolygon",
-  "mapeo-data-linestring",
-];
+const MAPEO_INTERACTIVE_LAYER_IDS = ["mapeo-data"];
 const additionalSelectableLayerIds = computed(() =>
   (props.mapLegendLayerIds || "")
     .split(",")
@@ -446,14 +440,6 @@ const handleAdditionalLayerMultiSelect = (e: MapMouseEvent) => {
   if (selectableFeature) {
     handleMultiSelectFeature(selectableFeature, selectableFeature.layer.id);
   }
-};
-
-const getMapeoLayerIdForGeometryType = (geometryType: string) => {
-  if (geometryType === "Polygon") return "mapeo-data-polygon";
-  if (geometryType === "MultiPolygon") return "mapeo-data-multipolygon";
-  if (geometryType === "LineString" || geometryType === "MultiLineString")
-    return "mapeo-data-linestring";
-  return "mapeo-data";
 };
 
 /**
@@ -943,134 +929,60 @@ const addAlertsData = async () => {
   });
 };
 
-/** Adds (optional) Mapeo data with selectable geometry layers. */
+/**
+ * Adds (optional) Mapeo data to the map by creating a GeoJSON source and a layer for Point features.
+ * It also sets up event listeners for user interactions with the Mapeo data features.
+ */
 const addMapeoData = () => {
   if (!props.mapeoData) {
     return;
   }
-
-  const geoJsonFeatures = props.mapeoData.map((feature) => ({
-    id: feature.normalizedId || feature.id,
-    type: "Feature" as const,
-    geometry: {
-      type: feature.geotype,
-      coordinates: JSON.parse(feature.geocoordinates),
-    } as Geometry,
-    properties: {
-      ...feature,
-    },
-  }));
-
-  mapeoDataColor.value = props.mapeoData[0]["filter-color"];
-  const fallbackColor = mapeoDataColor.value || "#4a90e2";
-
-  const addMapeoLayer = (
-    layerId: string,
-    geometryTypes: string[],
-    layerType: "circle" | "line" | "fill",
-  ) => {
-    const features = geoJsonFeatures.filter((feature) =>
-      geometryTypes.includes(feature.geometry.type),
-    );
-    if (features.length === 0) return;
-
-    if (!map.value.getSource(layerId)) {
-      map.value.addSource(layerId, {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features,
-        },
-      });
-    }
-
-    if (layerType === "circle" && !map.value.getLayer(layerId)) {
-      map.value.addLayer({
-        id: layerId,
-        type: "circle",
-        source: layerId,
-        paint: {
-          "circle-radius": 6,
-          "circle-color": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            "#FFFF00",
-            ["get", "filter-color"],
-          ],
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#fff",
-        },
-      });
-    }
-
-    if (layerType === "line" && !map.value.getLayer(layerId)) {
-      map.value.addLayer({
-        id: layerId,
-        type: "line",
-        source: layerId,
-        paint: {
-          "line-color": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            "#FFFF00",
-            fallbackColor,
-          ],
-          "line-width": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            5,
-            3,
-          ],
-          "line-opacity": 0.8,
-        },
-      });
-    }
-
-    if (layerType === "fill") {
-      if (!map.value.getLayer(layerId)) {
-        map.value.addLayer({
-          id: layerId,
-          type: "fill",
-          source: layerId,
-          paint: {
-            "fill-color": [
-              "case",
-              ["boolean", ["feature-state", "selected"], false],
-              "#FFFF00",
-              fallbackColor,
-            ],
-            "fill-opacity": 0.5,
-          },
-        });
-      }
-
-      if (!map.value.getLayer(`${layerId}-stroke`)) {
-        map.value.addLayer({
-          id: `${layerId}-stroke`,
-          type: "line",
-          source: layerId,
-          paint: {
-            "line-color": [
-              "case",
-              ["boolean", ["feature-state", "selected"], false],
-              "#FFFF00",
-              fallbackColor,
-            ],
-            "line-width": 2,
-          },
-        });
-      }
-    }
+  // Create a GeoJSON source with all the features
+  const geoJsonSource = {
+    type: "FeatureCollection",
+    features: props.mapeoData.map((feature) => ({
+      id: feature.normalizedId || feature.id, // Use normalized ID if available, fallback to original ID
+      type: "Feature",
+      geometry: {
+        type: feature.geotype,
+        coordinates: JSON.parse(feature.geocoordinates),
+      },
+      properties: {
+        ...feature,
+      },
+    })),
   };
 
-  addMapeoLayer("mapeo-data", ["Point", "MultiPoint"], "circle");
-  addMapeoLayer(
-    "mapeo-data-linestring",
-    ["LineString", "MultiLineString"],
-    "line",
-  );
-  addMapeoLayer("mapeo-data-polygon", ["Polygon"], "fill");
-  addMapeoLayer("mapeo-data-multipolygon", ["MultiPolygon"], "fill");
+  mapeoDataColor.value = props.mapeoData[0]["filter-color"];
+
+  // Add the source to the map
+  if (!map.value.getSource("mapeo-data")) {
+    map.value.addSource("mapeo-data", {
+      type: "geojson",
+      data: geoJsonSource,
+    });
+  }
+
+  // Add a layer for Point features
+  if (!map.value.getLayer("mapeo-data")) {
+    map.value.addLayer({
+      id: "mapeo-data",
+      type: "circle",
+      source: "mapeo-data",
+      filter: ["==", "$type", "Point"],
+      paint: {
+        "circle-radius": 6,
+        "circle-color": [
+          "case",
+          ["boolean", ["feature-state", "selected"], false],
+          "#FFFF00",
+          ["get", "filter-color"],
+        ],
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#fff",
+      },
+    });
+  }
 
   const interactiveLayers = MAPEO_INTERACTIVE_LAYER_IDS.filter((layerId) =>
     map.value.getLayer(layerId),
