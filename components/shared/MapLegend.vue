@@ -131,7 +131,7 @@ watch(
   position: absolute;
   bottom: 30px;
   right: 10px;
-  width: min(300px, calc(100vw - 20px));
+  width: min(315px, calc(100vw - 20px));
   max-height: min(38vh, 260px);
   background-color: #fff;
   padding: 16px;
@@ -273,7 +273,7 @@ watch(
 @media (max-width: 900px) {
   .map-legend {
     right: 10px;
-    width: min(250px, calc(100vw - 20px));
+    width: min(265px, calc(100vw - 20px));
     max-height: min(32vh, 220px);
     bottom: 16px;
   }
