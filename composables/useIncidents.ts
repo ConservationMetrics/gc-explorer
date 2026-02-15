@@ -731,8 +731,8 @@ export const useIncidents = (
   };
 
   /**
-   * Selects features within the bounding box using pixel coordinates
-   * Handles both individual features and clusters (expands clusters to get all leaves)
+   * Selects individual (non-clustered) features within the bounding box
+   * using pixel coordinates.
    */
   const selectFeaturesInBoundingBox = async (
     bbox: [[number, number], [number, number]],
@@ -751,14 +751,6 @@ export const useIncidents = (
       "previous-alerts-point",
       "previous-alerts-symbol",
       "previous-alerts-centroids",
-    ];
-
-    // Cluster layers to check separately
-    const clusterLayers = [
-      "most-recent-alerts-point-clusters",
-      "most-recent-alerts-centroids-clusters",
-      "previous-alerts-point-clusters",
-      "previous-alerts-centroids-clusters",
     ];
 
     const mapeoLayers = ["mapeo-data"];
@@ -807,88 +799,12 @@ export const useIncidents = (
       }
     });
 
-    // Check for clusters in the bounding box and expand them
-    for (const clusterLayerId of clusterLayers) {
-      try {
-        if (!map.value!.getLayer(clusterLayerId)) continue;
+    console.debug(
+      "Total individual features found in bounding box:",
+      allFeatures.length,
+    );
 
-        // Query clusters that intersect the bounding box
-        // Then get ALL leaves from those clusters (not just leaves in bbox)
-        const clusterFeatures = map.value!.queryRenderedFeatures(bbox, {
-          layers: [clusterLayerId],
-        });
-
-        // Determine the source name from cluster layer ID
-        const sourceName = clusterLayerId.replace("-clusters", "");
-        const sourceObj = map.value!.getSource(
-          sourceName,
-        ) as mapboxgl.GeoJSONSource | null;
-
-        if (!sourceObj) continue;
-
-        console.debug(
-          `Found ${clusterFeatures.length} clusters in ${clusterLayerId}`,
-        );
-
-        // For each cluster, get all its leaves (individual features)
-        for (const clusterFeature of clusterFeatures) {
-          const clusterId = clusterFeature.properties?.cluster_id;
-          if (clusterId === undefined) continue;
-
-          try {
-            // Get ALL leaves in the cluster
-            const leaves: Feature[] = await new Promise((resolve, reject) => {
-              sourceObj.getClusterLeaves(
-                clusterId,
-                Infinity, // Get ALL leaves
-                0,
-                (err, features) => {
-                  if (err) {
-                    reject(err);
-                  } else {
-                    resolve(features as Feature[]);
-                  }
-                },
-              );
-            });
-
-            console.debug(
-              `Cluster ${clusterId} in ${sourceName} contains ${leaves.length} features`,
-            );
-
-            // Add all leaves to the selection
-            leaves.forEach((leaf) => {
-              // Create a feature object that matches the expected structure
-              const leafFeature = {
-                type: "Feature" as const,
-                id: leaf.id,
-                geometry: leaf.geometry as Geometry,
-                properties: leaf.properties,
-                layer: { id: sourceName }, // Use source name as layer ID
-              };
-              allFeatures.push(leafFeature as (typeof allFeatures)[0]);
-            });
-
-            // Add cluster ID to set so multiple clusters can be highlighted per source
-            if (!incidentClusterIds.value.has(sourceName)) {
-              incidentClusterIds.value.set(sourceName, new Set());
-            }
-            incidentClusterIds.value.get(sourceName)!.add(clusterId);
-          } catch (error) {
-            console.warn(
-              `Error getting cluster leaves for cluster ${clusterId}:`,
-              error,
-            );
-          }
-        }
-      } catch (error) {
-        console.warn(`Error querying cluster layer ${clusterLayerId}:`, error);
-      }
-    }
-
-    console.debug("Total features found in bounding box:", allFeatures.length);
-
-    // Process all features (both individual and from clusters)
+    // Process all individual features
     allFeatures.forEach(
       (feature: {
         properties?: {
@@ -1411,6 +1327,10 @@ export const useIncidents = (
     const hasSelectedIncident =
       selectedIncident.value && selectedIncidentEntries.value.length > 0;
     const hasHighlightedSources = highlightedSources.value.length > 0;
+    const tableRaw = route.params.tablename;
+    const currentAlertsTable = Array.isArray(tableRaw)
+      ? tableRaw.join("/")
+      : (tableRaw as string | undefined);
     // If we have a selected incident, use that (for viewing incident details)
     if (hasSelectedIncident) {
       // Clear old cluster IDs before re-finding (clusters may have merged with new IDs)
@@ -1427,45 +1347,31 @@ export const useIncidents = (
       // Clear old cluster IDs - they're invalid after zoom (clusters merge and get new IDs)
       incidentClusterIds.value.clear();
 
-      // Group highlighted sources by cluster source layer (point/centroids)
-      const sourcesByLayer = new Map<string, string[]>(); // sourceName -> alertIDs
+      // Use selectedSources alert IDs (source of truth) instead of map feature IDs.
+      // map feature IDs vary by source/layer, while source_id is stable for cluster lookups.
+      const selectedAlertIds = selectedSources.value
+        .filter(
+          (source) =>
+            source.source_table !== "mapeo_data" &&
+            (!currentAlertsTable || source.source_table === currentAlertsTable),
+        )
+        .map((source) => source.source_id);
 
-      highlightedSources.value.forEach(({ featureId, layerId }) => {
-        let clusterSourceName: string | null = null;
+      const candidateClusterSources = [
+        "most-recent-alerts-centroids",
+        "most-recent-alerts-point",
+        "previous-alerts-centroids",
+        "previous-alerts-point",
+      ].filter((sourceName) => map.value!.getSource(sourceName));
 
-        if (layerId.includes("-point")) {
-          clusterSourceName = layerId;
-        } else if (layerId.includes("-centroids")) {
-          clusterSourceName = layerId;
-        } else if (
-          layerId.includes("-polygon") ||
-          layerId.includes("-linestring")
-        ) {
-          const prefix = layerId.replace(
-            /-polygon|-linestring|-multipolygon/i,
-            "",
-          );
-          clusterSourceName = `${prefix}-centroids`;
-        }
-
-        if (clusterSourceName) {
-          if (!sourcesByLayer.has(clusterSourceName)) {
-            sourcesByLayer.set(clusterSourceName, []);
-          }
-          const alertId =
-            typeof featureId === "string" ? featureId : String(featureId);
-          sourcesByLayer.get(clusterSourceName)!.push(alertId);
-        }
-      });
-
-      // Re-find clusters for each source: every cluster that contains any selected point must stay highlighted
+      // Re-find clusters for each selected alert across cluster-capable sources.
       const rehighlightPromises: Promise<void>[] = [];
-      sourcesByLayer.forEach((alertIds, sourceName) => {
-        for (const alertId of alertIds) {
+      selectedAlertIds.forEach((alertId) => {
+        candidateClusterSources.forEach((sourceName) => {
           rehighlightPromises.push(
             highlightClusterForAlertId(alertId, sourceName),
           );
-        }
+        });
       });
 
       // Small delay to ensure clusters have rendered after zoom
