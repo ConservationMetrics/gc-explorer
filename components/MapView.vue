@@ -195,7 +195,22 @@ const addDataToMap = () => {
             "icon-",
             ["get", props.iconColumn, ["get", "feature"]],
           ],
-          "icon-size": 1.0,
+          "icon-size": [
+            "case",
+            [
+              "==",
+              ["slice", ["get", props.iconColumn, ["get", "feature"]], -4],
+              ".png",
+            ],
+            1.0,
+            [
+              "==",
+              ["slice", ["get", props.iconColumn, ["get", "feature"]], -4],
+              ".svg",
+            ],
+            0.2,
+            1.0, // default size if neither .png nor .svg
+          ],
           "icon-allow-overlap": true,
         },
       });
