@@ -105,3 +105,5 @@ test-results/
 
 # Playwright authentication state (contains sensitive cookies)
 playwright/.auth/
+# Agents files
+AGENTS.md

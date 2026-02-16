@@ -38,7 +38,16 @@ const handleTagsChanged = (key: string, newTags: Tag[]): void => {
   emit("updateConfig", { [key]: values });
 };
 
+/**
+ * Handles input changes and emits the updated config value.
+ * Guards against incomplete numeric input (e.g. "-", "-.") to prevent
+ * NaN from being emitted, which would clear the field and block negative entry.
+ *
+ * @param {string} key - The config key being updated.
+ * @param {string | number | boolean} value - The new value from the input.
+ */
 const handleInput = (key: string, value: string | number | boolean): void => {
+  if (typeof value === "number" && isNaN(value)) return;
   emit("updateConfig", { [key]: value });
 };
 
@@ -375,8 +384,12 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
           "
           :value="configData[key]"
           @input="
-            (e) =>
-              handleInput(key, parseFloat((e.target as HTMLInputElement).value))
+            (e) => {
+              const raw = (e.target as HTMLInputElement).value;
+              if (raw === '' || raw === '-' || raw === '.' || raw === '-.')
+                return;
+              handleInput(key, parseFloat(raw));
+            }
           "
           @wheel="(e) => e.target && (e.target as HTMLInputElement).blur()"
         />
