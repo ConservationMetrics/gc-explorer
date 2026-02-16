@@ -18,6 +18,12 @@ vi.mock("vue-i18n", () => import("@/test/helpers/vueI18nMock"));
 const i18n = createI18n();
 
 describe("IncidentsSidebar component", () => {
+  type SelectedSource = {
+    source_table: string;
+    source_id: string;
+    notes?: string;
+  };
+
   const mockIncidents: AnnotatedCollection[] = [
     {
       id: "1",
@@ -41,12 +47,19 @@ describe("IncidentsSidebar component", () => {
     },
   ];
 
-  const mockSelectedSources = [
+  const mockSelectedSources: SelectedSource[] = [
     { source_table: "mapeo_data", source_id: "source1" },
     { source_table: "alerts", source_id: "source2" },
   ];
 
-  const baseProps = {
+  const baseProps: {
+    incidents: AnnotatedCollection[];
+    selectedSources: SelectedSource[];
+    isLoading: boolean;
+    isCreating: boolean;
+    show: boolean;
+    openWithCreateForm: boolean;
+  } = {
     incidents: mockIncidents,
     selectedSources: [],
     isLoading: false,
@@ -102,7 +115,7 @@ describe("IncidentsSidebar component", () => {
     expect(heading.text()).toContain("incidents.createNewIncident");
   });
 
-  it("displays selected sources list", () => {
+  it("displays selected sources summary", () => {
     const wrapper = mountWithI18n({
       ...baseProps,
       selectedSources: mockSelectedSources,
@@ -110,38 +123,10 @@ describe("IncidentsSidebar component", () => {
 
     const selectedSourcesSection = wrapper.find(".selected-sources");
     expect(selectedSourcesSection.exists()).toBe(true);
-
-    const sourceItems = wrapper.findAll(".source-item");
-    expect(sourceItems.length).toBe(2);
-  });
-
-  it("displays source table and id for each selected source", () => {
-    const wrapper = mountWithI18n({
-      ...baseProps,
-      selectedSources: mockSelectedSources,
-    });
-
-    const sourceItems = wrapper.findAll(".source-item");
-    expect(sourceItems[0].text()).toContain("mapeo_data");
-    expect(sourceItems[0].text()).toContain("source1");
-    expect(sourceItems[1].text()).toContain("alerts");
-    expect(sourceItems[1].text()).toContain("source2");
-  });
-
-  it("emits removeSource when remove button is clicked", async () => {
-    const wrapper = mountWithI18n({
-      ...baseProps,
-      selectedSources: mockSelectedSources,
-    });
-
-    const removeButtons = wrapper.findAll(".remove-btn");
-    await removeButtons[0].trigger("click");
-
-    expect(wrapper.emitted("removeSource")).toBeTruthy();
-    expect(wrapper.emitted("removeSource")?.[0]).toEqual([
-      "mapeo_data",
-      "source1",
-    ]);
+    const summary = wrapper.find(".selected-sources-summary");
+    expect(summary.exists()).toBe(true);
+    expect(summary.text()).toContain("incidents.selectedAlertsCount");
+    expect(summary.text()).toContain("incidents.selectedMapeoCount");
   });
 
   it("emits clearSources when clear all button is clicked", async () => {

@@ -1,7 +1,7 @@
 import { computed, onBeforeUnmount, ref } from "vue";
 import type { RouteLocationNormalizedLoaded, Router } from "vue-router";
 import mapboxgl from "mapbox-gl";
-import type { Feature } from "geojson";
+import type { Feature, Geometry } from "geojson";
 import type {
   AnnotatedCollection,
   CollectionEntry,
@@ -40,6 +40,7 @@ export const useIncidents = (
   route: RouteLocationNormalizedLoaded,
   router: Router,
   apiKey: string,
+  mapLegendLayerIds?: Ref<string | undefined>,
 ) => {
   // Incidents state management
   const incidents = ref<AnnotatedCollection[]>([]);
@@ -65,12 +66,25 @@ export const useIncidents = (
 
   // Tooltip state
   const hoveredButton = ref<
-    "incidents" | "boundingBox" | "multiSelect" | "createIncident" | null
+    | "incidents"
+    | "boundingBox"
+    | "multiSelect"
+    | "createIncident"
+    | "deselect"
+    | null
   >(null);
 
   // Highlighted sources tracking
   const highlightedSources = ref<
-    Array<{ featureId: string | number; layerId: string }>
+    Array<{
+      featureId: string | number;
+      layerId: string;
+      sourceId: string;
+      sourceLayer?: string;
+      selectionMode: "featureState" | "overlay";
+      selectorType: "id" | "property";
+      selectorProperty?: string;
+    }>
   >([]);
 
   // Cluster highlighting state: multiple clusters per source (e.g. bbox over many clusters)
@@ -84,6 +98,153 @@ export const useIncidents = (
   >();
 
   let incidentPrefetchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  const getAdditionalSelectableLayerIds = () =>
+    (mapLegendLayerIds?.value || "")
+      .split(",")
+      .map((layerId) => layerId.trim())
+      .filter(Boolean);
+
+  const isAdditionalSelectableLayer = (layerId: string) => {
+    const additionalLayerIds = getAdditionalSelectableLayerIds();
+    return (
+      additionalLayerIds.includes(layerId) ||
+      (layerId.endsWith("-stroke") &&
+        additionalLayerIds.includes(layerId.replace(/-stroke$/i, "")))
+    );
+  };
+
+  const resolveFeatureStateTarget = (feature: Feature, layerId: string) => {
+    if (!map.value) return null;
+
+    const mapLayer = map.value.getLayer(layerId) as
+      | (mapboxgl.AnyLayer & { source?: string; "source-layer"?: string })
+      | undefined;
+
+    const sourceId = mapLayer?.source || layerId;
+    const sourceLayer = mapLayer?.["source-layer"];
+    const featureId = layerId.includes("-centroids")
+      ? feature.properties?.alertID
+      : (feature.id ??
+        feature.properties?.alertID ??
+        feature.properties?._id ??
+        feature.properties?.source_id ??
+        feature.properties?.sourceId ??
+        feature.properties?.id);
+
+    if (featureId === undefined || featureId === null || !sourceId) {
+      return null;
+    }
+
+    return { sourceId, sourceLayer, featureId };
+  };
+
+  const getOverlayLayerId = (layerId: string) =>
+    `${layerId}-incident-selected-overlay`;
+
+  const ensureOverlayLayer = (layerId: string) => {
+    if (!map.value) return;
+
+    const mapLayer = map.value.getLayer(layerId) as
+      | (mapboxgl.AnyLayer & { source?: string; "source-layer"?: string })
+      | undefined;
+    if (!mapLayer?.source) return;
+
+    const overlayLayerId = getOverlayLayerId(layerId);
+    if (map.value.getLayer(overlayLayerId)) return;
+
+    const sourceLayer = mapLayer["source-layer"];
+    const baseLayer = {
+      id: overlayLayerId,
+      source: mapLayer.source,
+      filter: ["==", 1, 0] as mapboxgl.FilterSpecification,
+      ...(sourceLayer ? { "source-layer": sourceLayer } : {}),
+    };
+
+    if (mapLayer.type === "fill") {
+      map.value.addLayer({
+        ...baseLayer,
+        type: "fill",
+        paint: {
+          "fill-color": "#FFFF00",
+          "fill-opacity": 0.45,
+        },
+      });
+      return;
+    }
+
+    if (mapLayer.type === "circle") {
+      map.value.addLayer({
+        ...baseLayer,
+        type: "circle",
+        paint: {
+          "circle-color": "#FFFF00",
+          "circle-radius": 7,
+          "circle-stroke-color": "#fff",
+          "circle-stroke-width": 1.5,
+        },
+      });
+      return;
+    }
+
+    map.value.addLayer({
+      ...baseLayer,
+      type: "line",
+      paint: {
+        "line-color": "#FFFF00",
+        "line-width": 4,
+      },
+    });
+  };
+
+  const updateOverlayFilter = (layerId: string) => {
+    if (!map.value) return;
+
+    const overlayLayerId = getOverlayLayerId(layerId);
+    if (!map.value.getLayer(overlayLayerId)) {
+      return;
+    }
+
+    const selectedForLayer = highlightedSources.value.filter(
+      (highlighted) =>
+        highlighted.layerId === layerId &&
+        highlighted.selectionMode === "overlay",
+    );
+
+    if (selectedForLayer.length === 0) {
+      map.value.setFilter(overlayLayerId, ["==", 1, 0]);
+      return;
+    }
+
+    const idValues = selectedForLayer
+      .filter((item) => item.selectorType === "id")
+      .map((item) => item.featureId);
+    const propertyGroups = new Map<string, Array<string | number>>();
+    selectedForLayer
+      .filter(
+        (item): item is typeof item & { selectorProperty: string } =>
+          item.selectorType === "property" && !!item.selectorProperty,
+      )
+      .forEach((item) => {
+        const values = propertyGroups.get(item.selectorProperty) || [];
+        values.push(item.featureId);
+        propertyGroups.set(item.selectorProperty, values);
+      });
+
+    const conditions: mapboxgl.ExpressionSpecification[] = [];
+    if (idValues.length > 0) {
+      conditions.push(["in", ["id"], ["literal", idValues]]);
+    }
+    propertyGroups.forEach((values, key) => {
+      conditions.push(["in", ["get", key], ["literal", values]]);
+    });
+
+    const overlayFilter: mapboxgl.FilterSpecification =
+      conditions.length === 1
+        ? (conditions[0] as mapboxgl.FilterSpecification)
+        : (["any", ...conditions] as mapboxgl.FilterSpecification);
+    map.value.setFilter(overlayLayerId, overlayFilter);
+  };
 
   /**
    * Fetches incidents from the API (paginated)
@@ -404,7 +565,7 @@ export const useIncidents = (
   };
 
   /**
-   * Sets up custom bounding box selection (Ctrl/Cmd + drag)
+   * Sets up custom bounding box selection while bbox mode is active
    * Creates a visual selection box and selects features within it
    */
   const setupCustomBoundingBox = () => {
@@ -450,7 +611,7 @@ export const useIncidents = (
      * Handles mouse down event to start bounding box selection
      */
     const mouseDownForBoundingBox = (e: MouseEvent) => {
-      if (!((e.ctrlKey || e.metaKey) && e.button === 0)) return;
+      if (e.button !== 0) return;
 
       map.value!.dragPan.disable();
 
@@ -570,8 +731,8 @@ export const useIncidents = (
   };
 
   /**
-   * Selects features within the bounding box using pixel coordinates
-   * Handles both individual features and clusters (expands clusters to get all leaves)
+   * Selects individual (non-clustered) features within the bounding box
+   * using pixel coordinates.
    */
   const selectFeaturesInBoundingBox = async (
     bbox: [[number, number], [number, number]],
@@ -592,20 +753,20 @@ export const useIncidents = (
       "previous-alerts-centroids",
     ];
 
-    // Cluster layers to check separately
-    const clusterLayers = [
-      "most-recent-alerts-point-clusters",
-      "most-recent-alerts-centroids-clusters",
-      "previous-alerts-point-clusters",
-      "previous-alerts-centroids-clusters",
-    ];
-
     const mapeoLayers = ["mapeo-data"];
 
+    const additionalLayers = getAdditionalSelectableLayerIds();
+
     const allFeatures: Array<{
+      id?: string | number;
+      type?: "Feature";
+      geometry?: Geometry;
       properties?: {
         alertID?: string;
         id?: string;
+        _id?: string;
+        source_id?: string;
+        sourceId?: string;
         cluster?: boolean;
         cluster_id?: number;
       };
@@ -613,7 +774,7 @@ export const useIncidents = (
     }> = [];
 
     // First, get individual (non-clustered) features
-    alertLayers.forEach((layerId) => {
+    [...alertLayers, ...mapeoLayers, ...additionalLayers].forEach((layerId) => {
       try {
         if (map.value!.getLayer(layerId)) {
           const features = map.value!.queryRenderedFeatures(bbox, {
@@ -638,103 +799,21 @@ export const useIncidents = (
       }
     });
 
-    // Check for clusters in the bounding box and expand them
-    for (const clusterLayerId of clusterLayers) {
-      try {
-        if (!map.value!.getLayer(clusterLayerId)) continue;
+    console.debug(
+      "Total individual features found in bounding box:",
+      allFeatures.length,
+    );
 
-        // Query clusters that intersect the bounding box
-        // Then get ALL leaves from those clusters (not just leaves in bbox)
-        const clusterFeatures = map.value!.queryRenderedFeatures(bbox, {
-          layers: [clusterLayerId],
-        });
-
-        // Determine the source name from cluster layer ID
-        const sourceName = clusterLayerId.replace("-clusters", "");
-        const sourceObj = map.value!.getSource(
-          sourceName,
-        ) as mapboxgl.GeoJSONSource | null;
-
-        if (!sourceObj) continue;
-
-        console.debug(
-          `Found ${clusterFeatures.length} clusters in ${clusterLayerId}`,
-        );
-
-        // For each cluster, get all its leaves (individual features)
-        for (const clusterFeature of clusterFeatures) {
-          const clusterId = clusterFeature.properties?.cluster_id;
-          if (clusterId === undefined) continue;
-
-          try {
-            // Get ALL leaves in the cluster
-            const leaves: Feature[] = await new Promise((resolve, reject) => {
-              sourceObj.getClusterLeaves(
-                clusterId,
-                Infinity, // Get ALL leaves
-                0,
-                (err, features) => {
-                  if (err) {
-                    reject(err);
-                  } else {
-                    resolve(features as Feature[]);
-                  }
-                },
-              );
-            });
-
-            console.debug(
-              `Cluster ${clusterId} in ${sourceName} contains ${leaves.length} features`,
-            );
-
-            // Add all leaves to the selection
-            leaves.forEach((leaf) => {
-              // Create a feature object that matches the expected structure
-              const leafFeature = {
-                properties: leaf.properties,
-                layer: { id: sourceName }, // Use source name as layer ID
-              };
-              allFeatures.push(leafFeature as (typeof allFeatures)[0]);
-            });
-
-            // Add cluster ID to set so multiple clusters can be highlighted per source
-            if (!incidentClusterIds.value.has(sourceName)) {
-              incidentClusterIds.value.set(sourceName, new Set());
-            }
-            incidentClusterIds.value.get(sourceName)!.add(clusterId);
-          } catch (error) {
-            console.warn(
-              `Error getting cluster leaves for cluster ${clusterId}:`,
-              error,
-            );
-          }
-        }
-      } catch (error) {
-        console.warn(`Error querying cluster layer ${clusterLayerId}:`, error);
-      }
-    }
-
-    // Handle mapeo layers
-    mapeoLayers.forEach((layerId) => {
-      try {
-        if (map.value!.getLayer(layerId)) {
-          const features = map.value!.queryRenderedFeatures(bbox, {
-            layers: [layerId],
-          });
-          allFeatures.push(...(features as typeof allFeatures));
-          console.debug(`Layer ${layerId}: found ${features.length} features`);
-        }
-      } catch (error) {
-        console.warn(`Error querying layer ${layerId}:`, error);
-      }
-    });
-
-    console.debug("Total features found in bounding box:", allFeatures.length);
-
-    // Process all features (both individual and from clusters)
+    // Process all individual features
     allFeatures.forEach(
       (feature: {
-        properties?: { alertID?: string; id?: string; _id?: string };
+        properties?: {
+          alertID?: string;
+          id?: string;
+          _id?: string;
+          source_id?: string;
+          sourceId?: string;
+        };
         layer?: { id?: string };
       }) => {
         const featureObject = feature.properties;
@@ -751,22 +830,14 @@ export const useIncidents = (
         } else if (featureObject?.id) {
           // Fallback for backward compatibility
           sourceId = featureObject.id;
+        } else if (featureObject?.source_id) {
+          sourceId = featureObject.source_id;
+        } else if (featureObject?.sourceId) {
+          sourceId = featureObject.sourceId;
         }
 
-        if (sourceId) {
-          // Create a proper Feature object for handleMultiSelectFeature
-          const featureForSelection: Feature = {
-            type: "Feature",
-            id:
-              featureObject?.alertID || featureObject?._id || featureObject?.id,
-            geometry: (feature as Feature).geometry || {
-              type: "Point",
-              coordinates: [0, 0],
-            },
-            properties: featureObject || {},
-          };
-
-          handleMultiSelectFeature(featureForSelection, layerId);
+        if (sourceId && featureObject) {
+          handleMultiSelectFeature(feature as Feature, layerId);
           console.debug(`Selected source: ${sourceId} from layer ${layerId}`);
         } else {
           console.warn(
@@ -831,7 +902,7 @@ export const useIncidents = (
   };
 
   /**
-   * Handles multi-select feature selection with toggle behavior
+   * Handles multi-select feature selection
    * Determines source table from layer ID and route params, extracts source ID from feature properties
    *
    * Source table determination logic:
@@ -842,8 +913,6 @@ export const useIncidents = (
    * Source ID extraction:
    * - For alerts: Uses feature.properties.alertID
    * - For Mapeo: Uses feature.properties._id (with fallback to feature.properties.id for backward compatibility)
-   *
-   * Toggle behavior: If the feature is already selected, it will be deselected. Otherwise, it will be selected.
    *
    * @param feature - The map feature to select/deselect
    * @param layerId - The layer ID the feature belongs to (e.g., "most-recent-alerts-polygon", "mapeo-data")
@@ -863,8 +932,10 @@ export const useIncidents = (
       layerId.includes("previous-alerts")
     ) {
       sourceTable = (tableName as string) || "";
-    } else if (layerId === "mapeo-data") {
+    } else if (layerId.startsWith("mapeo-data")) {
       sourceTable = "mapeo_data";
+    } else if (isAdditionalSelectableLayer(layerId)) {
+      sourceTable = (tableName as string) || "";
     }
 
     if (feature.properties.alertID) {
@@ -882,21 +953,20 @@ export const useIncidents = (
       // has been run on all partner VMs and we can guarantee no data uses the old id column.
       // This fallback exists for backward compatibility during the migration period.
       sourceId = feature.properties.id;
+    } else if (feature.properties.source_id) {
+      sourceId = feature.properties.source_id;
+    } else if (feature.properties.sourceId) {
+      sourceId = feature.properties.sourceId;
     }
 
     if (sourceTable && sourceId) {
-      // Check if already selected
       const isAlreadySelected = selectedSources.value.some(
         (source) =>
           source.source_table === sourceTable && source.source_id === sourceId,
       );
 
-      if (isAlreadySelected) {
-        // Deselect: remove from selection and unhighlight
-        removeSourceFromSelection(sourceTable, sourceId);
-        unhighlightSelectedSource(feature, layerId);
-      } else {
-        // Select: add to selection and highlight
+      // Don't toggle-off on click/box. Deselect is explicit via controls.
+      if (!isAlreadySelected) {
         addSourceToSelection(sourceTable, sourceId);
         highlightSelectedSource(feature, layerId);
       }
@@ -912,29 +982,79 @@ export const useIncidents = (
   const highlightSelectedSource = (feature: Feature, layerId: string) => {
     if (!map.value) return;
 
-    const featureId = layerId.includes("-centroids")
-      ? feature.properties?.alertID
-      : feature.id;
+    if (isAdditionalSelectableLayer(layerId)) {
+      const selectorProperty = feature.id
+        ? undefined
+        : feature.properties?.alertID
+          ? "alertID"
+          : feature.properties?._id
+            ? "_id"
+            : feature.properties?.source_id
+              ? "source_id"
+              : feature.properties?.sourceId
+                ? "sourceId"
+                : feature.properties?.id
+                  ? "id"
+                  : undefined;
+      const selectorType = selectorProperty ? "property" : "id";
+      const selectorValue =
+        feature.id ??
+        feature.properties?.alertID ??
+        feature.properties?._id ??
+        feature.properties?.source_id ??
+        feature.properties?.sourceId ??
+        feature.properties?.id;
 
-    if (featureId !== undefined && featureId !== null) {
-      // Check if this feature is already highlighted
+      if (selectorValue === undefined || selectorValue === null) {
+        return;
+      }
+
       const existingIndex = highlightedSources.value.findIndex(
         (highlighted) =>
-          highlighted.featureId === featureId &&
+          highlighted.featureId === selectorValue &&
           highlighted.layerId === layerId,
       );
+      if (existingIndex !== -1) return;
 
-      if (existingIndex === -1) {
-        highlightedSources.value.push({
-          featureId,
-          layerId,
-        });
+      highlightedSources.value.push({
+        featureId: selectorValue,
+        layerId,
+        sourceId: layerId,
+        selectionMode: "overlay",
+        selectorType,
+        selectorProperty,
+      });
 
-        map.value.setFeatureState(
-          { source: layerId, id: featureId },
-          { selected: true },
-        );
-      }
+      ensureOverlayLayer(layerId);
+      updateOverlayFilter(layerId);
+      return;
+    }
+
+    const featureStateTarget = resolveFeatureStateTarget(feature, layerId);
+    if (!featureStateTarget) return;
+
+    const { featureId, sourceId, sourceLayer } = featureStateTarget;
+
+    // Check if this feature is already highlighted
+    const existingIndex = highlightedSources.value.findIndex(
+      (highlighted) =>
+        highlighted.featureId === featureId && highlighted.layerId === layerId,
+    );
+
+    if (existingIndex === -1) {
+      highlightedSources.value.push({
+        featureId,
+        layerId,
+        sourceId,
+        sourceLayer,
+        selectionMode: "featureState",
+        selectorType: "id",
+      });
+
+      const target = sourceLayer
+        ? { source: sourceId, sourceLayer, id: featureId }
+        : { source: sourceId, id: featureId };
+      map.value.setFeatureState(target, { selected: true });
     }
   };
 
@@ -946,30 +1066,59 @@ export const useIncidents = (
   const unhighlightSelectedSource = (feature: Feature, layerId: string) => {
     if (!map.value) return;
 
-    const featureId = layerId.includes("-centroids")
-      ? feature.properties?.alertID
-      : feature.id;
+    if (isAdditionalSelectableLayer(layerId)) {
+      const selectorValue =
+        feature.id ??
+        feature.properties?.alertID ??
+        feature.properties?._id ??
+        feature.properties?.source_id ??
+        feature.properties?.sourceId ??
+        feature.properties?.id;
+      if (selectorValue === undefined || selectorValue === null) return;
 
-    if (featureId !== undefined && featureId !== null) {
-      // Remove from highlighted sources array
       const existingIndex = highlightedSources.value.findIndex(
         (highlighted) =>
-          highlighted.featureId === featureId &&
+          highlighted.featureId === selectorValue &&
           highlighted.layerId === layerId,
       );
-
       if (existingIndex !== -1) {
         highlightedSources.value.splice(existingIndex, 1);
+        updateOverlayFilter(layerId);
+      }
+      return;
+    }
 
-        try {
-          map.value!.setFeatureState(
-            { source: layerId, id: featureId },
-            { selected: false },
-          );
-        } catch (error) {
-          // Ignore errors if layer/source doesn't exist
-          console.warn("Error unhighlighting feature state:", error);
-        }
+    const featureStateTarget = resolveFeatureStateTarget(feature, layerId);
+    if (!featureStateTarget) return;
+
+    const { featureId } = featureStateTarget;
+    // Remove from highlighted sources array
+    const existingIndex = highlightedSources.value.findIndex(
+      (highlighted) =>
+        highlighted.featureId === featureId && highlighted.layerId === layerId,
+    );
+
+    if (existingIndex !== -1) {
+      const [existingHighlight] = highlightedSources.value.splice(
+        existingIndex,
+        1,
+      );
+
+      try {
+        const target = existingHighlight.sourceLayer
+          ? {
+              source: existingHighlight.sourceId,
+              sourceLayer: existingHighlight.sourceLayer,
+              id: existingHighlight.featureId,
+            }
+          : {
+              source: existingHighlight.sourceId,
+              id: existingHighlight.featureId,
+            };
+        map.value!.setFeatureState(target, { selected: false });
+      } catch (error) {
+        // Ignore errors if layer/source doesn't exist
+        console.warn("Error unhighlighting feature state:", error);
       }
     }
   };
@@ -1037,18 +1186,29 @@ export const useIncidents = (
   const clearSourceHighlighting = () => {
     if (!map.value) return;
 
-    highlightedSources.value.forEach(({ featureId, layerId }) => {
-      try {
-        map.value!.setFeatureState(
-          { source: layerId, id: featureId },
-          { selected: false },
-        );
-      } catch (error) {
-        // Ignore errors if layer/source doesn't exist
-        console.warn("Error clearing feature state:", error);
-      }
-    });
+    const overlayLayerIdsToReset = new Set<string>();
+    highlightedSources.value.forEach(
+      ({ featureId, sourceId, sourceLayer, selectionMode, layerId }) => {
+        if (selectionMode === "overlay") {
+          overlayLayerIdsToReset.add(layerId);
+          return;
+        }
+
+        try {
+          const target = sourceLayer
+            ? { source: sourceId, sourceLayer, id: featureId }
+            : { source: sourceId, id: featureId };
+          map.value!.setFeatureState(target, { selected: false });
+        } catch (error) {
+          // Ignore errors if layer/source doesn't exist
+          console.warn("Error clearing feature state:", error);
+        }
+      },
+    );
     highlightedSources.value = [];
+    overlayLayerIdsToReset.forEach((layerId) => {
+      updateOverlayFilter(layerId);
+    });
 
     // Clear cluster highlighting
     incidentClusterIds.value.clear();
@@ -1167,6 +1327,10 @@ export const useIncidents = (
     const hasSelectedIncident =
       selectedIncident.value && selectedIncidentEntries.value.length > 0;
     const hasHighlightedSources = highlightedSources.value.length > 0;
+    const tableRaw = route.params.tablename;
+    const currentAlertsTable = Array.isArray(tableRaw)
+      ? tableRaw.join("/")
+      : (tableRaw as string | undefined);
     // If we have a selected incident, use that (for viewing incident details)
     if (hasSelectedIncident) {
       // Clear old cluster IDs before re-finding (clusters may have merged with new IDs)
@@ -1183,45 +1347,31 @@ export const useIncidents = (
       // Clear old cluster IDs - they're invalid after zoom (clusters merge and get new IDs)
       incidentClusterIds.value.clear();
 
-      // Group highlighted sources by cluster source layer (point/centroids)
-      const sourcesByLayer = new Map<string, string[]>(); // sourceName -> alertIDs
+      // Use selectedSources alert IDs (source of truth) instead of map feature IDs.
+      // map feature IDs vary by source/layer, while source_id is stable for cluster lookups.
+      const selectedAlertIds = selectedSources.value
+        .filter(
+          (source) =>
+            source.source_table !== "mapeo_data" &&
+            (!currentAlertsTable || source.source_table === currentAlertsTable),
+        )
+        .map((source) => source.source_id);
 
-      highlightedSources.value.forEach(({ featureId, layerId }) => {
-        let clusterSourceName: string | null = null;
+      const candidateClusterSources = [
+        "most-recent-alerts-centroids",
+        "most-recent-alerts-point",
+        "previous-alerts-centroids",
+        "previous-alerts-point",
+      ].filter((sourceName) => map.value!.getSource(sourceName));
 
-        if (layerId.includes("-point")) {
-          clusterSourceName = layerId;
-        } else if (layerId.includes("-centroids")) {
-          clusterSourceName = layerId;
-        } else if (
-          layerId.includes("-polygon") ||
-          layerId.includes("-linestring")
-        ) {
-          const prefix = layerId.replace(
-            /-polygon|-linestring|-multipolygon/i,
-            "",
-          );
-          clusterSourceName = `${prefix}-centroids`;
-        }
-
-        if (clusterSourceName) {
-          if (!sourcesByLayer.has(clusterSourceName)) {
-            sourcesByLayer.set(clusterSourceName, []);
-          }
-          const alertId =
-            typeof featureId === "string" ? featureId : String(featureId);
-          sourcesByLayer.get(clusterSourceName)!.push(alertId);
-        }
-      });
-
-      // Re-find clusters for each source: every cluster that contains any selected point must stay highlighted
+      // Re-find clusters for each selected alert across cluster-capable sources.
       const rehighlightPromises: Promise<void>[] = [];
-      sourcesByLayer.forEach((alertIds, sourceName) => {
-        for (const alertId of alertIds) {
+      selectedAlertIds.forEach((alertId) => {
+        candidateClusterSources.forEach((sourceName) => {
           rehighlightPromises.push(
             highlightClusterForAlertId(alertId, sourceName),
           );
-        }
+        });
       });
 
       // Small delay to ensure clusters have rendered after zoom
@@ -1287,7 +1437,11 @@ export const useIncidents = (
 
       const filter: mapboxgl.ExpressionSpecification =
         entry.source_table === "mapeo_data"
-          ? ["==", ["get", "id"], entry.source_id]
+          ? [
+              "any",
+              ["==", ["get", "_id"], entry.source_id],
+              ["==", ["get", "id"], entry.source_id],
+            ]
           : ["==", ["get", "alertID"], entry.source_id];
 
       let found = false;

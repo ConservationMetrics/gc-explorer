@@ -9,12 +9,14 @@ defineProps<{
   openSidebarWithCreateForm: boolean;
   boundingBoxMode: boolean;
   multiSelectMode: boolean;
+  hasActiveSelection: boolean;
   selectedSourcesLength: number;
   hoveredButton:
     | "incidents"
     | "boundingBox"
     | "multiSelect"
     | "createIncident"
+    | "deselect"
     | null;
 }>();
 
@@ -23,8 +25,14 @@ const emit = defineEmits<{
   toggleBoundingBoxMode: [];
   toggleMultiSelectMode: [];
   openIncidentsSidebarWithCreateForm: [];
+  clearSelection: [];
   hoverButton: [
-    button: "incidents" | "boundingBox" | "multiSelect" | "createIncident",
+    button:
+      | "incidents"
+      | "boundingBox"
+      | "multiSelect"
+      | "createIncident"
+      | "deselect",
   ];
   clearHover: [];
 }>();
@@ -120,6 +128,32 @@ const emit = defineEmits<{
             ? t("incidents.disableMultiSelect")
             : t("incidents.enableMultiSelect")
         }}
+      </div>
+    </div>
+    <div
+      class="incident-control-wrapper"
+      @mouseenter="emit('hoverButton', 'deselect')"
+      @mouseleave="emit('clearHover')"
+    >
+      <button
+        class="incident-control-btn"
+        data-testid="incidents-deselect-button"
+        :disabled="!hasActiveSelection"
+        @click="emit('clearSelection')"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
+      <div v-if="hoveredButton === 'deselect'" class="tooltip tooltip-left">
+        {{ t("incidents.deselectSelection") }}
       </div>
     </div>
     <div
