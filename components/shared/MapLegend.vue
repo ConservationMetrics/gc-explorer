@@ -249,6 +249,7 @@ watch(
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
+  scrollbar-gutter: stable;
 }
 
 .slide-enter-active,
@@ -275,7 +276,7 @@ watch(
     right: 10px;
     width: min(265px, calc(100vw - 20px));
     max-height: min(32vh, 220px);
-    bottom: 16px;
+    bottom: 44px;
   }
 }
 </style>
