@@ -86,7 +86,19 @@ const filteredSortedViewsConfig = computed(() => {
     }, {});
 });
 
-const activeViewFilter = ref<string>("all");
+const activeViewFilter = ref<string>(
+  typeof route.query.view === "string" ? route.query.view : "all",
+);
+
+watch(activeViewFilter, (value) => {
+  const query = { ...route.query };
+  if (value === "all") {
+    delete query.view;
+  } else {
+    query.view = value;
+  }
+  router.replace({ path: route.path, query });
+});
 
 /**
  * All distinct view types present across the permission-filtered datasets.
