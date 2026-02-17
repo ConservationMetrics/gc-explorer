@@ -72,6 +72,98 @@ test("index page - displays available views and navigation flow", async ({
   expect(hasGallery || hasMap || hasAlerts).toBe(true);
 });
 
+test("index page - view type filter buttons are visible and functional", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  // "All" button should be visible and active by default
+  const allButton = page.getByRole("button", { name: /^all$/i });
+  await expect(allButton).toBeVisible({ timeout: 5000 });
+
+  // At least one view-type filter button should exist besides "All"
+  const filterButtons = page.locator(
+    "button.capitalize, button:has-text('All')",
+  );
+  const buttonCount = await filterButtons.count();
+  expect(buttonCount).toBeGreaterThan(1);
+
+  // Record initial card count
+  const allCards = page.locator("[data-testid='dataset-card']");
+  const initialCount = await allCards.count();
+  expect(initialCount).toBeGreaterThan(0);
+
+  // Click the "Map" filter button if it exists
+  const mapButton = page.getByRole("button", { name: /^map$/i });
+  const mapButtonCount = await mapButton.count();
+
+  if (mapButtonCount > 0) {
+    await mapButton.click();
+    await page.waitForTimeout(500);
+
+    // Filtered cards should be <= initial count
+    const filteredCards = page.locator("[data-testid='dataset-card']");
+    const filteredCount = await filteredCards.count();
+    expect(filteredCount).toBeLessThanOrEqual(initialCount);
+    expect(filteredCount).toBeGreaterThan(0);
+
+    // All visible cards should have a "map" view tag
+    const visibleMapTags = page.locator("[data-testid='view-tag-map']");
+    const mapTagCount = await visibleMapTags.count();
+    expect(mapTagCount).toBe(filteredCount);
+
+    // Click "All" to reset
+    await allButton.click();
+    await page.waitForTimeout(500);
+
+    const resetCards = page.locator("[data-testid='dataset-card']");
+    const resetCount = await resetCards.count();
+    expect(resetCount).toBe(initialCount);
+  }
+});
+
+test("index page - view filter persists in URL query param", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  // Click the "Map" filter button if it exists
+  const mapButton = page.getByRole("button", { name: /^map$/i });
+  const mapButtonCount = await mapButton.count();
+
+  if (mapButtonCount > 0) {
+    await mapButton.click();
+    await page.waitForTimeout(500);
+
+    // URL should contain ?view=map
+    const url = page.url();
+    expect(url).toContain("view=map");
+
+    // Navigate to the URL directly and verify filter is preserved
+    await page.goto("/?view=map");
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("[data-testid='dataset-card']", {
+      timeout: 15000,
+    });
+
+    // All visible cards should still have map tags
+    const visibleMapTags = page.locator("[data-testid='view-tag-map']");
+    const mapTagCount = await visibleMapTags.count();
+    const cardCount = await page
+      .locator("[data-testid='dataset-card']")
+      .count();
+    expect(mapTagCount).toBe(cardCount);
+  }
+});
+
 test("index page - search bar filters dataset cards by name", async ({
   authenticatedPageAsAdmin: page,
 }) => {

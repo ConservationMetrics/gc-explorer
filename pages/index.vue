@@ -86,6 +86,20 @@ const filteredSortedViewsConfig = computed(() => {
     }, {});
 });
 
+const activeViewFilter = ref<string>(
+  typeof route.query.view === "string" ? route.query.view : "all",
+);
+
+watch(activeViewFilter, (value) => {
+  const query = { ...route.query };
+  if (value === "all") {
+    delete query.view;
+  } else {
+    query.view = value;
+  }
+  router.replace({ path: route.path, query });
+});
+
 const searchQuery = ref<string>(
   typeof route.query.q === "string" ? route.query.q : "",
 );
@@ -101,24 +115,63 @@ watch(searchQuery, (value) => {
 });
 
 /**
- * Applies search filtering on the permission-filtered config.
+ * All distinct view types present across the permission-filtered datasets.
+ *
+ * @returns {string[]} Sorted array of unique view type strings (e.g. ["alerts", "gallery", "map"]).
+ */
+const availableViewTypes = computed(() => {
+  const types = new Set<string>();
+  Object.values(filteredSortedViewsConfig.value).forEach((config) => {
+    if (config.VIEWS) {
+      config.VIEWS.split(",")
+        .map((v) => v.trim())
+        .forEach((v) => types.add(v));
+    }
+  });
+  return Array.from(types).sort();
+});
+
+/**
+ * Applies the active view-type filter on top of the already permission-filtered config.
+ *
+ * @returns {Views} The filtered views config object.
+ */
+const displayedViewsConfig = computed(() => {
+  if (activeViewFilter.value === "all") {
+    return filteredSortedViewsConfig.value;
+  }
+  return Object.keys(filteredSortedViewsConfig.value)
+    .filter((key) => {
+      const config = filteredSortedViewsConfig.value[key];
+      if (!config.VIEWS) return false;
+      const views = config.VIEWS.split(",").map((v) => v.trim());
+      return views.includes(activeViewFilter.value);
+    })
+    .reduce((acc: Views, key: string) => {
+      acc[key] = filteredSortedViewsConfig.value[key];
+      return acc;
+    }, {});
+});
+
+/**
+ * Applies search filtering on top of the view-type-filtered config.
  * Matches case-insensitively against display name (DATASET_TABLE or key) and description.
  *
  * @returns {Views} The search-filtered views config object.
  */
 const searchedViewsConfig = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return filteredSortedViewsConfig.value;
+  if (!q) return displayedViewsConfig.value;
 
-  return Object.keys(filteredSortedViewsConfig.value)
+  return Object.keys(displayedViewsConfig.value)
     .filter((key) => {
-      const config = filteredSortedViewsConfig.value[key];
+      const config = displayedViewsConfig.value[key];
       const displayName = (config.DATASET_TABLE || key).toLowerCase();
       const description = (config.VIEW_DESCRIPTION || "").toLowerCase();
       return displayName.includes(q) || description.includes(q);
     })
     .reduce((acc: Views, key: string) => {
-      acc[key] = filteredSortedViewsConfig.value[key];
+      acc[key] = displayedViewsConfig.value[key];
       return acc;
     }, {});
 });
@@ -200,12 +253,40 @@ useHead({
         />
       </div>
 
-      <!-- Manage Datasets Button - Right above cards on RHS -->
+      <!-- View Type Filter & Manage Datasets -->
       <div
-        v-if="shouldShowConfigLink && viewsConfig"
-        class="flex justify-end mb-4"
+        v-if="viewsConfig"
+        class="flex flex-wrap items-center justify-between gap-3 mb-4"
       >
+        <div class="flex flex-wrap gap-2">
+          <button
+            class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors"
+            :class="
+              activeViewFilter === 'all'
+                ? 'bg-purple-700 text-white border-purple-700'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            "
+            @click="activeViewFilter = 'all'"
+          >
+            {{ $t("all") }}
+          </button>
+          <button
+            v-for="viewType in availableViewTypes"
+            :key="viewType"
+            class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors capitalize"
+            :class="
+              activeViewFilter === viewType
+                ? 'bg-purple-700 text-white border-purple-700'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            "
+            @click="activeViewFilter = viewType"
+          >
+            {{ $t(viewType) }}
+          </button>
+        </div>
+        <!-- NuxtLink messes up the layout, hence the use of a regular anchor tag -->
         <a
+          v-if="shouldShowConfigLink"
           href="/config"
           class="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer"
         >

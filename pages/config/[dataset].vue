@@ -155,26 +155,54 @@ useHead({
         class="max-w-7xl mx-auto p-3 sm:p-6 w-full"
       >
         <div class="mb-6">
-          <NuxtLink
-            to="/config"
-            class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium mb-4 transition-colors"
-          >
-            <svg
-              class="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+          <div class="flex items-center justify-between mb-4">
+            <NuxtLink
+              to="/config"
+              class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium transition-colors"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            {{ $t("configuration") }}
-          </NuxtLink>
+              <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              {{ $t("configuration") }}
+            </NuxtLink>
+            <NuxtLink
+              :to="`/dataset/${dataset}`"
+              class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
+              {{ $t("viewDataset") }}
+            </NuxtLink>
+          </div>
           <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             {{ $t("configuration") }} - {{ dataset }}
           </h1>
