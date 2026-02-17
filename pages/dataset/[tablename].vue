@@ -241,26 +241,26 @@ useHead({
           </div>
         </div>
 
-        <div class="relative p-6 sm:p-8 text-white">
+        <div class="relative p-6 sm:p-8">
           <div class="mb-6 sm:mb-8">
             <div v-if="description || isDescriptionTruncated">
-              <p class="text-base sm:text-lg text-black leading-relaxed">
+              <p class="text-base sm:text-lg text-gray-700 leading-relaxed">
                 {{ description }}
               </p>
               <button
                 v-if="isDescriptionTruncated"
-                class="text-purple-300 hover:text-purple-100 text-sm font-medium underline mt-2"
+                class="text-purple-600 hover:text-purple-800 text-sm font-medium underline mt-2"
                 @click="isDescriptionExpanded = !isDescriptionExpanded"
               >
                 {{ isDescriptionExpanded ? "Show less" : "Show more" }}
               </button>
             </div>
-            <div v-else class="text-base sm:text-lg text-white/70 italic">
+            <div v-else class="text-base sm:text-lg text-gray-500 italic">
               <span>{{ $t("noDescriptionProvidedYet") }}</span>
               <NuxtLink
                 v-if="isAdmin"
                 :to="`/config/${tableName}`"
-                class="ml-1 text-purple-300 hover:text-purple-100 underline"
+                class="ml-1 text-purple-600 hover:text-purple-800 underline"
               >
                 {{ $t("addDescription") }}
               </NuxtLink>
@@ -285,7 +285,7 @@ useHead({
           </div>
 
           <div v-else class="text-center py-8">
-            <p class="text-white/70 text-sm sm:text-base">
+            <p class="text-gray-500 text-sm sm:text-base">
               {{
                 $t("noDatasetViewsAvailable") ||
                 "No views available for this dataset"
