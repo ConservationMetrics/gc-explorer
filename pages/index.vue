@@ -86,6 +86,43 @@ const filteredSortedViewsConfig = computed(() => {
     }, {});
 });
 
+const searchQuery = ref<string>(
+  typeof route.query.q === "string" ? route.query.q : "",
+);
+
+watch(searchQuery, (value) => {
+  const query = { ...route.query };
+  if (value) {
+    query.q = value;
+  } else {
+    delete query.q;
+  }
+  router.replace({ path: route.path, query });
+});
+
+/**
+ * Applies search filtering on the permission-filtered config.
+ * Matches case-insensitively against display name (DATASET_TABLE or key) and description.
+ *
+ * @returns {Views} The search-filtered views config object.
+ */
+const searchedViewsConfig = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return filteredSortedViewsConfig.value;
+
+  return Object.keys(filteredSortedViewsConfig.value)
+    .filter((key) => {
+      const config = filteredSortedViewsConfig.value[key];
+      const displayName = (config.DATASET_TABLE || key).toLowerCase();
+      const description = (config.VIEW_DESCRIPTION || "").toLowerCase();
+      return displayName.includes(q) || description.includes(q);
+    })
+    .reduce((acc: Views, key: string) => {
+      acc[key] = filteredSortedViewsConfig.value[key];
+      return acc;
+    }, {});
+});
+
 // Check if user should see config link
 const shouldShowConfigLink = computed(() => {
   // Show config link in CI environment
@@ -139,12 +176,35 @@ useHead({
         </h1>
       </div>
 
+      <!-- Search Bar -->
+      <div class="relative mb-4">
+        <svg
+          class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+          />
+        </svg>
+        <input
+          v-model="searchQuery"
+          type="text"
+          :placeholder="$t('searchDatasets')"
+          class="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+        />
+      </div>
+
       <!-- Manage Datasets Button - Right above cards on RHS -->
       <div
         v-if="shouldShowConfigLink && viewsConfig"
         class="flex justify-end mb-4"
       >
-        <!-- NuxtLink messes up the layout, hence the use of a regular anchor tag -->
         <a
           href="/config"
           class="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer"
@@ -155,19 +215,29 @@ useHead({
 
       <!-- Project Cards Grid -->
       <div
-        v-if="viewsConfig"
+        v-if="viewsConfig && Object.keys(searchedViewsConfig).length > 0"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch"
       >
         <DatasetCard
-          v-for="(config, tableName) in filteredSortedViewsConfig"
+          v-for="(config, tableName) in searchedViewsConfig"
           :key="tableName"
           :table-name="tableName"
           :config="config"
         />
       </div>
 
+      <!-- No Results State -->
+      <div
+        v-else-if="viewsConfig && searchQuery.trim()"
+        class="text-center py-12"
+      >
+        <p class="text-gray-500 text-sm sm:text-base">
+          {{ $t("noResultsFound") }}
+        </p>
+      </div>
+
       <!-- Empty State -->
-      <div v-else class="text-center py-12">
+      <div v-else-if="!viewsConfig" class="text-center py-12">
         <p class="text-gray-500 text-sm sm:text-base">
           {{ $t("noDatasetViewsAvailable") || "No dataset views available" }}
         </p>
