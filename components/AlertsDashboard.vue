@@ -1533,46 +1533,49 @@ onBeforeUnmount(() => {
       :planet-api-key="planetApiKey"
       @basemap-selected="handleBasemapChange"
     />
-    <IncidentsSidebar
-      :incidents="incidents"
-      :incidents-total="incidentsTotal"
-      :is-loading-more="isLoadingMoreIncidents"
-      :selected-incident="selectedIncident"
-      :selected-incident-data="selectedIncidentData"
-      :selected-incident-entries="selectedIncidentEntries"
-      :is-loading-selected-incident="isLoadingSelectedIncident"
-      :selected-sources="selectedSources"
-      :is-loading="isLoadingIncidents"
-      :is-creating="isCreatingIncident"
-      :show="showIncidentsSidebar"
-      :open-with-create-form="openSidebarWithCreateForm"
-      @close="toggleIncidentsSidebar"
-      @back-to-incidents-list="clearSelectedIncident"
-      @select-incident="openIncidentDetails"
-      @hover-incident="scheduleIncidentPrefetch"
-      @load-more-incidents="loadMoreIncidents"
-      @create-incident="createIncident"
-      @remove-source="removeSourceFromSelection"
-      @clear-sources="handleClearSourcesAndCloseSidebar"
-    />
-    <IncidentsControls
-      :show-incidents-sidebar="showIncidentsSidebar"
-      :open-sidebar-with-create-form="openSidebarWithCreateForm"
-      :bounding-box-mode="boundingBoxMode"
-      :multi-select-mode="multiSelectMode"
-      :has-active-selection="hasActiveSelection"
-      :selected-sources-length="selectedSources.length"
-      :hovered-button="hoveredButton"
-      @toggle-incidents-sidebar="toggleIncidentsSidebar"
-      @toggle-bounding-box-mode="toggleBoundingBoxMode"
-      @toggle-multi-select-mode="toggleMultiSelectMode"
-      @open-incidents-sidebar-with-create-form="
-        openIncidentsSidebarWithCreateForm
-      "
-      @clear-selection="handleExplicitDeselect"
-      @hover-button="(button) => (hoveredButton = button)"
-      @clear-hover="hoveredButton = null"
-    />
+    <!-- Incidents UI is hidden on mobile — too clunky for small screens -->
+    <div class="hidden md:block">
+      <IncidentsSidebar
+        :incidents="incidents"
+        :incidents-total="incidentsTotal"
+        :is-loading-more="isLoadingMoreIncidents"
+        :selected-incident="selectedIncident"
+        :selected-incident-data="selectedIncidentData"
+        :selected-incident-entries="selectedIncidentEntries"
+        :is-loading-selected-incident="isLoadingSelectedIncident"
+        :selected-sources="selectedSources"
+        :is-loading="isLoadingIncidents"
+        :is-creating="isCreatingIncident"
+        :show="showIncidentsSidebar"
+        :open-with-create-form="openSidebarWithCreateForm"
+        @close="toggleIncidentsSidebar"
+        @back-to-incidents-list="clearSelectedIncident"
+        @select-incident="openIncidentDetails"
+        @hover-incident="scheduleIncidentPrefetch"
+        @load-more-incidents="loadMoreIncidents"
+        @create-incident="createIncident"
+        @remove-source="removeSourceFromSelection"
+        @clear-sources="handleClearSourcesAndCloseSidebar"
+      />
+      <IncidentsControls
+        :show-incidents-sidebar="showIncidentsSidebar"
+        :open-sidebar-with-create-form="openSidebarWithCreateForm"
+        :bounding-box-mode="boundingBoxMode"
+        :multi-select-mode="multiSelectMode"
+        :has-active-selection="hasActiveSelection"
+        :selected-sources-length="selectedSources.length"
+        :hovered-button="hoveredButton"
+        @toggle-incidents-sidebar="toggleIncidentsSidebar"
+        @toggle-bounding-box-mode="toggleBoundingBoxMode"
+        @toggle-multi-select-mode="toggleMultiSelectMode"
+        @open-incidents-sidebar-with-create-form="
+          openIncidentsSidebarWithCreateForm
+        "
+        @clear-selection="handleExplicitDeselect"
+        @hover-button="(button) => (hoveredButton = button)"
+        @clear-hover="hoveredButton = null"
+      />
+    </div>
   </div>
 </template>
 
