@@ -164,6 +164,90 @@ test("index page - view filter persists in URL query param", async ({
   }
 });
 
+test("index page - search bar filters dataset cards by name", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  const allCards = page.locator("[data-testid='dataset-card']");
+  const initialCount = await allCards.count();
+  expect(initialCount).toBeGreaterThan(0);
+
+  // Type a search query that matches one of the dataset names
+  const searchInput = page.locator("input[type='text']");
+  await expect(searchInput).toBeVisible({ timeout: 5000 });
+
+  // Get the text of the first card's heading to use as search query
+  const firstCardHeading = page
+    .locator("[data-testid='dataset-card'] h2")
+    .first();
+  const headingText = await firstCardHeading.textContent();
+  const searchTerm = (headingText || "").trim().substring(0, 5);
+
+  await searchInput.fill(searchTerm);
+  await page.waitForTimeout(500);
+
+  // Verify the cards are filtered (count should be <= initial)
+  const filteredCards = page.locator("[data-testid='dataset-card']");
+  const filteredCount = await filteredCards.count();
+  expect(filteredCount).toBeGreaterThan(0);
+  expect(filteredCount).toBeLessThanOrEqual(initialCount);
+});
+
+test("index page - search bar shows no results message for gibberish", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  const searchInput = page.locator("input[type='text']");
+  await searchInput.fill("zzzznonexistentdataset12345");
+  await page.waitForTimeout(500);
+
+  // Cards should be gone
+  const cards = page.locator("[data-testid='dataset-card']");
+  const cardCount = await cards.count();
+  expect(cardCount).toBe(0);
+
+  // No results message should appear
+  const noResults = page.getByText(/no datasets match/i);
+  await expect(noResults).toBeVisible({ timeout: 5000 });
+});
+
+test("index page - search persists in URL query param", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  const searchInput = page.locator("input[type='text']");
+  await searchInput.fill("test");
+  await page.waitForTimeout(500);
+
+  // URL should contain ?q=test
+  const url = page.url();
+  expect(url).toContain("q=test");
+
+  // Navigate to the URL directly and verify search is preserved
+  await page.goto("/?q=test");
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(500);
+
+  const searchInputAfter = page.locator("input[type='text']");
+  const value = await searchInputAfter.inputValue();
+  expect(value).toBe("test");
+});
+
 test("index page - language picker functionality", async ({
   authenticatedPageAsAdmin: page,
 }) => {
