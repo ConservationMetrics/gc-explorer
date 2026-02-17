@@ -223,6 +223,7 @@ useHead({
             {{ $t(viewType) }}
           </button>
         </div>
+        <!-- NuxtLink messes up the layout, hence the use of a regular anchor tag -->
         <a
           v-if="shouldShowConfigLink"
           href="/config"
