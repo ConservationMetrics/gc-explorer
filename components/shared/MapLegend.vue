@@ -139,7 +139,7 @@ watch(
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  z-index: 1000;
+  z-index: 10;
 }
 
 .color-box {
