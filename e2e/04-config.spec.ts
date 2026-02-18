@@ -1729,6 +1729,91 @@ test("config page - color column configuration", async ({
   }
 });
 
+test("config page - copy config from another dataset", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/config");
+  await page.waitForLoadState("networkidle");
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+
+  const datasetCards = page.locator("[data-testid='config-dataset-card']");
+  const cardCount = await datasetCards.count();
+
+  if (cardCount < 2) {
+    test.skip();
+    return;
+  }
+
+  const firstCard = datasetCards.first();
+  const editLink = firstCard.locator("[data-testid='edit-dataset-view-link']");
+  await editLink.click();
+  await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("form", { timeout: 15000 });
+
+  const copyButton = page.locator("[data-testid='copy-config-button']");
+  await expect(copyButton).toBeVisible({ timeout: 5000 });
+
+  await copyButton.click();
+
+  const copyModal = page.locator("[data-testid='copy-config-modal']");
+  await expect(copyModal).toBeVisible({ timeout: 5000 });
+
+  const confirmButton = page.locator(
+    "[data-testid='copy-config-confirm-button']",
+  );
+  await expect(confirmButton).toBeDisabled();
+
+  const dropdown = page.locator("[data-testid='copy-config-select']");
+  const options = await dropdown.locator("option:not([disabled])").all();
+  expect(options.length).toBeGreaterThan(0);
+
+  await dropdown.selectOption({ index: 1 });
+  await expect(confirmButton).toBeEnabled();
+
+  await confirmButton.click();
+  await expect(copyModal).not.toBeVisible({ timeout: 5000 });
+
+  const submitButton = page.locator("[data-testid='config-submit-button']");
+  await expect(submitButton).toBeEnabled({ timeout: 5000 });
+});
+
+test("config page - copy config modal cancel closes modal", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/config");
+  await page.waitForLoadState("networkidle");
+  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+
+  const datasetCards = page.locator("[data-testid='config-dataset-card']");
+  const cardCount = await datasetCards.count();
+
+  if (cardCount < 2) {
+    test.skip();
+    return;
+  }
+
+  const firstCard = datasetCards.first();
+  const editLink = firstCard.locator("[data-testid='edit-dataset-view-link']");
+  await editLink.click();
+  await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("form", { timeout: 15000 });
+
+  const copyButton = page.locator("[data-testid='copy-config-button']");
+  await copyButton.click();
+
+  const copyModal = page.locator("[data-testid='copy-config-modal']");
+  await expect(copyModal).toBeVisible({ timeout: 5000 });
+
+  const cancelButton = page.locator(
+    "[data-testid='copy-config-cancel-button']",
+  );
+  await cancelButton.click();
+
+  await expect(copyModal).not.toBeVisible({ timeout: 5000 });
+});
+
 test("config page - basemap configuration - max 3 limit", async ({
   authenticatedPageAsAdmin: page,
 }) => {
