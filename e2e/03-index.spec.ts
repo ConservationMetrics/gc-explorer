@@ -164,6 +164,40 @@ test("index page - view filter persists in URL query param", async ({
   }
 });
 
+test("index page - view type filter buttons display icons", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  const mapButton = page.getByRole("button", { name: /^map$/i });
+  const mapButtonExists = (await mapButton.count()) > 0;
+
+  if (mapButtonExists) {
+    const mapIcon = mapButton.locator("svg");
+    await expect(mapIcon).toBeVisible({ timeout: 5000 });
+  }
+
+  const alertsButton = page.getByRole("button", { name: /^alerts$/i });
+  const alertsButtonExists = (await alertsButton.count()) > 0;
+
+  if (alertsButtonExists) {
+    const alertsIcon = alertsButton.locator("svg");
+    await expect(alertsIcon).toBeVisible({ timeout: 5000 });
+  }
+
+  const galleryButton = page.getByRole("button", { name: /^gallery$/i });
+  const galleryButtonExists = (await galleryButton.count()) > 0;
+
+  if (galleryButtonExists) {
+    const galleryIcon = galleryButton.locator("svg");
+    await expect(galleryIcon).toBeVisible({ timeout: 5000 });
+  }
+});
+
 test("index page - search bar filters dataset cards by name", async ({
   authenticatedPageAsAdmin: page,
 }) => {
