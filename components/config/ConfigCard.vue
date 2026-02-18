@@ -7,6 +7,7 @@ import ConfigCollapsibleSection from "./ConfigCollapsibleSection.vue";
 const props = defineProps<{
   tableName: string;
   viewConfig: ViewConfig;
+  configToCopy: ViewConfig | null;
 }>();
 
 const emit = defineEmits(["submitConfig", "removeTableFromConfig"]);
@@ -76,6 +77,19 @@ watch(
     }
   },
   { deep: true },
+);
+
+// Apply copied config from another dataset without resetting the saved baseline
+watch(
+  () => props.configToCopy,
+  (copiedConfig) => {
+    if (copiedConfig) {
+      localConfig.value = JSON.parse(JSON.stringify(copiedConfig));
+      availableViews.value = localConfig.value?.VIEWS
+        ? localConfig.value.VIEWS.split(",")
+        : [];
+    }
+  },
 );
 
 // Form validations and helpers

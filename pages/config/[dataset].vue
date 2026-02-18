@@ -140,6 +140,44 @@ const handleCancelRemove = () => {
   tableNameToRemove.value = null;
 };
 
+// Copy config from another dataset
+const showCopyModal = ref(false);
+const selectedCopySource = ref<string>("");
+const configToCopy = ref<ViewConfig | null>(null);
+
+/**
+ * Returns dataset names available to copy from (excludes the current dataset).
+ *
+ * @returns {string[]} Sorted list of other dataset keys.
+ */
+const otherDatasets = computed(() => {
+  return Object.keys(viewsConfig.value)
+    .filter(
+      (key) =>
+        key !== dataset && Object.keys(viewsConfig.value[key]).length > 0,
+    )
+    .sort();
+});
+
+const handleOpenCopyModal = () => {
+  selectedCopySource.value = "";
+  showCopyModal.value = true;
+};
+
+const handleConfirmCopy = () => {
+  if (!selectedCopySource.value) return;
+  const sourceConfig = viewsConfig.value[selectedCopySource.value];
+  if (sourceConfig) {
+    configToCopy.value = JSON.parse(JSON.stringify(sourceConfig));
+  }
+  showCopyModal.value = false;
+};
+
+const handleCancelCopy = () => {
+  showCopyModal.value = false;
+  selectedCopySource.value = "";
+};
+
 const { t } = useI18n();
 useHead({
   title: "GuardianConnector Explorer: " + t("configuration") + " - " + dataset,
@@ -203,9 +241,33 @@ useHead({
               {{ $t("viewDataset") }}
             </NuxtLink>
           </div>
-          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            {{ $t("configuration") }} - {{ dataset }}
-          </h1>
+          <div class="flex items-center justify-between">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+              {{ $t("configuration") }} - {{ dataset }}
+            </h1>
+            <button
+              v-if="otherDatasets.length > 0"
+              data-testid="copy-config-button"
+              class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              @click="handleOpenCopyModal"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
+              {{ $t("copyConfigFromDataset") }}
+            </button>
+          </div>
         </div>
         <div
           v-if="errorMessage"
@@ -216,6 +278,7 @@ useHead({
         <ConfigCard
           :table-name="dataset"
           :view-config="datasetConfig"
+          :config-to-copy="configToCopy"
           @submit-config="submitConfig"
           @remove-table-from-config="handleRemoveTableFromConfig"
         />
@@ -247,6 +310,63 @@ useHead({
             <button
               class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
               @click="handleCancelRemove"
+            >
+              {{ $t("cancel") }}
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Copy Config Modal -->
+      <div
+        v-if="showCopyModal"
+        data-testid="copy-config-modal"
+        class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      >
+        <div
+          data-testid="copy-config-modal-content"
+          class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+        >
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            {{ $t("copyConfigFromDataset") }}
+          </h3>
+          <p class="text-sm text-gray-600 mb-4">
+            {{ $t("copyConfigDescription") }}
+          </p>
+          <select
+            v-model="selectedCopySource"
+            data-testid="copy-config-select"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors mb-4"
+          >
+            <option value="" disabled>
+              {{ $t("selectDataset") }}
+            </option>
+            <option
+              v-for="dsName in otherDatasets"
+              :key="dsName"
+              :value="dsName"
+            >
+              {{ viewsConfig[dsName]?.DATASET_TABLE || dsName }}
+            </option>
+          </select>
+          <div class="flex gap-3 justify-end">
+            <button
+              data-testid="copy-config-confirm-button"
+              :disabled="!selectedCopySource"
+              class="px-4 py-2 font-medium rounded-lg transition-colors"
+              :class="{
+                'bg-gray-300 text-gray-500 cursor-not-allowed':
+                  !selectedCopySource,
+                'bg-purple-700 hover:bg-purple-800 text-white':
+                  selectedCopySource,
+              }"
+              @click="handleConfirmCopy"
+            >
+              {{ $t("confirm") }}
+            </button>
+            <button
+              data-testid="copy-config-cancel-button"
+              class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
+              @click="handleCancelCopy"
             >
               {{ $t("cancel") }}
             </button>
