@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ConfigCard from "@/components/config/ConfigCard.vue";
 import AppHeader from "@/components/shared/AppHeader.vue";
+import { useCopyConfig } from "@/composables/useCopyConfig";
 import type { Views, ViewConfig } from "@/types/types";
 
 const route = useRoute();
@@ -140,43 +141,15 @@ const handleCancelRemove = () => {
   tableNameToRemove.value = null;
 };
 
-// Copy config from another dataset
-const showCopyModal = ref(false);
-const selectedCopySource = ref<string>("");
-const configToCopy = ref<ViewConfig | null>(null);
-
-/**
- * Returns dataset names available to copy from (excludes the current dataset).
- *
- * @returns {string[]} Sorted list of other dataset keys.
- */
-const otherDatasets = computed(() => {
-  return Object.keys(viewsConfig.value)
-    .filter(
-      (key) =>
-        key !== dataset && Object.keys(viewsConfig.value[key]).length > 0,
-    )
-    .sort();
-});
-
-const handleOpenCopyModal = () => {
-  selectedCopySource.value = "";
-  showCopyModal.value = true;
-};
-
-const handleConfirmCopy = () => {
-  if (!selectedCopySource.value) return;
-  const sourceConfig = viewsConfig.value[selectedCopySource.value];
-  if (sourceConfig) {
-    configToCopy.value = JSON.parse(JSON.stringify(sourceConfig));
-  }
-  showCopyModal.value = false;
-};
-
-const handleCancelCopy = () => {
-  showCopyModal.value = false;
-  selectedCopySource.value = "";
-};
+const {
+  showCopyModal,
+  selectedCopySource,
+  configToCopy,
+  otherDatasets,
+  handleOpenCopyModal,
+  handleConfirmCopy,
+  handleCancelCopy,
+} = useCopyConfig(viewsConfig, dataset);
 
 const { t } = useI18n();
 useHead({
