@@ -114,14 +114,14 @@ test("gallery page - displays images with lightbox functionality", async ({
     .getByTestId("gallery-container")
     .waitFor({ state: "attached", timeout: 10000 });
 
-  // 6. Look for image links (lightbox enabled)
-  const imageLinks = page.locator("a[data-lightbox]");
-  await imageLinks.first().waitFor({ state: "visible", timeout: 10000 });
-  const imageCount = await imageLinks.count();
+  // 6. Look for image links (lightbox enabled) — they start hidden until img loads
+  const visibleImageLinks = page.locator("a[data-lightbox]:not(.hidden)");
+  await visibleImageLinks.first().waitFor({ state: "visible", timeout: 30000 });
+  const imageCount = await visibleImageLinks.count();
 
   if (imageCount > 0) {
     // 7. Click on the first image to open lightbox
-    const firstImage = imageLinks.first();
+    const firstImage = visibleImageLinks.first();
     await firstImage.click();
 
     // 8. Wait for lightbox to appear (lightbox library creates overlay)
