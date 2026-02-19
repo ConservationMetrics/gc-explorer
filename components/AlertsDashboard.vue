@@ -34,10 +34,9 @@ import type {
   AllowedFileExtensions,
   Basemap,
   BasemapConfig,
-  Dataset,
   MapLegendItem,
 } from "@/types/types";
-import type { Feature, Geometry } from "geojson";
+import type { Feature, FeatureCollection } from "geojson";
 
 const { t } = useI18n();
 
@@ -58,7 +57,7 @@ const props = defineProps<{
   mapboxZoom: number;
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
-  mapeoData: Dataset | null;
+  mapeoData: FeatureCollection | null;
   mediaBasePath: string | undefined;
   mediaBasePathAlerts: string | undefined;
   planetApiKey: string | undefined;
@@ -207,73 +206,36 @@ const selectInitialAlertFeature = (alertId: string) => {
 };
 
 /**
- * Selects and zooms to a Mapeo feature based on its document ID
+ * Selects and zooms to a Mapeo feature based on its document ID.
+ * Mapeo data arrives as a GeoJSON FeatureCollection with normalized numeric IDs
+ * (via MurmurHash) for Mapbox feature-state compatibility.
  */
 const selectInitialMapeoFeature = (mapeoDocId: string) => {
-  const mapeoFeature = props.mapeoData?.find((f) => f.id === mapeoDocId);
+  const feature = props.mapeoData?.features.find(
+    (mapeoFeature) =>
+      mapeoFeature.properties?._id === mapeoDocId ||
+      mapeoFeature.properties?.id === mapeoDocId,
+  );
 
-  if (mapeoFeature) {
-    const geometryType = mapeoFeature.geotype as
-      | "Polygon"
-      | "LineString"
-      | "Point"
-      | "MultiPoint"
-      | "MultiLineString"
-      | "MultiPolygon"
-      | "GeometryCollection";
+  if (!feature) return;
 
-    // Create a new GeoJSON Feature object instead of using mapeoFeature directly for several critical reasons:
-    //
-    // 1. DATA FORMAT MISMATCH: Mapeo data comes as raw DataEntry objects, but Mapbox expects proper
-    //    GeoJSON Feature objects with specific structure (type, geometry, properties, id).
-    //
-    // 2. ID NORMALIZATION REQUIREMENT: Mapeo document IDs are 64-bit hex strings (e.g., "0084cdc57c0b0280")
-    //    that exceed JavaScript's safe integer range (2^53 - 1). Mapbox requires feature IDs to be either
-    //    Numbers or strings that can be safely cast to Numbers. Without normalization, Mapbox falls back to
-    //    undefined IDs, causing setFeatureState() to fail with "The feature id parameter must be provided."
-    //    We use the normalized 53-bit safe integer (mapeoFeature.normalizedId) for Mapbox compatibility.
-    //
-    // 3. COORDINATE PARSING: The geometry coordinates are stored as JSON strings in the raw data but need
-    //    to be parsed into array format for GeoJSON compliance.
-    //
-    // 4. FEATURE STATE MANAGEMENT: Mapbox's setFeatureState() requires matching IDs between the GeoJSON
-    //    source and the feature selection. Without this transformation, feature highlighting and selection
-    //    would fail completely.
-    //
-    // For detailed technical explanation of this problem and solution, see:
-    // https://github.com/ConservationMetrics/gc-explorer/pull/109#issuecomment-2985123992
-    // Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
-    const feature: Feature = {
-      type: "Feature",
-      id: mapeoFeature.normalizedId || mapeoFeature.id, // Use normalized ID if available
-      geometry: {
-        type: geometryType,
-        coordinates: JSON.parse(mapeoFeature.geocoordinates),
-      } as Geometry,
-      properties: {
-        ...mapeoFeature,
-      },
-    };
+  selectFeature(feature, "mapeo-data");
+  isMapeo.value = true;
 
-    selectFeature(feature, "mapeo-data");
-    isMapeo.value = true;
-
-    // Zoom to the feature
-    if (feature.geometry.type === "Point") {
-      const [lng, lat] = feature.geometry.coordinates;
-      map.value.flyTo({ center: [lng, lat], zoom: 13 });
-    } else if (
-      feature.geometry.type === "Polygon" ||
-      feature.geometry.type === "MultiPolygon"
-    ) {
-      const bounds = bbox(feature);
-      map.value.fitBounds(bounds, { padding: 50 });
-    } else if (feature.geometry.type === "LineString") {
-      const [lng, lat] = calculateLineStringCentroid(
-        feature.geometry.coordinates,
-      );
-      map.value.flyTo({ center: [lng, lat], zoom: 13 });
-    }
+  if (feature.geometry.type === "Point") {
+    const [lng, lat] = (feature.geometry as GeoJSON.Point).coordinates;
+    map.value.flyTo({ center: [lng, lat], zoom: 13 });
+  } else if (
+    feature.geometry.type === "Polygon" ||
+    feature.geometry.type === "MultiPolygon"
+  ) {
+    const bounds = bbox(feature);
+    map.value.fitBounds(bounds, { padding: 50 });
+  } else if (feature.geometry.type === "LineString") {
+    const [lng, lat] = calculateLineStringCentroid(
+      (feature.geometry as GeoJSON.LineString).coordinates,
+    );
+    map.value.flyTo({ center: [lng, lat], zoom: 13 });
   }
 };
 
@@ -932,36 +894,22 @@ const addAlertsData = async () => {
 };
 
 /**
- * Adds (optional) Mapeo data to the map by creating a GeoJSON source and a layer for Point features.
- * It also sets up event listeners for user interactions with the Mapeo data features.
+ * Adds Mapeo data to the map. The data arrives as a GeoJSON FeatureCollection
+ * from the server (built by the shared spatial payload module), so it is passed
+ * directly to the map source with no reconstruction.
  */
 const addMapeoData = () => {
-  if (!props.mapeoData) {
+  if (!props.mapeoData || props.mapeoData.features.length === 0) {
     return;
   }
-  // Create a GeoJSON source with all the features
-  const geoJsonSource = {
-    type: "FeatureCollection",
-    features: props.mapeoData.map((feature) => ({
-      id: feature.normalizedId || feature.id, // Use normalized ID if available, fallback to original ID
-      type: "Feature",
-      geometry: {
-        type: feature.geotype,
-        coordinates: JSON.parse(feature.geocoordinates),
-      },
-      properties: {
-        ...feature,
-      },
-    })),
-  };
 
-  mapeoDataColor.value = props.mapeoData[0]["filter-color"];
+  mapeoDataColor.value =
+    props.mapeoData.features[0]?.properties?.["filter-color"];
 
-  // Add the source to the map
   if (!map.value.getSource("mapeo-data")) {
     map.value.addSource("mapeo-data", {
       type: "geojson",
-      data: geoJsonSource,
+      data: props.mapeoData,
     });
   }
 
