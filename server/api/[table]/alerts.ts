@@ -10,7 +10,7 @@ import {
   filterUnwantedKeys,
   filterGeoData,
 } from "@/server/dataProcessing/filterData";
-import { buildMinimalFeatureCollection } from "@/server/utils/spatialPayload";
+import { buildMinimalFeatureCollection } from "~/server/utils/formatSpatialData";
 import { validatePermissions } from "@/utils/auth";
 import { parseBasemaps } from "@/server/utils/basemaps";
 

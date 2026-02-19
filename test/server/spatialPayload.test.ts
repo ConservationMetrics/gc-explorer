@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildMinimalFeatureCollection } from "@/server/utils/spatialPayload";
+import { buildMinimalFeatureCollection } from "~/server/utils/formatSpatialData";
 
 describe("buildMinimalFeatureCollection", () => {
   const sampleData = [

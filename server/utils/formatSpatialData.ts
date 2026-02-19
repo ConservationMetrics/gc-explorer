@@ -8,7 +8,7 @@ import {
 import type { Feature, FeatureCollection, Geometry, Position } from "geojson";
 import type { DataEntry } from "@/types/types";
 
-export interface SpatialPayloadOptions {
+export interface SpatialDataOptions {
   idField?: string;
   includeProperties?: string[];
   includeAllProperties?: boolean;

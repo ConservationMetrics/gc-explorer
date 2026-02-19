@@ -4,7 +4,7 @@ import {
   filterGeoData,
 } from "@/server/dataProcessing/filterData";
 import { prepareMapStatistics } from "@/server/dataProcessing/transformData";
-import { buildMinimalFeatureCollection } from "@/server/utils/spatialPayload";
+import { buildMinimalFeatureCollection } from "~/server/utils/formatSpatialData";
 import { validatePermissions } from "@/utils/auth";
 import { parseBasemaps } from "@/server/utils/basemaps";
 
