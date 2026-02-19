@@ -46,8 +46,11 @@ export default defineEventHandler(async (event: H3Event) => {
     const filterColumn = viewsConfig[table].FRONT_END_FILTER_COLUMN;
 
     // Process geodata
+    const includeProperties = [colorColumn, iconColumn].filter(
+      (column): column is string => !!column,
+    );
     const featureCollection = buildMinimalFeatureCollection(filteredGeoData, {
-      includeAllProperties: true,
+      includeProperties,
       filterColumn,
     });
 

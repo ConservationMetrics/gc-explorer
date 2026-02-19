@@ -894,9 +894,8 @@ const addAlertsData = async () => {
 };
 
 /**
- * Adds (optional) Mapeo data to the map. The data arrives as a GeoJSON FeatureCollection
- * from the server (built by the shared spatial payload module), so it is passed
- * directly to the map source with no reconstruction.
+ * Adds (optional) Mapeo data to the map as a GeoJSON FeatureCollection source
+ * with associated circle and symbol layers.
  */
 const addMapeoData = () => {
   if (!props.mapeoData || props.mapeoData.features.length === 0) {
