@@ -193,7 +193,7 @@ const addDataToMap = () => {
           "icon-size": [
             "case",
             ["==", ["slice", ["get", props.iconColumn], -4], ".png"],
-            1.0,
+            1.0 , // default size if neither .png nor .svg,
             ["==", ["slice", ["get", props.iconColumn], -4], ".svg"],
             0.2,
             1.0,
@@ -342,7 +342,7 @@ const addDataToMap = () => {
     );
   });
 };
-
+/** Load icon images when using icon mode */
 const loadIconImages = async () => {
   if (!props.iconColumn || !props.mediaBasePathIcons || !map.value) return;
 
@@ -380,7 +380,7 @@ const loadIconImages = async () => {
     }
   }
 };
-
+/** Prepare map canvas content by adding data and legend */
 const prepareMapCanvasContent = async () => {
   // For initial load, load icons if needed
   if (showIcons.value && props.iconColumn && props.mediaBasePathIcons) {
@@ -390,6 +390,7 @@ const prepareMapCanvasContent = async () => {
   prepareMapLegendContent();
 };
 
+/** Filter data based on selected values from DataFilter component */
 const filterValues = (values: FilterValues) => {
   if (values.includes("null")) {
     filteredFeatureCollection.value = { ...props.mapData };
