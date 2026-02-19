@@ -160,7 +160,7 @@ const addDataToMap = () => {
     }
   }
 
-  /// Add the source to the map
+  // Add the source to the map
   if (!map.value.getSource("data-source")) {
     map.value.addSource("data-source", {
       type: "geojson",
@@ -325,6 +325,7 @@ const addDataToMap = () => {
           geometry: clickedFeature.geometry,
           properties: { ...clickedFeature.properties },
         };
+        // Remove filter-color from properties
         delete featureGeojson.properties!["filter-color"];
         selectedFeatureOriginal.value = featureGeojson;
 
@@ -335,6 +336,7 @@ const addDataToMap = () => {
             const displayRecord = { ...record };
             delete displayRecord["filter-color"];
 
+            // Rewrite coordinates string from [long, lat] to lat, long, removing brackets for display
             if (displayRecord.geocoordinates) {
               displayRecord.geocoordinates =
                 prepareCoordinatesForSelectedFeature(
@@ -358,6 +360,7 @@ const addDataToMap = () => {
     );
   });
 };
+
 /** Load icon images when using icon mode */
 const loadIconImages = async () => {
   if (!props.iconColumn || !props.mediaBasePathIcons || !map.value) return;
@@ -396,6 +399,7 @@ const loadIconImages = async () => {
     }
   }
 };
+
 /** Prepare map canvas content by adding data and legend */
 const prepareMapCanvasContent = async () => {
   // For initial load, load icons if needed
@@ -418,11 +422,13 @@ const filterValues = (values: FilterValues) => {
       ),
     };
   }
+  // Update the map data
   addDataToMap();
 };
 
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
 
+/** Handle basemap change and update map style */
 const handleBasemapChange = (newBasemap: Basemap) => {
   changeMapStyle(map.value, newBasemap, props.planetApiKey);
   currentBasemap.value = newBasemap;
@@ -436,6 +442,7 @@ const handleBasemapChange = (newBasemap: Basemap) => {
 
 const mapLegendContent = ref();
 
+/** Prepare map legend content based on layer IDs */
 const prepareMapLegendContent = () => {
   if (!props.mapLegendLayerIds) {
     return;
@@ -448,10 +455,12 @@ const prepareMapLegendContent = () => {
   });
 };
 
+/** Toggle visibility of a map layer */
 const toggleLayerVisibility = (item: MapLegendItem) => {
   utilsToggleLayerVisibility(map.value, item);
 };
 
+/** Reset the map to initial state */
 const resetToInitialState = () => {
   selectedFeature.value = undefined;
   selectedFeatureOriginal.value = undefined;
@@ -468,6 +477,7 @@ const resetToInitialState = () => {
   });
 };
 
+/** Handle sidebar close */
 const handleSidebarClose = () => {
   showSidebar.value = false;
   selectedFeature.value = undefined;
@@ -476,6 +486,7 @@ const handleSidebarClose = () => {
   showIntroPanel.value = true;
 };
 
+/** Toggle between icons and points */
 const handleToggleIcons = async () => {
   if (!map.value) return;
 

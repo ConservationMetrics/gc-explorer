@@ -941,6 +941,7 @@ const addMapeoData = () => {
   mapeoDataColor.value =
     props.mapeoData.features[0]?.properties?.["filter-color"];
 
+  // Add the source to the map
   if (!map.value.getSource("mapeo-data")) {
     map.value.addSource("mapeo-data", {
       type: "geojson",
@@ -958,6 +959,7 @@ const addMapeoData = () => {
       paint: {
         "circle-radius": 6,
         "circle-color": [
+          // Use filter-color for fallback if selected is false
           "case",
           ["boolean", ["feature-state", "selected"], false],
           "#FFFF00",
@@ -969,6 +971,7 @@ const addMapeoData = () => {
     });
   }
 
+  // Add event listeners
   const interactiveLayers = MAPEO_INTERACTIVE_LAYER_IDS.filter((layerId) =>
     map.value.getLayer(layerId),
   );
@@ -1001,8 +1004,10 @@ const addMapeoData = () => {
         if (e.features && e.features.length > 0) {
           const feature = e.features[0];
           if (multiSelectMode.value) {
+            // Add to selected sources instead of selecting for sidebar
             handleMultiSelectFeature(feature, layerId);
           } else {
+            // Normal selection behavior
             selectFeature(feature, layerId);
           }
         }
