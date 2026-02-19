@@ -29,9 +29,13 @@ import type { FeatureCollection } from "geojson";
  *
  * Mapbox requires feature IDs to be either a Number or a string that can be
  * safely cast to a Number, but Mapeo IDs are 64-bit hex strings that exceed
- * JavaScript's safe integer range.
+ * JavaScript's safe integer range. This function uses MurmurHash to generate
+ * a 32-bit integer from the 64-bit hex string, ensuring compatibility with Mapbox.
  *
- * Reference: https://stackoverflow.com/questions/72040370
+ * Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
+ *
+ * @param {DataEntry} entry - A raw database row containing _id or id as a 16-character hex string (e.g., "0084cdc57c0b0280")
+ * @returns {number | undefined} A 32-bit integer for use with Mapbox feature state management, or undefined if the ID is not a valid Mapeo format.
  */
 const generateMapboxIdFromMapeoFeatureId = (
   entry: DataEntry,
