@@ -154,7 +154,7 @@ const addDataToMap = () => {
     }
   }
 
-  /// Add the source to the map
+  // Add the source to the map
   if (!map.value.getSource("data-source")) {
     map.value.addSource("data-source", {
       type: "geojson",
