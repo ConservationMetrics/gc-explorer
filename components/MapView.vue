@@ -142,7 +142,7 @@ onMounted(() => {
  */
 const addDataToMap = () => {
   if (map.value) {
-    // Remove existing data layers from the map
+    // Remove existing data layers and sources from the map
     map.value.getStyle().layers.forEach((layer: Layer) => {
       if (layer.id.startsWith("data-layer")) {
         if (map.value.getLayer(layer.id)) {
@@ -155,7 +155,7 @@ const addDataToMap = () => {
     }
   }
 
-  // Create a GeoJSON source with all the features
+  /// Add the source to the map
   if (!map.value.getSource("data-source")) {
     map.value.addSource("data-source", {
       type: "geojson",
@@ -193,7 +193,7 @@ const addDataToMap = () => {
           "icon-size": [
             "case",
             ["==", ["slice", ["get", props.iconColumn], -4], ".png"],
-            1.0 , // default size if neither .png nor .svg,
+            1.0, // default size if neither .png nor .svg,
             ["==", ["slice", ["get", props.iconColumn], -4], ".svg"],
             0.2,
             1.0,

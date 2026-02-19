@@ -221,7 +221,7 @@ const selectInitialMapeoFeature = (mapeoDocId: string) => {
 
   selectFeature(feature, "mapeo-data");
   isMapeo.value = true;
-
+  // Zoom to the feature
   if (feature.geometry.type === "Point") {
     const [lng, lat] = (feature.geometry as GeoJSON.Point).coordinates;
     map.value.flyTo({ center: [lng, lat], zoom: 13 });

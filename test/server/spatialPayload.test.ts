@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildMinimalFeatureCollection } from "~/server/utils/formatSpatialData";
+import { buildMinimalFeatureCollection } from "@/server/utils/formatSpatialData";
 
 describe("buildMinimalFeatureCollection", () => {
   const sampleData = [
@@ -107,6 +107,50 @@ describe("buildMinimalFeatureCollection", () => {
 
     expect(result.features[0].id).toBe(100);
     expect(result.features[1].id).toBe(200);
+  });
+
+  it("normalizes Mapeo hex IDs to 32-bit integers when isMapeoData is true", () => {
+    const mapeoData = [
+      {
+        _id: "0084cdc57c0b0280",
+        g__type: "Point",
+        g__coordinates: "[10.5, 45.2]",
+        name: "Mapeo observation",
+      },
+      {
+        id: "00a1b2c3d4e5f678",
+        g__type: "Point",
+        g__coordinates: "[11.0, 46.0]",
+        name: "Mapeo observation (id field)",
+      },
+    ];
+
+    const result = buildMinimalFeatureCollection(mapeoData, {
+      isMapeoData: true,
+    });
+
+    expect(result.features).toHaveLength(2);
+    result.features.forEach((feature) => {
+      expect(typeof feature.id).toBe("number");
+      expect(Number.isInteger(feature.id)).toBe(true);
+    });
+  });
+
+  it("skips Mapeo ID normalization for non-hex IDs", () => {
+    const nonHexData = [
+      {
+        _id: "not-a-hex-id",
+        g__type: "Point",
+        g__coordinates: "[10.5, 45.2]",
+      },
+    ];
+
+    const result = buildMinimalFeatureCollection(nonHexData, {
+      isMapeoData: true,
+    });
+
+    expect(result.features).toHaveLength(1);
+    expect(result.features[0].id).toBeUndefined();
   });
 
   it("uses custom idField", () => {

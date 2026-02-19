@@ -14,6 +14,20 @@ export interface SpatialDataOptions {
   includeAllProperties?: boolean;
   filterColumn?: string;
   generateId?: (entry: DataEntry) => number | string | undefined;
+  /**
+   * When true, enables Mapeo-specific ID normalization. Mapeo document IDs are
+   * 64-bit hex strings (e.g. "0084cdc57c0b0280") that exceed JavaScript's safe
+   * integer range (2^53 - 1). Mapbox requires feature IDs to be either Numbers
+   * or strings safely castable to Numbers; without normalization, Mapbox falls
+   * back to undefined IDs and setFeatureState() fails.
+   *
+   * This option resolves the ID from both `_id` and `id` fields (Mapeo data may
+   * use either), validates the 16-char hex format, and hashes via MurmurHash to
+   * produce a safe 32-bit integer.
+   *
+   * Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
+   */
+  isMapeoData?: boolean;
 }
 
 /**
@@ -23,12 +37,12 @@ export interface SpatialDataOptions {
  * is specified, a deterministic "filter-color" is assigned per unique value.
  *
  * @param {DataEntry[]} data - Raw database rows, each expected to have g__type and g__coordinates.
- * @param {SpatialPayloadOptions} options - Controls which properties to include, ID generation, and filter coloring.
+ * @param {SpatialDataOptions} options - Controls which properties to include, ID generation, and filter coloring.
  * @returns {FeatureCollection} A valid GeoJSON FeatureCollection ready for Mapbox consumption.
  */
 export const buildMinimalFeatureCollection = (
   data: DataEntry[],
-  options: SpatialPayloadOptions = {},
+  options: SpatialDataOptions = {},
 ): FeatureCollection => {
   const {
     idField = "_id",
@@ -36,6 +50,7 @@ export const buildMinimalFeatureCollection = (
     includeAllProperties = false,
     filterColumn,
     generateId,
+    isMapeoData = false,
   } = options;
 
   const colorMap = new Map<string, string>();
@@ -63,8 +78,19 @@ export const buildMinimalFeatureCollection = (
 
     const rawId = entry[idField] as string | undefined;
     let featureId: number | string | undefined;
+
     if (generateId) {
       featureId = generateId(entry);
+    } else if (isMapeoData) {
+      // Mapeo IDs can be in _id or id; validate 16-char hex before hashing
+      const mapeoId = (entry._id || entry.id) as string | undefined;
+      if (
+        mapeoId &&
+        typeof mapeoId === "string" &&
+        mapeoId.match(/^[0-9a-fA-F]{16}$/)
+      ) {
+        featureId = murmurhash.v3(mapeoId);
+      }
     } else if (rawId) {
       featureId = murmurhash.v3(rawId);
     }

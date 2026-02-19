@@ -1,5 +1,3 @@
-import murmurhash from "murmurhash";
-
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import {
   prepareAlertData,
@@ -21,35 +19,6 @@ import type {
   AlertsMetadata,
 } from "@/types/types";
 import type { FeatureCollection } from "geojson";
-
-/**
- * Converts a Mapeo document ID (64-bit hex string) to a 32-bit integer
- * using MurmurHash for Mapbox feature state management. This is a lossy,
- * non-reversible operation.
- *
- * Mapbox requires feature IDs to be either a Number or a string that can be
- * safely cast to a Number, but Mapeo IDs are 64-bit hex strings that exceed
- * JavaScript's safe integer range. This function uses MurmurHash to generate
- * a 32-bit integer from the 64-bit hex string, ensuring compatibility with Mapbox.
- *
- * Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
- *
- * @param {DataEntry} entry - A raw database row containing _id or id as a 16-character hex string (e.g., "0084cdc57c0b0280")
- * @returns {number | undefined} A 32-bit integer for use with Mapbox feature state management, or undefined if the ID is not a valid Mapeo format.
- */
-const generateMapboxIdFromMapeoFeatureId = (
-  entry: DataEntry,
-): number | undefined => {
-  const mapeoId = entry._id || entry.id;
-  if (
-    !mapeoId ||
-    typeof mapeoId !== "string" ||
-    !mapeoId.match(/^[0-9a-fA-F]{16}$/)
-  ) {
-    return undefined;
-  }
-  return murmurhash.v3(mapeoId);
-};
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -120,7 +89,7 @@ export default defineEventHandler(async (event: H3Event) => {
         idField: "_id",
         includeAllProperties: true,
         filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
-        generateId: generateMapboxIdFromMapeoFeatureId,
+        isMapeoData: true,
       });
     }
 
