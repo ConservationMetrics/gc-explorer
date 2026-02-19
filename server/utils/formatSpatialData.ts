@@ -120,8 +120,8 @@ export const buildMinimalFeatureCollection = (
         colorMap.set(filterValue, getRandomColor());
       }
       properties["filter-color"] = colorMap.get(filterValue) ?? "#3333FF";
-      // Preserve null for entries without a filter value so DataFilter
-      // can distinguish them and display "No column entry"
+      // Preserve null for entries without a filter value so it can be
+      // distinguished and displayed as "No column entry"
       properties[filterColumn] = rawFilterValue != null ? rawFilterValue : null;
     } else {
       // Always assign a default filter-color so Mapbox paint expressions

@@ -95,19 +95,18 @@ onMounted(() => {
     pitch: props.mapboxPitch || 0,
     bearing: props.mapboxBearing || 0,
   });
-
+  // Apply 3D terrain whenever the style loads
   let controlsAdded = false;
 
-  // Apply 3D terrain whenever the style loads
+  // Apply terrain whenever style loads (initial load and style changes)
   map.value.on("style.load", () => {
     applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
   });
 
-  // Apply terrain whenever style loads (initial load and style changes)
   map.value.on("load", () => {
+    // Add 3D Terrain if set (for initial load)
     applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
 
-    // Add 3D Terrain if set (for initial load)
     // Only add controls once (on first load, not on style changes)
     if (!controlsAdded) {
       prepareMapCanvasContent();
