@@ -120,6 +120,7 @@ useHead({
         :media-base-path-icons="mediaBasePathIcons"
         :media-column="mediaColumn"
         :planet-api-key="planetApiKey"
+        :table="table"
       />
     </ClientOnly>
   </div>

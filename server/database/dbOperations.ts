@@ -77,6 +77,35 @@ export const fetchData = async (
   return { mainData, columnsData, metadata };
 };
 
+/**
+ * Fetches a single raw record from the warehouse database by its _id column.
+ * Returns the record exactly as stored — no transformations or filtering.
+ *
+ * @param {string} table - The table name to query.
+ * @param {string} recordId - The _id value of the record to fetch.
+ * @returns {Promise<DataEntry | null>} The raw record, or null if not found.
+ */
+export const fetchRecord = async (
+  table: string,
+  recordId: string,
+): Promise<DataEntry | null> => {
+  const cleanTableName = table.replace(/"/g, "");
+  const tableExists = await checkTableExists(cleanTableName);
+  if (!tableExists) {
+    throw new Error("Table does not exist");
+  }
+
+  const result = await warehouseDb.execute(sql`
+    SELECT * FROM ${sql.identifier(cleanTableName)} WHERE _id = ${recordId} LIMIT 1
+  `);
+
+  if (!result || result.length === 0) {
+    return null;
+  }
+
+  return result[0] as DataEntry;
+};
+
 export const fetchTableNames = async (): Promise<string[]> => {
   try {
     const result = await warehouseDb.execute(sql`

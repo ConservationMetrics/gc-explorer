@@ -18,6 +18,8 @@ import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type { FeatureCollection, Feature } from "geojson";
+import { useRecordCache } from "@/composables/useRecordCache";
+
 import type {
   AllowedFileExtensions,
   Basemap,
@@ -52,11 +54,15 @@ const props = defineProps<{
   mediaBasePathIcons?: string;
   mediaColumn?: string;
   planetApiKey?: string;
+  table: string;
 }>();
+
+const { fetchRecord } = useRecordCache();
 
 const map = ref();
 const selectedFeature = ref<DataEntry>();
 const selectedFeatureOriginal = ref<Feature>();
+const selectedFeatureLoading = ref(false);
 const showSidebar = ref(true);
 const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
@@ -301,42 +307,53 @@ const addDataToMap = () => {
     map.value.on(
       "click",
       layerId,
-      (e: MapMouseEvent) => {
+      async (e: MapMouseEvent) => {
         if (!e.features || e.features.length === 0) return;
         const clickedFeature = e.features[0];
         if (!clickedFeature.properties) return;
 
-        // Remove filter-color from properties
-        const featureProperties = { ...clickedFeature.properties };
-        delete featureProperties["filter-color"];
+        const recordId = clickedFeature.properties._id as string | undefined;
 
-        // Create display feature with formatted coordinates
-        if (featureProperties.geocoordinates) {
-          // Rewrite coordinates string from [long, lat] to lat, long, removing brackets for display
-          featureProperties.geocoordinates =
-            prepareCoordinatesForSelectedFeature(
-              featureProperties.geocoordinates,
-            );
-        } else if (
-          clickedFeature.geometry.type === "Point" &&
-          clickedFeature.geometry.coordinates
-        ) {
-          const [lng, lat] = clickedFeature.geometry.coordinates;
-          featureProperties.geocoordinates = `${lat}, ${lng}`;
-        }
+        // Open sidebar immediately with loading state
+        selectedFeature.value = undefined;
+        selectedFeatureLoading.value = true;
+        showSidebar.value = true;
+        showIntroPanel.value = false;
 
-        // Create GeoJSON Feature for download
+        // Create GeoJSON Feature for download (available from the minimal payload)
         const featureGeojson: Feature = {
           type: "Feature",
           geometry: clickedFeature.geometry,
           properties: { ...clickedFeature.properties },
         };
         delete featureGeojson.properties!["filter-color"];
-
-        selectedFeature.value = featureProperties;
         selectedFeatureOriginal.value = featureGeojson;
-        showSidebar.value = true;
-        showIntroPanel.value = false;
+
+        // Fetch the full raw record from the single-record endpoint
+        if (recordId) {
+          const record = await fetchRecord(props.table, recordId);
+          if (record) {
+            const displayRecord = { ...record };
+            delete displayRecord["filter-color"];
+
+            if (displayRecord.geocoordinates) {
+              displayRecord.geocoordinates =
+                prepareCoordinatesForSelectedFeature(
+                  displayRecord.geocoordinates,
+                );
+            } else if (
+              clickedFeature.geometry.type === "Point" &&
+              clickedFeature.geometry.coordinates
+            ) {
+              const [lng, lat] = clickedFeature.geometry.coordinates;
+              displayRecord.geocoordinates = `${lat}, ${lng}`;
+            }
+
+            selectedFeature.value = displayRecord;
+          }
+        }
+
+        selectedFeatureLoading.value = false;
       },
       { passive: true },
     );
@@ -438,6 +455,7 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
 const resetToInitialState = () => {
   selectedFeature.value = undefined;
   selectedFeatureOriginal.value = undefined;
+  selectedFeatureLoading.value = false;
   showSidebar.value = true;
   showIntroPanel.value = true;
 
@@ -454,6 +472,7 @@ const handleSidebarClose = () => {
   showSidebar.value = false;
   selectedFeature.value = undefined;
   selectedFeatureOriginal.value = undefined;
+  selectedFeatureLoading.value = false;
   showIntroPanel.value = true;
 };
 
@@ -513,6 +532,7 @@ onBeforeUnmount(() => {
     <ViewSidebar
       :allowed-file-extensions="allowedFileExtensions"
       :feature="selectedFeature"
+      :feature-loading="selectedFeatureLoading"
       :feature-geojson="selectedFeatureOriginal"
       :file-paths="
         selectedFeature

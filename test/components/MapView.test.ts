@@ -93,6 +93,7 @@ const baseProps: InstanceType<typeof MapView>["$props"] = {
   mapData: baseMapData,
   mediaBasePath: "/media",
   planetApiKey: "",
+  table: "test_table",
 };
 
 Object.assign(globalThis, {
@@ -103,6 +104,29 @@ Object.assign(globalThis, {
   onMounted,
   onBeforeUnmount,
   nextTick,
+});
+
+// Mock useRecordCache composable
+const mockFetchRecord = vi.fn().mockResolvedValue({
+  _id: "1",
+  status: "active",
+  name: "Full Record",
+  geocoordinates: "[0, 0]",
+});
+
+vi.mock("@/composables/useRecordCache", () => ({
+  useRecordCache: () => ({
+    fetchRecord: mockFetchRecord,
+    clearCache: vi.fn(),
+    cacheSize: computed(() => 0),
+  }),
+}));
+
+// Mock useRuntimeConfig for useRecordCache
+Object.assign(globalThis, {
+  useRuntimeConfig: () => ({
+    public: { appApiKey: "test-key" },
+  }),
 });
 
 // Mock vue-router for route & router injections
@@ -130,6 +154,13 @@ const globalConfig = {
 describe("MapView component", () => {
   beforeEach(() => {
     mapboxMock.reset();
+    mockFetchRecord.mockClear();
+    mockFetchRecord.mockResolvedValue({
+      _id: "1",
+      status: "active",
+      name: "Full Record",
+      geocoordinates: "[0, 0]",
+    });
     document.body.innerHTML = '<div id="map"></div>';
   });
 
@@ -290,7 +321,7 @@ describe("MapView component", () => {
     expect(vm.filteredFeatureCollection.features).toHaveLength(2);
   });
 
-  it("selects a feature and opens sidebar when clicked", async () => {
+  it("selects a feature and fetches full record on click", async () => {
     const wrapper = mount(MapView, {
       props: baseProps,
       global: {
@@ -298,7 +329,7 @@ describe("MapView component", () => {
         stubs: {
           ...globalConfig.stubs,
           ViewSidebar: {
-            props: ["showSidebar", "feature"],
+            props: ["showSidebar", "feature", "featureLoading"],
             template:
               "<div v-if='showSidebar'>Sidebar {{ feature?._id }}</div>",
           },
@@ -328,10 +359,15 @@ describe("MapView component", () => {
     const vm = wrapper.vm as unknown as {
       showSidebar: boolean;
       selectedFeature: Record<string, unknown> | undefined;
+      selectedFeatureLoading: boolean;
     };
     expect(vm.showSidebar).toBe(true);
+    // fetchRecord was called with the table and record ID
+    expect(mockFetchRecord).toHaveBeenCalledWith("test_table", "1");
+    // Full record is populated from the API response
     expect(vm.selectedFeature?._id).toBe("1");
     expect(vm.selectedFeature?.["filter-color"]).toBeUndefined();
+    expect(vm.selectedFeatureLoading).toBe(false);
   });
 
   it("closes sidebar and resets selection", async () => {

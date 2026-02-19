@@ -26,6 +26,7 @@ import IncidentsControls from "@/components/alerts/IncidentsControls.vue";
 import { useIncidents } from "@/composables/useIncidents";
 import { useFeatureSelection } from "@/composables/useFeatureSelection";
 import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
+import { useRecordCache } from "@/composables/useRecordCache";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
@@ -58,9 +59,11 @@ const props = defineProps<{
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
   mapeoData: FeatureCollection | null;
+  mapeoTable?: string;
   mediaBasePath: string | undefined;
   mediaBasePathAlerts: string | undefined;
   planetApiKey: string | undefined;
+  table: string;
 }>();
 
 const localAlertsData = ref<Feature | AlertsData>(props.alertsData);
@@ -77,6 +80,9 @@ const route = useRoute();
 const router = useRouter();
 
 const isMapeo = ref(false);
+const selectedFeatureLoading = ref(false);
+
+const { fetchRecord } = useRecordCache();
 
 // Get API key from runtime config
 const config = useRuntimeConfig();
@@ -136,6 +142,36 @@ const {
   showSidebar,
   showIntroPanel,
   isMapeo,
+);
+
+// Fetch full Mapeo record on demand when a Mapeo feature is selected.
+// Clears the feature display and shows a loading skeleton while the
+// full record is fetched, preventing a jarring flash of stale data.
+let skipNextWatch = false;
+
+watch(
+  () => selectedFeature.value,
+  async (feature) => {
+    if (skipNextWatch) {
+      skipNextWatch = false;
+      return;
+    }
+    if (!feature || !isMapeo.value || !props.mapeoTable) return;
+
+    const recordId = feature._id || feature.id;
+    if (!recordId) return;
+
+    const minimalFeature = { ...feature };
+    selectedFeature.value = null;
+    selectedFeatureLoading.value = true;
+
+    const fullRecord = await fetchRecord(props.mapeoTable, recordId);
+
+    // Skip the next watcher trigger caused by setting the full record
+    skipNextWatch = true;
+    selectedFeature.value = fullRecord ?? minimalFeature;
+    selectedFeatureLoading.value = false;
+  },
 );
 
 // Use alerts date filter composable
@@ -1452,6 +1488,7 @@ onBeforeUnmount(() => {
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
       :feature="selectedFeature"
+      :feature-loading="selectedFeatureLoading"
       :feature-geojson="localAlertsData"
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
