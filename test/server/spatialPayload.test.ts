@@ -100,6 +100,61 @@ describe("buildMinimalFeatureCollection", () => {
     expect(colors[0]).not.toBe(colors[1]);
   });
 
+  it("preserves null for entries missing a filter column value", () => {
+    const dataWithMissingFilter = [
+      {
+        _id: "rec-1",
+        g__type: "Point",
+        g__coordinates: "[10.5, 45.2]",
+        category: "park",
+      },
+      {
+        _id: "rec-2",
+        g__type: "Point",
+        g__coordinates: "[11.0, 46.0]",
+      },
+    ];
+
+    const result = buildMinimalFeatureCollection(dataWithMissingFilter, {
+      filterColumn: "category",
+    });
+
+    expect(result.features[0].properties?.category).toBe("park");
+    expect(result.features[1].properties?.category).toBeNull();
+    expect(result.features[1].properties?.["filter-color"]).toBe("#3333FF");
+  });
+
+  it("omits empty/null includeProperties so Mapbox coalesce falls through", () => {
+    const dataWithEmptyColor = [
+      {
+        _id: "rec-1",
+        g__type: "Point",
+        g__coordinates: "[10.5, 45.2]",
+        color: "#FF0000",
+      },
+      {
+        _id: "rec-2",
+        g__type: "Point",
+        g__coordinates: "[11.0, 46.0]",
+        color: "",
+      },
+      {
+        _id: "rec-3",
+        g__type: "Point",
+        g__coordinates: "[12.0, 47.0]",
+        color: null,
+      },
+    ];
+
+    const result = buildMinimalFeatureCollection(dataWithEmptyColor, {
+      includeProperties: ["color"],
+    });
+
+    expect(result.features[0].properties?.color).toBe("#FF0000");
+    expect(result.features[1].properties).not.toHaveProperty("color");
+    expect(result.features[2].properties).not.toHaveProperty("color");
+  });
+
   it("uses custom generateId when provided", () => {
     const result = buildMinimalFeatureCollection(sampleData, {
       generateId: (entry) => Number(entry._id.replace("rec-", "")) * 100,

@@ -107,19 +107,27 @@ export const buildMinimalFeatureCollection = (
       }
     } else {
       for (const prop of includeProperties) {
-        if (prop in entry) {
+        if (prop in entry && entry[prop] != null && entry[prop] !== "") {
           properties[prop] = entry[prop];
         }
       }
     }
 
     if (filterColumn) {
-      const filterValue = (entry[filterColumn] ?? "") as string;
+      const rawFilterValue = entry[filterColumn];
+      const filterValue = (rawFilterValue ?? "") as string;
       if (filterValue && !colorMap.has(filterValue)) {
         colorMap.set(filterValue, getRandomColor());
       }
       properties["filter-color"] = colorMap.get(filterValue) ?? "#3333FF";
-      properties[filterColumn] = filterValue;
+      // Preserve null for entries without a filter value so DataFilter
+      // can distinguish them and display "No column entry"
+      properties[filterColumn] = rawFilterValue != null ? rawFilterValue : null;
+    } else {
+      // Always assign a default filter-color so Mapbox paint expressions
+      // that reference it (e.g. ["get", "filter-color"]) don't resolve
+      // to null and fall back to black
+      properties["filter-color"] = "#3333FF";
     }
 
     features.push({
