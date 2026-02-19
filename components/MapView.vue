@@ -319,7 +319,7 @@ const addDataToMap = () => {
         showSidebar.value = true;
         showIntroPanel.value = false;
 
-        // Create GeoJSON Feature for download (available from the minimal payload)
+        // Create GeoJSON Feature for download
         const featureGeojson: Feature = {
           type: "Feature",
           geometry: clickedFeature.geometry,
