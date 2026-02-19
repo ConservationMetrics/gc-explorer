@@ -16,7 +16,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "toggleIcons"): void;
 }>();
-
+/** Get data source from first item if available */
 const dataSource = computed(() => {
   if (props.mapFeatureCollection.features.length === 0) return null;
 

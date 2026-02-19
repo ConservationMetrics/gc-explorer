@@ -143,7 +143,7 @@ onMounted(() => {
 
 /**
  * Adds the FeatureCollection directly to the map as a GeoJSON source and
- * creates layers for each geometry type. No reconstruction from flat arrays.
+ * creates layers for each geometry type.
  */
 const addDataToMap = () => {
   if (map.value) {
