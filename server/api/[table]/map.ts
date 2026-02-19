@@ -4,7 +4,7 @@ import {
   filterGeoData,
 } from "@/server/dataProcessing/filterData";
 import { prepareMapStatistics } from "@/server/dataProcessing/transformData";
-import { buildMinimalFeatureCollection } from "@/server/utils/spatialPayload";
+import { buildMinimalFeatureCollection } from "~/server/utils/formatSpatialData";
 import { validatePermissions } from "@/utils/auth";
 import { parseBasemaps } from "@/server/utils/basemaps";
 
@@ -45,11 +45,10 @@ export default defineEventHandler(async (event: H3Event) => {
     const iconColumn = viewsConfig[table].ICON_COLUMN;
     const filterColumn = viewsConfig[table].FRONT_END_FILTER_COLUMN;
 
-    // Process geodata — only include fields needed for map rendering and styling
+    // Process geodata
     const includeProperties = [colorColumn, iconColumn].filter(
       (column): column is string => !!column,
     );
-
     const featureCollection = buildMinimalFeatureCollection(filteredGeoData, {
       includeProperties,
       filterColumn,

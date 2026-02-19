@@ -257,7 +257,7 @@ const selectInitialMapeoFeature = (mapeoDocId: string) => {
 
   selectFeature(feature, "mapeo-data");
   isMapeo.value = true;
-
+  // Zoom to the feature
   if (feature.geometry.type === "Point") {
     const [lng, lat] = (feature.geometry as GeoJSON.Point).coordinates;
     map.value.flyTo({ center: [lng, lat], zoom: 13 });
@@ -930,9 +930,8 @@ const addAlertsData = async () => {
 };
 
 /**
- * Adds Mapeo data to the map. The data arrives as a GeoJSON FeatureCollection
- * from the server (built by the shared spatial payload module), so it is passed
- * directly to the map source with no reconstruction.
+ * Adds (optional) Mapeo data to the map as a GeoJSON FeatureCollection source
+ * with associated circle and symbol layers.
  */
 const addMapeoData = () => {
   if (!props.mapeoData || props.mapeoData.features.length === 0) {

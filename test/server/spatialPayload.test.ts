@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildMinimalFeatureCollection } from "@/server/utils/spatialPayload";
+import { buildMinimalFeatureCollection } from "@/server/utils/formatSpatialData";
 
 describe("buildMinimalFeatureCollection", () => {
   const sampleData = [
@@ -100,6 +100,61 @@ describe("buildMinimalFeatureCollection", () => {
     expect(colors[0]).not.toBe(colors[1]);
   });
 
+  it("preserves null for entries missing a filter column value", () => {
+    const dataWithMissingFilter = [
+      {
+        _id: "rec-1",
+        g__type: "Point",
+        g__coordinates: "[10.5, 45.2]",
+        category: "park",
+      },
+      {
+        _id: "rec-2",
+        g__type: "Point",
+        g__coordinates: "[11.0, 46.0]",
+      },
+    ];
+
+    const result = buildMinimalFeatureCollection(dataWithMissingFilter, {
+      filterColumn: "category",
+    });
+
+    expect(result.features[0].properties?.category).toBe("park");
+    expect(result.features[1].properties?.category).toBeNull();
+    expect(result.features[1].properties?.["filter-color"]).toBe("#3333FF");
+  });
+
+  it("omits empty/null includeProperties so Mapbox coalesce falls through", () => {
+    const dataWithEmptyColor = [
+      {
+        _id: "rec-1",
+        g__type: "Point",
+        g__coordinates: "[10.5, 45.2]",
+        color: "#FF0000",
+      },
+      {
+        _id: "rec-2",
+        g__type: "Point",
+        g__coordinates: "[11.0, 46.0]",
+        color: "",
+      },
+      {
+        _id: "rec-3",
+        g__type: "Point",
+        g__coordinates: "[12.0, 47.0]",
+        color: null,
+      },
+    ];
+
+    const result = buildMinimalFeatureCollection(dataWithEmptyColor, {
+      includeProperties: ["color"],
+    });
+
+    expect(result.features[0].properties?.color).toBe("#FF0000");
+    expect(result.features[1].properties).not.toHaveProperty("color");
+    expect(result.features[2].properties).not.toHaveProperty("color");
+  });
+
   it("uses custom generateId when provided", () => {
     const result = buildMinimalFeatureCollection(sampleData, {
       generateId: (entry) => Number(entry._id.replace("rec-", "")) * 100,
@@ -107,6 +162,50 @@ describe("buildMinimalFeatureCollection", () => {
 
     expect(result.features[0].id).toBe(100);
     expect(result.features[1].id).toBe(200);
+  });
+
+  it("normalizes Mapeo hex IDs to 32-bit integers when isMapeoData is true", () => {
+    const mapeoData = [
+      {
+        _id: "0084cdc57c0b0280",
+        g__type: "Point",
+        g__coordinates: "[10.5, 45.2]",
+        name: "Mapeo observation",
+      },
+      {
+        id: "00a1b2c3d4e5f678",
+        g__type: "Point",
+        g__coordinates: "[11.0, 46.0]",
+        name: "Mapeo observation (id field)",
+      },
+    ];
+
+    const result = buildMinimalFeatureCollection(mapeoData, {
+      isMapeoData: true,
+    });
+
+    expect(result.features).toHaveLength(2);
+    result.features.forEach((feature) => {
+      expect(typeof feature.id).toBe("number");
+      expect(Number.isInteger(feature.id)).toBe(true);
+    });
+  });
+
+  it("skips Mapeo ID normalization for non-hex IDs", () => {
+    const nonHexData = [
+      {
+        _id: "not-a-hex-id",
+        g__type: "Point",
+        g__coordinates: "[10.5, 45.2]",
+      },
+    ];
+
+    const result = buildMinimalFeatureCollection(nonHexData, {
+      isMapeoData: true,
+    });
+
+    expect(result.features).toHaveLength(1);
+    expect(result.features[0].id).toBeUndefined();
   });
 
   it("uses custom idField", () => {

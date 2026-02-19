@@ -101,19 +101,18 @@ onMounted(() => {
     pitch: props.mapboxPitch || 0,
     bearing: props.mapboxBearing || 0,
   });
-
+  // Apply 3D terrain whenever the style loads
   let controlsAdded = false;
 
-  // Apply 3D terrain whenever the style loads
+  // Apply terrain whenever style loads (initial load and style changes)
   map.value.on("style.load", () => {
     applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
   });
 
-  // Apply terrain whenever style loads (initial load and style changes)
   map.value.on("load", () => {
+    // Add 3D Terrain if set (for initial load)
     applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
 
-    // Add 3D Terrain if set (for initial load)
     // Only add controls once (on first load, not on style changes)
     if (!controlsAdded) {
       prepareMapCanvasContent();
@@ -148,7 +147,7 @@ onMounted(() => {
  */
 const addDataToMap = () => {
   if (map.value) {
-    // Remove existing data layers from the map
+    // Remove existing data layers and sources from the map
     map.value.getStyle().layers.forEach((layer: Layer) => {
       if (layer.id.startsWith("data-layer")) {
         if (map.value.getLayer(layer.id)) {
@@ -161,7 +160,7 @@ const addDataToMap = () => {
     }
   }
 
-  // Create a GeoJSON source with all the features
+  /// Add the source to the map
   if (!map.value.getSource("data-source")) {
     map.value.addSource("data-source", {
       type: "geojson",
@@ -199,7 +198,7 @@ const addDataToMap = () => {
           "icon-size": [
             "case",
             ["==", ["slice", ["get", props.iconColumn], -4], ".png"],
-            1.0,
+            1.0, // default size if neither .png nor .svg,
             ["==", ["slice", ["get", props.iconColumn], -4], ".svg"],
             0.2,
             1.0,
@@ -359,7 +358,7 @@ const addDataToMap = () => {
     );
   });
 };
-
+/** Load icon images when using icon mode */
 const loadIconImages = async () => {
   if (!props.iconColumn || !props.mediaBasePathIcons || !map.value) return;
 
@@ -397,7 +396,7 @@ const loadIconImages = async () => {
     }
   }
 };
-
+/** Prepare map canvas content by adding data and legend */
 const prepareMapCanvasContent = async () => {
   // For initial load, load icons if needed
   if (showIcons.value && props.iconColumn && props.mediaBasePathIcons) {
@@ -407,6 +406,7 @@ const prepareMapCanvasContent = async () => {
   prepareMapLegendContent();
 };
 
+/** Filter data based on selected values from DataFilter component */
 const filterValues = (values: FilterValues) => {
   if (values.includes("null")) {
     filteredFeatureCollection.value = { ...props.mapData };
