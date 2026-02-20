@@ -16,6 +16,58 @@ import * as mapboxMock from "@/test/helpers/mapboxMock";
 
 import MapView from "@/components/MapView.vue";
 
+import type { FeatureCollection } from "geojson";
+
+const makeFeatureCollection = (
+  features: Array<{
+    id?: number;
+    type: string;
+    coordinates: unknown;
+    properties?: Record<string, unknown>;
+  }>,
+): FeatureCollection => ({
+  type: "FeatureCollection",
+  features: features.map((f) => ({
+    type: "Feature" as const,
+    id: f.id ?? 1,
+    geometry: {
+      type: f.type as "Point" | "Polygon",
+      coordinates: f.coordinates,
+    } as GeoJSON.Geometry,
+    properties: f.properties ?? {},
+  })),
+});
+
+const baseMapData = makeFeatureCollection([
+  {
+    id: 1,
+    type: "Point",
+    coordinates: [0, 0],
+    properties: {
+      _id: "1",
+      status: "active",
+      "filter-color": "#ff0000",
+    },
+  },
+  {
+    id: 2,
+    type: "Polygon",
+    coordinates: [
+      [
+        [0, 0],
+        [1, 1],
+        [1, 0],
+        [0, 0],
+      ],
+    ],
+    properties: {
+      _id: "2",
+      status: "inactive",
+      "filter-color": "#00ff00",
+    },
+  },
+]);
+
 // Re-usable minimal props object
 const baseProps: InstanceType<typeof MapView>["$props"] = {
   allowedFileExtensions: {
@@ -38,24 +90,10 @@ const baseProps: InstanceType<typeof MapView>["$props"] = {
   mapboxZoom: 10,
   mapbox3d: false,
   mapbox3dTerrainExaggeration: 1.5,
-  mapData: [
-    {
-      id: "1",
-      geotype: "Point",
-      geocoordinates: "[0, 0]",
-      status: "active",
-      "filter-color": "#ff0000",
-    },
-    {
-      id: "2",
-      geotype: "Polygon",
-      geocoordinates: "[[[0,0],[1,1],[1,0],[0,0]]]",
-      status: "inactive",
-      "filter-color": "#00ff00",
-    },
-  ],
+  mapData: baseMapData,
   mediaBasePath: "/media",
   planetApiKey: "",
+  table: "test_table",
 };
 
 Object.assign(globalThis, {
@@ -66,6 +104,29 @@ Object.assign(globalThis, {
   onMounted,
   onBeforeUnmount,
   nextTick,
+});
+
+// Mock useRecordCache composable
+const mockFetchRecord = vi.fn().mockResolvedValue({
+  _id: "1",
+  status: "active",
+  name: "Full Record",
+  geocoordinates: "[0, 0]",
+});
+
+vi.mock("@/composables/useRecordCache", () => ({
+  useRecordCache: () => ({
+    fetchRecord: mockFetchRecord,
+    clearCache: vi.fn(),
+    cacheSize: computed(() => 0),
+  }),
+}));
+
+// Mock useRuntimeConfig for useRecordCache
+Object.assign(globalThis, {
+  useRuntimeConfig: () => ({
+    public: { appApiKey: "test-key" },
+  }),
 });
 
 // Mock vue-router for route & router injections
@@ -93,6 +154,13 @@ const globalConfig = {
 describe("MapView component", () => {
   beforeEach(() => {
     mapboxMock.reset();
+    mockFetchRecord.mockClear();
+    mockFetchRecord.mockResolvedValue({
+      _id: "1",
+      status: "active",
+      name: "Full Record",
+      geocoordinates: "[0, 0]",
+    });
     document.body.innerHTML = '<div id="map"></div>';
   });
 
@@ -221,15 +289,17 @@ describe("MapView component", () => {
 
     // Simulate filter change by calling the component method directly
     const vm = wrapper.vm as unknown as {
-      filteredData: typeof baseProps.mapData;
+      filteredFeatureCollection: FeatureCollection;
       filterValues: (values: string[]) => void;
     };
 
     vm.filterValues(["active"]);
     await flushPromises();
 
-    expect(vm.filteredData).toHaveLength(1);
-    expect(vm.filteredData[0].status).toBe("active");
+    expect(vm.filteredFeatureCollection.features).toHaveLength(1);
+    expect(vm.filteredFeatureCollection.features[0].properties?.status).toBe(
+      "active",
+    );
   });
 
   it("shows all data when 'null' is in filter values", async () => {
@@ -246,12 +316,12 @@ describe("MapView component", () => {
     await flushPromises();
 
     const vm = wrapper.vm as unknown as {
-      filteredData: typeof baseProps.mapData;
+      filteredFeatureCollection: FeatureCollection;
     };
-    expect(vm.filteredData).toHaveLength(2);
+    expect(vm.filteredFeatureCollection.features).toHaveLength(2);
   });
 
-  it("selects a feature and opens sidebar when clicked", async () => {
+  it("selects a feature and fetches full record on click", async () => {
     const wrapper = mount(MapView, {
       props: baseProps,
       global: {
@@ -259,8 +329,9 @@ describe("MapView component", () => {
         stubs: {
           ...globalConfig.stubs,
           ViewSidebar: {
-            props: ["showSidebar", "feature"],
-            template: "<div v-if='showSidebar'>Sidebar {{ feature?.id }}</div>",
+            props: ["showSidebar", "feature", "featureLoading"],
+            template:
+              "<div v-if='showSidebar'>Sidebar {{ feature?._id }}</div>",
           },
         },
       },
@@ -276,13 +347,9 @@ describe("MapView component", () => {
           type: "Feature",
           geometry: { type: "Point", coordinates: [0, 0] },
           properties: {
-            feature: JSON.stringify({
-              id: "1",
-              geotype: "Point",
-              geocoordinates: "[0, 0]",
-              status: "active",
-              "filter-color": "#ff0000",
-            }),
+            _id: "1",
+            status: "active",
+            "filter-color": "#ff0000",
           },
         },
       ],
@@ -291,11 +358,16 @@ describe("MapView component", () => {
 
     const vm = wrapper.vm as unknown as {
       showSidebar: boolean;
-      selectedFeature: Record<string, unknown>;
+      selectedFeature: Record<string, unknown> | undefined;
+      selectedFeatureLoading: boolean;
     };
     expect(vm.showSidebar).toBe(true);
-    expect(vm.selectedFeature.id).toBe("1");
-    expect(vm.selectedFeature["filter-color"]).toBeUndefined();
+    // fetchRecord was called with the table and record ID
+    expect(mockFetchRecord).toHaveBeenCalledWith("test_table", "1");
+    // Full record is populated from the API response
+    expect(vm.selectedFeature?._id).toBe("1");
+    expect(vm.selectedFeature?.["filter-color"]).toBeUndefined();
+    expect(vm.selectedFeatureLoading).toBe(false);
   });
 
   it("closes sidebar and resets selection", async () => {
@@ -310,7 +382,7 @@ describe("MapView component", () => {
     // Call the close handler directly
     const vm = wrapper.vm as unknown as {
       showSidebar: boolean;
-      selectedFeature: null | Record<string, unknown>;
+      selectedFeature: undefined | Record<string, unknown>;
       showIntroPanel: boolean;
       handleSidebarClose: () => void;
     };
@@ -319,7 +391,7 @@ describe("MapView component", () => {
     await flushPromises();
 
     expect(vm.showSidebar).toBe(false);
-    expect(vm.selectedFeature).toBeNull();
+    expect(vm.selectedFeature).toBeUndefined();
     expect(vm.showIntroPanel).toBe(true);
   });
 
@@ -363,11 +435,11 @@ describe("MapView component", () => {
     await flushPromises();
 
     const vm = wrapper.vm as unknown as {
-      selectedFeature: null | Record<string, unknown>;
+      selectedFeature: undefined | Record<string, unknown>;
       showSidebar: boolean;
       showIntroPanel: boolean;
     };
-    expect(vm.selectedFeature).toBeNull();
+    expect(vm.selectedFeature).toBeUndefined();
     expect(vm.showSidebar).toBe(true);
     expect(vm.showIntroPanel).toBe(true);
     expect(mapboxMock.mockMap.flyTo).toHaveBeenCalledWith({
@@ -387,12 +459,12 @@ describe("MapView component", () => {
     mapboxMock.fireLoad();
     await flushPromises();
 
-    // Call the basemap change handler directly
     const vm = wrapper.vm as unknown as {
       currentBasemap: { id: string; style: string };
       handleBasemapChange: (basemap: { id: string; style: string }) => void;
     };
 
+    // Call the basemap change handler directly
     vm.handleBasemapChange({
       id: "satellite",
       style: "mapbox://styles/mapbox/satellite-v9",
@@ -421,16 +493,19 @@ describe("MapView component", () => {
     const propsWithColorColumn = {
       ...baseProps,
       colorColumn: "color",
-      mapData: [
+      mapData: makeFeatureCollection([
         {
-          id: "1",
-          geotype: "Point",
-          geocoordinates: "[0, 0]",
-          status: "active",
-          color: "#B209B2",
-          "filter-color": "#ff0000",
+          id: 1,
+          type: "Point",
+          coordinates: [0, 0],
+          properties: {
+            _id: "1",
+            status: "active",
+            color: "#B209B2",
+            "filter-color": "#ff0000",
+          },
         },
-      ],
+      ]),
     };
 
     mount(MapView, {
@@ -456,15 +531,18 @@ describe("MapView component", () => {
     const propsWithoutColorColumn = {
       ...baseProps,
       colorColumn: undefined,
-      mapData: [
+      mapData: makeFeatureCollection([
         {
-          id: "1",
-          geotype: "Point",
-          geocoordinates: "[0, 0]",
-          status: "active",
-          "filter-color": "#ff0000",
+          id: 1,
+          type: "Point",
+          coordinates: [0, 0],
+          properties: {
+            _id: "1",
+            status: "active",
+            "filter-color": "#ff0000",
+          },
         },
-      ],
+      ]),
     };
 
     mount(MapView, {
@@ -480,7 +558,7 @@ describe("MapView component", () => {
       expect.objectContaining({
         id: "data-layer-point",
         paint: expect.objectContaining({
-          "circle-color": ["get", "filter-color", ["get", "feature"]],
+          "circle-color": ["coalesce", ["get", "filter-color"], "#3333FF"],
         }),
       }),
     );
@@ -577,16 +655,19 @@ describe("MapView component", () => {
       ...baseProps,
       iconColumn: "icon",
       mediaBasePathIcons: "https://example.com/icons",
-      mapData: [
+      mapData: makeFeatureCollection([
         {
-          id: "1",
-          geotype: "Point",
-          geocoordinates: "[0, 0]",
-          status: "active",
-          icon: "camp.png",
-          "filter-color": "#ff0000",
+          id: 1,
+          type: "Point",
+          coordinates: [0, 0],
+          properties: {
+            _id: "1",
+            status: "active",
+            icon: "camp.png",
+            "filter-color": "#ff0000",
+          },
         },
-      ],
+      ]),
     };
 
     const wrapper = mount(MapView, {
@@ -594,12 +675,12 @@ describe("MapView component", () => {
       global: globalConfig,
     });
 
+    // Verify that toggle is available and starts as false
     const vm = wrapper.vm as unknown as {
       showIcons: boolean;
       canToggleIcons: boolean;
     };
 
-    // Verify that toggle is available and starts as false
     expect(vm.canToggleIcons).toBe(true);
     expect(vm.showIcons).toBe(false);
 
@@ -609,7 +690,9 @@ describe("MapView component", () => {
     // Check that addLayer was called with circle type (default)
     const addLayerCalls = mapboxMock.mockMap.addLayer.mock.calls;
     const circleLayer = addLayerCalls.find(
-      (call) => call[0].id === "data-layer-point" && call[0].type === "circle",
+      (call: unknown[]) =>
+        (call[0] as Record<string, unknown>).id === "data-layer-point" &&
+        (call[0] as Record<string, unknown>).type === "circle",
     );
     expect(circleLayer).toBeDefined();
   });
@@ -632,7 +715,9 @@ describe("MapView component", () => {
     // Check that addLayer was called with circle type (default)
     const addLayerCalls = mapboxMock.mockMap.addLayer.mock.calls;
     const circleLayer = addLayerCalls.find(
-      (call) => call[0].id === "data-layer-point" && call[0].type === "circle",
+      (call: unknown[]) =>
+        (call[0] as Record<string, unknown>).id === "data-layer-point" &&
+        (call[0] as Record<string, unknown>).type === "circle",
     );
     expect(circleLayer).toBeDefined();
   });
