@@ -146,7 +146,7 @@ const {
 
 // Fetch full Mapeo record on demand when a Mapeo feature is selected.
 // Clears the feature display and shows a loading skeleton while the
-// full record is fetched, preventing a jarring flash of stale data.
+// full record is fetched.
 let skipNextWatch = false;
 
 watch(
