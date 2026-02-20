@@ -18,6 +18,8 @@ import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type { FeatureCollection, Feature } from "geojson";
+import { useRecordCache } from "@/composables/useRecordCache";
+
 import type {
   AllowedFileExtensions,
   Basemap,
@@ -52,11 +54,15 @@ const props = defineProps<{
   mediaBasePathIcons?: string;
   mediaColumn?: string;
   planetApiKey?: string;
+  table: string;
 }>();
+
+const { fetchRecord } = useRecordCache();
 
 const map = ref();
 const selectedFeature = ref<DataEntry>();
 const selectedFeatureOriginal = ref<Feature>();
+const selectedFeatureLoading = ref(false);
 const showSidebar = ref(true);
 const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
@@ -300,29 +306,18 @@ const addDataToMap = () => {
     map.value.on(
       "click",
       layerId,
-      (e: MapMouseEvent) => {
+      async (e: MapMouseEvent) => {
         if (!e.features || e.features.length === 0) return;
         const clickedFeature = e.features[0];
         if (!clickedFeature.properties) return;
 
-        // Remove filter-color from properties
-        const featureProperties = { ...clickedFeature.properties };
-        delete featureProperties["filter-color"];
+        const recordId = clickedFeature.properties._id as string | undefined;
 
-        // Create display feature with formatted coordinates
-        if (featureProperties.geocoordinates) {
-          // Rewrite coordinates string from [long, lat] to lat, long, removing brackets for display
-          featureProperties.geocoordinates =
-            prepareCoordinatesForSelectedFeature(
-              featureProperties.geocoordinates,
-            );
-        } else if (
-          clickedFeature.geometry.type === "Point" &&
-          clickedFeature.geometry.coordinates
-        ) {
-          const [lng, lat] = clickedFeature.geometry.coordinates;
-          featureProperties.geocoordinates = `${lat}, ${lng}`;
-        }
+        // Open sidebar immediately with loading state
+        selectedFeature.value = undefined;
+        selectedFeatureLoading.value = true;
+        showSidebar.value = true;
+        showIntroPanel.value = false;
 
         // Create GeoJSON Feature for download
         const featureGeojson: Feature = {
@@ -330,17 +325,42 @@ const addDataToMap = () => {
           geometry: clickedFeature.geometry,
           properties: { ...clickedFeature.properties },
         };
+        // Remove filter-color from properties
         delete featureGeojson.properties!["filter-color"];
-
-        selectedFeature.value = featureProperties;
         selectedFeatureOriginal.value = featureGeojson;
-        showSidebar.value = true;
-        showIntroPanel.value = false;
+
+        // Fetch the full raw record from the single-record endpoint
+        if (recordId) {
+          const record = await fetchRecord(props.table, recordId);
+          if (record) {
+            const displayRecord = { ...record };
+            delete displayRecord["filter-color"];
+
+            // Rewrite coordinates string from [long, lat] to lat, long, removing brackets for display
+            if (displayRecord.geocoordinates) {
+              displayRecord.geocoordinates =
+                prepareCoordinatesForSelectedFeature(
+                  displayRecord.geocoordinates,
+                );
+            } else if (
+              clickedFeature.geometry.type === "Point" &&
+              clickedFeature.geometry.coordinates
+            ) {
+              const [lng, lat] = clickedFeature.geometry.coordinates;
+              displayRecord.geocoordinates = `${lat}, ${lng}`;
+            }
+
+            selectedFeature.value = displayRecord;
+          }
+        }
+
+        selectedFeatureLoading.value = false;
       },
       { passive: true },
     );
   });
 };
+
 /** Load icon images when using icon mode */
 const loadIconImages = async () => {
   if (!props.iconColumn || !props.mediaBasePathIcons || !map.value) return;
@@ -379,6 +399,7 @@ const loadIconImages = async () => {
     }
   }
 };
+
 /** Prepare map canvas content by adding data and legend */
 const prepareMapCanvasContent = async () => {
   // For initial load, load icons if needed
@@ -401,11 +422,13 @@ const filterValues = (values: FilterValues) => {
       ),
     };
   }
+  // Update the map data
   addDataToMap();
 };
 
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
 
+/** Handle basemap change and update map style */
 const handleBasemapChange = (newBasemap: Basemap) => {
   changeMapStyle(map.value, newBasemap, props.planetApiKey);
   currentBasemap.value = newBasemap;
@@ -419,6 +442,7 @@ const handleBasemapChange = (newBasemap: Basemap) => {
 
 const mapLegendContent = ref();
 
+/** Prepare map legend content based on layer IDs */
 const prepareMapLegendContent = () => {
   if (!props.mapLegendLayerIds) {
     return;
@@ -431,13 +455,16 @@ const prepareMapLegendContent = () => {
   });
 };
 
+/** Toggle visibility of a map layer */
 const toggleLayerVisibility = (item: MapLegendItem) => {
   utilsToggleLayerVisibility(map.value, item);
 };
 
+/** Reset the map to initial state */
 const resetToInitialState = () => {
   selectedFeature.value = undefined;
   selectedFeatureOriginal.value = undefined;
+  selectedFeatureLoading.value = false;
   showSidebar.value = true;
   showIntroPanel.value = true;
 
@@ -450,13 +477,16 @@ const resetToInitialState = () => {
   });
 };
 
+/** Handle sidebar close */
 const handleSidebarClose = () => {
   showSidebar.value = false;
   selectedFeature.value = undefined;
   selectedFeatureOriginal.value = undefined;
+  selectedFeatureLoading.value = false;
   showIntroPanel.value = true;
 };
 
+/** Toggle between icons and points */
 const handleToggleIcons = async () => {
   if (!map.value) return;
 
@@ -513,6 +543,7 @@ onBeforeUnmount(() => {
     <ViewSidebar
       :allowed-file-extensions="allowedFileExtensions"
       :feature="selectedFeature"
+      :feature-loading="selectedFeatureLoading"
       :feature-geojson="selectedFeatureOriginal"
       :file-paths="
         selectedFeature

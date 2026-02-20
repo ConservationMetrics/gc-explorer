@@ -26,6 +26,7 @@ import IncidentsControls from "@/components/alerts/IncidentsControls.vue";
 import { useIncidents } from "@/composables/useIncidents";
 import { useFeatureSelection } from "@/composables/useFeatureSelection";
 import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
+import { useRecordCache } from "@/composables/useRecordCache";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
@@ -58,9 +59,11 @@ const props = defineProps<{
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
   mapeoData: FeatureCollection | null;
+  mapeoTable?: string;
   mediaBasePath: string | undefined;
   mediaBasePathAlerts: string | undefined;
   planetApiKey: string | undefined;
+  table: string;
 }>();
 
 const localAlertsData = ref<Feature | AlertsData>(props.alertsData);
@@ -77,6 +80,9 @@ const route = useRoute();
 const router = useRouter();
 
 const isMapeo = ref(false);
+const selectedFeatureLoading = ref(false);
+
+const { fetchRecord } = useRecordCache();
 
 // Get API key from runtime config
 const config = useRuntimeConfig();
@@ -136,6 +142,36 @@ const {
   showSidebar,
   showIntroPanel,
   isMapeo,
+);
+
+// Fetch full Mapeo record on demand when a Mapeo feature is selected.
+// Clears the feature display and shows a loading skeleton while the
+// full record is fetched.
+let skipNextWatch = false;
+
+watch(
+  () => selectedFeature.value,
+  async (feature) => {
+    if (skipNextWatch) {
+      skipNextWatch = false;
+      return;
+    }
+    if (!feature || !isMapeo.value || !props.mapeoTable) return;
+
+    const recordId = feature._id || feature.id;
+    if (!recordId) return;
+
+    const minimalFeature = { ...feature };
+    selectedFeature.value = null;
+    selectedFeatureLoading.value = true;
+
+    const fullRecord = await fetchRecord(props.mapeoTable, recordId);
+
+    // Skip the next watcher trigger caused by setting the full record
+    skipNextWatch = true;
+    selectedFeature.value = fullRecord ?? minimalFeature;
+    selectedFeatureLoading.value = false;
+  },
 );
 
 // Use alerts date filter composable
@@ -905,6 +941,7 @@ const addMapeoData = () => {
   mapeoDataColor.value =
     props.mapeoData.features[0]?.properties?.["filter-color"];
 
+  // Add the source to the map
   if (!map.value.getSource("mapeo-data")) {
     map.value.addSource("mapeo-data", {
       type: "geojson",
@@ -922,6 +959,7 @@ const addMapeoData = () => {
       paint: {
         "circle-radius": 6,
         "circle-color": [
+          // Use filter-color for fallback if selected is false
           "case",
           ["boolean", ["feature-state", "selected"], false],
           "#FFFF00",
@@ -933,6 +971,7 @@ const addMapeoData = () => {
     });
   }
 
+  // Add event listeners
   const interactiveLayers = MAPEO_INTERACTIVE_LAYER_IDS.filter((layerId) =>
     map.value.getLayer(layerId),
   );
@@ -965,8 +1004,10 @@ const addMapeoData = () => {
         if (e.features && e.features.length > 0) {
           const feature = e.features[0];
           if (multiSelectMode.value) {
+            // Add to selected sources instead of selecting for sidebar
             handleMultiSelectFeature(feature, layerId);
           } else {
+            // Normal selection behavior
             selectFeature(feature, layerId);
           }
         }
@@ -1451,6 +1492,7 @@ onBeforeUnmount(() => {
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
       :feature="selectedFeature"
+      :feature-loading="selectedFeatureLoading"
       :feature-geojson="localAlertsData"
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
