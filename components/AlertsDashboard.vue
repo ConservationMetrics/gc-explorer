@@ -149,11 +149,9 @@ const {
 // Clears the feature display and shows a loading skeleton while the
 // full record is fetched.
 let skipNextWatch = false;
-console.log("selectedFeature", selectedFeature.value);
 watch(
   () => selectedFeature.value,
   async (feature) => {
-    console.log("feature", feature, isMapeo.value, props.mapeoTable);
     if (skipNextWatch) {
       skipNextWatch = false;
       return;
@@ -168,14 +166,8 @@ watch(
     selectedFeatureLoading.value = true;
 
     const fullRecord = await fetchRecord(props.mapeoTable, recordId);
-    console.log("fullRecord", fullRecord);
     // Skip the next watcher trigger caused by setting the full record
     skipNextWatch = true;
-    if (fullRecord) {
-      console.log("fullRecord", fullRecord);
-      console.log(transformRecord(fullRecord));
-    }
-
     const displayRecord = fullRecord
       ? transformRecord(fullRecord)
       : minimalFeature;
