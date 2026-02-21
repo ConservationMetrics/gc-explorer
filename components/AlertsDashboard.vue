@@ -27,6 +27,7 @@ import { useIncidents } from "@/composables/useIncidents";
 import { useFeatureSelection } from "@/composables/useFeatureSelection";
 import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
 import { useRecordCache } from "@/composables/useRecordCache";
+import { transformRecord } from "@/utils/transforms";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
@@ -148,15 +149,16 @@ const {
 // Clears the feature display and shows a loading skeleton while the
 // full record is fetched.
 let skipNextWatch = false;
-
+console.log("selectedFeature", selectedFeature.value);
 watch(
   () => selectedFeature.value,
   async (feature) => {
+    console.log("feature", feature, isMapeo.value, props.mapeoTable);
     if (skipNextWatch) {
       skipNextWatch = false;
       return;
     }
-    if (!feature || !isMapeo.value || !props.mapeoTable) return;
+    if (!feature || !props.mapeoTable) return;
 
     const recordId = feature._id || feature.id;
     if (!recordId) return;
@@ -166,10 +168,23 @@ watch(
     selectedFeatureLoading.value = true;
 
     const fullRecord = await fetchRecord(props.mapeoTable, recordId);
-
+    console.log("fullRecord", fullRecord);
     // Skip the next watcher trigger caused by setting the full record
     skipNextWatch = true;
-    selectedFeature.value = fullRecord ?? minimalFeature;
+    if (fullRecord) {
+      console.log("fullRecord", fullRecord);
+      console.log(transformRecord(fullRecord));
+    }
+
+    const displayRecord = fullRecord
+      ? transformRecord(fullRecord)
+      : minimalFeature;
+    selectedFeature.value = displayRecord;
+    if (displayRecord.photos) {
+      imageUrl.value = [];
+      const photos = String(displayRecord.photos).split(",");
+      photos.forEach((photo: string) => imageUrl.value.push(photo.trim()));
+    }
     selectedFeatureLoading.value = false;
   },
 );
@@ -247,6 +262,7 @@ const selectInitialAlertFeature = (alertId: string) => {
  * (via MurmurHash) for Mapbox feature-state compatibility.
  */
 const selectInitialMapeoFeature = (mapeoDocId: string) => {
+  console.log("selectInitialMapeoFeature", mapeoDocId, props.mapeoData);
   const feature = props.mapeoData?.features.find(
     (mapeoFeature) =>
       mapeoFeature.properties?._id === mapeoDocId ||

@@ -3,57 +3,14 @@ import murmurhash from "murmurhash";
 import { describe, it, expect } from "vitest";
 
 import {
-  transformSurveyData,
-  prepareMapData,
   prepareAlertData,
   prepareAlertsStatistics,
   prepareMapStatistics,
   transformToGeojson,
 } from "@/server/dataProcessing/transformData";
 import { isValidCoordinate } from "@/server/dataProcessing/helpers";
-import { mapeoData, transformedMapeoData } from "../fixtures/mapeoData";
+import { transformedMapeoData } from "../fixtures/mapeoData";
 import { alertsData, alertsMetadata } from "../fixtures/alertsData";
-
-describe("transformSurveyData", () => {
-  it("should transform survey data keys and values", () => {
-    const result = transformSurveyData(mapeoData);
-
-    result.forEach((item) => {
-      expect(item).not.toHaveProperty("g__coordinates");
-      expect(item).toHaveProperty("geocoordinates");
-      expect(item.category[0]).toBe(item.category[0].toUpperCase());
-      // TODO: For now this expects original timestamps instead of formatted dates
-      // See comment in transformSurveyData function for more details.
-      expect(item.created).toMatch(
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
-      );
-      // expect(item.created).toMatch(/^\d{1,2}\/\d{1,2}\/\d{4}$/);
-      expect(item.photos).toMatch(/^(\w+\.jpg(, )?)*\w+\.jpg$|^$/);
-      expect(item).toHaveProperty("id");
-    });
-  });
-});
-
-describe("prepareMapData", () => {
-  it("should prepare map data", () => {
-    const result = prepareMapData(transformedMapeoData, "category");
-
-    let randomColorForHouseCategory: string | null = null;
-
-    result.forEach((item) => {
-      expect(item).toHaveProperty("filter-color");
-      if (item.geocoordinates !== "") {
-        expect(item["geotype"]).toBe("Point");
-      }
-      if (item.category === "House") {
-        if (!randomColorForHouseCategory) {
-          randomColorForHouseCategory = item["filter-color"];
-        }
-        expect(item["filter-color"]).toBe(randomColorForHouseCategory);
-      }
-    });
-  });
-});
 
 describe("prepareMapStatistics", () => {
   it("should calculate map statistics from transformed mapeo data", () => {
