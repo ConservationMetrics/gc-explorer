@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { getFilePathsWithExtension } from "@/utils";
 import { prepareCoordinatesForSelectedFeature } from "@/utils/mapFunctions";
+import { transformRecord } from "@/utils/transforms";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
@@ -55,15 +56,15 @@ const filterValues = (values: FilterValues) => {
   }
 };
 
-/** Prepare coordinates for selected feature */
-const featureWithPreparedCoordinates = (feature: DataEntry): DataEntry => {
-  const result = {
-    ...feature,
-    geocoordinates: feature.geocoordinates
-      ? prepareCoordinatesForSelectedFeature(feature.geocoordinates)
-      : feature.geocoordinates,
-  };
-  return result as unknown as DataEntry;
+/** Transform raw record for display and prepare coordinates for selected feature */
+const prepareForDisplay = (feature: DataEntry): DataEntry => {
+  const transformed = transformRecord(feature);
+  if (transformed.geocoordinates) {
+    transformed.geocoordinates = prepareCoordinatesForSelectedFeature(
+      transformed.geocoordinates,
+    );
+  }
+  return transformed;
 };
 </script>
 
@@ -88,7 +89,7 @@ const featureWithPreparedCoordinates = (feature: DataEntry): DataEntry => {
       v-for="(feature, index) in paginatedData"
       :key="index"
       :allowed-file-extensions="allowedFileExtensions"
-      :feature="featureWithPreparedCoordinates(feature)"
+      :feature="prepareForDisplay(feature)"
       :file-paths="
         getFilePathsWithExtension(feature, allowedFileExtensions, mediaColumn)
       "

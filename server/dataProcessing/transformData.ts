@@ -1,19 +1,8 @@
 import murmurhash from "murmurhash";
 
-import {
-  calculateCentroid,
-  capitalizeFirstLetter,
-  getRandomColor,
-} from "./helpers";
+import { calculateCentroid, capitalizeFirstLetter } from "./helpers";
 
-import type {
-  Feature,
-  FeatureCollection,
-  Geometry,
-  LineString,
-  Polygon,
-  Position,
-} from "geojson";
+import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type {
   AlertsMetadata,
   AlertsPerMonth,
@@ -21,197 +10,6 @@ import type {
   AlertsStatistics,
   DataEntry,
 } from "@/types/types";
-
-/**
- * Transforms survey data by modifying keys and values to a more readable format.
- *
- * This function processes an array of survey data entries, transforming both the keys
- * and values of each entry to enhance readability and consistency. The transformation
- * includes:
- * - Modifying key names by removing prefixes, replacing underscores with spaces, and
- *   standardizing certain key names (e.g., "today" becomes "dataCollectedOn").
- * - Adjusting value formats by replacing underscores and semicolons with spaces and commas,
- *   respectively, capitalizing the first letter, and formatting date-related values.
- * - Handling lists enclosed in square brackets by removing brackets and quotes, and
- *   joining items with commas.
- *
- * @param {DataEntry[]} data - An array of survey data entries to be transformed.
- * @param {string} iconColumn - Optional icon column name to exclude from transformation
- * @returns {DataEntry[]} - A new array of data entries with transformed keys and values.
- */
-const transformSurveyData = (
-  data: DataEntry[],
-  iconColumn?: string,
-): DataEntry[] => {
-  const transformSurveyDataKey = (key: string): string => {
-    // Don't transform the icon column key
-    if (iconColumn && key === iconColumn) {
-      return key;
-    }
-
-    let transformedKey = key
-      .replace(/^g__/, "geo")
-      .replace(/^p__/, "")
-      .replace(/_/g, " ");
-    if (transformedKey.toLowerCase() === "today") {
-      transformedKey = "dataCollectedOn";
-    } else if (transformedKey.toLowerCase().includes("categoryid")) {
-      transformedKey = "category";
-    } else if (transformedKey.toLowerCase() === "id") {
-      transformedKey = "id";
-    }
-    return transformedKey.trimStart();
-  };
-
-  const transformSurveyDataValue = (
-    key: string,
-    value: string | number | null,
-  ) => {
-    if (value === null) return null;
-    if (key === "g__coordinates") return value;
-    // Don't transform icon column values (filenames)
-    if (iconColumn && key === iconColumn) return value;
-
-    let transformedValue = value;
-    if (typeof transformedValue === "string") {
-      transformedValue = transformedValue
-        .replace(/_/g, " ")
-        .replace(/;/g, ", ");
-      if (key.toLowerCase().includes("category")) {
-        transformedValue = transformedValue.replace(/-/g, " ");
-      }
-      // TODO: For now this is a quick fix to ensure original timestamps are
-      // returned in file downloads. We need to rethink how we do data transformations
-      // so that file downloads return the original records, not transformed ones.
-      // if (
-      //   key.toLowerCase().includes("created") ||
-      //   key.toLowerCase().includes("modified") ||
-      //   key.toLowerCase().includes("updated")
-      // ) {
-      //   transformedValue = formatDate(transformedValue);
-      // }
-      transformedValue =
-        transformedValue.charAt(0).toUpperCase() + transformedValue.slice(1);
-    }
-    // Handle lists enclosed in square brackets
-    if (
-      typeof transformedValue === "string" &&
-      transformedValue.match(/^\[.*\]$/)
-    ) {
-      transformedValue = transformedValue
-        .replace(/^\[|\]$/g, "")
-        .split(", ")
-        .map((item) => item.replace(/'/g, ""))
-        .join(", ");
-    }
-    return transformedValue;
-  };
-  const transformedData = data.map((entry) => {
-    const transformedEntry: DataEntry = {};
-    Object.entries(entry).forEach(([key, value]) => {
-      // Use original key for icon column, don't transform it
-      const transformedKey =
-        iconColumn && key === iconColumn ? key : transformSurveyDataKey(key);
-      const transformedValue = transformSurveyDataValue(key, value);
-      if (transformedValue !== null) {
-        transformedEntry[transformedKey] = String(transformedValue);
-      }
-    });
-    return transformedEntry;
-  });
-
-  return transformedData;
-};
-
-/**
- * Prepares and processes geospatial data for visualization on a map view.
- *
- * This function takes an array of data entries and an optional filter column,
- * and processes each entry to ensure it is ready for map visualization. It handles
- * the following tasks:
- *
- * 1. Determines the geometry type (Point, LineString, or Polygon) for each entry
- *    based on its coordinates and assigns it if not already specified.
- * 2. Parses and formats geocoordinates from string to JSON format suitable for
- *    map rendering.
- * 3. Assigns a unique color to each entry based on the specified filter column,
- *    ensuring consistent coloring for entries with the same filter value.
- *
- * @param {DataEntry[]} data - An array of data entries, where each entry is an object
- *                             containing geospatial information and other attributes.
- * @param {string | undefined} filterColumn - An optional column name used to filter
- *                                            and assign colors to data entries.
- * @returns {DataEntry[]} - An array of processed data entries, each with formatted
- *                          geocoordinates and assigned colors for map visualization.
- */
-const prepareMapData = (
-  data: DataEntry[],
-  filterColumn: string | undefined,
-): DataEntry[] => {
-  const colorMap = new Map<string, string>();
-
-  const processGeolocation = (obj: { [key: string]: string }) => {
-    if (!obj.geocoordinates || obj.geocoordinates.trim() === "") {
-      return obj;
-    }
-    try {
-      const geometryType = obj.geotype;
-      let coordinates: Position | LineString | Polygon = [];
-
-      if (!Array.isArray(obj.geocoordinates)) {
-        coordinates = JSON.parse(obj.geocoordinates);
-      } else {
-        coordinates = obj.geocoordinates;
-      }
-      if (
-        geometryType === "Point" &&
-        Array.isArray(coordinates) &&
-        coordinates.length === 2
-      ) {
-        obj.geocoordinates = JSON.stringify(coordinates);
-      } else if (geometryType === "LineString") {
-        obj.geocoordinates = JSON.stringify(coordinates);
-      } else if (geometryType === "Polygon") {
-        obj.geocoordinates = JSON.stringify([coordinates]);
-      }
-    } catch (error) {
-      console.error("Error parsing coordinates:", error);
-    }
-    return obj;
-  };
-
-  const processedGeoData = data.map((item) => {
-    if (!item.geotype) {
-      const coordinateKey = Object.keys(item).find((key) =>
-        key.toLowerCase().includes("coordinates"),
-      );
-      if (coordinateKey) {
-        const coordinates = JSON.parse(item[coordinateKey]);
-        if (
-          Array.isArray(coordinates) &&
-          coordinates.length === 2 &&
-          typeof coordinates[0] === "number" &&
-          typeof coordinates[1] === "number"
-        ) {
-          item.geotype = "Point";
-        } else {
-          item.geotype = "Polygon";
-        }
-      }
-    }
-
-    const filterColumnValue =
-      filterColumn !== undefined ? (item[filterColumn] ?? "") : "";
-    if (filterColumnValue && !colorMap.has(filterColumnValue)) {
-      colorMap.set(filterColumnValue, getRandomColor());
-    }
-    item["filter-color"] = colorMap.get(filterColumnValue) ?? "#3333FF";
-
-    return processGeolocation(item);
-  });
-
-  return processedGeoData;
-};
 
 /**
  * Prepares and transforms alert data for display in the alerts view.
@@ -870,8 +668,6 @@ const prepareMapStatistics = (data: DataEntry[]): MapStatistics => {
 };
 
 export {
-  transformSurveyData,
-  prepareMapData,
   prepareAlertData,
   prepareAlertsStatistics,
   prepareMapStatistics,
