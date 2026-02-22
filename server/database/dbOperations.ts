@@ -124,9 +124,13 @@ export const fetchRecords = async (
     throw new Error("Table does not exist");
   }
 
+  const idPlaceholders = sql.join(
+    ids.map((id) => sql`${id}`),
+    sql`, `,
+  );
   const result = await warehouseDb.execute(sql`
     SELECT * FROM ${sql.identifier(cleanTableName)}
-    WHERE _id = ANY(${ids})
+    WHERE _id IN (${idPlaceholders})
   `);
 
   if (!result || result.length === 0) {
