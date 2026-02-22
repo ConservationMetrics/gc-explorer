@@ -106,6 +106,51 @@ export const fetchRecord = async (
   return result[0] as DataEntry;
 };
 
+/**
+ * Fetches multiple raw records from the warehouse database by their _id values.
+ * Returns records in the same order as the requested IDs; missing IDs are omitted.
+ *
+ * @param {string} table - The table name to query.
+ * @param {string[]} ids - Array of _id values to fetch.
+ * @returns {Promise<DataEntry[]>} The matching raw records.
+ */
+export const fetchRecords = async (
+  table: string,
+  ids: string[],
+): Promise<DataEntry[]> => {
+  const cleanTableName = table.replace(/"/g, "");
+  const tableExists = await checkTableExists(cleanTableName);
+  if (!tableExists) {
+    throw new Error("Table does not exist");
+  }
+
+  const result = await warehouseDb.execute(sql`
+    SELECT * FROM ${sql.identifier(cleanTableName)}
+    WHERE _id = ANY(${ids})
+  `);
+
+  if (!result || result.length === 0) {
+    return [];
+  }
+
+  // Preserve request order: build a lookup and map back to input order
+  const recordMap = new Map<string, DataEntry>();
+  for (const row of result) {
+    const entry = row as DataEntry;
+    recordMap.set(String(entry._id), entry);
+  }
+
+  const ordered: DataEntry[] = [];
+  for (const id of ids) {
+    const record = recordMap.get(id);
+    if (record) {
+      ordered.push(record);
+    }
+  }
+
+  return ordered;
+};
+
 export const fetchTableNames = async (): Promise<string[]> => {
   try {
     const result = await warehouseDb.execute(sql`

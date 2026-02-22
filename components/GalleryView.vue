@@ -19,8 +19,16 @@ const props = defineProps<{
   galleryData: Dataset;
   mediaBasePath: string;
   mediaColumn?: string;
+  table: string;
 }>();
+
+const {
+  public: { appApiKey },
+} = useRuntimeConfig();
+
 const filteredData = ref(props.galleryData);
+const loadedRecords = ref<Map<string, DataEntry>>(new Map());
+const loading = ref(false);
 
 // Pagination per page
 const currentPage = ref(1);
@@ -30,6 +38,46 @@ const paginatedData = computed<Dataset>(() => {
   const end = currentPage.value * itemsPerPage;
   return filteredData.value.slice(start, end) as Dataset;
 });
+
+/** Batch-fetches full records for the given IDs, skipping already-loaded ones. */
+const fetchFullRecords = async (ids: string[]) => {
+  const idsToFetch = ids.filter((id) => !loadedRecords.value.has(id));
+  if (idsToFetch.length === 0) return;
+
+  loading.value = true;
+  try {
+    const records = await $fetch<DataEntry[]>(`/api/${props.table}/records`, {
+      method: "POST",
+      body: { ids: idsToFetch },
+      headers: { "x-api-key": appApiKey as string },
+    });
+
+    for (const record of records) {
+      if (record._id) {
+        loadedRecords.value.set(String(record._id), record);
+      }
+    }
+  } catch (error) {
+    console.error("Error batch-fetching gallery records:", error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+/** Fetch full records whenever the visible page changes */
+watch(
+  paginatedData,
+  async (items) => {
+    const ids = items
+      .map((item) => item._id)
+      .filter((id): id is string => id != null && String(id).trim() !== "")
+      .map(String);
+    if (ids.length > 0) {
+      await fetchFullRecords(ids);
+    }
+  },
+  { immediate: true },
+);
 
 const handleScroll = () => {
   if (window.innerHeight + window.scrollY >= document.body.offsetHeight) {
@@ -54,6 +102,15 @@ const filterValues = (values: FilterValues) => {
       values.includes(item[props.filterColumn].toString()),
     );
   }
+};
+
+/**
+ * Returns the full loaded record for a gallery item, falling back to the
+ * minimal record if the full record hasn't loaded yet.
+ */
+const getFullRecord = (minimalItem: DataEntry): DataEntry => {
+  const id = String(minimalItem._id);
+  return loadedRecords.value.get(id) ?? minimalItem;
 };
 
 /** Transform raw record for display and prepare coordinates for selected feature */
@@ -87,11 +144,15 @@ const prepareForDisplay = (feature: DataEntry): DataEntry => {
     </div>
     <DataFeature
       v-for="(feature, index) in paginatedData"
-      :key="index"
+      :key="feature._id ?? index"
       :allowed-file-extensions="allowedFileExtensions"
-      :feature="prepareForDisplay(feature)"
+      :feature="prepareForDisplay(getFullRecord(feature))"
       :file-paths="
-        getFilePathsWithExtension(feature, allowedFileExtensions, mediaColumn)
+        getFilePathsWithExtension(
+          getFullRecord(feature),
+          allowedFileExtensions,
+          mediaColumn,
+        )
       "
       :media-base-path="mediaBasePath"
       :data-testid="`gallery-item-${index}`"
