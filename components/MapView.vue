@@ -330,7 +330,8 @@ const addDataToMap = () => {
         delete featureGeojson.properties!["filter-color"];
         selectedFeatureOriginal.value = featureGeojson;
 
-        // Fetch the full raw record and apply presentation transforms for display
+        // Fetch the full raw record from the single-record endpoint
+        // and apply presentation transforms for display
         if (recordId) {
           const record = await fetchRecord(props.table, recordId);
           if (record) {
