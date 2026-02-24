@@ -103,7 +103,6 @@ export const transformSurveyDataValue = (
  * - Handling lists enclosed in square brackets by removing brackets and quotes, and
  *   joining items with commas.
  *
- * Applied client-side at render time so that downloads can access untransformed records.
  *
  * @param {DataEntry[]} data - An array of survey data entries to be transformed.
  * @param {string} [iconColumn] - Optional icon column name to exclude from transformation.
