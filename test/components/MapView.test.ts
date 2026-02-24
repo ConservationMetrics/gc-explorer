@@ -364,8 +364,8 @@ describe("MapView component", () => {
     expect(vm.showSidebar).toBe(true);
     // fetchRecord was called with the table and record ID
     expect(mockFetchRecord).toHaveBeenCalledWith("test_table", "1");
-    // Full record is populated from the API response
-    expect(vm.selectedFeature?._id).toBe("1");
+    // Full record is populated from the API response with client-side transforms applied
+    expect(vm.selectedFeature?.id).toBe("1");
     expect(vm.selectedFeature?.["filter-color"]).toBeUndefined();
     expect(vm.selectedFeatureLoading).toBe(false);
   });

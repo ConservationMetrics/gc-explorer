@@ -8,14 +8,6 @@ export const getRandomColor = () => {
   return color;
 };
 
-/** Capitalizes the first letter of each word in a string. */
-export const capitalizeFirstLetter = (string: string): string => {
-  return string
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-};
-
 /** Checks if a number is a valid geographic coordinate. */
 export const isValidCoordinate = (coord: number): boolean => {
   return coord != null && !isNaN(coord) && coord >= -180 && coord <= 180;

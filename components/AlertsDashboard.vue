@@ -27,6 +27,7 @@ import { useIncidents } from "@/composables/useIncidents";
 import { useFeatureSelection } from "@/composables/useFeatureSelection";
 import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
 import { useRecordCache } from "@/composables/useRecordCache";
+import { transformSurveyEntry } from "@/utils/transforms";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
@@ -148,7 +149,6 @@ const {
 // Clears the feature display and shows a loading skeleton while the
 // full record is fetched.
 let skipNextWatch = false;
-
 watch(
   () => selectedFeature.value,
   async (feature) => {
@@ -156,7 +156,7 @@ watch(
       skipNextWatch = false;
       return;
     }
-    if (!feature || !isMapeo.value || !props.mapeoTable) return;
+    if (!feature || !props.mapeoTable) return;
 
     const recordId = feature._id || feature.id;
     if (!recordId) return;
@@ -166,10 +166,17 @@ watch(
     selectedFeatureLoading.value = true;
 
     const fullRecord = await fetchRecord(props.mapeoTable, recordId);
-
     // Skip the next watcher trigger caused by setting the full record
     skipNextWatch = true;
-    selectedFeature.value = fullRecord ?? minimalFeature;
+    const displayRecord = fullRecord
+      ? transformSurveyEntry(fullRecord)
+      : minimalFeature;
+    selectedFeature.value = displayRecord;
+    if (displayRecord.photos) {
+      imageUrl.value = [];
+      const photos = String(displayRecord.photos).split(",");
+      photos.forEach((photo: string) => imageUrl.value.push(photo.trim()));
+    }
     selectedFeatureLoading.value = false;
   },
 );
