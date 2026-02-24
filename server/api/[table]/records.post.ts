@@ -4,7 +4,7 @@ import { validatePermissions } from "@/utils/auth";
 import type { H3Event } from "h3";
 
 const MAX_IDS = 500;
-
+/** NOTE: The endpoint does not guarantee that records are returned in the same order as requested IDs. Consumers must not rely on response ordering. */
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
 
@@ -52,13 +52,12 @@ export default defineEventHandler(async (event: H3Event) => {
     const records = await fetchRecords(table, stringIds);
     return records;
   } catch (error) {
-    if (error instanceof Error && "statusCode" in error) {
-      throw error;
+    if (error instanceof Error) {
+      console.error("Error fetching records:", error);
+      return sendError(event, error);
+    } else {
+      console.error("Unknown error fetching records:", error);
+      return sendError(event, new Error("An unknown error occurred"));
     }
-    console.error("Error fetching records:", error);
-    throw createError({
-      statusCode: 500,
-      statusMessage: "Internal server error",
-    });
   }
 });

@@ -133,26 +133,7 @@ export const fetchRecords = async (
     WHERE _id IN (${idPlaceholders})
   `);
 
-  if (!result || result.length === 0) {
-    return [];
-  }
-
-  // Preserve request order: build a lookup and map back to input order
-  const recordMap = new Map<string, DataEntry>();
-  for (const row of result) {
-    const entry = row as DataEntry;
-    recordMap.set(String(entry._id), entry);
-  }
-
-  const ordered: DataEntry[] = [];
-  for (const id of ids) {
-    const record = recordMap.get(id);
-    if (record) {
-      ordered.push(record);
-    }
-  }
-
-  return ordered;
+  return result as Array<DataEntry>;
 };
 
 export const fetchTableNames = async (): Promise<string[]> => {

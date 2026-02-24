@@ -27,6 +27,7 @@ const {
 } = useRuntimeConfig();
 
 const filteredData = ref(props.galleryData);
+// The local cache automatically gets cleared when the user navigates to a different page (when the component is unmounted)
 const loadedRecords = ref<Map<string, DataEntry>>(new Map());
 const loading = ref(false);
 
