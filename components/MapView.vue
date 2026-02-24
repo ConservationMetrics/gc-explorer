@@ -19,7 +19,7 @@ import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type { FeatureCollection, Feature } from "geojson";
 import { useRecordCache } from "@/composables/useRecordCache";
-import { transformRecord } from "@/utils/transforms";
+import { transformSurveyEntry } from "@/utils/transforms";
 
 import type {
   AllowedFileExtensions,
@@ -335,7 +335,7 @@ const addDataToMap = () => {
         if (recordId) {
           const record = await fetchRecord(props.table, recordId);
           if (record) {
-            const displayRecord = transformRecord(record);
+            const displayRecord = transformSurveyEntry(record);
             delete displayRecord["filter-color"];
 
             // Rewrite coordinates string from [long, lat] to lat, long, removing brackets for display

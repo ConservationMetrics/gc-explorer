@@ -135,7 +135,7 @@ export const transformSurveyData = (
  * @param {string} [iconColumn] - Optional icon column name to preserve unchanged.
  * @returns {DataEntry} The transformed entry with readable keys and values.
  */
-export const transformRecord = (
+export const transformSurveyEntry = (
   entry: DataEntry,
   iconColumn?: string,
 ): DataEntry => {

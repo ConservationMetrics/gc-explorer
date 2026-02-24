@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { getFilePathsWithExtension } from "@/utils";
 import { prepareCoordinatesForSelectedFeature } from "@/utils/mapFunctions";
-import { transformRecord } from "@/utils/transforms";
+import { transformSurveyEntry } from "@/utils/transforms";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
@@ -58,7 +58,7 @@ const filterValues = (values: FilterValues) => {
 
 /** Transform raw record for display and prepare coordinates for selected feature */
 const prepareForDisplay = (feature: DataEntry): DataEntry => {
-  const transformed = transformRecord(feature);
+  const transformed = transformSurveyEntry(feature);
   if (transformed.geocoordinates) {
     transformed.geocoordinates = prepareCoordinatesForSelectedFeature(
       transformed.geocoordinates,
