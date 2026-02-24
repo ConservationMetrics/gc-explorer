@@ -61,6 +61,7 @@ export const transformSurveyDataValue = (
 ): string | number | null => {
   if (value === null) return null;
   if (key === "g__coordinates") return value;
+  // Don't transform icon column values (filenames)
   if (iconColumn && key === iconColumn) return value;
 
   let transformedValue = value;
@@ -69,6 +70,9 @@ export const transformSurveyDataValue = (
     if (key.toLowerCase().includes("category")) {
       transformedValue = transformedValue.replace(/-/g, " ");
     }
+    // TODO: For now this is a quick fix to ensure original timestamps are
+    // returned in file downloads. We need to rethink how we do data transformations
+    // so that file downloads return the original records, not transformed ones.
     transformedValue =
       transformedValue.charAt(0).toUpperCase() + transformedValue.slice(1);
   }
