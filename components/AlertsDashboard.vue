@@ -254,7 +254,6 @@ const selectInitialAlertFeature = (alertId: string) => {
  * (via MurmurHash) for Mapbox feature-state compatibility.
  */
 const selectInitialMapeoFeature = (mapeoDocId: string) => {
-  console.log("selectInitialMapeoFeature", mapeoDocId, props.mapeoData);
   const feature = props.mapeoData?.features.find(
     (mapeoFeature) =>
       mapeoFeature.properties?._id === mapeoDocId ||
