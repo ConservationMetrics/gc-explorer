@@ -5,7 +5,26 @@ import type { Ref, ComputedRef } from "vue";
 // Records are keyed by `${table}::${recordId}`.
 const cache = new Map<string, DataEntry>();
 const pending = new Map<string, Promise<DataEntry | null>>();
+const MAX_CACHE_SIZE = 3000;
 
+/**
+ * Ensures the in-memory record cache does not exceed the configured
+ * maximum size. If the cache grows beyond `MAX_CACHE_SIZE`, the
+ * oldest inserted entry is removed.
+ *
+ * This implements a simple FIFO eviction strategy based on the
+ * insertion order preserved by `Map`. It is not a true LRU cache.
+ *
+ * @returns {void}
+ */
+const maybeEvictOldestCacheEntry = () => {
+  if (cache.size > MAX_CACHE_SIZE) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey) {
+      cache.delete(firstKey);
+    }
+  }
+};
 // Lazy-initialized reactive counter; avoids calling ref() at import time
 // (which would fail in test environments where Vue auto-imports are not yet
 // registered on globalThis).
@@ -57,6 +76,7 @@ export const useRecordCache = () => {
     const request = $fetch<DataEntry>(`/api/${table}/${recordId}`, { headers })
       .then((record) => {
         cache.set(cacheKey, record);
+        maybeEvictOldestCacheEntry();
         count.value = cache.size;
         return record;
       })
@@ -115,6 +135,7 @@ export const useRecordCache = () => {
         if (record._id != null) {
           const cacheKey = `${table}::${String(record._id)}`;
           cache.set(cacheKey, record);
+          maybeEvictOldestCacheEntry();
         }
         results.push(record);
       }
