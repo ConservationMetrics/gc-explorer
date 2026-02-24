@@ -54,6 +54,7 @@ const fetchFullRecords = async (ids: string[]) => {
 
     for (const record of records) {
       if (record._id) {
+        // add to frontend data cache
         loadedRecords.value.set(String(record._id), record);
       }
     }
