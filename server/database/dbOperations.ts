@@ -118,8 +118,7 @@ export const fetchRecords = async (
   table: string,
   ids: string[],
 ): Promise<DataEntry[]> => {
-  const cleanTableName = table.replace(/"/g, "");
-  const tableExists = await checkTableExists(cleanTableName);
+  const tableExists = await checkTableExists(table);
   if (!tableExists) {
     throw new Error("Table does not exist");
   }
@@ -129,7 +128,7 @@ export const fetchRecords = async (
     sql`, `,
   );
   const result = await warehouseDb.execute(sql`
-    SELECT * FROM ${sql.identifier(cleanTableName)}
+    SELECT * FROM ${sql.identifier(table)}
     WHERE _id IN (${idPlaceholders})
   `);
 

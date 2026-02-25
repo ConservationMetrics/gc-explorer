@@ -17,7 +17,7 @@ export default defineEventHandler(async (event: H3Event) => {
     });
   }
 
-  const { ids } = body as { ids: unknown[] };
+  const { ids } = body as { ids: Array<string> };
 
   if (ids.length === 0) {
     throw createError({
@@ -33,23 +33,12 @@ export default defineEventHandler(async (event: H3Event) => {
     });
   }
 
-  const stringIds = ids.filter(
-    (id): id is string => typeof id === "string" && id.trim() !== "",
-  );
-
-  if (stringIds.length === 0) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "The 'ids' array must contain valid string IDs",
-    });
-  }
-
   try {
     const viewsConfig = await fetchConfig();
     const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
 
-    const records = await fetchRecords(table, stringIds);
+    const records = await fetchRecords(table, ids);
     return records;
   } catch (error) {
     if (error instanceof Error) {

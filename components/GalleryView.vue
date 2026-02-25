@@ -53,10 +53,7 @@ const fetchFullRecords = async (ids: string[]) => {
 watch(
   paginatedData,
   async (items) => {
-    const ids = items
-      .map((item) => item._id)
-      .filter((id): id is string => id != null)
-      .map(String);
+    const ids = items.map((item) => item._id);
     if (ids.length > 0) {
       await fetchFullRecords(ids);
     }
