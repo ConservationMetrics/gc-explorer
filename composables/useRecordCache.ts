@@ -6,6 +6,7 @@ import type { Ref, ComputedRef } from "vue";
 const cache = new Map<string, DataEntry>();
 const pending = new Map<string, Promise<DataEntry | null>>();
 const MAX_CACHE_SIZE = 3000;
+const BATCH_SIZE = 500;
 
 /**
  * Ensures the in-memory record cache does not exceed the configured
@@ -97,7 +98,8 @@ export const useRecordCache = () => {
 
   /**
    * Batch-fetches raw records by IDs, populating the shared cache.
-   * Only fetches IDs that are not already cached or in-flight.
+   * Only fetches IDs that are not already cached or in-flight. Requests are
+   * split into chunks of BATCH_SIZE to stay within the server's MAX_IDS limit.
    *
    * @param {string} table - The dataset table name.
    * @param {string[]} ids - Array of _id values to fetch.
@@ -110,7 +112,6 @@ export const useRecordCache = () => {
     const results: DataEntry[] = [];
     const idsToFetch: string[] = [];
 
-    // Collect cached hits and identify what needs fetching
     for (const id of ids) {
       const cacheKey = `${table}::${id}`;
       if (cache.has(cacheKey)) {
@@ -124,21 +125,41 @@ export const useRecordCache = () => {
       return results;
     }
 
-    try {
-      const freshRecords = await $fetch<DataEntry[]>(`/api/${table}/records`, {
-        method: "POST",
-        body: { ids: idsToFetch },
-        headers,
-      });
+    // Split into batches to respect the server's MAX_IDS limit
+    const batches: string[][] = [];
+    for (let i = 0; i < idsToFetch.length; i += BATCH_SIZE) {
+      batches.push(idsToFetch.slice(i, i + BATCH_SIZE));
+    }
 
-      for (const record of freshRecords) {
-        if (record._id != null) {
-          const cacheKey = `${table}::${String(record._id)}`;
-          cache.set(cacheKey, record);
-          maybeEvictOldestCacheEntry();
+    try {
+      const batchPromises = batches.map((batch) =>
+        $fetch<DataEntry[]>(`/api/${table}/records`, {
+          method: "POST",
+          body: { ids: batch },
+          headers,
+        }),
+      );
+      const batchResults = await Promise.all(batchPromises);
+
+      let returnedCount = 0;
+      for (const freshRecords of batchResults) {
+        for (const record of freshRecords) {
+          returnedCount++;
+          if (record._id != null) {
+            const cacheKey = `${table}::${String(record._id)}`;
+            cache.set(cacheKey, record);
+            maybeEvictOldestCacheEntry();
+          }
+          results.push(record);
         }
-        results.push(record);
       }
+
+      if (returnedCount < idsToFetch.length) {
+        console.warn(
+          `[useRecordCache] Requested ${idsToFetch.length} records from "${table}" but server returned ${returnedCount}`,
+        );
+      }
+
       count.value = cache.size;
     } catch (error) {
       console.error("Failed to batch-fetch records:", error);

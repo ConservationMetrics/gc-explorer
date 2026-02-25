@@ -55,7 +55,7 @@ watch(
   async (items) => {
     const ids = items
       .map((item) => item._id)
-      .filter((id): id is string => id != null && String(id).trim() !== "")
+      .filter((id): id is string => id != null)
       .map(String);
     if (ids.length > 0) {
       await fetchFullRecords(ids);
