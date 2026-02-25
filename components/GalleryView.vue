@@ -38,7 +38,7 @@ const paginatedData = computed<Dataset>(() => {
 });
 
 /** Batch-fetches full records for the visible page into the shared cache. */
-const fetchPageRecords = async (ids: string[]) => {
+const fetchFullRecords = async (ids: string[]) => {
   loading.value = true;
   try {
     await fetchRecords(props.table, ids);
@@ -58,7 +58,7 @@ watch(
       .filter((id): id is string => id != null && String(id).trim() !== "")
       .map(String);
     if (ids.length > 0) {
-      await fetchPageRecords(ids);
+      await fetchFullRecords(ids);
     }
   },
   { immediate: true },
