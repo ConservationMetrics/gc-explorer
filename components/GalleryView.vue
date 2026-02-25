@@ -2,6 +2,7 @@
 import { getFilePathsWithExtension } from "@/utils";
 import { prepareCoordinatesForSelectedFeature } from "@/utils/mapFunctions";
 import { transformRecord } from "@/utils/transforms";
+import { useRecordCache } from "@/composables/useRecordCache";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
@@ -22,13 +23,9 @@ const props = defineProps<{
   table: string;
 }>();
 
-const {
-  public: { appApiKey },
-} = useRuntimeConfig();
+const { fetchRecords, getCachedRecord, cacheSize } = useRecordCache();
 
 const filteredData = ref(props.galleryData);
-// The local cache automatically gets cleared when the user navigates to a different page (when the component is unmounted)
-const loadedRecords = ref<Map<string, DataEntry>>(new Map());
 const loading = ref(false);
 
 // Pagination per page
@@ -40,25 +37,11 @@ const paginatedData = computed<Dataset>(() => {
   return filteredData.value.slice(start, end) as Dataset;
 });
 
-/** Batch-fetches full records for the given IDs, skipping already-loaded ones. */
+/** Batch-fetches full records for the visible page into the shared cache. */
 const fetchFullRecords = async (ids: string[]) => {
-  const idsToFetch = ids.filter((id) => !loadedRecords.value.has(id));
-  if (idsToFetch.length === 0) return;
-
   loading.value = true;
   try {
-    const records = await $fetch<DataEntry[]>(`/api/${props.table}/records`, {
-      method: "POST",
-      body: { ids: idsToFetch },
-      headers: { "x-api-key": appApiKey as string },
-    });
-
-    for (const record of records) {
-      if (record._id) {
-        // add to frontend data cache
-        loadedRecords.value.set(String(record._id), record);
-      }
-    }
+    await fetchRecords(props.table, ids);
   } catch (error) {
     console.error("Error batch-fetching gallery records:", error);
   } finally {
@@ -107,12 +90,14 @@ const filterValues = (values: FilterValues) => {
 };
 
 /**
- * Returns the full loaded record for a gallery item, falling back to the
+ * Returns the full cached record for a gallery item, falling back to the
  * minimal record if the full record hasn't loaded yet.
  */
 const getFullRecord = (minimalItem: DataEntry): DataEntry => {
+  // Read cacheSize to trigger Vue reactivity when cache updates
+  void cacheSize.value;
   const id = String(minimalItem._id);
-  return loadedRecords.value.get(id) ?? minimalItem;
+  return getCachedRecord(props.table, id) ?? minimalItem;
 };
 
 /** Transform raw record for display and prepare coordinates for selected feature */
