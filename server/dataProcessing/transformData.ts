@@ -1,7 +1,7 @@
 import murmurhash from "murmurhash";
 
-import { calculateCentroid, capitalizeFirstLetter } from "./helpers";
-
+import { calculateCentroid } from "./helpers";
+import { capitalizeFirstLetter } from "@/utils/transforms";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type {
   AlertsMetadata,

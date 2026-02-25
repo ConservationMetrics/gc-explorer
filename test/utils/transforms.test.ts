@@ -4,7 +4,7 @@ import {
   transformSurveyData,
   transformSurveyDataKey,
   transformSurveyDataValue,
-  transformRecord,
+  transformSurveyEntry,
 } from "@/utils/transforms";
 import { mapeoData } from "../fixtures/mapeoData";
 
@@ -133,10 +133,10 @@ describe("transformSurveyData", () => {
   });
 });
 
-describe("transformRecord", () => {
+describe("transformSurveyEntry", () => {
   it("should transform a single record", () => {
     const rawRecord = mapeoData[0];
-    const result = transformRecord(rawRecord);
+    const result = transformSurveyEntry(rawRecord);
 
     expect(result).not.toHaveProperty("g__coordinates");
     expect(result).toHaveProperty("geocoordinates");
@@ -150,7 +150,7 @@ describe("transformRecord", () => {
       icon_col: "icon.png",
       p__categoryid: "forest",
     };
-    const result = transformRecord(record, "icon_col");
+    const result = transformSurveyEntry(record, "icon_col");
     expect(result.icon_col).toBe("icon.png");
   });
 });

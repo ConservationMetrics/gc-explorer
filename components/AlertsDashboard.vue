@@ -27,7 +27,7 @@ import { useIncidents } from "@/composables/useIncidents";
 import { useFeatureSelection } from "@/composables/useFeatureSelection";
 import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
 import { useRecordCache } from "@/composables/useRecordCache";
-import { transformRecord } from "@/utils/transforms";
+import { transformSurveyEntry } from "@/utils/transforms";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
@@ -169,7 +169,7 @@ watch(
     // Skip the next watcher trigger caused by setting the full record
     skipNextWatch = true;
     const displayRecord = fullRecord
-      ? transformRecord(fullRecord)
+      ? transformSurveyEntry(fullRecord)
       : minimalFeature;
     selectedFeature.value = displayRecord;
     if (displayRecord.photos) {
@@ -254,7 +254,6 @@ const selectInitialAlertFeature = (alertId: string) => {
  * (via MurmurHash) for Mapbox feature-state compatibility.
  */
 const selectInitialMapeoFeature = (mapeoDocId: string) => {
-  console.log("selectInitialMapeoFeature", mapeoDocId, props.mapeoData);
   const feature = props.mapeoData?.features.find(
     (mapeoFeature) =>
       mapeoFeature.properties?._id === mapeoDocId ||
