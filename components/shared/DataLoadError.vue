@@ -9,7 +9,10 @@ const props = withDefaults(
   { showRetry: true },
 );
 
+const route = useRoute();
 const router = useRouter();
+
+const isHomeRoute = computed(() => route.path === "/" || route.path === "");
 
 const isRetrying = ref(false);
 
@@ -59,6 +62,7 @@ const handleGoBack = () => {
           {{ $t("goBack") }}
         </button>
         <NuxtLink
+          v-if="!isHomeRoute"
           to="/"
           class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
         >
