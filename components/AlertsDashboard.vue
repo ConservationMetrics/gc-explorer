@@ -40,6 +40,17 @@ import type {
 import type { Feature, Geometry } from "geojson";
 
 const { t } = useI18n();
+const { error: showErrorToast } = useToast();
+
+const handleCreateIncident = async (
+  data: Parameters<typeof createIncident>[0],
+) => {
+  try {
+    await createIncident(data);
+  } catch {
+    showErrorToast(t("errorCouldNotCreateIncident"));
+  }
+};
 
 const props = defineProps<{
   alertsData: AlertsData;
@@ -95,10 +106,12 @@ const {
   multiSelectMode,
   boundingBoxMode,
   isLoadingIncidents,
+  incidentsFetchError,
   selectedIncident,
   selectedIncidentData,
   selectedIncidentEntries,
   isLoadingSelectedIncident,
+  incidentDetailsError,
   hoveredButton,
   fetchIncidents,
   loadMoreIncidents,
@@ -1543,17 +1556,21 @@ onBeforeUnmount(() => {
         :selected-incident-data="selectedIncidentData"
         :selected-incident-entries="selectedIncidentEntries"
         :is-loading-selected-incident="isLoadingSelectedIncident"
+        :incidents-fetch-error="incidentsFetchError"
+        :incident-details-error="incidentDetailsError"
         :selected-sources="selectedSources"
         :is-loading="isLoadingIncidents"
         :is-creating="isCreatingIncident"
         :show="showIncidentsSidebar"
         :open-with-create-form="openSidebarWithCreateForm"
+        :retry-fetch-incidents="fetchIncidents"
         @close="toggleIncidentsSidebar"
         @back-to-incidents-list="clearSelectedIncident"
+        @retry-incident-details="(id: string) => openIncidentDetails(id)"
         @select-incident="openIncidentDetails"
         @hover-incident="scheduleIncidentPrefetch"
         @load-more-incidents="loadMoreIncidents"
-        @create-incident="createIncident"
+        @create-incident="handleCreateIncident"
         @remove-source="removeSourceFromSelection"
         @clear-sources="handleClearSourcesAndCloseSidebar"
       />

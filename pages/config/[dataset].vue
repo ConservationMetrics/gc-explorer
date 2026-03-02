@@ -24,7 +24,7 @@ const headers = {
   "x-api-key": appApiKey,
 };
 
-const { data, error } = await useFetch("/api/config", {
+const { data, error, refresh } = await useFetch("/api/config", {
   headers,
 });
 
@@ -129,6 +129,7 @@ const handleConfirmRemove = async () => {
       }, 3000);
     } catch (error) {
       console.error("Error removing table from config:", error);
+      showErrorToast(t("errorCouldNotRemoveDataset"));
       showModal.value = false;
     }
   }
@@ -152,6 +153,7 @@ const {
 } = useCopyConfig(viewsConfig, dataset);
 
 const { t } = useI18n();
+const { error: showErrorToast } = useToast();
 useHead({
   title: "GuardianConnector Explorer: " + t("configuration") + " - " + dataset,
 });
@@ -160,7 +162,13 @@ useHead({
 <template>
   <div class="min-h-screen flex flex-col bg-white">
     <AppHeader />
-    <ClientOnly>
+    <DataLoadError
+      v-if="error"
+      :title="$t('dataLoadErrorTitle')"
+      :message="$t('dataLoadErrorMessage')"
+      :retry="() => refresh()"
+    />
+    <ClientOnly v-else>
       <div
         v-if="dataFetched && datasetConfig"
         class="max-w-7xl mx-auto p-3 sm:p-6 w-full"

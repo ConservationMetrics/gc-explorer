@@ -55,6 +55,8 @@ const props = defineProps<{
   selectedIncidentData?: Incident | null;
   selectedIncidentEntries?: CollectionEntry[];
   isLoadingSelectedIncident?: boolean;
+  incidentsFetchError?: boolean;
+  incidentDetailsError?: boolean;
   selectedSources: Array<{
     source_table: string;
     source_id: string;
@@ -64,6 +66,7 @@ const props = defineProps<{
   isCreating: boolean;
   show: boolean;
   openWithCreateForm?: boolean;
+  retryFetchIncidents?: () => void | Promise<void>;
 }>();
 
 const emit = defineEmits<{
@@ -84,6 +87,7 @@ const emit = defineEmits<{
   ];
   removeSource: [sourceTable: string, sourceId: string];
   clearSources: [];
+  retryIncidentDetails: [incidentId: string];
 }>();
 
 const showCreateForm = ref(false);
@@ -245,6 +249,22 @@ const handleClose = () => {
       <div v-if="selectedIncident" class="incident-detail">
         <div v-if="isLoadingSelectedIncident" class="loading">
           {{ $t("incidents.loadingIncident") }}
+        </div>
+
+        <div
+          v-else-if="incidentDetailsError"
+          class="incident-error-state rounded-lg border border-purple-200 bg-purple-50/50 p-4 text-center"
+        >
+          <p class="text-sm text-gray-700 mb-3">
+            {{ $t("errorCouldNotLoadIncident") }}
+          </p>
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded-lg bg-purple-700 px-3 py-2 text-sm font-medium text-white hover:bg-purple-800"
+            @click="emit('retryIncidentDetails', selectedIncident.id)"
+          >
+            {{ $t("retry") }}
+          </button>
         </div>
 
         <template v-else>
@@ -483,6 +503,23 @@ const handleClose = () => {
         >
           <div v-if="isLoading" class="loading">
             {{ $t("incidents.loadingIncidents") }}
+          </div>
+
+          <div
+            v-else-if="incidentsFetchError"
+            class="incident-error-state rounded-lg border border-purple-200 bg-purple-50/50 p-4 text-center"
+          >
+            <p class="text-sm text-gray-700 mb-3">
+              {{ $t("errorCouldNotLoadIncidents") }}
+            </p>
+            <button
+              v-if="retryFetchIncidents"
+              type="button"
+              class="inline-flex items-center justify-center rounded-lg bg-purple-700 px-3 py-2 text-sm font-medium text-white hover:bg-purple-800"
+              @click="retryFetchIncidents()"
+            >
+              {{ $t("retry") }}
+            </button>
           </div>
 
           <div v-else-if="incidents.length === 0" class="empty-state">

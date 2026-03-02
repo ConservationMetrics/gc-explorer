@@ -23,7 +23,7 @@ const {
 const headers = {
   "x-api-key": appApiKey,
 };
-const { data, error } = await useFetch(`/api/${table}/gallery`, {
+const { data, error, refresh } = await useFetch(`/api/${table}/gallery`, {
   headers,
 });
 
@@ -59,7 +59,13 @@ useHead({
 
 <template>
   <div>
-    <ClientOnly>
+    <DataLoadError
+      v-if="error"
+      :title="$t('dataLoadErrorTitle')"
+      :message="$t('dataLoadErrorMessage')"
+      :retry="() => refresh()"
+    />
+    <ClientOnly v-else>
       <GalleryView
         v-if="mediaBasePath && dataFetched"
         :allowed-file-extensions="allowedFileExtensions"

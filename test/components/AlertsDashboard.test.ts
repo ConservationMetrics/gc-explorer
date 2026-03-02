@@ -74,6 +74,13 @@ const mockUseRuntimeConfig = () => ({
   },
 });
 
+const mockUseToast = () => ({
+  error: vi.fn(),
+  warning: vi.fn(),
+  success: vi.fn(),
+  info: vi.fn(),
+});
+
 // Make Vue reactivity functions and Nuxt composables available globally (for auto-imports)
 Object.assign(globalThis, {
   ref,
@@ -84,6 +91,7 @@ Object.assign(globalThis, {
   onBeforeUnmount,
   nextTick,
   useRuntimeConfig: mockUseRuntimeConfig,
+  useToast: mockUseToast,
   $fetch: mockFetch,
 });
 

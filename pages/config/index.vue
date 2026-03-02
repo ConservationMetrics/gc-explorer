@@ -14,7 +14,7 @@ const headers = {
   "x-api-key": appApiKey,
 };
 
-const { data, error } = await useFetch("/api/config", {
+const { data, error, refresh } = await useFetch("/api/config", {
   headers,
 });
 
@@ -44,6 +44,7 @@ const submitConfig = async ({
     });
   } catch (error) {
     console.error("Error submitting request data:", error);
+    showErrorToast(t("errorCouldNotSaveChanges"));
   }
 };
 
@@ -55,6 +56,7 @@ const removeTableFromConfig = async (tableName: string) => {
     });
   } catch (error) {
     console.error("Error removing table from config:", error);
+    showErrorToast(t("errorCouldNotRemoveDataset"));
   }
 };
 
@@ -66,10 +68,12 @@ const addTableToConfig = async (tableName: string) => {
     });
   } catch (error) {
     console.error("Error adding table to config:", error);
+    showErrorToast(t("errorCouldNotAddDataset"));
   }
 };
 
 const { t } = useI18n();
+const { error: showErrorToast } = useToast();
 useHead({
   title: "GuardianConnector Explorer: " + t("configuration"),
 });
@@ -78,7 +82,13 @@ useHead({
 <template>
   <div class="min-h-screen flex flex-col bg-white">
     <AppHeader />
-    <ClientOnly>
+    <DataLoadError
+      v-if="error"
+      :title="$t('dataLoadErrorTitle')"
+      :message="$t('dataLoadErrorMessage')"
+      :retry="() => refresh()"
+    />
+    <ClientOnly v-else>
       <ConfigDashboard
         v-if="dataFetched"
         :views-config="viewsConfig"

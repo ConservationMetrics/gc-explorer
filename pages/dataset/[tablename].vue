@@ -26,7 +26,7 @@ const headers = {
   "x-api-key": appApiKey,
 };
 
-const { data, error } = await useFetch("/api/config", {
+const { data, error, refresh } = await useFetch("/api/config", {
   headers,
 });
 
@@ -154,7 +154,13 @@ useHead({
   <div class="min-h-screen flex flex-col bg-white">
     <AppHeader />
 
-    <main v-if="dataFetched && canViewDataset" class="w-full">
+    <DataLoadError
+      v-if="error"
+      :title="$t('dataLoadErrorTitle')"
+      :message="$t('dataLoadErrorMessage')"
+      :retry="() => refresh()"
+    />
+    <main v-else-if="dataFetched && canViewDataset" class="w-full">
       <div class="w-5/6 mx-auto mb-4 flex items-center justify-between">
         <NuxtLink
           to="/"
