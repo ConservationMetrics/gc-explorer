@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ConfigCard from "@/components/config/ConfigCard.vue";
 import AppHeader from "@/components/shared/AppHeader.vue";
+import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import type { Views, ViewConfig } from "@/types/types";
 

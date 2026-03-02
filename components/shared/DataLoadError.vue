@@ -26,7 +26,6 @@ const handleRetry = async () => {
 const handleGoBack = () => {
   router.back();
 };
-
 </script>
 
 <template>

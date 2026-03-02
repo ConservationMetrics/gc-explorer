@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Views, ViewConfig } from "@/types/types";
 import AppHeader from "@/components/shared/AppHeader.vue";
+import DataLoadError from "@/components/shared/DataLoadError.vue";
 
 const viewsConfig = ref<Views>({});
 const tableNames = ref();

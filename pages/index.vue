@@ -2,6 +2,7 @@
 import type { Views, User } from "@/types/types";
 import { Role } from "@/types/types";
 import AppHeader from "@/components/shared/AppHeader.vue";
+import DataLoadError from "@/components/shared/DataLoadError.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
 
 const viewsConfig = ref<Views>({});
