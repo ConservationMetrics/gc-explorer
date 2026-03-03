@@ -17,10 +17,6 @@ const galleryData = ref();
 const mediaBasePath = ref();
 const mediaColumn = ref();
 
-const {
-  public: {},
-} = useRuntimeConfig();
-
 const { data, error, refresh } = await useFetch(`/api/${table}/gallery`);
 
 if (data.value && !error.value) {

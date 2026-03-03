@@ -34,10 +34,6 @@ const mediaBasePath = ref();
 const mediaBasePathAlerts = ref();
 const planetApiKey = ref();
 
-const {
-  public: {},
-} = useRuntimeConfig();
-
 const { data, error, refresh } = await useFetch(`/api/${table}/alerts`);
 
 if (data.value && !error.value) {

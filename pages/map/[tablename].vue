@@ -36,10 +36,6 @@ const mediaBasePathIcons = ref();
 const mediaColumn = ref();
 const planetApiKey = ref();
 
-const {
-  public: {},
-} = useRuntimeConfig();
-
 const { data, error, refresh } = await useFetch(`/api/${table}/map`);
 
 if (data.value && !error.value) {

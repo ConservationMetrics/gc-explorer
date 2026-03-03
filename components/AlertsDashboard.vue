@@ -90,9 +90,6 @@ const router = useRouter();
 
 const isMapeo = ref(false);
 
-// Get API key from runtime config
-const config = useRuntimeConfig();
-
 // Use incidents composable
 const {
   incidents,

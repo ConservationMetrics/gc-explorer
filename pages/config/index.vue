@@ -7,10 +7,6 @@ const viewsConfig = ref<Views>({});
 const tableNames = ref();
 const dataFetched = ref(false);
 
-const {
-  public: {},
-} = useRuntimeConfig();
-
 const { data, error, refresh } = await useFetch("/api/config");
 
 if (data.value && !error.value) {

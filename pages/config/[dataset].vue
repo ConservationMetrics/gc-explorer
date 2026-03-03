@@ -17,10 +17,6 @@ const dataFetched = ref(false);
 const datasetConfig = ref<ViewConfig | null>(null);
 const errorMessage = ref<string | null>(null);
 
-const {
-  public: {},
-} = useRuntimeConfig();
-
 const { data, error, refresh } = await useFetch("/api/config");
 
 if (data.value && !error.value) {
