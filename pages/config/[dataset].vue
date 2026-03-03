@@ -17,17 +17,7 @@ const dataFetched = ref(false);
 const datasetConfig = ref<ViewConfig | null>(null);
 const errorMessage = ref<string | null>(null);
 
-const {
-  public: { appApiKey },
-} = useRuntimeConfig();
-
-const headers = {
-  "x-api-key": appApiKey,
-};
-
-const { data, error, refresh } = await useFetch("/api/config", {
-  headers,
-});
+const { data, error, refresh } = await useFetch("/api/config");
 
 if (data.value && !error.value) {
   const fetchedViewsData = data.value[0] as Views;
@@ -71,7 +61,6 @@ const submitConfig = async ({
   try {
     await $fetch(`/api/config/update_config/${tableName}`, {
       method: "POST",
-      headers,
       body: JSON.stringify(config),
     });
     // Update the local datasetConfig to reflect the saved state
@@ -116,7 +105,6 @@ const handleConfirmRemove = async () => {
     try {
       await $fetch(`/api/config/delete_table/${tableNameToRemove.value}`, {
         method: "POST",
-        headers,
       });
       // Hide buttons and update message to show success
       showModalButtons.value = false;

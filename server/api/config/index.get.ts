@@ -1,9 +1,12 @@
 import { fetchConfig } from "@/server/database/dbOperations";
 import { getFilteredTableNames } from "./utils";
+import { validateUserSession } from "@/utils/auth";
 
 import type { H3Event } from "h3";
 
 export default defineEventHandler(async (event: H3Event) => {
+  await validateUserSession(event);
+
   try {
     const viewsConfig = await fetchConfig();
     const tableNames = await getFilteredTableNames();

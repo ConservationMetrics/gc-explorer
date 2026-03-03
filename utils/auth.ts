@@ -1,6 +1,27 @@
 import type { H3Event } from "h3";
 import type { User, RouteLevelPermission } from "@/types/types";
 import { Role } from "@/types/types";
+import { useRuntimeConfig } from "#imports";
+
+/**
+ * Validates that a user session exists, unless authStrategy is "none".
+ * @param event - The H3 event object
+ * @returns The user session
+ * @throws {Error} - Throws 401 if authentication is required but missing
+ */
+export const validateUserSession = async (event: H3Event) => {
+  const config = useRuntimeConfig();
+  const authStrategy = config.public.authStrategy;
+  const session = await getUserSession(event);
+
+  if (authStrategy !== "none" && !session.user) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: "Unauthorized - Authentication required",
+    });
+  }
+  return session;
+};
 
 /**
  * Validates user authentication and permissions for the given permission level

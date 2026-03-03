@@ -90,10 +90,6 @@ const router = useRouter();
 
 const isMapeo = ref(false);
 
-// Get API key from runtime config
-const config = useRuntimeConfig();
-const apiKey = config.public.appApiKey as string;
-
 // Use incidents composable
 const {
   incidents,
@@ -128,7 +124,7 @@ const {
   clearSelectedSources,
   handleMultiSelectFeature,
   handleIncidentClusterZoom,
-} = useIncidents(map, route, router, apiKey, toRef(props, "mapLegendLayerIds"));
+} = useIncidents(map, route, router, toRef(props, "mapLegendLayerIds"));
 
 // Use feature selection composable
 const {

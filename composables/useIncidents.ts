@@ -39,7 +39,6 @@ export const useIncidents = (
   map: Ref<mapboxgl.Map | undefined>,
   route: RouteLocationNormalizedLoaded,
   router: Router,
-  apiKey: string,
   mapLegendLayerIds?: Ref<string | undefined>,
 ) => {
   // Incidents state management
@@ -275,9 +274,6 @@ export const useIncidents = (
           limit: incidentsLimit.value,
           offset,
         },
-        headers: {
-          "x-api-key": apiKey,
-        },
       });
 
       incidentsFetchError.value = false;
@@ -349,11 +345,6 @@ export const useIncidents = (
 
     const promise = $fetch<IncidentDetailsResponse>(
       `/api/incidents/${incidentId}`,
-      {
-        headers: {
-          "x-api-key": apiKey,
-        },
-      },
     )
       .then((response) => {
         incidentDetailsCache.set(incidentId, response);
@@ -444,7 +435,6 @@ export const useIncidents = (
         {
           method: "POST",
           headers: {
-            "x-api-key": apiKey,
             "Content-Type": "application/json",
           },
           body: {

@@ -22,7 +22,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   nitro: {
-    plugins: ["@/server/index.ts", "@/server/plugins/apiAuth.ts"],
+    plugins: ["@/server/index.ts"],
     routeRules: {
       "/api/**": {
         cors: true,
@@ -135,7 +135,6 @@ export default defineNuxtConfig({
         audio: ["mp3", "ogg", "wav", "m4a"],
         video: ["mov", "mp4", "avi", "mkv"],
       },
-      appApiKey: "",
       authStrategy: "none",
       baseUrl: "http://localhost:8080",
       communityName: "community",

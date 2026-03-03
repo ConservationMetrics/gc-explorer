@@ -36,15 +36,7 @@ const mediaBasePathIcons = ref();
 const mediaColumn = ref();
 const planetApiKey = ref();
 
-const {
-  public: { appApiKey },
-} = useRuntimeConfig();
-const headers = {
-  "x-api-key": appApiKey,
-};
-const { data, error, refresh } = await useFetch(`/api/${table}/map`, {
-  headers,
-});
+const { data, error, refresh } = await useFetch(`/api/${table}/map`);
 
 if (data.value && !error.value) {
   allowedFileExtensions.value = data.value.allowedFileExtensions;

@@ -68,11 +68,6 @@ const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
 
 // Mock Nuxt composables - needs to be before component import
 const mockFetch = vi.fn();
-const mockUseRuntimeConfig = () => ({
-  public: {
-    appApiKey: "test-api-key",
-  },
-});
 
 const mockUseToast = () => ({
   error: vi.fn(),
@@ -90,7 +85,6 @@ Object.assign(globalThis, {
   onMounted,
   onBeforeUnmount,
   nextTick,
-  useRuntimeConfig: mockUseRuntimeConfig,
   useToast: mockUseToast,
   $fetch: mockFetch,
 });
@@ -105,7 +99,6 @@ vi.mock("vue-router", () => ({
 
 // Mock Nuxt composables via #imports
 vi.mock("#imports", () => ({
-  useRuntimeConfig: mockUseRuntimeConfig,
   $fetch: mockFetch,
 }));
 
