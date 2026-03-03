@@ -179,6 +179,24 @@ jobs:
       - name: Generate date for image tag
         id: imgtag_date
         run: echo "DATE_FOR_IMGTAG=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+      - name: Compute tag components
+        id: tagvars
+        run: |
+          SAFE_REF=$(echo "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]' | sed -E 's#[^a-z0-9._-]+#-#g')
+          echo "SAFE_REF=$SAFE_REF" >> $GITHUB_OUTPUT
+
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            echo "IS_PR=true" >> $GITHUB_OUTPUT
+            echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          else
+            echo "IS_PR=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            echo "IS_MAIN=true" >> $GITHUB_OUTPUT
+          else
+            echo "IS_MAIN=false" >> $GITHUB_OUTPUT
+          fi
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -193,9 +211,13 @@ jobs:
           push: true
           tags: |
             ${{ steps.meta.outputs.tags }}
-            ${{ github.ref == 'refs/heads/main' && 'communityfirst/guardianconnector-explorer:latest' || '' }}
-            ${{ github.ref == 'refs/heads/main' && format('communityfirst/guardianconnector-explorer:{0}-{1}', steps.imgtag_date.outputs.DATE_FOR_IMGTAG, github.run_number) || '' }}
-            communityfirst/guardianconnector-explorer:ci-test
+
+            ${{ steps.tagvars.outputs.IS_MAIN == 'true' && 'communityfirst/guardianconnector-explorer:latest' || '' }}
+            ${{ steps.tagvars.outputs.IS_MAIN == 'true' && format('communityfirst/guardianconnector-explorer:{0}-{1}', steps.imgtag_date.outputs.DATE_FOR_IMGTAG, github.run_number) || '' }}
+
+            ${{ steps.tagvars.outputs.IS_PR == 'true' && format('communityfirst/guardianconnector-explorer:pr-{0}-{1}', steps.tagvars.outputs.PR_NUMBER, github.run_number) || '' }}
+
+            ${{ steps.tagvars.outputs.IS_PR == 'true' && 'communityfirst/guardianconnector-explorer:ci-test' || '' }}
           labels: ${{ steps.meta.outputs.labels }}
       - name: Docker Hub Description
         if: github.event_name == 'release'
