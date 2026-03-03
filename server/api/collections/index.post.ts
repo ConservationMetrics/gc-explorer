@@ -1,18 +1,15 @@
 import { handleCreateCollection } from "@/server/utils/collectionHandlers";
+import { validateUserSession } from "@/utils/auth";
 
 export default defineEventHandler(async (event) => {
   // Get user session for authentication
-  const session = await getUserSession(event);
-  if (!session.user) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: "Unauthorized - Authentication required",
-    });
-  }
+  const session = await validateUserSession(event);
 
   // Add user info to the request body
   const body = await readBody(event);
-  body.created_by = (session.user as { email: string }).email;
+  if (session.user) {
+    body.created_by = (session.user as { email: string }).email;
+  }
 
   return await handleCreateCollection(event);
 });

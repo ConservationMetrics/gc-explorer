@@ -1,20 +1,9 @@
 import { handleCreateCollection } from "@/server/utils/collectionHandlers";
-import { useRuntimeConfig } from "#imports";
+import { validateUserSession } from "@/utils/auth";
 
 export default defineEventHandler(async (event) => {
-  const config = useRuntimeConfig();
-  const authStrategy = config.public.authStrategy as string | undefined;
-
-  // Get user session for authentication
-  const session = await getUserSession(event);
-
-  // Only require authentication if authStrategy is not "none"
-  if (authStrategy !== "none" && !session.user) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: "Unauthorized - Authentication required",
-    });
-  }
+  // Get user session for authentication (validates authStrategy)
+  const session = await validateUserSession(event);
 
   // Add user info to the request body only if auth0 is available
   const body = await readBody(event);

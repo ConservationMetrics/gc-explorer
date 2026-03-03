@@ -8,16 +8,10 @@ const tableNames = ref();
 const dataFetched = ref(false);
 
 const {
-  public: { appApiKey },
+  public: {},
 } = useRuntimeConfig();
 
-const headers = {
-  "x-api-key": appApiKey,
-};
-
-const { data, error, refresh } = await useFetch("/api/config", {
-  headers,
-});
+const { data, error, refresh } = await useFetch("/api/config");
 
 if (data.value && !error.value) {
   const fetchedViewsData = data.value[0] as Views;
@@ -40,7 +34,6 @@ const submitConfig = async ({
   try {
     await $fetch(`/api/config/update_config/${tableName}`, {
       method: "POST",
-      headers,
       body: JSON.stringify(config),
     });
   } catch (error) {
@@ -53,7 +46,6 @@ const removeTableFromConfig = async (tableName: string) => {
   try {
     await $fetch(`/api/config/delete_table/${tableName}`, {
       method: "POST",
-      headers,
     });
   } catch (error) {
     console.error("Error removing table from config:", error);
@@ -65,7 +57,6 @@ const addTableToConfig = async (tableName: string) => {
   try {
     await $fetch(`/api/config/new_table/${tableName}`, {
       method: "POST",
-      headers,
     });
   } catch (error) {
     console.error("Error adding table to config:", error);

@@ -18,15 +18,10 @@ const mediaBasePath = ref();
 const mediaColumn = ref();
 
 const {
-  public: { appApiKey },
+  public: {},
 } = useRuntimeConfig();
 
-const headers = {
-  "x-api-key": appApiKey,
-};
-const { data, error, refresh } = await useFetch(`/api/${table}/gallery`, {
-  headers,
-});
+const { data, error, refresh } = await useFetch(`/api/${table}/gallery`);
 
 if (data.value && !error.value) {
   allowedFileExtensions.value = data.value.allowedFileExtensions;

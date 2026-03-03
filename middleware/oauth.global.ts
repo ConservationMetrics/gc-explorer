@@ -33,17 +33,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (isDatasetRoute) {
     try {
-      const {
-        public: { appApiKey },
-      } = useRuntimeConfig();
-      const headers = { "x-api-key": appApiKey };
-
-      const response = await $fetch<
-        [
-          Record<string, { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission }>,
-          string[],
-        ]
-      >("/api/config", { headers });
+      const response =
+        await $fetch<
+          [
+            Record<string, { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission }>,
+            string[],
+          ]
+        >("/api/config");
       const [tableConfig] = response;
 
       // Extract the table name from the last part of the path

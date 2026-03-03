@@ -69,9 +69,7 @@ const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
 // Mock Nuxt composables - needs to be before component import
 const mockFetch = vi.fn();
 const mockUseRuntimeConfig = () => ({
-  public: {
-    appApiKey: "test-api-key",
-  },
+  public: {},
 });
 
 const mockUseToast = () => ({
