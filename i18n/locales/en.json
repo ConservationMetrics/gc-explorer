@@ -60,6 +60,7 @@
   "datasetViewManagement": "Dataset View Management",
   "dateRange": "Date range",
   "default": "Default",
+  "downloading": "Downloading…",
   "downloadCSV": "Download CSV",
   "downloadGeoJSON": "Download GeoJSON",
   "downloadKML": "Download KML",

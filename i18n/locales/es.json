@@ -57,6 +57,7 @@
   "datasetViewManagement": "Gestión de Vistas de Conjuntos de Datos",
   "dateRange": "Rango de fechas",
   "default": "Predeterminado",
+  "downloading": "Descargando…",
   "downloadCSV": "Descargar CSV",
   "downloadGeoJSON": "Descargar GeoJSON",
   "downloadKML": "Descargar KML",
