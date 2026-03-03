@@ -189,6 +189,59 @@ describe("GET api/[table]/export", () => {
     });
   });
 
+  describe("KML format", () => {
+    it("builds KML from records with valid coordinates", async () => {
+      const { mainData } = await mockFetchData("test_table");
+
+      const features = mainData
+        .filter(
+          (entry: Record<string, unknown>) =>
+            entry.g__type && entry.g__coordinates,
+        )
+        .map((entry: Record<string, unknown>) => {
+          const properties: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(entry)) {
+            if (!key.startsWith("g__")) {
+              properties[key] = value;
+            }
+          }
+          return {
+            type: "Feature",
+            geometry: {
+              type: entry.g__type,
+              coordinates: JSON.parse(entry.g__coordinates as string),
+            },
+            properties,
+          };
+        });
+
+      const geojson = { type: "FeatureCollection", features };
+
+      // tokml expects a valid GeoJSON FeatureCollection
+      expect(geojson.features).toHaveLength(2);
+      expect(geojson.type).toBe("FeatureCollection");
+      expect(geojson.features[0].geometry.type).toBe("Point");
+      expect(geojson.features[1].geometry.type).toBe("Point");
+    });
+
+    it("excludes records without coordinates from KML output", async () => {
+      const { mainData } = await mockFetchData("test_table");
+
+      const recordsWithCoords = mainData.filter(
+        (entry: Record<string, unknown>) =>
+          entry.g__type && entry.g__coordinates,
+      );
+
+      // rec3 has no geometry and should be excluded
+      expect(recordsWithCoords).toHaveLength(2);
+      expect(
+        recordsWithCoords.some(
+          (entry: Record<string, unknown>) => entry._id === "rec3",
+        ),
+      ).toBe(false);
+    });
+  });
+
   describe("validation", () => {
     it("rejects missing format parameter", () => {
       const format = undefined;
