@@ -13,18 +13,24 @@ const useRoute = vi.fn(() => ({
   path: "/test",
 }));
 
+const mockT = (key: string) => key;
+const mockUseI18n = () => ({ t: mockT });
+const mockUseToast = () => ({
+  warning: vi.fn(),
+  error: vi.fn(),
+});
+
 Object.assign(globalThis, {
   ref,
   computed,
   useRoute,
+  useI18n: mockUseI18n,
+  useToast: mockUseToast,
 });
 
-// Mock i18n
-const mockT = (key: string) => key;
+// Mock i18n for template $t
 vi.mock("vue-i18n", () => ({
-  useI18n: () => ({
-    t: mockT,
-  }),
+  useI18n: mockUseI18n,
 }));
 
 const globalConfig = {

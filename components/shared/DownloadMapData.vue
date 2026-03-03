@@ -7,6 +7,8 @@ import type { AlertsData } from "@/types/types";
 import { escapeCSVValue } from "@/utils/csvUtils";
 
 const route = useRoute();
+const { t } = useI18n();
+const { warning: showWarningToast } = useToast();
 
 const props = defineProps<{
   dataForDownload?: Feature | FeatureCollection | AlertsData;
@@ -41,12 +43,14 @@ const isFeatureCollection = (
 const downloadCSVFromFeatureCollection = () => {
   if (!props.dataForDownload || !isFeatureCollection(props.dataForDownload)) {
     console.error("No valid FeatureCollection available to convert to CSV.");
+    showWarningToast(t("errorNoDataToDownload"));
     return;
   }
 
   const features = props.dataForDownload.features;
   if (features.length === 0) {
     console.error("FeatureCollection has no features.");
+    showWarningToast(t("errorNoDataToDownload"));
     return;
   }
 
@@ -101,6 +105,7 @@ const downloadAlertCSV = () => {
     isFeatureCollection(props.dataForDownload)
   ) {
     console.error("No valid GeoJSON Feature data available to convert to CSV.");
+    showWarningToast(t("errorNoDataToDownload"));
     return;
   }
 
@@ -108,6 +113,7 @@ const downloadAlertCSV = () => {
 
   if (!properties) {
     console.error("No properties found in GeoJSON data.");
+    showWarningToast(t("errorNoDataToDownload"));
     return;
   }
 
@@ -169,6 +175,7 @@ const downloadAlertCSV = () => {
 const downloadAlertGeoJSON = () => {
   if (!props.dataForDownload) {
     console.error("No data available to download.");
+    showWarningToast(t("errorNoDataToDownload"));
     return;
   }
 
@@ -191,6 +198,7 @@ const downloadAlertGeoJSON = () => {
     console.error(
       "No valid GeoJSON Feature data available to convert to GeoJSON.",
     );
+    showWarningToast(t("errorNoDataToDownload"));
     return;
   }
 
@@ -198,6 +206,7 @@ const downloadAlertGeoJSON = () => {
 
   if (!geojsonCopy.properties) {
     console.error("No properties found in GeoJSON data.");
+    showWarningToast(t("errorNoDataToDownload"));
     return;
   }
 
@@ -231,6 +240,7 @@ const downloadAlertGeoJSON = () => {
 const downloadAlertKML = () => {
   if (!props.dataForDownload) {
     console.error("No data available to download.");
+    showWarningToast(t("errorNoDataToDownload"));
     return;
   }
 
@@ -259,6 +269,7 @@ const downloadAlertKML = () => {
 
   if (!properties) {
     console.error("No properties found in GeoJSON data.");
+    showWarningToast(t("errorNoDataToDownload"));
     return;
   }
 
