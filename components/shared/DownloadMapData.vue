@@ -16,7 +16,7 @@ const props = defineProps<{
   dataForDownload?: Feature | FeatureCollection | AlertsData;
 }>();
 
-const exporting = ref(false);
+const exportingFormat = ref<string | null>(null);
 
 /** Get filename base from route tablename, fallback to 'data' */
 const getFilenameBase = (): string => {
@@ -70,7 +70,7 @@ const downloadFromExportEndpoint = async (
     return;
   }
 
-  exporting.value = true;
+  exportingFormat.value = format;
   try {
     const blob = await $fetch<Blob>(`/api/${tablename}/export`, {
       params: { format },
@@ -90,7 +90,7 @@ const downloadFromExportEndpoint = async (
     console.error(`Failed to export ${format}:`, error);
     showWarningToast(t("errorNoDataToDownload"));
   } finally {
-    exporting.value = false;
+    exportingFormat.value = null;
   }
 };
 
@@ -268,32 +268,36 @@ const downloadAlertKML = () => {
   <div class="flex flex-wrap gap-2 justify-center mt-6">
     <button
       class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
-      :disabled="exporting"
+      :disabled="!!exportingFormat"
       @click="
         isBulkDownload ? downloadFromExportEndpoint('csv') : downloadAlertCSV()
       "
     >
-      {{ exporting ? $t("downloading") : $t("downloadCSV") }}
+      {{ exportingFormat === "csv" ? $t("downloading") : $t("downloadCSV") }}
     </button>
     <button
       class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
-      :disabled="exporting"
+      :disabled="!!exportingFormat"
       @click="
         isBulkDownload
           ? downloadFromExportEndpoint('geojson')
           : downloadAlertGeoJSON()
       "
     >
-      {{ exporting ? $t("downloading") : $t("downloadGeoJSON") }}
+      {{
+        exportingFormat === "geojson"
+          ? $t("downloading")
+          : $t("downloadGeoJSON")
+      }}
     </button>
     <button
       class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
-      :disabled="exporting"
+      :disabled="!!exportingFormat"
       @click="
         isBulkDownload ? downloadFromExportEndpoint('kml') : downloadAlertKML()
       "
     >
-      {{ exporting ? $t("downloading") : $t("downloadKML") }}
+      {{ exportingFormat === "kml" ? $t("downloading") : $t("downloadKML") }}
     </button>
   </div>
 </template>
