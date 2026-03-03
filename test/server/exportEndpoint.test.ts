@@ -42,9 +42,9 @@ const sampleColumns = [
   { original_column: "Coordinates", sql_column: "g__coordinates" },
 ];
 
-// Import the endpoint helper functions by importing the module directly
-// We test the buildCsv and buildGeoJson logic via the mocked fetchData
 import { escapeCSVValue } from "@/utils/csvUtils";
+// @ts-expect-error - tokml does not have types
+import tokml from "tokml";
 
 describe("GET api/[table]/export", () => {
   beforeEach(() => {
@@ -190,15 +190,10 @@ describe("GET api/[table]/export", () => {
   });
 
   describe("KML format", () => {
-    it("builds KML from records with valid coordinates", async () => {
-      const { mainData } = await mockFetchData("test_table");
-
-      const features = mainData
-        .filter(
-          (entry: Record<string, unknown>) =>
-            entry.g__type && entry.g__coordinates,
-        )
-        .map((entry: Record<string, unknown>) => {
+    const buildGeoJsonFromData = (data: Record<string, unknown>[]) => {
+      const features = data
+        .filter((entry) => entry.g__type && entry.g__coordinates)
+        .map((entry) => {
           const properties: Record<string, unknown> = {};
           for (const [key, value] of Object.entries(entry)) {
             if (!key.startsWith("g__")) {
@@ -206,39 +201,73 @@ describe("GET api/[table]/export", () => {
             }
           }
           return {
-            type: "Feature",
+            type: "Feature" as const,
             geometry: {
-              type: entry.g__type,
+              type: entry.g__type as string,
               coordinates: JSON.parse(entry.g__coordinates as string),
             },
             properties,
           };
         });
+      return { type: "FeatureCollection" as const, features };
+    };
 
-      const geojson = { type: "FeatureCollection", features };
+    it("produces valid KML with root element and namespace", async () => {
+      const { mainData } = await mockFetchData("test_table");
+      const geojson = buildGeoJsonFromData(mainData);
+      const kml: string = tokml(geojson);
 
-      // tokml expects a valid GeoJSON FeatureCollection
-      expect(geojson.features).toHaveLength(2);
-      expect(geojson.type).toBe("FeatureCollection");
-      expect(geojson.features[0].geometry.type).toBe("Point");
-      expect(geojson.features[1].geometry.type).toBe("Point");
+      expect(kml).toContain('<?xml version="1.0" encoding="UTF-8"?>');
+      expect(kml).toContain("<kml");
+      expect(kml).toContain('xmlns="http://www.opengis.net/kml/2.2"');
+      expect(kml).toContain("</kml>");
     });
 
-    it("excludes records without coordinates from KML output", async () => {
+    it("wraps features in a Document with Placemark elements", async () => {
       const { mainData } = await mockFetchData("test_table");
+      const geojson = buildGeoJsonFromData(mainData);
+      const kml: string = tokml(geojson);
 
-      const recordsWithCoords = mainData.filter(
-        (entry: Record<string, unknown>) =>
-          entry.g__type && entry.g__coordinates,
-      );
+      expect(kml).toContain("<Document>");
+      expect(kml).toContain("</Document>");
 
-      // rec3 has no geometry and should be excluded
-      expect(recordsWithCoords).toHaveLength(2);
-      expect(
-        recordsWithCoords.some(
-          (entry: Record<string, unknown>) => entry._id === "rec3",
-        ),
-      ).toBe(false);
+      const placemarkCount = (kml.match(/<Placemark>/g) || []).length;
+      expect(placemarkCount).toBe(2);
+    });
+
+    it("includes Point coordinates in lon,lat order", async () => {
+      const { mainData } = await mockFetchData("test_table");
+      const geojson = buildGeoJsonFromData(mainData);
+      const kml: string = tokml(geojson);
+
+      // GeoJSON [10, 20] → KML <coordinates>10,20</coordinates>
+      expect(kml).toContain("<Point>");
+      expect(kml).toContain("<coordinates>10,20</coordinates>");
+      expect(kml).toContain("<coordinates>30,40</coordinates>");
+    });
+
+    it("embeds feature properties as ExtendedData", async () => {
+      const { mainData } = await mockFetchData("test_table");
+      const geojson = buildGeoJsonFromData(mainData);
+      const kml: string = tokml(geojson);
+
+      expect(kml).toContain("<ExtendedData>");
+      expect(kml).toContain('<Data name="_id">');
+      expect(kml).toContain("<value>rec1</value>");
+      expect(kml).toContain('<Data name="name">');
+      expect(kml).toContain("<value>Alpha</value>");
+      expect(kml).toContain('<Data name="category">');
+      expect(kml).toContain("<value>threat</value>");
+    });
+
+    it("excludes records without coordinates", async () => {
+      const { mainData } = await mockFetchData("test_table");
+      const geojson = buildGeoJsonFromData(mainData);
+      const kml: string = tokml(geojson);
+
+      // rec3 has no geometry — should not appear as a Placemark
+      expect(kml).not.toContain("<value>rec3</value>");
+      expect(kml).not.toContain("<value>Gamma</value>");
     });
   });
 
