@@ -20,7 +20,7 @@ source .env.test.compose
 set +a
 # Check if required environment variables are set in the file
 echo "📋 Checking environment variables..."
-required_vars=("NUXT_PUBLIC_APP_API_KEY" "NUXT_SESSION_SECRET" "MAPBOX_ACCESS_TOKEN" "MEDIA_BASE_PATH")
+required_vars=("NUXT_SESSION_SECRET" "MAPBOX_ACCESS_TOKEN" "MEDIA_BASE_PATH")
 for var in "${required_vars[@]}"; do
     value=$(grep "^${var}=" .env.test.compose | cut -d'=' -f2)
     if [ -z "$value" ] || [ "$value" = "your_$(echo $var | tr '[:upper:]' '[:lower:]')_here" ]; then
