@@ -57,12 +57,14 @@ export const useIncidents = (
   const multiSelectMode = ref(false);
   const boundingBoxMode = ref(false);
   const isLoadingIncidents = ref(false);
+  const incidentsFetchError = ref(false);
 
   // Selected incident detail view state
   const selectedIncident = ref<AnnotatedCollection | null>(null);
   const selectedIncidentData = ref<Incident | null>(null);
   const selectedIncidentEntries = ref<CollectionEntry[]>([]);
   const isLoadingSelectedIncident = ref(false);
+  const incidentDetailsError = ref(false);
 
   // Tooltip state
   const hoveredButton = ref<
@@ -259,6 +261,7 @@ export const useIncidents = (
       isLoadingMoreIncidents.value = true;
     } else {
       isLoadingIncidents.value = true;
+      incidentsFetchError.value = false;
     }
 
     try {
@@ -277,6 +280,7 @@ export const useIncidents = (
         },
       });
 
+      incidentsFetchError.value = false;
       incidentsTotal.value = response.total;
       incidentsLimit.value = response.limit;
 
@@ -285,6 +289,7 @@ export const useIncidents = (
         : response.incidents;
     } catch (error) {
       console.error("Error fetching incidents:", error);
+      incidentsFetchError.value = true;
     } finally {
       if (append) {
         isLoadingMoreIncidents.value = false;
@@ -317,6 +322,7 @@ export const useIncidents = (
     selectedIncident.value = null;
     selectedIncidentData.value = null;
     selectedIncidentEntries.value = [];
+    incidentDetailsError.value = false;
     // Remove incidentId from URL when going back to incidents list
     const query = { ...route.query };
     delete query.incidentId;
@@ -380,6 +386,7 @@ export const useIncidents = (
    */
   const openIncidentDetails = async (incidentId: string) => {
     isLoadingSelectedIncident.value = true;
+    incidentDetailsError.value = false;
 
     try {
       const response = await getIncidentDetails(incidentId);
@@ -406,6 +413,7 @@ export const useIncidents = (
       router.replace({ query });
     } catch (error) {
       console.error("Error fetching incident details:", error);
+      incidentDetailsError.value = true;
     } finally {
       isLoadingSelectedIncident.value = false;
     }
@@ -1556,10 +1564,12 @@ export const useIncidents = (
     multiSelectMode,
     boundingBoxMode,
     isLoadingIncidents,
+    incidentsFetchError,
     selectedIncident,
     selectedIncidentData,
     selectedIncidentEntries,
     isLoadingSelectedIncident,
+    incidentDetailsError,
     hoveredButton,
     hasMoreIncidents,
     // Functions
