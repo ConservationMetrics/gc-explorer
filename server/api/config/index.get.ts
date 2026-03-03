@@ -5,7 +5,6 @@ import { validateUserSession } from "@/utils/auth";
 import type { H3Event } from "h3";
 
 export default defineEventHandler(async (event: H3Event) => {
-  // Validate that the user is authenticated (if auth is required)
   await validateUserSession(event);
 
   try {
