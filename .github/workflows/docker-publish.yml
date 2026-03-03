@@ -215,8 +215,6 @@ jobs:
             ${{ steps.tagvars.outputs.IS_MAIN == 'true' && 'communityfirst/guardianconnector-explorer:latest' || '' }}
             ${{ steps.tagvars.outputs.IS_MAIN == 'true' && format('communityfirst/guardianconnector-explorer:{0}-{1}', steps.imgtag_date.outputs.DATE_FOR_IMGTAG, github.run_number) || '' }}
 
-            ${{ steps.tagvars.outputs.IS_PR == 'true' && format('communityfirst/guardianconnector-explorer:pr-{0}-{1}', steps.tagvars.outputs.PR_NUMBER, github.run_number) || '' }}
-
             ${{ steps.tagvars.outputs.IS_PR == 'true' && 'communityfirst/guardianconnector-explorer:ci-test' || '' }}
           labels: ${{ steps.meta.outputs.labels }}
       - name: Docker Hub Description
