@@ -4,9 +4,7 @@ import { brotliCompressSync, gzipSync } from "node:zlib";
  * Nitro plugin that enables brotli/gzip compression for responses.
  *
  * Reads the client's Accept-Encoding header and compresses the
- * serialized response body, preferring brotli over gzip. Nuxt
- * internal routes are skipped since those assets are already
- * pre-compressed at build time via compressPublicAssets.
+ * serialized response body, preferring brotli over gzip.
  *
  * @see https://nitro.build/guide/plugins
  */
