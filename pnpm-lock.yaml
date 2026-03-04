@@ -26,6 +26,9 @@ importers:
       drizzle-orm:
         specifier: ^0.44.5
         version: 0.44.5(@types/pg@8.15.4)(pg@8.16.2)(postgres@3.4.7)
+      h3-compression:
+        specifier: ^0.3.2
+        version: 0.3.2(h3@1.15.3)
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -3955,6 +3958,11 @@ packages:
   gzip-size@7.0.0:
     resolution: {integrity: sha512-O1Ld7Dr+nqPnmGpdhzLmMTQ4vAsD+rHwMm1NLUmoUFFymBOMKxCCrtDxqdBRYXdeEPEi3SyoR4TizJLQrnKBNA==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+
+  h3-compression@0.3.2:
+    resolution: {integrity: sha512-B+yCKyDRnO0BXSfjAP4tCXJgJwmnKp3GyH5Yh66mY9KuOCrrGQSPk/gBFG2TgH7OyB/6mvqNZ1X0XNVuy0qRsw==}
+    peerDependencies:
+      h3: ^1.6.0
 
   h3@1.15.3:
     resolution: {integrity: sha512-z6GknHqyX0h9aQaTx22VZDf6QyZn+0Nh+Ym8O/u0SGSkyF5cuTJYKlc8MkzW3Nzf9LE1ivcpmYC3FUGpywhuUQ==}
@@ -11710,6 +11718,10 @@ snapshots:
   gzip-size@7.0.0:
     dependencies:
       duplexer: 0.1.2
+
+  h3-compression@0.3.2(h3@1.15.3):
+    dependencies:
+      h3: 1.15.3
 
   h3@1.15.3:
     dependencies:

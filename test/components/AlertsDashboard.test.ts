@@ -86,6 +86,7 @@ Object.assign(globalThis, {
   onBeforeUnmount,
   nextTick,
   useToast: mockUseToast,
+  useRuntimeConfig: () => ({ public: { appApiKey: "test-key" } }),
   $fetch: mockFetch,
 });
 
