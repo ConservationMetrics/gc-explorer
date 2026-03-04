@@ -1,65 +1,39 @@
-import { useCompression } from "h3-compression";
+import { brotliCompressSync, gzipSync } from "node:zlib";
 
 /**
- * Compressible MIME type prefixes for API responses.
- * Covers JSON, CSV, GeoJSON, KML/XML, and plain text.
- */
-export const COMPRESSIBLE_TYPES = [
-  "application/json",
-  "application/geo+json",
-  "application/vnd.google-earth.kml+xml",
-  "text/csv",
-  "text/plain",
-  "text/html",
-  "text/xml",
-  "application/xml",
-];
-
-/**
- * Minimum response size (in bytes) worth compressing.
- * Responses smaller than this threshold are sent uncompressed
- * because the compression overhead outweighs the savings.
- */
-export const MIN_COMPRESSION_SIZE = 1024;
-
-/**
- * Checks whether a Content-Type header value matches a compressible MIME type.
+ * Nitro plugin that enables brotli/gzip compression for responses.
  *
- * @param {string | undefined} contentType - The Content-Type header value.
- * @returns {boolean} True if the response content type is compressible.
- */
-export const isCompressible = (contentType: string | undefined): boolean => {
-  if (!contentType) return false;
-  return COMPRESSIBLE_TYPES.some((type) => contentType.includes(type));
-};
-
-/**
- * Nitro plugin that enables gzip/brotli/deflate compression for API responses.
+ * Reads the client's Accept-Encoding header and compresses the
+ * serialized response body, preferring brotli over gzip. Nuxt
+ * internal routes are skipped since those assets are already
+ * pre-compressed at build time via compressPublicAssets.
  *
- * Uses h3-compression which automatically selects the best encoding based
- * on the client's Accept-Encoding header (preferring brotli > gzip > deflate).
- *
- * Only compresses responses that:
- * - Come from /api/ routes
- * - Have a compressible Content-Type
- * - Are larger than MIN_COMPRESSION_SIZE bytes
+ * @see https://nitro.build/guide/plugins
  */
 export default defineNitroPlugin((nitro) => {
   nitro.hooks.hook("beforeResponse", async (event, response) => {
     const path = event.path || "";
-    if (!path.startsWith("/api/")) return;
+    if (path.startsWith("/_nuxt") || path.startsWith("/__nuxt")) return;
 
-    const contentType = getResponseHeader(event, "content-type") as
-      | string
-      | undefined;
-    if (!isCompressible(contentType)) return;
+    if (!response.body) return;
 
-    const body = response.body;
-    if (!body) return;
+    const acceptEncoding = getRequestHeader(event, "accept-encoding") || "";
 
-    const serialized = typeof body === "string" ? body : JSON.stringify(body);
-    if (serialized.length < MIN_COMPRESSION_SIZE) return;
+    const serialized =
+      typeof response.body === "string"
+        ? response.body
+        : JSON.stringify(response.body);
 
-    await useCompression(event, response);
+    if (acceptEncoding.includes("br")) {
+      response.body = brotliCompressSync(Buffer.from(serialized));
+      setResponseHeader(event, "content-encoding", "br");
+      setResponseHeader(event, "vary", "Accept-Encoding");
+      removeResponseHeader(event, "content-length");
+    } else if (acceptEncoding.includes("gzip")) {
+      response.body = gzipSync(Buffer.from(serialized));
+      setResponseHeader(event, "content-encoding", "gzip");
+      setResponseHeader(event, "vary", "Accept-Encoding");
+      removeResponseHeader(event, "content-length");
+    }
   });
 });

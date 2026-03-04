@@ -1,209 +1,146 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { brotliDecompressSync, gunzipSync } from "node:zlib";
 
-const registeredHooks: Record<string, Function> = {};
-const mockUseCompression = vi.fn();
-const mockGetResponseHeader = vi.fn();
+type HookFn = (...args: unknown[]) => Promise<void> | void;
+
+const registeredHooks: Record<string, HookFn> = {};
+const responseHeaders: Record<string, string> = {};
+const requestHeaders: Record<string, string> = {};
+const removedHeaders: string[] = [];
 
 vi.stubGlobal(
   "defineNitroPlugin",
-  vi.fn((callback: (nitro: { hooks: { hook: Function } }) => void) => {
-    callback({
-      hooks: {
-        hook: (name: string, fn: Function) => {
-          registeredHooks[name] = fn;
+  vi.fn(
+    (
+      callback: (nitro: {
+        hooks: { hook: (name: string, fn: HookFn) => void };
+      }) => void,
+    ) => {
+      callback({
+        hooks: {
+          hook: (name: string, fn: HookFn) => {
+            registeredHooks[name] = fn;
+          },
         },
-      },
-    });
+      });
+    },
+  ),
+);
+
+vi.stubGlobal(
+  "getRequestHeader",
+  vi.fn((_event: unknown, name: string) => requestHeaders[name]),
+);
+vi.stubGlobal(
+  "setResponseHeader",
+  vi.fn((_event: unknown, name: string, value: string) => {
+    responseHeaders[name] = value;
+  }),
+);
+vi.stubGlobal(
+  "removeResponseHeader",
+  vi.fn((_event: unknown, name: string) => {
+    removedHeaders.push(name);
   }),
 );
 
-vi.mock("h3-compression", () => ({
-  useCompression: (...args: unknown[]) => mockUseCompression(...args),
-}));
-
-vi.stubGlobal("getResponseHeader", mockGetResponseHeader);
-
-const { isCompressible, COMPRESSIBLE_TYPES, MIN_COMPRESSION_SIZE } =
-  await import("@/server/plugins/compression");
+await import("@/server/plugins/compression");
 
 describe("compression plugin", () => {
+  let hookCallback: (
+    event: { path: string },
+    response: { body?: unknown },
+  ) => Promise<void>;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    Object.keys(responseHeaders).forEach((key) => delete responseHeaders[key]);
+    Object.keys(requestHeaders).forEach((key) => delete requestHeaders[key]);
+    removedHeaders.length = 0;
+    hookCallback = registeredHooks["beforeResponse"] as typeof hookCallback;
   });
 
-  describe("isCompressible", () => {
-    it("returns true for application/json", () => {
-      expect(isCompressible("application/json")).toBe(true);
-    });
-
-    it("returns true for application/json with charset", () => {
-      expect(isCompressible("application/json; charset=utf-8")).toBe(true);
-    });
-
-    it("returns true for application/geo+json", () => {
-      expect(isCompressible("application/geo+json; charset=utf-8")).toBe(true);
-    });
-
-    it("returns true for text/csv", () => {
-      expect(isCompressible("text/csv; charset=utf-8")).toBe(true);
-    });
-
-    it("returns true for KML content type", () => {
-      expect(
-        isCompressible("application/vnd.google-earth.kml+xml; charset=utf-8"),
-      ).toBe(true);
-    });
-
-    it("returns true for text/html", () => {
-      expect(isCompressible("text/html")).toBe(true);
-    });
-
-    it("returns true for text/xml", () => {
-      expect(isCompressible("text/xml")).toBe(true);
-    });
-
-    it("returns true for application/xml", () => {
-      expect(isCompressible("application/xml")).toBe(true);
-    });
-
-    it("returns false for image types", () => {
-      expect(isCompressible("image/png")).toBe(false);
-      expect(isCompressible("image/jpeg")).toBe(false);
-    });
-
-    it("returns false for already-compressed types", () => {
-      expect(isCompressible("application/gzip")).toBe(false);
-      expect(isCompressible("application/zip")).toBe(false);
-    });
-
-    it("returns false for undefined content type", () => {
-      expect(isCompressible(undefined)).toBe(false);
-    });
-
-    it("returns false for empty string", () => {
-      expect(isCompressible("")).toBe(false);
-    });
+  it("registers the beforeResponse hook", () => {
+    expect(hookCallback).toBeDefined();
   });
 
-  describe("COMPRESSIBLE_TYPES", () => {
-    it("includes all expected MIME types for API responses", () => {
-      expect(COMPRESSIBLE_TYPES).toContain("application/json");
-      expect(COMPRESSIBLE_TYPES).toContain("application/geo+json");
-      expect(COMPRESSIBLE_TYPES).toContain(
-        "application/vnd.google-earth.kml+xml",
-      );
-      expect(COMPRESSIBLE_TYPES).toContain("text/csv");
-      expect(COMPRESSIBLE_TYPES).toContain("text/plain");
-    });
+  it("compresses with brotli when client accepts br", async () => {
+    requestHeaders["accept-encoding"] = "gzip, deflate, br";
+
+    const original = JSON.stringify({ data: "test-payload" });
+    const response = { body: original } as { body: unknown };
+
+    await hookCallback({ path: "/api/test/map" }, response);
+
+    expect(responseHeaders["content-encoding"]).toBe("br");
+    expect(responseHeaders["vary"]).toBe("Accept-Encoding");
+    expect(removedHeaders).toContain("content-length");
+
+    const decompressed = brotliDecompressSync(
+      response.body as Buffer,
+    ).toString();
+    expect(decompressed).toBe(original);
   });
 
-  describe("MIN_COMPRESSION_SIZE", () => {
-    it("is set to 1024 bytes", () => {
-      expect(MIN_COMPRESSION_SIZE).toBe(1024);
-    });
+  it("falls back to gzip when client does not accept br", async () => {
+    requestHeaders["accept-encoding"] = "gzip, deflate";
+
+    const original = JSON.stringify({ data: "test-payload" });
+    const response = { body: original } as { body: unknown };
+
+    await hookCallback({ path: "/api/test/map" }, response);
+
+    expect(responseHeaders["content-encoding"]).toBe("gzip");
+
+    const decompressed = gunzipSync(response.body as Buffer).toString();
+    expect(decompressed).toBe(original);
   });
 
-  describe("beforeResponse hook gating", () => {
-    const hookCallback = registeredHooks["beforeResponse"] as (
-      event: { path: string },
-      response: { body?: unknown },
-    ) => Promise<void>;
+  it("serializes object bodies before compressing", async () => {
+    requestHeaders["accept-encoding"] = "br";
 
-    it("registers the beforeResponse hook", () => {
-      expect(hookCallback).toBeDefined();
-      expect(typeof hookCallback).toBe("function");
-    });
+    const payload = { features: [{ id: 1 }, { id: 2 }] };
+    const response = { body: payload } as { body: unknown };
 
-    it("skips non-API routes", async () => {
-      mockGetResponseHeader.mockReturnValue("application/json");
+    await hookCallback({ path: "/api/test/records" }, response);
 
-      await hookCallback({ path: "/some-page" }, { body: "x".repeat(2000) });
+    expect(responseHeaders["content-encoding"]).toBe("br");
 
-      expect(mockUseCompression).not.toHaveBeenCalled();
-    });
+    const decompressed = brotliDecompressSync(
+      response.body as Buffer,
+    ).toString();
+    expect(decompressed).toBe(JSON.stringify(payload));
+  });
 
-    it("skips non-compressible content types", async () => {
-      mockGetResponseHeader.mockReturnValue("image/png");
+  it("does not compress when client sends no Accept-Encoding", async () => {
+    const original = JSON.stringify({ data: "test" });
+    const response = { body: original };
 
-      await hookCallback(
-        { path: "/api/test/data" },
-        { body: "x".repeat(2000) },
-      );
+    await hookCallback({ path: "/api/test/data" }, response);
 
-      expect(mockUseCompression).not.toHaveBeenCalled();
-    });
+    expect(responseHeaders["content-encoding"]).toBeUndefined();
+    expect(response.body).toBe(original);
+  });
 
-    it("skips responses with no body", async () => {
-      mockGetResponseHeader.mockReturnValue("application/json");
+  it("skips /_nuxt internal routes", async () => {
+    requestHeaders["accept-encoding"] = "gzip, br";
 
-      await hookCallback({ path: "/api/test/data" }, { body: undefined });
+    const original = "static asset content";
+    const response = { body: original };
 
-      expect(mockUseCompression).not.toHaveBeenCalled();
-    });
+    await hookCallback({ path: "/_nuxt/chunk-abc.js" }, response);
 
-    it("skips responses smaller than MIN_COMPRESSION_SIZE", async () => {
-      mockGetResponseHeader.mockReturnValue("application/json");
+    expect(responseHeaders["content-encoding"]).toBeUndefined();
+    expect(response.body).toBe(original);
+  });
 
-      await hookCallback(
-        { path: "/api/test/data" },
-        { body: '{"small": true}' },
-      );
+  it("skips responses with no body", async () => {
+    requestHeaders["accept-encoding"] = "gzip, br";
 
-      expect(mockUseCompression).not.toHaveBeenCalled();
-    });
+    const response = { body: undefined };
 
-    it("compresses qualifying API responses", async () => {
-      mockGetResponseHeader.mockReturnValue("application/json");
+    await hookCallback({ path: "/api/test/data" }, response);
 
-      const event = { path: "/api/test/map" };
-      const response = { body: JSON.stringify({ data: "x".repeat(2000) }) };
-
-      await hookCallback(event, response);
-
-      expect(mockUseCompression).toHaveBeenCalledWith(event, response);
-    });
-
-    it("compresses CSV export responses", async () => {
-      mockGetResponseHeader.mockReturnValue("text/csv; charset=utf-8");
-
-      const event = { path: "/api/test/export" };
-      const response = {
-        body: "col1,col2\n" + "val1,val2\n".repeat(200),
-      };
-
-      await hookCallback(event, response);
-
-      expect(mockUseCompression).toHaveBeenCalledWith(event, response);
-    });
-
-    it("compresses GeoJSON export responses", async () => {
-      mockGetResponseHeader.mockReturnValue(
-        "application/geo+json; charset=utf-8",
-      );
-
-      const event = { path: "/api/test/export" };
-      const response = {
-        body: JSON.stringify({
-          type: "FeatureCollection",
-          features: Array(100).fill({ type: "Feature", properties: {} }),
-        }),
-      };
-
-      await hookCallback(event, response);
-
-      expect(mockUseCompression).toHaveBeenCalledWith(event, response);
-    });
-
-    it("compresses object bodies by stringifying for size check", async () => {
-      mockGetResponseHeader.mockReturnValue("application/json");
-
-      const largeObject = { items: Array(100).fill({ id: "test-item" }) };
-      const event = { path: "/api/test/records" };
-      const response = { body: largeObject };
-
-      await hookCallback(event, response);
-
-      expect(mockUseCompression).toHaveBeenCalledWith(event, response);
-    });
+    expect(responseHeaders["content-encoding"]).toBeUndefined();
   });
 });
