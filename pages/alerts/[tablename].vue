@@ -35,15 +35,7 @@ const mediaBasePath = ref();
 const mediaBasePathAlerts = ref();
 const planetApiKey = ref();
 
-const {
-  public: { appApiKey },
-} = useRuntimeConfig();
-const headers = {
-  "x-api-key": appApiKey,
-};
-const { data, error, refresh } = await useFetch(`/api/${table}/alerts`, {
-  headers,
-});
+const { data, error, refresh } = await useFetch(`/api/${table}/alerts`);
 
 if (data.value && !error.value) {
   alertsData.value = data.value.alertsData;

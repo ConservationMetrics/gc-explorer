@@ -1,4 +1,5 @@
 import { updateConfig } from "@/server/database/dbOperations";
+import { validatePermissions } from "@/utils/auth";
 
 import type { H3Event } from "h3";
 
@@ -7,6 +8,8 @@ export default defineEventHandler(async (event: H3Event) => {
   const config = await readBody(event);
 
   try {
+    await validatePermissions(event, "admin");
+
     await updateConfig(table, config);
     return { message: "Configuration updated successfully" };
   } catch (error) {

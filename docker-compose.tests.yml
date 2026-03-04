@@ -16,7 +16,6 @@ services:
       NUXT_DB_PASSWORD: testpassword
       NUXT_DATABASE: test_warehouse
       # Add the secrets from GitHub Actions
-      NUXT_PUBLIC_APP_API_KEY: ${NUXT_PUBLIC_APP_API_KEY}
       NUXT_PUBLIC_AUTH_STRATEGY: ${NUXT_PUBLIC_AUTH_STRATEGY:-auth0}
       NUXT_SESSION_SECRET: ${NUXT_SESSION_SECRET}
       NUXT_SESSION_PASSWORD: ${NUXT_SESSION_SECRET}

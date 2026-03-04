@@ -8,7 +8,7 @@ import DatasetCard from "@/components/index/DatasetCard.vue";
 const viewsConfig = ref<Views>({});
 
 const {
-  public: { appApiKey, authStrategy },
+  public: { authStrategy },
 } = useRuntimeConfig();
 
 const { loggedIn, user } = useUserSession();
@@ -17,12 +17,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
-const headers = {
-  "x-api-key": appApiKey,
-};
-const { data, error, refresh } = await useFetch("/api/config", {
-  headers,
-});
+const { data, error, refresh } = await useFetch("/api/config");
 
 if (data.value && !error.value) {
   const fetchedViewsData = data.value[0] as Views;

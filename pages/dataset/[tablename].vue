@@ -18,18 +18,12 @@ const isTitleExpanded = ref(false);
 const isDescriptionExpanded = ref(false);
 
 const {
-  public: { appApiKey, authStrategy },
+  public: { authStrategy },
 } = useRuntimeConfig();
 
 const { loggedIn, user } = useUserSession();
 
-const headers = {
-  "x-api-key": appApiKey,
-};
-
-const { data, error, refresh } = await useFetch("/api/config", {
-  headers,
-});
+const { data, error, refresh } = await useFetch("/api/config");
 
 if (data.value && !error.value) {
   const fetchedViewsData = data.value[0] as Views;
