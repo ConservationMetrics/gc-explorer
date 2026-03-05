@@ -4,8 +4,13 @@ import { brotliCompressSync, gzipSync } from "node:zlib";
  * Nitro plugin that enables brotli/gzip compression for responses.
  *
  * Reads the client's Accept-Encoding header and compresses the
- * serialized response body, preferring brotli over gzip.
+ * serialized response body, preferring brotli over gzip. Uses
+ * Node.js built-in zlib instead of h3-compression because that
+ * library only supports plaintext/HTML — it silently skips JSON
+ * API responses in the beforeResponse hook.
  *
+ * @see https://github.com/CodeDredd/h3-compression/issues/8
+ * @see https://github.com/ConservationMetrics/gc-explorer/pull/355#issuecomment-2700637498
  * @see https://nitro.build/guide/plugins
  */
 export default defineNitroPlugin((nitro) => {
