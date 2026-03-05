@@ -1,5 +1,18 @@
 import type { DataEntry } from "@/types/types";
 
+const SATELLITE_LOOKUP: Record<string, string> = {
+  S1: "Sentinel-1",
+  S2: "Sentinel-2",
+  PS: "Planetscope",
+  L8: "Landsat 8",
+  L9: "Landsat 9",
+  WV1: "WorldView-1",
+  WV2: "WorldView-2",
+  WV3: "WorldView-3",
+  WV4: "WorldView-4",
+  IK: "IKONOS",
+};
+
 /**
  * Capitalizes the first letter of each word in a string.
  *
@@ -140,4 +153,46 @@ export const transformSurveyEntry = (
   iconColumn?: string,
 ): DataEntry => {
   return transformSurveyData([entry], iconColumn)[0];
+};
+
+/**
+ * Transforms a raw alert database record into the display-ready format
+ * expected by the alerts sidebar (DataFeature).
+ *
+ * @param {DataEntry} entry - A raw alert row from the single-record endpoint.
+ * @param {string} table - The dataset table name (used for imagery URL construction).
+ * @returns {DataEntry} The transformed entry with human-readable keys.
+ */
+export const transformAlertEntry = (
+  entry: DataEntry,
+  table: string,
+): DataEntry => {
+  const result: DataEntry = {};
+
+  const formattedMonth = String(entry.month_detec ?? "").padStart(2, "0");
+
+  result.alertID = entry.alert_id;
+  result.confidenceLevel = entry.confidence;
+  result.alertType = entry.alert_type?.replace(/_/g, " ") ?? "";
+  result.dataProvider = capitalizeFirstLetter(String(entry.data_source ?? ""));
+  result.monthDetected = `${formattedMonth}-${entry.year_detec}`;
+  result.alertDetectionRange = `${entry.date_start_t1} to ${entry.date_end_t1}`;
+
+  if (entry.data_source === "Global Forest Watch") {
+    return result;
+  }
+
+  result.territory = capitalizeFirstLetter(String(entry.territory_name ?? ""));
+  result.alertAreaHectares =
+    typeof entry.area_alert_ha === "number"
+      ? (entry.area_alert_ha as number).toFixed(2)
+      : entry.area_alert_ha;
+  result.satelliteUsedForDetection =
+    SATELLITE_LOOKUP[entry.sat_detect_prefix] || entry.sat_detect_prefix;
+  result.t0_url = `${table}/${entry.territory_id}/${entry.year_detec}/${formattedMonth}/${entry.alert_id}/images/${entry.sat_viz_prefix}_T0_${entry.alert_id}.jpg`;
+  result.t1_url = `${table}/${entry.territory_id}/${entry.year_detec}/${formattedMonth}/${entry.alert_id}/images/${entry.sat_viz_prefix}_T1_${entry.alert_id}.jpg`;
+  result.previewImagerySource =
+    SATELLITE_LOOKUP[entry.sat_viz_prefix] || entry.sat_viz_prefix;
+
+  return result;
 };
