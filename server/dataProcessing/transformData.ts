@@ -180,6 +180,99 @@ const prepareAlertData = (
 };
 
 /**
+ * Splits raw alert data into most-recent and previous buckets (same date
+ * logic as prepareAlertData) but only retains the fields needed for map
+ * rendering: _id, alertID, YYYYMM, geographicCentroid, and geometry (g__*).
+ *
+ * @param {DataEntry[]} data - Raw alert rows from the database.
+ * @returns {{ mostRecentAlerts: DataEntry[], previousAlerts: DataEntry[] }}
+ */
+const prepareMinimalAlertEntries = (
+  data: DataEntry[],
+): {
+  mostRecentAlerts: DataEntry[];
+  previousAlerts: DataEntry[];
+} => {
+  let latestProprietaryDate = new Date(0);
+  let latestProprietaryMonthStr = "";
+
+  const validGeoData = data.filter(isValidGeolocation);
+  const proprietaryAlertData = validGeoData.filter(
+    (d) => d.data_source !== "Global Forest Watch",
+  );
+  const gfwData = validGeoData.filter(
+    (d) => d.data_source === "Global Forest Watch",
+  );
+
+  proprietaryAlertData.forEach((item) => {
+    const formattedMonth =
+      item.month_detec.length === 1 ? `0${item.month_detec}` : item.month_detec;
+    const monthYearStr = `${formattedMonth}-${item.year_detec}`;
+    const date = new Date(
+      parseInt(item.year_detec),
+      parseInt(formattedMonth) - 1,
+    );
+
+    if (date > latestProprietaryDate) {
+      latestProprietaryDate = date;
+      latestProprietaryMonthStr = monthYearStr;
+    }
+  });
+
+  let latestGfwDate = new Date(0);
+  gfwData.forEach((item) => {
+    const date = new Date(item.date_end_t1);
+    if (date > latestGfwDate) latestGfwDate = date;
+  });
+
+  const toMinimalEntry = (item: DataEntry): DataEntry => {
+    const formattedMonth = String(item.month_detec).padStart(2, "0");
+    const entry: DataEntry = {};
+
+    // Geometry fields
+    Object.keys(item).forEach((key) => {
+      if (key.startsWith("g__")) entry[key] = item[key];
+    });
+
+    entry._id = item._id;
+    entry.alertID = item.alert_id;
+    entry.YYYYMM =
+      item.data_source === "Global Forest Watch"
+        ? item.year_detec + item.month_detec
+        : `${item.year_detec}${formattedMonth}`;
+    entry.geographicCentroid = calculateCentroid(item.g__coordinates);
+
+    return entry;
+  };
+
+  const mostRecentAlerts: DataEntry[] = [];
+  const previousAlerts: DataEntry[] = [];
+
+  proprietaryAlertData.forEach((item) => {
+    const formattedMonth =
+      item.month_detec.length === 1 ? `0${item.month_detec}` : item.month_detec;
+    const monthYearStr = `${formattedMonth}-${item.year_detec}`;
+
+    if (monthYearStr === latestProprietaryMonthStr) {
+      mostRecentAlerts.push(toMinimalEntry(item));
+    } else {
+      previousAlerts.push(toMinimalEntry(item));
+    }
+  });
+
+  gfwData.forEach((item) => {
+    const date = new Date(item.date_end_t1);
+    if (date.getTime() === latestGfwDate.getTime()) {
+      mostRecentAlerts.push(toMinimalEntry(item));
+    } else {
+      previousAlerts.push(toMinimalEntry(item));
+    }
+  });
+
+  return { mostRecentAlerts, previousAlerts };
+};
+
+/**
  * Prepares statistical data for the alerts view introduction panel.
  *
  * This function processes alert data and optional metadata to generate
@@ -671,5 +764,6 @@ export {
   prepareAlertData,
   prepareAlertsStatistics,
   prepareMapStatistics,
+  prepareMinimalAlertEntries,
   transformToGeojson,
 };

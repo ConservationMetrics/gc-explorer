@@ -1,8 +1,8 @@
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import murmurhash from "murmurhash";
 import {
-  prepareAlertData,
   prepareAlertsStatistics,
-  transformToGeojson,
+  prepareMinimalAlertEntries,
 } from "@/server/dataProcessing/transformData";
 import {
   filterUnwantedKeys,
@@ -43,13 +43,23 @@ export default defineEventHandler(async (event: H3Event) => {
       metadata: AlertsMetadata[];
     };
 
-    // Prepare alerts data for the alerts view
-    const changeDetectionData = prepareAlertData(mainData, table as string);
+    const { mostRecentAlerts, previousAlerts } =
+      prepareMinimalAlertEntries(mainData);
+
+    const minimalAlertOptions = {
+      includeProperties: ["alertID", "YYYYMM", "geographicCentroid"],
+      generateId: (entry: DataEntry) => murmurhash.v3(String(entry.alertID)),
+    };
+
     const alertsGeojsonData = {
-      mostRecentAlerts: transformToGeojson(
-        changeDetectionData.mostRecentAlerts,
+      mostRecentAlerts: buildMinimalFeatureCollection(
+        mostRecentAlerts,
+        minimalAlertOptions,
       ),
-      previousAlerts: transformToGeojson(changeDetectionData.previousAlerts),
+      previousAlerts: buildMinimalFeatureCollection(
+        previousAlerts,
+        minimalAlertOptions,
+      ),
     };
 
     // Prepare Mapeo data for the alerts view
