@@ -169,10 +169,6 @@ export const transformAlertEntry = (
 ): DataEntry => {
   const result: DataEntry = {};
 
-  Object.keys(entry).forEach((key) => {
-    if (key.startsWith("g__")) result[key] = entry[key];
-  });
-
   const formattedMonth = String(entry.month_detec ?? "").padStart(2, "0");
 
   result.alertID = entry.alert_id;

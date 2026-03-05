@@ -188,11 +188,11 @@ describe("transformAlertEntry", () => {
     expect(result.t1_url).toContain("T1_");
   });
 
-  it("should preserve geometry fields", () => {
+  it("should not include geometry fields in display output", () => {
     const result = transformAlertEntry(rawAlert, table);
 
-    expect(result.g__type).toBe("Polygon");
-    expect(result.g__coordinates).toBeDefined();
+    expect(result).not.toHaveProperty("g__type");
+    expect(result).not.toHaveProperty("g__coordinates");
   });
 
   it("should handle GFW records without proprietary fields", () => {

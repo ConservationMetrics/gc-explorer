@@ -203,6 +203,8 @@ watch(
         imageUrl.value.push(String(displayRecord.t0_url));
       if (displayRecord.t1_url)
         imageUrl.value.push(String(displayRecord.t1_url));
+      delete displayRecord.t0_url;
+      delete displayRecord.t1_url;
     }
 
     selectedFeature.value = displayRecord;
