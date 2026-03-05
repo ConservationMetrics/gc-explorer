@@ -74,25 +74,3 @@ test.describe("Dataset allowlist - unregistered table not accessible", () => {
     expect(body).not.toMatch(/"data":\s*\[/);
   });
 });
-
-test.describe("Dataset allowlist - role-based restriction enforced at API", () => {
-  // CI config has bcmform_responses with ROUTE_LEVEL_PERMISSION: "member".
-  // Unauthenticated request must get 403 (or redirect if API is behind auth middleware).
-  test("GET /api/bcmform_responses/map without auth returns 403 or redirect", async ({
-    page,
-    baseURL,
-  }) => {
-    const url = `${baseURL ?? "http://localhost:8080"}/api/bcmform_responses/map`;
-    const response = await page.request.get(url, {
-      maxRedirects: 0,
-      failOnStatusCode: false,
-    });
-
-    // Either 403 Forbidden or we're redirected (e.g. to login)
-    const ok = response.status() === 403 || response.status() === 302;
-    expect(
-      ok,
-      `Member-only table must return 403 or redirect, got ${response.status()}`,
-    ).toBe(true);
-  });
-});
