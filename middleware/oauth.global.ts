@@ -58,28 +58,20 @@ export default defineNuxtRouteMiddleware(async (to) => {
       // Authenticated from here on
       const typedUser = user.value as User;
       const userRole = typedUser?.userRole ?? Role.SignedIn;
-      console.log("[TEST] Middleware checking permissions:", {
-        permission,
-        userRole,
-        path: to.path,
-      });
       // Role-based access control
       switch (permission) {
         case "guest":
           if (userRole < Role.Guest) {
-            console.log("[TEST] Guest permission denied for role:", userRole);
             return router.push("/?reason=unauthorized");
           }
           break;
         case "member":
           if (userRole < Role.Member) {
-            console.log("[TEST] Member permission denied for role:", userRole);
             return router.push("/?reason=unauthorized");
           }
           break;
         case "admin":
           if (userRole < Role.Admin) {
-            console.log("[TEST] Admin permission denied for role:", userRole);
             return router.push("/?reason=unauthorized");
           }
           break;
