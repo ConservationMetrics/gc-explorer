@@ -1,15 +1,10 @@
-import murmurhash from "murmurhash";
-
 import { describe, it, expect } from "vitest";
 
 import {
-  prepareAlertData,
   prepareAlertsStatistics,
   prepareMapStatistics,
   prepareMinimalAlertEntries,
-  transformToGeojson,
 } from "@/server/dataProcessing/transformData";
-import { isValidCoordinate } from "@/server/dataProcessing/helpers";
 import { transformedMapeoData } from "../fixtures/mapeoData";
 import { alertsData, alertsMetadata } from "../fixtures/alertsData";
 
@@ -42,38 +37,6 @@ describe("prepareMapStatistics", () => {
     const result = prepareMapStatistics(dataWithNonDateColumn);
 
     expect(result.dateRange).toBeUndefined();
-  });
-});
-
-describe("prepareAlertData", () => {
-  it("should prepare alert data for the alerts dashboard", () => {
-    const result = prepareAlertData(alertsData);
-
-    result.mostRecentAlerts.forEach((item) => {
-      expect(item).toHaveProperty("alertDetectionRange");
-      expect(item).toHaveProperty("previewImagerySource");
-      expect(item).toHaveProperty("alertType");
-      expect(item).toHaveProperty("alertAreaHectares");
-      expect(item).toHaveProperty("satelliteUsedForDetection");
-      expect(item.previewImagerySource).toBe("Sentinel-2");
-    });
-
-    // 2 of the 3 alerts are the most recent alerts
-    expect(result.mostRecentAlerts).toHaveLength(2);
-    expect(result.previousAlerts).toHaveLength(1);
-
-    // alertDetectionRange should be a string in the format "YYYY-MM-DD to YYYY-MM-DD"
-    expect(result.mostRecentAlerts[0].alertDetectionRange).toMatch(
-      /^\d{4}-\d{2}-\d{2} to \d{4}-\d{2}-\d{2}$/,
-    );
-
-    // Validate geographicCentroid field to be a valid coordinate pair
-    const geographicCentroid = result.mostRecentAlerts[0].geographicCentroid;
-    const coordinatePattern = /^-?\d{1,3}\.\d{6}, -?\d{1,3}\.\d{6}$/;
-    expect(geographicCentroid).toMatch(coordinatePattern);
-    const [latitude, longitude] = geographicCentroid.split(", ").map(Number);
-    expect(isValidCoordinate(latitude)).toBe(true);
-    expect(isValidCoordinate(longitude)).toBe(true);
   });
 });
 
@@ -153,29 +116,5 @@ describe("prepareMinimalAlertEntries", () => {
     const result = prepareMinimalAlertEntries(alertsData);
 
     expect(result.mostRecentAlerts[0].alertID).toBe(alertsData[0].alert_id);
-  });
-});
-
-describe("transformToGeojson", () => {
-  it("should transform data to GeoJSON", () => {
-    const result = transformToGeojson(
-      prepareAlertData(alertsData).mostRecentAlerts,
-    );
-
-    expect(result).toHaveProperty("type");
-    expect(result.type).toBe("FeatureCollection");
-    expect(result).toHaveProperty("features");
-    expect(result.features).toBeInstanceOf(Array);
-    result.features.forEach((feature, index) => {
-      expect(feature).toHaveProperty("type");
-      expect(feature.type).toBe("Feature");
-      expect(feature).toHaveProperty("properties");
-      expect(feature).toHaveProperty("geometry");
-      expect(feature).toHaveProperty("id");
-      // Check if the alert._id is properly transformed to feature.id using murmurhash
-      const expectedId = murmurhash.v3(String(alertsData[index].alert_id));
-      expect(feature.id).toBe(expectedId);
-    });
-    expect(result.features).toHaveLength(2);
   });
 });

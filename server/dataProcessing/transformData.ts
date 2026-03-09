@@ -1,8 +1,5 @@
-import murmurhash from "murmurhash";
-
 import { calculateCentroid } from "./helpers";
-import { capitalizeFirstLetter } from "@/utils/transforms";
-import type { Feature, FeatureCollection, Geometry } from "geojson";
+import type { Geometry } from "geojson";
 import type {
   AlertsMetadata,
   AlertsPerMonth,
@@ -12,176 +9,8 @@ import type {
 } from "@/types/types";
 
 /**
- * Prepares and transforms alert data for display in the alerts view.
- *
- * This function processes a list of alert data entries, transforming each entry
- * to include only relevant information for display. It segregates the data into
- * two categories: the most recent alerts and previous alerts, based on the latest
- * detection date found in the data.
- *
- * The transformation includes:
- * - Filtering and retaining columns that start with 'g__'.
- * - Mapping satellite prefixes to their full names.
- * - Formatting and capitalizing specific fields such as territory name and data provider.
- * - Calculating geographic centroids for alert locations.
- * - Constructing URLs for alert imagery.
- *
- * @param {DataEntry[]} data - An array of data entries representing alerts.
- * @returns {Object} An object containing two arrays:
- *   - `mostRecentAlerts`: Alerts detected in the most recent month.
- *   - `previousAlerts`: Alerts detected in months prior to the most recent.
- */
-const prepareAlertData = (
-  data: DataEntry[],
-  table: string,
-): {
-  mostRecentAlerts: DataEntry[];
-  previousAlerts: DataEntry[];
-} => {
-  const transformChangeDetectionItem = (
-    item: DataEntry,
-    formattedMonth?: string,
-  ): DataEntry => {
-    const transformedItem: DataEntry = {};
-
-    // Keep columns starting with 'g__'
-    Object.keys(item).forEach((key) => {
-      if (key.startsWith("g__")) {
-        transformedItem[key] = item[key];
-      }
-    });
-
-    if (item.data_source === "Global Forest Watch") {
-      transformedItem["alertID"] = item.alert_id;
-      transformedItem["confidenceLevel"] = item.confidence;
-      transformedItem["alertType"] = item.alert_type?.replace(/_/g, " ") ?? "";
-      transformedItem["dataProvider"] = capitalizeFirstLetter(item.data_source);
-      transformedItem["geographicCentroid"] = calculateCentroid(
-        item.g__coordinates,
-      );
-      transformedItem["YYYYMM"] = item.year_detec + item.month_detec;
-      transformedItem["monthDetected"] =
-        `${item.month_detec}-${item.year_detec}`;
-      transformedItem["alertDetectionRange"] =
-        `${item.date_start_t1} to ${item.date_end_t1}`;
-      return transformedItem;
-    }
-
-    // To rewrite the satellite prefix column
-    const satelliteLookup: { [key: string]: string } = {
-      S1: "Sentinel-1",
-      S2: "Sentinel-2",
-      PS: "Planetscope",
-      L8: "Landsat 8",
-      L9: "Landsat 9",
-      WV1: "WorldView-1",
-      WV2: "WorldView-2",
-      WV3: "WorldView-3",
-      WV4: "WorldView-4",
-      IK: "IKONOS",
-    };
-
-    // Include only the transformed columns
-    transformedItem["territory"] = capitalizeFirstLetter(
-      item.territory_name ?? "",
-    );
-    transformedItem["alertID"] = item.alert_id;
-    transformedItem["alertDetectionRange"] =
-      `${item.date_start_t1} to ${item.date_end_t1}`;
-    transformedItem["monthDetected"] = `${formattedMonth}-${item.year_detec}`;
-    transformedItem["YYYYMM"] = `${item.year_detec}${formattedMonth}`;
-    transformedItem["dataProvider"] = capitalizeFirstLetter(
-      `${item.data_source}`,
-    );
-    transformedItem["confidenceLevel"] = item.confidence;
-    transformedItem["alertType"] = item.alert_type?.replace(/_/g, " ") ?? "";
-    transformedItem["alertAreaHectares"] =
-      typeof item.area_alert_ha === "number"
-        ? (item.area_alert_ha as number).toFixed(2)
-        : item.area_alert_ha;
-    transformedItem["geographicCentroid"] = calculateCentroid(
-      item.g__coordinates,
-    );
-    transformedItem["satelliteUsedForDetection"] =
-      satelliteLookup[item.sat_detect_prefix] || item.sat_detect_prefix;
-
-    transformedItem["t0_url"] =
-      `${table}/${item.territory_id}/${item.year_detec}/${formattedMonth}/${item.alert_id}/images/${item.sat_viz_prefix}_T0_${item.alert_id}.jpg`;
-    transformedItem["t1_url"] =
-      `${table}/${item.territory_id}/${item.year_detec}/${formattedMonth}/${item.alert_id}/images/${item.sat_viz_prefix}_T1_${item.alert_id}.jpg`;
-    transformedItem["previewImagerySource"] =
-      satelliteLookup[item.sat_viz_prefix] || item.sat_viz_prefix;
-
-    return transformedItem;
-  };
-
-  let latestProprietaryDate = new Date(0);
-  let latestProprietaryMonthStr = "";
-
-  const validGeoData = data.filter(isValidGeolocation);
-  const proprietaryAlertData = validGeoData.filter(
-    (d) => d.data_source !== "Global Forest Watch",
-  );
-  const gfwData = validGeoData.filter(
-    (d) => d.data_source === "Global Forest Watch",
-  );
-
-  // First pass to find the latest date
-  proprietaryAlertData.forEach((item) => {
-    const formattedMonth =
-      item.month_detec.length === 1 ? `0${item.month_detec}` : item.month_detec;
-    const monthYearStr = `${formattedMonth}-${item.year_detec}`;
-    const date = new Date(
-      parseInt(item.year_detec),
-      parseInt(formattedMonth) - 1,
-    );
-
-    if (date > latestProprietaryDate) {
-      latestProprietaryDate = date;
-      latestProprietaryMonthStr = monthYearStr;
-    }
-  });
-
-  let latestGfwDate = new Date(0);
-  gfwData.forEach((item) => {
-    const date = new Date(item.date_end_t1);
-    if (date > latestGfwDate) latestGfwDate = date;
-  });
-
-  const mostRecentAlerts: DataEntry[] = [];
-  const previousAlerts: DataEntry[] = [];
-
-  // Second pass to segregate the data
-  proprietaryAlertData.forEach((item) => {
-    const formattedMonth =
-      item.month_detec.length === 1 ? `0${item.month_detec}` : item.month_detec;
-    const monthYearStr = `${formattedMonth}-${item.year_detec}`;
-    const transformedItem = transformChangeDetectionItem(item, formattedMonth);
-
-    // Segregate data based on the latest month detected
-    if (monthYearStr === latestProprietaryMonthStr) {
-      mostRecentAlerts.push(transformedItem);
-    } else {
-      previousAlerts.push(transformedItem);
-    }
-  });
-
-  gfwData.forEach((item) => {
-    const date = new Date(item.date_end_t1);
-    const transformedItem = transformChangeDetectionItem(item);
-    if (date.getTime() === latestGfwDate.getTime()) {
-      mostRecentAlerts.push(transformedItem);
-    } else {
-      previousAlerts.push(transformedItem);
-    }
-  });
-
-  return { mostRecentAlerts, previousAlerts };
-};
-
-/**
- * Splits raw alert data into most-recent and previous buckets (same date
- * logic as prepareAlertData) but only retains the fields needed for map
+ * Splits raw alert data into most-recent and previous buckets, retaining
+ * only the fields needed for map
  * rendering: _id, alertID, YYYYMM, geographicCentroid, and geometry (g__*).
  *
  * @param {DataEntry[]} data - Raw alert rows from the database.
@@ -563,60 +392,6 @@ const prepareAlertsStatistics = (
   };
 };
 
-/**
- * Transforms data entries into a GeoJSON FeatureCollection.
- *
- * @param {DataEntry[]} data - An array of data entries to be transformed.
- * @returns {FeatureCollection} A GeoJSON FeatureCollection object.
- */
-const transformToGeojson = (data: DataEntry[]): FeatureCollection => {
-  const features = data.map((input) => {
-    const feature: Feature = {
-      type: "Feature",
-      id: undefined,
-      properties: {}, // Ensure properties is always an object
-      geometry: {
-        type: input.g__type as "Point" | "LineString" | "Polygon",
-        coordinates: [],
-      },
-    };
-
-    Object.entries(input).forEach(([key, value]) => {
-      if (key === "alertID") {
-        // Mapbox requires `feature.id` to be a 32-bit integer or a small string.
-        // Some `alertID` values (e.g. "20240910100161660491") are too large to safely cast to Number,
-        // which causes "given varint doesn't fit into 10 bytes" errors when rendering vector tiles.
-        // We hash the `alertID` with MurmurHash to ensure a safe, deterministic 32-bit integer ID.
-        feature.id = murmurhash.v3(String(value));
-        feature.properties![key] = value; // Use non-null assertion
-      } else if (key.startsWith("g__")) {
-        const geometryKey = key.substring(3); // Removes 'g__' prefix
-        if (feature.geometry) {
-          if (geometryKey === "coordinates") {
-            feature.geometry[geometryKey as keyof Geometry] = JSON.parse(
-              String(value),
-            );
-          } else if (geometryKey === "type") {
-            feature.geometry.type = String(value) as
-              | "Point"
-              | "LineString"
-              | "Polygon";
-          }
-        }
-      } else {
-        feature.properties![key] = value; // Use non-null assertion
-      }
-    });
-
-    return feature;
-  });
-
-  return {
-    type: "FeatureCollection",
-    features: features,
-  };
-};
-
 /** Validates if a data entry has valid geolocation data. */
 const isValidGeolocation = (item: DataEntry): boolean => {
   const validGeoTypes = [
@@ -761,9 +536,7 @@ const prepareMapStatistics = (data: DataEntry[]): MapStatistics => {
 };
 
 export {
-  prepareAlertData,
   prepareAlertsStatistics,
   prepareMapStatistics,
   prepareMinimalAlertEntries,
-  transformToGeojson,
 };
