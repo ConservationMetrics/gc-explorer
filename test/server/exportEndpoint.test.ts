@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+import { escapeCSVValue } from "@/utils/csvUtils";
+// @ts-expect-error - tokml does not have types
+import tokml from "tokml";
+
 const mockFetchConfig = vi.fn();
 const mockFetchData = vi.fn();
 
@@ -41,10 +45,6 @@ const sampleColumns = [
   { original_column: "Geo Type", sql_column: "g__type" },
   { original_column: "Coordinates", sql_column: "g__coordinates" },
 ];
-
-import { escapeCSVValue } from "@/utils/csvUtils";
-// @ts-expect-error - tokml does not have types
-import tokml from "tokml";
 
 describe("GET api/[table]/export", () => {
   beforeEach(() => {
