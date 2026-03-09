@@ -85,7 +85,7 @@ const filteredFeatureCollection = ref<FeatureCollection>({
  * in the FeatureCollection features, not full records.
  */
 const flatDataForFilter = computed<Dataset>(() => {
-  return filteredFeatureCollection.value.features.map((feature) => ({
+  return props.mapData.features.map((feature) => ({
     ...feature.properties,
   })) as Dataset;
 });
