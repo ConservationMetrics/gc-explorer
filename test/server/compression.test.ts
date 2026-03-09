@@ -54,8 +54,12 @@ describe("compression plugin", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    Object.keys(responseHeaders).forEach((key) => delete responseHeaders[key]);
-    Object.keys(requestHeaders).forEach((key) => delete requestHeaders[key]);
+    for (const key of Object.keys(responseHeaders)) {
+      Reflect.deleteProperty(responseHeaders, key);
+    }
+    for (const key of Object.keys(requestHeaders)) {
+      Reflect.deleteProperty(requestHeaders, key);
+    }
     removedHeaders.length = 0;
     hookCallback = registeredHooks["beforeResponse"] as typeof hookCallback;
   });
