@@ -10,7 +10,7 @@ import type {
 
 /**
  * Splits raw alert data into most-recent and previous buckets, retaining
- * only the fields needed for map
+ * only the fields needed for map and other components (like `AlertsSlider.vue`)
  * rendering: _id, alertID, YYYYMM, geographicCentroid, and geometry (g__*).
  *
  * @param {DataEntry[]} data - Raw alert rows from the database.
