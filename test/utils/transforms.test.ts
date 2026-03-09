@@ -1,11 +1,13 @@
 import { describe, it, expect } from "vitest";
 
 import {
+  transformAlertEntry,
   transformSurveyData,
   transformSurveyDataKey,
   transformSurveyDataValue,
   transformSurveyEntry,
 } from "@/utils/transforms";
+import { alertsData } from "../fixtures/alertsData";
 import { mapeoData } from "../fixtures/mapeoData";
 
 describe("transformSurveyDataKey", () => {
@@ -152,5 +154,59 @@ describe("transformSurveyEntry", () => {
     };
     const result = transformSurveyEntry(record, "icon_col");
     expect(result.icon_col).toBe("icon.png");
+  });
+});
+
+describe("transformAlertEntry", () => {
+  const rawAlert = alertsData[0];
+  const table = "test_alerts";
+
+  it("should map raw column names to display-ready keys", () => {
+    const result = transformAlertEntry(rawAlert, table);
+
+    expect(result.alertID).toBe(rawAlert.alert_id);
+    expect(result.alertType).toBe("gold mining");
+    expect(result.alertAreaHectares).toBe("0.85");
+    expect(result.dataProvider).toBe("Fake Alerts Provider");
+    expect(result.alertDetectionRange).toBe("2024-01-01 to 2024-01-31");
+    expect(result.monthDetected).toBe("01-2024");
+  });
+
+  it("should resolve satellite prefix to full name", () => {
+    const result = transformAlertEntry(rawAlert, table);
+
+    expect(result.satelliteUsedForDetection).toBe("Sentinel-1");
+    expect(result.previewImagerySource).toBe("Sentinel-2");
+  });
+
+  it("should construct imagery URLs using the table name", () => {
+    const result = transformAlertEntry(rawAlert, table);
+
+    expect(result.t0_url).toContain(table);
+    expect(result.t0_url).toContain("T0_");
+    expect(result.t1_url).toContain(table);
+    expect(result.t1_url).toContain("T1_");
+  });
+
+  it("should not include geometry fields in display output", () => {
+    const result = transformAlertEntry(rawAlert, table);
+
+    expect(result).not.toHaveProperty("g__type");
+    expect(result).not.toHaveProperty("g__coordinates");
+  });
+
+  it("should handle GFW records without proprietary fields", () => {
+    const gfwAlert = {
+      ...rawAlert,
+      data_source: "Global Forest Watch",
+    };
+    const result = transformAlertEntry(gfwAlert, table);
+
+    expect(result.alertID).toBe(gfwAlert.alert_id);
+    expect(result.alertType).toBe("gold mining");
+    // GFW records don't include territory, imagery URLs, etc.
+    expect(result).not.toHaveProperty("territory");
+    expect(result).not.toHaveProperty("t0_url");
+    expect(result).not.toHaveProperty("alertAreaHectares");
   });
 });

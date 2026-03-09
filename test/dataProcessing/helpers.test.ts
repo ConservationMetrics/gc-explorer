@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 
-import { calculateCentroid } from "@/server/dataProcessing/helpers";
+import {
+  calculateCentroid,
+  hasValidCoordinates,
+} from "@/server/dataProcessing/helpers";
 
 describe("calculateCentroid", () => {
   it("returns centroid for Point", () => {
@@ -65,5 +68,38 @@ describe("calculateCentroid", () => {
       ],
     ]);
     expect(calculateCentroid(ringedPolygon)).toBe("3.136000, -54.296000");
+  });
+});
+
+describe("hasValidCoordinates", () => {
+  it("validates Point coordinates", () => {
+    expect(hasValidCoordinates({ g__coordinates: "[-54.28, 3.12]" })).toBe(
+      true,
+    );
+  });
+
+  it("validates Polygon coordinates", () => {
+    const polygon =
+      "[[[-80.58, 38.77], [-80.57, 38.78], [-80.59, 38.80], [-80.58, 38.77]]]";
+    expect(hasValidCoordinates({ g__coordinates: polygon })).toBe(true);
+  });
+
+  it("validates LineString coordinates", () => {
+    const line = "[[-54.28, 3.12], [-54.29, 3.13]]";
+    expect(hasValidCoordinates({ g__coordinates: line })).toBe(true);
+  });
+
+  it("validates MultiPolygon coordinates", () => {
+    const multi =
+      "[[[[-54.28, 3.12], [-54.29, 3.13], [-54.28, 3.12]]], [[[-54.30, 3.14], [-54.31, 3.15], [-54.30, 3.14]]]]";
+    expect(hasValidCoordinates({ g__coordinates: multi })).toBe(true);
+  });
+
+  it("rejects entries with no coordinate key", () => {
+    expect(hasValidCoordinates({ name: "test" })).toBe(false);
+  });
+
+  it("rejects entries with null coordinates", () => {
+    expect(hasValidCoordinates({ g__coordinates: null })).toBe(false);
   });
 });

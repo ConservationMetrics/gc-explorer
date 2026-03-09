@@ -55,11 +55,16 @@ export const hasValidCoordinates = (
         parsedCoordinates = rawCoordinates.flat().map(Number);
       }
 
-      // If we have a valid array, check if all elements are valid coordinates
+      // Flatten nested coordinate arrays (Polygon, LineString, MultiPolygon)
+      // before validating individual numbers.
       if (Array.isArray(parsedCoordinates) && parsedCoordinates.length > 0) {
+        const flatCoords = (parsedCoordinates as unknown[]).flat(
+          Infinity,
+        ) as number[];
         return (
-          parsedCoordinates.length % 2 === 0 &&
-          parsedCoordinates.every(isValidCoordinate)
+          flatCoords.length > 0 &&
+          flatCoords.length % 2 === 0 &&
+          flatCoords.every(isValidCoordinate)
         );
       }
 

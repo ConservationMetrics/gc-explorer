@@ -27,7 +27,7 @@ import { useIncidents } from "@/composables/useIncidents";
 import { useFeatureSelection } from "@/composables/useFeatureSelection";
 import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
 import { useRecordCache } from "@/composables/useRecordCache";
-import { transformSurveyEntry } from "@/utils/transforms";
+import { transformSurveyEntry, transformAlertEntry } from "@/utils/transforms";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
@@ -154,9 +154,10 @@ const {
   isMapeo,
 );
 
-// Fetch full Mapeo record on demand when a Mapeo feature is selected.
-// Clears the feature display and shows a loading skeleton while the
-// full record is fetched.
+// Fetch full record on demand when a minimal feature is selected.
+// Handles both Mapeo features and alert features — the minimal
+// FeatureCollection only carries IDs and map-rendering fields, so
+// the full record is loaded via the single-record endpoint.
 let skipNextWatch = false;
 watch(
   () => selectedFeature.value,
@@ -165,27 +166,48 @@ watch(
       skipNextWatch = false;
       return;
     }
-    if (!feature || !props.mapeoTable) return;
+    if (!feature) return;
+
+    const isMapeoFeature = isMapeo.value && props.mapeoTable;
+    const isMinimalAlert = !isMapeo.value && feature.alertID && feature._id;
+
+    if (!isMapeoFeature && !isMinimalAlert) return;
 
     const recordId = feature._id || feature.id;
     if (!recordId) return;
 
+    const fetchTable = isMapeoFeature ? props.mapeoTable! : props.table;
     const minimalFeature = { ...feature };
     selectedFeature.value = null;
     selectedFeatureLoading.value = true;
 
-    const fullRecord = await fetchRecord(props.mapeoTable, recordId);
-    // Skip the next watcher trigger caused by setting the full record
+    const fullRecord = await fetchRecord(fetchTable, recordId);
     skipNextWatch = true;
-    const displayRecord = fullRecord
-      ? transformSurveyEntry(fullRecord)
-      : minimalFeature;
-    selectedFeature.value = displayRecord;
-    if (displayRecord.photos) {
+
+    let displayRecord: Record<string, unknown>;
+    if (isMapeoFeature) {
+      displayRecord = fullRecord
+        ? transformSurveyEntry(fullRecord)
+        : minimalFeature;
+      if (displayRecord.photos) {
+        imageUrl.value = [];
+        const photos = String(displayRecord.photos).split(",");
+        photos.forEach((photo: string) => imageUrl.value.push(photo.trim()));
+      }
+    } else {
+      displayRecord = fullRecord
+        ? transformAlertEntry(fullRecord, props.table)
+        : minimalFeature;
       imageUrl.value = [];
-      const photos = String(displayRecord.photos).split(",");
-      photos.forEach((photo: string) => imageUrl.value.push(photo.trim()));
+      if (displayRecord.t0_url)
+        imageUrl.value.push(String(displayRecord.t0_url));
+      if (displayRecord.t1_url)
+        imageUrl.value.push(String(displayRecord.t1_url));
+      delete displayRecord.t0_url;
+      delete displayRecord.t1_url;
     }
+
+    selectedFeature.value = displayRecord;
     selectedFeatureLoading.value = false;
   },
 );

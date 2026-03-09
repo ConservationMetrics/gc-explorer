@@ -64,6 +64,7 @@ const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
   mediaBasePath: "",
   mediaBasePathAlerts: "",
   planetApiKey: "",
+  table: "test_alerts",
 };
 
 // Mock Nuxt composables - needs to be before component import
