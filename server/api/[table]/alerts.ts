@@ -62,7 +62,6 @@ export default defineEventHandler(async (event: H3Event) => {
       ),
     };
 
-    // Prepare Mapeo data for the alerts view
     const mapeoTable = viewsConfig[table].MAPEO_TABLE;
     const mapeoCategoryIds = viewsConfig[table].MAPEO_CATEGORY_IDS;
 
