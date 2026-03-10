@@ -13,19 +13,10 @@ test("visibility system - public dataset accessible without authentication", asy
   // 1. Navigate directly to the test dataset that we'll make public
   await page.goto("/gallery/seed_survey_data");
 
-  // Some environments may not have this seed dataset configured as public.
-  // Skip early if request is immediately redirected to auth/unauthorized.
-  const initialUrl = page.url();
-  if (
-    initialUrl.includes("/login") ||
-    initialUrl.includes("reason=unauthorized")
-  ) {
-    test.skip(true, "seed_survey_data is not public in this environment");
-  }
-
   // 2. Wait for the page to load
   await page.waitForURL("**/gallery/**", { timeout: 10000 });
   await page.waitForLoadState("networkidle");
+  await expect(page).not.toHaveURL(/\/login|\?reason=unauthorized/);
 
   // 3. Wait for either gallery content or gallery unavailability message.
   // Public accessibility should still be valid in either configured state.
@@ -38,29 +29,15 @@ test("visibility system - public dataset accessible without authentication", asy
       state: "visible",
       timeout: 15000,
     }),
-    page.getByTestId("data-load-error").waitFor({
-      state: "visible",
-      timeout: 15000,
-    }),
-    page.waitForURL(/\/(login|\?reason=unauthorized)/, { timeout: 15000 }),
   ]);
-
-  const settledUrl = page.url();
-  if (
-    settledUrl.includes("/login") ||
-    settledUrl.includes("reason=unauthorized")
-  ) {
-    test.skip(true, "seed_survey_data is not public in this environment");
-  }
+  await expect(page).not.toHaveURL(/\/login|\?reason=unauthorized/);
 
   // 4. Verify one expected public-state UI is visible
   const galleryContainer = page.getByTestId("gallery-container");
   const galleryError = page.getByTestId("gallery-error-message");
-  const dataLoadError = page.getByTestId("data-load-error");
   const hasGallery = (await galleryContainer.count()) > 0;
   const hasError = (await galleryError.count()) > 0;
-  const hasDataLoadError = (await dataLoadError.count()) > 0;
-  expect(hasGallery || hasError || hasDataLoadError).toBe(true);
+  expect(hasGallery || hasError).toBe(true);
   if (hasGallery) {
     await expect(galleryContainer).toBeVisible();
   }
