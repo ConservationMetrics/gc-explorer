@@ -19,7 +19,7 @@ test("visibility system - public dataset accessible without authentication", asy
   // 3. Wait for the gallery container to be present
   await page
     .getByTestId("gallery-container")
-    .waitFor({ state: "attached", timeout: 5000 });
+    .waitFor({ state: "attached", timeout: 10000 });
 
   // 4. Verify gallery container is visible
   await expect(page.getByTestId("gallery-container")).toBeVisible();

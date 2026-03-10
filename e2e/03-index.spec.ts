@@ -6,6 +6,9 @@ test("index page - displays available views and navigation flow", async ({
   // 1. Navigate to the root of the application
   await page.goto("/");
 
+  // Use a desktop-sized viewport so header content is visible
+  await page.setViewportSize({ width: 1280, height: 800 });
+
   // 2. Wait for page to load
   await page.waitForLoadState("networkidle");
 

@@ -256,7 +256,11 @@ useHead({
                 {{ isDescriptionExpanded ? "Show less" : "Show more" }}
               </button>
             </div>
-            <div v-else class="text-base sm:text-lg text-gray-500 italic">
+            <div
+              v-else
+              data-testid="dataset-description-fallback"
+              class="text-base sm:text-lg text-gray-500 italic"
+            >
               <span>{{ $t("noDescriptionProvidedYet") }}</span>
               <NuxtLink
                 v-if="isAdmin"
@@ -335,7 +339,11 @@ useHead({
                 {{ isDescriptionExpanded ? "Show less" : "Show more" }}
               </button>
             </div>
-            <div v-else class="text-base sm:text-lg text-gray-500 italic">
+            <div
+              v-else
+              data-testid="dataset-description-fallback"
+              class="text-base sm:text-lg text-gray-500 italic"
+            >
               <span>{{ $t("noDescriptionProvidedYet") }}</span>
               <NuxtLink
                 v-if="isAdmin"

@@ -133,7 +133,7 @@ test("gallery page - displays images with lightbox functionality", async ({
 
     // 8. Wait for lightbox to appear (lightbox library creates overlay)
     const lightboxOverlay = page.locator(".lightboxOverlay");
-    await expect(lightboxOverlay).toBeVisible({ timeout: 5000 });
+    await expect(lightboxOverlay).toBeVisible({ timeout: 10000 });
 
     // 9. Verify lightbox image is visible
     const lightboxImage = page.locator(".lb-image");

@@ -139,9 +139,7 @@ test("dataset page - displays description when available", async ({
   const descriptionCount = await description.count();
 
   // 7. Check for fallback message if no description
-  const fallbackMessage = page.locator("*").filter({
-    hasText: /no description provided yet/i,
-  });
+  const fallbackMessage = page.getByTestId("dataset-description-fallback");
   const hasFallback = (await fallbackMessage.count()) > 0;
 
   /* Description is optional, so we just verify the page structure is correct

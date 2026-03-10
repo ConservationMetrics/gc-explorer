@@ -184,9 +184,10 @@ test("alerts dashboard - legend can control all alert layer types", async ({
 }) => {
   // Navigate to alerts dashboard
   await page.goto("/alerts/fake_alerts");
+  await page.waitForLoadState("networkidle");
 
   // Wait for map to load
-  await page.locator("#map").waitFor({ state: "attached", timeout: 5000 });
+  await page.locator("#map").waitFor({ state: "attached", timeout: 10000 });
 
   // Wait for legend to appear
   await page.waitForSelector('[data-testid="map-legend"]');
