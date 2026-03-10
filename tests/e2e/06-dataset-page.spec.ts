@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures/auth-storage";
+import { expect, test } from "@/tests/e2e/fixtures/auth-storage";
 
 test("dataset page - displays header, description, and view cards", async ({
   authenticatedPageAsAdmin: page,

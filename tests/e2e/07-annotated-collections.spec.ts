@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures/auth-storage";
+import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import type { Page } from "@playwright/test";
 
 const selectionModifierKey = process.platform === "darwin" ? "Meta" : "Control";

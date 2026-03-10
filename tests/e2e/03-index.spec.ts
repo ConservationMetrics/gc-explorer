@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures/auth-storage";
+import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 
 test("index page - displays available views and navigation flow", async ({
   authenticatedPageAsAdmin: page,
