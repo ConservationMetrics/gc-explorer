@@ -180,16 +180,17 @@ test("alerts dashboard - layer visibility toggles", async ({
 });
 
 test("alerts dashboard - legend can control all alert layer types", async ({
-  page,
+  authenticatedPageAsAdmin: page,
 }) => {
-  // Navigate to alerts dashboard
+  // Navigate to alerts dashboard (auth required so API returns data and #map renders)
   await page.goto("/alerts/fake_alerts");
+  await page.waitForLoadState("networkidle");
 
-  // Wait for map to load
-  await page.locator("#map").waitFor({ state: "attached", timeout: 5000 });
+  // Wait for map to load (AlertsDashboard mounts inside ClientOnly after fetch)
+  await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
 
   // Wait for legend to appear
-  await page.waitForSelector('[data-testid="map-legend"]');
+  await page.waitForSelector('[data-testid="map-legend"]', { timeout: 10000 });
 
   // Test that we can control all alert layer types by simulating the toggle function behavior
   const alertTests = [

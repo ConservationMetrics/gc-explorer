@@ -195,7 +195,7 @@ const emit = defineEmits<{
   position: absolute;
   top: 230px;
   right: 10px;
-  z-index: 10;
+  z-index: 30;
   display: flex;
   flex-direction: column;
   gap: 8px;

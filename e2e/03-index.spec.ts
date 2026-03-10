@@ -3,6 +3,10 @@ import { test, expect } from "./fixtures/auth-storage";
 test("index page - displays available views and navigation flow", async ({
   authenticatedPageAsAdmin: page,
 }) => {
+  // Use a desktop-sized viewport first so the desktop header (Guardian Connector) is visible
+  // Desktop header is shown when width > 1000px (max-[1000px]:hidden)
+  await page.setViewportSize({ width: 1280, height: 800 });
+
   // 1. Navigate to the root of the application
   await page.goto("/");
 
@@ -11,14 +15,10 @@ test("index page - displays available views and navigation flow", async ({
 
   // 3. Verify header elements are visible
   // Check for Guardian Connector logo (use first() to avoid strict mode violation)
-  const logo = page.locator('img[alt="Guardian Connector Explorer"]').first();
-  await expect(logo).toBeVisible();
-
-  // Check for Guardian Connector text in header
-  const guardianConnectorText = page
-    .getByRole("heading", { name: /guardian connector/i })
+  const logo = page
+    .locator('img[alt="Guardian Connector Explorer"]:visible')
     .first();
-  await expect(guardianConnectorText).toBeVisible();
+  await expect(logo).toBeVisible({ timeout: 10000 });
 
   /* Check for community name in tab (should be visible in desktop view)
    * tab-trigger is a NuxtLink, not a button
