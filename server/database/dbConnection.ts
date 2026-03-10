@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as schema from "../db/schema";
+import * as schema from "@/server/database/schema";
 
 // Create connection for guardianconnector database (config)
 const createConfigConnection = () => {

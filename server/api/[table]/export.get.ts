@@ -1,12 +1,12 @@
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
-import { hasValidCoordinates } from "@/server/dataProcessing/helpers";
-import { validatePermissions } from "@/utils/auth";
+import { hasValidCoordinates } from "@/utils/geoUtils";
+import { validatePermissions } from "@/utils/accessControls";
 import { escapeCSVValue } from "@/utils/csvUtils";
 // @ts-expect-error - tokml does not have types
 import tokml from "tokml";
 
 import type { H3Event } from "h3";
-import type { DataEntry, ColumnEntry } from "@/types/types";
+import type { DataEntry, ColumnEntry } from "@/types";
 import type { Feature, FeatureCollection, Geometry, Position } from "geojson";
 
 const SUPPORTED_FORMATS = ["csv", "geojson", "kml"] as const;

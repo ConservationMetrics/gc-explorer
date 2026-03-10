@@ -1,15 +1,11 @@
 import { sql, eq, and, desc } from "drizzle-orm";
-import type {
-  AnnotatedCollection,
-  Incident,
-  CollectionEntry,
-} from "@/types/types";
-import { configDb, warehouseDb } from "../utils/db";
+import type { AnnotatedCollection, Incident, CollectionEntry } from "@/types";
+import { configDb, warehouseDb } from "@/server/database/dbConnection";
 import {
   annotatedCollections,
   incidents,
   collectionEntries,
-} from "../db/schema";
+} from "@/server/database/schema";
 
 /**
  * Creates a new annotated collection with optional incident data and collection entries
@@ -168,6 +164,7 @@ export const getAnnotatedCollection = async (
  * @param incidentUpdates - Optional incident-specific fields to update
  * @returns Promise<AnnotatedCollection> - The updated annotated collection
  */
+
 export const updateAnnotatedCollection = async (
   collectionId: string,
   updates: Partial<AnnotatedCollection>,

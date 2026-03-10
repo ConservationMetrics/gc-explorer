@@ -6,7 +6,7 @@ import {
   transformSurveyDataKey,
   transformSurveyDataValue,
   transformSurveyEntry,
-} from "@/utils/transforms";
+} from "@/utils/dataTransformers";
 import { alertsData } from "../fixtures/alertsData";
 import { mapeoData } from "../fixtures/mapeoData";
 

@@ -6,7 +6,7 @@ import VueSlider from "vue-3-slider-component";
 import { toCamelCase } from "@/utils";
 import { updateTags } from "@/composables/useTags";
 
-import type { ViewConfig, BasemapConfig } from "@/types/types";
+import type { ViewConfig, BasemapConfig } from "@/types";
 
 const props = defineProps<{
   tableName: string;

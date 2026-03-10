@@ -6,8 +6,8 @@ import {
   buildFilebrowserBase,
   getBaseUrlFromInput,
   isValidFilebrowserInput,
-} from "@/utils/media";
-import type { ViewConfig } from "@/types/types";
+} from "@/utils/mediaHelpers";
+import type { ViewConfig } from "@/types";
 
 const props = defineProps<{
   tableName: string;

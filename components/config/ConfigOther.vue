@@ -2,7 +2,7 @@
 import { toCamelCase } from "@/utils";
 import ConfigDatasetInfo from "./ConfigDatasetInfo.vue";
 
-import type { ViewConfig } from "@/types/types";
+import type { ViewConfig } from "@/types";
 
 const props = defineProps<{
   tableName: string;

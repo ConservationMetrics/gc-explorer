@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 
-import type { MapStatistics } from "@/types/types";
+import type { MapStatistics } from "@/types";
 import type { FeatureCollection } from "geojson";
 
 const props = defineProps<{

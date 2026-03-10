@@ -3,21 +3,17 @@ import murmurhash from "murmurhash";
 import {
   prepareAlertsStatistics,
   prepareMinimalAlertEntries,
-} from "@/server/dataProcessing/transformData";
+} from "@/server/dataProcessing/dataTransformers";
 import {
   filterUnwantedKeys,
   filterGeoData,
-} from "@/server/dataProcessing/filterData";
-import { buildMinimalFeatureCollection } from "~/server/utils/formatSpatialData";
-import { validatePermissions } from "@/utils/auth";
-import { parseBasemaps } from "@/server/utils/basemaps";
+} from "@/server/dataProcessing/dataFilters";
+import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
+import { validatePermissions } from "@/utils/accessControls";
+import { parseBasemaps } from "@/server/utils";
 
 import type { H3Event } from "h3";
-import type {
-  AllowedFileExtensions,
-  DataEntry,
-  AlertsMetadata,
-} from "@/types/types";
+import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
 import type { FeatureCollection } from "geojson";
 
 export default defineEventHandler(async (event: H3Event) => {

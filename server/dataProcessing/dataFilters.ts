@@ -1,10 +1,6 @@
-import { hasValidCoordinates } from "./helpers";
+import { hasValidCoordinates } from "@/utils/geoUtils";
 
-import type {
-  ColumnEntry,
-  DataEntry,
-  AllowedFileExtensions,
-} from "@/types/types";
+import type { ColumnEntry, DataEntry, AllowedFileExtensions } from "@/types";
 
 /**
  * Filters out unwanted columns and substrings from the provided data entries.

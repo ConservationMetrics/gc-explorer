@@ -1,12 +1,11 @@
-import { calculateCentroid } from "./helpers";
-import type { Geometry } from "geojson";
+import { calculateCentroid, isValidGeolocation } from "@/utils/geoUtils";
 import type {
   AlertsMetadata,
   AlertsPerMonth,
   MapStatistics,
   AlertsStatistics,
   DataEntry,
-} from "@/types/types";
+} from "@/types";
 
 /**
  * Splits raw alert data into most-recent and previous buckets, retaining
@@ -390,87 +389,6 @@ const prepareAlertsStatistics = (
     hectaresPerMonth: isGFW ? null : hectaresPerMonth,
     twelveMonthsBefore: twelveMonthsBeforeStr,
   };
-};
-
-/** Validates if a data entry has valid geolocation data. */
-const isValidGeolocation = (item: DataEntry): boolean => {
-  const validGeoTypes = [
-    "LineString",
-    "MultiLineString",
-    "Point",
-    "Polygon",
-    "MultiPolygon",
-  ];
-
-  const isValidCoordinates = (
-    type: string,
-    coordinates: Geometry | string,
-  ): boolean => {
-    if (typeof coordinates === "string") {
-      try {
-        coordinates = JSON.parse(coordinates);
-      } catch (error) {
-        console.error("Error parsing coordinates:", error);
-        return false;
-      }
-    }
-
-    if (type === "Point") {
-      return (
-        Array.isArray(coordinates) &&
-        coordinates.length === 2 &&
-        coordinates.every(Number.isFinite)
-      );
-    } else if (type === "LineString" || type === "MultiLineString") {
-      return (
-        Array.isArray(coordinates) &&
-        coordinates.every(
-          (coord) =>
-            Array.isArray(coord) &&
-            coord.length === 2 &&
-            coord.every(Number.isFinite),
-        )
-      );
-    } else if (type === "Polygon") {
-      return (
-        Array.isArray(coordinates) &&
-        coordinates.every(
-          (ring) =>
-            Array.isArray(ring) &&
-            ring.every(
-              (coord) =>
-                Array.isArray(coord) &&
-                coord.length === 2 &&
-                coord.every(Number.isFinite),
-            ),
-        )
-      );
-    } else if (type === "MultiPolygon") {
-      return (
-        Array.isArray(coordinates) &&
-        coordinates.every(
-          (polygon) =>
-            Array.isArray(polygon) &&
-            polygon.every(
-              (ring) =>
-                Array.isArray(ring) &&
-                ring.every(
-                  (coord) =>
-                    Array.isArray(coord) &&
-                    coord.length === 2 &&
-                    coord.every(Number.isFinite),
-                ),
-            ),
-        )
-      );
-    }
-    return false;
-  };
-
-  return (
-    validGeoTypes.includes(item.g__type) &&
-    isValidCoordinates(item.g__type, item.g__coordinates)
-  );
 };
 
 /**

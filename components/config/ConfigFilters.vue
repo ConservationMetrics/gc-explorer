@@ -6,7 +6,7 @@ import { VueTagsInput } from "@vojtechlanka/vue-tags-input";
 
 import { updateTags } from "@/composables/useTags";
 
-import type { ViewConfig } from "@/types/types";
+import type { ViewConfig } from "@/types";
 
 const props = defineProps<{
   tableName: string;

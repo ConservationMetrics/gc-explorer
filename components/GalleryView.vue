@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { getFilePathsWithExtension } from "@/utils";
-import { prepareCoordinatesForSelectedFeature } from "@/utils/mapFunctions";
+import { prepareCoordinatesForSelectedFeature } from "@/utils/mapGLHelpers";
 import { useRecordCache } from "@/composables/useRecordCache";
-import { transformSurveyEntry } from "@/utils/transforms";
+import { transformSurveyEntry } from "@/utils/dataTransformers";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
@@ -12,7 +12,7 @@ import type {
   Dataset,
   DataEntry,
   FilterValues,
-} from "@/types/types";
+} from "@/types";
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;

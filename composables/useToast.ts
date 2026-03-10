@@ -1,4 +1,4 @@
-import type { ToastOptions } from "@/types/types";
+import type { ToastOptions } from "@/types";
 export interface Toast extends ToastOptions {
   id: string;
 }

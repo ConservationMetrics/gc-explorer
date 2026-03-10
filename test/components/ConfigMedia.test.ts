@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { ref, computed, watch, onMounted, nextTick } from "vue";
 import ConfigMedia from "@/components/config/ConfigMedia.vue";
-import type { ViewConfig } from "@/types/types";
+import type { ViewConfig } from "@/types";
 
 Object.assign(globalThis, {
   ref,

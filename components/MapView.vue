@@ -9,7 +9,7 @@ import {
   prepareMapLegendLayers,
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
-} from "@/utils/mapFunctions";
+} from "@/utils/mapGLHelpers";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
@@ -19,7 +19,7 @@ import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type { FeatureCollection, Feature } from "geojson";
 import { useRecordCache } from "@/composables/useRecordCache";
-import { transformSurveyEntry } from "@/utils/transforms";
+import { transformSurveyEntry } from "@/utils/dataTransformers";
 
 import type {
   AllowedFileExtensions,
@@ -30,7 +30,7 @@ import type {
   FilterValues,
   MapLegendItem,
   MapStatistics,
-} from "@/types/types";
+} from "@/types";
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;

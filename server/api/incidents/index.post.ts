@@ -1,5 +1,5 @@
-import { handleCreateCollection } from "@/server/utils/collectionHandlers";
-import { validateUserSession } from "@/utils/auth";
+import { handleCreateCollection } from "@/server/annotatedCollections/handlers";
+import { validateUserSession } from "@/utils/accessControls";
 
 export default defineEventHandler(async (event) => {
   // Get user session for authentication (validates authStrategy)

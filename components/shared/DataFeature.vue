@@ -3,13 +3,9 @@ import MediaFile from "@/components/shared/MediaFile.vue";
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import { Copy, Check } from "lucide-vue-next";
 import AlertTooltip from "@/components/alerts/AlertTooltip.vue";
-import { useCopyLink } from "@/utils/copyLink";
+import { useCopyLink } from "@/composables/useCopyLink";
 
-import type {
-  AllowedFileExtensions,
-  DataEntry,
-  AlertsData,
-} from "@/types/types";
+import type { AllowedFileExtensions, DataEntry, AlertsData } from "@/types";
 import type { Feature } from "geojson";
 
 const props = defineProps<{

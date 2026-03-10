@@ -16,7 +16,7 @@ import {
   applyTerrain,
   prepareMapLegendLayers,
   toggleLayerVisibility as utilsToggleLayerVisibility,
-} from "@/utils/mapFunctions";
+} from "@/utils/mapGLHelpers";
 
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
@@ -27,7 +27,10 @@ import { useIncidents } from "@/composables/useIncidents";
 import { useFeatureSelection } from "@/composables/useFeatureSelection";
 import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
 import { useRecordCache } from "@/composables/useRecordCache";
-import { transformSurveyEntry, transformAlertEntry } from "@/utils/transforms";
+import {
+  transformSurveyEntry,
+  transformAlertEntry,
+} from "@/utils/dataTransformers";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
@@ -37,7 +40,7 @@ import type {
   Basemap,
   BasemapConfig,
   MapLegendItem,
-} from "@/types/types";
+} from "@/types";
 import type { Feature, FeatureCollection } from "geojson";
 
 const { t } = useI18n();

@@ -9,7 +9,7 @@ vi.mock("@/server/database/dbOperations", () => ({
   fetchRecord: (table: string, id: string) => mockFetchRecord(table, id),
 }));
 
-vi.mock("@/utils/auth", () => ({
+vi.mock("@/utils/accessControls", () => ({
   validatePermissions: vi.fn(),
 }));
 

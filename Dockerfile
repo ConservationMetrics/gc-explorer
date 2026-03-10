@@ -53,7 +53,7 @@ COPY --from=builder /app/migrate-and-start.sh ./migrate-and-start.sh
 
 # Copy drizzle config and migrations (needed for migrations)
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
-COPY --from=builder /app/server/db ./server/db
+COPY --from=builder /app/server/database ./server/database
 
 # Expose and set port 8080
 EXPOSE 8080

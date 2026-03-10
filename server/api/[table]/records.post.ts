@@ -1,5 +1,5 @@
 import { fetchConfig, fetchRecords } from "@/server/database/dbOperations";
-import { validatePermissions } from "@/utils/auth";
+import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
 

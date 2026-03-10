@@ -1,6 +1,6 @@
 import { defineNuxtRouteMiddleware, useRuntimeConfig } from "#imports";
-import type { User, RouteLevelPermission } from "~/types/types";
-import { Role } from "~/types/types";
+import type { User, RouteLevelPermission } from "@/types";
+import { Role } from "@/types";
 
 // Following example: https://github.com/atinux/atidone/blob/main/app/middleware/auth.ts
 export default defineNuxtRouteMiddleware(async (to) => {

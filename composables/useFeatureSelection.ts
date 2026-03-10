@@ -3,8 +3,8 @@ import type { RouteLocationNormalizedLoaded, Router } from "vue-router";
 import type mapboxgl from "mapbox-gl";
 import { along, length, lineString } from "@turf/turf";
 import type { Feature } from "geojson";
-import type { AlertsData } from "@/types/types";
-import { prepareCoordinatesForSelectedFeature } from "@/utils/mapFunctions";
+import type { AlertsData } from "@/types";
+import { prepareCoordinatesForSelectedFeature } from "@/utils/mapGLHelpers";
 
 export function useFeatureSelection(
   map: Ref<mapboxgl.Map | undefined>,

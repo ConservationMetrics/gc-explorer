@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MapLegendItem } from "@/types/types";
+import type { MapLegendItem } from "@/types";
 
 const props = defineProps<{
   mapLegendContent: MapLegendItem[];

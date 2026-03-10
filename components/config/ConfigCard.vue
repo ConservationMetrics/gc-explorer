@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ViewConfig } from "@/types/types";
+import type { ViewConfig } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
 import ConfigPermissions from "./ConfigPermissions.vue";
 import ConfigCollapsibleSection from "./ConfigCollapsibleSection.vue";

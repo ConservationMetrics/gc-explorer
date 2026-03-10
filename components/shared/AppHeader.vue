@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { User } from "@/types/types";
-import { Role } from "@/types/types";
+import type { User } from "@/types";
+import { Role } from "@/types";
 import GlobeLanguagePicker from "@/components/shared/GlobeLanguagePicker.vue";
 
 const config = useRuntimeConfig();

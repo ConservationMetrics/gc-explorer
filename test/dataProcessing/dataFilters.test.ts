@@ -5,7 +5,7 @@ import {
   filterOutUnwantedValues,
   filterGeoData,
   filterDataByExtension,
-} from "@/server/dataProcessing/filterData";
+} from "@/server/dataProcessing/dataFilters";
 import { mapeoData } from "../fixtures/mapeoData";
 
 describe("filterUnwantedKeys", () => {

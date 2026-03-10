@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import { ref, nextTick } from "vue";
 import IncidentsSidebar from "@/components/alerts/IncidentsSidebar.vue";
-import type { AnnotatedCollection } from "@/types/types";
+import type { AnnotatedCollection } from "@/types";
 import { createI18n } from "@/test/helpers/vueI18nMock";
 
 // Make Vue reactivity functions available globally (for auto-imports in components)

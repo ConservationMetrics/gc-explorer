@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Views, User } from "@/types/types";
-import { Role } from "@/types/types";
+import type { Views, User } from "@/types";
+import { Role } from "@/types";
 import AppHeader from "@/components/shared/AppHeader.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
