@@ -109,17 +109,6 @@ export const formatDisplayName = (str: string): string => {
     .join(" ");
 };
 
-/**
- * Character limits for dataset configuration fields
- * @type {Object}
- */
-export const CONFIG_LIMITS = {
-  /** @type {number} Maximum length for dataset table display name */
-  DATASET_TABLE: 100,
-  /** @type {number} Maximum length for view description */
-  VIEW_DESCRIPTION: 500,
-} as const;
-
 /** Generates a random hex color code. */
 export const getRandomColor = () => {
   const letters = "0123456789ABCDEF";
@@ -142,3 +131,14 @@ export const formatDate = (date: string): string => {
   }
   return date;
 };
+
+/**
+ * Character limits for dataset configuration fields
+ * @type {Object}
+ */
+export const CONFIG_LIMITS = {
+  /** @type {number} Maximum length for dataset table display name */
+  DATASET_TABLE: 100,
+  /** @type {number} Maximum length for view description */
+  VIEW_DESCRIPTION: 500,
+} as const;
