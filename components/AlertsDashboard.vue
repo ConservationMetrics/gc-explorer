@@ -26,6 +26,8 @@ import IncidentsControls from "@/components/alerts/IncidentsControls.vue";
 import { useIncidents } from "@/composables/useIncidents";
 import { useFeatureSelection } from "@/composables/useFeatureSelection";
 import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
+import { useRecordCache } from "@/composables/useRecordCache";
+import { transformSurveyEntry, transformAlertEntry } from "@/utils/transforms";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
@@ -34,10 +36,9 @@ import type {
   AllowedFileExtensions,
   Basemap,
   BasemapConfig,
-  Dataset,
   MapLegendItem,
 } from "@/types/types";
-import type { Feature, Geometry } from "geojson";
+import type { Feature, FeatureCollection } from "geojson";
 
 const { t } = useI18n();
 const { error: showErrorToast } = useToast();
@@ -69,10 +70,12 @@ const props = defineProps<{
   mapboxZoom: number;
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
-  mapeoData: Dataset | null;
+  mapeoData: FeatureCollection | null;
+  mapeoTable?: string;
   mediaBasePath: string | undefined;
   mediaBasePathAlerts: string | undefined;
   planetApiKey: string | undefined;
+  table: string;
 }>();
 
 const localAlertsData = ref<Feature | AlertsData>(props.alertsData);
@@ -89,6 +92,9 @@ const route = useRoute();
 const router = useRouter();
 
 const isMapeo = ref(false);
+const selectedFeatureLoading = ref(false);
+
+const { fetchRecord } = useRecordCache();
 
 // Use incidents composable
 const {
@@ -146,6 +152,64 @@ const {
   showSidebar,
   showIntroPanel,
   isMapeo,
+);
+
+// Fetch full record on demand when a minimal feature is selected.
+// Handles both Mapeo features and alert features — the minimal
+// FeatureCollection only carries IDs and map-rendering fields, so
+// the full record is loaded via the single-record endpoint.
+let skipNextWatch = false;
+watch(
+  () => selectedFeature.value,
+  async (feature) => {
+    if (skipNextWatch) {
+      skipNextWatch = false;
+      return;
+    }
+    if (!feature) return;
+
+    const isMapeoFeature = isMapeo.value && props.mapeoTable;
+    const isMinimalAlert = !isMapeo.value && feature.alertID && feature._id;
+
+    if (!isMapeoFeature && !isMinimalAlert) return;
+
+    const recordId = feature._id || feature.id;
+    if (!recordId) return;
+
+    const fetchTable = isMapeoFeature ? props.mapeoTable! : props.table;
+    const minimalFeature = { ...feature };
+    selectedFeature.value = null;
+    selectedFeatureLoading.value = true;
+
+    const fullRecord = await fetchRecord(fetchTable, recordId);
+    skipNextWatch = true;
+
+    let displayRecord: Record<string, unknown>;
+    if (isMapeoFeature) {
+      displayRecord = fullRecord
+        ? transformSurveyEntry(fullRecord)
+        : minimalFeature;
+      if (displayRecord.photos) {
+        imageUrl.value = [];
+        const photos = String(displayRecord.photos).split(",");
+        photos.forEach((photo: string) => imageUrl.value.push(photo.trim()));
+      }
+    } else {
+      displayRecord = fullRecord
+        ? transformAlertEntry(fullRecord, props.table)
+        : minimalFeature;
+      imageUrl.value = [];
+      if (displayRecord.t0_url)
+        imageUrl.value.push(String(displayRecord.t0_url));
+      if (displayRecord.t1_url)
+        imageUrl.value.push(String(displayRecord.t1_url));
+      delete displayRecord.t0_url;
+      delete displayRecord.t1_url;
+    }
+
+    selectedFeature.value = displayRecord;
+    selectedFeatureLoading.value = false;
+  },
 );
 
 // Use alerts date filter composable
@@ -216,73 +280,36 @@ const selectInitialAlertFeature = (alertId: string) => {
 };
 
 /**
- * Selects and zooms to a Mapeo feature based on its document ID
+ * Selects and zooms to a Mapeo feature based on its document ID.
+ * Mapeo data arrives as a GeoJSON FeatureCollection with normalized numeric IDs
+ * (via MurmurHash) for Mapbox feature-state compatibility.
  */
 const selectInitialMapeoFeature = (mapeoDocId: string) => {
-  const mapeoFeature = props.mapeoData?.find((f) => f.id === mapeoDocId);
+  const feature = props.mapeoData?.features.find(
+    (mapeoFeature) =>
+      mapeoFeature.properties?._id === mapeoDocId ||
+      mapeoFeature.properties?.id === mapeoDocId,
+  );
 
-  if (mapeoFeature) {
-    const geometryType = mapeoFeature.geotype as
-      | "Polygon"
-      | "LineString"
-      | "Point"
-      | "MultiPoint"
-      | "MultiLineString"
-      | "MultiPolygon"
-      | "GeometryCollection";
+  if (!feature) return;
 
-    // Create a new GeoJSON Feature object instead of using mapeoFeature directly for several critical reasons:
-    //
-    // 1. DATA FORMAT MISMATCH: Mapeo data comes as raw DataEntry objects, but Mapbox expects proper
-    //    GeoJSON Feature objects with specific structure (type, geometry, properties, id).
-    //
-    // 2. ID NORMALIZATION REQUIREMENT: Mapeo document IDs are 64-bit hex strings (e.g., "0084cdc57c0b0280")
-    //    that exceed JavaScript's safe integer range (2^53 - 1). Mapbox requires feature IDs to be either
-    //    Numbers or strings that can be safely cast to Numbers. Without normalization, Mapbox falls back to
-    //    undefined IDs, causing setFeatureState() to fail with "The feature id parameter must be provided."
-    //    We use the normalized 53-bit safe integer (mapeoFeature.normalizedId) for Mapbox compatibility.
-    //
-    // 3. COORDINATE PARSING: The geometry coordinates are stored as JSON strings in the raw data but need
-    //    to be parsed into array format for GeoJSON compliance.
-    //
-    // 4. FEATURE STATE MANAGEMENT: Mapbox's setFeatureState() requires matching IDs between the GeoJSON
-    //    source and the feature selection. Without this transformation, feature highlighting and selection
-    //    would fail completely.
-    //
-    // For detailed technical explanation of this problem and solution, see:
-    // https://github.com/ConservationMetrics/gc-explorer/pull/109#issuecomment-2985123992
-    // Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
-    const feature: Feature = {
-      type: "Feature",
-      id: mapeoFeature.normalizedId || mapeoFeature.id, // Use normalized ID if available
-      geometry: {
-        type: geometryType,
-        coordinates: JSON.parse(mapeoFeature.geocoordinates),
-      } as Geometry,
-      properties: {
-        ...mapeoFeature,
-      },
-    };
-
-    selectFeature(feature, "mapeo-data");
-    isMapeo.value = true;
-
-    // Zoom to the feature
-    if (feature.geometry.type === "Point") {
-      const [lng, lat] = feature.geometry.coordinates;
-      map.value.flyTo({ center: [lng, lat], zoom: 13 });
-    } else if (
-      feature.geometry.type === "Polygon" ||
-      feature.geometry.type === "MultiPolygon"
-    ) {
-      const bounds = bbox(feature);
-      map.value.fitBounds(bounds, { padding: 50 });
-    } else if (feature.geometry.type === "LineString") {
-      const [lng, lat] = calculateLineStringCentroid(
-        feature.geometry.coordinates,
-      );
-      map.value.flyTo({ center: [lng, lat], zoom: 13 });
-    }
+  selectFeature(feature, "mapeo-data");
+  isMapeo.value = true;
+  // Zoom to the feature
+  if (feature.geometry.type === "Point") {
+    const [lng, lat] = (feature.geometry as GeoJSON.Point).coordinates;
+    map.value.flyTo({ center: [lng, lat], zoom: 13 });
+  } else if (
+    feature.geometry.type === "Polygon" ||
+    feature.geometry.type === "MultiPolygon"
+  ) {
+    const bounds = bbox(feature);
+    map.value.fitBounds(bounds, { padding: 50 });
+  } else if (feature.geometry.type === "LineString") {
+    const [lng, lat] = calculateLineStringCentroid(
+      (feature.geometry as GeoJSON.LineString).coordinates,
+    );
+    map.value.flyTo({ center: [lng, lat], zoom: 13 });
   }
 };
 
@@ -941,36 +968,22 @@ const addAlertsData = async () => {
 };
 
 /**
- * Adds (optional) Mapeo data to the map by creating a GeoJSON source and a layer for Point features.
- * It also sets up event listeners for user interactions with the Mapeo data features.
+ * Adds (optional) Mapeo data to the map as a GeoJSON FeatureCollection source
+ * with associated circle and symbol layers.
  */
 const addMapeoData = () => {
-  if (!props.mapeoData) {
+  if (!props.mapeoData || props.mapeoData.features.length === 0) {
     return;
   }
-  // Create a GeoJSON source with all the features
-  const geoJsonSource = {
-    type: "FeatureCollection",
-    features: props.mapeoData.map((feature) => ({
-      id: feature.normalizedId || feature.id, // Use normalized ID if available, fallback to original ID
-      type: "Feature",
-      geometry: {
-        type: feature.geotype,
-        coordinates: JSON.parse(feature.geocoordinates),
-      },
-      properties: {
-        ...feature,
-      },
-    })),
-  };
 
-  mapeoDataColor.value = props.mapeoData[0]["filter-color"];
+  mapeoDataColor.value =
+    props.mapeoData.features[0]?.properties?.["filter-color"];
 
   // Add the source to the map
   if (!map.value.getSource("mapeo-data")) {
     map.value.addSource("mapeo-data", {
       type: "geojson",
-      data: geoJsonSource,
+      data: props.mapeoData,
     });
   }
 
@@ -984,6 +997,7 @@ const addMapeoData = () => {
       paint: {
         "circle-radius": 6,
         "circle-color": [
+          // Use filter-color for fallback if selected is false
           "case",
           ["boolean", ["feature-state", "selected"], false],
           "#FFFF00",
@@ -995,6 +1009,7 @@ const addMapeoData = () => {
     });
   }
 
+  // Add event listeners
   const interactiveLayers = MAPEO_INTERACTIVE_LAYER_IDS.filter((layerId) =>
     map.value.getLayer(layerId),
   );
@@ -1027,8 +1042,10 @@ const addMapeoData = () => {
         if (e.features && e.features.length > 0) {
           const feature = e.features[0];
           if (multiSelectMode.value) {
+            // Add to selected sources instead of selecting for sidebar
             handleMultiSelectFeature(feature, layerId);
           } else {
+            // Normal selection behavior
             selectFeature(feature, layerId);
           }
         }
@@ -1513,6 +1530,7 @@ onBeforeUnmount(() => {
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
       :feature="selectedFeature"
+      :feature-loading="selectedFeatureLoading"
       :feature-geojson="localAlertsData"
       :file-paths="imageUrl"
       :geojson-selection="filteredData"

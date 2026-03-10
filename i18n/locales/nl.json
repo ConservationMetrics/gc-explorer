@@ -58,6 +58,7 @@
   "datasetViewManagement": "Dataset Weergave Beheer",
   "dateRange": "Datumbereik",
   "default": "Standaard",
+  "downloading": "Downloaden…",
   "downloadCSV": "Download CSV",
   "downloadGeoJSON": "Download GeoJSON",
   "downloadKML": "Download KML",

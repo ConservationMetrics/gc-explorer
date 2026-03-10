@@ -1,19 +1,5 @@
-import murmurhash from "murmurhash";
-
-import {
-  calculateCentroid,
-  capitalizeFirstLetter,
-  getRandomColor,
-} from "./helpers";
-
-import type {
-  Feature,
-  FeatureCollection,
-  Geometry,
-  LineString,
-  Polygon,
-  Position,
-} from "geojson";
+import { calculateCentroid } from "./helpers";
+import type { Geometry } from "geojson";
 import type {
   AlertsMetadata,
   AlertsPerMonth,
@@ -23,300 +9,19 @@ import type {
 } from "@/types/types";
 
 /**
- * Transforms survey data by modifying keys and values to a more readable format.
+ * Splits raw alert data into most-recent and previous buckets, retaining
+ * only the fields needed for map and other components (like `AlertsSlider.vue`)
+ * rendering: _id, alertID, YYYYMM, geographicCentroid, and geometry (g__*).
  *
- * This function processes an array of survey data entries, transforming both the keys
- * and values of each entry to enhance readability and consistency. The transformation
- * includes:
- * - Modifying key names by removing prefixes, replacing underscores with spaces, and
- *   standardizing certain key names (e.g., "today" becomes "dataCollectedOn").
- * - Adjusting value formats by replacing underscores and semicolons with spaces and commas,
- *   respectively, capitalizing the first letter, and formatting date-related values.
- * - Handling lists enclosed in square brackets by removing brackets and quotes, and
- *   joining items with commas.
- *
- * @param {DataEntry[]} data - An array of survey data entries to be transformed.
- * @param {string} iconColumn - Optional icon column name to exclude from transformation
- * @returns {DataEntry[]} - A new array of data entries with transformed keys and values.
+ * @param {DataEntry[]} data - Raw alert rows from the database.
+ * @returns {{ mostRecentAlerts: DataEntry[], previousAlerts: DataEntry[] }}
  */
-const transformSurveyData = (
+const prepareMinimalAlertEntries = (
   data: DataEntry[],
-  iconColumn?: string,
-): DataEntry[] => {
-  const transformSurveyDataKey = (key: string): string => {
-    // Don't transform the icon column key
-    if (iconColumn && key === iconColumn) {
-      return key;
-    }
-
-    let transformedKey = key
-      .replace(/^g__/, "geo")
-      .replace(/^p__/, "")
-      .replace(/_/g, " ");
-    if (transformedKey.toLowerCase() === "today") {
-      transformedKey = "dataCollectedOn";
-    } else if (transformedKey.toLowerCase().includes("categoryid")) {
-      transformedKey = "category";
-    } else if (transformedKey.toLowerCase() === "id") {
-      transformedKey = "id";
-    }
-    return transformedKey.trimStart();
-  };
-
-  const transformSurveyDataValue = (
-    key: string,
-    value: string | number | null,
-  ) => {
-    if (value === null) return null;
-    if (key === "g__coordinates") return value;
-    // Don't transform icon column values (filenames)
-    if (iconColumn && key === iconColumn) return value;
-
-    let transformedValue = value;
-    if (typeof transformedValue === "string") {
-      transformedValue = transformedValue
-        .replace(/_/g, " ")
-        .replace(/;/g, ", ");
-      if (key.toLowerCase().includes("category")) {
-        transformedValue = transformedValue.replace(/-/g, " ");
-      }
-      // TODO: For now this is a quick fix to ensure original timestamps are
-      // returned in file downloads. We need to rethink how we do data transformations
-      // so that file downloads return the original records, not transformed ones.
-      // if (
-      //   key.toLowerCase().includes("created") ||
-      //   key.toLowerCase().includes("modified") ||
-      //   key.toLowerCase().includes("updated")
-      // ) {
-      //   transformedValue = formatDate(transformedValue);
-      // }
-      transformedValue =
-        transformedValue.charAt(0).toUpperCase() + transformedValue.slice(1);
-    }
-    // Handle lists enclosed in square brackets
-    if (
-      typeof transformedValue === "string" &&
-      transformedValue.match(/^\[.*\]$/)
-    ) {
-      transformedValue = transformedValue
-        .replace(/^\[|\]$/g, "")
-        .split(", ")
-        .map((item) => item.replace(/'/g, ""))
-        .join(", ");
-    }
-    return transformedValue;
-  };
-  const transformedData = data.map((entry) => {
-    const transformedEntry: DataEntry = {};
-    Object.entries(entry).forEach(([key, value]) => {
-      // Use original key for icon column, don't transform it
-      const transformedKey =
-        iconColumn && key === iconColumn ? key : transformSurveyDataKey(key);
-      const transformedValue = transformSurveyDataValue(key, value);
-      if (transformedValue !== null) {
-        transformedEntry[transformedKey] = String(transformedValue);
-      }
-    });
-    return transformedEntry;
-  });
-
-  return transformedData;
-};
-
-/**
- * Prepares and processes geospatial data for visualization on a map view.
- *
- * This function takes an array of data entries and an optional filter column,
- * and processes each entry to ensure it is ready for map visualization. It handles
- * the following tasks:
- *
- * 1. Determines the geometry type (Point, LineString, or Polygon) for each entry
- *    based on its coordinates and assigns it if not already specified.
- * 2. Parses and formats geocoordinates from string to JSON format suitable for
- *    map rendering.
- * 3. Assigns a unique color to each entry based on the specified filter column,
- *    ensuring consistent coloring for entries with the same filter value.
- *
- * @param {DataEntry[]} data - An array of data entries, where each entry is an object
- *                             containing geospatial information and other attributes.
- * @param {string | undefined} filterColumn - An optional column name used to filter
- *                                            and assign colors to data entries.
- * @returns {DataEntry[]} - An array of processed data entries, each with formatted
- *                          geocoordinates and assigned colors for map visualization.
- */
-const prepareMapData = (
-  data: DataEntry[],
-  filterColumn: string | undefined,
-): DataEntry[] => {
-  const colorMap = new Map<string, string>();
-
-  const processGeolocation = (obj: { [key: string]: string }) => {
-    if (!obj.geocoordinates || obj.geocoordinates.trim() === "") {
-      return obj;
-    }
-    try {
-      const geometryType = obj.geotype;
-      let coordinates: Position | LineString | Polygon = [];
-
-      if (!Array.isArray(obj.geocoordinates)) {
-        coordinates = JSON.parse(obj.geocoordinates);
-      } else {
-        coordinates = obj.geocoordinates;
-      }
-      if (
-        geometryType === "Point" &&
-        Array.isArray(coordinates) &&
-        coordinates.length === 2
-      ) {
-        obj.geocoordinates = JSON.stringify(coordinates);
-      } else if (geometryType === "LineString") {
-        obj.geocoordinates = JSON.stringify(coordinates);
-      } else if (geometryType === "Polygon") {
-        obj.geocoordinates = JSON.stringify([coordinates]);
-      }
-    } catch (error) {
-      console.error("Error parsing coordinates:", error);
-    }
-    return obj;
-  };
-
-  const processedGeoData = data.map((item) => {
-    if (!item.geotype) {
-      const coordinateKey = Object.keys(item).find((key) =>
-        key.toLowerCase().includes("coordinates"),
-      );
-      if (coordinateKey) {
-        const coordinates = JSON.parse(item[coordinateKey]);
-        if (
-          Array.isArray(coordinates) &&
-          coordinates.length === 2 &&
-          typeof coordinates[0] === "number" &&
-          typeof coordinates[1] === "number"
-        ) {
-          item.geotype = "Point";
-        } else {
-          item.geotype = "Polygon";
-        }
-      }
-    }
-
-    const filterColumnValue =
-      filterColumn !== undefined ? (item[filterColumn] ?? "") : "";
-    if (filterColumnValue && !colorMap.has(filterColumnValue)) {
-      colorMap.set(filterColumnValue, getRandomColor());
-    }
-    item["filter-color"] = colorMap.get(filterColumnValue) ?? "#3333FF";
-
-    return processGeolocation(item);
-  });
-
-  return processedGeoData;
-};
-
-/**
- * Prepares and transforms alert data for display in the alerts view.
- *
- * This function processes a list of alert data entries, transforming each entry
- * to include only relevant information for display. It segregates the data into
- * two categories: the most recent alerts and previous alerts, based on the latest
- * detection date found in the data.
- *
- * The transformation includes:
- * - Filtering and retaining columns that start with 'g__'.
- * - Mapping satellite prefixes to their full names.
- * - Formatting and capitalizing specific fields such as territory name and data provider.
- * - Calculating geographic centroids for alert locations.
- * - Constructing URLs for alert imagery.
- *
- * @param {DataEntry[]} data - An array of data entries representing alerts.
- * @returns {Object} An object containing two arrays:
- *   - `mostRecentAlerts`: Alerts detected in the most recent month.
- *   - `previousAlerts`: Alerts detected in months prior to the most recent.
- */
-const prepareAlertData = (
-  data: DataEntry[],
-  table: string,
 ): {
   mostRecentAlerts: DataEntry[];
   previousAlerts: DataEntry[];
 } => {
-  const transformChangeDetectionItem = (
-    item: DataEntry,
-    formattedMonth?: string,
-  ): DataEntry => {
-    const transformedItem: DataEntry = {};
-
-    // Keep columns starting with 'g__'
-    Object.keys(item).forEach((key) => {
-      if (key.startsWith("g__")) {
-        transformedItem[key] = item[key];
-      }
-    });
-
-    if (item.data_source === "Global Forest Watch") {
-      transformedItem["alertID"] = item.alert_id;
-      transformedItem["confidenceLevel"] = item.confidence;
-      transformedItem["alertType"] = item.alert_type?.replace(/_/g, " ") ?? "";
-      transformedItem["dataProvider"] = capitalizeFirstLetter(item.data_source);
-      transformedItem["geographicCentroid"] = calculateCentroid(
-        item.g__coordinates,
-      );
-      transformedItem["YYYYMM"] = item.year_detec + item.month_detec;
-      transformedItem["monthDetected"] =
-        `${item.month_detec}-${item.year_detec}`;
-      transformedItem["alertDetectionRange"] =
-        `${item.date_start_t1} to ${item.date_end_t1}`;
-      return transformedItem;
-    }
-
-    // To rewrite the satellite prefix column
-    const satelliteLookup: { [key: string]: string } = {
-      S1: "Sentinel-1",
-      S2: "Sentinel-2",
-      PS: "Planetscope",
-      L8: "Landsat 8",
-      L9: "Landsat 9",
-      WV1: "WorldView-1",
-      WV2: "WorldView-2",
-      WV3: "WorldView-3",
-      WV4: "WorldView-4",
-      IK: "IKONOS",
-    };
-
-    // Include only the transformed columns
-    transformedItem["territory"] = capitalizeFirstLetter(
-      item.territory_name ?? "",
-    );
-    transformedItem["alertID"] = item.alert_id;
-    transformedItem["alertDetectionRange"] =
-      `${item.date_start_t1} to ${item.date_end_t1}`;
-    transformedItem["monthDetected"] = `${formattedMonth}-${item.year_detec}`;
-    transformedItem["YYYYMM"] = `${item.year_detec}${formattedMonth}`;
-    transformedItem["dataProvider"] = capitalizeFirstLetter(
-      `${item.data_source}`,
-    );
-    transformedItem["confidenceLevel"] = item.confidence;
-    transformedItem["alertType"] = item.alert_type?.replace(/_/g, " ") ?? "";
-    transformedItem["alertAreaHectares"] =
-      typeof item.area_alert_ha === "number"
-        ? (item.area_alert_ha as number).toFixed(2)
-        : item.area_alert_ha;
-    transformedItem["geographicCentroid"] = calculateCentroid(
-      item.g__coordinates,
-    );
-    transformedItem["satelliteUsedForDetection"] =
-      satelliteLookup[item.sat_detect_prefix] || item.sat_detect_prefix;
-
-    transformedItem["t0_url"] =
-      `${table}/${item.territory_id}/${item.year_detec}/${formattedMonth}/${item.alert_id}/images/${item.sat_viz_prefix}_T0_${item.alert_id}.jpg`;
-    transformedItem["t1_url"] =
-      `${table}/${item.territory_id}/${item.year_detec}/${formattedMonth}/${item.alert_id}/images/${item.sat_viz_prefix}_T1_${item.alert_id}.jpg`;
-    transformedItem["previewImagerySource"] =
-      satelliteLookup[item.sat_viz_prefix] || item.sat_viz_prefix;
-
-    return transformedItem;
-  };
-
   let latestProprietaryDate = new Date(0);
   let latestProprietaryMonthStr = "";
 
@@ -328,7 +33,6 @@ const prepareAlertData = (
     (d) => d.data_source === "Global Forest Watch",
   );
 
-  // First pass to find the latest date
   proprietaryAlertData.forEach((item) => {
     const formattedMonth =
       item.month_detec.length === 1 ? `0${item.month_detec}` : item.month_detec;
@@ -350,31 +54,47 @@ const prepareAlertData = (
     if (date > latestGfwDate) latestGfwDate = date;
   });
 
+  const toMinimalEntry = (item: DataEntry): DataEntry => {
+    const formattedMonth = String(item.month_detec).padStart(2, "0");
+    const entry: DataEntry = {};
+
+    // Geometry fields
+    Object.keys(item).forEach((key) => {
+      if (key.startsWith("g__")) entry[key] = item[key];
+    });
+
+    entry._id = item._id;
+    entry.alertID = item.alert_id;
+    entry.YYYYMM =
+      item.data_source === "Global Forest Watch"
+        ? item.year_detec + item.month_detec
+        : `${item.year_detec}${formattedMonth}`;
+    entry.geographicCentroid = calculateCentroid(item.g__coordinates);
+
+    return entry;
+  };
+
   const mostRecentAlerts: DataEntry[] = [];
   const previousAlerts: DataEntry[] = [];
 
-  // Second pass to segregate the data
   proprietaryAlertData.forEach((item) => {
     const formattedMonth =
       item.month_detec.length === 1 ? `0${item.month_detec}` : item.month_detec;
     const monthYearStr = `${formattedMonth}-${item.year_detec}`;
-    const transformedItem = transformChangeDetectionItem(item, formattedMonth);
 
-    // Segregate data based on the latest month detected
     if (monthYearStr === latestProprietaryMonthStr) {
-      mostRecentAlerts.push(transformedItem);
+      mostRecentAlerts.push(toMinimalEntry(item));
     } else {
-      previousAlerts.push(transformedItem);
+      previousAlerts.push(toMinimalEntry(item));
     }
   });
 
   gfwData.forEach((item) => {
     const date = new Date(item.date_end_t1);
-    const transformedItem = transformChangeDetectionItem(item);
     if (date.getTime() === latestGfwDate.getTime()) {
-      mostRecentAlerts.push(transformedItem);
+      mostRecentAlerts.push(toMinimalEntry(item));
     } else {
-      previousAlerts.push(transformedItem);
+      previousAlerts.push(toMinimalEntry(item));
     }
   });
 
@@ -672,60 +392,6 @@ const prepareAlertsStatistics = (
   };
 };
 
-/**
- * Transforms data entries into a GeoJSON FeatureCollection.
- *
- * @param {DataEntry[]} data - An array of data entries to be transformed.
- * @returns {FeatureCollection} A GeoJSON FeatureCollection object.
- */
-const transformToGeojson = (data: DataEntry[]): FeatureCollection => {
-  const features = data.map((input) => {
-    const feature: Feature = {
-      type: "Feature",
-      id: undefined,
-      properties: {}, // Ensure properties is always an object
-      geometry: {
-        type: input.g__type as "Point" | "LineString" | "Polygon",
-        coordinates: [],
-      },
-    };
-
-    Object.entries(input).forEach(([key, value]) => {
-      if (key === "alertID") {
-        // Mapbox requires `feature.id` to be a 32-bit integer or a small string.
-        // Some `alertID` values (e.g. "20240910100161660491") are too large to safely cast to Number,
-        // which causes "given varint doesn't fit into 10 bytes" errors when rendering vector tiles.
-        // We hash the `alertID` with MurmurHash to ensure a safe, deterministic 32-bit integer ID.
-        feature.id = murmurhash.v3(String(value));
-        feature.properties![key] = value; // Use non-null assertion
-      } else if (key.startsWith("g__")) {
-        const geometryKey = key.substring(3); // Removes 'g__' prefix
-        if (feature.geometry) {
-          if (geometryKey === "coordinates") {
-            feature.geometry[geometryKey as keyof Geometry] = JSON.parse(
-              String(value),
-            );
-          } else if (geometryKey === "type") {
-            feature.geometry.type = String(value) as
-              | "Point"
-              | "LineString"
-              | "Polygon";
-          }
-        }
-      } else {
-        feature.properties![key] = value; // Use non-null assertion
-      }
-    });
-
-    return feature;
-  });
-
-  return {
-    type: "FeatureCollection",
-    features: features,
-  };
-};
-
 /** Validates if a data entry has valid geolocation data. */
 const isValidGeolocation = (item: DataEntry): boolean => {
   const validGeoTypes = [
@@ -870,10 +536,7 @@ const prepareMapStatistics = (data: DataEntry[]): MapStatistics => {
 };
 
 export {
-  transformSurveyData,
-  prepareMapData,
-  prepareAlertData,
   prepareAlertsStatistics,
   prepareMapStatistics,
-  transformToGeojson,
+  prepareMinimalAlertEntries,
 };
