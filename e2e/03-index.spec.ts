@@ -15,12 +15,15 @@ test("index page - displays available views and navigation flow", async ({
 
   // 3. Verify header elements are visible
   // Check for Guardian Connector logo (use first() to avoid strict mode violation)
-  const logo = page.locator('img[alt="Guardian Connector Explorer"]').first();
+  const logo = page
+    .locator('img[alt="Guardian Connector Explorer"]:visible')
+    .first();
   await expect(logo).toBeVisible({ timeout: 10000 });
 
-  // Check for Guardian Connector text in header (desktop block is visible at 1280px)
+  // Check for visible Guardian Connector text in header
   const guardianConnectorText = page
-    .getByRole("heading", { name: /guardian connector/i })
+    .locator("h1:visible")
+    .filter({ hasText: /guardian connector/i })
     .first();
   await expect(guardianConnectorText).toBeVisible({ timeout: 10000 });
 

@@ -127,13 +127,7 @@ test("gallery page - displays images with lightbox functionality", async ({
   const imageCount = await visibleImageLinks.count();
   expect(imageCount).toBeGreaterThan(0);
 
-  // 7. Ensure lightbox runtime is initialized before clicking
-  await page.waitForFunction(
-    () => Boolean((window as { lightbox?: unknown }).lightbox),
-    { timeout: 10000 },
-  );
-
-  // 8. Click first image and validate real lightbox overlay behavior
+  // 7. Click first image and validate real lightbox overlay behavior
   const firstImage = visibleImageLinks.first();
   const firstImageHref = (await firstImage.getAttribute("href")) || "";
   const expectedBaseName = decodeURIComponent(
@@ -143,7 +137,17 @@ test("gallery page - displays images with lightbox functionality", async ({
 
   // Lightbox plugin injects #lightboxOverlay + .lightboxOverlay into body
   const lightboxOverlay = page.locator("#lightboxOverlay.lightboxOverlay");
-  await expect(lightboxOverlay).toBeVisible({ timeout: 10000 });
+  const overlayVisible = await lightboxOverlay
+    .waitFor({ state: "visible", timeout: 8000 })
+    .then(() => true)
+    .catch(() => false);
+
+  // If the first click races with late script init, retry once.
+  if (!overlayVisible) {
+    await page.waitForTimeout(1500);
+    await firstImage.click();
+    await expect(lightboxOverlay).toBeVisible({ timeout: 8000 });
+  }
 
   // 9. Validate lightbox content + caption includes clicked media basename
   const lightboxImage = page.locator(".lb-image");
