@@ -4,7 +4,7 @@
  * - Wraps values containing commas or quotes in double quotes
  * - Escapes internal quotes by doubling them
  */
-export function escapeCSVValue(value: unknown): string {
+export const escapeCSVValue = (value: unknown): string => {
   if (value === undefined || value === null) return "";
 
   let strValue = String(value);
@@ -20,4 +20,4 @@ export function escapeCSVValue(value: unknown): string {
   }
 
   return strValue;
-}
+};
