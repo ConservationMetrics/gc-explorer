@@ -4,12 +4,8 @@ import type {
   Incident,
   CollectionEntry,
 } from "@/types/types";
-import { configDb, warehouseDb } from "../utils/dbUtils";
-import {
-  annotatedCollections,
-  incidents,
-  collectionEntries,
-} from "../db/schema";
+import { configDb, warehouseDb } from "@/server/utils/dbUtils";
+import { annotatedCollections, incidents, collectionEntries } from "./schema";
 
 /**
  * Creates a new annotated collection with optional incident data and collection entries

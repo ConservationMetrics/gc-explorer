@@ -3,8 +3,8 @@ import { eq, sql } from "drizzle-orm";
 import type { ColumnEntry, DataEntry, Views, ViewConfig } from "@/types/types";
 import { CONFIG_LIMITS } from "@/utils";
 
-import { viewConfig } from "../db/schema";
-import { configDb, warehouseDb } from "../utils/dbUtils";
+import { viewConfig } from "./schema";
+import { configDb, warehouseDb } from "@/server/utils/dbUtils";
 
 const checkTableExists = async (
   table: string | undefined,

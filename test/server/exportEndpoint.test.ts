@@ -12,7 +12,7 @@ vi.mock("@/server/database/dbOperations", () => ({
   fetchData: (table: string) => mockFetchData(table),
 }));
 
-vi.mock("@/utils/auth", () => ({
+vi.mock("@/utils/accessControls", () => ({
   validatePermissions: vi.fn(),
 }));
 

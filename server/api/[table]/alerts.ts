@@ -9,8 +9,8 @@ import {
   filterGeoData,
 } from "@/server/dataProcessing/dataFilters";
 import { buildMinimalFeatureCollection } from "@/server/utils/geoUtils";
-import { validatePermissions } from "@/utils/auth";
-import { parseBasemaps } from "@/server/utils/helpers";
+import { validatePermissions } from "@/utils/accessControls";
+import { parseBasemaps } from "@/server/utils";
 
 import type { H3Event } from "h3";
 import type {

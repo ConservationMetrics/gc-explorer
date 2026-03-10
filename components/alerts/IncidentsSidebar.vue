@@ -3,7 +3,7 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { snakeToTitleCase, titleToCamelCase } from "@/utils/index";
 import { Copy, Check } from "lucide-vue-next";
-import { useCopyLink } from "@/utils/copyLink";
+import { useCopyLink } from "@/composables/useCopyLink";
 import type {
   AnnotatedCollection,
   CollectionEntry,

@@ -3,7 +3,7 @@ import type { DataEntry } from "@/types/types";
 
 import murmurhash from "murmurhash";
 
-import { getRandomColor } from "@/server/utils/helpers";
+import { getRandomColor } from "@/server/utils";
 
 export interface SpatialDataOptions {
   idField?: string;

@@ -1,6 +1,6 @@
 import { fetchConfig } from "@/server/database/dbOperations";
 import { getFilteredTableNames } from "./utils";
-import { validateUserSession } from "@/utils/auth";
+import { validateUserSession } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
 

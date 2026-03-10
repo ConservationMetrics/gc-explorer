@@ -5,8 +5,8 @@ import {
 } from "@/server/dataProcessing/dataFilters";
 import { prepareMapStatistics } from "@/server/dataProcessing/dataTransformers";
 import { buildMinimalFeatureCollection } from "@/server/utils/geoUtils";
-import { validatePermissions } from "@/utils/auth";
-import { parseBasemaps } from "@/server/utils/helpers";
+import { validatePermissions } from "@/utils/accessControls";
+import { parseBasemaps } from "@/server/utils";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions } from "@/types/types";

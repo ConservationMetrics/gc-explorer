@@ -4,7 +4,7 @@ import {
   filterUnwantedKeys,
   filterOutUnwantedValues,
 } from "@/server/dataProcessing/dataFilters";
-import { validatePermissions } from "@/utils/auth";
+import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, ColumnEntry } from "@/types/types";
