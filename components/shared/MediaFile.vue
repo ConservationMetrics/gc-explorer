@@ -117,7 +117,6 @@ const handleImageLoad = () => {
       <a
         v-if="shouldLoadImage && !imageError"
         :href="rawImageUrl"
-        target="_blank"
         :data-lightbox="filePath"
         :data-title="filePath"
         class="block"

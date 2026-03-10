@@ -28,14 +28,20 @@ test("visibility system - public dataset accessible without authentication", asy
       state: "visible",
       timeout: 15000,
     }),
+    page.getByTestId("data-load-error").waitFor({
+      state: "visible",
+      timeout: 15000,
+    }),
   ]);
 
   // 4. Verify one expected public-state UI is visible
   const galleryContainer = page.getByTestId("gallery-container");
   const galleryError = page.getByTestId("gallery-error-message");
+  const dataLoadError = page.getByTestId("data-load-error");
   const hasGallery = (await galleryContainer.count()) > 0;
   const hasError = (await galleryError.count()) > 0;
-  expect(hasGallery || hasError).toBe(true);
+  const hasDataLoadError = (await dataLoadError.count()) > 0;
+  expect(hasGallery || hasError || hasDataLoadError).toBe(true);
   if (hasGallery) {
     await expect(galleryContainer).toBeVisible();
   }

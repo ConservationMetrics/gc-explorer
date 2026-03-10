@@ -33,6 +33,7 @@ const handleGoBack = () => {
 
 <template>
   <div
+    data-testid="data-load-error"
     class="flex min-h-[50vh] flex-col items-center justify-center gap-6 px-4 py-12"
   >
     <div
