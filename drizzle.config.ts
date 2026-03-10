@@ -2,8 +2,8 @@ import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
   dialect: "postgresql",
-  schema: "./server/db/schema.ts",
-  out: "./server/db/migrations",
+  schema: "./server/database/schema.ts",
+  out: "./server/database/migrations",
   dbCredentials: {
     host: process.env.NUXT_DB_HOST || "localhost",
     port: parseInt(process.env.NUXT_DB_PORT || "5432"),
