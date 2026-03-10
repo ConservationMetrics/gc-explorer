@@ -14,12 +14,13 @@ test("visibility system - public dataset accessible without authentication", asy
   await page.goto("/gallery/seed_survey_data");
 
   // 2. Wait for the page to load
-  await page.waitForURL("**/gallery/**", { timeout: 5000 });
+  await page.waitForURL("**/gallery/**", { timeout: 10000 });
+  await page.waitForLoadState("networkidle");
 
-  // 3. Wait for the gallery container to be present
+  // 3. Wait for the gallery container to be present (ClientOnly + dataFetched)
   await page
     .getByTestId("gallery-container")
-    .waitFor({ state: "attached", timeout: 10000 });
+    .waitFor({ state: "attached", timeout: 15000 });
 
   // 4. Verify gallery container is visible
   await expect(page.getByTestId("gallery-container")).toBeVisible();

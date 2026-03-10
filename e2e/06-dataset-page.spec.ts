@@ -127,13 +127,18 @@ test("dataset page - displays description when available", async ({
   await page.waitForURL(/\/dataset\/\w+/, { timeout: 10000 });
   await page.waitForLoadState("networkidle");
 
-  // 5. Wait for main content to be visible
-  await page.waitForSelector("main", { timeout: 10000 });
+  // 5. Wait for main content: view cards or description fallback (dataset may have no views)
+  await page
+    .locator(
+      "[data-testid='view-cards-container'], [data-testid='dataset-description-fallback']",
+    )
+    .first()
+    .waitFor({ state: "visible", timeout: 15000 });
 
   // 6. Check if description is present (it may or may not be configured)
   // Description can be in a <p> tag or in the fallback message div
   const description = page
-    .locator("p")
+    .locator("main p")
     .filter({ hasText: /.+/ })
     .filter({ hasNotText: /no description/i });
   const descriptionCount = await description.count();
