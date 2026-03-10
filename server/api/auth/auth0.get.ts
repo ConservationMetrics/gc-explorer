@@ -1,6 +1,6 @@
 import type { H3Event } from "h3";
 import { useRuntimeConfig } from "#imports";
-import { Role } from "~/types/types";
+import { Role } from "@/types/types";
 
 /**
  * Interface representing a user object from Auth0

@@ -1,4 +1,4 @@
-import { hasValidCoordinates } from "./helpers";
+import { hasValidCoordinates } from "@/server/utils/geoUtils";
 
 import type {
   ColumnEntry,

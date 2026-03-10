@@ -2,11 +2,11 @@ import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import {
   filterOutUnwantedValues,
   filterGeoData,
-} from "@/server/dataProcessing/filterData";
-import { prepareMapStatistics } from "@/server/dataProcessing/transformData";
-import { buildMinimalFeatureCollection } from "~/server/utils/formatSpatialData";
+} from "@/server/dataProcessing/dataFilters";
+import { prepareMapStatistics } from "@/server/dataProcessing/dataTransformers";
+import { buildMinimalFeatureCollection } from "@/server/utils/geoUtils";
 import { validatePermissions } from "@/utils/auth";
-import { parseBasemaps } from "@/server/utils/basemaps";
+import { parseBasemaps } from "@/server/utils/helpers";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions } from "@/types/types";

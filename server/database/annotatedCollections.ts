@@ -4,7 +4,7 @@ import type {
   Incident,
   CollectionEntry,
 } from "@/types/types";
-import { configDb, warehouseDb } from "../utils/db";
+import { configDb, warehouseDb } from "../utils/dbUtils";
 import {
   annotatedCollections,
   incidents,

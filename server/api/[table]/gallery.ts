@@ -3,7 +3,7 @@ import {
   filterDataByExtension,
   filterUnwantedKeys,
   filterOutUnwantedValues,
-} from "@/server/dataProcessing/filterData";
+} from "@/server/dataProcessing/dataFilters";
 import { validatePermissions } from "@/utils/auth";
 
 import type { H3Event } from "h3";

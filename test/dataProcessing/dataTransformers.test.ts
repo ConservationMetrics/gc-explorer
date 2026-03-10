@@ -4,7 +4,7 @@ import {
   prepareAlertsStatistics,
   prepareMapStatistics,
   prepareMinimalAlertEntries,
-} from "@/server/dataProcessing/transformData";
+} from "@/server/dataProcessing/dataTransformers";
 import { transformedMapeoData } from "../fixtures/mapeoData";
 import { alertsData, alertsMetadata } from "../fixtures/alertsData";
 
