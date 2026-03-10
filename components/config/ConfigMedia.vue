@@ -6,7 +6,7 @@ import {
   buildFilebrowserBase,
   getBaseUrlFromInput,
   isValidFilebrowserInput,
-} from "@/utils/media";
+} from "@/utils/mediaHelpers";
 import type { ViewConfig } from "@/types";
 
 const props = defineProps<{
