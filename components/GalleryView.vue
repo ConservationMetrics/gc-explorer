@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { getFilePathsWithExtension } from "@/utils";
 import { prepareCoordinatesForSelectedFeature } from "@/utils/mapFunctions";
+import { useRecordCache } from "@/composables/useRecordCache";
+import { transformSurveyEntry } from "@/utils/transforms";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
@@ -18,8 +20,13 @@ const props = defineProps<{
   galleryData: Dataset;
   mediaBasePath: string;
   mediaColumn?: string;
+  table: string;
 }>();
+
+const { fetchRecords, getCachedRecord, cacheSize } = useRecordCache();
+
 const filteredData = ref(props.galleryData);
+const loading = ref(false);
 
 // Pagination per page
 const currentPage = ref(1);
@@ -29,6 +36,30 @@ const paginatedData = computed<Dataset>(() => {
   const end = currentPage.value * itemsPerPage;
   return filteredData.value.slice(start, end) as Dataset;
 });
+
+/** Batch-fetches full records for the visible page into the shared cache. */
+const fetchFullRecords = async (ids: string[]) => {
+  loading.value = true;
+  try {
+    await fetchRecords(props.table, ids);
+  } catch (error) {
+    console.error("Error batch-fetching gallery records:", error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+/** Fetch full records whenever the visible page changes */
+watch(
+  paginatedData,
+  async (items) => {
+    const ids = items.map((item) => item._id);
+    if (ids.length > 0) {
+      await fetchFullRecords(ids);
+    }
+  },
+  { immediate: true },
+);
 
 const handleScroll = () => {
   if (window.innerHeight + window.scrollY >= document.body.offsetHeight) {
@@ -55,15 +86,26 @@ const filterValues = (values: FilterValues) => {
   }
 };
 
-/** Prepare coordinates for selected feature */
-const featureWithPreparedCoordinates = (feature: DataEntry): DataEntry => {
-  const result = {
-    ...feature,
-    geocoordinates: feature.geocoordinates
-      ? prepareCoordinatesForSelectedFeature(feature.geocoordinates)
-      : feature.geocoordinates,
-  };
-  return result as unknown as DataEntry;
+/**
+ * Returns the full cached record for a gallery item, falling back to the
+ * minimal record if the full record hasn't loaded yet.
+ */
+const getFullRecord = (minimalItem: DataEntry): DataEntry => {
+  // Read cacheSize to trigger Vue reactivity when cache updates
+  void cacheSize.value;
+  const id = String(minimalItem._id);
+  return getCachedRecord(props.table, id) ?? minimalItem;
+};
+
+/** Transform raw record for display and prepare coordinates for selected feature */
+const prepareForDisplay = (feature: DataEntry): DataEntry => {
+  const transformed = transformSurveyEntry(feature);
+  if (transformed.geocoordinates) {
+    transformed.geocoordinates = prepareCoordinatesForSelectedFeature(
+      transformed.geocoordinates,
+    );
+  }
+  return transformed;
 };
 </script>
 
@@ -86,11 +128,15 @@ const featureWithPreparedCoordinates = (feature: DataEntry): DataEntry => {
     </div>
     <DataFeature
       v-for="(feature, index) in paginatedData"
-      :key="index"
+      :key="feature._id ?? index"
       :allowed-file-extensions="allowedFileExtensions"
-      :feature="featureWithPreparedCoordinates(feature)"
+      :feature="prepareForDisplay(getFullRecord(feature))"
       :file-paths="
-        getFilePathsWithExtension(feature, allowedFileExtensions, mediaColumn)
+        getFilePathsWithExtension(
+          getFullRecord(feature),
+          allowedFileExtensions,
+          mediaColumn,
+        )
       "
       :media-base-path="mediaBasePath"
       :data-testid="`gallery-item-${index}`"

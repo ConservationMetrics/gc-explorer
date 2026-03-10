@@ -1,59 +1,12 @@
-import murmurhash from "murmurhash";
-
 import { describe, it, expect } from "vitest";
 
 import {
-  transformSurveyData,
-  prepareMapData,
-  prepareAlertData,
   prepareAlertsStatistics,
   prepareMapStatistics,
-  transformToGeojson,
+  prepareMinimalAlertEntries,
 } from "@/server/dataProcessing/transformData";
-import { isValidCoordinate } from "@/server/dataProcessing/helpers";
-import { mapeoData, transformedMapeoData } from "../fixtures/mapeoData";
+import { transformedMapeoData } from "../fixtures/mapeoData";
 import { alertsData, alertsMetadata } from "../fixtures/alertsData";
-
-describe("transformSurveyData", () => {
-  it("should transform survey data keys and values", () => {
-    const result = transformSurveyData(mapeoData);
-
-    result.forEach((item) => {
-      expect(item).not.toHaveProperty("g__coordinates");
-      expect(item).toHaveProperty("geocoordinates");
-      expect(item.category[0]).toBe(item.category[0].toUpperCase());
-      // TODO: For now this expects original timestamps instead of formatted dates
-      // See comment in transformSurveyData function for more details.
-      expect(item.created).toMatch(
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
-      );
-      // expect(item.created).toMatch(/^\d{1,2}\/\d{1,2}\/\d{4}$/);
-      expect(item.photos).toMatch(/^(\w+\.jpg(, )?)*\w+\.jpg$|^$/);
-      expect(item).toHaveProperty("id");
-    });
-  });
-});
-
-describe("prepareMapData", () => {
-  it("should prepare map data", () => {
-    const result = prepareMapData(transformedMapeoData, "category");
-
-    let randomColorForHouseCategory: string | null = null;
-
-    result.forEach((item) => {
-      expect(item).toHaveProperty("filter-color");
-      if (item.geocoordinates !== "") {
-        expect(item["geotype"]).toBe("Point");
-      }
-      if (item.category === "House") {
-        if (!randomColorForHouseCategory) {
-          randomColorForHouseCategory = item["filter-color"];
-        }
-        expect(item["filter-color"]).toBe(randomColorForHouseCategory);
-      }
-    });
-  });
-});
 
 describe("prepareMapStatistics", () => {
   it("should calculate map statistics from transformed mapeo data", () => {
@@ -87,38 +40,6 @@ describe("prepareMapStatistics", () => {
   });
 });
 
-describe("prepareAlertData", () => {
-  it("should prepare alert data for the alerts dashboard", () => {
-    const result = prepareAlertData(alertsData);
-
-    result.mostRecentAlerts.forEach((item) => {
-      expect(item).toHaveProperty("alertDetectionRange");
-      expect(item).toHaveProperty("previewImagerySource");
-      expect(item).toHaveProperty("alertType");
-      expect(item).toHaveProperty("alertAreaHectares");
-      expect(item).toHaveProperty("satelliteUsedForDetection");
-      expect(item.previewImagerySource).toBe("Sentinel-2");
-    });
-
-    // 2 of the 3 alerts are the most recent alerts
-    expect(result.mostRecentAlerts).toHaveLength(2);
-    expect(result.previousAlerts).toHaveLength(1);
-
-    // alertDetectionRange should be a string in the format "YYYY-MM-DD to YYYY-MM-DD"
-    expect(result.mostRecentAlerts[0].alertDetectionRange).toMatch(
-      /^\d{4}-\d{2}-\d{2} to \d{4}-\d{2}-\d{2}$/,
-    );
-
-    // Validate geographicCentroid field to be a valid coordinate pair
-    const geographicCentroid = result.mostRecentAlerts[0].geographicCentroid;
-    const coordinatePattern = /^-?\d{1,3}\.\d{6}, -?\d{1,3}\.\d{6}$/;
-    expect(geographicCentroid).toMatch(coordinatePattern);
-    const [latitude, longitude] = geographicCentroid.split(", ").map(Number);
-    expect(isValidCoordinate(latitude)).toBe(true);
-    expect(isValidCoordinate(longitude)).toBe(true);
-  });
-});
-
 describe("prepareAlertsStatistics", () => {
   it("should prepare alert statistics", () => {
     const result = prepareAlertsStatistics(alertsData, alertsMetadata);
@@ -142,26 +63,58 @@ describe("prepareAlertsStatistics", () => {
   });
 });
 
-describe("transformToGeojson", () => {
-  it("should transform data to GeoJSON", () => {
-    const result = transformToGeojson(
-      prepareAlertData(alertsData).mostRecentAlerts,
-    );
+describe("prepareMinimalAlertEntries", () => {
+  it("should split alerts into most-recent and previous buckets", () => {
+    const result = prepareMinimalAlertEntries(alertsData);
 
-    expect(result).toHaveProperty("type");
-    expect(result.type).toBe("FeatureCollection");
-    expect(result).toHaveProperty("features");
-    expect(result.features).toBeInstanceOf(Array);
-    result.features.forEach((feature, index) => {
-      expect(feature).toHaveProperty("type");
-      expect(feature.type).toBe("Feature");
-      expect(feature).toHaveProperty("properties");
-      expect(feature).toHaveProperty("geometry");
-      expect(feature).toHaveProperty("id");
-      // Check if the alert._id is properly transformed to feature.id using murmurhash
-      const expectedId = murmurhash.v3(String(alertsData[index].alert_id));
-      expect(feature.id).toBe(expectedId);
+    expect(result.mostRecentAlerts).toHaveLength(2);
+    expect(result.previousAlerts).toHaveLength(1);
+  });
+
+  it("should include only minimal fields per entry", () => {
+    const result = prepareMinimalAlertEntries(alertsData);
+    const entry = result.mostRecentAlerts[0];
+
+    expect(entry).toHaveProperty("_id");
+    expect(entry).toHaveProperty("alertID");
+    expect(entry).toHaveProperty("YYYYMM");
+    expect(entry).toHaveProperty("geographicCentroid");
+    expect(entry).toHaveProperty("g__type");
+    expect(entry).toHaveProperty("g__coordinates");
+
+    // Should NOT have full-transform fields
+    expect(entry).not.toHaveProperty("alertDetectionRange");
+    expect(entry).not.toHaveProperty("alertType");
+    expect(entry).not.toHaveProperty("alertAreaHectares");
+    expect(entry).not.toHaveProperty("satelliteUsedForDetection");
+    expect(entry).not.toHaveProperty("territory");
+    expect(entry).not.toHaveProperty("t0_url");
+    expect(entry).not.toHaveProperty("t1_url");
+  });
+
+  it("should produce a valid YYYYMM for date filtering", () => {
+    const result = prepareMinimalAlertEntries(alertsData);
+
+    result.mostRecentAlerts.forEach((entry) => {
+      expect(entry.YYYYMM).toMatch(/^\d{6}$/);
     });
-    expect(result.features).toHaveLength(2);
+    result.previousAlerts.forEach((entry) => {
+      expect(entry.YYYYMM).toMatch(/^\d{6}$/);
+    });
+  });
+
+  it("should compute a valid geographicCentroid", () => {
+    const result = prepareMinimalAlertEntries(alertsData);
+    const coordPattern = /^-?\d{1,3}\.\d+, -?\d{1,3}\.\d+$/;
+
+    result.mostRecentAlerts.forEach((entry) => {
+      expect(entry.geographicCentroid).toMatch(coordPattern);
+    });
+  });
+
+  it("should preserve alert_id as alertID", () => {
+    const result = prepareMinimalAlertEntries(alertsData);
+
+    expect(result.mostRecentAlerts[0].alertID).toBe(alertsData[0].alert_id);
   });
 });

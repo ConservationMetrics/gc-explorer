@@ -9,10 +9,14 @@ import { escapeCSVValue } from "@/utils/csvUtils";
 const route = useRoute();
 const { t } = useI18n();
 const { warning: showWarningToast } = useToast();
+const config = useRuntimeConfig();
+const apiKey = config.public.appApiKey as string;
 
 const props = defineProps<{
   dataForDownload?: Feature | FeatureCollection | AlertsData;
 }>();
+
+const exportingFormat = ref<string | null>(null);
 
 /** Get filename base from route tablename, fallback to 'data' */
 const getFilenameBase = (): string => {
@@ -40,62 +44,54 @@ const isFeatureCollection = (
   );
 };
 
-const downloadCSVFromFeatureCollection = () => {
-  if (!props.dataForDownload || !isFeatureCollection(props.dataForDownload)) {
-    console.error("No valid FeatureCollection available to convert to CSV.");
+/** True when the download represents a full dataset rather than a single feature */
+const isBulkDownload = computed(() => {
+  return (
+    isFeatureCollection(props.dataForDownload) ||
+    isAlertsData(props.dataForDownload)
+  );
+});
+
+/**
+ * Downloads a dataset file from the server export endpoint.
+ * The server handles data formatting and streams the response;
+ * the client saves the received blob directly to disk.
+ *
+ * @param {"csv" | "geojson" | "kml"} format - The desired export format.
+ * @returns {Promise<void>}
+ */
+const downloadFromExportEndpoint = async (
+  format: "csv" | "geojson" | "kml",
+) => {
+  const tablename = getFilenameBase();
+  if (tablename === "data") {
+    console.error("No table name available for export.");
     showWarningToast(t("errorNoDataToDownload"));
     return;
   }
 
-  const features = props.dataForDownload.features;
-  if (features.length === 0) {
-    console.error("FeatureCollection has no features.");
+  exportingFormat.value = format;
+  try {
+    const blob = await $fetch<Blob>(`/api/${tablename}/export`, {
+      params: { format },
+      responseType: "blob",
+      headers: { "x-api-key": apiKey },
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${tablename}.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error(`Failed to export ${format}:`, error);
     showWarningToast(t("errorNoDataToDownload"));
-    return;
+  } finally {
+    exportingFormat.value = null;
   }
-
-  // Get all unique column names from all features
-  const columnSet = new Set<string>();
-  features.forEach((feature) => {
-    if (feature.properties) {
-      Object.keys(feature.properties).forEach((key) => columnSet.add(key));
-    }
-  });
-  columnSet.add("geometry_type");
-  columnSet.add("coordinates");
-
-  const columns = Array.from(columnSet);
-
-  // Build CSV rows
-  const rows = features.map((feature) => {
-    return columns
-      .map((col) => {
-        if (col === "geometry_type") {
-          return escapeCSVValue(feature.geometry.type);
-        } else if (col === "coordinates") {
-          // Only Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon have coordinates
-          const geom = feature.geometry;
-          if ("coordinates" in geom) {
-            return `"${JSON.stringify(geom.coordinates)}"`;
-          }
-          return "";
-        } else {
-          const value = feature.properties?.[col];
-          return escapeCSVValue(value);
-        }
-      })
-      .join(",");
-  });
-
-  const csvString = [columns.join(","), ...rows].join("\n");
-  const blob = new Blob([csvString], { type: "text/csv" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `${getFilenameBase()}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
 };
 
 const downloadAlertCSV = () => {
@@ -173,28 +169,11 @@ const downloadAlertCSV = () => {
 };
 
 const downloadAlertGeoJSON = () => {
-  if (!props.dataForDownload) {
-    console.error("No data available to download.");
-    showWarningToast(t("errorNoDataToDownload"));
-    return;
-  }
-
-  // Handle FeatureCollection (from MapIntroPanel)
-  if (isFeatureCollection(props.dataForDownload)) {
-    const jsonStr = JSON.stringify(props.dataForDownload, null, 2);
-    const blob = new Blob([jsonStr], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${getFilenameBase()}.geojson`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-    return;
-  }
-
-  // Handle AlertsData (not a single feature)
-  if (isAlertsData(props.dataForDownload)) {
+  if (
+    !props.dataForDownload ||
+    isAlertsData(props.dataForDownload) ||
+    isFeatureCollection(props.dataForDownload)
+  ) {
     console.error(
       "No valid GeoJSON Feature data available to convert to GeoJSON.",
     );
@@ -238,28 +217,13 @@ const downloadAlertGeoJSON = () => {
 };
 
 const downloadAlertKML = () => {
-  if (!props.dataForDownload) {
-    console.error("No data available to download.");
-    showWarningToast(t("errorNoDataToDownload"));
-    return;
-  }
-
-  // Handle FeatureCollection or AlertsData
   if (
-    isFeatureCollection(props.dataForDownload) ||
-    isAlertsData(props.dataForDownload)
+    !props.dataForDownload ||
+    isAlertsData(props.dataForDownload) ||
+    isFeatureCollection(props.dataForDownload)
   ) {
-    const kmlString = tokml(props.dataForDownload);
-    const blob = new Blob([kmlString], {
-      type: "application/vnd.google-earth.kml+xml",
-    });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${getFilenameBase()}.kml`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
+    console.error("No valid GeoJSON Feature data available to convert to KML.");
+    showWarningToast(t("errorNoDataToDownload"));
     return;
   }
 
@@ -298,186 +262,42 @@ const downloadAlertKML = () => {
   document.body.removeChild(link);
   URL.revokeObjectURL(link.href);
 };
-
-const downloadCSVSelection = () => {
-  if (!props.dataForDownload || !isAlertsData(props.dataForDownload)) {
-    console.warn("No valid AlertsData available to download as CSV.");
-    return;
-  }
-
-  const combinedFeatures = [
-    ...props.dataForDownload.previousAlerts.features,
-    ...props.dataForDownload.mostRecentAlerts.features,
-  ];
-
-  let csvString = "";
-  let headerWritten = false;
-
-  combinedFeatures.forEach((feature) => {
-    const { geometry, properties } = feature;
-
-    const flattenedProperties = { ...properties };
-    delete flattenedProperties["image_url"];
-    delete flattenedProperties["image_caption"];
-    delete flattenedProperties["preview_link"];
-    delete flattenedProperties["YYYYMM"];
-
-    const coordinates = JSON.stringify(
-      (geometry as GeoJSON.Point | GeoJSON.LineString | GeoJSON.Polygon)
-        .coordinates,
-    );
-    flattenedProperties["coordinates"] = coordinates;
-
-    const csvColumns = Object.keys(flattenedProperties);
-    const csvData = Object.values(flattenedProperties).map((value) =>
-      escapeCSVValue(value),
-    );
-
-    csvColumns.push("geometry type");
-    csvData.push(escapeCSVValue(geometry.type));
-
-    if (!headerWritten) {
-      csvString += csvColumns.join(",") + "\n";
-      headerWritten = true;
-    }
-
-    csvString += csvData.join(",") + "\n";
-  });
-
-  const filename = combinedFeatures[0].properties?.["territory"]
-    ? `${combinedFeatures[0].properties["territory"]}_alerts.csv`
-    : `${getFilenameBase()}.csv`;
-  const blob = new Blob([csvString], { type: "text/csv" });
-
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-
-  link.click();
-
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
-};
-
-const downloadGeoJSONSelection = () => {
-  if (!props.dataForDownload || !isAlertsData(props.dataForDownload)) {
-    console.warn("No valid AlertsData available to download as CSV.");
-    return;
-  }
-
-  // Combine features from mostRecentAlerts and previousAlerts
-  const combinedFeatures = [
-    ...props.dataForDownload.previousAlerts.features,
-    ...props.dataForDownload.mostRecentAlerts.features,
-  ];
-
-  combinedFeatures.forEach((feature) => {
-    if (feature.properties) {
-      delete feature.properties["image_url"];
-      delete feature.properties["image_caption"];
-      delete feature.properties["preview_link"];
-      delete feature.properties["YYYYMM"];
-    }
-  });
-
-  const combinedGeoJSON = {
-    type: "FeatureCollection",
-    features: combinedFeatures,
-  };
-
-  const filename = combinedFeatures[0].properties?.["territory"]
-    ? `${combinedFeatures[0].properties["territory"]}_alerts.geojson`
-    : `${getFilenameBase()}.geojson`;
-  const jsonStr = JSON.stringify(combinedGeoJSON, null, 2);
-  const blob = new Blob([jsonStr], { type: "application/json" });
-
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-
-  link.click();
-
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
-};
-
-const downloadKMLSelection = () => {
-  if (!props.dataForDownload || !isAlertsData(props.dataForDownload)) {
-    console.warn("No valid AlertsData available to download as CSV.");
-    return;
-  }
-
-  const combinedFeatures = [
-    ...props.dataForDownload.previousAlerts.features,
-    ...props.dataForDownload.mostRecentAlerts.features,
-  ];
-
-  const combinedGeoJSON = {
-    type: "FeatureCollection",
-    features: combinedFeatures,
-  };
-
-  const kmlString = tokml(combinedGeoJSON);
-
-  const filename = combinedFeatures[0].properties?.["territory"]
-    ? `${combinedFeatures[0].properties["territory"]}_alerts.kml`
-    : `${getFilenameBase()}.kml`;
-
-  const blob = new Blob([kmlString], {
-    type: "application/vnd.google-earth.kml+xml",
-  });
-
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-
-  link.click();
-
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
-};
 </script>
 
 <template>
   <div class="flex flex-wrap gap-2 justify-center mt-6">
     <button
       class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
+      :disabled="!!exportingFormat"
       @click="
-        isFeatureCollection(props.dataForDownload)
-          ? downloadCSVFromFeatureCollection()
-          : !isAlertsData(props.dataForDownload)
-            ? downloadAlertCSV()
-            : downloadCSVSelection()
+        isBulkDownload ? downloadFromExportEndpoint('csv') : downloadAlertCSV()
       "
     >
-      {{ $t("downloadCSV") }}
+      {{ exportingFormat === "csv" ? $t("downloading") : $t("downloadCSV") }}
     </button>
     <button
       class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
+      :disabled="!!exportingFormat"
       @click="
-        isFeatureCollection(props.dataForDownload)
-          ? downloadAlertGeoJSON()
-          : !isAlertsData(props.dataForDownload)
-            ? downloadAlertGeoJSON()
-            : downloadGeoJSONSelection()
+        isBulkDownload
+          ? downloadFromExportEndpoint('geojson')
+          : downloadAlertGeoJSON()
       "
     >
-      {{ $t("downloadGeoJSON") }}
+      {{
+        exportingFormat === "geojson"
+          ? $t("downloading")
+          : $t("downloadGeoJSON")
+      }}
     </button>
     <button
       class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
+      :disabled="!!exportingFormat"
       @click="
-        isFeatureCollection(props.dataForDownload)
-          ? downloadAlertKML()
-          : !isAlertsData(props.dataForDownload)
-            ? downloadAlertKML()
-            : downloadKMLSelection()
+        isBulkDownload ? downloadFromExportEndpoint('kml') : downloadAlertKML()
       "
     >
-      {{ $t("downloadKML") }}
+      {{ exportingFormat === "kml" ? $t("downloading") : $t("downloadKML") }}
     </button>
   </div>
 </template>
