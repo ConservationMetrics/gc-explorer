@@ -1,7 +1,7 @@
 import { computed, nextTick, ref, type Ref, type ComputedRef } from "vue";
 import type mapboxgl from "mapbox-gl";
 import type { Feature } from "geojson";
-import type { AlertsData, AlertsStatistics } from "@/types/types";
+import type { AlertsData, AlertsStatistics } from "@/types";
 
 /**
  * Composable for managing alerts date range filtering.

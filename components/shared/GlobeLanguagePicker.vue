@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import type { SupportedLocale } from "@/types/types";
+import type { SupportedLocale } from "@/types";
 
 const { locale, locales, setLocale } = useI18n();
 const { t } = useI18n();

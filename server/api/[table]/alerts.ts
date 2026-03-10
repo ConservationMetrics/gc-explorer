@@ -13,11 +13,7 @@ import { validatePermissions } from "@/utils/accessControls";
 import { parseBasemaps } from "@/server/utils";
 
 import type { H3Event } from "h3";
-import type {
-  AllowedFileExtensions,
-  DataEntry,
-  AlertsMetadata,
-} from "@/types/types";
+import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
 import type { FeatureCollection } from "geojson";
 
 export default defineEventHandler(async (event: H3Event) => {

@@ -1,4 +1,4 @@
-import type { DataEntry } from "@/types/types";
+import type { DataEntry } from "@/types";
 import type { Ref, ComputedRef } from "vue";
 
 // Module-level state so all components share a single cache instance.

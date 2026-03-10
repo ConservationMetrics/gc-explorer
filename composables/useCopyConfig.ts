@@ -1,4 +1,4 @@
-import type { Views, ViewConfig } from "@/types/types";
+import type { Views, ViewConfig } from "@/types";
 
 /**
  * Composable for copying configuration from one dataset to another.

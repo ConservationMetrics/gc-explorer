@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { XCircle } from "lucide-vue-next";
-import type { AllowedFileExtensions } from "@/types/types";
+import type { AllowedFileExtensions } from "@/types";
 import { useIntersectionObserver } from "@/composables/useIntersectionObserver";
 import { useOptimizedImages } from "@/composables/useOptimizedImages";
 

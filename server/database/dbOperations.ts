@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 
-import type { ColumnEntry, DataEntry, Views, ViewConfig } from "@/types/types";
+import type { ColumnEntry, DataEntry, Views, ViewConfig } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
 
 import { viewConfig } from "./schema";

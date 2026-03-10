@@ -1,4 +1,4 @@
-import type { DataEntry } from "@/types/types";
+import type { DataEntry } from "@/types";
 
 const SATELLITE_LOOKUP: Record<string, string> = {
   S1: "Sentinel-1",

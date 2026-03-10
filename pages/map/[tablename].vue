@@ -5,7 +5,7 @@ import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { replaceUnderscoreWithSpace } from "@/utils/index";
 import { useIsPublic } from "@/utils/accessControls";
 
-import type { BasemapConfig } from "@/types/types";
+import type { BasemapConfig } from "@/types";
 import type { FeatureCollection } from "geojson";
 
 // Extract the tablename from the route parameters

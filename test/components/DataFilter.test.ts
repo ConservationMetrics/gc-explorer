@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { ref, computed } from "vue";
 import DataFilter from "@/components/shared/DataFilter.vue";
-import type { Dataset } from "@/types/types";
+import type { Dataset } from "@/types";
 
 Object.assign(globalThis, {
   ref,

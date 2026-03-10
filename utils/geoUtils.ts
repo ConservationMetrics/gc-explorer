@@ -1,5 +1,5 @@
 import type { Geometry, Feature, FeatureCollection, Position } from "geojson";
-import type { DataEntry } from "@/types/types";
+import type { DataEntry } from "@/types";
 
 import murmurhash from "murmurhash";
 

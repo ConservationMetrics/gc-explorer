@@ -2,11 +2,7 @@ import { computed, onBeforeUnmount, ref } from "vue";
 import type { RouteLocationNormalizedLoaded, Router } from "vue-router";
 import mapboxgl from "mapbox-gl";
 import type { Feature, Geometry } from "geojson";
-import type {
-  AnnotatedCollection,
-  CollectionEntry,
-  Incident,
-} from "@/types/types";
+import type { AnnotatedCollection, CollectionEntry, Incident } from "@/types";
 
 /**
  * Small in-memory cache to avoid refetching incident details repeatedly.

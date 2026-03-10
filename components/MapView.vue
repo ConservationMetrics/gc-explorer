@@ -30,7 +30,7 @@ import type {
   FilterValues,
   MapLegendItem,
   MapStatistics,
-} from "@/types/types";
+} from "@/types";
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;

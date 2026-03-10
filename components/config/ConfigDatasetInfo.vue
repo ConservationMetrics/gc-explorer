@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toCamelCase, CONFIG_LIMITS } from "@/utils";
-import type { ViewConfig } from "@/types/types";
+import type { ViewConfig } from "@/types";
 
 defineProps<{
   tableName: string;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ToastEmits, ToastOptions } from "@/types/types";
+import type { ToastEmits, ToastOptions } from "@/types";
 const props = withDefaults(defineProps<ToastOptions>(), {
   type: "info",
   duration: 5000,

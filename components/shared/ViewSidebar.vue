@@ -11,7 +11,7 @@ import type {
   DataEntry,
   Dataset,
   MapStatistics,
-} from "@/types/types";
+} from "@/types";
 
 import type { Feature, FeatureCollection } from "geojson";
 

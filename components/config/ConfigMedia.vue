@@ -7,7 +7,7 @@ import {
   getBaseUrlFromInput,
   isValidFilebrowserInput,
 } from "@/utils/media";
-import type { ViewConfig } from "@/types/types";
+import type { ViewConfig } from "@/types";
 
 const props = defineProps<{
   tableName: string;

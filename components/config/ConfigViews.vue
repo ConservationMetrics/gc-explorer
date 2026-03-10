@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ViewConfig } from "@/types/types";
+import type { ViewConfig } from "@/types";
 
 const props = defineProps<{
   tableName: string;

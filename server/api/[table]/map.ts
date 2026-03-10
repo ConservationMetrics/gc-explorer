@@ -9,7 +9,7 @@ import { validatePermissions } from "@/utils/accessControls";
 import { parseBasemaps } from "@/server/utils";
 
 import type { H3Event } from "h3";
-import type { AllowedFileExtensions } from "@/types/types";
+import type { AllowedFileExtensions } from "@/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };

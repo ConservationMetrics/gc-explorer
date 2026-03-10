@@ -2,7 +2,7 @@
 import Datepicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
 
-import type { Basemap, BasemapConfig } from "@/types/types";
+import type { Basemap, BasemapConfig } from "@/types";
 
 const props = defineProps({
   hasRulerControl: Boolean,

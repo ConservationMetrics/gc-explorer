@@ -12,7 +12,7 @@ import type {
   Dataset,
   DataEntry,
   FilterValues,
-} from "@/types/types";
+} from "@/types";
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;

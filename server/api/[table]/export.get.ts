@@ -6,7 +6,7 @@ import { escapeCSVValue } from "@/utils/csvUtils";
 import tokml from "tokml";
 
 import type { H3Event } from "h3";
-import type { DataEntry, ColumnEntry } from "@/types/types";
+import type { DataEntry, ColumnEntry } from "@/types";
 import type { Feature, FeatureCollection, Geometry, Position } from "geojson";
 
 const SUPPORTED_FORMATS = ["csv", "geojson", "kml"] as const;

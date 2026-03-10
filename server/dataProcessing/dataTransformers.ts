@@ -5,7 +5,7 @@ import type {
   MapStatistics,
   AlertsStatistics,
   DataEntry,
-} from "@/types/types";
+} from "@/types";
 
 /**
  * Splits raw alert data into most-recent and previous buckets, retaining

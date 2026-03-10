@@ -3,7 +3,7 @@ import { useI18n } from "vue-i18n";
 
 import VueSelect from "vue3-select-component";
 
-import type { Dataset } from "@/types/types";
+import type { Dataset } from "@/types";
 
 const { t } = useI18n();
 

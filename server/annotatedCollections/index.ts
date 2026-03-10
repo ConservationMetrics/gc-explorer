@@ -1,9 +1,5 @@
 import { sql, eq, and, desc } from "drizzle-orm";
-import type {
-  AnnotatedCollection,
-  Incident,
-  CollectionEntry,
-} from "@/types/types";
+import type { AnnotatedCollection, Incident, CollectionEntry } from "@/types";
 import { configDb, warehouseDb } from "@/server/database/dbConnection";
 import {
   annotatedCollections,

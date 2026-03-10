@@ -40,7 +40,7 @@ import type {
   Basemap,
   BasemapConfig,
   MapLegendItem,
-} from "@/types/types";
+} from "@/types";
 import type { Feature, FeatureCollection } from "geojson";
 
 const { t } = useI18n();

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ViewConfig, User, RouteLevelPermission } from "@/types/types";
-import { Role } from "@/types/types";
+import type { ViewConfig, User, RouteLevelPermission } from "@/types";
+import { Role } from "@/types";
 
 const props = defineProps<{
   tableName: string;

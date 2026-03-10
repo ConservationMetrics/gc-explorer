@@ -1,6 +1,6 @@
 import type { H3Event } from "h3";
-import type { User, RouteLevelPermission } from "@/types/types";
-import { Role } from "@/types/types";
+import type { User, RouteLevelPermission } from "@/types";
+import { Role } from "@/types";
 import { useRuntimeConfig } from "#imports";
 
 import type { Ref } from "vue";

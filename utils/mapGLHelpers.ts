@@ -1,6 +1,6 @@
 import type mapboxgl from "mapbox-gl";
 
-import type { Basemap, MapStyle } from "@/types/types";
+import type { Basemap, MapStyle } from "@/types";
 
 /** Map styles configuration for different basemaps */
 export const mapStyles: Record<string, MapStyle> = {

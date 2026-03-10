@@ -7,7 +7,7 @@ import {
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
-import type { AllowedFileExtensions, ColumnEntry } from "@/types/types";
+import type { AllowedFileExtensions, ColumnEntry } from "@/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };

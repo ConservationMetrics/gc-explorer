@@ -13,7 +13,7 @@ import {
   LinearScale,
 } from "chart.js";
 
-import type { AlertsStatistics } from "@/types/types";
+import type { AlertsStatistics } from "@/types";
 
 Chart.register(
   Title,

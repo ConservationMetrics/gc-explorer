@@ -1,4 +1,4 @@
-import type { BasemapConfig, ViewConfig } from "@/types/types";
+import type { BasemapConfig, ViewConfig } from "@/types";
 
 import { fetchTableNames } from "@/server/database/dbOperations";
 

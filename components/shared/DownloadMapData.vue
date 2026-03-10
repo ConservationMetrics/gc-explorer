@@ -3,7 +3,7 @@
 import tokml from "tokml";
 
 import type { Feature, FeatureCollection } from "geojson";
-import type { AlertsData } from "@/types/types";
+import type { AlertsData } from "@/types";
 import { escapeCSVValue } from "@/utils/csvUtils";
 
 const route = useRoute();
