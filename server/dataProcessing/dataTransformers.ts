@@ -1,4 +1,4 @@
-import { calculateCentroid, isValidGeolocation } from "@/server/utils/geoUtils";
+import { calculateCentroid, isValidGeolocation } from "@/utils/geoUtils";
 import type {
   AlertsMetadata,
   AlertsPerMonth,

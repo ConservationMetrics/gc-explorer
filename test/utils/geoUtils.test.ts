@@ -3,7 +3,7 @@ import {
   buildMinimalFeatureCollection,
   calculateCentroid,
   hasValidCoordinates,
-} from "@/server/utils/geoUtils";
+} from "@/utils/geoUtils";
 
 describe("calculateCentroid", () => {
   it("returns centroid for Point", () => {

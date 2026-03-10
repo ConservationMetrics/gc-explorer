@@ -16,7 +16,7 @@ import {
   applyTerrain,
   prepareMapLegendLayers,
   toggleLayerVisibility as utilsToggleLayerVisibility,
-} from "@/utils/mapHelpers";
+} from "@/utils/mapGLHelpers";
 
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";

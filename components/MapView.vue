@@ -9,7 +9,7 @@ import {
   prepareMapLegendLayers,
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
-} from "@/utils/mapHelpers";
+} from "@/utils/mapGLHelpers";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";

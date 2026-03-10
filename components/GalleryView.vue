@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { getFilePathsWithExtension } from "@/utils";
-import { prepareCoordinatesForSelectedFeature } from "@/utils/mapHelpers";
+import { prepareCoordinatesForSelectedFeature } from "@/utils/mapGLHelpers";
 import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
 

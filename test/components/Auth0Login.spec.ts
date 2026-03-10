@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createI18n } from "vue-i18n";
-import Auth0Login from "../../components/Auth0Login.vue";
+import Auth0Login from "@/components/Auth0Login.vue";
 
 // Mock the composables at the top level
 vi.mock("#imports", () => ({

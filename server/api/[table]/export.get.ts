@@ -1,5 +1,5 @@
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
-import { hasValidCoordinates } from "@/server/utils/geoUtils";
+import { hasValidCoordinates } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { escapeCSVValue } from "@/utils/csvUtils";
 // @ts-expect-error - tokml does not have types

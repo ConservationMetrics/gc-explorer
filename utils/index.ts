@@ -119,3 +119,26 @@ export const CONFIG_LIMITS = {
   /** @type {number} Maximum length for view description */
   VIEW_DESCRIPTION: 500,
 } as const;
+
+/** Generates a random hex color code. */
+export const getRandomColor = () => {
+  const letters = "0123456789ABCDEF";
+  let color = "#";
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+};
+
+/** Formats a date string to a locale date string. */
+export const formatDate = (date: string): string => {
+  // First let's ensure the date is in the correct format
+  const dateRegex = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).*/;
+  const dateMatch = date.match(dateRegex);
+  if (dateMatch) {
+    date = new Date(
+      `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}T${dateMatch[4]}:${dateMatch[5]}:${dateMatch[6]}`,
+    ).toLocaleDateString();
+  }
+  return date;
+};

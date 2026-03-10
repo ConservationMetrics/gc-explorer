@@ -5,7 +5,7 @@ import {
   addEntriesToCollection,
   deleteAnnotatedCollection,
   listAnnotatedCollections,
-} from "@/server/database/annotatedCollections";
+} from "@/server/annotatedCollections";
 import type { AnnotatedCollection, Incident } from "@/types/types";
 import type { H3Event } from "h3";
 

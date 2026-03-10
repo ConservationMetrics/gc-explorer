@@ -1,27 +1,6 @@
-/** Generates a random hex color code. */
 import type { BasemapConfig, ViewConfig } from "@/types/types";
 
-export const getRandomColor = () => {
-  const letters = "0123456789ABCDEF";
-  let color = "#";
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
-  return color;
-};
-
-/** Formats a date string to a locale date string. */
-export const formatDate = (date: string): string => {
-  // First let's ensure the date is in the correct format
-  const dateRegex = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).*/;
-  const dateMatch = date.match(dateRegex);
-  if (dateMatch) {
-    date = new Date(
-      `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}T${dateMatch[4]}:${dateMatch[5]}:${dateMatch[6]}`,
-    ).toLocaleDateString();
-  }
-  return date;
-};
+import { fetchTableNames } from "@/server/database/dbOperations";
 
 export type ParsedBasemaps = {
   basemaps: BasemapConfig[];
@@ -75,4 +54,21 @@ export const parseBasemaps = (
   }
 
   return { basemaps, defaultMapboxStyle };
+};
+
+/** Retrieves table names from the database, excluding those with metadata, columns, and PostGIS-related entries. */
+export const getFilteredTableNames = async () => {
+  if (process.env.CI) {
+    return ["fake_alerts", "bcmform_responses"];
+  }
+
+  let tableNames = await fetchTableNames();
+  tableNames = tableNames.filter(
+    (name) =>
+      !name.includes("metadata") &&
+      !name.includes("columns") &&
+      !name.includes("spatial_ref_sys"),
+  );
+
+  return tableNames;
 };

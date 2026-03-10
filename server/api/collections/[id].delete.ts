@@ -1,4 +1,4 @@
-import { handleDeleteCollection } from "@/server/utils/collectionHandlers";
+import { handleDeleteCollection } from "@/server/annotatedCollections/handlers";
 import { validateUserSession } from "@/utils/accessControls";
 
 export default defineEventHandler(async (event) => {

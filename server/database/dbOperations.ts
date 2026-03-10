@@ -4,7 +4,7 @@ import type { ColumnEntry, DataEntry, Views, ViewConfig } from "@/types/types";
 import { CONFIG_LIMITS } from "@/utils";
 
 import { viewConfig } from "./schema";
-import { configDb, warehouseDb } from "@/server/utils/dbUtils";
+import { configDb, warehouseDb } from "./dbConnection";
 
 const checkTableExists = async (
   table: string | undefined,
