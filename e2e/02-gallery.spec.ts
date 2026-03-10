@@ -125,36 +125,45 @@ test("gallery page - displays images with lightbox functionality", async ({
 
   const visibleImageLinks = page.locator("a[data-lightbox]:not(.hidden)");
   const imageCount = await visibleImageLinks.count();
+  expect(imageCount).toBeGreaterThan(0);
 
-  if (imageCount > 0) {
-    // 7. Click on the first image (app uses target="_blank" so may open in new tab or lightbox)
-    const firstImage = visibleImageLinks.first();
-    const galleryUrl = page.url();
-    await firstImage.click();
+  // 7. Ensure lightbox runtime is initialized before clicking
+  await page.waitForFunction(
+    () => Boolean((window as { lightbox?: unknown }).lightbox),
+    { timeout: 10000 },
+  );
 
-    // 8. Either lightbox overlay appears (if script intercepts) or link opens in new tab (target="_blank")
-    const lightboxOverlay = page.locator(".lightboxOverlay");
-    const overlayAppeared = await lightboxOverlay
-      .waitFor({ state: "visible", timeout: 5000 })
-      .then(() => true)
-      .catch(() => false);
+  // 8. Click first image and validate real lightbox overlay behavior
+  const firstImage = visibleImageLinks.first();
+  const firstImageHref = (await firstImage.getAttribute("href")) || "";
+  const expectedBaseName = decodeURIComponent(
+    firstImageHref.split("/").pop() || "",
+  );
+  await firstImage.click();
 
-    if (overlayAppeared) {
-      // 9. Verify lightbox image and close it
-      const lightboxImage = page.locator(".lb-image");
-      await expect(lightboxImage).toBeVisible({ timeout: 3000 });
-      const closeButton = page.locator(".lb-close");
-      if ((await closeButton.count()) > 0) {
-        await closeButton.click();
-      } else {
-        await page.keyboard.press("Escape");
-      }
-      await expect(lightboxOverlay).not.toBeVisible({ timeout: 3000 });
-    } else {
-      // Link opened in new tab or navigated: ensure we still have gallery context (e.g. popup opened)
-      await expect(page).toHaveURL(/\/(gallery|$)/);
-    }
+  // Lightbox plugin injects #lightboxOverlay + .lightboxOverlay into body
+  const lightboxOverlay = page.locator("#lightboxOverlay.lightboxOverlay");
+  await expect(lightboxOverlay).toBeVisible({ timeout: 10000 });
+
+  // 9. Validate lightbox content + caption includes clicked media basename
+  const lightboxImage = page.locator(".lb-image");
+  await expect(lightboxImage).toBeVisible({ timeout: 5000 });
+
+  const caption = page.locator(".lb-caption");
+  await expect(caption).toBeVisible({ timeout: 5000 });
+  const captionText = (await caption.textContent()) || "";
+  expect(captionText.toLowerCase()).toContain(expectedBaseName.toLowerCase());
+
+  // 10. Close lightbox by pressing Escape or clicking close button
+  const closeButton = page.locator(".lb-close");
+  if ((await closeButton.count()) > 0) {
+    await closeButton.click();
+  } else {
+    await page.keyboard.press("Escape");
   }
+
+  // 11. Verify lightbox is closed
+  await expect(lightboxOverlay).not.toBeVisible({ timeout: 3000 });
 });
 
 test("gallery page - audio playback functionality", async ({
