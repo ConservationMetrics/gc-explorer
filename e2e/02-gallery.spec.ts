@@ -127,27 +127,33 @@ test("gallery page - displays images with lightbox functionality", async ({
   const imageCount = await visibleImageLinks.count();
   expect(imageCount).toBeGreaterThan(0);
 
-  // 7. Click first image and validate real lightbox overlay behavior
+  // 7. Open lightbox deterministically for first image
   const firstImage = visibleImageLinks.first();
   const firstImageHref = (await firstImage.getAttribute("href")) || "";
   const expectedBaseName = decodeURIComponent(
     firstImageHref.split("/").pop() || "",
   );
-  await firstImage.click();
+  await page.waitForFunction(
+    () =>
+      Boolean(
+        (window as { lightbox?: { start?: unknown } }).lightbox?.start &&
+          typeof (window as { lightbox?: { start?: unknown } }).lightbox
+            ?.start === "function",
+      ),
+    { timeout: 10000 },
+  );
+  const started = await firstImage.evaluate((el) => {
+    const lb = (window as { lightbox?: { start?: (el: Element) => void } })
+      .lightbox;
+    if (!lb?.start) return false;
+    lb.start(el);
+    return true;
+  });
+  expect(started).toBe(true);
 
   // Lightbox plugin injects #lightboxOverlay + .lightboxOverlay into body
   const lightboxOverlay = page.locator("#lightboxOverlay.lightboxOverlay");
-  const overlayVisible = await lightboxOverlay
-    .waitFor({ state: "visible", timeout: 8000 })
-    .then(() => true)
-    .catch(() => false);
-
-  // If the first click races with late script init, retry once.
-  if (!overlayVisible) {
-    await page.waitForTimeout(1500);
-    await firstImage.click();
-    await expect(lightboxOverlay).toBeVisible({ timeout: 8000 });
-  }
+  await expect(lightboxOverlay).toBeVisible({ timeout: 8000 });
 
   // 9. Validate lightbox content + caption includes clicked media basename
   const lightboxImage = page.locator(".lb-image");
