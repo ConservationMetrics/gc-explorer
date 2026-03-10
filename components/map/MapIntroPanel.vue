@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 
-import type { MapStatistics } from "@/types/types";
+import type { Dataset, MapStatistics } from "@/types/types";
 import type { FeatureCollection } from "geojson";
 
 const props = defineProps<{
   mapStatistics: MapStatistics;
-  mapFeatureCollection: FeatureCollection;
+  mapData: Dataset;
   logoUrl?: string;
   showIcons?: boolean;
   canToggleIcons?: boolean;
@@ -16,19 +16,51 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "toggleIcons"): void;
 }>();
+
 /** Get data source from first item if available */
 const dataSource = computed(() => {
-  if (props.mapFeatureCollection.features.length === 0) return null;
-
-  const firstProps = props.mapFeatureCollection.features[0].properties;
-  if (!firstProps) return null;
+  if (props.mapData.length === 0) return null;
 
   // Look for a column that contains "data source" (case insensitive)
-  const dataSourceKey = Object.keys(firstProps).find((key) =>
+  const firstItem = props.mapData[0];
+  const dataSourceKey = Object.keys(firstItem).find((key) =>
     key.toLowerCase().includes("data source"),
   );
 
-  return dataSourceKey ? firstProps[dataSourceKey] : null;
+  return dataSourceKey ? firstItem[dataSourceKey] : null;
+});
+
+/** Convert Dataset to GeoJSON FeatureCollection for download */
+const dataForDownload = computed<FeatureCollection>(() => {
+  return {
+    type: "FeatureCollection",
+    features: props.mapData.map((item) => {
+      let coordinates;
+      try {
+        coordinates =
+          typeof item.geocoordinates === "string"
+            ? JSON.parse(item.geocoordinates)
+            : item.geocoordinates;
+      } catch (error) {
+        console.error("Error parsing coordinates for feature:", error);
+        coordinates = [];
+      }
+
+      // Create properties without geocoordinates and geotype
+      const properties = { ...item };
+      delete properties.geocoordinates;
+      delete properties.geotype;
+
+      return {
+        type: "Feature",
+        geometry: {
+          type: item.geotype as "Point" | "LineString" | "Polygon",
+          coordinates: coordinates,
+        },
+        properties: properties,
+      };
+    }),
+  };
 });
 </script>
 
@@ -73,7 +105,7 @@ const dataSource = computed(() => {
 
     <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
       <div class="p-6">
-        <DownloadMapData :data-for-download="mapFeatureCollection" />
+        <DownloadMapData :data-for-download="dataForDownload" />
       </div>
     </div>
 

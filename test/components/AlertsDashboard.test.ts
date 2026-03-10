@@ -64,7 +64,6 @@ const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
   mediaBasePath: "",
   mediaBasePathAlerts: "",
   planetApiKey: "",
-  table: "test_alerts",
 };
 
 // Mock Nuxt composables - needs to be before component import
@@ -87,7 +86,6 @@ Object.assign(globalThis, {
   onBeforeUnmount,
   nextTick,
   useToast: mockUseToast,
-  useRuntimeConfig: () => ({ public: { appApiKey: "test-key" } }),
   $fetch: mockFetch,
 });
 

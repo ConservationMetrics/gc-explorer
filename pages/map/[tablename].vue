@@ -6,7 +6,6 @@ import { replaceUnderscoreWithSpace } from "@/utils/index";
 import { useIsPublic } from "@/utils/permissions";
 
 import type { BasemapConfig } from "@/types/types";
-import type { FeatureCollection } from "geojson";
 
 // Extract the tablename from the route parameters
 const route = useRoute();
@@ -31,7 +30,7 @@ const mapboxBasemaps = ref<BasemapConfig[]>([]);
 const mapboxZoom = ref(0);
 const mapbox3d = ref(false);
 const mapbox3dTerrainExaggeration = ref(0);
-const mapData = ref<FeatureCollection>();
+const mapData = ref();
 const mediaBasePath = ref();
 const mediaBasePathIcons = ref();
 const mediaColumn = ref();
@@ -96,7 +95,7 @@ useHead({
     />
     <ClientOnly v-else>
       <MapView
-        v-if="dataFetched && mapData"
+        v-if="dataFetched"
         :allowed-file-extensions="allowedFileExtensions"
         :color-column="colorColumn"
         :filter-column="filterColumn"
@@ -119,7 +118,6 @@ useHead({
         :media-base-path-icons="mediaBasePathIcons"
         :media-column="mediaColumn"
         :planet-api-key="planetApiKey"
-        :table="table"
       />
     </ClientOnly>
   </div>

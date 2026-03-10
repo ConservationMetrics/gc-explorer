@@ -77,64 +77,6 @@ export const fetchData = async (
   return { mainData, columnsData, metadata };
 };
 
-/**
- * Fetches a single raw record from the warehouse database by its _id column.
- * Returns the record exactly as stored — no transformations or filtering.
- *
- * @param {string} table - The table name to query.
- * @param {string} recordId - The _id value of the record to fetch.
- * @returns {Promise<DataEntry | null>} The raw record, or null if not found.
- */
-export const fetchRecord = async (
-  table: string,
-  recordId: string,
-): Promise<DataEntry | null> => {
-  const cleanTableName = table.replace(/"/g, "");
-  const tableExists = await checkTableExists(cleanTableName);
-  if (!tableExists) {
-    throw new Error("Table does not exist");
-  }
-
-  const result = await warehouseDb.execute(sql`
-    SELECT * FROM ${sql.identifier(cleanTableName)} WHERE _id = ${recordId} LIMIT 1
-  `);
-
-  if (!result || result.length === 0) {
-    return null;
-  }
-
-  return result[0] as DataEntry;
-};
-
-/**
- * Fetches multiple raw records from the warehouse database by their _id values.
- * Returns records in the same order as the requested IDs; missing IDs are omitted.
- *
- * @param {string} table - The table name to query.
- * @param {string[]} ids - Array of _id values to fetch.
- * @returns {Promise<DataEntry[]>} The matching raw records.
- */
-export const fetchRecords = async (
-  table: string,
-  ids: string[],
-): Promise<DataEntry[]> => {
-  const tableExists = await checkTableExists(table);
-  if (!tableExists) {
-    throw new Error("Table does not exist");
-  }
-
-  const idPlaceholders = sql.join(
-    ids.map((id) => sql`${id}`),
-    sql`, `,
-  );
-  const result = await warehouseDb.execute(sql`
-    SELECT * FROM ${sql.identifier(table)}
-    WHERE _id IN (${idPlaceholders})
-  `);
-
-  return result as Array<DataEntry>;
-};
-
 export const fetchTableNames = async (): Promise<string[]> => {
   try {
     const result = await warehouseDb.execute(sql`

@@ -1,16 +1,18 @@
-import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import murmurhash from "murmurhash";
+
+import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import {
+  prepareAlertData,
   prepareAlertsStatistics,
-  prepareMinimalAlertEntries,
+  transformToGeojson,
+  prepareMapData,
+  transformSurveyData,
 } from "@/server/dataProcessing/transformData";
 import {
   filterUnwantedKeys,
   filterGeoData,
 } from "@/server/dataProcessing/filterData";
-import { buildMinimalFeatureCollection } from "~/server/utils/formatSpatialData";
 import { validatePermissions } from "@/utils/auth";
-import { parseBasemaps } from "@/server/utils/basemaps";
 
 import type { H3Event } from "h3";
 import type {
@@ -18,7 +20,37 @@ import type {
   DataEntry,
   AlertsMetadata,
 } from "@/types/types";
-import type { FeatureCollection } from "geojson";
+import { parseBasemaps } from "@/server/utils/basemaps";
+
+/**
+ * Converts a Mapeo document ID (64-bit hex string) to a 32-bit integer
+ * using MurmurHash for Mapbox feature state management. This is a lossy, non-reversible operation.
+ *
+ * Mapbox requires feature IDs to be either a Number or a string that can be safely
+ * cast to a Number, but Mapeo IDs are 64-bit hex strings that exceed JavaScript's
+ * safe integer range. This function uses MurmurHash to generate a 32-bit integer
+ * from the 64-bit hex string, ensuring compatibility with Mapbox.
+ *
+ * Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
+ *
+ * @param {string} mapeoId - The Mapeo document ID as a 16-character hex string (e.g., "0084cdc57c0b0280")
+ * @returns {number} - A 32-bit integer for use with Mapbox feature state management
+ * @throws {Error} - If the input is not a valid 16-character hex string
+ */
+const generateMapboxIdFromMapeoFeatureId = (mapeoId: string): number => {
+  // Validate that this is actually a Mapeo ID format
+  if (
+    !mapeoId ||
+    typeof mapeoId !== "string" ||
+    !mapeoId.match(/^[0-9a-fA-F]{16}$/)
+  ) {
+    throw new Error(
+      `Invalid Mapeo ID format: ${mapeoId}. Expected 16-character hex string.`,
+    );
+  }
+
+  return murmurhash.v3(mapeoId);
+};
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -43,29 +75,20 @@ export default defineEventHandler(async (event: H3Event) => {
       metadata: AlertsMetadata[];
     };
 
-    const { mostRecentAlerts, previousAlerts } =
-      prepareMinimalAlertEntries(mainData);
-
-    const minimalAlertOptions = {
-      includeProperties: ["alertID", "YYYYMM", "geographicCentroid"],
-      generateId: (entry: DataEntry) => murmurhash.v3(String(entry.alertID)),
-    };
-
+    // Prepare alerts data for the alerts view
+    const changeDetectionData = prepareAlertData(mainData, table as string);
     const alertsGeojsonData = {
-      mostRecentAlerts: buildMinimalFeatureCollection(
-        mostRecentAlerts,
-        minimalAlertOptions,
+      mostRecentAlerts: transformToGeojson(
+        changeDetectionData.mostRecentAlerts,
       ),
-      previousAlerts: buildMinimalFeatureCollection(
-        previousAlerts,
-        minimalAlertOptions,
-      ),
+      previousAlerts: transformToGeojson(changeDetectionData.previousAlerts),
     };
 
+    // Prepare Mapeo data for the alerts view
     const mapeoTable = viewsConfig[table].MAPEO_TABLE;
     const mapeoCategoryIds = viewsConfig[table].MAPEO_CATEGORY_IDS;
 
-    let mapeoData: FeatureCollection | null = null;
+    let mapeoData = null;
 
     if (mapeoTable && mapeoCategoryIds) {
       // Fetch Mapeo data
@@ -92,14 +115,28 @@ export default defineEventHandler(async (event: H3Event) => {
 
       // Filter only data with valid geofields
       const filteredMapeoGeoData = filterGeoData(filteredMapeoDataByCategory);
-
+      // Transform data that was collected using survey apps (e.g. KoBoToolbox, Mapeo)
+      const transformedMapeoData = transformSurveyData(filteredMapeoGeoData);
       // Process geodata
-      mapeoData = buildMinimalFeatureCollection(filteredMapeoGeoData, {
-        idField: "_id",
-        includeAllProperties: true,
-        filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
-        isMapeoData: true,
+      const processedMapeoData = prepareMapData(
+        transformedMapeoData,
+        viewsConfig[table].FRONT_END_FILTER_COLUMN,
+      );
+
+      // Add normalized IDs for Mapeo features to ensure Mapbox compatibility
+      // This is done here because we know we're dealing with Mapeo data specifically
+      const mapeoDataWithNormalizedIds = processedMapeoData.map((item) => {
+        if (
+          item.id &&
+          typeof item.id === "string" &&
+          item.id.match(/^[0-9a-fA-F]{16}$/)
+        ) {
+          item.normalizedId = generateMapboxIdFromMapeoFeatureId(item.id);
+        }
+        return item;
       });
+
+      mapeoData = mapeoDataWithNormalizedIds;
     }
 
     // Prepare statistics data for the alerts view
@@ -108,10 +145,10 @@ export default defineEventHandler(async (event: H3Event) => {
     // Parse basemaps configuration
     const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
 
-    return {
+    const response = {
       alertsData: alertsGeojsonData,
-      alertsStatistics,
-      allowedFileExtensions,
+      alertsStatistics: alertsStatistics,
+      allowedFileExtensions: allowedFileExtensions,
       logoUrl: viewsConfig[table].LOGO_URL,
       mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,
       mapbox3d: viewsConfig[table].MAPBOX_3D ?? false,
@@ -127,14 +164,15 @@ export default defineEventHandler(async (event: H3Event) => {
       mapboxStyle: defaultMapboxStyle,
       mapboxBasemaps: basemaps,
       mapboxZoom: Number(viewsConfig[table].MAPBOX_ZOOM),
-      mapeoTable,
-      mapeoData,
+      mapeoData: mapeoData,
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
       mediaBasePathAlerts: viewsConfig[table].MEDIA_BASE_PATH_ALERTS,
       planetApiKey: viewsConfig[table].PLANET_API_KEY,
-      table,
+      table: table,
       routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
     };
+
+    return response;
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error fetching data on API side:", error.message);

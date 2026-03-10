@@ -13,7 +13,7 @@ import type {
   MapStatistics,
 } from "@/types/types";
 
-import type { Feature, FeatureCollection } from "geojson";
+import type { Feature } from "geojson";
 
 const props = defineProps<{
   alertsStatistics?: AlertsStatistics;
@@ -22,7 +22,6 @@ const props = defineProps<{
   canToggleIcons?: boolean;
   dateOptions?: Array<string>;
   feature?: DataEntry;
-  featureLoading?: boolean;
   featureGeojson?: Feature | AlertsData;
   filePaths?: Array<string>;
   isAlert?: boolean;
@@ -31,7 +30,6 @@ const props = defineProps<{
   localAlertsData?: Feature | AlertsData;
   logoUrl?: string;
   mapData?: Dataset;
-  mapFeatureCollection?: FeatureCollection;
   mapStatistics?: MapStatistics;
   mediaBasePath?: string;
   mediaBasePathAlerts?: string;
@@ -135,31 +133,18 @@ onBeforeUnmount(() => {
         />
         <MapIntroPanel
           v-if="
-            showIntroPanel &&
-            mapStatistics &&
-            mapFeatureCollection &&
-            !isAlertsDashboard
+            showIntroPanel && mapStatistics && mapData && !isAlertsDashboard
           "
           :map-statistics="mapStatistics"
-          :map-feature-collection="mapFeatureCollection"
+          :map-data="mapData"
           :logo-url="logoUrl"
           :show-icons="showIcons"
           :can-toggle-icons="canToggleIcons"
           :loading-icons="loadingIcons"
           @toggle-icons="emit('toggle-icons')"
         />
-        <div
-          v-if="featureLoading && !feature"
-          class="p-6 space-y-4 animate-pulse"
-          data-testid="feature-loading"
-        >
-          <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div class="h-4 bg-gray-200 rounded w-1/2"></div>
-          <div class="h-4 bg-gray-200 rounded w-5/6"></div>
-          <div class="h-4 bg-gray-200 rounded w-2/3"></div>
-        </div>
         <DataFeature
-          v-if="feature && !featureLoading"
+          v-if="feature"
           :allowed-file-extensions="allowedFileExtensions"
           :feature="filteredFeature"
           :feature-geojson="featureGeojson"

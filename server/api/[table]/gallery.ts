@@ -1,4 +1,5 @@
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import { transformSurveyData } from "@/server/dataProcessing/transformData";
 import {
   filterDataByExtension,
   filterUnwantedKeys,
@@ -48,29 +49,15 @@ export default defineEventHandler(async (event: H3Event) => {
       allowedFileExtensions,
       viewsConfig[table].MEDIA_COLUMN,
     );
-
-    const filterColumn = viewsConfig[table].FRONT_END_FILTER_COLUMN;
-    const mediaColumn = viewsConfig[table].MEDIA_COLUMN;
-
-    // Return minimal records: ID + columns needed for filtering and media display
-    const minimalData = dataWithFilesOnly.map((entry) => {
-      const minimal: Record<string, unknown> = {};
-      if (entry._id != null) minimal._id = entry._id;
-      if (filterColumn && entry[filterColumn] != null) {
-        minimal[filterColumn] = entry[filterColumn];
-      }
-      if (mediaColumn && entry[mediaColumn] != null) {
-        minimal[mediaColumn] = entry[mediaColumn];
-      }
-      return minimal;
-    });
+    // Transform data that was collected using survey apps (e.g. KoBoToolbox, Mapeo)
+    const transformedData = transformSurveyData(dataWithFilesOnly);
 
     const response = {
       allowedFileExtensions: allowedFileExtensions,
-      data: minimalData,
-      filterColumn,
+      data: transformedData,
+      filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
-      mediaColumn,
+      mediaColumn: viewsConfig[table].MEDIA_COLUMN,
       table: table,
       routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
     };

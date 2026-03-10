@@ -20,18 +20,12 @@ const mockUseToast = () => ({
   error: vi.fn(),
 });
 
-const mockUseRuntimeConfig = () => ({
-  public: { appApiKey: "test-key" },
-});
-
 Object.assign(globalThis, {
   ref,
   computed,
   useRoute,
   useI18n: mockUseI18n,
   useToast: mockUseToast,
-  useRuntimeConfig: mockUseRuntimeConfig,
-  $fetch: vi.fn(),
 });
 
 // Mock i18n for template $t

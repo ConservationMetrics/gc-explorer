@@ -8,6 +8,14 @@ export const getRandomColor = () => {
   return color;
 };
 
+/** Capitalizes the first letter of each word in a string. */
+export const capitalizeFirstLetter = (string: string): string => {
+  return string
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
 /** Checks if a number is a valid geographic coordinate. */
 export const isValidCoordinate = (coord: number): boolean => {
   return coord != null && !isNaN(coord) && coord >= -180 && coord <= 180;
@@ -55,16 +63,11 @@ export const hasValidCoordinates = (
         parsedCoordinates = rawCoordinates.flat().map(Number);
       }
 
-      // Flatten nested coordinate arrays (Polygon, LineString, MultiPolygon)
-      // before validating individual numbers.
+      // If we have a valid array, check if all elements are valid coordinates
       if (Array.isArray(parsedCoordinates) && parsedCoordinates.length > 0) {
-        const flatCoords = (parsedCoordinates as unknown[]).flat(
-          Infinity,
-        ) as number[];
         return (
-          flatCoords.length > 0 &&
-          flatCoords.length % 2 === 0 &&
-          flatCoords.every(isValidCoordinate)
+          parsedCoordinates.length % 2 === 0 &&
+          parsedCoordinates.every(isValidCoordinate)
         );
       }
 

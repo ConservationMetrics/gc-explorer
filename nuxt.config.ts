@@ -23,7 +23,6 @@ export default defineNuxtConfig({
 
   nitro: {
     plugins: ["@/server/index.ts"],
-    compressPublicAssets: { gzip: true, brotli: true },
     routeRules: {
       "/api/**": {
         cors: true,

@@ -65,7 +65,6 @@ useHead({
         :filter-column="filterColumn"
         :media-base-path="mediaBasePath"
         :media-column="mediaColumn"
-        :table="table"
       />
       <h3
         v-if="!mediaBasePath && dataFetched"

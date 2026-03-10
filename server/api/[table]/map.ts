@@ -1,15 +1,19 @@
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import {
+  prepareMapData,
+  prepareMapStatistics,
+  transformSurveyData,
+} from "@/server/dataProcessing/transformData";
+import {
+  filterUnwantedKeys,
   filterOutUnwantedValues,
   filterGeoData,
 } from "@/server/dataProcessing/filterData";
-import { prepareMapStatistics } from "@/server/dataProcessing/transformData";
-import { buildMinimalFeatureCollection } from "~/server/utils/formatSpatialData";
 import { validatePermissions } from "@/utils/auth";
-import { parseBasemaps } from "@/server/utils/basemaps";
 
 import type { H3Event } from "h3";
-import type { AllowedFileExtensions } from "@/types/types";
+import type { AllowedFileExtensions, ColumnEntry } from "@/types/types";
+import { parseBasemaps } from "@/server/utils/basemaps";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -29,45 +33,48 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData } = await fetchData(table);
+    const { mainData, columnsData } = await fetchData(table);
 
+    // Filter data to remove unwanted columns and substrings
+    const filteredData = filterUnwantedKeys(
+      mainData,
+      columnsData as ColumnEntry[],
+      viewsConfig[table].UNWANTED_COLUMNS,
+      viewsConfig[table].UNWANTED_SUBSTRINGS,
+    );
     // Filter data to remove unwanted values per chosen column
     const dataFilteredByValues = filterOutUnwantedValues(
-      mainData,
+      filteredData,
       viewsConfig[table].FILTER_BY_COLUMN,
       viewsConfig[table].FILTER_OUT_VALUES_FROM_COLUMN,
     );
-
     // Filter only data with valid geofields
     const filteredGeoData = filterGeoData(dataFilteredByValues);
-
-    const colorColumn = viewsConfig[table].COLOR_COLUMN;
-    const iconColumn = viewsConfig[table].ICON_COLUMN;
-    const filterColumn = viewsConfig[table].FRONT_END_FILTER_COLUMN;
-
-    // Process geodata
-    const includeProperties = [colorColumn, iconColumn].filter(
-      (column): column is string => !!column,
+    // Transform data that was collected using survey apps (e.g. KoBoToolbox, Mapeo)
+    const transformedData = transformSurveyData(
+      filteredGeoData,
+      viewsConfig[table].ICON_COLUMN,
     );
-    const featureCollection = buildMinimalFeatureCollection(filteredGeoData, {
-      includeProperties,
-      filterColumn,
-    });
+    // Process geodata
+    const processedGeoData = prepareMapData(
+      transformedData,
+      viewsConfig[table].FRONT_END_FILTER_COLUMN,
+    );
 
     // Prepare statistics data for the map view
-    const mapStatistics = prepareMapStatistics(filteredGeoData);
+    const mapStatistics = prepareMapStatistics(processedGeoData);
 
     // Parse basemaps configuration
     const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
 
-    return {
-      allowedFileExtensions,
-      colorColumn,
-      data: featureCollection,
-      filterColumn,
-      iconColumn,
+    const response = {
+      allowedFileExtensions: allowedFileExtensions,
+      colorColumn: viewsConfig[table].COLOR_COLUMN,
+      data: processedGeoData,
+      filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
+      iconColumn: viewsConfig[table].ICON_COLUMN,
       mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,
-      mapStatistics,
+      mapStatistics: mapStatistics,
       mapbox3d: viewsConfig[table].MAPBOX_3D ?? false,
       mapbox3dTerrainExaggeration: Number(
         viewsConfig[table].MAPBOX_3D_TERRAIN_EXAGGERATION,
@@ -85,9 +92,11 @@ export default defineEventHandler(async (event: H3Event) => {
       mediaBasePathIcons: viewsConfig[table].MEDIA_BASE_PATH_ICONS,
       mediaColumn: viewsConfig[table].MEDIA_COLUMN,
       planetApiKey: viewsConfig[table].PLANET_API_KEY,
-      table,
+      table: table,
       routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
     };
+
+    return response;
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error fetching data on API side:", error.message);
