@@ -7,8 +7,8 @@ import {
   transformSurveyDataValue,
   transformSurveyEntry,
 } from "@/utils/dataTransformers";
-import { alertsData } from "../fixtures/alertsData";
-import { mapeoData } from "../fixtures/mapeoData";
+import { alertsData } from "@/tests/unit/fixtures/alertsData";
+import { mapeoData } from "@/tests/unit/fixtures/mapeoData";
 
 describe("transformSurveyDataKey", () => {
   it("should remove g__ prefix and replace with geo", () => {

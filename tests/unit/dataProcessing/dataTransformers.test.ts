@@ -5,8 +5,8 @@ import {
   prepareMapStatistics,
   prepareMinimalAlertEntries,
 } from "@/server/dataProcessing/dataTransformers";
-import { transformedMapeoData } from "../fixtures/mapeoData";
-import { alertsData, alertsMetadata } from "../fixtures/alertsData";
+import { transformedMapeoData } from "@/tests/unit/fixtures/mapeoData";
+import { alertsData, alertsMetadata } from "@/tests/unit/fixtures/alertsData";
 
 describe("prepareMapStatistics", () => {
   it("should calculate map statistics from transformed mapeo data", () => {

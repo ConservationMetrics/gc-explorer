@@ -11,7 +11,7 @@ import {
 } from "vue";
 import { createI18n } from "vue-i18n";
 
-import * as mapboxMock from "@/test/helpers/mapboxMock";
+import * as mapboxMock from "@/tests/unit/helpers/mapboxMock";
 
 import AlertsDashboard from "@/components/AlertsDashboard.vue";
 
