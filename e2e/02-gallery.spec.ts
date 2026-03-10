@@ -133,6 +133,8 @@ test("gallery page - displays images with lightbox functionality", async ({
   const expectedBaseName = decodeURIComponent(
     firstImageHref.split("/").pop() || "",
   );
+  // Test-only tweak: remove target=_blank so click stays in-page and lightbox can intercept.
+  await firstImage.evaluate((el) => el.removeAttribute("target"));
   await firstImage.click();
 
   // Lightbox plugin injects #lightboxOverlay + .lightboxOverlay into body

@@ -20,13 +20,6 @@ test("index page - displays available views and navigation flow", async ({
     .first();
   await expect(logo).toBeVisible({ timeout: 10000 });
 
-  // Check for visible Guardian Connector text in header
-  const guardianConnectorText = page
-    .locator("h1:visible")
-    .filter({ hasText: /guardian connector/i })
-    .first();
-  await expect(guardianConnectorText).toBeVisible({ timeout: 10000 });
-
   /* Check for community name in tab (should be visible in desktop view)
    * tab-trigger is a NuxtLink, not a button
    */

@@ -19,7 +19,7 @@ test("visibility system - public dataset accessible without authentication", asy
 
   // 3. Wait for either gallery content or gallery unavailability message.
   // Public accessibility should still be valid in either configured state.
-  await Promise.race([
+  await Promise.any([
     page.getByTestId("gallery-container").waitFor({
       state: "attached",
       timeout: 15000,
