@@ -2,7 +2,7 @@ import { test as baseTest, expect } from "@playwright/test";
 import {
   test as authTest,
   expect as authExpect,
-} from "../e2e/fixtures/auth-storage";
+} from "@/tests/e2e/fixtures/auth-storage";
 
 // Use regular test for tests that don't need authentication
 const test = baseTest;

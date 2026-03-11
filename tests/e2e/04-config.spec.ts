@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures/auth-storage";
+import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 
 test("config page - displays configuration dashboard with table cards", async ({
   authenticatedPageAsAdmin: page,

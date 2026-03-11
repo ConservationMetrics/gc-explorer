@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures/auth-storage";
+import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 
 test("API responses include Content-Encoding header", async ({
   authenticatedPageAsAdmin: page,

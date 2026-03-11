@@ -12,7 +12,7 @@ import {
 // Note: vue-i18n is mocked via module alias in vitest.config.ts
 // pointing to /test/helpers/vueI18nMock.ts
 
-import * as mapboxMock from "@/test/helpers/mapboxMock";
+import * as mapboxMock from "@/tests/unit/helpers/mapboxMock";
 
 import MapView from "@/components/MapView.vue";
 
