@@ -52,7 +52,7 @@ import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const authDir = path.join(__dirname, "@/playwright/.auth");
+const authDir = path.join(__dirname, "../playwright/.auth");
 
 // Ensure auth directory exists (important in Docker/GitHub Actions)
 if (!fs.existsSync(authDir)) {
