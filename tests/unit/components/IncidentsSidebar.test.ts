@@ -3,7 +3,7 @@ import { mount, flushPromises } from "@vue/test-utils";
 import { ref, nextTick } from "vue";
 import IncidentsSidebar from "@/components/alerts/IncidentsSidebar.vue";
 import type { AnnotatedCollection } from "@/types";
-import { createI18n } from "@/test/helpers/vueI18nMock";
+import { createI18n } from "@/tests/unit/helpers/vueI18nMock";
 
 // Make Vue reactivity functions available globally (for auto-imports in components)
 Object.assign(globalThis, {
@@ -12,7 +12,7 @@ Object.assign(globalThis, {
 });
 
 // Mock vue-i18n to use our test helper
-vi.mock("vue-i18n", () => import("@/test/helpers/vueI18nMock"));
+vi.mock("vue-i18n", () => import("@/tests/unit/helpers/vueI18nMock"));
 
 // Create i18n instance for template $t support
 const i18n = createI18n();

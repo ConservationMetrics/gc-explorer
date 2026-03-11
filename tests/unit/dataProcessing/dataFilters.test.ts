@@ -6,7 +6,7 @@ import {
   filterGeoData,
   filterDataByExtension,
 } from "@/server/dataProcessing/dataFilters";
-import { mapeoData } from "../fixtures/mapeoData";
+import { mapeoData } from "@/tests/unit/fixtures/mapeoData";
 
 describe("filterUnwantedKeys", () => {
   it("should filter out unwanted columns and substrings", () => {
