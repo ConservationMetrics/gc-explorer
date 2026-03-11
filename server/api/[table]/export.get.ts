@@ -1,4 +1,9 @@
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import {
+  filterOutUnwantedValues,
+  filterGeoData,
+  filterToSelectedValues,
+} from "@/server/dataProcessing/dataFilters";
 import { hasValidCoordinates } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { escapeCSVValue } from "@/utils/csvUtils";
@@ -115,8 +120,26 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const { mainData, columnsData } = await fetchData(table);
 
+    // Use the same pipeline as the map API (config exclusions, valid geo), then optionally restrict to the user’s current map filter when filterColumn/filterValues are provided.
+    let dataToExport = filterOutUnwantedValues(
+      mainData,
+      viewsConfig[table]?.FILTER_BY_COLUMN,
+      viewsConfig[table]?.FILTER_OUT_VALUES_FROM_COLUMN,
+    );
+    dataToExport = filterGeoData(dataToExport);
+
+    const filterColumn = (query.filterColumn as string)?.trim();
+    const filterValues = (query.filterValues as string)?.trim();
+    if (filterColumn && filterValues) {
+      dataToExport = filterToSelectedValues(
+        dataToExport,
+        filterColumn,
+        filterValues,
+      );
+    }
+
     if (format === "csv") {
-      const csv = buildCsv(mainData, columnsData);
+      const csv = buildCsv(dataToExport, columnsData);
       setResponseHeader(event, "Content-Type", "text/csv; charset=utf-8");
       setResponseHeader(
         event,
@@ -127,7 +150,7 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     if (format === "geojson") {
-      const geojson = buildGeoJson(mainData);
+      const geojson = buildGeoJson(dataToExport);
       setResponseHeader(
         event,
         "Content-Type",
@@ -142,7 +165,7 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     if (format === "kml") {
-      const geojson = buildGeoJson(mainData);
+      const geojson = buildGeoJson(dataToExport);
       const kml = tokml(geojson);
       setResponseHeader(
         event,

@@ -20,6 +20,7 @@ import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type { FeatureCollection, Feature } from "geojson";
 import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
+import { mapStatisticsFromFeatureCollection } from "@/utils/mapStatistics";
 
 import type {
   AllowedFileExtensions,
@@ -88,6 +89,10 @@ const flatDataForFilter = computed<Dataset>(() => {
   return props.mapData.features.map((feature) => ({
     ...feature.properties,
   })) as Dataset;
+});
+
+const filteredMapStatistics = computed<MapStatistics>(() => {
+  return mapStatisticsFromFeatureCollection(filteredFeatureCollection.value);
 });
 
 onMounted(() => {
@@ -412,8 +417,11 @@ const prepareMapCanvasContent = async () => {
   prepareMapLegendContent();
 };
 
+const selectedFilterValues = ref<FilterValues>([]);
+
 /** Filter data based on selected values from DataFilter component */
 const filterValues = (values: FilterValues) => {
+  selectedFilterValues.value = values;
   if (values.includes("null")) {
     filteredFeatureCollection.value = { ...props.mapData };
   } else {
@@ -558,8 +566,10 @@ onBeforeUnmount(() => {
       "
       :is-alerts-dashboard="false"
       :map-data="flatDataForFilter"
-      :map-feature-collection="mapData"
-      :map-statistics="mapStatistics"
+      :map-feature-collection="filteredFeatureCollection"
+      :map-filter-column="filterColumn"
+      :map-filter-values="selectedFilterValues"
+      :map-statistics="filteredMapStatistics"
       :media-base-path="mediaBasePath"
       :show-intro-panel="showIntroPanel"
       :show-sidebar="showSidebar"

@@ -14,6 +14,8 @@ const apiKey = config.public.appApiKey as string;
 
 const props = defineProps<{
   dataForDownload?: Feature | FeatureCollection | AlertsData;
+  exportFilterColumn?: string;
+  exportFilterValues?: string[];
 }>();
 
 const exportingFormat = ref<string | null>(null);
@@ -72,8 +74,13 @@ const downloadFromExportEndpoint = async (
 
   exportingFormat.value = format;
   try {
+    const params: Record<string, string> = { format };
+    if (props.exportFilterColumn && props.exportFilterValues?.length) {
+      params.filterColumn = props.exportFilterColumn;
+      params.filterValues = props.exportFilterValues.join(",");
+    }
     const blob = await $fetch<Blob>(`/api/${tablename}/export`, {
-      params: { format },
+      params,
       responseType: "blob",
       headers: { "x-api-key": apiKey },
     });

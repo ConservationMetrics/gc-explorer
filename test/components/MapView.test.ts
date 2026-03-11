@@ -321,6 +321,39 @@ describe("MapView component", () => {
     expect(vm.filteredFeatureCollection.features).toHaveLength(2);
   });
 
+  it("passes filtered feature collection and stats to ViewSidebar when filter is applied", async () => {
+    const wrapper = mount(MapView, {
+      props: baseProps,
+      global: {
+        ...globalConfig,
+        stubs: {
+          ...globalConfig.stubs,
+          ViewSidebar: {
+            name: "ViewSidebar",
+            props: ["mapFeatureCollection", "mapStatistics"],
+            template: "<div></div>",
+          },
+        },
+      },
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      filterValues: (values: string[]) => void;
+    };
+    vm.filterValues(["active"]);
+    await flushPromises();
+
+    const sidebar = wrapper.findComponent({ name: "ViewSidebar" });
+    expect(sidebar.props("mapFeatureCollection").features).toHaveLength(1);
+    expect(
+      sidebar.props("mapFeatureCollection").features[0].properties?.status,
+    ).toBe("active");
+    expect(sidebar.props("mapStatistics").totalFeatures).toBe(1);
+  });
+
   it("selects a feature and fetches full record on click", async () => {
     const wrapper = mount(MapView, {
       props: baseProps,

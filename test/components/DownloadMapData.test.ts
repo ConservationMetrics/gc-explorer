@@ -166,4 +166,40 @@ describe("DownloadMapData component", () => {
       });
     });
   });
+
+  describe("Bulk export with filter params", () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Blob());
+    beforeEach(() => {
+      (globalThis as unknown as { $fetch: ReturnType<typeof vi.fn> }).$fetch =
+        fetchMock;
+      global.URL.createObjectURL = vi.fn(() => "blob:mock-url");
+      global.URL.revokeObjectURL = vi.fn();
+    });
+
+    it("calls export endpoint with filterColumn and filterValues when provided", async () => {
+      const wrapper = mount(DownloadMapData, {
+        props: {
+          dataForDownload: simpleFeatureCollection,
+          exportFilterColumn: "category",
+          exportFilterValues: ["active", "inactive"],
+        },
+        global: globalConfig,
+      });
+
+      const csvButton = wrapper.findAll("button")[0];
+      await csvButton.trigger("click");
+      await wrapper.vm.$nextTick();
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/test_data/export",
+        expect.objectContaining({
+          params: {
+            format: "csv",
+            filterColumn: "category",
+            filterValues: "active,inactive",
+          },
+        }),
+      );
+    });
+  });
 });

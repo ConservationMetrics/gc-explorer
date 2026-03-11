@@ -7,6 +7,8 @@ import type { FeatureCollection } from "geojson";
 const props = defineProps<{
   mapStatistics: MapStatistics;
   mapFeatureCollection: FeatureCollection;
+  exportFilterColumn?: string;
+  exportFilterValues?: string[];
   logoUrl?: string;
   showIcons?: boolean;
   canToggleIcons?: boolean;
@@ -73,7 +75,11 @@ const dataSource = computed(() => {
 
     <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
       <div class="p-6">
-        <DownloadMapData :data-for-download="mapFeatureCollection" />
+        <DownloadMapData
+          :data-for-download="mapFeatureCollection"
+          :export-filter-column="exportFilterColumn"
+          :export-filter-values="exportFilterValues"
+        />
       </div>
     </div>
 
