@@ -1,4 +1,8 @@
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import {
+  filterGeoData,
+  filterToSelectedValues,
+} from "@/server/dataProcessing/dataFilters";
 import { hasValidCoordinates } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { escapeCSVValue } from "@/utils/csvUtils";
@@ -115,8 +119,21 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const { mainData, columnsData } = await fetchData(table);
 
+    // Users expect all of their data when they download; therefore, we do not apply config-based filter-out (FILTER_BY_COLUMN / FILTER_OUT_VALUES). We only keep valid geo and, when provided, the user’s current map filter (filterColumn/filterValues) and date range (minDate/maxDate).
+    let dataToExport = filterGeoData(mainData);
+
+    const filterColumn = (query.filterColumn as string)?.trim();
+    const filterValues = (query.filterValues as string)?.trim();
+    if (filterColumn && filterValues) {
+      dataToExport = filterToSelectedValues(
+        dataToExport,
+        filterColumn,
+        filterValues,
+      );
+    }
+
     if (format === "csv") {
-      const csv = buildCsv(mainData, columnsData);
+      const csv = buildCsv(dataToExport, columnsData);
       setResponseHeader(event, "Content-Type", "text/csv; charset=utf-8");
       setResponseHeader(
         event,
@@ -127,7 +144,7 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     if (format === "geojson") {
-      const geojson = buildGeoJson(mainData);
+      const geojson = buildGeoJson(dataToExport);
       setResponseHeader(
         event,
         "Content-Type",
@@ -142,7 +159,7 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     if (format === "kml") {
-      const geojson = buildGeoJson(mainData);
+      const geojson = buildGeoJson(dataToExport);
       const kml = tokml(geojson);
       setResponseHeader(
         event,

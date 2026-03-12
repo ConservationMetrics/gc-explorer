@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   filterUnwantedKeys,
   filterOutUnwantedValues,
+  filterToSelectedValues,
   filterGeoData,
   filterDataByExtension,
 } from "@/server/dataProcessing/dataFilters";
@@ -49,6 +50,38 @@ describe("filterUnwantedValues", () => {
       ),
     );
     expect(containsUnwantedValues).toBe(false);
+  });
+});
+
+describe("filterToSelectedValues", () => {
+  it("returns all data when column or values not provided", () => {
+    const data = [
+      { id: "1", status: "active" },
+      { id: "2", status: "inactive" },
+    ];
+    expect(filterToSelectedValues(data, undefined, "active")).toEqual(data);
+    expect(filterToSelectedValues(data, "status", undefined)).toEqual(data);
+  });
+
+  it("keeps only rows where column value is in the allowed set", () => {
+    const data = [
+      { id: "1", status: "active" },
+      { id: "2", status: "inactive" },
+      { id: "3", status: "pending" },
+    ];
+    const result = filterToSelectedValues(data, "status", "active,inactive");
+    expect(result).toHaveLength(2);
+    expect(result.map((r) => r.id)).toEqual(["1", "2"]);
+  });
+
+  it("treats null in values as matching null/undefined/empty", () => {
+    const data = [
+      { id: "1", status: "active" },
+      { id: "2", status: "" },
+      { id: "3" },
+    ];
+    const result = filterToSelectedValues(data, "status", "active,null");
+    expect(result).toHaveLength(3);
   });
 });
 

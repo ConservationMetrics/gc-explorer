@@ -117,6 +117,37 @@ export const filterOutUnwantedValues = (
   return filteredData;
 };
 
+/**
+ * Keeps only rows where the given column value is in the allowed set.
+ * The string "null" in allowedValues is treated as matching null/undefined/empty.
+ *
+ * @param {DataEntry[]} data - Rows to filter.
+ * @param {string | undefined} filterByColumn - Column name to filter on.
+ * @param {string | undefined} filterValuesList - Comma-separated allowed values; "null" matches missing/empty.
+ * @returns {DataEntry[]} Filtered rows.
+ */
+export const filterToSelectedValues = (
+  data: DataEntry[],
+  filterByColumn: string | undefined,
+  filterValuesList: string | undefined,
+): DataEntry[] => {
+  if (!filterByColumn || !filterValuesList) {
+    return data;
+  }
+  const parts = filterValuesList.split(",").map((p) => p.trim());
+  const allowNull = parts.includes("null");
+  const valueSet = new Set(parts.filter((p) => p !== "null"));
+
+  return data.filter((item) => {
+    const raw = item[filterByColumn];
+    const value = raw == null || raw === "" ? null : String(raw);
+    if (value === null) {
+      return allowNull;
+    }
+    return valueSet.has(value);
+  });
+};
+
 /** Filters out data without columns storing valid coordinates. */
 export const filterGeoData = (
   data: DataEntry[] | null | undefined,
