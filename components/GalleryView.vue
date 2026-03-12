@@ -21,10 +21,56 @@ const props = defineProps<{
   mediaBasePath: string;
   mediaColumn?: string;
   table: string;
+  timestampColumn?: string;
 }>();
 
 const { fetchRecords, getCachedRecord, cacheSize } = useRecordCache();
 
+const parseDateMs = (value: unknown): number | null => {
+  if (value == null || value === "") return null;
+  const str = String(value).trim();
+  if (!str) return null;
+  const num = Number(str);
+  if (!Number.isNaN(num) && num > 0) return num;
+  const date = new Date(str);
+  return Number.isNaN(date.getTime()) ? null : date.getTime();
+};
+
+const dateMin = ref<string>("");
+const dateMax = ref<string>("");
+
+/** Normalize filter payload: "null" string or array of { value } to string[] */
+const normalizedFilterValues = (values: FilterValues): string[] => {
+  return values.map((v: string | { value?: unknown }) =>
+    typeof v === "object" && v != null && v.value != null ? String(v.value) : String(v),
+  );
+};
+
+/** Apply date range then category filter (AND). */
+const applyAllFilters = () => {
+  let items = props.galleryData;
+  const col = props.timestampColumn;
+  if (col && (dateMin.value || dateMax.value)) {
+    const minMs = dateMin.value ? parseDateMs(dateMin.value) : null;
+    const maxMs = dateMax.value ? parseDateMs(dateMax.value) : null;
+    items = items.filter((item) => {
+      const ms = parseDateMs(item[col]);
+      if (ms == null) return false;
+      if (minMs != null && ms < minMs) return false;
+      if (maxMs != null && ms > maxMs) return false;
+      return true;
+    });
+  }
+  const values = normalizedFilterValues(selectedFilterValues.value);
+  if (values.length && !values.includes("null")) {
+    items = items.filter((item) =>
+      values.includes(String(item[props.filterColumn] ?? "")),
+    );
+  }
+  filteredData.value = items;
+};
+
+const selectedFilterValues = ref<FilterValues>([]);
 const filteredData = ref(props.galleryData);
 const loading = ref(false);
 
@@ -75,16 +121,17 @@ onBeforeUnmount(() => {
   window.removeEventListener("scroll", handleScroll);
 });
 
-/** Filter data based on selected values from DataFilter component  */
+/** Filter data based on selected values from DataFilter component */
 const filterValues = (values: FilterValues) => {
-  if (values.includes("null")) {
-    filteredData.value = props.galleryData;
-  } else {
-    filteredData.value = props.galleryData.filter((item) =>
-      values.includes(item[props.filterColumn].toString()),
-    );
-  }
+  selectedFilterValues.value = values;
+  applyAllFilters();
 };
+
+watch([dateMin, dateMax], () => applyAllFilters());
+watch(
+  () => props.galleryData.length,
+  () => applyAllFilters(),
+);
 
 /**
  * Returns the full cached record for a gallery item, falling back to the
@@ -116,15 +163,25 @@ const prepareForDisplay = (feature: DataEntry): DataEntry => {
     class="gallery p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
   >
     <div
-      v-if="filterColumn"
-      class="sticky top-10 right-10 z-10"
+      v-if="filterColumn || timestampColumn"
+      class="sticky top-10 right-10 z-10 flex flex-col gap-3"
       data-testid="filter-container"
     >
       <DataFilter
+        v-if="filterColumn"
         :data="galleryData"
         :filter-column="filterColumn"
         @filter="filterValues"
       />
+      <div
+        v-if="timestampColumn"
+        class="rounded-lg border bg-white/95 p-3 shadow flex flex-col gap-2"
+      >
+        <label class="text-xs font-medium text-gray-600">{{ $t("dateFilterFrom") }}</label>
+        <input v-model="dateMin" type="date" class="rounded border px-2 py-1 text-sm" />
+        <label class="text-xs font-medium text-gray-600">{{ $t("dateFilterTo") }}</label>
+        <input v-model="dateMax" type="date" class="rounded border px-2 py-1 text-sm" />
+      </div>
     </div>
     <DataFeature
       v-for="(feature, index) in paginatedData"

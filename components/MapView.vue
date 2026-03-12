@@ -57,9 +57,20 @@ const props = defineProps<{
   mediaColumn?: string;
   planetApiKey?: string;
   table: string;
+  timestampColumn?: string;
 }>();
 
 const { fetchRecord } = useRecordCache();
+
+const parseDateMs = (value: unknown): number | null => {
+  if (value == null || value === "") return null;
+  const str = String(value).trim();
+  if (!str) return null;
+  const num = Number(str);
+  if (!Number.isNaN(num) && num > 0) return num;
+  const date = new Date(str);
+  return Number.isNaN(date.getTime()) ? null : date.getTime();
+};
 
 const map = ref();
 const selectedFeature = ref<DataEntry>();
@@ -418,23 +429,52 @@ const prepareMapCanvasContent = async () => {
 };
 
 const selectedFilterValues = ref<FilterValues>([]);
+const dateMin = ref<string>("");
+const dateMax = ref<string>("");
+
+/** Normalize filter payload: "null" string or array of { value } to string[] */
+const normalizedFilterValues = (values: FilterValues): string[] => {
+  return values.map((v: string | { value?: unknown }) =>
+    typeof v === "object" && v != null && v.value != null ? String(v.value) : String(v),
+  );
+};
+
+/** Apply date range then category filter (AND). */
+const applyAllFilters = () => {
+  let features = props.mapData.features;
+  const col = props.timestampColumn;
+  if (col && (dateMin.value || dateMax.value)) {
+    const minMs = dateMin.value ? parseDateMs(dateMin.value) : null;
+    const maxMs = dateMax.value ? parseDateMs(dateMax.value) : null;
+    features = features.filter((f) => {
+      const ms = parseDateMs(f.properties?.[col]);
+      if (ms == null) return false;
+      if (minMs != null && ms < minMs) return false;
+      if (maxMs != null && ms > maxMs) return false;
+      return true;
+    });
+  }
+  const values = normalizedFilterValues(selectedFilterValues.value);
+  if (values.length && !values.includes("null")) {
+    features = features.filter((f) =>
+      values.includes(String(f.properties?.[props.filterColumn] ?? "")),
+    );
+  }
+  filteredFeatureCollection.value = { type: "FeatureCollection", features };
+  addDataToMap();
+};
 
 /** Filter data based on selected values from DataFilter component */
 const filterValues = (values: FilterValues) => {
   selectedFilterValues.value = values;
-  if (values.includes("null")) {
-    filteredFeatureCollection.value = { ...props.mapData };
-  } else {
-    filteredFeatureCollection.value = {
-      type: "FeatureCollection",
-      features: props.mapData.features.filter((feature) =>
-        values.includes(feature.properties?.[props.filterColumn]),
-      ),
-    };
-  }
-  // Update the map data
-  addDataToMap();
+  applyAllFilters();
 };
+
+watch([dateMin, dateMax], () => applyAllFilters());
+watch(
+  () => props.mapData.features.length,
+  () => applyAllFilters(),
+);
 
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
 
@@ -550,6 +590,23 @@ onBeforeUnmount(() => {
       :show-colored-dot="true"
       @filter="filterValues"
     />
+    <div
+      v-if="timestampColumn"
+      class="absolute top-4 right-4 z-10 flex flex-col gap-2 rounded-lg border bg-white/95 p-3 shadow"
+    >
+      <label class="text-xs font-medium text-gray-600">{{ $t("dateFilterFrom") }}</label>
+      <input
+        v-model="dateMin"
+        type="date"
+        class="rounded border px-2 py-1 text-sm"
+      />
+      <label class="text-xs font-medium text-gray-600">{{ $t("dateFilterTo") }}</label>
+      <input
+        v-model="dateMax"
+        type="date"
+        class="rounded border px-2 py-1 text-sm"
+      />
+    </div>
     <ViewSidebar
       :allowed-file-extensions="allowedFileExtensions"
       :feature="selectedFeature"
@@ -567,9 +624,12 @@ onBeforeUnmount(() => {
       :is-alerts-dashboard="false"
       :map-data="flatDataForFilter"
       :map-feature-collection="filteredFeatureCollection"
+      :map-date-min="dateMin"
+      :map-date-max="dateMax"
       :map-filter-column="filterColumn"
       :map-filter-values="selectedFilterValues"
       :map-statistics="filteredMapStatistics"
+      :timestamp-column="timestampColumn"
       :media-base-path="mediaBasePath"
       :show-intro-panel="showIntroPanel"
       :show-sidebar="showSidebar"

@@ -3,6 +3,7 @@ import {
   filterOutUnwantedValues,
   filterGeoData,
   filterToSelectedValues,
+  filterByDateRange,
 } from "@/server/dataProcessing/dataFilters";
 import { hasValidCoordinates } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
@@ -135,6 +136,18 @@ export default defineEventHandler(async (event: H3Event) => {
         dataToExport,
         filterColumn,
         filterValues,
+      );
+    }
+
+    const timestampColumn = viewsConfig[table]?.TIMESTAMP_COLUMN;
+    const minDate = (query.minDate as string)?.trim();
+    const maxDate = (query.maxDate as string)?.trim();
+    if (timestampColumn && (minDate || maxDate)) {
+      dataToExport = filterByDateRange(
+        dataToExport,
+        timestampColumn,
+        minDate || undefined,
+        maxDate || undefined,
       );
     }
 

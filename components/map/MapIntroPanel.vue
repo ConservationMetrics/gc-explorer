@@ -9,6 +9,9 @@ const props = defineProps<{
   mapFeatureCollection: FeatureCollection;
   exportFilterColumn?: string;
   exportFilterValues?: string[];
+  exportMinDate?: string;
+  exportMaxDate?: string;
+  exportTimestampColumn?: string;
   logoUrl?: string;
   showIcons?: boolean;
   canToggleIcons?: boolean;
@@ -79,6 +82,9 @@ const dataSource = computed(() => {
           :data-for-download="mapFeatureCollection"
           :export-filter-column="exportFilterColumn"
           :export-filter-values="exportFilterValues"
+          :export-min-date="exportMinDate"
+          :export-max-date="exportMaxDate"
+          :export-timestamp-column="exportTimestampColumn"
         />
       </div>
     </div>

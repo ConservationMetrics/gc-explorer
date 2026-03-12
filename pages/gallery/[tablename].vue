@@ -16,6 +16,7 @@ const filterColumn = ref();
 const galleryData = ref();
 const mediaBasePath = ref();
 const mediaColumn = ref();
+const timestampColumn = ref<string | undefined>();
 
 const { data, error, refresh } = await useFetch(`/api/${table}/gallery`);
 
@@ -26,6 +27,7 @@ if (data.value && !error.value) {
   galleryData.value = data.value.data;
   mediaBasePath.value = data.value.mediaBasePath;
   mediaColumn.value = data.value.mediaColumn;
+  timestampColumn.value = data.value.timestampColumn;
 } else {
   console.error("Error fetching data:", error.value);
 }
@@ -66,6 +68,7 @@ useHead({
         :media-base-path="mediaBasePath"
         :media-column="mediaColumn"
         :table="table"
+        :timestamp-column="timestampColumn"
       />
       <h3
         v-if="!mediaBasePath && dataFetched"
