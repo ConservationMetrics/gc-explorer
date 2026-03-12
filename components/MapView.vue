@@ -158,6 +158,7 @@ onMounted(() => {
  * creates layers for each geometry type.
  */
 const addDataToMap = () => {
+  if (!map.value?.isStyleLoaded()) return;
   if (map.value) {
     // Remove existing data layers and sources from the map
     map.value.getStyle().layers.forEach((layer: Layer) => {

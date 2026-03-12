@@ -165,12 +165,14 @@ const resetDateRange = () => {
     <div v-if="dateInfo.options.length > 0" class="px-2.5 py-2.5 pb-8">
       <VueSlider
         v-model="selectedRange"
-        class="mt-2.5"
+        class="mt-2.5 date-slider"
         :contained="true"
         :data="dateInfo.options"
         :height="8"
         :hide-label="true"
         :marks="true"
+        :process-style="{ backgroundColor: '#3b82f6' }"
+        :rail-style="{ backgroundColor: '#e5e7eb' }"
         :tooltip="'always'"
         :tooltip-placement="'bottom'"
         data-testid="date-slider"

@@ -54,9 +54,7 @@ const handleInput = (key: string, value: string): void => {
 <template>
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <div v-for="key in keys" :key="key" class="space-y-2">
-      <template
-        v-if="key === 'FRONT_END_FILTER_COLUMN' || key === 'TIMESTAMP_COLUMN'"
-      >
+      <template v-if="key === 'FRONT_END_FILTER_COLUMN'">
         <label
           :for="`${tableName}-${key}`"
           class="block text-sm font-medium text-gray-700"
@@ -68,6 +66,22 @@ const handleInput = (key: string, value: string): void => {
           :value="config[key]"
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
           type="text"
+          @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
+        />
+      </template>
+      <template v-else-if="key === 'TIMESTAMP_COLUMN'">
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t(toCamelCase(key)) }}
+        </label>
+        <input
+          :id="`${tableName}-${key}`"
+          :value="config[key]"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+          type="text"
+          placeholder="e.g. End or created_at"
           @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
         />
       </template>
