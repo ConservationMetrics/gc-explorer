@@ -20,7 +20,7 @@ import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type { FeatureCollection, Feature } from "geojson";
 import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
-import { mapStatisticsFromFeatureCollection } from "@/utils/mapStatistics";
+import { mapStatisticsFromFeatureCollection } from "@/utils/geoUtils";
 
 import type {
   AllowedFileExtensions,
