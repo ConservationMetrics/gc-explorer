@@ -6,6 +6,7 @@ import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
+import TimestampFilter from "@/components/shared/TimestampFilter.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
 
 import type {
@@ -120,6 +121,16 @@ const filterValues = (values: FilterValues) => {
   applyAllFilters();
 };
 
+/** Handle date range from TimestampFilter slider */
+const onTimestampFilter = (payload: {
+  start: Date | null;
+  end: Date | null;
+}) => {
+  dateMin.value = payload.start ? payload.start.toISOString().slice(0, 10) : "";
+  dateMax.value = payload.end ? payload.end.toISOString() : "";
+  applyAllFilters();
+};
+
 watch([dateMin, dateMax], () => applyAllFilters());
 watch(
   () => props.galleryData.length,
@@ -166,27 +177,12 @@ const prepareForDisplay = (feature: DataEntry): DataEntry => {
         :filter-column="filterColumn"
         @filter="filterValues"
       />
-      <div
+      <TimestampFilter
         v-if="timestampColumn"
-        class="rounded-lg border bg-white/95 p-3 shadow flex flex-col gap-2"
-      >
-        <label class="text-xs font-medium text-gray-600">{{
-          $t("dateFilterFrom")
-        }}</label>
-        <input
-          v-model="dateMin"
-          type="date"
-          class="rounded border px-2 py-1 text-sm"
-        />
-        <label class="text-xs font-medium text-gray-600">{{
-          $t("dateFilterTo")
-        }}</label>
-        <input
-          v-model="dateMax"
-          type="date"
-          class="rounded border px-2 py-1 text-sm"
-        />
-      </div>
+        :data="galleryData"
+        :timestamp-column="timestampColumn"
+        @filter="onTimestampFilter"
+      />
     </div>
     <DataFeature
       v-for="(feature, index) in paginatedData"

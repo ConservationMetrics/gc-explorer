@@ -12,6 +12,7 @@ import {
 } from "@/utils/mapGLHelpers";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
+import TimestampFilter from "@/components/shared/TimestampFilter.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
 import MapLegend from "@/components/shared/MapLegend.vue";
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
@@ -463,6 +464,16 @@ const filterValues = (values: FilterValues) => {
   applyAllFilters();
 };
 
+/** Handle date range from TimestampFilter slider (start = start of day, end = end of day) */
+const onTimestampFilter = (payload: {
+  start: Date | null;
+  end: Date | null;
+}) => {
+  dateMin.value = payload.start ? payload.start.toISOString().slice(0, 10) : "";
+  dateMax.value = payload.end ? payload.end.toISOString() : "";
+  applyAllFilters();
+};
+
 watch([dateMin, dateMax], () => applyAllFilters());
 watch(
   () => props.mapData.features.length,
@@ -583,25 +594,11 @@ onBeforeUnmount(() => {
       :show-colored-dot="true"
       @filter="filterValues"
     />
-    <div
-      v-if="timestampColumn"
-      class="absolute top-4 right-4 z-10 flex flex-col gap-2 rounded-lg border bg-white/95 p-3 shadow"
-    >
-      <label class="text-xs font-medium text-gray-600">{{
-        $t("dateFilterFrom")
-      }}</label>
-      <input
-        v-model="dateMin"
-        type="date"
-        class="rounded border px-2 py-1 text-sm"
-      />
-      <label class="text-xs font-medium text-gray-600">{{
-        $t("dateFilterTo")
-      }}</label>
-      <input
-        v-model="dateMax"
-        type="date"
-        class="rounded border px-2 py-1 text-sm"
+    <div v-if="timestampColumn" class="absolute top-4 right-4 z-10">
+      <TimestampFilter
+        :data="flatDataForFilter"
+        :timestamp-column="timestampColumn"
+        @filter="onTimestampFilter"
       />
     </div>
     <ViewSidebar
