@@ -168,7 +168,7 @@ const prepareForDisplay = (feature: DataEntry): DataEntry => {
   >
     <div
       v-if="filterColumn || timestampColumn"
-      class="sticky top-10 right-10 z-10 flex flex-col gap-3"
+      class="sticky top-10 right-10 z-10 flex flex-col gap-0.5"
       data-testid="filter-container"
     >
       <DataFilter

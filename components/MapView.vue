@@ -586,16 +586,17 @@ onBeforeUnmount(() => {
     >
       {{ $t("resetMap") }}
     </button>
-    <DataFilter
-      v-if="filterColumn"
-      :data="flatDataForFilter"
-      :filter-column="filterColumn"
-      :color-column="colorColumn"
-      :show-colored-dot="true"
-      @filter="filterValues"
-    />
-    <div v-if="timestampColumn" class="absolute top-4 right-4 z-10">
+    <div class="absolute top-4 right-14 z-10 flex flex-col gap-0.5">
+      <DataFilter
+        v-if="filterColumn"
+        :data="flatDataForFilter"
+        :filter-column="filterColumn"
+        :color-column="colorColumn"
+        :show-colored-dot="true"
+        @filter="filterValues"
+      />
       <TimestampFilter
+        v-if="timestampColumn"
         :data="flatDataForFilter"
         :timestamp-column="timestampColumn"
         @filter="onTimestampFilter"

@@ -115,16 +115,12 @@ const emitFilterSelection = () => {
 
 <style scoped>
 .filter-modal {
-  position: absolute;
-  top: 10px;
-  right: 50px;
   min-width: 325px;
   max-width: 600px;
   background: #f5f5f5;
   padding: 10px;
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
   border-radius: 10px;
-  /* Rounded corners */
   z-index: 1000;
 
   h4 {
