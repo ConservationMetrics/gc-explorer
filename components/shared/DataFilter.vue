@@ -65,7 +65,7 @@ const emitFilterSelection = () => {
 </script>
 
 <template>
-  <div class="filter-modal" data-testid="data-filter">
+  <div class="filter-modal mb-2" data-testid="data-filter">
     <h4 data-testid="filter-heading">
       {{ $t("filterDataByColumn") }}: <strong>{{ filterColumn }}</strong>
     </h4>

@@ -114,6 +114,19 @@ watch(selectedRange, () => {
   if (userInteracted.value) emitFilter();
 });
 
+const isResetDisabled = computed(() => {
+  const info = dateInfo.value;
+  if (info.options.length === 0 || selectedRange.value.length !== 2) {
+    return true;
+  }
+  const [minOpt, maxOpt] = [
+    info.options[0],
+    info.options[info.options.length - 1],
+  ];
+  const [selMin, selMax] = selectedRange.value;
+  return selMin === minOpt && selMax === maxOpt;
+});
+
 const resetDateRange = () => {
   if (dateInfo.value.options.length > 0) {
     userInteracted.value = false;
@@ -129,7 +142,7 @@ const resetDateRange = () => {
 
 <template>
   <div
-    class="min-w-[325px] max-w-[500px] rounded-xl bg-gray-100 p-2.5 shadow-md"
+    class="mb-2 min-w-[325px] max-w-[500px] rounded-xl bg-gray-100 p-2.5 shadow-md"
     data-testid="timestamp-filter"
   >
     <div
@@ -141,8 +154,9 @@ const resetDateRange = () => {
       </h4>
       <button
         type="button"
-        class="cursor-pointer rounded border-none bg-gray-500 px-3 py-1 text-sm text-white transition-colors hover:bg-gray-600"
+        class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm"
         data-testid="reset-date-button"
+        :disabled="isResetDisabled"
         @click="resetDateRange"
       >
         {{ $t("reset") }}

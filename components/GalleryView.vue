@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { getFilePathsWithExtension } from "@/utils";
-import { parseDateMs } from "@/utils/dateUtils";
+import {
+  filterByDateAndCategory,
+  normalizeFilterValues,
+} from "@/composables/useDateAndCategoryFilter";
 import { prepareCoordinatesForSelectedFeature } from "@/utils/mapGLHelpers";
 import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
@@ -31,37 +34,18 @@ const { fetchRecords, getCachedRecord, cacheSize } = useRecordCache();
 const dateMin = ref<string>("");
 const dateMax = ref<string>("");
 
-/** Normalize filter payload: "null" string or array of { value } to string[] */
-const normalizedFilterValues = (values: FilterValues): string[] => {
-  return values.map((v: string | { value?: unknown }) =>
-    typeof v === "object" && v != null && v.value != null
-      ? String(v.value)
-      : String(v),
-  );
-};
-
 /** Apply date range then category filter (AND). */
 const applyAllFilters = () => {
-  let items = props.galleryData;
   const col = props.timestampColumn;
-  if (col && (dateMin.value || dateMax.value)) {
-    const minMs = dateMin.value ? parseDateMs(dateMin.value) : null;
-    const maxMs = dateMax.value ? parseDateMs(dateMax.value) : null;
-    items = items.filter((item) => {
-      const ms = parseDateMs(item[col]);
-      if (ms == null) return false;
-      if (minMs != null && ms < minMs) return false;
-      if (maxMs != null && ms > maxMs) return false;
-      return true;
-    });
-  }
-  const values = normalizedFilterValues(selectedFilterValues.value);
-  if (values.length && !values.includes("null")) {
-    items = items.filter((item) =>
-      values.includes(String(item[props.filterColumn] ?? "")),
-    );
-  }
-  filteredData.value = items;
+  filteredData.value = filterByDateAndCategory(props.galleryData, {
+    timestampColumn: col,
+    dateMin: dateMin.value,
+    dateMax: dateMax.value,
+    filterColumn: props.filterColumn,
+    selectedValues: normalizeFilterValues(selectedFilterValues.value),
+    getTimestamp: (item) => (col ? item[col] : null),
+    getCategory: (item) => item[props.filterColumn],
+  });
 };
 
 const selectedFilterValues = ref<FilterValues>([]);

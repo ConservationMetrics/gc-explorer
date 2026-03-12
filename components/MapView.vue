@@ -21,7 +21,10 @@ import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type { FeatureCollection, Feature } from "geojson";
 import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
-import { parseDateMs } from "@/utils/dateUtils";
+import {
+  filterByDateAndCategory,
+  normalizeFilterValues,
+} from "@/composables/useDateAndCategoryFilter";
 import { mapStatisticsFromFeatureCollection } from "@/utils/geoUtils";
 
 import type {
@@ -424,36 +427,17 @@ const selectedFilterValues = ref<FilterValues>([]);
 const dateMin = ref<string>("");
 const dateMax = ref<string>("");
 
-/** Normalize filter payload: "null" string or array of { value } to string[] */
-const normalizedFilterValues = (values: FilterValues): string[] => {
-  return values.map((v: string | { value?: unknown }) =>
-    typeof v === "object" && v != null && v.value != null
-      ? String(v.value)
-      : String(v),
-  );
-};
-
 /** Apply date range then category filter (AND). */
 const applyAllFilters = () => {
-  let features = props.mapData.features;
-  const col = props.timestampColumn;
-  if (col && (dateMin.value || dateMax.value)) {
-    const minMs = dateMin.value ? parseDateMs(dateMin.value) : null;
-    const maxMs = dateMax.value ? parseDateMs(dateMax.value) : null;
-    features = features.filter((f) => {
-      const ms = parseDateMs(f.properties?.[col]);
-      if (ms == null) return false;
-      if (minMs != null && ms < minMs) return false;
-      if (maxMs != null && ms > maxMs) return false;
-      return true;
-    });
-  }
-  const values = normalizedFilterValues(selectedFilterValues.value);
-  if (values.length && !values.includes("null")) {
-    features = features.filter((f) =>
-      values.includes(String(f.properties?.[props.filterColumn] ?? "")),
-    );
-  }
+  const features = filterByDateAndCategory(props.mapData.features, {
+    timestampColumn: props.timestampColumn,
+    dateMin: dateMin.value,
+    dateMax: dateMax.value,
+    filterColumn: props.filterColumn,
+    selectedValues: normalizeFilterValues(selectedFilterValues.value),
+    getTimestamp: (f) => f.properties?.[props.timestampColumn ?? ""],
+    getCategory: (f) => f.properties?.[props.filterColumn],
+  });
   filteredFeatureCollection.value = { type: "FeatureCollection", features };
   addDataToMap();
 };
