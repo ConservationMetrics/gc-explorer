@@ -1,6 +1,5 @@
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import {
-  filterOutUnwantedValues,
   filterGeoData,
   filterToSelectedValues,
   filterByDateRange,
@@ -121,13 +120,8 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const { mainData, columnsData } = await fetchData(table);
 
-    // Use the same pipeline as the map API (config exclusions, valid geo), then optionally restrict to the user’s current map filter when filterColumn/filterValues are provided.
-    let dataToExport = filterOutUnwantedValues(
-      mainData,
-      viewsConfig[table]?.FILTER_BY_COLUMN,
-      viewsConfig[table]?.FILTER_OUT_VALUES_FROM_COLUMN,
-    );
-    dataToExport = filterGeoData(dataToExport);
+    // Users expect all of their data when they download; therefore, we do not apply config-based filter-out (FILTER_BY_COLUMN / FILTER_OUT_VALUES). We only keep valid geo and, when provided, the user’s current map filter (filterColumn/filterValues) and date range (minDate/maxDate).
+    let dataToExport = filterGeoData(mainData);
 
     const filterColumn = (query.filterColumn as string)?.trim();
     const filterValues = (query.filterValues as string)?.trim();

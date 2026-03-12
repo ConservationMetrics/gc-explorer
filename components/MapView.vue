@@ -22,7 +22,7 @@ import type { FeatureCollection, Feature } from "geojson";
 import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
 import { parseDateMs } from "@/utils/dateUtils";
-import { mapStatisticsFromFeatureCollection } from "@/utils/mapStatistics";
+import { mapStatisticsFromFeatureCollection } from "@/utils/geoUtils";
 
 import type {
   AllowedFileExtensions,
