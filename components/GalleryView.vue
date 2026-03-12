@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { getFilePathsWithExtension } from "@/utils";
+import { parseDateMs } from "@/utils/dateUtils";
 import { prepareCoordinatesForSelectedFeature } from "@/utils/mapGLHelpers";
 import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
@@ -26,23 +27,15 @@ const props = defineProps<{
 
 const { fetchRecords, getCachedRecord, cacheSize } = useRecordCache();
 
-const parseDateMs = (value: unknown): number | null => {
-  if (value == null || value === "") return null;
-  const str = String(value).trim();
-  if (!str) return null;
-  const num = Number(str);
-  if (!Number.isNaN(num) && num > 0) return num;
-  const date = new Date(str);
-  return Number.isNaN(date.getTime()) ? null : date.getTime();
-};
-
 const dateMin = ref<string>("");
 const dateMax = ref<string>("");
 
 /** Normalize filter payload: "null" string or array of { value } to string[] */
 const normalizedFilterValues = (values: FilterValues): string[] => {
   return values.map((v: string | { value?: unknown }) =>
-    typeof v === "object" && v != null && v.value != null ? String(v.value) : String(v),
+    typeof v === "object" && v != null && v.value != null
+      ? String(v.value)
+      : String(v),
   );
 };
 
@@ -177,10 +170,22 @@ const prepareForDisplay = (feature: DataEntry): DataEntry => {
         v-if="timestampColumn"
         class="rounded-lg border bg-white/95 p-3 shadow flex flex-col gap-2"
       >
-        <label class="text-xs font-medium text-gray-600">{{ $t("dateFilterFrom") }}</label>
-        <input v-model="dateMin" type="date" class="rounded border px-2 py-1 text-sm" />
-        <label class="text-xs font-medium text-gray-600">{{ $t("dateFilterTo") }}</label>
-        <input v-model="dateMax" type="date" class="rounded border px-2 py-1 text-sm" />
+        <label class="text-xs font-medium text-gray-600">{{
+          $t("dateFilterFrom")
+        }}</label>
+        <input
+          v-model="dateMin"
+          type="date"
+          class="rounded border px-2 py-1 text-sm"
+        />
+        <label class="text-xs font-medium text-gray-600">{{
+          $t("dateFilterTo")
+        }}</label>
+        <input
+          v-model="dateMax"
+          type="date"
+          class="rounded border px-2 py-1 text-sm"
+        />
       </div>
     </div>
     <DataFeature

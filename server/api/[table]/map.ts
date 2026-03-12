@@ -46,6 +46,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const filterColumn = viewsConfig[table].FRONT_END_FILTER_COLUMN;
     const timestampColumn = viewsConfig[table].TIMESTAMP_COLUMN;
 
+    // Process geodata
     const includeProperties = [colorColumn, iconColumn, timestampColumn].filter(
       (column): column is string => !!column,
     );

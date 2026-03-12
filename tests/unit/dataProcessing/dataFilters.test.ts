@@ -95,9 +95,7 @@ describe("filterByDateRange", () => {
     expect(
       filterByDateRange(data, undefined, "2024-01-01", "2024-12-31"),
     ).toEqual(data);
-    expect(
-      filterByDateRange(data, "ts", undefined, undefined),
-    ).toEqual(data);
+    expect(filterByDateRange(data, "ts", undefined, undefined)).toEqual(data);
   });
 
   it("keeps only rows within min/max inclusive", () => {
@@ -106,12 +104,7 @@ describe("filterByDateRange", () => {
       { id: "2", ts: "2024-06-20" },
       { id: "3", ts: "2024-12-01" },
     ];
-    const result = filterByDateRange(
-      data,
-      "ts",
-      "2024-02-01",
-      "2024-10-01",
-    );
+    const result = filterByDateRange(data, "ts", "2024-02-01", "2024-10-01");
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("2");
   });
@@ -142,12 +135,7 @@ describe("filterByDateRange", () => {
       { id: "2", ts: "" },
       { id: "3" },
     ];
-    const result = filterByDateRange(
-      data,
-      "ts",
-      "2024-01-01",
-      "2024-12-31",
-    );
+    const result = filterByDateRange(data, "ts", "2024-01-01", "2024-12-31");
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("1");
   });

@@ -82,7 +82,10 @@ const downloadFromExportEndpoint = async (
       params.filterColumn = props.exportFilterColumn;
       params.filterValues = props.exportFilterValues.join(",");
     }
-    if (props.exportTimestampColumn && (props.exportMinDate || props.exportMaxDate)) {
+    if (
+      props.exportTimestampColumn &&
+      (props.exportMinDate || props.exportMaxDate)
+    ) {
       if (props.exportMinDate) params.minDate = props.exportMinDate;
       if (props.exportMaxDate) params.maxDate = props.exportMaxDate;
     }

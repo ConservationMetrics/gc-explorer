@@ -53,6 +53,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const mediaColumn = viewsConfig[table].MEDIA_COLUMN;
     const timestampColumn = viewsConfig[table].TIMESTAMP_COLUMN;
 
+    // Return minimal records: ID + columns needed for filtering and media display
     const minimalData = dataWithFilesOnly.map((entry) => {
       const minimal: Record<string, unknown> = {};
       if (entry._id != null) minimal._id = entry._id;
