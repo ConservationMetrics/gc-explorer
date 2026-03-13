@@ -150,7 +150,7 @@ const resetDateRange = () => {
       data-testid="filter-header"
     >
       <h4 class="m-0 text-lg text-gray-800" data-testid="filter-heading">
-        {{ $t("filterByDate") }}: <strong>{{ actualColumnName }}</strong>
+        {{ $t("filterByDate") }}
       </h4>
       <button
         type="button"
