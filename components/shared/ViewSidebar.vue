@@ -32,9 +32,12 @@ const props = defineProps<{
   logoUrl?: string;
   mapData?: Dataset;
   mapFeatureCollection?: FeatureCollection;
+  mapDateMin?: string;
+  mapDateMax?: string;
   mapFilterColumn?: string;
   mapFilterValues?: string[];
   mapStatistics?: MapStatistics;
+  timestampColumn?: string;
   mediaBasePath?: string;
   mediaBasePathAlerts?: string;
   showIcons?: boolean;
@@ -146,6 +149,9 @@ onBeforeUnmount(() => {
           :map-feature-collection="mapFeatureCollection"
           :export-filter-column="mapFilterColumn"
           :export-filter-values="mapFilterValues"
+          :export-min-date="mapDateMin"
+          :export-max-date="mapDateMax"
+          :export-timestamp-column="timestampColumn"
           :logo-url="logoUrl"
           :show-icons="showIcons"
           :can-toggle-icons="canToggleIcons"

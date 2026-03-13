@@ -44,9 +44,10 @@ export default defineEventHandler(async (event: H3Event) => {
     const colorColumn = viewsConfig[table].COLOR_COLUMN;
     const iconColumn = viewsConfig[table].ICON_COLUMN;
     const filterColumn = viewsConfig[table].FRONT_END_FILTER_COLUMN;
+    const timestampColumn = viewsConfig[table].TIMESTAMP_COLUMN;
 
     // Process geodata
-    const includeProperties = [colorColumn, iconColumn].filter(
+    const includeProperties = [colorColumn, iconColumn, timestampColumn].filter(
       (column): column is string => !!column,
     );
     const featureCollection = buildMinimalFeatureCollection(filteredGeoData, {
@@ -66,6 +67,7 @@ export default defineEventHandler(async (event: H3Event) => {
       data: featureCollection,
       filterColumn,
       iconColumn,
+      timestampColumn: timestampColumn ?? undefined,
       mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,
       mapStatistics,
       mapbox3d: viewsConfig[table].MAPBOX_3D ?? false,

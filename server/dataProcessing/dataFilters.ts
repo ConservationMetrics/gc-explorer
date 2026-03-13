@@ -148,6 +148,48 @@ export const filterToSelectedValues = (
   });
 };
 
+const parseDateValue = (value: unknown): number | null => {
+  if (value == null || value === "") return null;
+  const str = String(value).trim();
+  if (!str) return null;
+  const num = Number(str);
+  if (!Number.isNaN(num) && num > 0) return num;
+  const date = new Date(str);
+  return Number.isNaN(date.getTime()) ? null : date.getTime();
+};
+
+/**
+ * Keeps only rows where the timestamp column value falls within [minDate, maxDate] (inclusive).
+ *
+ * @param {DataEntry[]} data - Rows to filter.
+ * @param {string | undefined} timestampColumn - Column name holding the date value.
+ * @param {string | undefined} minDate - Minimum date (inclusive).
+ * @param {string | undefined} maxDate - Maximum date (inclusive).
+ * @returns {DataEntry[]} Filtered rows.
+ */
+export const filterByDateRange = (
+  data: DataEntry[],
+  timestampColumn: string | undefined,
+  minDate: string | undefined,
+  maxDate: string | undefined,
+): DataEntry[] => {
+  if (!timestampColumn || (!minDate && !maxDate)) {
+    return data;
+  }
+  const minMs = minDate ? parseDateValue(minDate) : null;
+  const maxMs = maxDate ? parseDateValue(maxDate) : null;
+  if (minDate && minMs == null) return data;
+  if (maxDate && maxMs == null) return data;
+
+  return data.filter((item) => {
+    const valueMs = parseDateValue(item[timestampColumn]);
+    if (valueMs == null) return false;
+    if (minMs != null && valueMs < minMs) return false;
+    if (maxMs != null && valueMs > maxMs) return false;
+    return true;
+  });
+};
+
 /** Filters out data without columns storing valid coordinates. */
 export const filterGeoData = (
   data: DataEntry[] | null | undefined,

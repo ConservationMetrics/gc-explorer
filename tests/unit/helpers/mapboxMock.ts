@@ -29,6 +29,7 @@ export const mockMap = {
   removeSource: vi.fn(),
   getStyle: vi.fn(() => ({ layers })),
   setStyle: vi.fn(),
+  isStyleLoaded: vi.fn(() => true),
   getLayer: vi.fn(() => false),
   getSource: vi.fn(() => false),
   getCanvas: vi.fn(() => ({ style: { cursor: "" } })),

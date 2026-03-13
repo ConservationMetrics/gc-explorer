@@ -51,6 +51,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const filterColumn = viewsConfig[table].FRONT_END_FILTER_COLUMN;
     const mediaColumn = viewsConfig[table].MEDIA_COLUMN;
+    const timestampColumn = viewsConfig[table].TIMESTAMP_COLUMN;
 
     // Return minimal records: ID + columns needed for filtering and media display
     const minimalData = dataWithFilesOnly.map((entry) => {
@@ -58,6 +59,9 @@ export default defineEventHandler(async (event: H3Event) => {
       if (entry._id != null) minimal._id = entry._id;
       if (filterColumn && entry[filterColumn] != null) {
         minimal[filterColumn] = entry[filterColumn];
+      }
+      if (timestampColumn && entry[timestampColumn] != null) {
+        minimal[timestampColumn] = entry[timestampColumn];
       }
       if (mediaColumn && entry[mediaColumn] != null) {
         minimal[mediaColumn] = entry[mediaColumn];
@@ -72,6 +76,7 @@ export default defineEventHandler(async (event: H3Event) => {
       mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
       mediaColumn,
       table: table,
+      timestampColumn: timestampColumn ?? undefined,
       routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
     };
 

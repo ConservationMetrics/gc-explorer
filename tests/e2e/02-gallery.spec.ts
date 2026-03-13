@@ -354,11 +354,11 @@ test("gallery page - filter functionality", async ({
       // 12. Wait for filter to clear
       await page.waitForTimeout(1500);
 
-      // 13. Verify items are back to original count (or close to it)
+      // 13. Verify clearing category filter did not shrink the list (date filter may still be active)
       const clearedItems = page.locator('[data-testid^="gallery-item-"]');
       const clearedCount = await clearedItems.count();
-      // Allow some tolerance due to pagination
-      expect(clearedCount).toBeGreaterThanOrEqual(Math.min(initialCount, 100));
+      expect(clearedCount).toBeGreaterThanOrEqual(filteredCount);
+      expect(clearedCount).toBeGreaterThan(0);
     }
   } else {
     // If no filter, just verify gallery loaded
