@@ -61,19 +61,6 @@ const dateInfo = computed(() => {
 const selectedRange = ref<string[]>([]);
 const userInteracted = ref(false);
 
-/** Resolve column name (handles underscore → space transformation in display data) */
-const actualColumnName = computed(() => {
-  if (!props.data?.length) return props.timestampColumn;
-  const columnVariants = [
-    props.timestampColumn,
-    props.timestampColumn.replace(/_/g, " "),
-  ];
-  for (const variant of columnVariants) {
-    if (props.data[0][variant] != null) return variant;
-  }
-  return props.timestampColumn;
-});
-
 /** Parse "YYYY-MM" to last moment of that month (23:59:59.999). */
 function endOfMonth(year: number, month1Based: number): Date {
   const d = new Date(year, month1Based, 0, 23, 59, 59, 999);
