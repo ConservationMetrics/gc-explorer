@@ -12,7 +12,7 @@ const emit = defineEmits<{
   (e: "filter", payload: { start: Date | null; end: Date | null }): void;
 }>();
 
-/** Computes unique dates from the dataset and generates date options */
+/** Unique months that contain data, as "YYYY-MM", for month-level slider (like alerts). */
 const dateInfo = computed(() => {
   const columnVariants = [
     props.timestampColumn,
@@ -39,33 +39,22 @@ const dateInfo = computed(() => {
       min: null,
       max: null,
       options: [],
-      dateMap: new Map<string, Date>(),
     };
   }
 
-  const sortedDates = [...dates].sort((a, b) => a.getTime() - b.getTime());
-  const minDate = sortedDates[0];
-  const maxDate = sortedDates[sortedDates.length - 1];
-
-  const options: string[] = [];
-  const dateMap = new Map<string, Date>();
-  const current = new Date(minDate);
-  current.setHours(0, 0, 0, 0);
-  const end = new Date(maxDate);
-  end.setHours(0, 0, 0, 0);
-
-  while (current <= end) {
-    const dateStr = current.toISOString().split("T")[0];
-    options.push(dateStr);
-    dateMap.set(dateStr, new Date(current));
-    current.setDate(current.getDate() + 1);
+  const monthSet = new Set<string>();
+  for (const d of dates) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    monthSet.add(`${y}-${m}`);
   }
+  const options = [...monthSet].sort();
 
+  const sortedDates = [...dates].sort((a, b) => a.getTime() - b.getTime());
   return {
-    min: minDate,
-    max: maxDate,
+    min: sortedDates[0],
+    max: sortedDates[sortedDates.length - 1],
     options,
-    dateMap,
   };
 });
 
@@ -85,13 +74,24 @@ const actualColumnName = computed(() => {
   return props.timestampColumn;
 });
 
-/** Emit filter when range changes */
+/** Parse "YYYY-MM" to last moment of that month (23:59:59.999). */
+function endOfMonth(year: number, month1Based: number): Date {
+  const d = new Date(year, month1Based, 0, 23, 59, 59, 999);
+  return d;
+}
+
+/** Emit filter when range changes (options are "YYYY-MM" months). */
 const emitFilter = () => {
   if (selectedRange.value.length !== 2) return;
   const [startStr, endStr] = selectedRange.value;
-  const start = startStr ? new Date(startStr) : null;
-  const end = endStr ? new Date(endStr) : null;
-  if (end) end.setHours(23, 59, 59, 999);
+  if (!startStr || !endStr) {
+    emit("filter", { start: null, end: null });
+    return;
+  }
+  const [startY, startM] = startStr.split("-").map(Number);
+  const [endY, endM] = endStr.split("-").map(Number);
+  const start = new Date(startY, startM - 1, 1, 0, 0, 0, 0);
+  const end = endOfMonth(endY, endM);
   emit("filter", { start, end });
 };
 
