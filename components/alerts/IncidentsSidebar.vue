@@ -4,7 +4,12 @@ import { useI18n } from "vue-i18n";
 import { snakeToTitleCase, titleToCamelCase } from "@/utils/index";
 import { Copy, Check } from "lucide-vue-next";
 import { useCopyLink } from "@/composables/useCopyLink";
-import type { AnnotatedCollection, CollectionEntry, Incident } from "@/types";
+import type {
+  AnnotatedCollection,
+  CollectionEntry,
+  CollectionEntryInput,
+  Incident,
+} from "@/types";
 
 const { t, te } = useI18n();
 
@@ -53,11 +58,7 @@ const props = defineProps<{
   isLoadingSelectedIncident?: boolean;
   incidentsFetchError?: boolean;
   incidentDetailsError?: boolean;
-  selectedSources: Array<{
-    source_table: string;
-    source_id: string;
-    notes?: string;
-  }>;
+  selectedSources: CollectionEntryInput[];
   isLoading: boolean;
   isCreating: boolean;
   show: boolean;

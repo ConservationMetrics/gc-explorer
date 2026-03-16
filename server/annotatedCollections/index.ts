@@ -1,5 +1,10 @@
 import { sql, eq, and, desc } from "drizzle-orm";
-import type { AnnotatedCollection, Incident, CollectionEntry } from "@/types";
+import type {
+  AnnotatedCollection,
+  Incident,
+  CollectionEntry,
+  CollectionEntryInput,
+} from "@/types";
 import { configDb, warehouseDb } from "@/server/database/dbConnection";
 import {
   annotatedCollections,
@@ -11,20 +16,13 @@ import {
  * Creates a new annotated collection with optional incident data and collection entries
  * @param collection - The annotated collection data (without id, created_at, updated_at)
  * @param incidentData - Optional incident-specific data if collection_type is "incident"
- * @param entries - Optional array of collection entries to add to the collection. Each entry contains:
- *   - source_table: The table name (e.g., "fake_alerts", "mapeo_data") corresponding to the URL path
- *   - source_id: The unique identifier from the source table (e.g., alertID for alerts, mapeoID for mapeo)
- *   - notes: Optional notes about the entry
+ * @param entries - Optional array of collection entries to add. Each entry must include feature_type ("alert" | "mapeo") so the server uses alert_id for alerts and _id for mapeo.
  * @returns Promise<AnnotatedCollection> - The created annotated collection
  */
 export const createAnnotatedCollection = async (
   collection: Omit<AnnotatedCollection, "id" | "created_at" | "updated_at">,
   incidentData?: Omit<Incident, "collection_id">,
-  entries?: Array<{
-    source_table: string;
-    source_id: string;
-    notes?: string;
-  }>,
+  entries?: CollectionEntryInput[],
 ): Promise<AnnotatedCollection> => {
   return await configDb.transaction(async (tx) => {
     const [newCollection] = await tx
@@ -52,10 +50,9 @@ export const createAnnotatedCollection = async (
 
     if (entries && entries.length > 0) {
       for (const entry of entries) {
-        // Fetch source data from warehouse database
-        // All warehouse tables use _id as primary key
+        const idColumn = entry.feature_type === "alert" ? "alert_id" : "_id";
         const sourceResult = await warehouseDb.execute(sql`
-          SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} LIMIT 1
+          SELECT * FROM ${sql.identifier(entry.source_table)} WHERE ${sql.identifier(idColumn)} = ${entry.source_id} LIMIT 1
         `);
 
         await tx.insert(collectionEntries).values({
@@ -63,7 +60,7 @@ export const createAnnotatedCollection = async (
           sourceTable: entry.source_table,
           sourceId: entry.source_id,
           sourceData: sourceResult[0] || {},
-          addedBy: collection.created_by,
+          addedBy: collection.created_by ?? "",
           notes: entry.notes,
         });
       }
@@ -252,30 +249,22 @@ export const updateAnnotatedCollection = async (
 /**
  * Adds collection entries to an existing annotated collection
  * @param collectionId - The annotated collection ID to add entries to
- * @param entries - Array of collection entries to add. Each entry contains:
- *   - source_table: The table name (e.g., "fake_alerts", "mapeo_data") corresponding to the URL path
- *   - source_id: The unique identifier from the source table (e.g., alertID for alerts, mapeoID for mapeo)
- *   - notes: Optional notes about the entry
+ * @param entries - Array of entries to add; each must include feature_type ("alert" | "mapeo") so the server uses alert_id or _id
  * @param addedBy - User ID who is adding the collection entries
  * @returns Promise<CollectionEntry[]> - The added collection entries
  */
 export const addEntriesToCollection = async (
   collectionId: string,
-  entries: Array<{
-    source_table: string;
-    source_id: string;
-    notes?: string;
-  }>,
+  entries: CollectionEntryInput[],
   addedBy: string,
 ): Promise<CollectionEntry[]> => {
   return await configDb.transaction(async (tx) => {
     const newEntries = [];
 
     for (const entry of entries) {
-      // Fetch source data from warehouse database
-      // All warehouse tables use _id as primary key
+      const idColumn = entry.feature_type === "alert" ? "alert_id" : "_id";
       const sourceResult = await warehouseDb.execute(sql`
-        SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} LIMIT 1
+        SELECT * FROM ${sql.identifier(entry.source_table)} WHERE ${sql.identifier(idColumn)} = ${entry.source_id} LIMIT 1
       `);
 
       const [newEntry] = await tx

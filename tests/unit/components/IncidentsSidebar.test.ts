@@ -21,6 +21,7 @@ describe("IncidentsSidebar component", () => {
   type SelectedSource = {
     source_table: string;
     source_id: string;
+    feature_type: "alert" | "mapeo";
     notes?: string;
   };
 
@@ -48,8 +49,8 @@ describe("IncidentsSidebar component", () => {
   ];
 
   const mockSelectedSources: SelectedSource[] = [
-    { source_table: "mapeo_data", source_id: "source1" },
-    { source_table: "alerts", source_id: "source2" },
+    { source_table: "mapeo_data", source_id: "source1", feature_type: "mapeo" },
+    { source_table: "alerts", source_id: "source2", feature_type: "alert" },
   ];
 
   const baseProps: {

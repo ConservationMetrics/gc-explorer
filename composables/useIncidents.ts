@@ -2,7 +2,12 @@ import { computed, onBeforeUnmount, ref } from "vue";
 import type { RouteLocationNormalizedLoaded, Router } from "vue-router";
 import mapboxgl from "mapbox-gl";
 import type { Feature, Geometry } from "geojson";
-import type { AnnotatedCollection, CollectionEntry, Incident } from "@/types";
+import type {
+  AnnotatedCollection,
+  CollectionEntry,
+  CollectionEntryInput,
+  Incident,
+} from "@/types";
 
 /**
  * Small in-memory cache to avoid refetching incident details repeatedly.
@@ -36,6 +41,7 @@ export const useIncidents = (
   route: RouteLocationNormalizedLoaded,
   router: Router,
   mapLegendLayerIds?: Ref<string | undefined>,
+  mapeoTableRef?: Ref<string | undefined>,
 ) => {
   // Incidents state management
   const incidents = ref<AnnotatedCollection[]>([]);
@@ -45,9 +51,7 @@ export const useIncidents = (
 
   const showIncidentsSidebar = ref(false);
   const openSidebarWithCreateForm = ref(false);
-  const selectedSources = ref<
-    Array<{ source_table: string; source_id: string; notes?: string }>
-  >([]);
+  const selectedSources = ref<CollectionEntryInput[]>([]);
   const isCreatingIncident = ref(false);
   const multiSelectMode = ref(false);
   const boundingBoxMode = ref(false);
@@ -850,11 +854,13 @@ export const useIncidents = (
    * Adds a source to the selected sources list for incident creation
    * @param sourceTable - The table name (e.g., "fake_alerts", "mapeo_data")
    * @param sourceId - The unique identifier from the source table
+   * @param featureType - "alert" or "mapeo" so the server uses alert_id or _id when fetching the row
    * @param notes - Optional notes about the source
    */
   const addSourceToSelection = (
     sourceTable: string,
     sourceId: string,
+    featureType: CollectionEntryInput["feature_type"],
     notes?: string,
   ) => {
     const existingIndex = selectedSources.value.findIndex(
@@ -866,6 +872,7 @@ export const useIncidents = (
       selectedSources.value.push({
         source_table: sourceTable,
         source_id: sourceId,
+        feature_type: featureType,
         notes: notes,
       });
     }
@@ -900,9 +907,8 @@ export const useIncidents = (
    * Determines source table from layer ID and route params, extracts source ID from feature properties
    *
    * Source table determination logic:
-   * - For alert layers (containing "most-recent-alerts" or "previous-alerts"): Uses the table name from route params.
-   *   The route structure is /alerts/{tablename}, so route.params.tablename contains the table name (e.g., "fake_alerts").
-   * - For Mapeo layers (layerId === "mapeo-data"): Uses the hardcoded table name "mapeo_data".
+   * - For alert layers (containing "most-recent-alerts" or "previous-alerts"): Uses the table name from route params; feature_type "alert".
+   * - For Mapeo layers (layerId.startsWith("mapeo-data")): Uses mapeoTableRef from view config; feature_type "mapeo".
    *
    * Source ID extraction:
    * - For alerts: Uses feature.properties.alertID
@@ -916,8 +922,8 @@ export const useIncidents = (
 
     let sourceTable = "";
     let sourceId = "";
+    let featureType: CollectionEntryInput["feature_type"] = "alert";
 
-    // Get table name from route params (e.g., /alerts/fake_alerts -> fake_alerts)
     const tableRaw = route.params.tablename;
     const tableName = Array.isArray(tableRaw) ? tableRaw.join("/") : tableRaw;
 
@@ -926,10 +932,13 @@ export const useIncidents = (
       layerId.includes("previous-alerts")
     ) {
       sourceTable = (tableName as string) || "";
+      featureType = "alert";
     } else if (layerId.startsWith("mapeo-data")) {
-      sourceTable = "mapeo_data";
+      sourceTable = mapeoTableRef?.value ?? "";
+      featureType = "mapeo";
     } else if (isAdditionalSelectableLayer(layerId)) {
       sourceTable = (tableName as string) || "";
+      featureType = "alert";
     }
 
     if (feature.properties.alertID) {
@@ -961,7 +970,7 @@ export const useIncidents = (
 
       // Don't toggle-off on click/box. Deselect is explicit via controls.
       if (!isAlreadySelected) {
-        addSourceToSelection(sourceTable, sourceId);
+        addSourceToSelection(sourceTable, sourceId, featureType);
         highlightSelectedSource(feature, layerId);
       }
     }

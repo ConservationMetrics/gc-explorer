@@ -133,7 +133,13 @@ const {
   clearSelectedSources,
   handleMultiSelectFeature,
   handleIncidentClusterZoom,
-} = useIncidents(map, route, router, toRef(props, "mapLegendLayerIds"));
+} = useIncidents(
+  map,
+  route,
+  router,
+  toRef(props, "mapLegendLayerIds"),
+  toRef(props, "mapeoTable"),
+);
 
 // Use feature selection composable
 const {
