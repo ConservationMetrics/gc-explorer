@@ -4,6 +4,7 @@ import {
   filterUnwantedKeys,
   filterOutUnwantedValues,
   filterToSelectedValues,
+  filterByDateRange,
   filterGeoData,
   filterDataByExtension,
 } from "@/server/dataProcessing/dataFilters";
@@ -82,6 +83,61 @@ describe("filterToSelectedValues", () => {
     ];
     const result = filterToSelectedValues(data, "status", "active,null");
     expect(result).toHaveLength(3);
+  });
+});
+
+describe("filterByDateRange", () => {
+  it("returns all data when column or both dates missing", () => {
+    const data = [
+      { id: "1", ts: "2024-01-15" },
+      { id: "2", ts: "2024-06-20" },
+    ];
+    expect(
+      filterByDateRange(data, undefined, "2024-01-01", "2024-12-31"),
+    ).toEqual(data);
+    expect(filterByDateRange(data, "ts", undefined, undefined)).toEqual(data);
+  });
+
+  it("keeps only rows within min/max inclusive", () => {
+    const data = [
+      { id: "1", ts: "2024-01-15" },
+      { id: "2", ts: "2024-06-20" },
+      { id: "3", ts: "2024-12-01" },
+    ];
+    const result = filterByDateRange(data, "ts", "2024-02-01", "2024-10-01");
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("2");
+  });
+
+  it("accepts only minDate", () => {
+    const data = [
+      { id: "1", ts: "2024-01-15" },
+      { id: "2", ts: "2024-06-20" },
+    ];
+    const result = filterByDateRange(data, "ts", "2024-02-01", undefined);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("2");
+  });
+
+  it("accepts only maxDate", () => {
+    const data = [
+      { id: "1", ts: "2024-01-15" },
+      { id: "2", ts: "2024-06-20" },
+    ];
+    const result = filterByDateRange(data, "ts", undefined, "2024-02-01");
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("1");
+  });
+
+  it("excludes rows with null or invalid timestamp", () => {
+    const data = [
+      { id: "1", ts: "2024-06-15" },
+      { id: "2", ts: "" },
+      { id: "3" },
+    ];
+    const result = filterByDateRange(data, "ts", "2024-01-01", "2024-12-31");
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("1");
   });
 });
 

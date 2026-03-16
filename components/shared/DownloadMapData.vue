@@ -16,6 +16,9 @@ const props = defineProps<{
   dataForDownload?: Feature | FeatureCollection | AlertsData;
   exportFilterColumn?: string;
   exportFilterValues?: string[];
+  exportMinDate?: string;
+  exportMaxDate?: string;
+  exportTimestampColumn?: string;
 }>();
 
 const exportingFormat = ref<string | null>(null);
@@ -78,6 +81,13 @@ const downloadFromExportEndpoint = async (
     if (props.exportFilterColumn && props.exportFilterValues?.length) {
       params.filterColumn = props.exportFilterColumn;
       params.filterValues = props.exportFilterValues.join(",");
+    }
+    if (
+      props.exportTimestampColumn &&
+      (props.exportMinDate || props.exportMaxDate)
+    ) {
+      if (props.exportMinDate) params.minDate = props.exportMinDate;
+      if (props.exportMaxDate) params.maxDate = props.exportMaxDate;
     }
     const blob = await $fetch<Blob>(`/api/${tablename}/export`, {
       params,

@@ -12,6 +12,7 @@ import {
 } from "@/utils/mapGLHelpers";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
+import TimestampFilter from "@/components/shared/TimestampFilter.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
 import MapLegend from "@/components/shared/MapLegend.vue";
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
@@ -20,6 +21,11 @@ import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type { FeatureCollection, Feature } from "geojson";
 import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
+import {
+  filterByDateAndCategory,
+  normalizeFilterValues,
+  useTimestampFilter,
+} from "@/composables/useDateAndCategoryFilter";
 import { mapStatisticsFromFeatureCollection } from "@/utils/geoUtils";
 
 import type {
@@ -57,6 +63,7 @@ const props = defineProps<{
   mediaColumn?: string;
   planetApiKey?: string;
   table: string;
+  timestampColumn?: string;
 }>();
 
 const { fetchRecord } = useRecordCache();
@@ -152,6 +159,7 @@ onMounted(() => {
  * creates layers for each geometry type.
  */
 const addDataToMap = () => {
+  if (!map.value?.isStyleLoaded()) return;
   if (map.value) {
     // Remove existing data layers and sources from the map
     map.value.getStyle().layers.forEach((layer: Layer) => {
@@ -418,23 +426,42 @@ const prepareMapCanvasContent = async () => {
 };
 
 const selectedFilterValues = ref<FilterValues>([]);
+const { dateMin, dateMax, setDateRange } = useTimestampFilter();
+
+/** Apply date range then category filter (AND). */
+const applyAllFilters = () => {
+  const features = filterByDateAndCategory(props.mapData.features, {
+    timestampColumn: props.timestampColumn,
+    dateMin: dateMin.value,
+    dateMax: dateMax.value,
+    filterColumn: props.filterColumn,
+    selectedValues: normalizeFilterValues(selectedFilterValues.value),
+    getTimestamp: (f) => f.properties?.[props.timestampColumn ?? ""],
+    getCategory: (f) => f.properties?.[props.filterColumn],
+  });
+  filteredFeatureCollection.value = { type: "FeatureCollection", features };
+  addDataToMap();
+};
 
 /** Filter data based on selected values from DataFilter component */
 const filterValues = (values: FilterValues) => {
   selectedFilterValues.value = values;
-  if (values.includes("null")) {
-    filteredFeatureCollection.value = { ...props.mapData };
-  } else {
-    filteredFeatureCollection.value = {
-      type: "FeatureCollection",
-      features: props.mapData.features.filter((feature) =>
-        values.includes(feature.properties?.[props.filterColumn]),
-      ),
-    };
-  }
-  // Update the map data
-  addDataToMap();
+  applyAllFilters();
 };
+
+const onTimestampFilter = (payload: {
+  start: Date | null;
+  end: Date | null;
+}) => {
+  setDateRange(payload);
+  applyAllFilters();
+};
+
+watch([dateMin, dateMax], () => applyAllFilters());
+watch(
+  () => props.mapData.features.length,
+  () => applyAllFilters(),
+);
 
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
 
@@ -542,14 +569,22 @@ onBeforeUnmount(() => {
     >
       {{ $t("resetMap") }}
     </button>
-    <DataFilter
-      v-if="filterColumn"
-      :data="flatDataForFilter"
-      :filter-column="filterColumn"
-      :color-column="colorColumn"
-      :show-colored-dot="true"
-      @filter="filterValues"
-    />
+    <div class="absolute top-4 right-14 z-10 flex flex-col gap-0.5">
+      <DataFilter
+        v-if="filterColumn"
+        :data="flatDataForFilter"
+        :filter-column="filterColumn"
+        :color-column="colorColumn"
+        :show-colored-dot="true"
+        @filter="filterValues"
+      />
+      <TimestampFilter
+        v-if="timestampColumn"
+        :data="flatDataForFilter"
+        :timestamp-column="timestampColumn"
+        @filter="onTimestampFilter"
+      />
+    </div>
     <ViewSidebar
       :allowed-file-extensions="allowedFileExtensions"
       :feature="selectedFeature"
@@ -567,9 +602,12 @@ onBeforeUnmount(() => {
       :is-alerts-dashboard="false"
       :map-data="flatDataForFilter"
       :map-feature-collection="filteredFeatureCollection"
+      :map-date-min="dateMin"
+      :map-date-max="dateMax"
       :map-filter-column="filterColumn"
       :map-filter-values="selectedFilterValues"
       :map-statistics="filteredMapStatistics"
+      :timestamp-column="timestampColumn"
       :media-base-path="mediaBasePath"
       :show-intro-panel="showIntroPanel"
       :show-sidebar="showSidebar"

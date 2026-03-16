@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { getFilePathsWithExtension } from "@/utils";
+import {
+  filterByDateAndCategory,
+  normalizeFilterValues,
+  useTimestampFilter,
+} from "@/composables/useDateAndCategoryFilter";
 import { prepareCoordinatesForSelectedFeature } from "@/utils/mapGLHelpers";
 import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
+import TimestampFilter from "@/components/shared/TimestampFilter.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
 
 import type {
@@ -21,10 +27,28 @@ const props = defineProps<{
   mediaBasePath: string;
   mediaColumn?: string;
   table: string;
+  timestampColumn?: string;
 }>();
 
 const { fetchRecords, getCachedRecord, cacheSize } = useRecordCache();
 
+const { dateMin, dateMax, setDateRange } = useTimestampFilter();
+
+/** Apply date range then category filter (AND). */
+const applyAllFilters = () => {
+  const col = props.timestampColumn;
+  filteredData.value = filterByDateAndCategory(props.galleryData, {
+    timestampColumn: col,
+    dateMin: dateMin.value,
+    dateMax: dateMax.value,
+    filterColumn: props.filterColumn,
+    selectedValues: normalizeFilterValues(selectedFilterValues.value),
+    getTimestamp: (item) => (col ? item[col] : null),
+    getCategory: (item) => item[props.filterColumn],
+  });
+};
+
+const selectedFilterValues = ref<FilterValues>([]);
 const filteredData = ref(props.galleryData);
 const loading = ref(false);
 
@@ -75,16 +99,25 @@ onBeforeUnmount(() => {
   window.removeEventListener("scroll", handleScroll);
 });
 
-/** Filter data based on selected values from DataFilter component  */
+/** Filter data based on selected values from DataFilter component */
 const filterValues = (values: FilterValues) => {
-  if (values.includes("null")) {
-    filteredData.value = props.galleryData;
-  } else {
-    filteredData.value = props.galleryData.filter((item) =>
-      values.includes(item[props.filterColumn].toString()),
-    );
-  }
+  selectedFilterValues.value = values;
+  applyAllFilters();
 };
+
+const onTimestampFilter = (payload: {
+  start: Date | null;
+  end: Date | null;
+}) => {
+  setDateRange(payload);
+  applyAllFilters();
+};
+
+watch([dateMin, dateMax], () => applyAllFilters());
+watch(
+  () => props.galleryData.length,
+  () => applyAllFilters(),
+);
 
 /**
  * Returns the full cached record for a gallery item, falling back to the
@@ -116,14 +149,21 @@ const prepareForDisplay = (feature: DataEntry): DataEntry => {
     class="gallery p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
   >
     <div
-      v-if="filterColumn"
-      class="sticky top-10 right-10 z-10"
+      v-if="filterColumn || timestampColumn"
+      class="sticky top-10 right-10 z-10 flex flex-col gap-0.5"
       data-testid="filter-container"
     >
       <DataFilter
+        v-if="filterColumn"
         :data="galleryData"
         :filter-column="filterColumn"
         @filter="filterValues"
+      />
+      <TimestampFilter
+        v-if="timestampColumn"
+        :data="galleryData"
+        :timestamp-column="timestampColumn"
+        @filter="onTimestampFilter"
       />
     </div>
     <DataFeature
