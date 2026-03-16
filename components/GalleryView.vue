@@ -4,6 +4,7 @@ import {
   filterByDateAndCategory,
   normalizeFilterValues,
 } from "@/composables/useDateAndCategoryFilter";
+import { useTimestampFilter } from "@/composables/useTimestampFilter";
 import { prepareCoordinatesForSelectedFeature } from "@/utils/mapGLHelpers";
 import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
@@ -31,8 +32,7 @@ const props = defineProps<{
 
 const { fetchRecords, getCachedRecord, cacheSize } = useRecordCache();
 
-const dateMin = ref<string>("");
-const dateMax = ref<string>("");
+const { dateMin, dateMax, setDateRange } = useTimestampFilter();
 
 /** Apply date range then category filter (AND). */
 const applyAllFilters = () => {
@@ -105,13 +105,11 @@ const filterValues = (values: FilterValues) => {
   applyAllFilters();
 };
 
-/** Handle date range from TimestampFilter slider */
 const onTimestampFilter = (payload: {
   start: Date | null;
   end: Date | null;
 }) => {
-  dateMin.value = payload.start ? payload.start.toISOString().slice(0, 10) : "";
-  dateMax.value = payload.end ? payload.end.toISOString() : "";
+  setDateRange(payload);
   applyAllFilters();
 };
 

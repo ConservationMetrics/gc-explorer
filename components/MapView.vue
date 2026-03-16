@@ -25,6 +25,7 @@ import {
   filterByDateAndCategory,
   normalizeFilterValues,
 } from "@/composables/useDateAndCategoryFilter";
+import { useTimestampFilter } from "@/composables/useTimestampFilter";
 import { mapStatisticsFromFeatureCollection } from "@/utils/geoUtils";
 
 import type {
@@ -425,8 +426,7 @@ const prepareMapCanvasContent = async () => {
 };
 
 const selectedFilterValues = ref<FilterValues>([]);
-const dateMin = ref<string>("");
-const dateMax = ref<string>("");
+const { dateMin, dateMax, setDateRange } = useTimestampFilter();
 
 /** Apply date range then category filter (AND). */
 const applyAllFilters = () => {
@@ -449,13 +449,11 @@ const filterValues = (values: FilterValues) => {
   applyAllFilters();
 };
 
-/** Handle date range from TimestampFilter slider (start = start of day, end = end of day) */
 const onTimestampFilter = (payload: {
   start: Date | null;
   end: Date | null;
 }) => {
-  dateMin.value = payload.start ? payload.start.toISOString().slice(0, 10) : "";
-  dateMax.value = payload.end ? payload.end.toISOString() : "";
+  setDateRange(payload);
   applyAllFilters();
 };
 
