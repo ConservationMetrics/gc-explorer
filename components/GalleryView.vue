@@ -3,8 +3,8 @@ import { getFilePathsWithExtension } from "@/utils";
 import {
   filterByDateAndCategory,
   normalizeFilterValues,
+  useTimestampFilter,
 } from "@/composables/useDateAndCategoryFilter";
-import { useTimestampFilter } from "@/composables/useTimestampFilter";
 import { prepareCoordinatesForSelectedFeature } from "@/utils/mapGLHelpers";
 import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";

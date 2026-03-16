@@ -24,8 +24,8 @@ import { transformSurveyEntry } from "@/utils/dataTransformers";
 import {
   filterByDateAndCategory,
   normalizeFilterValues,
+  useTimestampFilter,
 } from "@/composables/useDateAndCategoryFilter";
-import { useTimestampFilter } from "@/composables/useTimestampFilter";
 import { mapStatisticsFromFeatureCollection } from "@/utils/geoUtils";
 
 import type {
