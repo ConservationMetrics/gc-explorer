@@ -60,7 +60,7 @@ export const createAnnotatedCollection = async (
 
     if (entries && entries.length > 0) {
       for (const entry of entries) {
-        console.log(entry);
+        // Alerts tables use alert_id (date-ish ids); mapeo and others use _id. Pick column by source_id shape.
         const idColumn = looksLikeAlertId(entry.source_id) ? "alert_id" : "_id";
         const sourceResult = await warehouseDb.execute(sql`
           SELECT * FROM ${sql.identifier(entry.source_table)} WHERE ${sql.identifier(idColumn)} = ${entry.source_id} LIMIT 1
@@ -280,6 +280,7 @@ export const addEntriesToCollection = async (
     const newEntries = [];
 
     for (const entry of entries) {
+      // Alerts tables use alert_id (date-ish ids); mapeo and others use _id. Pick column by source_id shape.
       const idColumn = looksLikeAlertId(entry.source_id) ? "alert_id" : "_id";
       const sourceResult = await warehouseDb.execute(sql`
         SELECT * FROM ${sql.identifier(entry.source_table)} WHERE ${sql.identifier(idColumn)} = ${entry.source_id} LIMIT 1
