@@ -1,5 +1,10 @@
 import { sql, eq, and, desc } from "drizzle-orm";
-import type { AnnotatedCollection, Incident, CollectionEntry } from "@/types";
+import type {
+  AnnotatedCollection,
+  Incident,
+  CollectionEntry,
+  CollectionEntryInput,
+} from "@/types";
 import { configDb, warehouseDb } from "@/server/database/dbConnection";
 import {
   annotatedCollections,
@@ -8,31 +13,16 @@ import {
 } from "@/server/database/schema";
 
 /**
- * Returns true if source_id matches the alert ID pattern (YYYYMM + digits), so we query by alert_id; otherwise we use _id (e.g. mapeo).
- *
- * @param sourceId - The collection entry source_id to classify.
- * @returns {boolean} True when source_id looks like an alert ID (date-ish numeric).
- */
-const looksLikeAlertId = (sourceId: string) => /^\d{4}\d{2}\d/.test(sourceId);
-
-/**
  * Creates a new annotated collection with optional incident data and collection entries
  * @param collection - The annotated collection data (without id, created_at, updated_at)
  * @param incidentData - Optional incident-specific data if collection_type is "incident"
- * @param entries - Optional array of collection entries to add to the collection. Each entry contains:
- *   - source_table: The table name (e.g., "fake_alerts", "mapeo_data") corresponding to the URL path
- *   - source_id: The unique identifier from the source table (e.g., alertID for alerts, mapeoID for mapeo)
- *   - notes: Optional notes about the entry
+ * @param entries - Optional array of collection entries to add. Each entry must include feature_type ("alert" | "mapeo") so the server uses alert_id for alerts and _id for mapeo.
  * @returns Promise<AnnotatedCollection> - The created annotated collection
  */
 export const createAnnotatedCollection = async (
   collection: Omit<AnnotatedCollection, "id" | "created_at" | "updated_at">,
   incidentData?: Omit<Incident, "collection_id">,
-  entries?: Array<{
-    source_table: string;
-    source_id: string;
-    notes?: string;
-  }>,
+  entries?: CollectionEntryInput[],
 ): Promise<AnnotatedCollection> => {
   return await configDb.transaction(async (tx) => {
     const [newCollection] = await tx
@@ -60,8 +50,7 @@ export const createAnnotatedCollection = async (
 
     if (entries && entries.length > 0) {
       for (const entry of entries) {
-        // Alerts tables use alert_id (date-ish ids); mapeo and others use _id. Pick column by source_id shape.
-        const idColumn = looksLikeAlertId(entry.source_id) ? "alert_id" : "_id";
+        const idColumn = entry.feature_type === "alert" ? "alert_id" : "_id";
         const sourceResult = await warehouseDb.execute(sql`
           SELECT * FROM ${sql.identifier(entry.source_table)} WHERE ${sql.identifier(idColumn)} = ${entry.source_id} LIMIT 1
         `);
@@ -260,28 +249,20 @@ export const updateAnnotatedCollection = async (
 /**
  * Adds collection entries to an existing annotated collection
  * @param collectionId - The annotated collection ID to add entries to
- * @param entries - Array of collection entries to add. Each entry contains:
- *   - source_table: The table name (e.g., "fake_alerts", "mapeo_data") corresponding to the URL path
- *   - source_id: The unique identifier from the source table (e.g., alertID for alerts, mapeoID for mapeo)
- *   - notes: Optional notes about the entry
+ * @param entries - Array of entries to add; each must include feature_type ("alert" | "mapeo") so the server uses alert_id or _id
  * @param addedBy - User ID who is adding the collection entries
  * @returns Promise<CollectionEntry[]> - The added collection entries
  */
 export const addEntriesToCollection = async (
   collectionId: string,
-  entries: Array<{
-    source_table: string;
-    source_id: string;
-    notes?: string;
-  }>,
+  entries: CollectionEntryInput[],
   addedBy: string,
 ): Promise<CollectionEntry[]> => {
   return await configDb.transaction(async (tx) => {
     const newEntries = [];
 
     for (const entry of entries) {
-      // Alerts tables use alert_id (date-ish ids); mapeo and others use _id. Pick column by source_id shape.
-      const idColumn = looksLikeAlertId(entry.source_id) ? "alert_id" : "_id";
+      const idColumn = entry.feature_type === "alert" ? "alert_id" : "_id";
       const sourceResult = await warehouseDb.execute(sql`
         SELECT * FROM ${sql.identifier(entry.source_table)} WHERE ${sql.identifier(idColumn)} = ${entry.source_id} LIMIT 1
       `);

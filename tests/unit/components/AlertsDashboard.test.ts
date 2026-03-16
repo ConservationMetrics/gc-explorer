@@ -382,9 +382,16 @@ describe("AlertsDashboard component", () => {
         selectedSources: Array<{
           source_table: string;
           source_id: string;
+          feature_type: "alert" | "mapeo";
         }>;
       };
-      vm.selectedSources = [{ source_table: "mapeo_data", source_id: "test1" }];
+      vm.selectedSources = [
+        {
+          source_table: "mapeo_data",
+          source_id: "test1",
+          feature_type: "mapeo",
+        },
+      ];
       await flushPromises();
 
       const createButton = wrapper.find(

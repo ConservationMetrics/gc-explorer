@@ -225,6 +225,15 @@ export interface Incident {
   };
 }
 
+export type FeatureType = "alert" | "mapeo";
+
+export interface CollectionEntryInput {
+  source_table: string;
+  source_id: string;
+  feature_type: FeatureType;
+  notes?: string;
+}
+
 export interface CollectionEntry {
   id: string;
   collection_id: string;
