@@ -8,6 +8,14 @@ import {
 } from "@/server/database/schema";
 
 /**
+ * Returns true if source_id matches the alert ID pattern (YYYYMM + digits), so we query by alert_id; otherwise we use _id (e.g. mapeo).
+ *
+ * @param sourceId - The collection entry source_id to classify.
+ * @returns {boolean} True when source_id looks like an alert ID (date-ish numeric).
+ */
+const looksLikeAlertId = (sourceId: string) => /^\d{4}\d{2}\d/.test(sourceId);
+
+/**
  * Creates a new annotated collection with optional incident data and collection entries
  * @param collection - The annotated collection data (without id, created_at, updated_at)
  * @param incidentData - Optional incident-specific data if collection_type is "incident"
@@ -52,10 +60,10 @@ export const createAnnotatedCollection = async (
 
     if (entries && entries.length > 0) {
       for (const entry of entries) {
-        // Fetch source data from warehouse database
-        // All warehouse tables use _id as primary key
+        console.log(entry);
+        const idColumn = looksLikeAlertId(entry.source_id) ? "alert_id" : "_id";
         const sourceResult = await warehouseDb.execute(sql`
-          SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} LIMIT 1
+          SELECT * FROM ${sql.identifier(entry.source_table)} WHERE ${sql.identifier(idColumn)} = ${entry.source_id} LIMIT 1
         `);
 
         await tx.insert(collectionEntries).values({
@@ -63,7 +71,7 @@ export const createAnnotatedCollection = async (
           sourceTable: entry.source_table,
           sourceId: entry.source_id,
           sourceData: sourceResult[0] || {},
-          addedBy: collection.created_by,
+          addedBy: collection.created_by ?? "",
           notes: entry.notes,
         });
       }
@@ -272,10 +280,9 @@ export const addEntriesToCollection = async (
     const newEntries = [];
 
     for (const entry of entries) {
-      // Fetch source data from warehouse database
-      // All warehouse tables use _id as primary key
+      const idColumn = looksLikeAlertId(entry.source_id) ? "alert_id" : "_id";
       const sourceResult = await warehouseDb.execute(sql`
-        SELECT * FROM ${sql.identifier(entry.source_table)} WHERE _id = ${entry.source_id} LIMIT 1
+        SELECT * FROM ${sql.identifier(entry.source_table)} WHERE ${sql.identifier(idColumn)} = ${entry.source_id} LIMIT 1
       `);
 
       const [newEntry] = await tx

@@ -36,6 +36,7 @@ export const useIncidents = (
   route: RouteLocationNormalizedLoaded,
   router: Router,
   mapLegendLayerIds?: Ref<string | undefined>,
+  mapeoTableRef?: Ref<string | undefined>,
 ) => {
   // Incidents state management
   const incidents = ref<AnnotatedCollection[]>([]);
@@ -927,7 +928,7 @@ export const useIncidents = (
     ) {
       sourceTable = (tableName as string) || "";
     } else if (layerId.startsWith("mapeo-data")) {
-      sourceTable = "mapeo_data";
+      sourceTable = mapeoTableRef?.value ?? "";
     } else if (isAdditionalSelectableLayer(layerId)) {
       sourceTable = (tableName as string) || "";
     }
