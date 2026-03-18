@@ -33,6 +33,20 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (isDatasetRoute) {
     try {
+      // Extract the table name from the last part of the path
+      const tableName = to.path.split("/").pop()!;
+      const publicTableNames = await $fetch<string[]>(
+        "/api/config/public_views",
+      );
+      // Public access: no login needed
+      if (publicTableNames.includes(tableName)) return;
+
+      // Require authentication
+      if (!loggedIn.value) {
+        if (authStrategy === "auth0") return router.push("/login");
+        return;
+      }
+
       const response =
         await $fetch<
           [
@@ -41,19 +55,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
           ]
         >("/api/config");
       const [tableConfig] = response;
-
-      // Extract the table name from the last part of the path
-      const tableName = to.path.split("/").pop()!;
       const permission: RouteLevelPermission =
-        tableConfig?.[tableName]?.ROUTE_LEVEL_PERMISSION ?? "anyone";
-      // Public access: no login needed
-      if (permission === "anyone") return;
-
-      // Require authentication
-      if (!loggedIn.value) {
-        if (authStrategy === "auth0") return router.push("/login");
-        return; // allow for other auth strategies
-      }
+        tableConfig?.[tableName]?.ROUTE_LEVEL_PERMISSION ?? "member";
 
       // Authenticated from here on
       const typedUser = user.value as User;

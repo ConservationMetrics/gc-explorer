@@ -1,9 +1,15 @@
 import { eq, sql } from "drizzle-orm";
 
-import type { ColumnEntry, DataEntry, Views, ViewConfig } from "@/types";
+import type {
+  ColumnEntry,
+  DataEntry,
+  RouteLevelPermission,
+  Views,
+  ViewConfig,
+} from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
 
-import { viewConfig } from "./schema";
+import { viewConfig, publicViews } from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
 
 const checkTableExists = async (
@@ -256,6 +262,40 @@ export const fetchConfig = async (): Promise<Views> => {
   }
 };
 
+/**
+ * Keeps public_views in sync with view config: add table if permission is anyone, remove otherwise.
+ * @param tableName - The table name to sync.
+ * @param permission - The ROUTE_LEVEL_PERMISSION for that table.
+ */
+export const syncPublicViews = async (
+  tableName: string,
+  permission: RouteLevelPermission | undefined,
+): Promise<void> => {
+  if (permission === "anyone") {
+    await configDb
+      .insert(publicViews)
+      .values({ tableName })
+      .onConflictDoNothing();
+  } else {
+    // Ensure table is not in public_views. If it was never there or already removed,
+    // delete affects 0 rows and does not throw; save flow continues normally.
+    await configDb
+      .delete(publicViews)
+      .where(eq(publicViews.tableName, tableName));
+  }
+};
+
+/**
+ * Returns the list of table names that are public (ROUTE_LEVEL_PERMISSION = anyone).
+ * Used by the open public_views API for middleware auth bypass.
+ */
+export const fetchPublicViewTableNames = async (): Promise<string[]> => {
+  const rows = await configDb
+    .select({ tableName: publicViews.tableName })
+    .from(publicViews);
+  return rows.map((row) => row.tableName);
+};
+
 export const updateConfig = async (
   tableName: string,
   config: unknown,
@@ -290,6 +330,8 @@ export const updateConfig = async (
         viewsConfig: configString,
       })
       .where(eq(viewConfig.tableName, tableName));
+
+    await syncPublicViews(tableName, typedConfig.ROUTE_LEVEL_PERMISSION);
   } catch (error) {
     console.error("Error updating config:", error);
     throw error;
@@ -312,6 +354,9 @@ export const removeTableFromConfig = async (
   tableName: string,
 ): Promise<void> => {
   try {
+    await configDb
+      .delete(publicViews)
+      .where(eq(publicViews.tableName, tableName));
     await configDb
       .delete(viewConfig)
       .where(eq(viewConfig.tableName, tableName));
