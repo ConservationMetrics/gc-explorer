@@ -18,6 +18,14 @@ ALTER TABLE ONLY public.view_config
     ADD CONSTRAINT view_config_pkey PRIMARY KEY (table_name);
 
 --
+-- Name: public_views; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE IF NOT EXISTS public.public_views (
+    table_name text NOT NULL PRIMARY KEY
+);
+
+--
 -- Annotated Collections Tables
 --
 

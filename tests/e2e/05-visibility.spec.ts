@@ -53,6 +53,32 @@ authTest(
   },
 );
 
+test("visibility system - public dataset accessible without session (incognito)", async ({
+  page,
+}) => {
+  await page.goto("/gallery/seed_survey_data");
+  await page.waitForURL("**/gallery/**", { timeout: 10000 });
+  await expect(page).not.toHaveURL(/\/login|\?reason=unauthorized/);
+
+  await Promise.any([
+    page.getByTestId("gallery-container").waitFor({
+      state: "attached",
+      timeout: 15000,
+    }),
+    page.getByTestId("gallery-error-message").waitFor({
+      state: "visible",
+      timeout: 15000,
+    }),
+  ]);
+  await expect(page).not.toHaveURL(/\/login|\?reason=unauthorized/);
+
+  const galleryContainer = page.getByTestId("gallery-container");
+  const galleryError = page.getByTestId("gallery-error-message");
+  const hasGallery = (await galleryContainer.count()) > 0;
+  const hasError = (await galleryError.count()) > 0;
+  expect(hasGallery || hasError).toBe(true);
+});
+
 test("visibility system - protected dataset redirects to login when not authenticated", async ({
   page,
 }) => {
