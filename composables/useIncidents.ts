@@ -461,6 +461,19 @@ export const useIncidents = (
   };
 
   /**
+   * Deletes an incident (collection) by ID. Clears selected incident if it was the one deleted and refreshes the list.
+   * @param incidentId - The collection/incident ID to delete
+   */
+  const deleteIncident = async (incidentId: string) => {
+    await $fetch(`/api/collections/${incidentId}`, { method: "DELETE" });
+    incidentDetailsCache.delete(incidentId);
+    if (selectedIncident.value?.id === incidentId) {
+      clearSelectedIncident();
+    }
+    await fetchIncidents();
+  };
+
+  /**
    * Toggles the incidents sidebar visibility
    * Clears all selections when closing only if they were opened via "Create Incident" button
    * If no sources are selected, it's safe to open (user is just viewing saved incidents)
@@ -1574,6 +1587,7 @@ export const useIncidents = (
     scheduleIncidentPrefetch,
     openIncidentDetails,
     createIncident,
+    deleteIncident,
     toggleIncidentsSidebar,
     openIncidentsSidebarWithCreateForm,
     toggleMultiSelectMode,

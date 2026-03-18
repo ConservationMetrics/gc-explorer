@@ -85,6 +85,7 @@ const emit = defineEmits<{
   removeSource: [sourceTable: string, sourceId: string];
   clearSources: [];
   retryIncidentDetails: [incidentId: string];
+  deleteIncident: [incidentId: string];
 }>();
 
 const showCreateForm = ref(false);
@@ -322,9 +323,9 @@ const handleClose = () => {
             </div>
           </div>
 
-          <!-- Copy link section -->
+          <!-- Copy link and remove incident section -->
           <div
-            class="mt-6 pt-4 border-t border-gray-200"
+            class="mt-6 pt-4 border-t border-gray-200 flex flex-row flex-wrap gap-2"
             data-testid="copy-link-section"
           >
             <button
@@ -340,6 +341,14 @@ const handleClose = () => {
               <span>{{
                 showCopied ? $t("copied") : $t("incidents.copyLink")
               }}</span>
+            </button>
+            <button
+              type="button"
+              class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:text-red-800 transition-colors duration-200"
+              data-testid="remove-incident-button"
+              @click="emit('deleteIncident', selectedIncident!.id)"
+            >
+              {{ $t("incidents.removeIncident") }}
             </button>
           </div>
 
