@@ -15,7 +15,7 @@ const { toasts, removeToast } = useToast();
     :duration="toast.duration || 0"
     :visible="true"
     :position="toast.position || 'top-right'"
-    :style="{ zIndex: 1000 - index }"
+    :style="{ zIndex: 10000 - index }"
     @close="removeToast(toast.id)"
   />
 </template>
