@@ -16,7 +16,7 @@ const ENTRY_CSV_FIXED_HEADERS = [
   "entry_added_at",
 ] as const;
 
-function unionSourceDataKeys(entries: CollectionEntry[]): string[] {
+const unionSourceDataKeys = (entries: CollectionEntry[]): string[] => {
   const keys = new Set<string>();
   for (const entry of entries) {
     for (const key of Object.keys(entry.source_data ?? {})) {
@@ -24,7 +24,7 @@ function unionSourceDataKeys(entries: CollectionEntry[]): string[] {
     }
   }
   return Array.from(keys).sort((a, b) => a.localeCompare(b));
-}
+};
 
 /**
  * Builds CSV text: (1) incident/collection field–value rows, then (2) a tabular block

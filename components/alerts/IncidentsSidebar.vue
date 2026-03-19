@@ -8,7 +8,8 @@ import {
   buildIncidentEntriesFeatureCollection,
   buildIncidentMetadataCsv,
   triggerTextDownload,
-} from "@/utils/incidentExport";
+} from "@/utils/incidentHelpers";
+import { sanitizeFilenameSegment } from "@/utils/identifierUtils";
 import type {
   AnnotatedCollection,
   CollectionEntry,
@@ -100,9 +101,7 @@ const downloadIncidentMetadata = () => {
     props.selectedIncidentData,
     props.selectedIncidentEntries,
   );
-  const safeName =
-    props.selectedIncident.name.replace(/[^a-z0-9-_]+/gi, "_").slice(0, 80) ||
-    "incident";
+  const safeName = sanitizeFilenameSegment(props.selectedIncident.name);
   triggerTextDownload(
     `${safeName}-${props.selectedIncident.id}-metadata.csv`,
     csv,
@@ -116,9 +115,7 @@ const downloadIncidentFeatures = () => {
     props.selectedIncidentEntries,
   );
   const text = JSON.stringify(fc, null, 2);
-  const safeName =
-    props.selectedIncident.name.replace(/[^a-z0-9-_]+/gi, "_").slice(0, 80) ||
-    "incident";
+  const safeName = sanitizeFilenameSegment(props.selectedIncident.name);
   triggerTextDownload(
     `${safeName}-${props.selectedIncident.id}-features.geojson`,
     text,

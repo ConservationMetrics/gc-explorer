@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildIncidentMetadataCsv,
   buildIncidentEntriesFeatureCollection,
-} from "@/utils/incidentExport";
+} from "@/utils/incidentHelpers";
 import type { AnnotatedCollection, CollectionEntry, Incident } from "@/types";
 
 describe("buildIncidentMetadataCsv", () => {

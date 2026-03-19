@@ -289,3 +289,38 @@ test("annotated collections - shareable incident link URL parameter", async ({
   await page.goto(url);
   await expect(page.getByText("Shareable Link Test Incident")).toBeVisible();
 });
+
+test("annotated collections - incident detail shows CSV and GeoJSON download buttons", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await navigateToAlertsDashboard(page);
+
+  await page.getByTestId("incidents-multiselect-button").click();
+
+  const lngLat = await getSelectableFeatureLngLat(page);
+  if (!lngLat) test.skip();
+
+  const point = await projectLngLatToPagePoint(page, lngLat);
+  if (!point) test.skip();
+
+  await page.mouse.click(point.x, point.y, {
+    modifiers: [selectionModifierKey],
+  });
+
+  await page.getByTestId("incidents-create-button").click();
+
+  await page.getByLabel("Name").fill("Export Buttons E2E Incident");
+  await page.getByLabel("Description").fill("E2E download buttons visibility");
+  await page.getByLabel("Incident Type").selectOption("Deforestation");
+  await page.locator(".submit-btn").click();
+
+  await page.getByTestId("incidents-view-button").click();
+  await page.getByText("Export Buttons E2E Incident").click();
+
+  await expect(
+    page.getByTestId("download-incident-metadata-button"),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId("download-incident-features-button"),
+  ).toBeVisible();
+});
