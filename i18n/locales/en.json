@@ -106,7 +106,7 @@
   "incidents.close": "Close",
   "incidents.copyLink": "Copy link to incident",
   "incidents.downloadIncidentMetadata": "Download incident metadata",
-  "incidents.downloadIncidentMetadataTooltip": "CSV with Incident Data",
+  "incidents.downloadIncidentMetadataTooltip": "CSV with incident data",
   "incidents.downloadIncidentFeatures": "Download incident features",
   "incidents.downloadIncidentFeaturesTooltip": "GeoJSON with all entries",
   "incidents.created": "Created",
