@@ -55,12 +55,7 @@ const getUniqueFilterValues = computed(() => {
 });
 
 const emitFilterSelection = () => {
-  if (selectedFilterValue.value.length > 0) {
-    const labels = selectedFilterValue.value;
-    emit("filter", labels);
-  } else {
-    emit("filter", "null");
-  }
+  emit("filter", [...selectedFilterValue.value]);
 };
 </script>
 
@@ -75,8 +70,8 @@ const emitFilterSelection = () => {
       :is-multi="true"
       :options="getUniqueFilterValues"
       data-testid="filter-select"
-      @option-selected="emitFilterSelection()"
-      @option-deselected="emitFilterSelection()"
+      @option-selected="emitFilterSelection"
+      @option-deselected="emitFilterSelection"
     >
       <!-- This is what shows in the listbox when selected -->
       <template #tag="{ option, removeOption }">
