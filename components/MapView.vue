@@ -427,6 +427,7 @@ const prepareMapCanvasContent = async () => {
 
 const selectedFilterValues = ref<FilterValues>([]);
 const { dateMin, dateMax, setDateRange } = useTimestampFilter();
+const filterResetKey = ref(0);
 
 /** Apply date range then category filter (AND). */
 const applyAllFilters = () => {
@@ -505,6 +506,12 @@ const resetToInitialState = () => {
   showSidebar.value = true;
   showIntroPanel.value = true;
 
+  // Reset filters
+  selectedFilterValues.value = [];
+  setDateRange({ start: null, end: null });
+  filterResetKey.value++;
+  applyAllFilters();
+
   // Fly to the initial position
   map.value.flyTo({
     center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
@@ -572,6 +579,7 @@ onBeforeUnmount(() => {
     <div class="absolute top-4 right-14 z-10 flex flex-col gap-0.5">
       <DataFilter
         v-if="filterColumn"
+        :key="`filter-${filterResetKey}`"
         :data="flatDataForFilter"
         :filter-column="filterColumn"
         :color-column="colorColumn"
@@ -580,6 +588,7 @@ onBeforeUnmount(() => {
       />
       <TimestampFilter
         v-if="timestampColumn"
+        :key="`timestamp-${filterResetKey}`"
         :data="flatDataForFilter"
         :timestamp-column="timestampColumn"
         @filter="onTimestampFilter"
