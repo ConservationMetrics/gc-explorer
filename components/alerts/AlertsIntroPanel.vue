@@ -49,64 +49,41 @@ const emit = defineEmits(["dateRangeChanged"]);
           <p class="italic">{{ $t("clickOnAlertsForMoreInfo") }}.</p>
         </div>
 
-        <div class="space-y-2">
-          <div
-            v-if="props.alertsStatistics.typeOfAlerts?.length"
-            class="flex items-center gap-2"
-          >
-            <span class="font-bold text-sm">{{ $t("typeOfAlerts") }}:</span>
-            <span class="text-sm text-muted-foreground">{{
-              props.alertsStatistics.typeOfAlerts.join(", ")
-            }}</span>
-          </div>
-          <div
-            v-if="props.alertsStatistics.dataProviders?.length"
-            class="flex items-center gap-2"
-          >
-            <span class="font-bold text-sm">{{ $t("dataProviders") }}:</span>
-            <span class="text-sm text-muted-foreground">{{
-              props.alertsStatistics.dataProviders.join(", ")
-            }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="font-bold text-sm"
-              >{{ $t("alertDetectionRange") }}:</span
+        <div class="space-y-2 text-sm">
+          <p v-if="props.alertsStatistics.typeOfAlerts?.length">
+            <span class="font-bold">{{ $t("typeOfAlerts") }}:&nbsp;</span>
+            {{ props.alertsStatistics.typeOfAlerts.join(", ") }}
+          </p>
+          <p v-if="props.alertsStatistics.dataProviders?.length">
+            <span class="font-bold">{{ $t("dataProviders") }}:&nbsp;</span>
+            {{ props.alertsStatistics.dataProviders.join(", ") }}
+          </p>
+          <p>
+            <span class="font-bold"
+              >{{ $t("alertDetectionRange") }}:&nbsp;</span
             >
-            <span class="text-sm text-muted-foreground">{{
-              props.alertsStatistics.alertDetectionRange
-            }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="font-bold text-sm">{{ $t("recentAlertsDate") }}:</span>
-            <span class="text-sm text-muted-foreground">{{
-              props.alertsStatistics.recentAlertsDate
-            }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="font-bold text-sm"
-              >{{ $t("recentAlertsNumber") }}:</span
-            >
-            <span class="text-sm text-muted-foreground">{{
-              $n(props.alertsStatistics.recentAlertsNumber)
-            }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="font-bold text-sm">{{ $t("alertsTotal") }}:</span>
-            <span class="text-sm text-muted-foreground">{{
-              $n(props.alertsStatistics.alertsTotal)
-            }}</span>
-          </div>
-          <div
+            {{ props.alertsStatistics.alertDetectionRange }}
+          </p>
+          <p>
+            <span class="font-bold">{{ $t("recentAlertsDate") }}:&nbsp;</span>
+            {{ props.alertsStatistics.recentAlertsDate }}
+          </p>
+          <p>
+            <span class="font-bold">{{ $t("recentAlertsNumber") }}:&nbsp;</span>
+            {{ $n(props.alertsStatistics.recentAlertsNumber) }}
+          </p>
+          <p>
+            <span class="font-bold">{{ $t("alertsTotal") }}:&nbsp;</span>
+            {{ $n(props.alertsStatistics.alertsTotal) }}
+          </p>
+          <p
             v-if="
               props.calculateHectares && props.alertsStatistics.hectaresTotal
             "
-            class="flex items-center gap-2"
           >
-            <span class="font-bold text-sm">{{ $t("hectaresTotal") }}:</span>
-            <span class="text-sm text-muted-foreground">{{
-              $n(Number(props.alertsStatistics.hectaresTotal))
-            }}</span>
-          </div>
+            <span class="font-bold">{{ $t("hectaresTotal") }}:&nbsp;</span>
+            {{ $n(Number(props.alertsStatistics.hectaresTotal)) }}
+          </p>
         </div>
       </div>
     </div>
