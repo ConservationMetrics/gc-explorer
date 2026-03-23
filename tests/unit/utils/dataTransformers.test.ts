@@ -169,7 +169,7 @@ describe("transformAlertEntry", () => {
     expect(result.alertAreaHectares).toBe("0.85");
     expect(result.dataProvider).toBe("Fake Alerts Provider");
     expect(result.alertDetectionRange).toBe("2024-01-01 to 2024-01-31");
-    expect(result.monthDetected).toBe("01-2024");
+    expect(result.dateDetected).toBe("01-2024");
   });
 
   it("should resolve satellite prefix to full name", () => {

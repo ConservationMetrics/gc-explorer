@@ -14,3 +14,22 @@ export const parseDateMs = (value: unknown): number | null => {
   const date = new Date(str);
   return Number.isNaN(date.getTime()) ? null : date.getTime();
 };
+
+/**
+ * Formats a date string to a locale date string.
+ *
+ * @param month - The month (1-12).
+ * @param year - The year (4 digits).
+ * @param day - The day (1-31). Optional.
+ * @returns The formatted date string.
+ */
+export const formatLocaleDate = (
+  month: string | number,
+  year: string | number,
+  day?: string | number | null,
+): string => {
+  const mm = String(month).padStart(2, "0");
+  return day
+    ? `${String(day).padStart(2, "0")}-${mm}-${year}`
+    : `${mm}-${year}`;
+};

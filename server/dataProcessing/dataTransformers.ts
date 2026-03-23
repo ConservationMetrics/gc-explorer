@@ -1,4 +1,5 @@
 import { calculateCentroid, isValidGeolocation } from "@/utils/geoUtils";
+import { formatLocaleDate } from "@/utils/dateUtils";
 import type {
   AlertsMetadata,
   AlertsPerMonth,
@@ -119,6 +120,7 @@ const prepareMinimalAlertEntries = (
  * @param {AlertsMetadata[] | null} metadata - Optional metadata for additional context.
  * @returns {AlertsStatistics} An object containing various statistics for the alerts view.
  */
+
 const prepareAlertsStatistics = (
   data: DataEntry[],
   metadata: AlertsMetadata[] | null,
@@ -141,9 +143,11 @@ const prepareAlertsStatistics = (
   } | null => {
     if (!metadata || metadata.length === 0) return null;
 
-    metadata.sort((a, b) =>
-      a.year === b.year ? a.month - b.month : a.year - b.year,
-    );
+    metadata.sort((a, b) => {
+      if (a.year !== b.year) return a.year - b.year;
+      if (a.month !== b.month) return a.month - b.month;
+      return (a.day ?? 0) - (b.day ?? 0);
+    });
     const earliestMetadata = metadata[0];
     const latestMetadata = metadata[metadata.length - 1];
 
@@ -151,11 +155,23 @@ const prepareAlertsStatistics = (
       earliestDate: new Date(
         earliestMetadata.year,
         earliestMetadata.month - 1,
-        1,
+        earliestMetadata.day ?? 1,
       ),
-      latestDate: new Date(latestMetadata.year, latestMetadata.month - 1, 28),
-      earliestDateStr: `${String(earliestMetadata.month).padStart(2, "0")}-${earliestMetadata.year}`,
-      latestDateStr: `${String(latestMetadata.month).padStart(2, "0")}-${latestMetadata.year}`,
+      latestDate: new Date(
+        latestMetadata.year,
+        latestMetadata.month - 1,
+        latestMetadata.day ?? 28,
+      ),
+      earliestDateStr: formatLocaleDate(
+        earliestMetadata.month,
+        earliestMetadata.year,
+        earliestMetadata.day,
+      ),
+      latestDateStr: formatLocaleDate(
+        latestMetadata.month,
+        latestMetadata.year,
+        latestMetadata.day,
+      ),
     };
   };
 
@@ -211,11 +227,18 @@ const prepareAlertsStatistics = (
 
   // Create Date objects for sorting and comparisons
   const formattedDates = data.map((item) => {
+    const mm = item.month_detec.padStart(2, "0");
+    const dayNum = item.day_detec ? parseInt(item.day_detec) : 15;
     return {
       date: new Date(
-        `${item.year_detec}-${item.month_detec.padStart(2, "0")}-15`,
+        `${item.year_detec}-${mm}-${String(dayNum).padStart(2, "0")}`,
       ),
-      dateString: `${item.month_detec.padStart(2, "0")}-${item.year_detec}`,
+      dateString: `${mm}-${item.year_detec}`,
+      displayString: formatLocaleDate(
+        item.month_detec,
+        item.year_detec,
+        item.day_detec,
+      ),
     };
   });
 
@@ -235,11 +258,11 @@ const prepareAlertsStatistics = (
     // If metadata is null, calculate earliest and latest dates from data
     earliestDate = formattedDates[0].date;
     earliestDate.setDate(1);
-    earliestDateStr = formattedDates[0].dateString;
+    earliestDateStr = formattedDates[0].displayString;
 
     latestDate = formattedDates[formattedDates.length - 1].date;
     latestDate.setDate(28);
-    latestDateStr = formattedDates[formattedDates.length - 1].dateString;
+    latestDateStr = formattedDates[formattedDates.length - 1].displayString;
   }
 
   // Create an array of all dates
@@ -352,13 +375,23 @@ const prepareAlertsStatistics = (
   updateCumulativeData(last12MonthsData, hectaresPerMonth, "hectares");
 
   // Count the number of alerts for the most recent date
-  const recentAlertDate =
+  const lastItem =
     last12MonthsData.length > 0
-      ? `${last12MonthsData[last12MonthsData.length - 1].month_detec.padStart(2, "0")}-${last12MonthsData[last12MonthsData.length - 1].year_detec}`
-      : "N/A";
+      ? last12MonthsData[last12MonthsData.length - 1]
+      : null;
+  const recentMonthYear = lastItem
+    ? `${lastItem.month_detec.padStart(2, "0")}-${lastItem.year_detec}`
+    : "N/A";
+  const recentAlertDate = lastItem
+    ? formatLocaleDate(
+        lastItem.month_detec,
+        lastItem.year_detec,
+        lastItem.day_detec,
+      )
+    : "N/A";
   const recentAlertsNumber = data.filter((item) => {
     const itemDateStr = `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
-    return itemDateStr === recentAlertDate;
+    return itemDateStr === recentMonthYear;
   }).length;
 
   // Calculate total number of alerts

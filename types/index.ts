@@ -133,6 +133,7 @@ export type AlertsMetadata = {
   type_alert: string;
   month: number;
   year: number;
+  day?: number;
   total_alerts: string;
   description_alerts: string;
   territory: string;
