@@ -502,6 +502,7 @@ const handleToggleMultiSelectMode = () => {
     !showIncidentsSidebar.value
   ) {
     showSidebar.value = true;
+    showIntroPanel.value = true;
   }
 };
 
@@ -519,6 +520,7 @@ const handleToggleBoundingBoxMode = () => {
     !showIncidentsSidebar.value
   ) {
     showSidebar.value = true;
+    showIntroPanel.value = true;
   }
 };
 
@@ -527,6 +529,7 @@ const handleToggleIncidentsSidebar = () => {
   toggleIncidentsSidebar();
   if (wasOpen && !showIncidentsSidebar.value) {
     showSidebar.value = true;
+    showIntroPanel.value = true;
   }
 };
 

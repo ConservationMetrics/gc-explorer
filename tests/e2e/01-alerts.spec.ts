@@ -1,4 +1,5 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
+import { navigateToAlertsDashboard } from "./helpers/navigateToAlertsDashboard";
 
 test("alerts dashboard - layer visibility toggles", async ({
   authenticatedPageAsAdmin: page,
@@ -946,4 +947,19 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
   } else {
     console.log("No initial source data found, skipping date range test");
   }
+});
+
+test("alerts dashboard - restores alerts intro after exiting incident multiselect mode", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await navigateToAlertsDashboard(page);
+
+  const intro = page.getByTestId("alerts-intro-panel");
+  await expect(intro).toBeVisible({ timeout: 20000 });
+
+  await page.getByTestId("incidents-multiselect-button").click();
+  await expect(intro).not.toBeVisible();
+
+  await page.getByTestId("incidents-multiselect-button").click();
+  await expect(intro).toBeVisible({ timeout: 20000 });
 });
