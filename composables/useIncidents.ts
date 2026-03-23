@@ -569,6 +569,13 @@ export const useIncidents = (
     syncSelectedSourceHighlightsToMode();
   };
 
+  /**
+   * Extracts a stable source identifier from a rendered map feature.
+   * Supports alerts (`alertID`) and Mapeo/back-compat keys.
+   *
+   * @param feature - Map feature from click/query results.
+   * @returns Source identifier string, or null when no known key exists.
+   */
   const extractFeatureSourceId = (feature: Feature): string | null => {
     if (!feature.properties) return null;
     if (feature.properties.alertID) return String(feature.properties.alertID);
@@ -580,6 +587,13 @@ export const useIncidents = (
     return null;
   };
 
+  /**
+   * Synchronizes incident-selection highlighting with current mode state.
+   * - When incident mode is disabled, map highlights are cleared but selectedSources stay in memory.
+   * - When enabled, highlights are rebuilt from selectedSources and cluster highlighting is refreshed.
+   *
+   * @returns void
+   */
   const syncSelectedSourceHighlightsToMode = () => {
     if (!map.value) return;
 
