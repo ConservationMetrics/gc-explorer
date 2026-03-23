@@ -527,7 +527,10 @@ describe("AlertsDashboard component", () => {
       mapboxMock.fireLoad();
       await flushPromises();
 
-      const vm = wrapper.vm as unknown as { showSidebar: boolean };
+      const vm = wrapper.vm as unknown as {
+        showSidebar: boolean;
+        showIntroPanel: boolean;
+      };
       const multiSelectButton = wrapper.find(
         '[data-testid="incidents-multiselect-button"]',
       );
@@ -535,10 +538,13 @@ describe("AlertsDashboard component", () => {
       await multiSelectButton.trigger("click");
       await flushPromises();
       expect(vm.showSidebar).toBe(false);
+      vm.showIntroPanel = false;
+      await flushPromises();
 
       await multiSelectButton.trigger("click");
       await flushPromises();
       expect(vm.showSidebar).toBe(true);
+      expect(vm.showIntroPanel).toBe(true);
     });
 
     it("does not open feature sidebar on map click while incidents sidebar is open", async () => {
