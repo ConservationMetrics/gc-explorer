@@ -337,6 +337,45 @@ test("index page - language picker functionality", async ({
   ).toBeVisible({ timeout: 5000 });
 });
 
+test("index page - static assets load uncorrupted (logo, favicon)", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  const failedAssets: string[] = [];
+  page.on("response", (response) => {
+    const url = response.url();
+    if (
+      (url.includes("gcexplorer.png") || url.includes("favicon.ico")) &&
+      response.status() !== 200
+    ) {
+      failedAssets.push(`${url} → ${response.status()}`);
+    }
+  });
+
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  // Logo image should be visible and rendered with nonzero dimensions
+  const logo = page
+    .locator('img[alt="Guardian Connector Explorer"]:visible')
+    .first();
+  await expect(logo).toBeVisible({ timeout: 10000 });
+
+  const logoDimensions = await logo.evaluate((img: HTMLImageElement) => ({
+    naturalWidth: img.naturalWidth,
+    naturalHeight: img.naturalHeight,
+  }));
+  expect(logoDimensions.naturalWidth).toBeGreaterThan(0);
+  expect(logoDimensions.naturalHeight).toBeGreaterThan(0);
+
+  // Favicon should have loaded successfully (no 4xx/5xx)
+  const faviconResponse = await page.request.get("/favicon.ico");
+  expect(faviconResponse.status()).toBe(200);
+  const faviconBody = await faviconResponse.body();
+  expect(faviconBody.length).toBeGreaterThan(0);
+
+  expect(failedAssets).toHaveLength(0);
+});
+
 test("index page - language switching to Portuguese changes heading", async ({
   authenticatedPageAsAdmin: page,
 }) => {
