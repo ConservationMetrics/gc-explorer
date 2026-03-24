@@ -39,6 +39,7 @@ export const createAnnotatedCollection = async (
     if (incidentData && collection.collection_type === "incident") {
       await tx.insert(incidents).values({
         collectionId: newCollection.id,
+        parentAlertsTable: incidentData.parent_alerts_table,
         incidentType: incidentData.incident_type,
         responsibleParty: incidentData.responsible_party,
         status: incidentData.status,
@@ -123,6 +124,7 @@ export const getAnnotatedCollection = async (
     if (incidentResult) {
       incident = {
         collection_id: incidentResult.collectionId,
+        parent_alerts_table: incidentResult.parentAlertsTable ?? undefined,
         incident_type: incidentResult.incidentType,
         responsible_party: incidentResult.responsibleParty,
         status: incidentResult.status,
@@ -212,6 +214,9 @@ export const updateAnnotatedCollection = async (
       const incidentUpdateData: Partial<typeof incidents.$inferInsert> = {};
       if (incidentUpdates.incident_type !== undefined)
         incidentUpdateData.incidentType = incidentUpdates.incident_type;
+      if (incidentUpdates.parent_alerts_table !== undefined)
+        incidentUpdateData.parentAlertsTable =
+          incidentUpdates.parent_alerts_table;
       if (incidentUpdates.responsible_party !== undefined)
         incidentUpdateData.responsibleParty = incidentUpdates.responsible_party;
       if (incidentUpdates.impact_description !== undefined)
@@ -322,6 +327,7 @@ export const listAnnotatedCollections = async (filters?: {
   collection_type?: string;
   status?: string;
   created_by?: string;
+  parent_alerts_table?: string;
   limit?: number;
   offset?: number;
 }): Promise<{
@@ -341,13 +347,37 @@ export const listAnnotatedCollections = async (filters?: {
     );
   }
 
-  // For status filtering, we need to join with incidents table
-  if (filters?.status) {
+  // For incident-scoped filtering, we need to join with incidents table
+  if (filters?.status || filters?.parent_alerts_table) {
+    const joinWhereConditions = [];
+    if (filters?.status) {
+      joinWhereConditions.push(eq(incidents.status, filters.status));
+    }
+    if (filters?.parent_alerts_table) {
+      joinWhereConditions.push(
+        eq(incidents.parentAlertsTable, filters.parent_alerts_table),
+      );
+    }
+    if (filters?.collection_type) {
+      joinWhereConditions.push(
+        eq(annotatedCollections.collectionType, filters.collection_type),
+      );
+    }
+    if (filters?.created_by) {
+      joinWhereConditions.push(
+        eq(annotatedCollections.createdBy, filters.created_by),
+      );
+    }
+    const joinWhere =
+      joinWhereConditions.length === 1
+        ? joinWhereConditions[0]
+        : and(...joinWhereConditions);
+
     const collectionsResult = await configDb
       .select()
       .from(annotatedCollections)
       .leftJoin(incidents, eq(annotatedCollections.id, incidents.collectionId))
-      .where(eq(incidents.status, filters.status))
+      .where(joinWhere)
       .orderBy(desc(annotatedCollections.createdAt))
       .limit(filters?.limit || 20)
       .offset(filters?.offset || 0);
@@ -356,7 +386,7 @@ export const listAnnotatedCollections = async (filters?: {
       .select({ count: sql<number>`count(*)` })
       .from(annotatedCollections)
       .leftJoin(incidents, eq(annotatedCollections.id, incidents.collectionId))
-      .where(eq(incidents.status, filters.status));
+      .where(joinWhere);
 
     const collections = collectionsResult.map((row) => ({
       id: row.annotated_collections.id,

@@ -28,6 +28,7 @@ export const handleListCollections = async (
         collection_type: defaultCollectionType || (query.type as string),
         status: query.status as string,
         created_by: query.created_by as string,
+        parent_alerts_table: query.parent_alerts_table as string,
         limit: query.limit ? parseInt(query.limit as string) : 20,
         offset: query.offset ? parseInt(query.offset as string) : 0,
       }).filter(([_, value]) => value !== undefined),
@@ -101,6 +102,7 @@ export const handleCreateCollection = async (
     let incidentData: Omit<Incident, "collection_id"> | undefined;
     if (collectionType === "incident") {
       incidentData = {
+        parent_alerts_table: body.parent_alerts_table,
         incident_type: body.incident_type,
         responsible_party: body.responsible_party,
         status: body.status || "suspected",
