@@ -24,6 +24,7 @@ export const incidents = pgTable("incidents", {
   collectionId: uuid("collection_id")
     .primaryKey()
     .references(() => annotatedCollections.id, { onDelete: "cascade" }),
+  parentAlertsTable: text("parent_alerts_table"),
   incidentType: text("incident_type"),
   responsibleParty: text("responsible_party"),
   status: text("status").default("suspected"),

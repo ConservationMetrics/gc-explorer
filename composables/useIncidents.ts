@@ -100,6 +100,17 @@ export const useIncidents = (
 
   let incidentPrefetchTimeout: ReturnType<typeof setTimeout> | null = null;
 
+  /**
+   * Returns current alerts table name from route params.
+   *
+   * @returns Alerts table slug string or undefined.
+   */
+  const getCurrentAlertsTable = (): string | undefined => {
+    const tableRaw = route.params.tablename;
+    if (!tableRaw) return undefined;
+    return Array.isArray(tableRaw) ? tableRaw.join("/") : String(tableRaw);
+  };
+
   const getAdditionalSelectableLayerIds = () =>
     (mapLegendLayerIds?.value || "")
       .split(",")
@@ -273,6 +284,7 @@ export const useIncidents = (
         query: {
           limit: incidentsLimit.value,
           offset,
+          parent_alerts_table: getCurrentAlertsTable(),
         },
       });
 
@@ -439,6 +451,7 @@ export const useIncidents = (
           },
           body: {
             ...incidentData,
+            parent_alerts_table: getCurrentAlertsTable(),
             entries: selectedSources.value,
           },
         },
