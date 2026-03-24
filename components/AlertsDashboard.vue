@@ -44,7 +44,7 @@ import type {
 import type { Feature, FeatureCollection } from "geojson";
 
 const { t } = useI18n();
-const { error: showErrorToast } = useToast();
+const { error: showErrorToast, success: showSuccessToast } = useToast();
 
 const handleCreateIncident = async (
   data: Parameters<typeof createIncident>[0],
@@ -54,6 +54,33 @@ const handleCreateIncident = async (
   } catch {
     showErrorToast(t("errorCouldNotCreateIncident"));
   }
+};
+
+const showRemoveIncidentModal = ref(false);
+const incidentIdToRemove = ref<string | null>(null);
+
+const handleDeleteIncident = (incidentId: string) => {
+  incidentIdToRemove.value = incidentId;
+  showRemoveIncidentModal.value = true;
+};
+
+const handleConfirmRemoveIncident = async () => {
+  if (!incidentIdToRemove.value) return;
+  try {
+    await deleteIncident(incidentIdToRemove.value);
+    showRemoveIncidentModal.value = false;
+    incidentIdToRemove.value = null;
+    showSuccessToast(t("incidents.incidentRemoved"));
+  } catch {
+    showErrorToast(t("errorCouldNotDeleteIncident"));
+    showRemoveIncidentModal.value = false;
+    incidentIdToRemove.value = null;
+  }
+};
+
+const handleCancelRemoveIncident = () => {
+  showRemoveIncidentModal.value = false;
+  incidentIdToRemove.value = null;
 };
 
 const props = defineProps<{
@@ -124,6 +151,7 @@ const {
   scheduleIncidentPrefetch,
   openIncidentDetails,
   createIncident,
+  deleteIncident,
   toggleIncidentsSidebar,
   openIncidentsSidebarWithCreateForm,
   toggleMultiSelectMode,
@@ -1732,6 +1760,7 @@ onBeforeUnmount(() => {
         @hover-incident="scheduleIncidentPrefetch"
         @load-more-incidents="loadMoreIncidents"
         @create-incident="handleCreateIncident"
+        @delete-incident="handleDeleteIncident"
         @remove-source="removeSourceFromSelection"
         @clear-sources="handleClearSourcesAndCloseSidebar"
       />
@@ -1753,6 +1782,43 @@ onBeforeUnmount(() => {
         @hover-button="(button) => (hoveredButton = button)"
         @clear-hover="hoveredButton = null"
       />
+    </div>
+
+    <!-- Remove incident confirmation modal -->
+    <div
+      v-if="showRemoveIncidentModal"
+      data-testid="remove-incident-modal"
+      class="fixed inset-0 bg-black/50 z-[1100] flex items-center justify-center p-4"
+    >
+      <div
+        data-testid="remove-incident-modal-content"
+        class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+      >
+        <p
+          data-testid="remove-incident-modal-message"
+          class="mb-4 text-gray-700"
+        >
+          {{ $t("incidents.removeIncidentConfirm") }}
+        </p>
+        <div class="flex gap-3 justify-end">
+          <button
+            data-testid="remove-incident-confirm-button"
+            type="button"
+            class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
+            @click="handleConfirmRemoveIncident"
+          >
+            {{ $t("confirm") }}
+          </button>
+          <button
+            data-testid="remove-incident-cancel-button"
+            type="button"
+            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
+            @click="handleCancelRemoveIncident"
+          >
+            {{ $t("cancel") }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

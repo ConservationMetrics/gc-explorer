@@ -21,3 +21,28 @@ export const escapeCSVValue = (value: unknown): string => {
 
   return strValue;
 };
+
+/**
+ * Builds a CSV string from tabular rows with a fixed header order (like dataset export).
+ * Objects and arrays are JSON-stringified for a single cell.
+ */
+export const buildCsvFromObjects = (
+  rows: Array<Record<string, unknown>>,
+  headers: string[],
+): string => {
+  if (headers.length === 0) return "";
+
+  const cell = (value: unknown): string => {
+    if (value === undefined || value === null) return escapeCSVValue("");
+    if (typeof value === "object") {
+      return escapeCSVValue(JSON.stringify(value));
+    }
+    return escapeCSVValue(value);
+  };
+
+  const headerRow = headers.map((h) => escapeCSVValue(h)).join(",");
+  const dataRows = rows.map((row) =>
+    headers.map((h) => cell(row[h])).join(","),
+  );
+  return [headerRow, ...dataRows].join("\n");
+};
