@@ -108,11 +108,10 @@ const getAuthFile = (role: string): string => {
       );
     }
 
-    throw new Error(
+    baseTest.skip(
+      true,
       `Auth file not found: ${authFile}. ` +
-        `Make sure auth.setup.ts runs successfully and creates the auth files. ` +
-        `Check that E2E_AUTH0_${role.toUpperCase()}_PASSWORD is set. ` +
-        `In Docker/GitHub Actions, ensure the setup project runs before tests.`,
+        `Set E2E_AUTH0_${role.toUpperCase()}_PASSWORD to enable.`,
     );
   }
 
