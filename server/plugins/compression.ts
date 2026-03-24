@@ -1,14 +1,5 @@
 import { brotliCompressSync, gzipSync } from "node:zlib";
 
-const COMPRESSIBLE_TYPES = [
-  "text/",
-  "application/json",
-  "application/javascript",
-  "application/x-javascript",
-  "application/xml",
-  "image/svg+xml",
-];
-
 /**
  * Nitro plugin that enables brotli/gzip compression for text-like responses.
  *
@@ -31,18 +22,24 @@ export default defineNitroPlugin((nitro) => {
     if (path.startsWith("/_nuxt") || path.startsWith("/__nuxt")) return;
     if (!response.body) return;
 
-    const contentType =
-      (getResponseHeader(event, "content-type") as string) || "";
-    if (!COMPRESSIBLE_TYPES.some((t) => contentType.includes(t))) return;
-
     const acceptEncoding = getRequestHeader(event, "accept-encoding") || "";
+    if (!acceptEncoding.includes("br") && !acceptEncoding.includes("gzip"))
+      return;
 
-    const body =
-      typeof response.body === "string"
-        ? Buffer.from(response.body)
-        : Buffer.isBuffer(response.body)
-          ? response.body
-          : Buffer.from(JSON.stringify(response.body));
+    // Only compress text strings and JSON objects.
+    // Skip Buffer/Uint8Array (i.e. images, static files from public/) — Nitro's static
+    // handler may not honor body mutations, causing content-encoding mismatch.
+    let body: Buffer;
+    if (typeof response.body === "string") {
+      body = Buffer.from(response.body);
+    } else if (
+      response.body instanceof Uint8Array ||
+      Buffer.isBuffer(response.body)
+    ) {
+      return;
+    } else {
+      body = Buffer.from(JSON.stringify(response.body));
+    }
 
     if (acceptEncoding.includes("br")) {
       response.body = brotliCompressSync(body);
