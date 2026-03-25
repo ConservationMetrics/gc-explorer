@@ -1,9 +1,8 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import type { Page } from "@playwright/test";
+import type { LngLat } from "@/types";
 
 const selectionModifierKey = process.platform === "darwin" ? "Meta" : "Control";
-
-type LngLat = [number, number];
 
 /**
  * Navigates directly to an alerts table page and waits for map readiness.
@@ -30,7 +29,7 @@ const navigateToAlertsTable = async (
  * Finds a selectable feature and returns its lng/lat (point coordinate or polygon centroid).
  *
  * @param page - Playwright page.
- * @returns LngLat tuple or null when no selectable features are currently rendered.
+ * @returns LngLat position or null when no selectable features are currently rendered.
  */
 const getSelectableFeatureLngLat = async (
   page: Page,
