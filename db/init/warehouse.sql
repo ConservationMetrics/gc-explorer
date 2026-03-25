@@ -124,6 +124,27 @@ CREATE TABLE public.fake_alerts (
 
 
 --
+-- Name: gfw_alerts_viirs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.gfw_alerts_viirs (
+    _id text NOT NULL,
+    date_end_t0 text,
+    month_detec text,
+    date_start_t1 text,
+    alert_id text,
+    alert_type text,
+    g__coordinates text,
+    data_source text,
+    date_end_t1 text,
+    g__type text,
+    date_start_t0 text,
+    year_detec text,
+    confidence text
+);
+
+
+--
 -- Name: mapeo_data; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -466,6 +487,18 @@ COPY public.fake_alerts (_id, g__coordinates, g__geodesic, g__type, _topic, aler
 202206002840052	[[-79.88145336363716, 37.50230753996734], [-79.91576555409422, 37.470992054289525], [-79.91108616059869, 37.506379462443746], [-79.89663716587583, 37.53264918978175], [-79.88145336363716, 37.50230753996734]]	False	LineString	fake alerts provider	gold_mining	2.7	3819471	244	2021-06-16	2022-06-16	2021-05-17	2022-05-17	6	0	6	S1	S2	Landsat-8	300	Mountain valley	2022	\N	202206002840052
 \.
 
+
+--
+-- Data for Name: gfw_alerts_viirs; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.gfw_alerts_viirs (_id, date_end_t0, month_detec, date_start_t1, alert_id, alert_type, g__coordinates, data_source, date_end_t1, g__type, date_start_t0, year_detec, confidence) FROM stdin;
+20250101120373345006	2025-01-01	01	2025-01-01	20250101120373345006	nasa_viirs_fire_alerts	[34.5006, 1.20373]	Global Forest Watch	2025-01-01	Point	2025-01-01	2025	nominal
+20250102117333483745	2025-01-02	01	2025-01-02	20250102117333483745	nasa_viirs_fire_alerts	[34.83745, 1.1733]	Global Forest Watch	2025-01-02	Point	2025-01-02	2025	nominal
+20250102120139345039	2025-01-02	01	2025-01-02	20250102120139345039	nasa_viirs_fire_alerts	[34.5039, 1.20139]	Global Forest Watch	2025-01-02	Point	2025-01-02	2025	nominal
+202501021215183476645	2025-01-02	01	2025-01-02	202501021215183476645	nasa_viirs_fire_alerts	[34.76645, 1.21518]	Global Forest Watch	2025-01-02	Point	2025-01-02	2025	nominal
+202501021225943451321	2025-01-02	01	2025-01-02	202501021225943451321	nasa_viirs_fire_alerts	[34.51321, 1.22594]	Global Forest Watch	2025-01-02	Point	2025-01-02	2025	nominal
+\.
 
 --
 -- Data for Name: mapeo_data; Type: TABLE DATA; Schema: public; Owner: -
