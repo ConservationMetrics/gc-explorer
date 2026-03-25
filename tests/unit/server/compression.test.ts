@@ -32,6 +32,10 @@ vi.stubGlobal(
   vi.fn((_event: unknown, name: string) => requestHeaders[name]),
 );
 vi.stubGlobal(
+  "getResponseHeader",
+  vi.fn((_event: unknown, name: string) => responseHeaders[name]),
+);
+vi.stubGlobal(
   "setResponseHeader",
   vi.fn((_event: unknown, name: string, value: string) => {
     responseHeaders[name] = value;
@@ -68,7 +72,7 @@ describe("compression plugin", () => {
     expect(hookCallback).toBeDefined();
   });
 
-  it("compresses with brotli when client accepts br", async () => {
+  it("compresses string body with brotli when client accepts br", async () => {
     requestHeaders["accept-encoding"] = "gzip, deflate, br";
 
     const original = JSON.stringify({ data: "test-payload" });
@@ -100,7 +104,7 @@ describe("compression plugin", () => {
     expect(decompressed).toBe(original);
   });
 
-  it("serializes object bodies before compressing", async () => {
+  it("serializes plain object bodies before compressing", async () => {
     requestHeaders["accept-encoding"] = "br";
 
     const payload = { features: [{ id: 1 }, { id: 2 }] };
@@ -146,5 +150,32 @@ describe("compression plugin", () => {
     await hookCallback({ path: "/api/test/data" }, response);
 
     expect(responseHeaders["content-encoding"]).toBeUndefined();
+  });
+
+  it("skips Buffer bodies (static files)", async () => {
+    requestHeaders["accept-encoding"] = "gzip, br";
+
+    const pngBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
+    const response = { body: pngBytes } as { body: unknown };
+
+    await hookCallback({ path: "/gcexplorer.png" }, response);
+
+    expect(responseHeaders["content-encoding"]).toBeUndefined();
+    expect(response.body).toBe(pngBytes);
+  });
+
+  it("skips Uint8Array bodies (static files)", async () => {
+    requestHeaders["accept-encoding"] = "br";
+
+    const jsBytes = new Uint8Array(Buffer.from("console.log('hello');"));
+    const response = { body: jsBytes } as { body: unknown };
+
+    await hookCallback(
+      { path: "/vendor/lightbox/lightbox-plus-jquery.js" },
+      response,
+    );
+
+    expect(responseHeaders["content-encoding"]).toBeUndefined();
+    expect(response.body).toBe(jsBytes);
   });
 });

@@ -180,6 +180,35 @@ test("alerts dashboard - layer visibility toggles", async ({
   }
 });
 
+test("alerts dashboard - map.svg basemap icon loads uncorrupted", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/alerts/fake_alerts");
+  await page.waitForLoadState("networkidle");
+
+  // Wait for map to load (BasemapSelector renders after map is ready)
+  await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
+
+  // The basemap selector toggle uses <img src="/map.svg" alt="Map Icon">
+  const mapIcon = page.locator('img[alt="Map Icon"]').first();
+  await expect(mapIcon).toBeVisible({ timeout: 10000 });
+
+  const iconDimensions = await mapIcon.evaluate((img: HTMLImageElement) => ({
+    naturalWidth: img.naturalWidth,
+    naturalHeight: img.naturalHeight,
+  }));
+  expect(iconDimensions.naturalWidth).toBeGreaterThan(0);
+  expect(iconDimensions.naturalHeight).toBeGreaterThan(0);
+
+  // Also verify the raw asset returns a valid SVG
+  const svgResponse = await page.request.get("/map.svg");
+  expect(svgResponse.status()).toBe(200);
+  const contentType = svgResponse.headers()["content-type"] || "";
+  expect(contentType).toContain("svg");
+  const body = await svgResponse.text();
+  expect(body).toContain("<svg");
+});
+
 test("alerts dashboard - legend can control all alert layer types", async ({
   authenticatedPageAsAdmin: page,
 }) => {

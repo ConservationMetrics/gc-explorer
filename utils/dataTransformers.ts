@@ -175,7 +175,9 @@ export const transformAlertEntry = (
   result.confidenceLevel = entry.confidence;
   result.alertType = entry.alert_type?.replace(/_/g, " ") ?? "";
   result.dataProvider = capitalizeFirstLetter(String(entry.data_source ?? ""));
-  result.monthDetected = `${formattedMonth}-${entry.year_detec}`;
+  result.dateDetected = entry.day_detec
+    ? `${entry.day_detec}-${formattedMonth}-${entry.year_detec}`
+    : `${formattedMonth}-${entry.year_detec}`;
   result.alertDetectionRange = `${entry.date_start_t1} to ${entry.date_end_t1}`;
 
   if (entry.data_source === "Global Forest Watch") {

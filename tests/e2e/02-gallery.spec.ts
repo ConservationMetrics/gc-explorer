@@ -149,6 +149,78 @@ test("gallery page - displays images with lightbox functionality", async ({
   }
 });
 
+test("gallery page - lightbox opens on image click (vendor JS loaded)", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  const datasetCards = page.locator("[data-testid='dataset-card']");
+  let galleryCard = null;
+  for (let i = 0; i < (await datasetCards.count()); i++) {
+    const card = datasetCards.nth(i);
+    const galleryTag = card.locator("[data-testid='view-tag-gallery']");
+    if ((await galleryTag.count()) > 0) {
+      galleryCard = card;
+      break;
+    }
+  }
+
+  if (!galleryCard) {
+    test.skip();
+    return;
+  }
+
+  await galleryCard.locator("[data-testid='open-dataset-view-link']").click();
+  await page.waitForLoadState("networkidle");
+
+  const galleryLink = page.locator('a[href^="/gallery/"]').first();
+  await galleryLink.waitFor({ state: "visible", timeout: 10000 });
+  await galleryLink.click();
+  await page.waitForURL("**/gallery/**", { timeout: 5000 });
+  await page.waitForLoadState("networkidle");
+
+  await page
+    .getByTestId("gallery-container")
+    .waitFor({ state: "attached", timeout: 10000 });
+
+  // Wait for images to load
+  await page.waitForTimeout(5000);
+
+  const lightboxLinks = page.locator("a[data-lightbox]:not(.hidden)");
+  const linkCount = await lightboxLinks.count();
+
+  if (linkCount === 0) {
+    console.log("No lightbox images found, skipping lightbox click test");
+    test.skip();
+    return;
+  }
+
+  // Click the first lightbox-enabled image
+  await lightboxLinks.first().click();
+
+  // Lightbox overlay should appear — the #lightbox container is injected by
+  // the vendor jQuery script in public/vendor/lightbox/. If the JS failed to
+  // load (e.g. compression corruption), this element won't exist.
+  const lightboxOverlay = page.locator("#lightbox");
+  await expect(lightboxOverlay).toBeVisible({ timeout: 5000 });
+
+  // The lightbox image should render
+  const lightboxImage = page.locator("#lightbox .lb-image");
+  await expect(lightboxImage).toBeVisible({ timeout: 5000 });
+
+  // Close the lightbox
+  const closeButton = page.locator("#lightbox .lb-close");
+  if ((await closeButton.count()) > 0) {
+    await closeButton.click();
+    await expect(lightboxOverlay).toBeHidden({ timeout: 3000 });
+  }
+});
+
 test("gallery page - audio playback functionality", async ({
   authenticatedPageAsAdmin: page,
 }) => {
