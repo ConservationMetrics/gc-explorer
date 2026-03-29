@@ -2,6 +2,7 @@
 import { useI18n } from "vue-i18n";
 
 import DataLoadError from "@/components/shared/DataLoadError.vue";
+import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
 import { replaceUnderscoreWithSpace } from "@/utils/index";
 import { useIsPublic } from "@/utils/accessControls";
 
@@ -70,12 +71,16 @@ useHead({
         :table="table"
         :timestamp-column="timestampColumn"
       />
-      <h3
+      <div
         v-if="!mediaBasePath && dataFetched"
+        class="text-center py-12"
         data-testid="gallery-error-message"
       >
-        {{ $t("galleryNotAvailable") }}.
-      </h3>
+        <EmptyStateIllustration variant="notConfigured" />
+        <p class="text-gray-500 text-sm sm:text-base">
+          {{ $t("galleryNotAvailable") }}.
+        </p>
+      </div>
     </ClientOnly>
   </div>
 </template>

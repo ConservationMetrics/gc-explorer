@@ -12,6 +12,8 @@ import { transformSurveyEntry } from "@/utils/dataTransformers";
 import DataFilter from "@/components/shared/DataFilter.vue";
 import TimestampFilter from "@/components/shared/TimestampFilter.vue";
 import DataFeature from "@/components/shared/DataFeature.vue";
+import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
+import { useI18n } from "vue-i18n";
 
 import type {
   AllowedFileExtensions,
@@ -19,6 +21,8 @@ import type {
   DataEntry,
   FilterValues,
 } from "@/types";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
@@ -51,6 +55,16 @@ const applyAllFilters = () => {
 const selectedFilterValues = ref<FilterValues>([]);
 const filteredData = ref(props.galleryData);
 const loading = ref(false);
+
+const isFilteredToEmpty = computed(
+  () => props.galleryData.length > 0 && filteredData.value.length === 0,
+);
+
+const emptyStateMessage = computed(() =>
+  isFilteredToEmpty.value
+    ? t("galleryNoFilterResults")
+    : t("galleryEmpty"),
+);
 
 // Pagination per page
 const currentPage = ref(1);
@@ -166,8 +180,21 @@ const prepareForDisplay = (feature: DataEntry): DataEntry => {
         @filter="onTimestampFilter"
       />
     </div>
+    <div
+      v-if="filteredData.length === 0"
+      class="col-span-full text-center py-12"
+      data-testid="gallery-empty-state"
+    >
+      <EmptyStateIllustration
+        :variant="isFilteredToEmpty ? 'noFilterResults' : 'empty'"
+      />
+      <p class="text-gray-500 text-sm sm:text-base">
+        {{ emptyStateMessage }}
+      </p>
+    </div>
     <DataFeature
       v-for="(feature, index) in paginatedData"
+      v-else
       :key="feature._id ?? index"
       :allowed-file-extensions="allowedFileExtensions"
       :feature="prepareForDisplay(getFullRecord(feature))"
