@@ -10,6 +10,8 @@ const props = defineProps<{
   dataForAlertsIntroPanel?: AlertsData;
   logoUrl?: string;
   showSlider?: boolean;
+  statsExportMinDate?: string;
+  statsExportMaxDate?: string;
 }>();
 
 const emit = defineEmits(["dateRangeChanged"]);
@@ -99,6 +101,18 @@ const emit = defineEmits(["dateRangeChanged"]);
         />
         <div v-if="props.dataForAlertsIntroPanel" class="mt-4">
           <DownloadMapData :data-for-download="props.dataForAlertsIntroPanel" />
+        </div>
+        <div v-if="props.dataForAlertsIntroPanel" class="mt-4">
+          <p class="text-sm font-semibold mb-2">
+            {{ $t("downloadStatistics") }}
+          </p>
+          <DownloadMapData
+            :data-for-download="props.dataForAlertsIntroPanel"
+            export-path="statistics-export"
+            :export-min-date="props.statsExportMinDate"
+            :export-max-date="props.statsExportMaxDate"
+            filename-prefix="statistics"
+          />
         </div>
       </div>
     </div>

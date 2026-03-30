@@ -201,5 +201,32 @@ describe("DownloadMapData component", () => {
         }),
       );
     });
+
+    it("uses custom export path when provided", async () => {
+      const wrapper = mount(DownloadMapData, {
+        props: {
+          dataForDownload: simpleFeatureCollection,
+          exportPath: "statistics-export",
+          exportMinDate: "202401",
+          exportMaxDate: "202403",
+        },
+        global: globalConfig,
+      });
+
+      const csvButton = wrapper.findAll("button")[0];
+      await csvButton.trigger("click");
+      await wrapper.vm.$nextTick();
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/test_data/statistics-export",
+        expect.objectContaining({
+          params: {
+            format: "csv",
+            minDate: "202401",
+            maxDate: "202403",
+          },
+        }),
+      );
+    });
   });
 });

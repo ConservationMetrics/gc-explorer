@@ -14,11 +14,13 @@ const apiKey = config.public.appApiKey as string;
 
 const props = defineProps<{
   dataForDownload?: Feature | FeatureCollection | AlertsData;
+  exportPath?: string;
   exportFilterColumn?: string;
   exportFilterValues?: string[];
   exportMinDate?: string;
   exportMaxDate?: string;
   exportTimestampColumn?: string;
+  filenamePrefix?: string;
 }>();
 
 const exportingFormat = ref<string | null>(null);
@@ -69,6 +71,7 @@ const downloadFromExportEndpoint = async (
   format: "csv" | "geojson" | "kml",
 ) => {
   const tablename = getFilenameBase();
+  const exportPath = props.exportPath || "export";
   if (tablename === "data") {
     console.error("No table name available for export.");
     showWarningToast(t("errorNoDataToDownload"));
@@ -82,14 +85,15 @@ const downloadFromExportEndpoint = async (
       params.filterColumn = props.exportFilterColumn;
       params.filterValues = props.exportFilterValues.join(",");
     }
+    const isStatisticsExport = exportPath === "statistics-export";
     if (
-      props.exportTimestampColumn &&
+      (props.exportTimestampColumn || isStatisticsExport) &&
       (props.exportMinDate || props.exportMaxDate)
     ) {
       if (props.exportMinDate) params.minDate = props.exportMinDate;
       if (props.exportMaxDate) params.maxDate = props.exportMaxDate;
     }
-    const blob = await $fetch<Blob>(`/api/${tablename}/export`, {
+    const blob = await $fetch<Blob>(`/api/${tablename}/${exportPath}`, {
       params,
       responseType: "blob",
       headers: { "x-api-key": apiKey },
@@ -98,7 +102,8 @@ const downloadFromExportEndpoint = async (
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${tablename}.${format}`;
+    const filenameBase = props.filenamePrefix || tablename;
+    link.download = `${filenameBase}.${format}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

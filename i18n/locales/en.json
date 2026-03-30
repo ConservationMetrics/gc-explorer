@@ -65,6 +65,7 @@
   "downloadCSV": "Download CSV",
   "downloadGeoJSON": "Download GeoJSON",
   "downloadKML": "Download KML",
+  "downloadStatistics": "Download statistics",
   "earlier": "Earlier",
   "editConfiguration": "Edit Config",
   "editDataset": "Edit dataset view",

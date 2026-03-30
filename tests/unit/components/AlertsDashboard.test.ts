@@ -231,6 +231,51 @@ describe("AlertsDashboard component", () => {
     });
   });
 
+  it("updates sidebar statistics when date range changes", async () => {
+    const props = JSON.parse(JSON.stringify(baseProps));
+    props.alertsStatistics = {
+      ...props.alertsStatistics,
+      allDates: ["01-2024", "02-2024", "03-2024"],
+      earliestAlertsDate: "01-2024",
+      twelveMonthsBefore: "01-2024",
+      alertsTotal: 6,
+      recentAlertsDate: "03-2024",
+      recentAlertsNumber: 2,
+      alertsPerMonth: {
+        "01-2024": 2,
+        "02-2024": 4,
+        "03-2024": 6,
+      },
+      hectaresTotal: "9.00",
+      hectaresPerMonth: {
+        "01-2024": 3,
+        "02-2024": 6,
+        "03-2024": 9,
+      },
+    };
+
+    const wrapper = mountComponent(props, {
+      stubs: {
+        ViewSidebar: {
+          props: ["alertsStatistics"],
+          template: `<div data-testid="stats-total">{{ alertsStatistics?.alertsTotal }}</div>`,
+        },
+      },
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+    expect(wrapper.get('[data-testid="stats-total"]').text()).toBe("6");
+
+    const testWindow = window as unknown as {
+      _testHandleDateRangeChanged?: (range: [string, string]) => void;
+    };
+    testWindow._testHandleDateRangeChanged?.(["02-2024", "03-2024"]);
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="stats-total"]').text()).toBe("4");
+  });
+
   describe("Incidents functionality", () => {
     it("renders incidents controls", async () => {
       const wrapper = mount(AlertsDashboard, {
