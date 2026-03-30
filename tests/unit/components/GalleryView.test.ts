@@ -30,7 +30,8 @@ vi.mock("@/composables/useRecordCache", () => ({
 
 const filterByDateAndCategoryMock = vi.fn();
 vi.mock("@/composables/useDateAndCategoryFilter", () => ({
-  filterByDateAndCategory: (...args: unknown[]) => filterByDateAndCategoryMock(...args),
+  filterByDateAndCategory: (...args: unknown[]) =>
+    filterByDateAndCategoryMock(...args),
   normalizeFilterValues: (v: unknown) => v,
   useTimestampFilter: () => ({
     dateMin: ref<Date | null>(null),
@@ -118,4 +119,3 @@ describe("GalleryView empty states", () => {
     );
   });
 });
-

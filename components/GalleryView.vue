@@ -61,9 +61,7 @@ const isFilteredToEmpty = computed(
 );
 
 const emptyStateMessage = computed(() =>
-  isFilteredToEmpty.value
-    ? t("galleryNoFilterResults")
-    : t("galleryEmpty"),
+  isFilteredToEmpty.value ? t("galleryNoFilterResults") : t("galleryEmpty"),
 );
 
 // Pagination per page
