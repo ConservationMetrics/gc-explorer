@@ -3,6 +3,7 @@ import type { Views, User } from "@/types";
 import { Role } from "@/types";
 import AppHeader from "@/components/shared/AppHeader.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
+import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
 
 const viewsConfig = ref<Views>({});
@@ -354,6 +355,7 @@ useHead({
           v-else-if="viewsConfig && searchQuery.trim()"
           class="text-center py-12"
         >
+          <EmptyStateIllustration variant="indexSearchNoResults" />
           <p class="text-gray-500 text-sm sm:text-base">
             {{ $t("noResultsFound") }}
           </p>
@@ -361,6 +363,7 @@ useHead({
 
         <!-- Empty State -->
         <div v-else-if="!viewsConfig" class="text-center py-12">
+          <EmptyStateIllustration variant="indexNoDatasets" />
           <p class="text-gray-500 text-sm sm:text-base">
             {{ $t("noDatasetViewsAvailable") || "No dataset views available" }}
           </p>
