@@ -100,7 +100,6 @@ const downloadFromExportEndpoint = async (
     const blob = await $fetch<Blob>(`/api/${tablename}/${exportPath}`, {
       params,
       responseType: "blob",
-      headers: { "x-api-key": apiKey },
     });
 
     const url = URL.createObjectURL(blob);
