@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS public.public_views (
     table_name text NOT NULL PRIMARY KEY
 );
 
+INSERT INTO public.public_views (table_name) VALUES ('seed_survey_data') ON CONFLICT DO NOTHING;
+INSERT INTO public.public_views (table_name) VALUES ('fake_alerts') ON CONFLICT DO NOTHING;
+
 --
 -- Annotated Collections Tables
 --

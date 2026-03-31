@@ -1,4 +1,5 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
+import { navigateToAlertsDashboard } from "./helpers/navigateToAlertsDashboard";
 
 test("alerts dashboard - layer visibility toggles", async ({
   authenticatedPageAsAdmin: page,
@@ -177,6 +178,35 @@ test("alerts dashboard - layer visibility toggles", async ({
     const isChecked = await checkbox.isChecked();
     expect(isChecked).toBe(false);
   }
+});
+
+test("alerts dashboard - map.svg basemap icon loads uncorrupted", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/alerts/fake_alerts");
+  await page.waitForLoadState("networkidle");
+
+  // Wait for map to load (BasemapSelector renders after map is ready)
+  await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
+
+  // The basemap selector toggle uses <img src="/map.svg" alt="Map Icon">
+  const mapIcon = page.locator('img[alt="Map Icon"]').first();
+  await expect(mapIcon).toBeVisible({ timeout: 10000 });
+
+  const iconDimensions = await mapIcon.evaluate((img: HTMLImageElement) => ({
+    naturalWidth: img.naturalWidth,
+    naturalHeight: img.naturalHeight,
+  }));
+  expect(iconDimensions.naturalWidth).toBeGreaterThan(0);
+  expect(iconDimensions.naturalHeight).toBeGreaterThan(0);
+
+  // Also verify the raw asset returns a valid SVG
+  const svgResponse = await page.request.get("/map.svg");
+  expect(svgResponse.status()).toBe(200);
+  const contentType = svgResponse.headers()["content-type"] || "";
+  expect(contentType).toContain("svg");
+  const body = await svgResponse.text();
+  expect(body).toContain("<svg");
 });
 
 test("alerts dashboard - legend can control all alert layer types", async ({
@@ -946,4 +976,19 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
   } else {
     console.log("No initial source data found, skipping date range test");
   }
+});
+
+test("alerts dashboard - restores alerts intro after exiting incident multiselect mode", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await navigateToAlertsDashboard(page);
+
+  const intro = page.getByTestId("alerts-intro-panel");
+  await expect(intro).toBeVisible({ timeout: 20000 });
+
+  await page.getByTestId("incidents-multiselect-button").click();
+  await expect(intro).not.toBeVisible();
+
+  await page.getByTestId("incidents-multiselect-button").click();
+  await expect(intro).toBeVisible({ timeout: 20000 });
 });

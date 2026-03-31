@@ -103,6 +103,17 @@ export const useIncidents = (
 
   let incidentPrefetchTimeout: ReturnType<typeof setTimeout> | null = null;
 
+  /**
+   * Returns current alerts table name from route params.
+   *
+   * @returns Alerts table slug string or undefined.
+   */
+  const getCurrentAlertsTable = (): string | undefined => {
+    const tableRaw = route.params.tablename;
+    if (!tableRaw) return undefined;
+    return Array.isArray(tableRaw) ? tableRaw.join("/") : String(tableRaw);
+  };
+
   const getAdditionalSelectableLayerIds = () =>
     (mapLegendLayerIds?.value || "")
       .split(",")
@@ -276,6 +287,7 @@ export const useIncidents = (
         query: {
           limit: incidentsLimit.value,
           offset,
+          parent_alerts_table: getCurrentAlertsTable(),
         },
       });
 
@@ -442,6 +454,7 @@ export const useIncidents = (
           },
           body: {
             ...incidentData,
+            parent_alerts_table: getCurrentAlertsTable(),
             entries: selectedSources.value,
           },
         },
@@ -461,6 +474,19 @@ export const useIncidents = (
     } finally {
       isCreatingIncident.value = false;
     }
+  };
+
+  /**
+   * Deletes an incident (collection) by ID. Clears selected incident if it was the one deleted and refreshes the list.
+   * @param incidentId - The collection/incident ID to delete
+   */
+  const deleteIncident = async (incidentId: string) => {
+    await $fetch(`/api/collections/${incidentId}`, { method: "DELETE" });
+    incidentDetailsCache.delete(incidentId);
+    if (selectedIncident.value?.id === incidentId) {
+      clearSelectedIncident();
+    }
+    await fetchIncidents();
   };
 
   /**
@@ -715,10 +741,15 @@ export const useIncidents = (
     };
 
     /**
-     * Handles mouse down event to start bounding box selection
+     * Handles mouse down event to start bounding box selection.
+     * Plain drag pans the map; Ctrl or ⌘ + drag draws the selection box.
      */
     const mouseDownForBoundingBox = (e: MouseEvent) => {
       if (e.button !== 0) return;
+      if (!(e.ctrlKey || e.metaKey)) return;
+
+      e.preventDefault();
+      e.stopPropagation();
 
       map.value!.dragPan.disable();
 
@@ -1685,6 +1716,7 @@ export const useIncidents = (
     scheduleIncidentPrefetch,
     openIncidentDetails,
     createIncident,
+    deleteIncident,
     toggleIncidentsSidebar,
     openIncidentsSidebarWithCreateForm,
     toggleMultiSelectMode,

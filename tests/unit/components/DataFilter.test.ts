@@ -221,7 +221,7 @@ describe("DataFilter component", () => {
     expect(vm.getUniqueFilterValues).toHaveLength(2);
   });
 
-  it("emits filter event when selection changes", async () => {
+  it("emits selected values on option-selected", async () => {
     const wrapper = mount(DataFilter, {
       props: baseProps,
       global: globalConfig,
@@ -229,31 +229,66 @@ describe("DataFilter component", () => {
 
     const vm = wrapper.vm as unknown as {
       selectedFilterValue: { value: string }[];
-      emitFilterSelection: () => void;
     };
 
-    vm.selectedFilterValue = [{ value: "Camp" }];
-    vm.emitFilterSelection();
+    // Simulate what vue3-select-component does: mutate array then emit event
+    vm.selectedFilterValue.push({ value: "Camp" });
+    const vueSelect = wrapper.findComponent({ name: "VueSelect" });
+    await vueSelect.vm.$emit("optionSelected", { value: "Camp" });
 
-    expect(wrapper.emitted("filter")).toBeTruthy();
-    expect(wrapper.emitted("filter")?.[0]).toEqual([[{ value: "Camp" }]]);
+    const filterEvents = wrapper.emitted("filter")!;
+    expect(filterEvents).toHaveLength(1);
+    expect(filterEvents[0]).toEqual([[{ value: "Camp" }]]);
   });
 
-  it("emits 'null' when no selection is made", async () => {
+  it("emits empty array on clear-all (not the string 'null')", async () => {
     const wrapper = mount(DataFilter, {
       props: baseProps,
       global: globalConfig,
     });
 
     const vm = wrapper.vm as unknown as {
-      selectedFilterValue: never[];
-      emitFilterSelection: () => void;
+      selectedFilterValue: { value: string }[];
     };
 
-    vm.selectedFilterValue = [];
-    vm.emitFilterSelection();
+    // Select something first
+    vm.selectedFilterValue.push({ value: "Camp" });
+    const vueSelect = wrapper.findComponent({ name: "VueSelect" });
+    await vueSelect.vm.$emit("optionSelected", { value: "Camp" });
 
-    expect(wrapper.emitted("filter")).toBeTruthy();
-    expect(wrapper.emitted("filter")?.[0]).toEqual(["null"]);
+    // Clear all: library replaces array with [] and emits optionDeselected(null)
+    vm.selectedFilterValue.splice(0);
+    await vueSelect.vm.$emit("optionDeselected", null);
+
+    const filterEvents = wrapper.emitted("filter")!;
+    expect(filterEvents).toHaveLength(2);
+    expect(filterEvents[0]).toEqual([[{ value: "Camp" }]]);
+    expect(filterEvents[1]).toEqual([[]]);
+  });
+
+  it("emits remaining values on option-deselected", async () => {
+    const wrapper = mount(DataFilter, {
+      props: baseProps,
+      global: globalConfig,
+    });
+
+    const vm = wrapper.vm as unknown as {
+      selectedFilterValue: { value: string }[];
+    };
+    const vueSelect = wrapper.findComponent({ name: "VueSelect" });
+
+    // Select two
+    vm.selectedFilterValue.push({ value: "Camp" }, { value: "Water Source" });
+    await vueSelect.vm.$emit("optionSelected", { value: "Camp" });
+
+    // Remove one (library uses .filter() which reassigns)
+    vm.selectedFilterValue.splice(0, vm.selectedFilterValue.length, {
+      value: "Water Source",
+    });
+    await vueSelect.vm.$emit("optionDeselected", { value: "Camp" });
+
+    const filterEvents = wrapper.emitted("filter")!;
+    expect(filterEvents).toHaveLength(2);
+    expect(filterEvents[1]).toEqual([[{ value: "Water Source" }]]);
   });
 });
