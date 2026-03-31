@@ -87,6 +87,19 @@ const emit = defineEmits(["dateRangeChanged"]);
             {{ $n(Number(props.alertsStatistics.hectaresTotal)) }}
           </p>
         </div>
+
+        <div
+          v-if="props.showSlider && props.dataForAlertsIntroPanel"
+          class="mt-4 flex justify-center [&>div]:!mt-0"
+        >
+          <DownloadMapData
+            :data-for-download="props.dataForAlertsIntroPanel"
+            export-path="statistics-export"
+            :export-min-date="props.statsExportMinDate"
+            :export-max-date="props.statsExportMaxDate"
+            filename-prefix="statistics"
+          />
+        </div>
       </div>
     </div>
 
@@ -101,18 +114,6 @@ const emit = defineEmits(["dateRangeChanged"]);
         />
         <div v-if="props.dataForAlertsIntroPanel" class="mt-4">
           <DownloadMapData :data-for-download="props.dataForAlertsIntroPanel" />
-        </div>
-        <div v-if="props.dataForAlertsIntroPanel" class="mt-4">
-          <p class="text-sm font-semibold mb-2">
-            {{ $t("downloadStatistics") }}
-          </p>
-          <DownloadMapData
-            :data-for-download="props.dataForAlertsIntroPanel"
-            export-path="statistics-export"
-            :export-min-date="props.statsExportMinDate"
-            :export-max-date="props.statsExportMaxDate"
-            filename-prefix="statistics"
-          />
         </div>
       </div>
     </div>

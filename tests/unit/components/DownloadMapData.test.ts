@@ -126,6 +126,20 @@ describe("DownloadMapData component", () => {
       const buttons = wrapper.findAll("button");
       expect(buttons[2].text()).toContain("downloadKML");
     });
+
+    it("should render a single Download statistics button for statistics export", () => {
+      const wrapper = mount(DownloadMapData, {
+        props: {
+          dataForDownload: simpleFeatureCollection,
+          exportPath: "statistics-export",
+        },
+        global: globalConfig,
+      });
+
+      const buttons = wrapper.findAll("button");
+      expect(buttons.length).toBe(1);
+      expect(buttons[0].text()).toContain("downloadStatistics");
+    });
   });
 
   describe("Props handling", () => {

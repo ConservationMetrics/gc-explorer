@@ -5,15 +5,12 @@ import {
   buildStatisticsMonthlyRows,
   filterAlertsStatisticsByDateRange,
   statisticsRowsToCsv,
-  statisticsRowsToFeatureCollection,
 } from "@/utils/alertsStatistics";
-// @ts-expect-error - tokml does not have types
-import tokml from "tokml";
 
 import type { H3Event } from "h3";
 import type { AlertsMetadata, DataEntry } from "@/types";
 
-const SUPPORTED_FORMATS = ["csv", "geojson", "kml"] as const;
+const SUPPORTED_FORMATS = ["csv"] as const;
 type ExportFormat = (typeof SUPPORTED_FORMATS)[number];
 
 export default defineEventHandler(async (event: H3Event) => {
@@ -51,51 +48,17 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const rows = buildStatisticsMonthlyRows(alertsStatistics);
 
-    if (format === "csv") {
-      const csv = statisticsRowsToCsv(rows, {
-        alertsTotal: alertsStatistics.alertsTotal,
-        hectaresTotal: alertsStatistics.hectaresTotal,
-      });
-      setResponseHeader(event, "Content-Type", "text/csv; charset=utf-8");
-      setResponseHeader(
-        event,
-        "Content-Disposition",
-        `attachment; filename="${table}-statistics.csv"`,
-      );
-      return csv;
-    }
-
-    const geojson = statisticsRowsToFeatureCollection(rows, {
+    const csv = statisticsRowsToCsv(rows, {
       alertsTotal: alertsStatistics.alertsTotal,
       hectaresTotal: alertsStatistics.hectaresTotal,
     });
-
-    if (format === "geojson") {
-      setResponseHeader(
-        event,
-        "Content-Type",
-        "application/geo+json; charset=utf-8",
-      );
-      setResponseHeader(
-        event,
-        "Content-Disposition",
-        `attachment; filename="${table}-statistics.geojson"`,
-      );
-      return geojson;
-    }
-
-    const kml = tokml(geojson);
-    setResponseHeader(
-      event,
-      "Content-Type",
-      "application/vnd.google-earth.kml+xml; charset=utf-8",
-    );
+    setResponseHeader(event, "Content-Type", "text/csv; charset=utf-8");
     setResponseHeader(
       event,
       "Content-Disposition",
-      `attachment; filename="${table}-statistics.kml"`,
+      `attachment; filename="${table}-statistics.csv"`,
     );
-    return kml;
+    return csv;
   } catch (error) {
     if (error instanceof Error && "statusCode" in error) {
       throw error;

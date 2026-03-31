@@ -59,6 +59,10 @@ const isBulkDownload = computed(() => {
   );
 });
 
+const isStatisticsExport = computed(
+  () => props.exportPath === "statistics-export",
+);
+
 /**
  * Downloads a dataset file from the server export endpoint.
  * The server handles data formatting and streams the response;
@@ -85,9 +89,9 @@ const downloadFromExportEndpoint = async (
       params.filterColumn = props.exportFilterColumn;
       params.filterValues = props.exportFilterValues.join(",");
     }
-    const isStatisticsExport = exportPath === "statistics-export";
+    const isStatisticsEndpoint = exportPath === "statistics-export";
     if (
-      (props.exportTimestampColumn || isStatisticsExport) &&
+      (props.exportTimestampColumn || isStatisticsEndpoint) &&
       (props.exportMinDate || props.exportMaxDate)
     ) {
       if (props.exportMinDate) params.minDate = props.exportMinDate;
@@ -288,38 +292,61 @@ const downloadAlertKML = () => {
 
 <template>
   <div class="flex flex-wrap gap-2 justify-center mt-6">
-    <button
-      class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
-      :disabled="!!exportingFormat"
-      @click="
-        isBulkDownload ? downloadFromExportEndpoint('csv') : downloadAlertCSV()
-      "
-    >
-      {{ exportingFormat === "csv" ? $t("downloading") : $t("downloadCSV") }}
-    </button>
-    <button
-      class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
-      :disabled="!!exportingFormat"
-      @click="
-        isBulkDownload
-          ? downloadFromExportEndpoint('geojson')
-          : downloadAlertGeoJSON()
-      "
-    >
-      {{
-        exportingFormat === "geojson"
-          ? $t("downloading")
-          : $t("downloadGeoJSON")
-      }}
-    </button>
-    <button
-      class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
-      :disabled="!!exportingFormat"
-      @click="
-        isBulkDownload ? downloadFromExportEndpoint('kml') : downloadAlertKML()
-      "
-    >
-      {{ exportingFormat === "kml" ? $t("downloading") : $t("downloadKML") }}
-    </button>
+    <template v-if="isStatisticsExport">
+      <button
+        class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
+        :disabled="!!exportingFormat"
+        type="button"
+        @click="downloadFromExportEndpoint('csv')"
+      >
+        {{
+          exportingFormat === "csv"
+            ? $t("downloading")
+            : $t("downloadStatistics")
+        }}
+      </button>
+    </template>
+    <template v-else>
+      <button
+        class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
+        :disabled="!!exportingFormat"
+        type="button"
+        @click="
+          isBulkDownload
+            ? downloadFromExportEndpoint('csv')
+            : downloadAlertCSV()
+        "
+      >
+        {{ exportingFormat === "csv" ? $t("downloading") : $t("downloadCSV") }}
+      </button>
+      <button
+        class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
+        :disabled="!!exportingFormat"
+        type="button"
+        @click="
+          isBulkDownload
+            ? downloadFromExportEndpoint('geojson')
+            : downloadAlertGeoJSON()
+        "
+      >
+        {{
+          exportingFormat === "geojson"
+            ? $t("downloading")
+            : $t("downloadGeoJSON")
+        }}
+      </button>
+      <button
+        class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
+        :disabled="!!exportingFormat"
+        type="button"
+        @click="
+          isBulkDownload
+            ? downloadFromExportEndpoint('kml')
+            : downloadAlertKML()
+        "
+      >
+        {{ exportingFormat === "kml" ? $t("downloading") : $t("downloadKML") }}
+      </button>
+    </template>
   </div>
 </template>
