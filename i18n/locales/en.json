@@ -120,7 +120,7 @@
   "incidents.deselectSelection": "Deselect current selection",
   "incidents.disableBoundingBox": "Disable bounding box selection",
   "incidents.disableMultiSelect": "Disable multi-select mode",
-  "incidents.enableBoundingBox": "Select multiple features by drawing a box",
+  "incidents.enableBoundingBox": "Drag to pan the map. Hold Ctrl or ⌘ and drag to draw a selection box",
   "incidents.enableMultiSelect": "Select multiple features one by one by clicking features",
   "incidents.enterDescription": "Enter description",
   "incidents.enterIncidentName": "Enter incident name",

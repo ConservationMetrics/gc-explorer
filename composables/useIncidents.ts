@@ -741,10 +741,15 @@ export const useIncidents = (
     };
 
     /**
-     * Handles mouse down event to start bounding box selection
+     * Handles mouse down event to start bounding box selection.
+     * Plain drag pans the map; Ctrl or ⌘ + drag draws the selection box.
      */
     const mouseDownForBoundingBox = (e: MouseEvent) => {
       if (e.button !== 0) return;
+      if (!(e.ctrlKey || e.metaKey)) return;
+
+      e.preventDefault();
+      e.stopPropagation();
 
       map.value!.dragPan.disable();
 
