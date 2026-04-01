@@ -3,7 +3,7 @@ import { useI18n } from "vue-i18n";
 
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
-import { replaceUnderscoreWithSpace } from "@/utils/index";
+import { replaceUnderscoreWithSpace } from "@/utils";
 import { useIsPublic } from "@/utils/accessControls";
 
 // Extract the tablename from the route parameters

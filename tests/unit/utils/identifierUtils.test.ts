@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { camelToSnake } from "@/utils/identifierUtils";
+import {
+  camelToSnake,
+  replaceUnderscoreWithSpace,
+  snakeToTitleCase,
+  titleToCamelCase,
+  titleToSnakeCase,
+  toCamelCase,
+} from "@/utils/identifierUtils";
 
 describe("camelToSnake", () => {
   it("converts typical camelCase keys used in statistics exports", () => {
@@ -29,5 +36,35 @@ describe("camelToSnake", () => {
 
   it("returns empty string for empty input", () => {
     expect(camelToSnake("")).toBe("");
+  });
+});
+
+describe("toCamelCase", () => {
+  it("converts SCREAMING_SNAKE to camelCase", () => {
+    expect(toCamelCase("MEDIA_BASE_PATH")).toBe("mediaBasePath");
+  });
+});
+
+describe("replaceUnderscoreWithSpace", () => {
+  it("replaces underscores with spaces", () => {
+    expect(replaceUnderscoreWithSpace("my_table_name")).toBe("my table name");
+  });
+});
+
+describe("titleToSnakeCase", () => {
+  it("converts spaced title text to snake_case", () => {
+    expect(titleToSnakeCase("Illegal Logging")).toBe("illegal_logging");
+  });
+});
+
+describe("snakeToTitleCase", () => {
+  it("converts snake_case to Title Case", () => {
+    expect(snakeToTitleCase("illegal_logging")).toBe("Illegal Logging");
+  });
+});
+
+describe("titleToCamelCase", () => {
+  it("converts spaced title text to camelCase", () => {
+    expect(titleToCamelCase("Illegal Logging")).toBe("illegalLogging");
   });
 });
