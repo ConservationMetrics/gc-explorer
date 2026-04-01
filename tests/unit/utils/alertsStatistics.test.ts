@@ -81,7 +81,9 @@ describe("alertsStatistics utils", () => {
       alertsTotal: baseStatistics.alertsTotal,
       hectaresTotal: baseStatistics.hectaresTotal,
     });
-    expect(csv).toContain("rowType,period,alertsMonthly");
+    expect(csv).toContain(
+      "row_type,period,alerts_monthly,alerts_cumulative,hectares_monthly,hectares_cumulative,alerts_total,hectares_total",
+    );
     expect(csv).toContain("monthly,01-2024,2,2,3,3,,");
     expect(csv).toContain("summary,,,,,,12,20.00");
   });
