@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { ref } from "vue";
 
+import DownloadStatistics from "@/components/shared/DownloadStatistics.vue";
+
 const mocks = vi.hoisted(() => ({
   downloadTableExport: vi.fn().mockResolvedValue(undefined),
 }));
@@ -12,8 +14,6 @@ vi.mock("@/composables/useTableExportDownload", () => ({
     getTablename: () => "test_data",
   }),
 }));
-
-import DownloadStatistics from "@/components/shared/DownloadStatistics.vue";
 
 Object.assign(globalThis, {
   ref,
