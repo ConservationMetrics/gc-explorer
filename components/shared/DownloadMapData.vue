@@ -4,13 +4,9 @@ import tokml from "tokml";
 
 import type { Feature, FeatureCollection } from "geojson";
 import type { AlertsData } from "@/types";
+import { useTableExportDownload } from "@/composables/useTableExportDownload";
+import { triggerBrowserDownload } from "@/utils/browserDownload";
 import { escapeCSVValue } from "@/utils/csvUtils";
-
-const route = useRoute();
-const { t } = useI18n();
-const { warning: showWarningToast } = useToast();
-const config = useRuntimeConfig();
-const apiKey = config.public.appApiKey as string;
 
 const props = defineProps<{
   dataForDownload?: Feature | FeatureCollection | AlertsData;
@@ -19,15 +15,14 @@ const props = defineProps<{
   exportMinDate?: string;
   exportMaxDate?: string;
   exportTimestampColumn?: string;
+  filenamePrefix?: string;
 }>();
 
 const exportingFormat = ref<string | null>(null);
 
-/** Get filename base from route tablename, fallback to 'data' */
-const getFilenameBase = (): string => {
-  const tablename = route.params.tablename;
-  return typeof tablename === "string" ? tablename : "data";
-};
+const { t } = useI18n();
+const { warning: showWarningToast } = useToast();
+const { downloadTableExport, getTablename } = useTableExportDownload();
 
 /** Incoming feature data can be either a single Feature, FeatureCollection, or an AlertsData object */
 const isAlertsData = (
@@ -58,59 +53,36 @@ const isBulkDownload = computed(() => {
 });
 
 /**
- * Downloads a dataset file from the server export endpoint.
- * The server handles data formatting and streams the response;
- * the client saves the received blob directly to disk.
+ * Downloads spatial dataset files from the server export endpoint. For bulk export, the server
+ * handles data formatting and streams the response; the client saves the blob to disk.
  *
- * @param {"csv" | "geojson" | "kml"} format - The desired export format.
+ * @param format - The desired export format: `"csv"`, `"geojson"`, or `"kml"`.
  * @returns {Promise<void>}
  */
 const downloadFromExportEndpoint = async (
   format: "csv" | "geojson" | "kml",
 ) => {
-  const tablename = getFilenameBase();
-  if (tablename === "data") {
-    console.error("No table name available for export.");
-    showWarningToast(t("errorNoDataToDownload"));
-    return;
-  }
-
   exportingFormat.value = format;
   try {
-    const params: Record<string, string> = { format };
-    if (props.exportFilterColumn && props.exportFilterValues?.length) {
-      params.filterColumn = props.exportFilterColumn;
-      params.filterValues = props.exportFilterValues.join(",");
-    }
-    if (
-      props.exportTimestampColumn &&
-      (props.exportMinDate || props.exportMaxDate)
-    ) {
-      if (props.exportMinDate) params.minDate = props.exportMinDate;
-      if (props.exportMaxDate) params.maxDate = props.exportMaxDate;
-    }
-    const blob = await $fetch<Blob>(`/api/${tablename}/export`, {
-      params,
-      responseType: "blob",
-      headers: { "x-api-key": apiKey },
+    await downloadTableExport({
+      format,
+      exportFilterColumn: props.exportFilterColumn,
+      exportFilterValues: props.exportFilterValues,
+      exportMinDate: props.exportMinDate,
+      exportMaxDate: props.exportMaxDate,
+      exportTimestampColumn: props.exportTimestampColumn,
+      filenamePrefix: props.filenamePrefix,
     });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${tablename}.${format}`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error(`Failed to export ${format}:`, error);
-    showWarningToast(t("errorNoDataToDownload"));
   } finally {
     exportingFormat.value = null;
   }
 };
 
+/**
+ * Builds a CSV file from a single GeoJSON Feature in the browser and downloads it.
+ *
+ * @returns {void}
+ */
 const downloadAlertCSV = () => {
   if (
     !props.dataForDownload ||
@@ -169,22 +141,18 @@ const downloadAlertCSV = () => {
   } else if (properties["id"]) {
     filename = `${properties["id"]}.csv`;
   } else {
-    filename = `${getFilenameBase()}.csv`;
+    filename = `${getTablename()}.csv`;
   }
 
   const blob = new Blob([csvString], { type: "text/csv" });
-
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-
-  link.click();
-
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
+  triggerBrowserDownload(blob, filename);
 };
 
+/**
+ * Serializes a single GeoJSON Feature to a file download (client-side formatting).
+ *
+ * @returns {void}
+ */
 const downloadAlertGeoJSON = () => {
   if (
     !props.dataForDownload ||
@@ -216,23 +184,19 @@ const downloadAlertGeoJSON = () => {
   } else if (geojsonCopy.properties["id"]) {
     filename = `${geojsonCopy.properties["id"]}.geojson`;
   } else {
-    filename = `${getFilenameBase()}.geojson`;
+    filename = `${getTablename()}.geojson`;
   }
 
   const jsonStr = JSON.stringify(geojsonCopy, null, 2);
   const blob = new Blob([jsonStr], { type: "application/json" });
-
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-
-  link.click();
-
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
+  triggerBrowserDownload(blob, filename);
 };
 
+/**
+ * Converts a single GeoJSON Feature to KML via tokml and downloads it.
+ *
+ * @returns {void}
+ */
 const downloadAlertKML = () => {
   if (
     !props.dataForDownload ||
@@ -262,22 +226,13 @@ const downloadAlertKML = () => {
   } else if (properties["id"]) {
     filename = `${properties["id"]}.kml`;
   } else {
-    filename = `${getFilenameBase()}.kml`;
+    filename = `${getTablename()}.kml`;
   }
 
   const blob = new Blob([kmlString], {
     type: "application/vnd.google-earth.kml+xml",
   });
-
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = filename;
-  document.body.appendChild(link);
-
-  link.click();
-
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
+  triggerBrowserDownload(blob, filename);
 };
 </script>
 
@@ -286,6 +241,7 @@ const downloadAlertKML = () => {
     <button
       class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
       :disabled="!!exportingFormat"
+      type="button"
       @click="
         isBulkDownload ? downloadFromExportEndpoint('csv') : downloadAlertCSV()
       "
@@ -295,6 +251,7 @@ const downloadAlertKML = () => {
     <button
       class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
       :disabled="!!exportingFormat"
+      type="button"
       @click="
         isBulkDownload
           ? downloadFromExportEndpoint('geojson')
@@ -310,6 +267,7 @@ const downloadAlertKML = () => {
     <button
       class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
       :disabled="!!exportingFormat"
+      type="button"
       @click="
         isBulkDownload ? downloadFromExportEndpoint('kml') : downloadAlertKML()
       "

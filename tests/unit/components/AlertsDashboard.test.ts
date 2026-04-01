@@ -8,6 +8,7 @@ import {
   onMounted,
   onBeforeUnmount,
   nextTick,
+  type Plugin,
 } from "vue";
 import { createI18n } from "vue-i18n";
 
@@ -15,11 +16,16 @@ import * as mapboxMock from "@/tests/unit/helpers/mapboxMock";
 
 import AlertsDashboard from "@/components/AlertsDashboard.vue";
 
-// Create i18n instance for template $t support
+// Create i18n instance for template $t support (locales mirror app i18n config)
 const i18n = createI18n({
   legacy: false,
   locale: "en",
-  messages: { en: {} },
+  messages: {
+    en: {},
+    es: {},
+    pt: {},
+    nl: {},
+  },
 });
 
 // Re-usable minimal props object
@@ -68,7 +74,9 @@ const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
 };
 
 // Mock Nuxt composables - needs to be before component import
-const mockFetch = vi.fn();
+const hoisted = vi.hoisted(() => ({
+  mockFetch: vi.fn(),
+}));
 
 const mockUseToast = () => ({
   error: vi.fn(),
@@ -88,7 +96,7 @@ Object.assign(globalThis, {
   nextTick,
   useToast: mockUseToast,
   useRuntimeConfig: () => ({ public: { appApiKey: "test-key" } }),
-  $fetch: mockFetch,
+  $fetch: hoisted.mockFetch,
 });
 
 // Mock vue-router for route & router injections
@@ -99,17 +107,20 @@ vi.mock("vue-router", () => ({
   useRouter: () => mockRouter,
 }));
 
-// Mock Nuxt composables via #imports
-vi.mock("#imports", () => ({
-  $fetch: mockFetch,
-}));
+vi.mock("#imports", async () => {
+  const mod = await import("../helpers/importsMock");
+  return {
+    ...mod,
+    $fetch: hoisted.mockFetch,
+  };
+});
 
 describe("AlertsDashboard component", () => {
   beforeEach(() => {
     mapboxMock.reset();
     document.body.innerHTML = '<div id="map"></div>';
     // Mock $fetch to return empty incidents by default
-    mockFetch.mockResolvedValue({
+    hoisted.mockFetch.mockResolvedValue({
       incidents: [],
       total: 0,
       limit: 10,
@@ -121,7 +132,7 @@ describe("AlertsDashboard component", () => {
   const mountComponent = (
     props = baseProps,
     options: {
-      plugins?: unknown[];
+      plugins?: Plugin[];
       stubs?: Record<string, unknown>;
       mocks?: Record<string, unknown>;
     } = {},
@@ -229,6 +240,51 @@ describe("AlertsDashboard component", () => {
       source: "mapbox-dem",
       exaggeration: 3.0,
     });
+  });
+
+  it("updates sidebar statistics when date range changes", async () => {
+    const props = JSON.parse(JSON.stringify(baseProps));
+    props.alertsStatistics = {
+      ...props.alertsStatistics,
+      allDates: ["01-2024", "02-2024", "03-2024"],
+      earliestAlertsDate: "01-2024",
+      twelveMonthsBefore: "01-2024",
+      alertsTotal: 6,
+      recentAlertsDate: "03-2024",
+      recentAlertsNumber: 2,
+      alertsPerMonth: {
+        "01-2024": 2,
+        "02-2024": 4,
+        "03-2024": 6,
+      },
+      hectaresTotal: "9.00",
+      hectaresPerMonth: {
+        "01-2024": 3,
+        "02-2024": 6,
+        "03-2024": 9,
+      },
+    };
+
+    const wrapper = mountComponent(props, {
+      stubs: {
+        ViewSidebar: {
+          props: ["alertsStatistics"],
+          template: `<div data-testid="stats-total">{{ alertsStatistics?.alertsTotal }}</div>`,
+        },
+      },
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+    expect(wrapper.get('[data-testid="stats-total"]').text()).toBe("6");
+
+    const testWindow = window as unknown as {
+      _testHandleDateRangeChanged?: (range: [string, string]) => void;
+    };
+    testWindow._testHandleDateRangeChanged?.(["02-2024", "03-2024"]);
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="stats-total"]').text()).toBe("4");
   });
 
   describe("Incidents functionality", () => {

@@ -45,6 +45,8 @@ const props = defineProps<{
   showIntroPanel?: boolean;
   showSidebar?: boolean;
   showSlider?: boolean;
+  statsExportMinDate?: string;
+  statsExportMaxDate?: string;
 }>();
 
 const isScrollable = ref(false);
@@ -135,6 +137,8 @@ onBeforeUnmount(() => {
           :data-for-alerts-intro-panel="dataForAlertsIntroPanel"
           :logo-url="logoUrl"
           :show-slider="showSlider"
+          :stats-export-min-date="statsExportMinDate"
+          :stats-export-max-date="statsExportMaxDate"
           :alerts-statistics="alertsStatistics"
           @date-range-changed="emit('date-range-changed', $event)"
         />

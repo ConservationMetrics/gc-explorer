@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
+import DownloadStatistics from "@/components/shared/DownloadStatistics.vue";
 
 import type { AlertsData, AlertsStatistics } from "@/types";
 
@@ -10,6 +11,8 @@ const props = defineProps<{
   dataForAlertsIntroPanel?: AlertsData;
   logoUrl?: string;
   showSlider?: boolean;
+  statsExportMinDate?: string;
+  statsExportMaxDate?: string;
 }>();
 
 const emit = defineEmits(["dateRangeChanged"]);
@@ -84,6 +87,17 @@ const emit = defineEmits(["dateRangeChanged"]);
             <span class="font-bold">{{ $t("hectaresTotal") }}:&nbsp;</span>
             {{ $n(Number(props.alertsStatistics.hectaresTotal)) }}
           </p>
+        </div>
+
+        <div
+          v-if="props.showSlider && props.dataForAlertsIntroPanel"
+          class="mt-4 flex justify-center [&>div]:!mt-0"
+        >
+          <DownloadStatistics
+            :min-date="props.statsExportMinDate"
+            :max-date="props.statsExportMaxDate"
+            filename-prefix="statistics"
+          />
         </div>
       </div>
     </div>
