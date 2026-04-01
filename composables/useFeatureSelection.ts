@@ -5,6 +5,7 @@ import { along, length, lineString } from "@turf/turf";
 import type { Feature } from "geojson";
 import type { AlertsData } from "@/types";
 import { prepareCoordinatesForSelectedFeature } from "@/utils/mapGLHelpers";
+import { parsePhotosFromRecord } from "@/utils/index";
 
 export function useFeatureSelection(
   map: Ref<mapboxgl.Map | undefined>,
@@ -438,10 +439,9 @@ export function useFeatureSelection(
     if (featureObject.t1_url) {
       imageUrl.value.push(featureObject.t1_url);
     }
-    if (featureObject["photos"]) {
-      const photos = featureObject["photos"].split(",");
-      photos.forEach((photo: string) => imageUrl.value.push(photo.trim()));
-    }
+    parsePhotosFromRecord(featureObject as Record<string, unknown>).forEach(
+      (photo) => imageUrl.value.push(photo),
+    );
 
     delete featureObject["t0_url"];
     delete featureObject["t1_url"];
