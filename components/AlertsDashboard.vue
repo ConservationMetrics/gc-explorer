@@ -44,7 +44,7 @@ import type {
 import type { Feature, FeatureCollection } from "geojson";
 
 const { t } = useI18n();
-const { error: showErrorToast } = useToast();
+const { error: showErrorToast, success: showSuccessToast } = useToast();
 
 const handleCreateIncident = async (
   data: Parameters<typeof createIncident>[0],
@@ -54,6 +54,33 @@ const handleCreateIncident = async (
   } catch {
     showErrorToast(t("errorCouldNotCreateIncident"));
   }
+};
+
+const showRemoveIncidentModal = ref(false);
+const incidentIdToRemove = ref<string | null>(null);
+
+const handleDeleteIncident = (incidentId: string) => {
+  incidentIdToRemove.value = incidentId;
+  showRemoveIncidentModal.value = true;
+};
+
+const handleConfirmRemoveIncident = async () => {
+  if (!incidentIdToRemove.value) return;
+  try {
+    await deleteIncident(incidentIdToRemove.value);
+    showRemoveIncidentModal.value = false;
+    incidentIdToRemove.value = null;
+    showSuccessToast(t("incidents.incidentRemoved"));
+  } catch {
+    showErrorToast(t("errorCouldNotDeleteIncident"));
+    showRemoveIncidentModal.value = false;
+    incidentIdToRemove.value = null;
+  }
+};
+
+const handleCancelRemoveIncident = () => {
+  showRemoveIncidentModal.value = false;
+  incidentIdToRemove.value = null;
 };
 
 const props = defineProps<{
@@ -124,6 +151,7 @@ const {
   scheduleIncidentPrefetch,
   openIncidentDetails,
   createIncident,
+  deleteIncident,
   toggleIncidentsSidebar,
   openIncidentsSidebarWithCreateForm,
   toggleMultiSelectMode,
@@ -442,6 +470,13 @@ const additionalSelectableLayerIds = computed(() =>
 const hasActiveSelection = computed(
   () => selectedSources.value.length > 0 || !!selectedFeature.value,
 );
+const incidentSelectionContextActive = computed(
+  () =>
+    showIncidentsSidebar.value ||
+    selectedSources.value.length > 0 ||
+    multiSelectMode.value ||
+    boundingBoxMode.value,
+);
 
 const handleClearSourcesAndCloseSidebar = () => {
   clearSelectedSources();
@@ -456,6 +491,51 @@ const handleExplicitDeselect = () => {
   }
   if (selectedSources.value.length > 0) {
     clearSelectedSources();
+  }
+};
+
+const handleToggleMultiSelectMode = () => {
+  if (!multiSelectMode.value) {
+    if (selectedFeature.value) {
+      resetSelectedFeature();
+    }
+    showSidebar.value = false;
+  }
+  toggleMultiSelectMode();
+  if (
+    !multiSelectMode.value &&
+    !boundingBoxMode.value &&
+    !showIncidentsSidebar.value
+  ) {
+    showSidebar.value = true;
+    showIntroPanel.value = true;
+  }
+};
+
+const handleToggleBoundingBoxMode = () => {
+  if (!boundingBoxMode.value) {
+    if (selectedFeature.value) {
+      resetSelectedFeature();
+    }
+    showSidebar.value = false;
+  }
+  toggleBoundingBoxMode();
+  if (
+    !multiSelectMode.value &&
+    !boundingBoxMode.value &&
+    !showIncidentsSidebar.value
+  ) {
+    showSidebar.value = true;
+    showIntroPanel.value = true;
+  }
+};
+
+const handleToggleIncidentsSidebar = () => {
+  const wasOpen = showIncidentsSidebar.value;
+  toggleIncidentsSidebar();
+  if (wasOpen && !showIncidentsSidebar.value) {
+    showSidebar.value = true;
+    showIntroPanel.value = true;
   }
 };
 
@@ -555,11 +635,16 @@ const addAlertsData = async () => {
             paint: {
               "fill-color": [
                 "case",
-                ["boolean", ["feature-state", "selected"], false],
+                ["boolean", ["feature-state", "incidentSelected"], false],
                 "#FFFF00",
                 fillColor,
               ],
-              "fill-opacity": 0.5,
+              "fill-opacity": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                0.65,
+                0.5,
+              ],
             },
           });
         }
@@ -573,11 +658,27 @@ const addAlertsData = async () => {
             paint: {
               "line-color": [
                 "case",
-                ["boolean", ["feature-state", "selected"], false],
+                ["boolean", ["feature-state", "incidentSelected"], false],
                 "#FFFF00",
-                strokeColor,
+                [
+                  "case",
+                  ["boolean", ["feature-state", "selected"], false],
+                  "#00E5FF",
+                  strokeColor,
+                ],
               ],
-              "line-width": 2,
+              "line-width": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                5,
+                2,
+              ],
+              "line-blur": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                1.2,
+                0,
+              ],
             },
           });
         }
@@ -594,15 +695,31 @@ const addAlertsData = async () => {
             paint: {
               "line-color": [
                 "case",
-                ["boolean", ["feature-state", "selected"], false],
+                ["boolean", ["feature-state", "incidentSelected"], false],
                 "#FFFF00",
-                strokeColor,
+                [
+                  "case",
+                  ["boolean", ["feature-state", "selected"], false],
+                  "#00E5FF",
+                  strokeColor,
+                ],
               ],
               "line-width": [
                 "case",
-                ["boolean", ["feature-state", "selected"], false],
+                ["boolean", ["feature-state", "incidentSelected"], false],
                 5,
-                3,
+                [
+                  "case",
+                  ["boolean", ["feature-state", "selected"], false],
+                  6,
+                  3,
+                ],
+              ],
+              "line-blur": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                1.2,
+                0,
               ],
               "line-opacity": 0.8,
             },
@@ -664,17 +781,40 @@ const addAlertsData = async () => {
             paint: {
               "circle-color": [
                 "case",
-                ["boolean", ["feature-state", "selected"], false],
+                ["boolean", ["feature-state", "incidentSelected"], false],
                 "#FFFF00",
                 fillColor,
               ],
               "circle-radius": [
                 "case",
-                ["boolean", ["feature-state", "selected"], false],
+                ["boolean", ["feature-state", "incidentSelected"], false],
                 10,
-                5,
+                [
+                  "case",
+                  ["boolean", ["feature-state", "selected"], false],
+                  7,
+                  5,
+                ],
               ],
               "circle-opacity": 0.8,
+              "circle-stroke-width": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                3,
+                0,
+              ],
+              "circle-stroke-color": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                "#00E5FF",
+                "#ffffff",
+              ],
+              "circle-stroke-opacity": [
+                "case",
+                ["boolean", ["feature-state", "selected"], false],
+                0.9,
+                0,
+              ],
             },
           });
         }
@@ -783,19 +923,29 @@ const addAlertsData = async () => {
         paint: {
           "circle-color": [
             "case",
-            ["boolean", ["feature-state", "selected"], false],
+            ["boolean", ["feature-state", "incidentSelected"], false],
             "#FFFF00",
             color,
           ],
           "circle-radius": [
             "case",
-            ["boolean", ["feature-state", "selected"], false],
+            ["boolean", ["feature-state", "incidentSelected"], false],
             12,
-            8,
+            ["case", ["boolean", ["feature-state", "selected"], false], 10, 8],
           ],
           "circle-opacity": 0.8,
-          "circle-stroke-width": 2,
-          "circle-stroke-color": "#fff",
+          "circle-stroke-width": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            3,
+            2,
+          ],
+          "circle-stroke-color": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            "#00E5FF",
+            "#fff",
+          ],
         },
       });
     }
@@ -919,9 +1069,11 @@ const addAlertsData = async () => {
                 );
               }
             } else {
-              if (multiSelectMode.value) {
+              if (multiSelectMode.value || boundingBoxMode.value) {
                 // Add to selected sources instead of selecting for sidebar
                 handleMultiSelectFeature(feature, layer.id);
+              } else if (incidentSelectionContextActive.value) {
+                return;
               } else {
                 // Normal selection behavior
                 selectFeature(feature, layer.id);
@@ -1014,12 +1166,22 @@ const addMapeoData = () => {
         "circle-color": [
           // Use filter-color for fallback if selected is false
           "case",
-          ["boolean", ["feature-state", "selected"], false],
+          ["boolean", ["feature-state", "incidentSelected"], false],
           "#FFFF00",
           ["get", "filter-color"],
         ],
-        "circle-stroke-width": 2,
-        "circle-stroke-color": "#fff",
+        "circle-stroke-width": [
+          "case",
+          ["boolean", ["feature-state", "selected"], false],
+          3,
+          2,
+        ],
+        "circle-stroke-color": [
+          "case",
+          ["boolean", ["feature-state", "selected"], false],
+          "#00E5FF",
+          "#fff",
+        ],
       },
     });
   }
@@ -1056,9 +1218,11 @@ const addMapeoData = () => {
       (e: MapMouseEvent) => {
         if (e.features && e.features.length > 0) {
           const feature = e.features[0];
-          if (multiSelectMode.value) {
+          if (multiSelectMode.value || boundingBoxMode.value) {
             // Add to selected sources instead of selecting for sidebar
             handleMultiSelectFeature(feature, layerId);
+          } else if (incidentSelectionContextActive.value) {
+            return;
           } else {
             // Normal selection behavior
             selectFeature(feature, layerId);
@@ -1132,8 +1296,10 @@ const handleBufferClick = (e: MapMouseEvent) => {
   if (features.length > 0) {
     const firstFeature = features[0];
     const layerId = firstFeature.layer.id;
-    if (multiSelectMode.value) {
+    if (multiSelectMode.value || boundingBoxMode.value) {
       handleMultiSelectFeature(firstFeature, layerId);
+    } else if (incidentSelectionContextActive.value) {
+      return;
     } else {
       selectFeature(firstFeature, layerId);
     }
@@ -1595,13 +1761,14 @@ onBeforeUnmount(() => {
         :show="showIncidentsSidebar"
         :open-with-create-form="openSidebarWithCreateForm"
         :retry-fetch-incidents="fetchIncidents"
-        @close="toggleIncidentsSidebar"
+        @close="handleToggleIncidentsSidebar"
         @back-to-incidents-list="clearSelectedIncident"
         @retry-incident-details="(id: string) => openIncidentDetails(id)"
         @select-incident="openIncidentDetails"
         @hover-incident="scheduleIncidentPrefetch"
         @load-more-incidents="loadMoreIncidents"
         @create-incident="handleCreateIncident"
+        @delete-incident="handleDeleteIncident"
         @remove-source="removeSourceFromSelection"
         @clear-sources="handleClearSourcesAndCloseSidebar"
       />
@@ -1613,9 +1780,9 @@ onBeforeUnmount(() => {
         :has-active-selection="hasActiveSelection"
         :selected-sources-length="selectedSources.length"
         :hovered-button="hoveredButton"
-        @toggle-incidents-sidebar="toggleIncidentsSidebar"
-        @toggle-bounding-box-mode="toggleBoundingBoxMode"
-        @toggle-multi-select-mode="toggleMultiSelectMode"
+        @toggle-incidents-sidebar="handleToggleIncidentsSidebar"
+        @toggle-bounding-box-mode="handleToggleBoundingBoxMode"
+        @toggle-multi-select-mode="handleToggleMultiSelectMode"
         @open-incidents-sidebar-with-create-form="
           openIncidentsSidebarWithCreateForm
         "
@@ -1623,6 +1790,43 @@ onBeforeUnmount(() => {
         @hover-button="(button) => (hoveredButton = button)"
         @clear-hover="hoveredButton = null"
       />
+    </div>
+
+    <!-- Remove incident confirmation modal -->
+    <div
+      v-if="showRemoveIncidentModal"
+      data-testid="remove-incident-modal"
+      class="fixed inset-0 bg-black/50 z-[1100] flex items-center justify-center p-4"
+    >
+      <div
+        data-testid="remove-incident-modal-content"
+        class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+      >
+        <p
+          data-testid="remove-incident-modal-message"
+          class="mb-4 text-gray-700"
+        >
+          {{ $t("incidents.removeIncidentConfirm") }}
+        </p>
+        <div class="flex gap-3 justify-end">
+          <button
+            data-testid="remove-incident-confirm-button"
+            type="button"
+            class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
+            @click="handleConfirmRemoveIncident"
+          >
+            {{ $t("confirm") }}
+          </button>
+          <button
+            data-testid="remove-incident-cancel-button"
+            type="button"
+            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
+            @click="handleCancelRemoveIncident"
+          >
+            {{ $t("cancel") }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

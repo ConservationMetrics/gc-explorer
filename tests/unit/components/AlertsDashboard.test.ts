@@ -565,5 +565,88 @@ describe("AlertsDashboard component", () => {
       expect(multiSelectButton.classes()).toContain("active");
       expect(boundingBoxButton.classes()).not.toContain("active");
     });
+
+    it("restores view sidebar when incident mode is fully disabled", async () => {
+      const wrapper = mount(AlertsDashboard, {
+        props: baseProps,
+        global: {
+          plugins: [i18n],
+          stubs: {
+            ViewSidebar: true,
+            MapLegend: true,
+            BasemapSelector: true,
+            IncidentsSidebar: true,
+          },
+        },
+      });
+
+      mapboxMock.fireLoad();
+      await flushPromises();
+
+      const vm = wrapper.vm as unknown as {
+        showSidebar: boolean;
+        showIntroPanel: boolean;
+      };
+      const multiSelectButton = wrapper.find(
+        '[data-testid="incidents-multiselect-button"]',
+      );
+
+      await multiSelectButton.trigger("click");
+      await flushPromises();
+      expect(vm.showSidebar).toBe(false);
+      vm.showIntroPanel = false;
+      await flushPromises();
+
+      await multiSelectButton.trigger("click");
+      await flushPromises();
+      expect(vm.showSidebar).toBe(true);
+      expect(vm.showIntroPanel).toBe(true);
+    });
+
+    it("does not open feature sidebar on map click while incidents sidebar is open", async () => {
+      const props = JSON.parse(JSON.stringify(baseProps));
+      props.alertsData.mostRecentAlerts.features.push({
+        id: "alert1",
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [0, 0] },
+        properties: { alertID: "alert1", YYYYMM: "202401" },
+      });
+
+      const wrapper = mount(AlertsDashboard, {
+        props,
+        global: {
+          plugins: [i18n],
+          stubs: {
+            ViewSidebar: true,
+            MapLegend: true,
+            BasemapSelector: true,
+            IncidentsSidebar: true,
+          },
+        },
+      });
+
+      mapboxMock.fireLoad();
+      await flushPromises();
+
+      const vm = wrapper.vm as unknown as { showSidebar: boolean };
+      vm.showSidebar = false;
+      await flushPromises();
+
+      const viewIncidentsButton = wrapper.find(
+        '[data-testid="incidents-view-button"]',
+      );
+      await viewIncidentsButton.trigger("click");
+      await flushPromises();
+
+      const callsBefore = mapboxMock.setFeatureState.mock.calls.length;
+      mapboxMock.fireClick("most-recent-alerts-point", {
+        features: props.alertsData.mostRecentAlerts.features,
+        point: { x: 10, y: 10 },
+      });
+      await flushPromises();
+
+      expect(vm.showSidebar).toBe(false);
+      expect(mapboxMock.setFeatureState.mock.calls.length).toBe(callsBefore);
+    });
   });
 });
