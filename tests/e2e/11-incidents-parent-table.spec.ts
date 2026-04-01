@@ -1,5 +1,6 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import type { Page } from "@playwright/test";
+import type { FeatureCollection, Position } from "geojson";
 
 const selectionModifierKey = process.platform === "darwin" ? "Meta" : "Control";
 
