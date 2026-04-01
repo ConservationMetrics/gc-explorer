@@ -1,6 +1,5 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import type { Page } from "@playwright/test";
-import type { LngLat } from "@/types";
 
 const selectionModifierKey = process.platform === "darwin" ? "Meta" : "Control";
 
@@ -33,7 +32,7 @@ const navigateToAlertsTable = async (
  */
 const getSelectableFeatureLngLat = async (
   page: Page,
-): Promise<LngLat | null> => {
+): Promise<Position | null> => {
   return await page.evaluate(() => {
     // @ts-expect-error _testMap is exposed for E2E testing only
     const map = window._testMap;

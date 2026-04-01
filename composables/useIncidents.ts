@@ -8,7 +8,6 @@ import type {
   CollectionEntryInput,
   Incident,
 } from "@/types";
-
 /**
  * Small in-memory cache to avoid refetching incident details repeatedly.
  * (Also used for hover-prefetch.)
@@ -102,6 +101,8 @@ export const useIncidents = (
   >();
 
   let incidentPrefetchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  const SOURCE_ID_KEYS = ["alertID", "_id", "source_id", "sourceId"] as const;
 
   /**
    * Returns current alerts table name from route params.
@@ -605,17 +606,16 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
    * @param feature - Map feature from click/query results.
    * @returns Source identifier string, or null when no known key exists.
    */
-const extractFeatureSourceId = (feature: Feature): string | null => {
-  const props = feature.properties;
-  if (!props) return null;
+  const extractFeatureSourceId = (feature: Feature): string | null => {
+    const props = feature.properties;
+    if (!props) return null;
 
-  for (const key of SOURCE_ID_KEYS) {
-    const value = props[key];
-    if (value != null) return String(value);
-  }
+    for (const key of SOURCE_ID_KEYS) {
+      const value = props[key];
+      if (value != null) return String(value);
+    }
 
-  return null;
-};
+    return null;
   };
 
   /**

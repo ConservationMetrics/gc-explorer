@@ -145,7 +145,6 @@ export type AlertsData = {
 };
 
 export type AlertsPerMonth = Record<string, number>;
-export type LngLat = Position;
 
 export type AlertsStatistics = {
   territory: string;
