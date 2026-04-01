@@ -36,6 +36,28 @@ export const getFilePathsWithExtension = (
   return filePaths;
 };
 
+const CLEAN_PHOTO_TOKEN_EDGES = /^[\s"'\\[]+|[\s"'\\[\]]+$/g;
+
+/**
+ * Parses Mapeo / survey photo list strings (comma-separated and/or bracket-wrapped).
+ */
+export const parsePhotoListString = (raw: unknown): string[] => {
+  if (raw == null || raw === "") return [];
+  return String(raw)
+    .split(",")
+    .map((file) =>
+      file.trim().replace(CLEAN_PHOTO_TOKEN_EDGES, "").replace(/ /g, "_"),
+    )
+    .filter(Boolean);
+};
+
+/**
+ * Resolves `photos` (display-transformed) or `_photos` (raw Mapeo) into file paths.
+ */
+export const parsePhotosFromRecord = (
+  record: Record<string, unknown>,
+): string[] => parsePhotoListString(record.photos ?? record._photos);
+
 /** Converts a string to camelCase format. */
 export const toCamelCase = (key: string): string => {
   return key

@@ -31,6 +31,7 @@ import {
   transformSurveyEntry,
   transformAlertEntry,
 } from "@/utils/dataTransformers";
+import { parsePhotosFromRecord } from "@/utils/index";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
@@ -198,11 +199,10 @@ watch(
       displayRecord = fullRecord
         ? transformSurveyEntry(fullRecord)
         : minimalFeature;
-      if (displayRecord.photos) {
-        imageUrl.value = [];
-        const photos = String(displayRecord.photos).split(",");
-        photos.forEach((photo: string) => imageUrl.value.push(photo.trim()));
-      }
+      imageUrl.value = [];
+      parsePhotosFromRecord(displayRecord as Record<string, unknown>).forEach(
+        (photo) => imageUrl.value.push(photo),
+      );
     } else {
       displayRecord = fullRecord
         ? transformAlertEntry(fullRecord, props.table)
