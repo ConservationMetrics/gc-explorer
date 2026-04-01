@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
+import DownloadStatistics from "@/components/shared/DownloadStatistics.vue";
 
 import type { AlertsData, AlertsStatistics } from "@/types";
 
@@ -92,11 +93,9 @@ const emit = defineEmits(["dateRangeChanged"]);
           v-if="props.showSlider && props.dataForAlertsIntroPanel"
           class="mt-4 flex justify-center [&>div]:!mt-0"
         >
-          <DownloadMapData
-            :data-for-download="props.dataForAlertsIntroPanel"
-            export-path="statistics-export"
-            :export-min-date="props.statsExportMinDate"
-            :export-max-date="props.statsExportMaxDate"
+          <DownloadStatistics
+            :min-date="props.statsExportMinDate"
+            :max-date="props.statsExportMaxDate"
             filename-prefix="statistics"
           />
         </div>

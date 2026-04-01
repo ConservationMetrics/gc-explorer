@@ -126,20 +126,6 @@ describe("DownloadMapData component", () => {
       const buttons = wrapper.findAll("button");
       expect(buttons[2].text()).toContain("downloadKML");
     });
-
-    it("should render a single Download statistics button for statistics export", () => {
-      const wrapper = mount(DownloadMapData, {
-        props: {
-          dataForDownload: simpleFeatureCollection,
-          exportPath: "statistics-export",
-        },
-        global: globalConfig,
-      });
-
-      const buttons = wrapper.findAll("button");
-      expect(buttons.length).toBe(1);
-      expect(buttons[0].text()).toContain("downloadStatistics");
-    });
   });
 
   describe("Props handling", () => {
@@ -211,33 +197,6 @@ describe("DownloadMapData component", () => {
             format: "csv",
             filterColumn: "category",
             filterValues: "active,inactive",
-          },
-        }),
-      );
-    });
-
-    it("uses custom export path when provided", async () => {
-      const wrapper = mount(DownloadMapData, {
-        props: {
-          dataForDownload: simpleFeatureCollection,
-          exportPath: "statistics-export",
-          exportMinDate: "202401",
-          exportMaxDate: "202403",
-        },
-        global: globalConfig,
-      });
-
-      const csvButton = wrapper.findAll("button")[0];
-      await csvButton.trigger("click");
-      await wrapper.vm.$nextTick();
-
-      expect(fetchMock).toHaveBeenCalledWith(
-        "/api/test_data/statistics-export",
-        expect.objectContaining({
-          params: {
-            format: "csv",
-            minDate: "202401",
-            maxDate: "202403",
           },
         }),
       );
