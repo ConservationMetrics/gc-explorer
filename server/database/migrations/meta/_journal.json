@@ -40,8 +40,15 @@
     {
       "idx": 5,
       "version": "7",
-      "when": 1742817480000,
+      "when": 1768207769007,
       "tag": "0005_add_parent_alerts_table_to_incidents",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1768207769008,
+      "tag": "0006_backfill_parent_alerts_table_incidents",
       "breakpoints": true
     }
   ]
