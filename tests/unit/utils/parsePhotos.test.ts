@@ -9,9 +9,11 @@ describe("parsePhotoListString", () => {
   });
 
   it("parses bracket-wrapped list of multiple filenames", () => {
-    expect(
-      parsePhotoListString("['a.jpg', 'b.jpg', 'c.jpg']"),
-    ).toEqual(["a.jpg", "b.jpg", "c.jpg"]);
+    expect(parsePhotoListString("['a.jpg', 'b.jpg', 'c.jpg']")).toEqual([
+      "a.jpg",
+      "b.jpg",
+      "c.jpg",
+    ]);
   });
 
   it("parses plain comma-separated filenames", () => {
@@ -27,9 +29,9 @@ describe("parsePhotoListString", () => {
   });
 
   it("strips quotes and brackets from each token", () => {
-    expect(parsePhotoListString('["5bf52de27e1a7b36f2d2cec254b766c8.jpg"]')).toEqual(
-      ["5bf52de27e1a7b36f2d2cec254b766c8.jpg"],
-    );
+    expect(
+      parsePhotoListString('["5bf52de27e1a7b36f2d2cec254b766c8.jpg"]'),
+    ).toEqual(["5bf52de27e1a7b36f2d2cec254b766c8.jpg"]);
   });
 
   it("replaces spaces with underscores in filenames", () => {
