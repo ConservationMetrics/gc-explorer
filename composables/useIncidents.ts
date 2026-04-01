@@ -597,20 +597,25 @@ export const useIncidents = (
 
   /**
    * Extracts a stable source identifier from a rendered map feature.
-   * Supports alerts (`alertID`) and Mapeo/back-compat keys.
+
+const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
+
+   * Supports alerts (`alertID`) and standard GC warehouse unique identifier in `_id`.
    *
    * @param feature - Map feature from click/query results.
    * @returns Source identifier string, or null when no known key exists.
    */
-  const extractFeatureSourceId = (feature: Feature): string | null => {
-    if (!feature.properties) return null;
-    if (feature.properties.alertID) return String(feature.properties.alertID);
-    if (feature.properties._id) return String(feature.properties._id);
-    if (feature.properties.id) return String(feature.properties.id);
-    if (feature.properties.source_id)
-      return String(feature.properties.source_id);
-    if (feature.properties.sourceId) return String(feature.properties.sourceId);
-    return null;
+const extractFeatureSourceId = (feature: Feature): string | null => {
+  const props = feature.properties;
+  if (!props) return null;
+
+  for (const key of SOURCE_ID_KEYS) {
+    const value = props[key];
+    if (value != null) return String(value);
+  }
+
+  return null;
+};
   };
 
   /**

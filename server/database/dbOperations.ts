@@ -232,7 +232,6 @@ export const fetchConfig = async (): Promise<Views> => {
         EMBED_MEDIA: "NO",
         MEDIA_BASE_PATH_ALERTS: "",
         MEDIA_BASE_PATH: "",
-        LOGO_URL:
           "https://conservationmetrics.com/wp-content/themes/conservation-metrics/images/logo-conservation-metrics.png",
         MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-streets-v12",
         MAPBOX_PROJECTION: "globe",
