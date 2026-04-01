@@ -1,6 +1,6 @@
 import type pg from "pg";
 
-import type { FeatureCollection } from "geojson";
+import type { FeatureCollection, Position } from "geojson";
 
 export type DatabaseConnection = pg.Client | null;
 
@@ -215,6 +215,7 @@ export interface AnnotatedCollection {
 
 export interface Incident {
   collection_id: string;
+  parent_alerts_table?: string;
   incident_type?: string;
   responsible_party?: string;
   impact_description?: string;

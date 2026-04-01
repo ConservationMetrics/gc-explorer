@@ -116,7 +116,7 @@
   "incidents.deselectSelection": "Deseleccionar selección actual",
   "incidents.disableBoundingBox": "Desactivar selección de cuadro delimitador",
   "incidents.disableMultiSelect": "Desactivar modo de selección múltiple",
-  "incidents.enableBoundingBox": "Seleccionar múltiples características dibujando un cuadro",
+  "incidents.enableBoundingBox": "Arrastra para mover el mapa. Mantén Ctrl o ⌘ y arrastra para dibujar un cuadro de selección",
   "incidents.enableMultiSelect": "Seleccionar múltiples características una por una haciendo clic en las características",
   "incidents.enterDescription": "Ingrese la descripción",
   "incidents.enterIncidentName": "Ingrese el nombre del incidente",

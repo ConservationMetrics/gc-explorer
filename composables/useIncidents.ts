@@ -8,7 +8,6 @@ import type {
   CollectionEntryInput,
   Incident,
 } from "@/types";
-
 /**
  * Small in-memory cache to avoid refetching incident details repeatedly.
  * (Also used for hover-prefetch.)
@@ -55,6 +54,9 @@ export const useIncidents = (
   const isCreatingIncident = ref(false);
   const multiSelectMode = ref(false);
   const boundingBoxMode = ref(false);
+  const incidentModeEnabled = computed(
+    () => multiSelectMode.value || boundingBoxMode.value,
+  );
   const isLoadingIncidents = ref(false);
   const incidentsFetchError = ref(false);
 
@@ -99,6 +101,19 @@ export const useIncidents = (
   >();
 
   let incidentPrefetchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  const SOURCE_ID_KEYS = ["alertID", "_id", "source_id", "sourceId"] as const;
+
+  /**
+   * Returns current alerts table name from route params.
+   *
+   * @returns Alerts table slug string or undefined.
+   */
+  const getCurrentAlertsTable = (): string | undefined => {
+    const tableRaw = route.params.tablename;
+    if (!tableRaw) return undefined;
+    return Array.isArray(tableRaw) ? tableRaw.join("/") : String(tableRaw);
+  };
 
   const getAdditionalSelectableLayerIds = () =>
     (mapLegendLayerIds?.value || "")
@@ -273,6 +288,7 @@ export const useIncidents = (
         query: {
           limit: incidentsLimit.value,
           offset,
+          parent_alerts_table: getCurrentAlertsTable(),
         },
       });
 
@@ -439,6 +455,7 @@ export const useIncidents = (
           },
           body: {
             ...incidentData,
+            parent_alerts_table: getCurrentAlertsTable(),
             entries: selectedSources.value,
           },
         },
@@ -553,6 +570,8 @@ export const useIncidents = (
       }
       removeBoundingBoxHandlers();
     }
+
+    syncSelectedSourceHighlightsToMode();
   };
 
   /**
@@ -573,6 +592,114 @@ export const useIncidents = (
       }
       removeBoundingBoxHandlers();
     }
+
+    syncSelectedSourceHighlightsToMode();
+  };
+
+  /**
+   * Extracts a stable source identifier from a rendered map feature.
+
+const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
+
+   * Supports alerts (`alertID`) and standard GC warehouse unique identifier in `_id`.
+   *
+   * @param feature - Map feature from click/query results.
+   * @returns Source identifier string, or null when no known key exists.
+   */
+  const extractFeatureSourceId = (feature: Feature): string | null => {
+    const props = feature.properties;
+    if (!props) return null;
+
+    for (const key of SOURCE_ID_KEYS) {
+      const value = props[key];
+      if (value != null) return String(value);
+    }
+
+    return null;
+  };
+
+  /**
+   * Synchronizes incident-selection highlighting with current mode state.
+   * - When incident mode is disabled, map highlights are cleared but selectedSources stay in memory.
+   * - When enabled, highlights are rebuilt from selectedSources and cluster highlighting is refreshed.
+   *
+   * @returns void
+   */
+  const syncSelectedSourceHighlightsToMode = () => {
+    if (!map.value) return;
+
+    if (!incidentModeEnabled.value || selectedSources.value.length === 0) {
+      clearSourceHighlighting();
+      return;
+    }
+
+    clearSourceHighlighting();
+
+    const selectableLayers = [
+      "most-recent-alerts-polygon",
+      "most-recent-alerts-linestring",
+      "most-recent-alerts-point",
+      "most-recent-alerts-symbol",
+      "most-recent-alerts-centroids",
+      "previous-alerts-polygon",
+      "previous-alerts-linestring",
+      "previous-alerts-point",
+      "previous-alerts-symbol",
+      "previous-alerts-centroids",
+      "mapeo-data",
+      ...getAdditionalSelectableLayerIds(),
+    ].filter((layerId) => map.value!.getLayer(layerId));
+
+    if (selectableLayers.length > 0) {
+      const rendered = (
+        map.value.queryRenderedFeatures as (
+          geometry?:
+            | mapboxgl.PointLike
+            | [mapboxgl.PointLike, mapboxgl.PointLike],
+          options?: {
+            layers?: string[];
+            filter?: mapboxgl.FilterSpecification;
+          },
+        ) => mapboxgl.MapboxGeoJSONFeature[]
+      )(undefined, {
+        layers: selectableLayers,
+      }) as Feature[];
+
+      rendered.forEach((feature) => {
+        const layerId = (feature as Feature & { layer?: { id?: string } }).layer
+          ?.id;
+        if (!layerId) return;
+
+        const sourceId = extractFeatureSourceId(feature);
+        if (!sourceId) return;
+
+        const isMapeoLayer = layerId.startsWith("mapeo-data");
+        const shouldHighlight = selectedSources.value.some((source) => {
+          if (source.source_id !== sourceId) return false;
+          if (source.feature_type === "mapeo") return isMapeoLayer;
+          return !isMapeoLayer;
+        });
+        if (!shouldHighlight) return;
+
+        highlightSelectedSource(feature, layerId);
+      });
+    }
+
+    const selectedAlertIds = selectedSources.value
+      .filter((source) => source.feature_type === "alert")
+      .map((source) => source.source_id);
+    const candidateClusterSources = [
+      "most-recent-alerts-centroids",
+      "most-recent-alerts-point",
+      "previous-alerts-centroids",
+      "previous-alerts-point",
+    ].filter((sourceName) => map.value!.getSource(sourceName));
+    selectedAlertIds.forEach((alertId) => {
+      candidateClusterSources.forEach((sourceName) => {
+        void highlightClusterForAlertId(alertId, sourceName);
+      });
+    });
+    updateIncidentClusterHighlight();
   };
 
   /**
@@ -619,10 +746,15 @@ export const useIncidents = (
     };
 
     /**
-     * Handles mouse down event to start bounding box selection
+     * Handles mouse down event to start bounding box selection.
+     * Plain drag pans the map; Ctrl or ⌘ + drag draws the selection box.
      */
     const mouseDownForBoundingBox = (e: MouseEvent) => {
       if (e.button !== 0) return;
+      if (!(e.ctrlKey || e.metaKey)) return;
+
+      e.preventDefault();
+      e.stopPropagation();
 
       map.value!.dragPan.disable();
 
@@ -1070,7 +1202,7 @@ export const useIncidents = (
       const target = sourceLayer
         ? { source: sourceId, sourceLayer, id: featureId }
         : { source: sourceId, id: featureId };
-      map.value.setFeatureState(target, { selected: true });
+      map.value.setFeatureState(target, { incidentSelected: true });
     }
   };
 
@@ -1131,7 +1263,7 @@ export const useIncidents = (
               source: existingHighlight.sourceId,
               id: existingHighlight.featureId,
             };
-        map.value!.setFeatureState(target, { selected: false });
+        map.value!.setFeatureState(target, { incidentSelected: false });
       } catch (error) {
         // Ignore errors if layer/source doesn't exist
         console.warn("Error unhighlighting feature state:", error);
@@ -1214,7 +1346,7 @@ export const useIncidents = (
           const target = sourceLayer
             ? { source: sourceId, sourceLayer, id: featureId }
             : { source: sourceId, id: featureId };
-          map.value!.setFeatureState(target, { selected: false });
+          map.value!.setFeatureState(target, { incidentSelected: false });
         } catch (error) {
           // Ignore errors if layer/source doesn't exist
           console.warn("Error clearing feature state:", error);
@@ -1342,7 +1474,9 @@ export const useIncidents = (
     const hasClusterIds = incidentClusterIds.value.size > 0;
     const hasSelectedIncident =
       selectedIncident.value && selectedIncidentEntries.value.length > 0;
-    const hasHighlightedSources = highlightedSources.value.length > 0;
+    const hasHighlightedSources =
+      incidentModeEnabled.value &&
+      (highlightedSources.value.length > 0 || selectedSources.value.length > 0);
     const tableRaw = route.params.tablename;
     const currentAlertsTable = Array.isArray(tableRaw)
       ? tableRaw.join("/")

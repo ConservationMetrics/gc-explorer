@@ -117,7 +117,7 @@
   "incidents.deselectSelection": "Huidige selectie deselecteren",
   "incidents.disableBoundingBox": "Selectie van begrenzingsvak uitschakelen",
   "incidents.disableMultiSelect": "Multi-select modus uitschakelen",
-  "incidents.enableBoundingBox": "Selecteer meerdere objecten door een vak te tekenen",
+  "incidents.enableBoundingBox": "Sleep om de kaart te verschuiven. Houd Ctrl of ⌘ ingedrukt en sleep om een selectiekader te tekenen",
   "incidents.enableMultiSelect": "Selecteer meerdere objecten een voor een door op objecten te klikken",
   "incidents.enterDescription": "Voer beschrijving in",
   "incidents.enterIncidentName": "Voer incidentnaam in",

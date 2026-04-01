@@ -1,5 +1,6 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import type { Page } from "@playwright/test";
+import { navigateToAlertsDashboard } from "./helpers/navigateToAlertsDashboard";
 
 const selectionModifierKey = process.platform === "darwin" ? "Meta" : "Control";
 
@@ -64,52 +65,6 @@ async function projectLngLatToPagePoint(
     const rect = map.getCanvas().getBoundingClientRect();
     return { x: rect.left + point.x, y: rect.top + point.y };
   }, lngLat);
-}
-
-/* ─────────────────────────────────────────────── */
-/* NAVIGATION                                     */
-/* ─────────────────────────────────────────────── */
-
-async function navigateToAlertsDashboard(page: Page) {
-  await page.goto("/");
-  await page.waitForLoadState("networkidle");
-
-  await expect(
-    page.getByRole("heading", {
-      name: /available views|available dataset views/i,
-    }),
-  ).toBeVisible();
-
-  const cards = page.locator("[data-testid='dataset-card']");
-  const count = await cards.count();
-  expect(count).toBeGreaterThan(0);
-
-  let alertsCard = null;
-  for (let i = 0; i < count; i++) {
-    const card = cards.nth(i);
-    if ((await card.locator("[data-testid='view-tag-alerts']").count()) > 0) {
-      alertsCard = card;
-      break;
-    }
-  }
-
-  expect(alertsCard).not.toBeNull();
-
-  await alertsCard!.locator("[data-testid='open-dataset-view-link']").click();
-
-  await page.waitForLoadState("networkidle");
-
-  const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  const href = await alertsLink.getAttribute("href");
-  await page.goto(href!);
-
-  await page.locator("canvas.mapboxgl-canvas").waitFor();
-
-  await page.waitForFunction(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
-    return map?.isStyleLoaded() && map.loaded();
-  });
 }
 
 /* ─────────────────────────────────────────────── */
@@ -323,4 +278,25 @@ test("annotated collections - incident detail shows CSV and GeoJSON download but
   await expect(
     page.getByTestId("download-incident-features-button"),
   ).toBeVisible();
+});
+
+test("annotated collections - left sidebar shows alerts intro after exiting incident selection modes", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await navigateToAlertsDashboard(page);
+
+  const intro = page.getByTestId("alerts-intro-panel");
+  await expect(intro).toBeVisible({ timeout: 20000 });
+
+  await page.getByTestId("incidents-multiselect-button").click();
+  await expect(intro).not.toBeVisible();
+
+  await page.getByTestId("incidents-multiselect-button").click();
+  await expect(intro).toBeVisible({ timeout: 20000 });
+
+  await page.getByTestId("incidents-bbox-button").click();
+  await expect(intro).not.toBeVisible();
+
+  await page.getByTestId("incidents-bbox-button").click();
+  await expect(intro).toBeVisible({ timeout: 20000 });
 });
