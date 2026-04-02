@@ -115,6 +115,18 @@ export const useIncidents = (
     return Array.isArray(tableRaw) ? tableRaw.join("/") : String(tableRaw);
   };
 
+  /**
+   * True when a persisted incident entry refers to mapeo rows. {@link CollectionEntry.source_table}
+   * is the warehouse table name (often the view’s MAPEO_TABLE, or `mapeo_data`)
+   */
+  const savedEntryIsMapeo = (entry: CollectionEntry): boolean => {
+    const configuredMapeoTable = mapeoTableRef?.value;
+    return (
+      entry.source_table === "mapeo_data" ||
+      (!!configuredMapeoTable && entry.source_table === configuredMapeoTable)
+    );
+  };
+
   const getAdditionalSelectableLayerIds = () =>
     (mapLegendLayerIds?.value || "")
       .split(",")
@@ -997,7 +1009,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
 
   /**
    * Adds a source to the selected sources list for incident creation
-   * @param sourceTable - The table name (e.g., "fake_alerts", "mapeo_data")
+   * @param sourceTable - Warehouse table (alerts route table or view MAPEO_TABLE)
    * @param sourceId - The unique identifier from the source table
    * @param featureType - "alert" or "mapeo" so the server uses alert_id or _id when fetching the row
    * @param notes - Optional notes about the source
@@ -1502,7 +1514,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
       const selectedAlertIds = selectedSources.value
         .filter(
           (source) =>
-            source.source_table !== "mapeo_data" &&
+            source.feature_type === "alert" &&
             (!currentAlertsTable || source.source_table === currentAlertsTable),
         )
         .map((source) => source.source_id);
@@ -1571,7 +1583,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
       // If the entry refers to a different alerts table than the current route,
       // the map won't have that data loaded; still try best-effort highlighting.
       if (
-        entry.source_table !== "mapeo_data" &&
+        !savedEntryIsMapeo(entry) &&
         currentAlertsTable &&
         entry.source_table !== currentAlertsTable
       ) {
@@ -1582,17 +1594,17 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
         );
       }
 
-      const candidateSources =
-        entry.source_table === "mapeo_data" ? ["mapeo-data"] : alertLayers;
+      const candidateSources = savedEntryIsMapeo(entry)
+        ? ["mapeo-data"]
+        : alertLayers;
 
-      const filter: mapboxgl.ExpressionSpecification =
-        entry.source_table === "mapeo_data"
-          ? [
-              "any",
-              ["==", ["get", "_id"], entry.source_id],
-              ["==", ["get", "id"], entry.source_id],
-            ]
-          : ["==", ["get", "alertID"], entry.source_id];
+      const filter: mapboxgl.ExpressionSpecification = savedEntryIsMapeo(entry)
+        ? [
+            "any",
+            ["==", ["get", "_id"], entry.source_id],
+            ["==", ["get", "id"], entry.source_id],
+          ]
+        : ["==", ["get", "alertID"], entry.source_id];
 
       let found = false;
 
@@ -1615,7 +1627,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
             if (isCluster) {
               // If it's a cluster, highlight the cluster
               // For alert entries, we need to find which cluster contains this alertID
-              if (entry.source_table !== "mapeo_data" && entry.source_id) {
+              if (!savedEntryIsMapeo(entry) && entry.source_id) {
                 // Determine the centroids source for cluster checking
                 const centroidsSource = sourceId.includes("most-recent")
                   ? "most-recent-alerts-centroids"
@@ -1638,7 +1650,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
 
               // Also check if this feature is part of a cluster at current zoom
               // (it might be de-clustered when zoomed in, but we still want to highlight the cluster if zoomed out)
-              if (entry.source_table !== "mapeo_data" && entry.source_id) {
+              if (!savedEntryIsMapeo(entry) && entry.source_id) {
                 const centroidsSource = sourceId.includes("most-recent")
                   ? "most-recent-alerts-centroids"
                   : sourceId.includes("previous")
@@ -1668,7 +1680,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
 
       // If we didn't find the feature in any source, it might be clustered
       // Try checking clusters directly
-      if (!found && entry.source_table !== "mapeo_data" && entry.source_id) {
+      if (!found && !savedEntryIsMapeo(entry) && entry.source_id) {
         const centroidsSources = [
           "most-recent-alerts-centroids",
           "previous-alerts-centroids",
