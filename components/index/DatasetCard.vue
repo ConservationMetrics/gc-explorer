@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ViewConfig } from "@/types";
-import { formatDisplayName, CONFIG_LIMITS } from "@/utils/index";
+import { formatDisplayName, CONFIG_LIMITS } from "@/utils";
 
 interface Props {
   tableName: string | number;

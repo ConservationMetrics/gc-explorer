@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toCamelCase } from "@/utils";
+import { toCamelCase } from "@/utils/identifierUtils";
 
 // @ts-expect-error - vue-tags-input does not have types
 import { VueTagsInput } from "@vojtechlanka/vue-tags-input";

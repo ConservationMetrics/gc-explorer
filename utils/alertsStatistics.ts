@@ -1,6 +1,7 @@
 import type { AlertsPerMonth, AlertsStatistics } from "@/types";
 import type { Feature, FeatureCollection } from "geojson";
 import { escapeCSVValue } from "@/utils/csvUtils";
+import { camelToSnake } from "@/utils/identifierUtils";
 
 type MonthlySeriesRow = {
   period: string;
@@ -211,7 +212,7 @@ export const statisticsRowsToCsv = (
     "hectaresCumulative",
     "alertsTotal",
     "hectaresTotal",
-  ];
+  ].map((key) => camelToSnake(key));
 
   return [
     headers.join(","),

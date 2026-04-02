@@ -58,55 +58,6 @@ export const parsePhotosFromRecord = (
   record: Record<string, unknown>,
 ): string[] => parsePhotoListString(record.photos ?? record._photos);
 
-/** Converts a string to camelCase format. */
-export const toCamelCase = (key: string): string => {
-  return key
-    .toLowerCase()
-    .replace(/_([a-z0-9])/g, (_, p1) => p1.toUpperCase())
-    .replace(/(^\w)/, (match) => match.toLowerCase());
-};
-
-/** Converts a string to snake_case format. */
-export const replaceUnderscoreWithSpace = (str: string): string => {
-  return str.replace(/_/g, " ");
-};
-
-/**
- * Converts Title Case (or spaced words) to snake_case
- * @param str - The string to convert (e.g., "Illegal Logging")
- * @returns The snake_case version (e.g., "illegal_logging")
- */
-export const titleToSnakeCase = (str: string): string => {
-  return str.trim().toLowerCase().replace(/\s+/g, "_");
-};
-
-/**
- * Converts snake_case to Title Case
- * @param str - The string to convert (e.g., "illegal_logging")
- * @returns The Title Case version (e.g., "Illegal Logging")
- */
-export const snakeToTitleCase = (str: string): string => {
-  return str
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-};
-
-/**
- * Converts Title Case (or spaced words) to camelCase
- * @param str - The string to convert (e.g., "Illegal Logging")
- * @returns The camelCase version (e.g., "illegalLogging")
- */
-export const titleToCamelCase = (str: string): string => {
-  return str
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)
-    .map((word, index) =>
-      index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1),
-    )
-    .join("");
-};
 
 /**
  * Formats a string for display by converting camelCase, kebab-case, and snake_case to Title Case
@@ -139,19 +90,6 @@ export const getRandomColor = () => {
     color += letters[Math.floor(Math.random() * 16)];
   }
   return color;
-};
-
-/** Formats a date string to a locale date string. */
-export const formatDate = (date: string): string => {
-  // First let's ensure the date is in the correct format
-  const dateRegex = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).*/;
-  const dateMatch = date.match(dateRegex);
-  if (dateMatch) {
-    date = new Date(
-      `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}T${dateMatch[4]}:${dateMatch[5]}:${dateMatch[6]}`,
-    ).toLocaleDateString();
-  }
-  return date;
 };
 
 /**
