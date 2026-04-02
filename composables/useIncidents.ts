@@ -8,7 +8,6 @@ import type {
   CollectionEntryInput,
   Incident,
 } from "@/types";
-
 /**
  * Small in-memory cache to avoid refetching incident details repeatedly.
  * (Also used for hover-prefetch.)
@@ -55,6 +54,9 @@ export const useIncidents = (
   const isCreatingIncident = ref(false);
   const multiSelectMode = ref(false);
   const boundingBoxMode = ref(false);
+  const incidentModeEnabled = computed(
+    () => multiSelectMode.value || boundingBoxMode.value,
+  );
   const isLoadingIncidents = ref(false);
   const incidentsFetchError = ref(false);
 
@@ -99,6 +101,31 @@ export const useIncidents = (
   >();
 
   let incidentPrefetchTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  const SOURCE_ID_KEYS = ["alertID", "_id", "source_id", "sourceId"] as const;
+
+  /**
+   * Returns current alerts table name from route params.
+   *
+   * @returns Alerts table slug string or undefined.
+   */
+  const getCurrentAlertsTable = (): string | undefined => {
+    const tableRaw = route.params.tablename;
+    if (!tableRaw) return undefined;
+    return Array.isArray(tableRaw) ? tableRaw.join("/") : String(tableRaw);
+  };
+
+  /**
+   * True when a persisted incident entry refers to mapeo rows. {@link CollectionEntry.source_table}
+   * is the warehouse table name (often the view’s MAPEO_TABLE, or `mapeo_data`)
+   */
+  const savedEntryIsMapeo = (entry: CollectionEntry): boolean => {
+    const configuredMapeoTable = mapeoTableRef?.value;
+    return (
+      entry.source_table === "mapeo_data" ||
+      (!!configuredMapeoTable && entry.source_table === configuredMapeoTable)
+    );
+  };
 
   const getAdditionalSelectableLayerIds = () =>
     (mapLegendLayerIds?.value || "")
@@ -273,6 +300,7 @@ export const useIncidents = (
         query: {
           limit: incidentsLimit.value,
           offset,
+          parent_alerts_table: getCurrentAlertsTable(),
         },
       });
 
@@ -439,6 +467,7 @@ export const useIncidents = (
           },
           body: {
             ...incidentData,
+            parent_alerts_table: getCurrentAlertsTable(),
             entries: selectedSources.value,
           },
         },
@@ -458,6 +487,19 @@ export const useIncidents = (
     } finally {
       isCreatingIncident.value = false;
     }
+  };
+
+  /**
+   * Deletes an incident (collection) by ID. Clears selected incident if it was the one deleted and refreshes the list.
+   * @param incidentId - The collection/incident ID to delete
+   */
+  const deleteIncident = async (incidentId: string) => {
+    await $fetch(`/api/collections/${incidentId}`, { method: "DELETE" });
+    incidentDetailsCache.delete(incidentId);
+    if (selectedIncident.value?.id === incidentId) {
+      clearSelectedIncident();
+    }
+    await fetchIncidents();
   };
 
   /**
@@ -540,6 +582,8 @@ export const useIncidents = (
       }
       removeBoundingBoxHandlers();
     }
+
+    syncSelectedSourceHighlightsToMode();
   };
 
   /**
@@ -560,6 +604,114 @@ export const useIncidents = (
       }
       removeBoundingBoxHandlers();
     }
+
+    syncSelectedSourceHighlightsToMode();
+  };
+
+  /**
+   * Extracts a stable source identifier from a rendered map feature.
+
+const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
+
+   * Supports alerts (`alertID`) and standard GC warehouse unique identifier in `_id`.
+   *
+   * @param feature - Map feature from click/query results.
+   * @returns Source identifier string, or null when no known key exists.
+   */
+  const extractFeatureSourceId = (feature: Feature): string | null => {
+    const props = feature.properties;
+    if (!props) return null;
+
+    for (const key of SOURCE_ID_KEYS) {
+      const value = props[key];
+      if (value != null) return String(value);
+    }
+
+    return null;
+  };
+
+  /**
+   * Synchronizes incident-selection highlighting with current mode state.
+   * - When incident mode is disabled, map highlights are cleared but selectedSources stay in memory.
+   * - When enabled, highlights are rebuilt from selectedSources and cluster highlighting is refreshed.
+   *
+   * @returns void
+   */
+  const syncSelectedSourceHighlightsToMode = () => {
+    if (!map.value) return;
+
+    if (!incidentModeEnabled.value || selectedSources.value.length === 0) {
+      clearSourceHighlighting();
+      return;
+    }
+
+    clearSourceHighlighting();
+
+    const selectableLayers = [
+      "most-recent-alerts-polygon",
+      "most-recent-alerts-linestring",
+      "most-recent-alerts-point",
+      "most-recent-alerts-symbol",
+      "most-recent-alerts-centroids",
+      "previous-alerts-polygon",
+      "previous-alerts-linestring",
+      "previous-alerts-point",
+      "previous-alerts-symbol",
+      "previous-alerts-centroids",
+      "mapeo-data",
+      ...getAdditionalSelectableLayerIds(),
+    ].filter((layerId) => map.value!.getLayer(layerId));
+
+    if (selectableLayers.length > 0) {
+      const rendered = (
+        map.value.queryRenderedFeatures as (
+          geometry?:
+            | mapboxgl.PointLike
+            | [mapboxgl.PointLike, mapboxgl.PointLike],
+          options?: {
+            layers?: string[];
+            filter?: mapboxgl.FilterSpecification;
+          },
+        ) => mapboxgl.MapboxGeoJSONFeature[]
+      )(undefined, {
+        layers: selectableLayers,
+      }) as Feature[];
+
+      rendered.forEach((feature) => {
+        const layerId = (feature as Feature & { layer?: { id?: string } }).layer
+          ?.id;
+        if (!layerId) return;
+
+        const sourceId = extractFeatureSourceId(feature);
+        if (!sourceId) return;
+
+        const isMapeoLayer = layerId.startsWith("mapeo-data");
+        const shouldHighlight = selectedSources.value.some((source) => {
+          if (source.source_id !== sourceId) return false;
+          if (source.feature_type === "mapeo") return isMapeoLayer;
+          return !isMapeoLayer;
+        });
+        if (!shouldHighlight) return;
+
+        highlightSelectedSource(feature, layerId);
+      });
+    }
+
+    const selectedAlertIds = selectedSources.value
+      .filter((source) => source.feature_type === "alert")
+      .map((source) => source.source_id);
+    const candidateClusterSources = [
+      "most-recent-alerts-centroids",
+      "most-recent-alerts-point",
+      "previous-alerts-centroids",
+      "previous-alerts-point",
+    ].filter((sourceName) => map.value!.getSource(sourceName));
+    selectedAlertIds.forEach((alertId) => {
+      candidateClusterSources.forEach((sourceName) => {
+        void highlightClusterForAlertId(alertId, sourceName);
+      });
+    });
+    updateIncidentClusterHighlight();
   };
 
   /**
@@ -606,10 +758,15 @@ export const useIncidents = (
     };
 
     /**
-     * Handles mouse down event to start bounding box selection
+     * Handles mouse down event to start bounding box selection.
+     * Plain drag pans the map; Ctrl or ⌘ + drag draws the selection box.
      */
     const mouseDownForBoundingBox = (e: MouseEvent) => {
       if (e.button !== 0) return;
+      if (!(e.ctrlKey || e.metaKey)) return;
+
+      e.preventDefault();
+      e.stopPropagation();
 
       map.value!.dragPan.disable();
 
@@ -852,7 +1009,7 @@ export const useIncidents = (
 
   /**
    * Adds a source to the selected sources list for incident creation
-   * @param sourceTable - The table name (e.g., "fake_alerts", "mapeo_data")
+   * @param sourceTable - Warehouse table (alerts route table or view MAPEO_TABLE)
    * @param sourceId - The unique identifier from the source table
    * @param featureType - "alert" or "mapeo" so the server uses alert_id or _id when fetching the row
    * @param notes - Optional notes about the source
@@ -1057,7 +1214,7 @@ export const useIncidents = (
       const target = sourceLayer
         ? { source: sourceId, sourceLayer, id: featureId }
         : { source: sourceId, id: featureId };
-      map.value.setFeatureState(target, { selected: true });
+      map.value.setFeatureState(target, { incidentSelected: true });
     }
   };
 
@@ -1118,7 +1275,7 @@ export const useIncidents = (
               source: existingHighlight.sourceId,
               id: existingHighlight.featureId,
             };
-        map.value!.setFeatureState(target, { selected: false });
+        map.value!.setFeatureState(target, { incidentSelected: false });
       } catch (error) {
         // Ignore errors if layer/source doesn't exist
         console.warn("Error unhighlighting feature state:", error);
@@ -1201,7 +1358,7 @@ export const useIncidents = (
           const target = sourceLayer
             ? { source: sourceId, sourceLayer, id: featureId }
             : { source: sourceId, id: featureId };
-          map.value!.setFeatureState(target, { selected: false });
+          map.value!.setFeatureState(target, { incidentSelected: false });
         } catch (error) {
           // Ignore errors if layer/source doesn't exist
           console.warn("Error clearing feature state:", error);
@@ -1329,7 +1486,9 @@ export const useIncidents = (
     const hasClusterIds = incidentClusterIds.value.size > 0;
     const hasSelectedIncident =
       selectedIncident.value && selectedIncidentEntries.value.length > 0;
-    const hasHighlightedSources = highlightedSources.value.length > 0;
+    const hasHighlightedSources =
+      incidentModeEnabled.value &&
+      (highlightedSources.value.length > 0 || selectedSources.value.length > 0);
     const tableRaw = route.params.tablename;
     const currentAlertsTable = Array.isArray(tableRaw)
       ? tableRaw.join("/")
@@ -1355,7 +1514,7 @@ export const useIncidents = (
       const selectedAlertIds = selectedSources.value
         .filter(
           (source) =>
-            source.source_table !== "mapeo_data" &&
+            source.feature_type === "alert" &&
             (!currentAlertsTable || source.source_table === currentAlertsTable),
         )
         .map((source) => source.source_id);
@@ -1424,7 +1583,7 @@ export const useIncidents = (
       // If the entry refers to a different alerts table than the current route,
       // the map won't have that data loaded; still try best-effort highlighting.
       if (
-        entry.source_table !== "mapeo_data" &&
+        !savedEntryIsMapeo(entry) &&
         currentAlertsTable &&
         entry.source_table !== currentAlertsTable
       ) {
@@ -1435,17 +1594,17 @@ export const useIncidents = (
         );
       }
 
-      const candidateSources =
-        entry.source_table === "mapeo_data" ? ["mapeo-data"] : alertLayers;
+      const candidateSources = savedEntryIsMapeo(entry)
+        ? ["mapeo-data"]
+        : alertLayers;
 
-      const filter: mapboxgl.ExpressionSpecification =
-        entry.source_table === "mapeo_data"
-          ? [
-              "any",
-              ["==", ["get", "_id"], entry.source_id],
-              ["==", ["get", "id"], entry.source_id],
-            ]
-          : ["==", ["get", "alertID"], entry.source_id];
+      const filter: mapboxgl.ExpressionSpecification = savedEntryIsMapeo(entry)
+        ? [
+            "any",
+            ["==", ["get", "_id"], entry.source_id],
+            ["==", ["get", "id"], entry.source_id],
+          ]
+        : ["==", ["get", "alertID"], entry.source_id];
 
       let found = false;
 
@@ -1468,7 +1627,7 @@ export const useIncidents = (
             if (isCluster) {
               // If it's a cluster, highlight the cluster
               // For alert entries, we need to find which cluster contains this alertID
-              if (entry.source_table !== "mapeo_data" && entry.source_id) {
+              if (!savedEntryIsMapeo(entry) && entry.source_id) {
                 // Determine the centroids source for cluster checking
                 const centroidsSource = sourceId.includes("most-recent")
                   ? "most-recent-alerts-centroids"
@@ -1491,7 +1650,7 @@ export const useIncidents = (
 
               // Also check if this feature is part of a cluster at current zoom
               // (it might be de-clustered when zoomed in, but we still want to highlight the cluster if zoomed out)
-              if (entry.source_table !== "mapeo_data" && entry.source_id) {
+              if (!savedEntryIsMapeo(entry) && entry.source_id) {
                 const centroidsSource = sourceId.includes("most-recent")
                   ? "most-recent-alerts-centroids"
                   : sourceId.includes("previous")
@@ -1521,7 +1680,7 @@ export const useIncidents = (
 
       // If we didn't find the feature in any source, it might be clustered
       // Try checking clusters directly
-      if (!found && entry.source_table !== "mapeo_data" && entry.source_id) {
+      if (!found && !savedEntryIsMapeo(entry) && entry.source_id) {
         const centroidsSources = [
           "most-recent-alerts-centroids",
           "previous-alerts-centroids",
@@ -1574,6 +1733,7 @@ export const useIncidents = (
     scheduleIncidentPrefetch,
     openIncidentDetails,
     createIncident,
+    deleteIncident,
     toggleIncidentsSidebar,
     openIncidentsSidebarWithCreateForm,
     toggleMultiSelectMode,

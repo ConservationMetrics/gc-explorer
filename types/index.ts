@@ -215,6 +215,7 @@ export interface AnnotatedCollection {
 
 export interface Incident {
   collection_id: string;
+  parent_alerts_table?: string;
   incident_type?: string;
   responsible_party?: string;
   impact_description?: string;

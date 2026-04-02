@@ -1,9 +1,18 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { snakeToTitleCase, titleToCamelCase } from "@/utils/identifierUtils";
+import {
+  snakeToTitleCase,
+  titleToCamelCase,
+  sanitizeFilenameSegment,
+} from "@/utils/identifierUtils";
 import { Copy, Check } from "lucide-vue-next";
 import { useCopyLink } from "@/composables/useCopyLink";
+import {
+  buildIncidentEntriesFeatureCollection,
+  buildIncidentMetadataCsv,
+  triggerTextDownload,
+} from "@/utils/incidentHelpers";
 import type {
   AnnotatedCollection,
   CollectionEntry,
@@ -85,7 +94,37 @@ const emit = defineEmits<{
   removeSource: [sourceTable: string, sourceId: string];
   clearSources: [];
   retryIncidentDetails: [incidentId: string];
+  deleteIncident: [incidentId: string];
 }>();
+
+const downloadIncidentMetadata = () => {
+  if (!props.selectedIncident) return;
+  const csv = buildIncidentMetadataCsv(
+    props.selectedIncident,
+    props.selectedIncidentData,
+    props.selectedIncidentEntries,
+  );
+  const safeName = sanitizeFilenameSegment(props.selectedIncident.name);
+  triggerTextDownload(
+    `${safeName}-${props.selectedIncident.id}-metadata.csv`,
+    csv,
+    "text/csv;charset=utf-8",
+  );
+};
+
+const downloadIncidentFeatures = () => {
+  if (!props.selectedIncident || !props.selectedIncidentEntries) return;
+  const fc = buildIncidentEntriesFeatureCollection(
+    props.selectedIncidentEntries,
+  );
+  const text = JSON.stringify(fc, null, 2);
+  const safeName = sanitizeFilenameSegment(props.selectedIncident.name);
+  triggerTextDownload(
+    `${safeName}-${props.selectedIncident.id}-features.geojson`,
+    text,
+    "application/geo+json;charset=utf-8",
+  );
+};
 
 const showCreateForm = ref(false);
 const { showCopied, copyLink } = useCopyLink(["alertId", "mapeoDocId"]);
@@ -140,7 +179,7 @@ const selectedSourceSummary = computed(() => {
   };
 
   props.selectedSources.forEach((source) => {
-    if (source.source_table === "mapeo_data") {
+    if (source.feature_type === "mapeo") {
       summary.mapeoData += 1;
     } else {
       summary.alerts += 1;
@@ -322,9 +361,9 @@ const handleClose = () => {
             </div>
           </div>
 
-          <!-- Copy link section -->
+          <!-- Copy link and remove incident section -->
           <div
-            class="mt-6 pt-4 border-t border-gray-200"
+            class="mt-6 pt-4 border-t border-gray-200 flex flex-row flex-wrap gap-2"
             data-testid="copy-link-section"
           >
             <button
@@ -340,6 +379,35 @@ const handleClose = () => {
               <span>{{
                 showCopied ? $t("copied") : $t("incidents.copyLink")
               }}</span>
+            </button>
+            <button
+              type="button"
+              class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:text-red-800 transition-colors duration-200"
+              data-testid="remove-incident-button"
+              @click="emit('deleteIncident', selectedIncident!.id)"
+            >
+              {{ $t("incidents.removeIncident") }}
+            </button>
+          </div>
+
+          <div class="mt-3 flex flex-col gap-2">
+            <button
+              type="button"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
+              data-testid="download-incident-metadata-button"
+              :title="t('incidents.downloadIncidentMetadataTooltip')"
+              @click="downloadIncidentMetadata"
+            >
+              {{ $t("incidents.downloadIncidentMetadata") }}
+            </button>
+            <button
+              type="button"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
+              data-testid="download-incident-features-button"
+              :title="t('incidents.downloadIncidentFeaturesTooltip')"
+              @click="downloadIncidentFeatures"
+            >
+              {{ $t("incidents.downloadIncidentFeatures") }}
             </button>
           </div>
 
