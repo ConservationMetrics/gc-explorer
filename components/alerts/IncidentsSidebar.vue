@@ -176,7 +176,6 @@ const selectedSourceSummary = computed(() => {
   };
 
   props.selectedSources.forEach((source) => {
-    // Use feature_type: mapeo selections use the view-configured mapeo table name, not the literal mapeo_data label.
     if (source.feature_type === "mapeo") {
       summary.mapeoData += 1;
     } else {
