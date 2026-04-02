@@ -1,6 +1,6 @@
 import type pg from "pg";
 
-import type { FeatureCollection, Position } from "geojson";
+import type { FeatureCollection } from "geojson";
 
 export type DatabaseConnection = pg.Client | null;
 

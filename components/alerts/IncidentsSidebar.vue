@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { snakeToTitleCase, titleToCamelCase } from "@/utils/identifierUtils";
+import {
+  snakeToTitleCase,
+  titleToCamelCase,
+  sanitizeFilenameSegment,
+} from "@/utils/identifierUtils";
 import { Copy, Check } from "lucide-vue-next";
 import { useCopyLink } from "@/composables/useCopyLink";
 import {
@@ -9,7 +13,6 @@ import {
   buildIncidentMetadataCsv,
   triggerTextDownload,
 } from "@/utils/incidentHelpers";
-import { sanitizeFilenameSegment } from "@/utils/identifierUtils";
 import type {
   AnnotatedCollection,
   CollectionEntry,
