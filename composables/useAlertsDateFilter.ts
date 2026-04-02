@@ -2,6 +2,7 @@ import { computed, nextTick, ref, type Ref, type ComputedRef } from "vue";
 import type mapboxgl from "mapbox-gl";
 import type { Feature } from "geojson";
 import type { AlertsData, AlertsStatistics } from "@/types";
+import { filterAlertsStatisticsByDateRange } from "@/utils/alertsStatistics";
 
 /**
  * Composable for managing alerts date range filtering.
@@ -87,6 +88,25 @@ export function useAlertsDateFilter(
         features: filterFeatures(alertsData.value.previousAlerts.features),
       },
     };
+  });
+
+  const resolvedDateRange = computed<[string, string] | undefined>(() => {
+    if (!selectedDateRange.value) return undefined;
+    const [start, end] = selectedDateRange.value;
+    const [startDate, endDate] = convertDates(start, end);
+    return [startDate, endDate];
+  });
+
+  const filteredStatistics: ComputedRef<AlertsStatistics> = computed(() => {
+    if (!resolvedDateRange.value) {
+      return alertsStatistics.value;
+    }
+    const [startDate, endDate] = resolvedDateRange.value;
+    return filterAlertsStatisticsByDateRange(
+      alertsStatistics.value,
+      startDate,
+      endDate,
+    );
   });
 
   /**
@@ -222,7 +242,9 @@ export function useAlertsDateFilter(
 
   return {
     selectedDateRange,
+    resolvedDateRange,
     filteredData,
+    filteredStatistics,
     getDateOptions,
     handleDateRangeChanged,
     resetDateRange,

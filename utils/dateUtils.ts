@@ -33,3 +33,15 @@ export const formatLocaleDate = (
     ? `${String(day).padStart(2, "0")}-${mm}-${year}`
     : `${mm}-${year}`;
 };
+
+/** Formats an ISO-like timestamp string to a locale date string. */
+export const formatDate = (date: string): string => {
+  const dateRegex = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).*/;
+  const dateMatch = date.match(dateRegex);
+  if (dateMatch) {
+    return new Date(
+      `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}T${dateMatch[4]}:${dateMatch[5]}:${dateMatch[6]}`,
+    ).toLocaleDateString();
+  }
+  return date;
+};

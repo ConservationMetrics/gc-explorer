@@ -145,7 +145,7 @@ $ pnpm test:e2e
 
 The `docker-compose.tests.yml` takes care of:
 
-1. Populating the test database with known mock data (stored in `db/init/warehouse.sql`), including survey and alerts views
+1. Populating the test database with known mock data (stored in `tests/db-seed/warehouse.sql`), including survey and alerts views
 2. Setting `NUXT_PUBLIC_AUTH_STRATEGY="none"` to bypass authentication
 3. Running isolated containers that don't affect your development environment
 

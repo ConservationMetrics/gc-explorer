@@ -3,7 +3,7 @@
 import { VueTagsInput } from "@vojtechlanka/vue-tags-input";
 import VueSlider from "vue-3-slider-component";
 
-import { toCamelCase } from "@/utils";
+import { toCamelCase } from "@/utils/identifierUtils";
 import { updateTags } from "@/composables/useTags";
 
 import type { ViewConfig, BasemapConfig } from "@/types";

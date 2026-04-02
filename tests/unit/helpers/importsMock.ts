@@ -28,7 +28,13 @@ export const useRuntimeConfig = vi.fn(() => ({
   public: {
     authStrategy: "auth0",
     baseUrl: "http://localhost:8080",
+    appApiKey: "test-key",
   },
+}));
+
+export const useToast = vi.fn(() => ({
+  warning: vi.fn(),
+  error: vi.fn(),
 }));
 
 export const useCookie = vi.fn(() => ({

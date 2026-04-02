@@ -31,6 +31,7 @@ import {
   transformSurveyEntry,
   transformAlertEntry,
 } from "@/utils/dataTransformers";
+import { parsePhotosFromRecord } from "@/utils/index";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type {
@@ -226,11 +227,10 @@ watch(
       displayRecord = fullRecord
         ? transformSurveyEntry(fullRecord)
         : minimalFeature;
-      if (displayRecord.photos) {
-        imageUrl.value = [];
-        const photos = String(displayRecord.photos).split(",");
-        photos.forEach((photo: string) => imageUrl.value.push(photo.trim()));
-      }
+      imageUrl.value = [];
+      parsePhotosFromRecord(displayRecord as Record<string, unknown>).forEach(
+        (photo) => imageUrl.value.push(photo),
+      );
     } else {
       displayRecord = fullRecord
         ? transformAlertEntry(fullRecord, props.table)
@@ -250,14 +250,20 @@ watch(
 );
 
 // Use alerts date filter composable
-const { filteredData, getDateOptions, handleDateRangeChanged, resetDateRange } =
-  useAlertsDateFilter(
-    map,
-    toRef(props, "alertsData"),
-    toRef(props, "alertsStatistics"),
-    localAlertsData,
-    t,
-  );
+const {
+  filteredData,
+  filteredStatistics,
+  resolvedDateRange,
+  getDateOptions,
+  handleDateRangeChanged,
+  resetDateRange,
+} = useAlertsDateFilter(
+  map,
+  toRef(props, "alertsData"),
+  toRef(props, "alertsStatistics"),
+  localAlertsData,
+  t,
+);
 
 /**
  * Selects and zooms to an alert feature based on its ID
@@ -1700,7 +1706,7 @@ onBeforeUnmount(() => {
       {{ $t("resetDashboard") }}
     </button>
     <ViewSidebar
-      :alerts-statistics="alertsStatistics"
+      :alerts-statistics="filteredStatistics"
       :allowed-file-extensions="allowedFileExtensions"
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
@@ -1719,6 +1725,8 @@ onBeforeUnmount(() => {
       :show-intro-panel="showIntroPanel"
       :show-sidebar="showSidebar"
       :show-slider="showSlider"
+      :stats-export-min-date="resolvedDateRange?.[0]"
+      :stats-export-max-date="resolvedDateRange?.[1]"
       @close="handleSidebarClose"
       @date-range-changed="handleDateRangeChanged"
     />
