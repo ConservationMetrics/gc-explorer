@@ -58,7 +58,6 @@ export const parsePhotosFromRecord = (
   record: Record<string, unknown>,
 ): string[] => parsePhotoListString(record.photos ?? record._photos);
 
-
 /**
  * Formats a string for display by converting camelCase, kebab-case, and snake_case to Title Case
  * Transforms various naming conventions into a human-readable format
