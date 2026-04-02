@@ -2,7 +2,7 @@
 // @ts-expect-error - vue-tags-input does not have types
 import { VueTagsInput } from "@vojtechlanka/vue-tags-input";
 
-import { toCamelCase } from "@/utils";
+import { toCamelCase } from "@/utils/identifierUtils";
 import { updateTags } from "@/composables/useTags";
 
 import type { ViewConfig } from "@/types";

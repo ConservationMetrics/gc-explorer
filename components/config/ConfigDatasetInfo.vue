@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { toCamelCase, CONFIG_LIMITS } from "@/utils";
+import { CONFIG_LIMITS } from "@/utils";
+import { toCamelCase } from "@/utils/identifierUtils";
 import type { ViewConfig } from "@/types";
 
 defineProps<{

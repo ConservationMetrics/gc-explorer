@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toCamelCase } from "@/utils";
+import { toCamelCase } from "@/utils/identifierUtils";
 import ConfigDatasetInfo from "./ConfigDatasetInfo.vue";
 
 import type { ViewConfig } from "@/types";

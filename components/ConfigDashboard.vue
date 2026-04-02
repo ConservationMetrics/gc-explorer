@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import type { Views, ViewConfig } from "@/types";
-import { CONFIG_LIMITS } from "@/utils/index";
+import { CONFIG_LIMITS } from "@/utils";
 
 const props = defineProps<{
   viewsConfig: Views;
