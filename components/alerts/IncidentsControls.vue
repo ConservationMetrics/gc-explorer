@@ -59,7 +59,7 @@ const emit = defineEmits<{
       >
         <CheckCircle2 class="w-5 h-5" />
       </button>
-      <div v-if="hoveredButton === 'incidents'" class="tooltip tooltip-left">
+      <div v-if="hoveredButton === 'incidents'" class="tooltip">
         {{
           showIncidentsSidebar
             ? t("incidents.hideSidebar")
@@ -80,7 +80,7 @@ const emit = defineEmits<{
       >
         <SquareDashedMousePointer class="w-5 h-5" />
       </button>
-      <div v-if="hoveredButton === 'boundingBox'" class="tooltip tooltip-left">
+      <div v-if="hoveredButton === 'boundingBox'" class="tooltip">
         {{
           boundingBoxMode
             ? t("incidents.disableBoundingBox")
@@ -101,7 +101,7 @@ const emit = defineEmits<{
       >
         <MousePointer2 class="w-5 h-5" />
       </button>
-      <div v-if="hoveredButton === 'multiSelect'" class="tooltip tooltip-left">
+      <div v-if="hoveredButton === 'multiSelect'" class="tooltip">
         {{
           multiSelectMode
             ? t("incidents.disableMultiSelect")
@@ -122,7 +122,7 @@ const emit = defineEmits<{
       >
         <X class="w-5 h-5" />
       </button>
-      <div v-if="hoveredButton === 'deselect'" class="tooltip tooltip-left">
+      <div v-if="hoveredButton === 'deselect'" class="tooltip">
         {{ t("incidents.deselectSelection") }}
       </div>
     </div>
@@ -229,13 +229,9 @@ const emit = defineEmits<{
   white-space: nowrap;
   pointer-events: none;
   z-index: 1000;
-  max-width: 250px;
+  width: 150px;
   white-space: normal;
   line-height: 1.4;
-}
-
-.tooltip-left {
-  right: 50px;
 }
 
 .tooltip::after {
@@ -246,12 +242,5 @@ const emit = defineEmits<{
   transform: translateY(-50%);
   border: 6px solid transparent;
   border-left-color: rgba(0, 0, 0, 0.85);
-}
-
-:deep(.bbox-icon path) {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 40px;
-  stroke-linejoin: round;
 }
 </style>
