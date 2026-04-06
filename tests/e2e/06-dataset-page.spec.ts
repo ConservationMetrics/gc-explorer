@@ -65,17 +65,18 @@ test("dataset page - displays header, description, and view cards", async ({
   const firstCard = viewCards.first();
   await expect(firstCard).toBeVisible();
 
-  // Check for icon (SVG)
-  const icon = firstCard.locator("svg").first();
-  await expect(icon).toBeVisible();
+  // Check for icons (Lucide renders <svg ...>)
+  const icons = firstCard.locator("svg");
+  await expect(icons.first()).toBeVisible();
 
   // Check for title (h3)
   const cardTitle = firstCard.locator("h3");
   await expect(cardTitle).toBeVisible();
 
-  // Check for arrow icon (last SVG in card)
-  const arrowIcon = firstCard.locator("svg").last();
-  await expect(arrowIcon).toBeVisible();
+  // ViewCard includes a view icon + trailing chevron
+  await expect(icons).toHaveCount(2, { timeout: 5000 });
+  const iconCount = await icons.count();
+  expect(iconCount).toBeGreaterThanOrEqual(2);
 });
 
 test("dataset page - view cards link to correct pages", async ({

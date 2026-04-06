@@ -5,6 +5,7 @@ import AppHeader from "@/components/shared/AppHeader.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
+import { Images, Map, Search, TriangleAlert } from "lucide-vue-next";
 
 const viewsConfig = ref<Views>({});
 
@@ -235,20 +236,9 @@ useHead({
 
         <!-- Search Bar -->
         <div class="relative flex items-center mb-4">
-          <svg
+          <Search
             class="absolute left-3 w-5 h-5 text-gray-400 pointer-events-none"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
+          />
           <input
             v-model="searchQuery"
             type="text"
@@ -285,45 +275,12 @@ useHead({
               "
               @click="activeViewFilter = viewType"
             >
-              <svg
-                v-if="viewType === 'map'"
-                class="w-3.5 h-3.5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M12 1.586l-4 4v12.828l4-4V1.586zM3.707 3.293A1 1 0 002 4v10a1 1 0 00.293.707L6 18.414V5.586L3.707 3.293zM17.707 5.293L14 1.586v12.828l2.293 2.293A1 1 0 0018 16V6a1 1 0 00-.293-.707z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-              <svg
-                v-else-if="viewType === 'gallery'"
-                class="w-3.5 h-3.5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-              <svg
+              <Map v-if="viewType === 'map'" class="w-3.5 h-3.5" />
+              <Images v-else-if="viewType === 'gallery'" class="w-3.5 h-3.5" />
+              <TriangleAlert
                 v-else-if="viewType === 'alerts'"
                 class="w-3.5 h-3.5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                  clip-rule="evenodd"
-                />
-              </svg>
+              />
               {{ $t(viewType) }}
             </button>
           </div>

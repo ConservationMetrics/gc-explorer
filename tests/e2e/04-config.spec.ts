@@ -1016,12 +1016,7 @@ test("config page - language switching functionality", async ({
 
   // 2. Wait for the language picker button to be visible (globe icon in AppHeader)
   const languageButton = page
-    .locator("button[title*='Language'], button[title*='language']")
-    .or(
-      page
-        .locator("button")
-        .filter({ has: page.locator("svg path[d*='M3.055']") }),
-    )
+    .locator(".language-picker-container button")
     .first();
   await languageButton.waitFor({ state: "visible", timeout: 15000 });
 

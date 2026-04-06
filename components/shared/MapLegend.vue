@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MapLegendItem } from "@/types";
+import { ChevronDown } from "lucide-vue-next";
 
 const props = defineProps<{
   mapLegendContent: MapLegendItem[];
@@ -52,23 +53,7 @@ watch(
   >
     <button class="legend-header" @click="toggleExpanded">
       <h2 class="text-2xl font-semibold">{{ $t("mapLegend") }}</h2>
-      <svg
-        class="toggle-arrow"
-        :class="{ rotated: !isExpanded }"
-        width="20"
-        height="20"
-        viewBox="0 0 20 20"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M5 7.5L10 12.5L15 7.5"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
+      <ChevronDown class="toggle-arrow" :class="{ rotated: !isExpanded }" />
     </button>
     <Transition name="slide">
       <div v-show="isExpanded" class="legend-content">

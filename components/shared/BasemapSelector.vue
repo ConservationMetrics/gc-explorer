@@ -3,6 +3,7 @@ import Datepicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
 
 import type { Basemap, BasemapConfig } from "@/types";
+import { Layers } from "lucide-vue-next";
 
 const props = defineProps({
   hasRulerControl: Boolean,
@@ -121,7 +122,7 @@ const emitBasemapChange = () => {
       :style="{ top: topPosition }"
       @click="toggleBasemapWindow"
     >
-      <img src="/map.svg" alt="Map Icon" loading="eager" />
+      <Layers class="w-full h-full" />
     </div>
     <div
       v-if="showBasemapWindow"
@@ -219,10 +220,6 @@ const emitBasemapChange = () => {
   width: 30px;
   background-color: #fff;
   z-index: 20;
-
-  img {
-    width: 100%;
-  }
 }
 
 .basemap-toggle:hover {
