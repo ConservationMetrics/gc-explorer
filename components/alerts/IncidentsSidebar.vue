@@ -7,6 +7,7 @@ import {
   sanitizeFilenameSegment,
 } from "@/utils/identifierUtils";
 import { Copy, Check } from "lucide-vue-next";
+import { faChevronLeft, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { useCopyLink } from "@/composables/useCopyLink";
 import {
   buildIncidentEntriesFeatureCollection,
@@ -242,16 +243,7 @@ const handleClose = () => {
           :title="$t('incidents.backToIncidents')"
           @click="handleBackToList"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+          <FontAwesomeIcon :icon="faChevronLeft" class="!w-4 !h-4" />
         </button>
         <h2>
           {{
@@ -268,16 +260,7 @@ const handleClose = () => {
         :title="$t('incidents.close')"
         @click="handleClose"
       >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M18 6L6 18M6 6l12 12" />
-        </svg>
+        <FontAwesomeIcon :icon="faXmark" class="!w-4 !h-4" />
       </button>
     </div>
 

@@ -1,6 +1,12 @@
 <script setup lang="ts">
-import { Plus } from "lucide-vue-next";
 import { useI18n } from "vue-i18n";
+import {
+  faArrowPointer,
+  faCircleCheck,
+  faPlus,
+  faSquare,
+  faXmark,
+} from "@fortawesome/free-solid-svg-icons";
 
 const { t } = useI18n();
 
@@ -51,16 +57,7 @@ const emit = defineEmits<{
         :class="{ active: showIncidentsSidebar }"
         @click="emit('toggleIncidentsSidebar')"
       >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <FontAwesomeIcon :icon="faCircleCheck" class="!w-5 !h-5" />
       </button>
       <div v-if="hoveredButton === 'incidents'" class="tooltip tooltip-left">
         {{
@@ -81,16 +78,7 @@ const emit = defineEmits<{
         :class="{ active: boundingBoxMode }"
         @click="emit('toggleBoundingBoxMode')"
       >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-        </svg>
+        <FontAwesomeIcon :icon="faSquare" class="!w-5 !h-5 bbox-icon" />
       </button>
       <div v-if="hoveredButton === 'boundingBox'" class="tooltip tooltip-left">
         {{
@@ -111,16 +99,7 @@ const emit = defineEmits<{
         :class="{ active: multiSelectMode }"
         @click="emit('toggleMultiSelectMode')"
       >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-        </svg>
+        <FontAwesomeIcon :icon="faArrowPointer" class="!w-5 !h-5" />
       </button>
       <div v-if="hoveredButton === 'multiSelect'" class="tooltip tooltip-left">
         {{
@@ -141,16 +120,7 @@ const emit = defineEmits<{
         :disabled="!hasActiveSelection"
         @click="emit('clearSelection')"
       >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M18 6L6 18M6 6l12 12" />
-        </svg>
+        <FontAwesomeIcon :icon="faXmark" class="!w-5 !h-5" />
       </button>
       <div v-if="hoveredButton === 'deselect'" class="tooltip tooltip-left">
         {{ t("incidents.deselectSelection") }}
@@ -168,7 +138,7 @@ const emit = defineEmits<{
         :disabled="selectedSourcesLength === 0"
         @click="emit('openIncidentsSidebarWithCreateForm')"
       >
-        <Plus :size="20" />
+        <FontAwesomeIcon :icon="faPlus" class="!w-5 !h-5" />
       </button>
       <div
         v-if="hoveredButton === 'createIncident'"
@@ -276,5 +246,12 @@ const emit = defineEmits<{
   transform: translateY(-50%);
   border: 6px solid transparent;
   border-left-color: rgba(0, 0, 0, 0.85);
+}
+
+:deep(.bbox-icon path) {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 40px;
+  stroke-linejoin: round;
 }
 </style>
