@@ -90,11 +90,7 @@ export default defineNuxtConfig({
     quality: 80,
   },
 
-  css: [
-    "@fortawesome/fontawesome-svg-core/styles.css",
-    "public/vendor/lightbox/lightbox.min.css",
-    "@/assets/overlay.css",
-  ],
+  css: ["public/vendor/lightbox/lightbox.min.css", "@/assets/overlay.css"],
 
   i18n: {
     locales: [

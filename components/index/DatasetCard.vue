@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ViewConfig } from "@/types";
 import { formatDisplayName, CONFIG_LIMITS } from "@/utils";
-import { faImages, faMap, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { Images, Map, TriangleAlert } from "lucide-vue-next";
 
 interface Props {
   tableName: string | number;
@@ -103,21 +103,9 @@ const truncateDescription = (desc: string): string => {
         :data-testid="`view-tag-${view}`"
         class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full flex-shrink-0"
       >
-        <FontAwesomeIcon
-          v-if="view === 'map'"
-          :icon="faMap"
-          class="w-3 h-3"
-        />
-        <FontAwesomeIcon
-          v-else-if="view === 'gallery'"
-          :icon="faImages"
-          class="w-3 h-3"
-        />
-        <FontAwesomeIcon
-          v-else-if="view === 'alerts'"
-          :icon="faTriangleExclamation"
-          class="w-3 h-3"
-        />
+        <Map v-if="view === 'map'" class="w-3 h-3" />
+        <Images v-else-if="view === 'gallery'" class="w-3 h-3" />
+        <TriangleAlert v-else-if="view === 'alerts'" class="w-3 h-3" />
         {{ $t(view) }}
       </span>
     </div>

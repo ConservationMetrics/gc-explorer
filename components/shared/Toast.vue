@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { ToastEmits, ToastOptions } from "@/types";
 import {
-  faCircleCheck,
-  faCircleInfo,
-  faCircleXmark,
-  faTriangleExclamation,
-  faXmark,
-} from "@fortawesome/free-solid-svg-icons";
+  CheckCircle2,
+  Info,
+  TriangleAlert,
+  X,
+  XCircle,
+} from "lucide-vue-next";
 const props = withDefaults(defineProps<ToastOptions>(), {
   type: "info",
   duration: 5000,
@@ -91,31 +91,27 @@ const isExiting = ref(false);
       <div class="flex items-start">
         <div class="flex-shrink-0">
           <!-- Success Icon -->
-          <FontAwesomeIcon
+          <CheckCircle2
             v-if="type === 'success'"
             class="h-6 w-6 text-green-400"
-            :icon="faCircleCheck"
             aria-hidden="true"
           />
           <!-- Error Icon -->
-          <FontAwesomeIcon
+          <XCircle
             v-else-if="type === 'error'"
             class="h-6 w-6 text-red-400"
-            :icon="faCircleXmark"
             aria-hidden="true"
           />
           <!-- Warning Icon -->
-          <FontAwesomeIcon
+          <TriangleAlert
             v-else-if="type === 'warning'"
             class="h-6 w-6 text-yellow-400"
-            :icon="faTriangleExclamation"
             aria-hidden="true"
           />
           <!-- Info Icon -->
-          <FontAwesomeIcon
+          <Info
             v-else
             class="h-6 w-6 text-blue-400"
-            :icon="faCircleInfo"
             aria-hidden="true"
           />
         </div>
@@ -134,7 +130,7 @@ const isExiting = ref(false);
             @click="close"
           >
             <span class="sr-only">Close</span>
-            <FontAwesomeIcon :icon="faXmark" class="h-5 w-5" aria-hidden="true" />
+            <X class="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
       </div>

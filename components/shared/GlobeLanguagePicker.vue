@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import type { SupportedLocale } from "@/types";
-import { faChevronDown, faGlobe } from "@fortawesome/free-solid-svg-icons";
+import { ChevronDown, Globe } from "lucide-vue-next";
 
 const { locale, locales, setLocale } = useI18n();
 const { t } = useI18n();
@@ -111,7 +111,7 @@ const mobileItemClasses = computed(() => {
         class="relative w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
         @click.stop="dropdownOpen = !dropdownOpen"
       >
-        <FontAwesomeIcon :icon="faGlobe" class="w-5 h-5 text-gray-600" />
+        <Globe class="w-5 h-5 text-gray-600" />
       </button>
     </div>
     <div v-if="dropdownOpen" :class="dropdownClasses" @click.stop>
@@ -140,14 +140,13 @@ const mobileItemClasses = computed(() => {
       @click="toggleLanguagePicker"
     >
       <div class="flex items-center space-x-3">
-        <FontAwesomeIcon :icon="faGlobe" class="w-5 h-5 text-gray-600" />
+        <Globe class="w-5 h-5 text-gray-600" />
         <span class="text-sm text-gray-700 font-medium">{{
           t("header.languagePicker") || "Language"
         }}</span>
       </div>
-      <FontAwesomeIcon
+      <ChevronDown
         class="w-4 h-4 text-gray-600 transition-transform"
-        :icon="faChevronDown"
         :class="{ 'rotate-180': languagePickerOpen }"
       />
     </button>

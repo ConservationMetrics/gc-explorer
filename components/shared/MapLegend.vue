@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { MapLegendItem } from "@/types";
-import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
+import { ChevronDown } from "lucide-vue-next";
 
 const props = defineProps<{
   mapLegendContent: MapLegendItem[];
@@ -53,11 +53,7 @@ watch(
   >
     <button class="legend-header" @click="toggleExpanded">
       <h2 class="text-2xl font-semibold">{{ $t("mapLegend") }}</h2>
-      <FontAwesomeIcon
-        :icon="faChevronDown"
-        class="toggle-arrow"
-        :class="{ rotated: !isExpanded }"
-      />
+      <ChevronDown class="toggle-arrow" :class="{ rotated: !isExpanded }" />
     </button>
     <Transition name="slide">
       <div v-show="isExpanded" class="legend-content">

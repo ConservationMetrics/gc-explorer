@@ -3,13 +3,13 @@ import { useI18n } from "vue-i18n";
 import type { Views, ViewConfig } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
 import {
-  faArrowLeft,
-  faImages,
-  faMap,
-  faPenToSquare,
-  faPlus,
-  faTriangleExclamation,
-} from "@fortawesome/free-solid-svg-icons";
+  ChevronLeft,
+  Images,
+  Map,
+  Pencil,
+  Plus,
+  TriangleAlert,
+} from "lucide-vue-next";
 
 const props = defineProps<{
   viewsConfig: Views;
@@ -125,7 +125,7 @@ watch(tableNameToAdd, (newVal) => {
         to="/"
         class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium mb-4 transition-colors"
       >
-        <FontAwesomeIcon :icon="faArrowLeft" class="w-5 h-5" />
+        <ChevronLeft class="w-5 h-5" />
         {{ $t("availableViews") }}
       </NuxtLink>
       <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
@@ -192,17 +192,9 @@ watch(tableNameToAdd, (newVal) => {
             :data-testid="`config-view-tag-${view}`"
             class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full flex-shrink-0"
           >
-            <FontAwesomeIcon v-if="view === 'map'" :icon="faMap" class="w-3 h-3" />
-            <FontAwesomeIcon
-              v-else-if="view === 'gallery'"
-              :icon="faImages"
-              class="w-3 h-3"
-            />
-            <FontAwesomeIcon
-              v-else-if="view === 'alerts'"
-              :icon="faTriangleExclamation"
-              class="w-3 h-3"
-            />
+            <Map v-if="view === 'map'" class="w-3 h-3" />
+            <Images v-else-if="view === 'gallery'" class="w-3 h-3" />
+            <TriangleAlert v-else-if="view === 'alerts'" class="w-3 h-3" />
             {{ $t(view) }}
           </span>
         </div>
@@ -212,7 +204,7 @@ watch(tableNameToAdd, (newVal) => {
           data-testid="edit-dataset-view-link"
           class="mt-auto flex items-center justify-center gap-2 w-full text-center px-4 py-2 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200"
         >
-          <FontAwesomeIcon :icon="faPenToSquare" class="w-4 h-4" />
+          <Pencil class="w-4 h-4" />
           {{ $t("editDataset") }}
         </NuxtLink>
       </div>
@@ -224,7 +216,7 @@ watch(tableNameToAdd, (newVal) => {
         class="flex items-center gap-2 px-4 py-2 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200"
         @click="handleAddNewTable"
       >
-        <FontAwesomeIcon :icon="faPlus" class="w-5 h-5" />
+        <Plus class="w-5 h-5" />
         {{ $t("addNewTable") }}
       </button>
     </div>

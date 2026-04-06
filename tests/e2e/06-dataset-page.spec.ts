@@ -65,15 +65,15 @@ test("dataset page - displays header, description, and view cards", async ({
   const firstCard = viewCards.first();
   await expect(firstCard).toBeVisible();
 
-  // Check for icons (FontAwesome renders <svg data-prefix="fas" ...>)
-  const icons = firstCard.locator("svg[data-prefix]");
+  // Check for icons (Lucide renders <svg ...>)
+  const icons = firstCard.locator("svg");
   await expect(icons.first()).toBeVisible();
 
   // Check for title (h3)
   const cardTitle = firstCard.locator("h3");
   await expect(cardTitle).toBeVisible();
 
-  // ViewCard includes a trailing chevron; ensure at least 2 icons total
+  // ViewCard includes a view icon + trailing chevron
   await expect(icons).toHaveCount(2);
 });
 

@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import {
-  faCircleQuestion,
-  faImages,
-  faXmark,
-} from "@fortawesome/free-solid-svg-icons";
+import { CircleHelp, Images, X } from "lucide-vue-next";
 
 defineProps<{
   variant:
@@ -14,7 +10,7 @@ defineProps<{
     | "indexNoDatasets";
 }>();
 
-const baseIconClass = "!h-15 !w-15 scale-150";
+const baseIconClass = "w-24 h-24 sm:w-28 sm:h-28";
 const iconColorClass = "text-purple-500";
 </script>
 
@@ -23,34 +19,17 @@ const iconColorClass = "text-purple-500";
     class="mx-auto mb-10 w-full max-w-xl h-auto flex items-center justify-center"
     aria-hidden="true"
   >
-    <FontAwesomeIcon
-      v-if="variant === 'empty'"
-      :icon="faImages"
-      :class="[baseIconClass, iconColorClass]"
-    />
+    <Images v-if="variant === 'empty'" :class="[baseIconClass, iconColorClass]" />
 
-    <FontAwesomeIcon
-      v-else-if="variant === 'noFilterResults'"
-      :icon="faXmark"
-      :class="[baseIconClass, iconColorClass]"
-    />
+    <X v-else-if="variant === 'noFilterResults'" :class="[baseIconClass, iconColorClass]" />
 
-    <FontAwesomeIcon
+    <CircleHelp
       v-else-if="variant === 'notConfigured'"
-      :icon="faCircleQuestion"
       :class="[baseIconClass, iconColorClass]"
     />
 
-    <FontAwesomeIcon
-      v-else-if="variant === 'indexSearchNoResults'"
-      :icon="faXmark"
-      :class="[baseIconClass, iconColorClass]"
-    />
+    <X v-else-if="variant === 'indexSearchNoResults'" :class="[baseIconClass, iconColorClass]" />
 
-    <FontAwesomeIcon
-      v-else-if="variant === 'indexNoDatasets'"
-      :icon="faXmark"
-      :class="[baseIconClass, iconColorClass]"
-    />
+    <X v-else-if="variant === 'indexNoDatasets'" :class="[baseIconClass, iconColorClass]" />
   </div>
 </template>

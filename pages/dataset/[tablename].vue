@@ -4,7 +4,7 @@ import { Role } from "@/types";
 import AppHeader from "@/components/shared/AppHeader.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import ViewCard from "@/components/dataset/ViewCard.vue";
-import { faArrowLeft, faGear } from "@fortawesome/free-solid-svg-icons";
+import { ChevronLeft, Settings } from "lucide-vue-next";
 
 const route = useRoute();
 const tableRaw = route.params.tablename;
@@ -162,7 +162,7 @@ useHead({
           to="/"
           class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium transition-colors"
         >
-          <FontAwesomeIcon :icon="faArrowLeft" class="w-5 h-5" />
+          <ChevronLeft class="w-5 h-5" />
           {{ $t("availableViews") }}
         </NuxtLink>
         <NuxtLink
@@ -170,7 +170,7 @@ useHead({
           :to="`/config/${tableName}`"
           class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          <FontAwesomeIcon :icon="faGear" class="w-4 h-4" />
+          <Settings class="w-4 h-4" />
           {{ $t("editConfiguration") }}
         </NuxtLink>
       </div>

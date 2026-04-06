@@ -3,7 +3,7 @@ import Datepicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
 
 import type { Basemap, BasemapConfig } from "@/types";
-import { faLayerGroup } from "@fortawesome/free-solid-svg-icons";
+import { Layers } from "lucide-vue-next";
 
 const props = defineProps({
   hasRulerControl: Boolean,
@@ -122,7 +122,7 @@ const emitBasemapChange = () => {
       :style="{ top: topPosition }"
       @click="toggleBasemapWindow"
     >
-      <FontAwesomeIcon :icon="faLayerGroup" class="w-full h-full pl-0.5" />
+      <Layers class="w-full h-full pl-0.5" />
     </div>
     <div
       v-if="showBasemapWindow"

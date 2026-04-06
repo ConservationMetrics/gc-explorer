@@ -3,7 +3,7 @@ import type { ViewConfig } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
 import ConfigPermissions from "./ConfigPermissions.vue";
 import ConfigCollapsibleSection from "./ConfigCollapsibleSection.vue";
-import { faCheck, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { Check, Trash2 } from "lucide-vue-next";
 
 const props = defineProps<{
   tableName: string;
@@ -289,7 +289,7 @@ const handleSubmit = () => {
                 isChanged && isFormValid,
             }"
           >
-            <FontAwesomeIcon :icon="faCheck" class="w-5 h-5" />
+            <Check class="w-5 h-5" />
             {{ $t("submit") }}
           </button>
           <button
@@ -298,7 +298,7 @@ const handleSubmit = () => {
             class="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors duration-200"
             @click="$emit('removeTableFromConfig', tableName)"
           >
-            <FontAwesomeIcon :icon="faTrash" class="w-5 h-5" />
+            <Trash2 class="w-5 h-5" />
             {{ $t("removeTable") }}
           </button>
         </div>

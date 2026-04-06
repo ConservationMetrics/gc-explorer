@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
+import { ChevronDown } from "lucide-vue-next";
 
 interface Props {
   title: string;
@@ -29,9 +29,8 @@ const toggle = () => {
       @click="toggle"
     >
       <h3 class="text-lg font-semibold text-gray-800">{{ title }}</h3>
-      <FontAwesomeIcon
+      <ChevronDown
         class="w-5 h-5 text-purple-700 transition-transform"
-        :icon="faChevronDown"
         :class="{ 'rotate-180': isOpen }"
       />
     </button>

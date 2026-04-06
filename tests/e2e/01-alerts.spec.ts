@@ -192,7 +192,7 @@ test("alerts dashboard - basemap toggle icon is visible", async ({
   const basemapToggle = page.locator(".basemap-toggle").first();
   await expect(basemapToggle).toBeVisible({ timeout: 10000 });
 
-  const basemapIcon = basemapToggle.locator("svg[data-prefix]").first();
+  const basemapIcon = basemapToggle.locator("svg").first();
   await expect(basemapIcon).toBeVisible({ timeout: 10000 });
 });
 

@@ -4,12 +4,7 @@ import AppHeader from "@/components/shared/AppHeader.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import type { Views, ViewConfig } from "@/types";
-import {
-  faArrowLeft,
-  faCircleCheck,
-  faCopy,
-  faEye,
-} from "@fortawesome/free-solid-svg-icons";
+import { CheckCircle2, ChevronLeft, Copy, Eye } from "lucide-vue-next";
 
 const route = useRoute();
 const datasetRaw = route.params.dataset;
@@ -174,14 +169,14 @@ useHead({
               to="/config"
               class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium transition-colors"
             >
-              <FontAwesomeIcon :icon="faArrowLeft" class="w-5 h-5" />
+              <ChevronLeft class="w-5 h-5" />
               {{ $t("configuration") }}
             </NuxtLink>
             <NuxtLink
               :to="`/dataset/${dataset}`"
               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
             >
-              <FontAwesomeIcon :icon="faEye" class="w-4 h-4" />
+              <Eye class="w-4 h-4" />
               {{ $t("viewDataset") }}
             </NuxtLink>
           </div>
@@ -195,7 +190,7 @@ useHead({
               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               @click="handleOpenCopyModal"
             >
-              <FontAwesomeIcon :icon="faCopy" class="w-4 h-4" />
+              <Copy class="w-4 h-4" />
               {{ $t("copyConfigFromDataset") }}
             </button>
           </div>
@@ -320,10 +315,7 @@ useHead({
           @click.stop
         >
           <div class="mb-4">
-            <FontAwesomeIcon
-              :icon="faCircleCheck"
-              class="w-16 h-16 mx-auto text-green-500"
-            />
+            <CheckCircle2 class="w-16 h-16 mx-auto text-green-500" />
           </div>
           <h2 class="text-2xl font-bold text-gray-900 mb-2">Saved!</h2>
           <p class="text-gray-600">

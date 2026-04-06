@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import {
-  faArrowPointer,
-  faCircleCheck,
-  faPlus,
-  faSquare,
-  faXmark,
-} from "@fortawesome/free-solid-svg-icons";
+  CheckCircle2,
+  Plus,
+  SquareDashedMousePointer,
+  MousePointer2,
+  X,
+} from "lucide-vue-next";
 
 const { t } = useI18n();
 
@@ -57,7 +57,7 @@ const emit = defineEmits<{
         :class="{ active: showIncidentsSidebar }"
         @click="emit('toggleIncidentsSidebar')"
       >
-        <FontAwesomeIcon :icon="faCircleCheck" class="!w-5 !h-5" />
+        <CheckCircle2 class="w-5 h-5" />
       </button>
       <div v-if="hoveredButton === 'incidents'" class="tooltip tooltip-left">
         {{
@@ -78,7 +78,7 @@ const emit = defineEmits<{
         :class="{ active: boundingBoxMode }"
         @click="emit('toggleBoundingBoxMode')"
       >
-        <FontAwesomeIcon :icon="faSquare" class="!w-5 !h-5 bbox-icon" />
+        <SquareDashedMousePointer class="w-5 h-5" />
       </button>
       <div v-if="hoveredButton === 'boundingBox'" class="tooltip tooltip-left">
         {{
@@ -99,7 +99,7 @@ const emit = defineEmits<{
         :class="{ active: multiSelectMode }"
         @click="emit('toggleMultiSelectMode')"
       >
-        <FontAwesomeIcon :icon="faArrowPointer" class="!w-5 !h-5" />
+        <MousePointer2 class="w-5 h-5" />
       </button>
       <div v-if="hoveredButton === 'multiSelect'" class="tooltip tooltip-left">
         {{
@@ -120,7 +120,7 @@ const emit = defineEmits<{
         :disabled="!hasActiveSelection"
         @click="emit('clearSelection')"
       >
-        <FontAwesomeIcon :icon="faXmark" class="!w-5 !h-5" />
+        <X class="w-5 h-5" />
       </button>
       <div v-if="hoveredButton === 'deselect'" class="tooltip tooltip-left">
         {{ t("incidents.deselectSelection") }}
@@ -138,7 +138,7 @@ const emit = defineEmits<{
         :disabled="selectedSourcesLength === 0"
         @click="emit('openIncidentsSidebarWithCreateForm')"
       >
-        <FontAwesomeIcon :icon="faPlus" class="!w-5 !h-5" />
+        <Plus class="w-5 h-5" />
       </button>
       <div
         v-if="hoveredButton === 'createIncident'"
