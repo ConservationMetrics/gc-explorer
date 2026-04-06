@@ -6,8 +6,7 @@ import {
   titleToCamelCase,
   sanitizeFilenameSegment,
 } from "@/utils/identifierUtils";
-import { Copy, Check } from "lucide-vue-next";
-import { ChevronLeft, X } from "lucide-vue-next";
+import { Check, ChevronLeft, Copy, X } from "lucide-vue-next";
 import { useCopyLink } from "@/composables/useCopyLink";
 import {
   buildIncidentEntriesFeatureCollection,
@@ -688,18 +687,38 @@ const handleClose = () => {
 }
 
 .close-btn {
-  background: none;
+  background: rgba(255, 255, 255, 0.8);
   border: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 10px;
   color: #666;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 9999px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition:
+    background-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out,
+    transform 0.15s ease-in-out,
+    color 0.2s ease-in-out;
 }
 
 .close-btn:hover {
   color: #333;
+  background: #f3f4f6;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.close-btn:active {
+  transform: scale(0.95);
+}
+
+.close-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(229, 231, 235, 1),
+    0 0 0 4px rgba(255, 255, 255, 1);
 }
 
 .sidebar-content {
