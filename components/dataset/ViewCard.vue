@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import {
-  ChevronRight,
-  Images,
-  Map,
-  TriangleAlert,
-} from "lucide-vue-next";
+import { ChevronRight, Images, Map, TriangleAlert } from "lucide-vue-next";
 
 interface Props {
   view: string;

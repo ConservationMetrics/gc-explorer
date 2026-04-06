@@ -19,17 +19,29 @@ const iconColorClass = "text-purple-500";
     class="mx-auto mb-10 w-full max-w-xl h-auto flex items-center justify-center"
     aria-hidden="true"
   >
-    <Images v-if="variant === 'empty'" :class="[baseIconClass, iconColorClass]" />
+    <Images
+      v-if="variant === 'empty'"
+      :class="[baseIconClass, iconColorClass]"
+    />
 
-    <X v-else-if="variant === 'noFilterResults'" :class="[baseIconClass, iconColorClass]" />
+    <X
+      v-else-if="variant === 'noFilterResults'"
+      :class="[baseIconClass, iconColorClass]"
+    />
 
     <CircleHelp
       v-else-if="variant === 'notConfigured'"
       :class="[baseIconClass, iconColorClass]"
     />
 
-    <X v-else-if="variant === 'indexSearchNoResults'" :class="[baseIconClass, iconColorClass]" />
+    <X
+      v-else-if="variant === 'indexSearchNoResults'"
+      :class="[baseIconClass, iconColorClass]"
+    />
 
-    <X v-else-if="variant === 'indexNoDatasets'" :class="[baseIconClass, iconColorClass]" />
+    <X
+      v-else-if="variant === 'indexNoDatasets'"
+      :class="[baseIconClass, iconColorClass]"
+    />
   </div>
 </template>

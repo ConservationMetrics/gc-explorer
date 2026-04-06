@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import type { ToastEmits, ToastOptions } from "@/types";
-import {
-  CheckCircle2,
-  Info,
-  TriangleAlert,
-  X,
-  XCircle,
-} from "lucide-vue-next";
+import { CheckCircle2, Info, TriangleAlert, X, XCircle } from "lucide-vue-next";
 const props = withDefaults(defineProps<ToastOptions>(), {
   type: "info",
   duration: 5000,
@@ -109,11 +103,7 @@ const isExiting = ref(false);
             aria-hidden="true"
           />
           <!-- Info Icon -->
-          <Info
-            v-else
-            class="h-6 w-6 text-blue-400"
-            aria-hidden="true"
-          />
+          <Info v-else class="h-6 w-6 text-blue-400" aria-hidden="true" />
         </div>
         <div class="ml-3 w-0 flex-1 pt-0.5">
           <p class="text-sm font-medium text-gray-900">

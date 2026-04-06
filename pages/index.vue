@@ -5,12 +5,7 @@ import AppHeader from "@/components/shared/AppHeader.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
-import {
-  Images,
-  Map,
-  Search,
-  TriangleAlert,
-} from "lucide-vue-next";
+import { Images, Map, Search, TriangleAlert } from "lucide-vue-next";
 
 const viewsConfig = ref<Views>({});
 
@@ -241,7 +236,9 @@ useHead({
 
         <!-- Search Bar -->
         <div class="relative flex items-center mb-4">
-          <Search class="absolute left-3 w-5 h-5 text-gray-400 pointer-events-none" />
+          <Search
+            class="absolute left-3 w-5 h-5 text-gray-400 pointer-events-none"
+          />
           <input
             v-model="searchQuery"
             type="text"
@@ -280,7 +277,10 @@ useHead({
             >
               <Map v-if="viewType === 'map'" class="w-3.5 h-3.5" />
               <Images v-else-if="viewType === 'gallery'" class="w-3.5 h-3.5" />
-              <TriangleAlert v-else-if="viewType === 'alerts'" class="w-3.5 h-3.5" />
+              <TriangleAlert
+                v-else-if="viewType === 'alerts'"
+                class="w-3.5 h-3.5"
+              />
               {{ $t(viewType) }}
             </button>
           </div>
