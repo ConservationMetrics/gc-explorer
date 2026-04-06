@@ -65,17 +65,16 @@ test("dataset page - displays header, description, and view cards", async ({
   const firstCard = viewCards.first();
   await expect(firstCard).toBeVisible();
 
-  // Check for icon (SVG)
-  const icon = firstCard.locator("svg").first();
-  await expect(icon).toBeVisible();
+  // Check for icons (FontAwesome renders <svg data-prefix="fas" ...>)
+  const icons = firstCard.locator("svg[data-prefix]");
+  await expect(icons.first()).toBeVisible();
 
   // Check for title (h3)
   const cardTitle = firstCard.locator("h3");
   await expect(cardTitle).toBeVisible();
 
-  // Check for arrow icon (last SVG in card)
-  const arrowIcon = firstCard.locator("svg").last();
-  await expect(arrowIcon).toBeVisible();
+  // ViewCard includes a trailing chevron; ensure at least 2 icons total
+  await expect(icons).toHaveCount(2);
 });
 
 test("dataset page - view cards link to correct pages", async ({

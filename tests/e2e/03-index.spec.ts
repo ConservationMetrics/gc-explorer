@@ -177,7 +177,7 @@ test("index page - view type filter buttons display icons", async ({
   const mapButtonExists = (await mapButton.count()) > 0;
 
   if (mapButtonExists) {
-    const mapIcon = mapButton.locator("svg");
+    const mapIcon = mapButton.locator("svg[data-prefix]");
     await expect(mapIcon).toBeVisible({ timeout: 5000 });
   }
 
@@ -185,7 +185,7 @@ test("index page - view type filter buttons display icons", async ({
   const alertsButtonExists = (await alertsButton.count()) > 0;
 
   if (alertsButtonExists) {
-    const alertsIcon = alertsButton.locator("svg");
+    const alertsIcon = alertsButton.locator("svg[data-prefix]");
     await expect(alertsIcon).toBeVisible({ timeout: 5000 });
   }
 
@@ -193,7 +193,7 @@ test("index page - view type filter buttons display icons", async ({
   const galleryButtonExists = (await galleryButton.count()) > 0;
 
   if (galleryButtonExists) {
-    const galleryIcon = galleryButton.locator("svg");
+    const galleryIcon = galleryButton.locator("svg[data-prefix]");
     await expect(galleryIcon).toBeVisible({ timeout: 5000 });
   }
 });
