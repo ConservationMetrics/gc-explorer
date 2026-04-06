@@ -9,6 +9,10 @@ Please review those before submitting pull requests or issues.
 
 Any additional or overriding rules specific to this repository are listed below.
 
+## Icons
+
+Use `lucide-vue-next` for UI icons (Vue components), rather than inline SVGs or other icon libraries.
+
 
 # Contributor License Agreement
 
