@@ -2,6 +2,13 @@ import type { BasemapConfig, ViewConfig } from "@/types";
 
 import { fetchTableNames } from "@/server/database/dbOperations";
 
+export {
+  logServerProfilingMark,
+  snapshotProcessMemory,
+  triggerGcIfAvailable,
+  withServerProfiling,
+} from "@/server/utils/serverProfiling";
+
 export type ParsedBasemaps = {
   basemaps: BasemapConfig[];
   defaultMapboxStyle?: string;
