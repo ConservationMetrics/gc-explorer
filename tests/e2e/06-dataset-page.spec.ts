@@ -74,7 +74,9 @@ test("dataset page - displays header, description, and view cards", async ({
   await expect(cardTitle).toBeVisible();
 
   // ViewCard includes a view icon + trailing chevron
-  await expect(icons).toHaveCount(2);
+  await expect(icons).toHaveCount(2, { timeout: 5000 });
+  const iconCount = await icons.count();
+  expect(iconCount).toBeGreaterThanOrEqual(2);
 });
 
 test("dataset page - view cards link to correct pages", async ({
