@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import type { SupportedLocale } from "@/types";
-import { faGlobe } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faGlobe } from "@fortawesome/free-solid-svg-icons";
 
 const { locale, locales, setLocale } = useI18n();
 const { t } = useI18n();
@@ -139,21 +139,11 @@ onUnmounted(() => {
           t("header.languagePicker") || "Language"
         }}</span>
       </div>
-      <svg
+      <FontAwesomeIcon
         class="w-4 h-4 text-gray-600 transition-transform"
+        :icon="faChevronDown"
         :class="{ 'rotate-180': languagePickerOpen }"
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M19 9l-7 7-7-7"
-        />
-      </svg>
+      />
     </button>
     <div v-if="languagePickerOpen" class="mt-2 space-y-1">
       <button

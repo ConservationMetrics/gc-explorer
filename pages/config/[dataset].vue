@@ -4,6 +4,12 @@ import AppHeader from "@/components/shared/AppHeader.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import type { Views, ViewConfig } from "@/types";
+import {
+  faArrowLeft,
+  faCircleCheck,
+  faCopy,
+  faEye,
+} from "@fortawesome/free-solid-svg-icons";
 
 const route = useRoute();
 const datasetRaw = route.params.dataset;
@@ -168,46 +174,14 @@ useHead({
               to="/config"
               class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium transition-colors"
             >
-              <svg
-                class="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                />
-              </svg>
+              <FontAwesomeIcon :icon="faArrowLeft" class="w-5 h-5" />
               {{ $t("configuration") }}
             </NuxtLink>
             <NuxtLink
               :to="`/dataset/${dataset}`"
               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
             >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                />
-              </svg>
+              <FontAwesomeIcon :icon="faEye" class="w-4 h-4" />
               {{ $t("viewDataset") }}
             </NuxtLink>
           </div>
@@ -221,20 +195,7 @@ useHead({
               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               @click="handleOpenCopyModal"
             >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
-              </svg>
+              <FontAwesomeIcon :icon="faCopy" class="w-4 h-4" />
               {{ $t("copyConfigFromDataset") }}
             </button>
           </div>
@@ -359,19 +320,10 @@ useHead({
           @click.stop
         >
           <div class="mb-4">
-            <svg
+            <FontAwesomeIcon
+              :icon="faCircleCheck"
               class="w-16 h-16 mx-auto text-green-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
+            />
           </div>
           <h2 class="text-2xl font-bold text-gray-900 mb-2">Saved!</h2>
           <p class="text-gray-600">
