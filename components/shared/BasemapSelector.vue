@@ -122,7 +122,7 @@ const emitBasemapChange = () => {
       :style="{ top: topPosition }"
       @click="toggleBasemapWindow"
     >
-      <Layers class="w-full h-full pl-0.5" />
+      <Layers class="w-full h-full" />
     </div>
     <div
       v-if="showBasemapWindow"
