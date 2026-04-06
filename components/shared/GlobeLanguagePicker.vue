@@ -18,6 +18,12 @@ const props = withDefaults(defineProps<Props>(), {
 
 // Populate available locales from i18n plugin
 const availableLocales = computed(() => locales.value);
+const _currentLocaleName = computed(() => {
+  const currentLocale = locales.value.find(
+    (lang) => lang.code === locale.value,
+  );
+  return currentLocale?.name || "";
+});
 
 const dropdownOpen = ref(false);
 const languagePickerOpen = ref(false);
@@ -29,6 +35,23 @@ const handleClickOutside = (event: MouseEvent) => {
     dropdownOpen.value = false;
   }
 };
+
+// Load locale from session storage on mount and set up click outside handler
+onMounted(() => {
+  const savedLocale = sessionStorage.getItem("locale");
+  if (savedLocale && locales.value.some((lang) => lang.code === savedLocale)) {
+    setLocale(savedLocale as SupportedLocale);
+  }
+  if (props.variant !== "mobile") {
+    document.addEventListener("click", handleClickOutside);
+  }
+});
+
+onUnmounted(() => {
+  if (props.variant !== "mobile") {
+    document.removeEventListener("click", handleClickOutside);
+  }
+});
 
 const changeLocale = (localeCode: string): void => {
   setLocale(localeCode as SupportedLocale);
@@ -73,23 +96,6 @@ const mobileItemClasses = computed(() => {
       ? "bg-purple-100 text-purple-700 font-medium"
       : "text-gray-700 hover:bg-purple-50",
   ];
-});
-
-// Load locale from session storage on mount and set up click outside handler
-onMounted(() => {
-  const savedLocale = sessionStorage.getItem("locale");
-  if (savedLocale && locales.value.some((lang) => lang.code === savedLocale)) {
-    setLocale(savedLocale as SupportedLocale);
-  }
-  if (props.variant !== "mobile") {
-    document.addEventListener("click", handleClickOutside);
-  }
-});
-
-onUnmounted(() => {
-  if (props.variant !== "mobile") {
-    document.removeEventListener("click", handleClickOutside);
-  }
 });
 </script>
 
