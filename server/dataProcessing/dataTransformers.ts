@@ -1,6 +1,6 @@
 import {
   calculateCentroidFromParsedCoords,
-  tryParseAlertGeoCoordinates,
+  tryParseDataEntryGeoCoordinates,
 } from "@/utils/geoUtils";
 import { formatLocaleDate } from "@/utils/dateUtils";
 import type {
@@ -33,7 +33,7 @@ const prepareMinimalAlertEntries = (
   const gfwData: GeoTagged[] = [];
 
   for (const item of data) {
-    const parsedCoords = tryParseAlertGeoCoordinates(item);
+    const parsedCoords = tryParseDataEntryGeoCoordinates(item);
     if (parsedCoords === null) continue;
     if (item.data_source === "Global Forest Watch") {
       gfwData.push({ item, parsedCoords });
@@ -360,6 +360,9 @@ const prepareAlertsStatistics = (
     const monthKeys = Object.keys(accumulatorMap);
 
     if (property === "alerts") {
+      // Bucket counts in one pass over rows, then cumulative by chart month—cheap at large N.
+      // Watch out: a `.filter` on `dataCollection` inside the month loop brings back O(m×n) /
+      // O(N^2) rescans and a new array each month.
       const countsByMonth = new Map<string, number>();
       for (const item of dataCollection) {
         const key = `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
@@ -374,6 +377,7 @@ const prepareAlertsStatistics = (
     }
 
     if (property === "hectares" && !isGFW) {
+      // Same as alerts: one pass to bucket, then cumulative—avoid per-month full-list filters.
       const hectaresByMonth = new Map<string, number>();
       for (const item of dataCollection) {
         const key = `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;

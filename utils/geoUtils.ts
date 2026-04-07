@@ -165,7 +165,13 @@ const coordinatesMatchGeoType = (
   return false;
 };
 
-const ALERT_VALID_GEO_TYPES = [
+/**
+ * Geometry type names allowed on warehouse rows (`g__type`) for this app’s map
+ * and alerts pipelines. This is not an exhaustive GeoJSON enum (e.g. no
+ * GeometryCollection); it matches what we persist and serve through
+ * `buildMinimalFeatureCollection` and related paths.
+ */
+const DATA_ENTRY_SUPPORTED_GEOMETRY_TYPES = [
   "LineString",
   "MultiLineString",
   "Point",
@@ -174,14 +180,17 @@ const ALERT_VALID_GEO_TYPES = [
 ] as const;
 
 /**
- * Parses `g__coordinates` once and returns the coordinate array/object when it
- * matches `g__type`; otherwise returns null. Used to avoid duplicate JSON.parse
- * across validation, centroid, and GeoJSON feature construction.
+ * Parses `g__coordinates` once and returns the coordinate tree when it matches
+ * `g__type` and structural validation; otherwise returns null. Used to avoid
+ * duplicate `JSON.parse` across validation, centroid, and GeoJSON feature
+ * construction for {@link DataEntry} rows. Not a general-purpose GeoJSON
+ * validator; see {@link hasValidCoordinates} for coordinate fields keyed by name
+ * (e.g. CSV-style rows).
  *
  * @param {DataEntry} item - Row with `g__type` and `g__coordinates`.
  * @returns {unknown | null} Parsed coordinates, or null if invalid.
  */
-export const tryParseAlertGeoCoordinates = (
+export const tryParseDataEntryGeoCoordinates = (
   item: DataEntry,
 ): unknown | null => {
   const type = item.g__type as string | undefined;
@@ -189,8 +198,8 @@ export const tryParseAlertGeoCoordinates = (
 
   if (
     !type ||
-    !ALERT_VALID_GEO_TYPES.includes(
-      type as (typeof ALERT_VALID_GEO_TYPES)[number],
+    !DATA_ENTRY_SUPPORTED_GEOMETRY_TYPES.includes(
+      type as (typeof DATA_ENTRY_SUPPORTED_GEOMETRY_TYPES)[number],
     ) ||
     raw == null ||
     raw === ""
@@ -298,7 +307,7 @@ export const calculateCentroid = (coords: string): string => {
 
 /** Validates if a data entry has valid geolocation data. */
 export const isValidGeolocation = (item: DataEntry): boolean => {
-  return tryParseAlertGeoCoordinates(item) !== null;
+  return tryParseDataEntryGeoCoordinates(item) !== null;
 };
 
 /**
@@ -329,7 +338,7 @@ export const buildMinimalFeatureCollection = (
   const features: Feature[] = [];
 
   for (const entry of data) {
-    const coordinates = tryParseAlertGeoCoordinates(entry);
+    const coordinates = tryParseDataEntryGeoCoordinates(entry);
     if (coordinates === null) continue;
 
     const geoType = entry.g__type as string | undefined;
