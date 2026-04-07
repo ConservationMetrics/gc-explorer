@@ -151,170 +151,178 @@ definePageMeta({ layout: "explorer" });
 </script>
 
 <template>
-  <DataLoadError
-    v-if="error"
-    :title="$t('dataLoadErrorTitle')"
-    :message="$t('dataLoadErrorMessage')"
-    :retry="() => refresh()"
-  />
-  <ClientOnly v-else>
-    <div
-      v-if="dataFetched && datasetConfig"
-      class="max-w-7xl mx-auto p-3 sm:p-6 w-full"
-    >
-      <div class="mb-6">
-        <div class="flex items-center justify-between mb-4">
-          <NuxtLink
-            to="/config"
-            class="inline-flex items-center gap-2 text-violet-600 hover:text-violet-800 font-medium transition-colors"
-          >
-            <ChevronLeft class="w-5 h-5" />
-            {{ $t("configuration") }}
-          </NuxtLink>
-          <NuxtLink
-            :to="`/dataset/${dataset}`"
-            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors"
-          >
-            <Eye class="w-4 h-4" />
-            {{ $t("viewDataset") }}
-          </NuxtLink>
-        </div>
-        <div class="flex items-center justify-between">
-          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            {{ $t("configuration") }} - {{ dataset }}
-          </h1>
-          <button
-            v-if="otherDatasets.length > 0"
-            data-testid="copy-config-button"
-            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            @click="handleOpenCopyModal"
-          >
-            <Copy class="w-4 h-4" />
-            {{ $t("copyConfigFromDataset") }}
-          </button>
-        </div>
-      </div>
+  <div class="min-h-screen flex flex-col bg-white">
+    <DataLoadError
+      v-if="error"
+      :title="$t('dataLoadErrorTitle')"
+      :message="$t('dataLoadErrorMessage')"
+      :retry="() => refresh()"
+    />
+    <ClientOnly v-else>
       <div
-        v-if="errorMessage"
-        class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg"
+        v-if="dataFetched && datasetConfig"
+        class="max-w-7xl mx-auto p-3 sm:p-6 w-full"
       >
-        {{ errorMessage }}
-      </div>
-      <ConfigCard
-        :table-name="dataset"
-        :view-config="datasetConfig"
-        :config-to-copy="configToCopy"
-        @submit-config="submitConfig"
-        @remove-table-from-config="handleRemoveTableFromConfig"
-      />
-    </div>
-    <div
-      v-if="showModal"
-      data-testid="remove-confirmation-modal"
-      class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-    >
-      <div
-        data-testid="remove-confirmation-modal-content"
-        class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
-      >
-        <!-- eslint-disable vue/no-v-html -->
-        <!-- This is intentional to allow HTML rendering in the modal message -->
-        <p
-          data-testid="remove-confirmation-modal-message"
-          class="mb-4 text-gray-700"
-          v-html="modalMessage"
-        ></p>
-        <!-- eslint-enable vue/no-v-html -->
-        <div v-if="showModalButtons" class="flex gap-3 justify-end">
-          <button
-            class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
-            @click="handleConfirmRemove"
-          >
-            {{ $t("confirm") }}
-          </button>
-          <button
-            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
-            @click="handleCancelRemove"
-          >
-            {{ $t("cancel") }}
-          </button>
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <NuxtLink
+              to="/config"
+              class="inline-flex items-center gap-2 text-violet-600 hover:text-violet-800 font-medium transition-colors"
+            >
+              <ChevronLeft class="w-5 h-5" />
+              {{ $t("configuration") }}
+            </NuxtLink>
+            <NuxtLink
+              :to="`/dataset/${dataset}`"
+              class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors"
+            >
+              <Eye class="w-4 h-4" />
+              {{ $t("viewDataset") }}
+            </NuxtLink>
+          </div>
+          <div class="flex items-center justify-between">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+              {{ $t("configuration") }} - {{ dataset }}
+            </h1>
+            <button
+              v-if="otherDatasets.length > 0"
+              data-testid="copy-config-button"
+              class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              @click="handleOpenCopyModal"
+            >
+              <Copy class="w-4 h-4" />
+              {{ $t("copyConfigFromDataset") }}
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
-    <!-- Copy Config Modal -->
-    <div
-      v-if="showCopyModal"
-      data-testid="copy-config-modal"
-      class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-    >
-      <div
-        data-testid="copy-config-modal-content"
-        class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
-      >
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">
-          {{ $t("copyConfigFromDataset") }}
-        </h3>
-        <p class="text-sm text-gray-600 mb-4">
-          {{ $t("copyConfigDescription") }}
-        </p>
-        <select
-          v-model="selectedCopySource"
-          data-testid="copy-config-select"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors mb-4"
+        <div
+          v-if="errorMessage"
+          class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg"
         >
-          <option value="" disabled>
-            {{ $t("selectDataset") }}
-          </option>
-          <option v-for="dsName in otherDatasets" :key="dsName" :value="dsName">
-            {{ viewsConfig[dsName]?.DATASET_TABLE || dsName }}
-          </option>
-        </select>
-        <div class="flex gap-3 justify-end">
-          <button
-            data-testid="copy-config-confirm-button"
-            :disabled="!selectedCopySource"
-            class="px-4 py-2 font-medium rounded-lg transition-colors"
-            :class="{
-              'bg-gray-300 text-gray-500 cursor-not-allowed':
-                !selectedCopySource,
-              'bg-violet-700 hover:bg-violet-800 text-white':
-                selectedCopySource,
-            }"
-            @click="handleConfirmCopy"
-          >
-            {{ $t("confirm") }}
-          </button>
-          <button
-            data-testid="copy-config-cancel-button"
-            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
-            @click="handleCancelCopy"
-          >
-            {{ $t("cancel") }}
-          </button>
+          {{ errorMessage }}
         </div>
+        <ConfigCard
+          :table-name="dataset"
+          :view-config="datasetConfig"
+          :config-to-copy="configToCopy"
+          @submit-config="submitConfig"
+          @remove-table-from-config="handleRemoveTableFromConfig"
+        />
       </div>
-    </div>
-  </ClientOnly>
-
-  <!-- Saved! Modal -->
-  <ClientOnly>
-    <div
-      v-if="showSavedModal"
-      data-testid="saved-modal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-      @click="showSavedModal = false"
-    >
       <div
-        data-testid="saved-modal-content"
-        class="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4 text-center"
-        @click.stop
+        v-if="showModal"
+        data-testid="remove-confirmation-modal"
+        class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
       >
-        <div class="mb-4">
-          <CheckCircle2 class="w-16 h-16 mx-auto text-green-500" />
+        <div
+          data-testid="remove-confirmation-modal-content"
+          class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+        >
+          <!-- eslint-disable vue/no-v-html -->
+          <!-- This is intentional to allow HTML rendering in the modal message -->
+          <p
+            data-testid="remove-confirmation-modal-message"
+            class="mb-4 text-gray-700"
+            v-html="modalMessage"
+          ></p>
+          <!-- eslint-enable vue/no-v-html -->
+          <div v-if="showModalButtons" class="flex gap-3 justify-end">
+            <button
+              class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors"
+              @click="handleConfirmRemove"
+            >
+              {{ $t("confirm") }}
+            </button>
+            <button
+              class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
+              @click="handleCancelRemove"
+            >
+              {{ $t("cancel") }}
+            </button>
+          </div>
         </div>
-        <h2 class="text-2xl font-bold text-gray-900 mb-2">Saved!</h2>
-        <p class="text-gray-600">Configuration has been saved successfully.</p>
       </div>
-    </div>
-  </ClientOnly>
+      <!-- Copy Config Modal -->
+      <div
+        v-if="showCopyModal"
+        data-testid="copy-config-modal"
+        class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      >
+        <div
+          data-testid="copy-config-modal-content"
+          class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+        >
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            {{ $t("copyConfigFromDataset") }}
+          </h3>
+          <p class="text-sm text-gray-600 mb-4">
+            {{ $t("copyConfigDescription") }}
+          </p>
+          <select
+            v-model="selectedCopySource"
+            data-testid="copy-config-select"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors mb-4"
+          >
+            <option value="" disabled>
+              {{ $t("selectDataset") }}
+            </option>
+            <option
+              v-for="dsName in otherDatasets"
+              :key="dsName"
+              :value="dsName"
+            >
+              {{ viewsConfig[dsName]?.DATASET_TABLE || dsName }}
+            </option>
+          </select>
+          <div class="flex gap-3 justify-end">
+            <button
+              data-testid="copy-config-confirm-button"
+              :disabled="!selectedCopySource"
+              class="px-4 py-2 font-medium rounded-lg transition-colors"
+              :class="{
+                'bg-gray-300 text-gray-500 cursor-not-allowed':
+                  !selectedCopySource,
+                'bg-violet-700 hover:bg-violet-800 text-white':
+                  selectedCopySource,
+              }"
+              @click="handleConfirmCopy"
+            >
+              {{ $t("confirm") }}
+            </button>
+            <button
+              data-testid="copy-config-cancel-button"
+              class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
+              @click="handleCancelCopy"
+            >
+              {{ $t("cancel") }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </ClientOnly>
+
+    <!-- Saved! Modal -->
+    <ClientOnly>
+      <div
+        v-if="showSavedModal"
+        data-testid="saved-modal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+        @click="showSavedModal = false"
+      >
+        <div
+          data-testid="saved-modal-content"
+          class="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4 text-center"
+          @click.stop
+        >
+          <div class="mb-4">
+            <CheckCircle2 class="w-16 h-16 mx-auto text-green-500" />
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Saved!</h2>
+          <p class="text-gray-600">
+            Configuration has been saved successfully.
+          </p>
+        </div>
+      </div>
+    </ClientOnly>
+  </div>
 </template>
