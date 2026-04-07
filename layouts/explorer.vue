@@ -5,6 +5,6 @@ import AppHeader from "@/components/shared/AppHeader.vue";
 <template>
   <div class="min-h-screen flex flex-col bg-white">
     <AppHeader />
-    <slot />
+    <slot> </slot>
   </div>
 </template>
