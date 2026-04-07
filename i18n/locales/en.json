@@ -236,6 +236,8 @@
   "restrictView": "Do you want to restrict this view?",
   "restrictViewDescription": "When restricted, only Member and Admin users can access this view. Viewer users will be redirected to the home page.",
   "retry": "Retry",
+  "rowLimitReachedTitle": "Partial results",
+  "rowLimitReachedMessage": "This dataset exceeds the maximum number of records that can be displayed. Only the first {limit} records are shown in this view.",
   "returnToHome": "Return to home",
   "satelliteUsedForDetection": "Satellite used for detection",
   "searchDatasets": "Search datasets...",

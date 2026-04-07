@@ -5,6 +5,7 @@ import DataLoadError from "@/components/shared/DataLoadError.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
 import { replaceUnderscoreWithSpace } from "@/utils/identifierUtils";
 import { useIsPublic } from "@/utils/accessControls";
+import { ROW_LIMIT } from "@/utils";
 
 // Extract the tablename from the route parameters
 const route = useRoute();
@@ -19,9 +20,19 @@ const mediaBasePath = ref();
 const mediaColumn = ref();
 const timestampColumn = ref<string | undefined>();
 
-const { data, error, refresh } = await useFetch(`/api/${table}/gallery`);
+const { data, error, refresh } = await useFetch(`/api/${table}/gallery`, {
+  params: { limit: ROW_LIMIT },
+});
 
 if (data.value && !error.value) {
+  if (data.value.rowLimitReached) {
+    const { warning } = useToast();
+    warning(
+      t("rowLimitReachedTitle"),
+      t("rowLimitReachedMessage", { limit: ROW_LIMIT.toLocaleString() }),
+    );
+  }
+
   allowedFileExtensions.value = data.value.allowedFileExtensions;
   dataFetched.value = true;
   filterColumn.value = data.value.filterColumn;

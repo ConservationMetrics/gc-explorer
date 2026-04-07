@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { replaceUnderscoreWithSpace } from "@/utils/identifierUtils";
 import { useIsPublic } from "@/utils/accessControls";
+import { ROW_LIMIT } from "@/utils";
 
 import type { BasemapConfig } from "@/types";
 import type { FeatureCollection } from "geojson";
@@ -38,9 +39,19 @@ const mediaColumn = ref();
 const planetApiKey = ref();
 const timestampColumn = ref<string | undefined>();
 
-const { data, error, refresh } = await useFetch(`/api/${table}/map`);
+const { data, error, refresh } = await useFetch(`/api/${table}/map`, {
+  params: { limit: ROW_LIMIT },
+});
 
 if (data.value && !error.value) {
+  if (data.value.rowLimitReached) {
+    const { warning } = useToast();
+    warning(
+      t("rowLimitReachedTitle"),
+      t("rowLimitReachedMessage", { limit: ROW_LIMIT.toLocaleString() }),
+    );
+  }
+
   allowedFileExtensions.value = data.value.allowedFileExtensions;
   colorColumn.value = data.value.colorColumn;
   dataFetched.value = true;
