@@ -149,133 +149,47 @@ definePageMeta({ layout: "explorer" });
 
 <template>
   <DataLoadError
-      v-if="error"
-      :title="$t('dataLoadErrorTitle')"
-      :message="$t('dataLoadErrorMessage')"
-      :retry="() => refresh()"
-    />
-    <main v-else-if="dataFetched && canViewDataset" class="w-full">
-      <div class="w-5/6 mx-auto mb-4 flex items-center justify-between">
-        <NuxtLink
-          to="/"
-          class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium transition-colors"
-        >
-          <ChevronLeft class="w-5 h-5" />
-          {{ $t("availableViews") }}
-        </NuxtLink>
-        <NuxtLink
-          v-if="isAdmin"
-          :to="`/config/${tableName}`"
-          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <Settings class="w-4 h-4" />
-          {{ $t("editConfiguration") }}
-        </NuxtLink>
-      </div>
-
-      <div
-        v-if="headerImage"
-        data-testid="dataset-header-with-image"
-        class="relative w-5/6 mx-auto overflow-hidden rounded-xl"
+    v-if="error"
+    :title="$t('dataLoadErrorTitle')"
+    :message="$t('dataLoadErrorMessage')"
+    :retry="() => refresh()"
+  />
+  <main v-else-if="dataFetched && canViewDataset" class="w-full">
+    <div class="w-5/6 mx-auto mb-4 flex items-center justify-between">
+      <NuxtLink
+        to="/"
+        class="inline-flex items-center gap-2 text-violet-600 hover:text-violet-800 font-medium transition-colors"
       >
-        <div class="relative h-64 sm:h-80 md:h-96">
-          <img
-            :src="headerImage"
-            :alt="displayName"
-            class="w-full h-full object-cover"
-          />
-          <div
-            class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6 sm:p-8"
-          >
-            <div class="flex items-start gap-2">
-              <h1
-                class="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 break-words flex-1"
-                style="
-                  overflow-wrap: anywhere;
-                  word-break: break-word;
-                  hyphens: auto;
-                "
-              >
-                {{ displayName }}
-              </h1>
-              <button
-                v-if="isTitleTruncated"
-                class="text-white/80 hover:text-white text-sm font-medium underline flex-shrink-0 mt-1"
-                @click="isTitleExpanded = !isTitleExpanded"
-              >
-                {{ isTitleExpanded ? "Show less" : "Show more" }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="relative p-6 sm:p-8">
-          <div class="mb-6 sm:mb-8">
-            <div v-if="description || isDescriptionTruncated">
-              <p class="text-base sm:text-lg text-gray-700 leading-relaxed">
-                {{ description }}
-              </p>
-              <button
-                v-if="isDescriptionTruncated"
-                class="text-purple-600 hover:text-purple-800 text-sm font-medium underline mt-2"
-                @click="isDescriptionExpanded = !isDescriptionExpanded"
-              >
-                {{ isDescriptionExpanded ? "Show less" : "Show more" }}
-              </button>
-            </div>
-            <div
-              v-else
-              data-testid="dataset-description-fallback"
-              class="text-base sm:text-lg text-gray-500 italic"
-            >
-              <span>{{ $t("noDescriptionProvidedYet") }}</span>
-              <NuxtLink
-                v-if="isAdmin"
-                :to="`/config/${tableName}`"
-                class="ml-1 text-purple-600 hover:text-purple-800 underline"
-              >
-                {{ $t("addDescription") }}
-              </NuxtLink>
-              <span v-else class="ml-1">
-                Please contact an admin to add a description.
-              </span>
-            </div>
-          </div>
-
-          <div v-if="enabledViews.length > 0">
-            <div
-              data-testid="view-cards-container"
-              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-            >
-              <ViewCard
-                v-for="view in enabledViews"
-                :key="view"
-                :view="view"
-                :table-name="tableName"
-              />
-            </div>
-          </div>
-
-          <div v-else class="text-center py-8">
-            <p class="text-gray-500 text-sm sm:text-base">
-              {{
-                $t("noDatasetViewsAvailable") ||
-                "No views available for this dataset"
-              }}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div
-        v-else
-        data-testid="dataset-header-fallback"
-        class="w-5/6 mx-auto bg-gradient-to-r from-purple-100 to-purple-50 rounded-xl overflow-hidden mt-4"
+        <ChevronLeft class="w-5 h-5" />
+        {{ $t("availableViews") }}
+      </NuxtLink>
+      <NuxtLink
+        v-if="isAdmin"
+        :to="`/config/${tableName}`"
+        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
       >
-        <div class="p-6 sm:p-8">
-          <div class="flex items-start gap-2 mb-6 sm:mb-8">
+        <Settings class="w-4 h-4" />
+        {{ $t("editConfiguration") }}
+      </NuxtLink>
+    </div>
+
+    <div
+      v-if="headerImage"
+      data-testid="dataset-header-with-image"
+      class="relative w-5/6 mx-auto overflow-hidden rounded-xl"
+    >
+      <div class="relative h-64 sm:h-80 md:h-96">
+        <img
+          :src="headerImage"
+          :alt="displayName"
+          class="w-full h-full object-cover"
+        />
+        <div
+          class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6 sm:p-8"
+        >
+          <div class="flex items-start gap-2">
             <h1
-              class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 break-words flex-1"
+              class="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-2 break-words flex-1"
               style="
                 overflow-wrap: anywhere;
                 word-break: break-word;
@@ -286,77 +200,163 @@ definePageMeta({ layout: "explorer" });
             </h1>
             <button
               v-if="isTitleTruncated"
-              class="text-purple-600 hover:text-purple-800 text-sm font-medium underline flex-shrink-0 mt-1"
+              class="text-white/80 hover:text-white text-sm font-medium underline flex-shrink-0 mt-1"
               @click="isTitleExpanded = !isTitleExpanded"
             >
               {{ isTitleExpanded ? "Show less" : "Show more" }}
             </button>
           </div>
-
-          <div class="mb-6 sm:mb-8">
-            <div v-if="description || isDescriptionTruncated">
-              <p class="text-base sm:text-lg text-gray-700 leading-relaxed">
-                {{ description }}
-              </p>
-              <button
-                v-if="isDescriptionTruncated"
-                class="text-purple-600 hover:text-purple-800 text-sm font-medium underline mt-2"
-                @click="isDescriptionExpanded = !isDescriptionExpanded"
-              >
-                {{ isDescriptionExpanded ? "Show less" : "Show more" }}
-              </button>
-            </div>
-            <div
-              v-else
-              data-testid="dataset-description-fallback"
-              class="text-base sm:text-lg text-gray-500 italic"
-            >
-              <span>{{ $t("noDescriptionProvidedYet") }}</span>
-              <NuxtLink
-                v-if="isAdmin"
-                :to="`/config/${tableName}`"
-                class="ml-1 text-purple-600 hover:text-purple-800 underline"
-              >
-                {{ $t("addDescription") }}
-              </NuxtLink>
-              <span v-else class="ml-1">
-                Please contact an admin to add a description.
-              </span>
-            </div>
-          </div>
-
-          <div v-if="enabledViews.length > 0">
-            <div
-              data-testid="view-cards-container"
-              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
-            >
-              <ViewCard
-                v-for="view in enabledViews"
-                :key="view"
-                :view="view"
-                :table-name="tableName"
-              />
-            </div>
-          </div>
-
-          <div v-else class="text-center py-8">
-            <p class="text-gray-500 text-sm sm:text-base">
-              {{
-                $t("noDatasetViewsAvailable") ||
-                "No views available for this dataset"
-              }}
-            </p>
-          </div>
         </div>
       </div>
-    </main>
+
+      <div class="relative p-6 sm:p-8">
+        <div class="mb-6 sm:mb-8">
+          <div v-if="description || isDescriptionTruncated">
+            <p class="text-base sm:text-lg text-gray-700 leading-relaxed">
+              {{ description }}
+            </p>
+            <button
+              v-if="isDescriptionTruncated"
+              class="text-violet-600 hover:text-violet-800 text-sm font-medium underline mt-2"
+              @click="isDescriptionExpanded = !isDescriptionExpanded"
+            >
+              {{ isDescriptionExpanded ? "Show less" : "Show more" }}
+            </button>
+          </div>
+          <div
+            v-else
+            data-testid="dataset-description-fallback"
+            class="text-base sm:text-lg text-gray-500 italic"
+          >
+            <span>{{ $t("noDescriptionProvidedYet") }}</span>
+            <NuxtLink
+              v-if="isAdmin"
+              :to="`/config/${tableName}`"
+              class="ml-1 text-violet-600 hover:text-violet-800 underline"
+            >
+              {{ $t("addDescription") }}
+            </NuxtLink>
+            <span v-else class="ml-1">
+              Please contact an admin to add a description.
+            </span>
+          </div>
+        </div>
+
+        <div v-if="enabledViews.length > 0">
+          <div
+            data-testid="view-cards-container"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+          >
+            <ViewCard
+              v-for="view in enabledViews"
+              :key="view"
+              :view="view"
+              :table-name="tableName"
+            />
+          </div>
+        </div>
+
+        <div v-else class="text-center py-8">
+          <p class="text-gray-500 text-sm sm:text-base">
+            {{
+              $t("noDatasetViewsAvailable") ||
+              "No views available for this dataset"
+            }}
+          </p>
+        </div>
+      </div>
+    </div>
 
     <div
-      v-else-if="dataFetched && !canViewDataset"
-      class="max-w-7xl mx-auto px-4 sm:px-6 py-12 text-center"
+      v-else
+      data-testid="dataset-header-fallback"
+      class="w-5/6 mx-auto bg-gradient-to-r from-violet-100 to-violet-50 rounded-xl overflow-hidden mt-4"
     >
-      <p class="text-gray-500 text-sm sm:text-base">
-        {{ $t("accessDeniedMessage") }}
-      </p>
+      <div class="p-6 sm:p-8">
+        <div class="flex items-start gap-2 mb-6 sm:mb-8">
+          <h1
+            class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 break-words flex-1"
+            style="
+              overflow-wrap: anywhere;
+              word-break: break-word;
+              hyphens: auto;
+            "
+          >
+            {{ displayName }}
+          </h1>
+          <button
+            v-if="isTitleTruncated"
+            class="text-violet-600 hover:text-violet-800 text-sm font-medium underline flex-shrink-0 mt-1"
+            @click="isTitleExpanded = !isTitleExpanded"
+          >
+            {{ isTitleExpanded ? "Show less" : "Show more" }}
+          </button>
+        </div>
+
+        <div class="mb-6 sm:mb-8">
+          <div v-if="description || isDescriptionTruncated">
+            <p class="text-base sm:text-lg text-gray-700 leading-relaxed">
+              {{ description }}
+            </p>
+            <button
+              v-if="isDescriptionTruncated"
+              class="text-violet-600 hover:text-violet-800 text-sm font-medium underline mt-2"
+              @click="isDescriptionExpanded = !isDescriptionExpanded"
+            >
+              {{ isDescriptionExpanded ? "Show less" : "Show more" }}
+            </button>
+          </div>
+          <div
+            v-else
+            data-testid="dataset-description-fallback"
+            class="text-base sm:text-lg text-gray-500 italic"
+          >
+            <span>{{ $t("noDescriptionProvidedYet") }}</span>
+            <NuxtLink
+              v-if="isAdmin"
+              :to="`/config/${tableName}`"
+              class="ml-1 text-violet-600 hover:text-violet-800 underline"
+            >
+              {{ $t("addDescription") }}
+            </NuxtLink>
+            <span v-else class="ml-1">
+              Please contact an admin to add a description.
+            </span>
+          </div>
+        </div>
+
+        <div v-if="enabledViews.length > 0">
+          <div
+            data-testid="view-cards-container"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+          >
+            <ViewCard
+              v-for="view in enabledViews"
+              :key="view"
+              :view="view"
+              :table-name="tableName"
+            />
+          </div>
+        </div>
+
+        <div v-else class="text-center py-8">
+          <p class="text-gray-500 text-sm sm:text-base">
+            {{
+              $t("noDatasetViewsAvailable") ||
+              "No views available for this dataset"
+            }}
+          </p>
+        </div>
+      </div>
     </div>
+  </main>
+
+  <div
+    v-else-if="dataFetched && !canViewDataset"
+    class="max-w-7xl mx-auto px-4 sm:px-6 py-12 text-center"
+  >
+    <p class="text-gray-500 text-sm sm:text-base">
+      {{ $t("accessDeniedMessage") }}
+    </p>
+  </div>
 </template>

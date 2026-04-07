@@ -20,17 +20,17 @@ const toggle = () => {
 <template>
   <div
     data-testid="config-section-collapsible"
-    class="bg-purple-50 rounded-lg border border-purple-200 mb-4 overflow-hidden"
+    class="bg-violet-50 rounded-lg border border-violet-200 mb-4 overflow-hidden"
   >
     <button
       type="button"
       :data-testid="`config-section-${title.toLowerCase()}-toggle`"
-      class="w-full flex items-center justify-between p-4 bg-purple-100 hover:bg-purple-200 transition-colors text-left"
+      class="w-full flex items-center justify-between p-4 bg-violet-100 hover:bg-violet-200 transition-colors text-left"
       @click="toggle"
     >
       <h3 class="text-lg font-semibold text-gray-800">{{ title }}</h3>
       <ChevronDown
-        class="w-5 h-5 text-purple-700 transition-transform"
+        class="w-5 h-5 text-violet-700 transition-transform"
         :class="{ 'rotate-180': isOpen }"
       />
     </button>

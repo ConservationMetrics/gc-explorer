@@ -46,7 +46,7 @@ const shouldShowConfigLink = computed(() => {
 
 <template>
   <header
-    class="bg-gradient-to-r mb-2 from-purple-100 to-purple-50 w-5/6 place-self-center mt-2 rounded-xl p-3"
+    class="bg-gradient-to-r mb-2 from-violet-100 to-violet-50 w-5/6 place-self-center mt-2 rounded-xl p-3"
   >
     <!-- Desktop Layout - show above 1000px -->
     <div
@@ -105,7 +105,7 @@ const shouldShowConfigLink = computed(() => {
         <div v-if="shouldShowConfigLink" class="relative group">
           <NuxtLink
             to="/config"
-            class="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            class="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
           >
             <Database class="w-5 h-5 text-gray-600" />
           </NuxtLink>
@@ -135,7 +135,7 @@ const shouldShowConfigLink = computed(() => {
 
       <div class="flex items-center gap-2">
         <button
-          class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-purple-200 transition-colors"
+          class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-violet-200 transition-colors"
           aria-label="Menu"
           @click="toggleMobileMenu"
         >
@@ -159,13 +159,13 @@ const shouldShowConfigLink = computed(() => {
     <!-- Mobile Menu Dropdown -->
     <div
       v-if="mobileMenuOpen"
-      class="hidden max-[1000px]:block mt-4 p-4 bg-white rounded-lg border border-purple-200 shadow-lg"
+      class="hidden max-[1000px]:block mt-4 p-4 bg-white rounded-lg border border-violet-200 shadow-lg"
     >
       <!-- Config Management (if admin) -->
       <NuxtLink
         v-if="shouldShowConfigLink"
         to="/config"
-        class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-purple-50 transition-colors mb-2"
+        class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-violet-50 transition-colors mb-2"
         @click="mobileMenuOpen = false"
       >
         <Database class="w-5 h-5 text-gray-600" />

@@ -229,7 +229,7 @@ onMounted(() => {
         </label>
         <select
           :id="`${tableName}-provider-basePath`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
           :value="providerBasePath"
           @change="
             handleProviderChange(
@@ -259,7 +259,7 @@ onMounted(() => {
             :class="{
               'border-red-300 focus:ring-red-500 focus:border-red-500':
                 !isBasePathValid && shareInputBasePath,
-              'border-gray-300 focus:ring-purple-500 focus:border-purple-500':
+              'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
                 isBasePathValid || !shareInputBasePath,
             }"
             type="text"
@@ -300,7 +300,7 @@ onMounted(() => {
           </label>
           <input
             :id="`${tableName}-baseUrl-generic-basePath`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             type="url"
             :value="shareInputBasePath"
             placeholder="https://your-files-host.example/api/public/dl/"
@@ -330,7 +330,7 @@ onMounted(() => {
         </label>
         <select
           :id="`${tableName}-provider-alerts`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
           :value="providerAlerts"
           @change="
             handleProviderChange(
@@ -360,7 +360,7 @@ onMounted(() => {
             :class="{
               'border-red-300 focus:ring-red-500 focus:border-red-500':
                 !isAlertsValid && shareInputAlerts,
-              'border-gray-300 focus:ring-purple-500 focus:border-purple-500':
+              'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
                 isAlertsValid || !shareInputAlerts,
             }"
             type="text"
@@ -401,7 +401,7 @@ onMounted(() => {
           </label>
           <input
             :id="`${tableName}-baseUrl-generic-alerts`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             type="url"
             :value="shareInputAlerts"
             placeholder="https://your-files-host.example/api/public/dl/"
@@ -431,7 +431,7 @@ onMounted(() => {
         </label>
         <select
           :id="`${tableName}-provider-icons`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
           :value="providerIcons"
           @change="
             handleProviderChange(
@@ -461,7 +461,7 @@ onMounted(() => {
             :class="{
               'border-red-300 focus:ring-red-500 focus:border-red-500':
                 !isIconsValid && shareInputIcons,
-              'border-gray-300 focus:ring-purple-500 focus:border-purple-500':
+              'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
                 isIconsValid || !shareInputIcons,
             }"
             type="text"
@@ -502,7 +502,7 @@ onMounted(() => {
           </label>
           <input
             :id="`${tableName}-baseUrl-generic-icons`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             type="url"
             :value="shareInputIcons"
             placeholder="https://your-files-host.example/api/public/dl/"
@@ -524,7 +524,7 @@ onMounted(() => {
       </p>
       <input
         :id="`${tableName}-media-column`"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
         type="text"
         :value="mediaColumn"
         placeholder="photo"

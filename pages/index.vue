@@ -218,111 +218,111 @@ definePageMeta({ layout: "explorer" });
 
 <template>
   <main class="max-w-7xl mx-auto p-3 sm:p-6 w-full">
-      <DataLoadError
-        v-if="error"
-        :title="$t('dataLoadErrorTitle')"
-        :message="$t('dataLoadErrorMessage')"
-        :retry="() => refresh()"
-      />
-      <template v-else>
-        <!-- Page Title and Description -->
-        <div class="mb-6 sm:mb-8">
-          <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-            {{ $t("availableViews") }}
-          </h1>
-        </div>
+    <DataLoadError
+      v-if="error"
+      :title="$t('dataLoadErrorTitle')"
+      :message="$t('dataLoadErrorMessage')"
+      :retry="() => refresh()"
+    />
+    <template v-else>
+      <!-- Page Title and Description -->
+      <div class="mb-6 sm:mb-8">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+          {{ $t("availableViews") }}
+        </h1>
+      </div>
 
-        <!-- Search Bar -->
-        <div class="relative flex items-center mb-4">
-          <Search
-            class="absolute left-3 w-5 h-5 text-gray-400 pointer-events-none"
-          />
-          <input
-            v-model="searchQuery"
-            type="text"
-            :placeholder="$t('searchDatasets')"
-            class="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-          />
-        </div>
+      <!-- Search Bar -->
+      <div class="relative flex items-center mb-4">
+        <Search
+          class="absolute left-3 w-5 h-5 text-gray-400 pointer-events-none"
+        />
+        <input
+          v-model="searchQuery"
+          type="text"
+          :placeholder="$t('searchDatasets')"
+          class="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+        />
+      </div>
 
-        <!-- View Type Filter & Manage Datasets -->
-        <div
-          v-if="viewsConfig"
-          class="flex flex-wrap items-center justify-between gap-3 mb-4"
-        >
-          <div class="flex flex-wrap gap-2">
-            <button
-              class="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors"
-              :class="
-                activeViewFilter === 'all'
-                  ? 'bg-purple-700 text-white border-purple-700'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              "
-              @click="activeViewFilter = 'all'"
-            >
-              {{ $t("all") }}
-            </button>
-            <button
-              v-for="viewType in availableViewTypes"
-              :key="viewType"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors capitalize"
-              :class="
-                activeViewFilter === viewType
-                  ? 'bg-purple-700 text-white border-purple-700'
-                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-              "
-              @click="activeViewFilter = viewType"
-            >
-              <Map v-if="viewType === 'map'" class="w-3.5 h-3.5" />
-              <Images v-else-if="viewType === 'gallery'" class="w-3.5 h-3.5" />
-              <TriangleAlert
-                v-else-if="viewType === 'alerts'"
-                class="w-3.5 h-3.5"
-              />
-              {{ $t(viewType) }}
-            </button>
-          </div>
-          <!-- NuxtLink messes up the layout, hence the use of a regular anchor tag -->
-          <a
-            v-if="shouldShowConfigLink"
-            href="/config"
-            class="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer"
+      <!-- View Type Filter & Manage Datasets -->
+      <div
+        v-if="viewsConfig"
+        class="flex flex-wrap items-center justify-between gap-3 mb-4"
+      >
+        <div class="flex flex-wrap gap-2">
+          <button
+            class="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors"
+            :class="
+              activeViewFilter === 'all'
+                ? 'bg-violet-700 text-white border-violet-700'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            "
+            @click="activeViewFilter = 'all'"
           >
-            {{ $t("manageDatasets") }}
-          </a>
+            {{ $t("all") }}
+          </button>
+          <button
+            v-for="viewType in availableViewTypes"
+            :key="viewType"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors capitalize"
+            :class="
+              activeViewFilter === viewType
+                ? 'bg-violet-700 text-white border-violet-700'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            "
+            @click="activeViewFilter = viewType"
+          >
+            <Map v-if="viewType === 'map'" class="w-3.5 h-3.5" />
+            <Images v-else-if="viewType === 'gallery'" class="w-3.5 h-3.5" />
+            <TriangleAlert
+              v-else-if="viewType === 'alerts'"
+              class="w-3.5 h-3.5"
+            />
+            {{ $t(viewType) }}
+          </button>
         </div>
-
-        <!-- Project Cards Grid -->
-        <div
-          v-if="viewsConfig && Object.keys(searchedViewsConfig).length > 0"
-          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch"
+        <!-- NuxtLink messes up the layout, hence the use of a regular anchor tag -->
+        <a
+          v-if="shouldShowConfigLink"
+          href="/config"
+          class="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer"
         >
-          <DatasetCard
-            v-for="(config, tableName) in searchedViewsConfig"
-            :key="tableName"
-            :table-name="tableName"
-            :config="config"
-          />
-        </div>
+          {{ $t("manageDatasets") }}
+        </a>
+      </div>
 
-        <!-- No Results State -->
-        <div
-          v-else-if="viewsConfig && searchQuery.trim()"
-          class="text-center py-12"
-        >
-          <EmptyStateIllustration variant="indexSearchNoResults" />
-          <p class="text-gray-500 text-sm sm:text-base">
-            {{ $t("noResultsFound") }}
-          </p>
-        </div>
+      <!-- Project Cards Grid -->
+      <div
+        v-if="viewsConfig && Object.keys(searchedViewsConfig).length > 0"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch"
+      >
+        <DatasetCard
+          v-for="(config, tableName) in searchedViewsConfig"
+          :key="tableName"
+          :table-name="tableName"
+          :config="config"
+        />
+      </div>
 
-        <!-- Empty State -->
-        <div v-else-if="!viewsConfig" class="text-center py-12">
-          <EmptyStateIllustration variant="indexNoDatasets" />
-          <p class="text-gray-500 text-sm sm:text-base">
-            {{ $t("noDatasetViewsAvailable") || "No dataset views available" }}
-          </p>
-        </div>
-      </template>
-    </main>
+      <!-- No Results State -->
+      <div
+        v-else-if="viewsConfig && searchQuery.trim()"
+        class="text-center py-12"
+      >
+        <EmptyStateIllustration variant="indexSearchNoResults" />
+        <p class="text-gray-500 text-sm sm:text-base">
+          {{ $t("noResultsFound") }}
+        </p>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="!viewsConfig" class="text-center py-12">
+        <EmptyStateIllustration variant="indexNoDatasets" />
+        <p class="text-gray-500 text-sm sm:text-base">
+          {{ $t("noDatasetViewsAvailable") || "No dataset views available" }}
+        </p>
+      </div>
+    </template>
+  </main>
 </template>

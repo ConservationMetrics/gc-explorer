@@ -182,7 +182,7 @@ const handleSubmit = () => {
     class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
   >
     <div
-      class="bg-gradient-to-r from-purple-100 to-purple-50 border-b border-purple-200 px-6 py-4"
+      class="bg-gradient-to-r from-violet-100 to-violet-50 border-b border-violet-200 px-6 py-4"
     >
       <h2 class="text-xl font-bold text-gray-800">{{ tableName }}</h2>
     </div>
@@ -285,7 +285,7 @@ const handleSubmit = () => {
             :class="{
               'bg-gray-300 text-gray-500 cursor-not-allowed':
                 !isChanged || !isFormValid,
-              'bg-purple-700 hover:bg-purple-800 text-white':
+              'bg-violet-700 hover:bg-violet-800 text-white':
                 isChanged && isFormValid,
             }"
           >

@@ -7,7 +7,7 @@ const { locale, locales, setLocale } = useI18n();
 const { t } = useI18n();
 
 interface Props {
-  theme?: "purple" | "white" | "dark";
+  theme?: "violet" | "white" | "dark";
   variant?: "icon" | "mobile";
 }
 
@@ -70,7 +70,7 @@ const dropdownClasses = computed(() => {
       return "origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50";
     case "dark":
       return "origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-gray-800 ring-1 ring-gray-600 z-50";
-    case "purple":
+    case "violet":
     default:
       return "origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-gray-200 z-50";
   }
@@ -82,7 +82,7 @@ const itemClasses = computed(() => {
       return "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors";
     case "dark":
       return "block px-4 py-2 text-sm text-white hover:bg-gray-700 transition-colors";
-    case "purple":
+    case "violet":
     default:
       return "block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors";
   }
@@ -93,8 +93,8 @@ const mobileItemClasses = computed(() => {
   return (langCode: string) => [
     "w-full text-left px-4 py-2 rounded-lg text-sm transition-colors",
     locale.value === langCode
-      ? "bg-purple-100 text-purple-700 font-medium"
-      : "text-gray-700 hover:bg-purple-50",
+      ? "bg-violet-100 text-violet-700 font-medium"
+      : "text-gray-700 hover:bg-violet-50",
   ];
 });
 </script>
@@ -108,7 +108,7 @@ const mobileItemClasses = computed(() => {
     <div>
       <button
         type="button"
-        class="relative w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+        class="relative w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
         @click.stop="dropdownOpen = !dropdownOpen"
       >
         <Globe class="w-5 h-5 text-gray-600" />
@@ -136,7 +136,7 @@ const mobileItemClasses = computed(() => {
   <!-- Mobile Variant -->
   <div v-else-if="variant === 'mobile'" class="px-4 py-3 mb-2">
     <button
-      class="w-full flex items-center justify-between space-x-3 hover:bg-purple-50 rounded-lg px-2 py-2 transition-colors"
+      class="w-full flex items-center justify-between space-x-3 hover:bg-violet-50 rounded-lg px-2 py-2 transition-colors"
       @click="toggleLanguagePicker"
     >
       <div class="flex items-center space-x-3">
