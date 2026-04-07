@@ -91,6 +91,34 @@ export const getRandomColor = () => {
   return color;
 };
 
+/** Hard ceiling on rows any single dataset view endpoint will return. */
+export const ROW_LIMIT = 10_000;
+
+/**
+ * Validates a raw limit value (from a query param) against the server ceiling.
+ * Returns the validated integer or throws an error with `statusCode: 422`.
+ */
+export const validateRowLimit = (raw: unknown): number => {
+  const limit = raw != null ? Number(raw) : ROW_LIMIT;
+
+  if (!Number.isInteger(limit) || limit <= 0) {
+    throw Object.assign(new Error("limit must be a positive integer"), {
+      statusCode: 422,
+    });
+  }
+
+  if (limit > ROW_LIMIT) {
+    throw Object.assign(
+      new Error(
+        `Requested limit (${limit}) exceeds server maximum of ${ROW_LIMIT}`,
+      ),
+      { statusCode: 422 },
+    );
+  }
+
+  return limit;
+};
+
 /**
  * Character limits for dataset configuration fields
  * @type {Object}
