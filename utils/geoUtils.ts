@@ -1,4 +1,4 @@
-import type { Geometry, Feature, FeatureCollection, Position } from "geojson";
+import type { Geometry, Feature, FeatureCollection } from "geojson";
 import type { DataEntry, MapStatistics } from "@/types";
 
 import murmurhash from "murmurhash";
@@ -94,16 +94,138 @@ export const hasValidCoordinates = (
   });
 };
 
-/** Calculates the centroid of given coordinates, according to their type. */
-export const calculateCentroid = (coords: string): string => {
-  type Coordinate = [number, number];
-  type LineString = Coordinate[];
-  type Polygon = LineString[];
-  type MultiPolygon = Polygon[];
+type Coordinate = [number, number];
+type LineString = Coordinate[];
+type Polygon = LineString[];
+type MultiPolygon = Polygon[];
 
-  const allCoords: MultiPolygon | Polygon | LineString | Coordinate =
-    JSON.parse(coords);
+/**
+ * Returns whether parsed GeoJSON coordinates match the given geometry type.
+ *
+ * @param {string} type - GeoJSON geometry type name.
+ * @param {unknown} coordinates - Parsed coordinates (not a JSON string).
+ * @returns {boolean} True when the structure is valid for `type`.
+ */
+const coordinatesMatchGeoType = (
+  type: string,
+  coordinates: unknown,
+): boolean => {
+  if (type === "Point") {
+    return (
+      Array.isArray(coordinates) &&
+      coordinates.length === 2 &&
+      coordinates.every(Number.isFinite)
+    );
+  }
+  if (type === "LineString" || type === "MultiLineString") {
+    return (
+      Array.isArray(coordinates) &&
+      coordinates.every(
+        (coord) =>
+          Array.isArray(coord) &&
+          coord.length === 2 &&
+          coord.every(Number.isFinite),
+      )
+    );
+  }
+  if (type === "Polygon") {
+    return (
+      Array.isArray(coordinates) &&
+      coordinates.every(
+        (ring) =>
+          Array.isArray(ring) &&
+          ring.every(
+            (coord) =>
+              Array.isArray(coord) &&
+              coord.length === 2 &&
+              coord.every(Number.isFinite),
+          ),
+      )
+    );
+  }
+  if (type === "MultiPolygon") {
+    return (
+      Array.isArray(coordinates) &&
+      coordinates.every(
+        (polygon) =>
+          Array.isArray(polygon) &&
+          polygon.every(
+            (ring) =>
+              Array.isArray(ring) &&
+              ring.every(
+                (coord) =>
+                  Array.isArray(coord) &&
+                  coord.length === 2 &&
+                  coord.every(Number.isFinite),
+              ),
+          ),
+      )
+    );
+  }
+  return false;
+};
 
+const ALERT_VALID_GEO_TYPES = [
+  "LineString",
+  "MultiLineString",
+  "Point",
+  "Polygon",
+  "MultiPolygon",
+] as const;
+
+/**
+ * Parses `g__coordinates` once and returns the coordinate array/object when it
+ * matches `g__type`; otherwise returns null. Used to avoid duplicate JSON.parse
+ * across validation, centroid, and GeoJSON feature construction.
+ *
+ * @param {DataEntry} item - Row with `g__type` and `g__coordinates`.
+ * @returns {unknown | null} Parsed coordinates, or null if invalid.
+ */
+export const tryParseAlertGeoCoordinates = (
+  item: DataEntry,
+): unknown | null => {
+  const type = item.g__type as string | undefined;
+  const raw = item.g__coordinates;
+
+  if (
+    !type ||
+    !ALERT_VALID_GEO_TYPES.includes(
+      type as (typeof ALERT_VALID_GEO_TYPES)[number],
+    ) ||
+    raw == null ||
+    raw === ""
+  ) {
+    return null;
+  }
+
+  let parsed: unknown;
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  } else {
+    parsed = raw;
+  }
+
+  if (!coordinatesMatchGeoType(type, parsed)) {
+    return null;
+  }
+
+  return parsed;
+};
+
+/**
+ * Computes centroid string from already-parsed GeoJSON coordinates (same shape
+ * as `JSON.parse` on `g__coordinates`).
+ *
+ * @param {unknown} allCoords - Parsed coordinates tree.
+ * @returns {string} `"lat, lng"` average or empty string when invalid.
+ */
+export const calculateCentroidFromParsedCoords = (
+  allCoords: unknown,
+): string => {
   let totalLat = 0;
   let totalLng = 0;
   let numCoords = 0;
@@ -123,16 +245,21 @@ export const calculateCentroid = (coords: string): string => {
   };
 
   if (
+    Array.isArray(allCoords) &&
     Array.isArray(allCoords[0]) &&
-    Array.isArray(allCoords[0][0]) &&
-    Array.isArray(allCoords[0][0][0])
+    Array.isArray((allCoords as unknown[])[0][0]) &&
+    Array.isArray((allCoords as unknown[])[0][0][0])
   ) {
     // It's a MultiPolygon
     (allCoords as MultiPolygon).forEach(processPolygon);
-  } else if (Array.isArray(allCoords[0]) && Array.isArray(allCoords[0][0])) {
+  } else if (
+    Array.isArray(allCoords) &&
+    Array.isArray(allCoords[0]) &&
+    Array.isArray((allCoords as unknown[])[0][0])
+  ) {
     // It's a Polygon
     processPolygon(allCoords as Polygon);
-  } else if (Array.isArray(allCoords[0])) {
+  } else if (Array.isArray(allCoords) && Array.isArray(allCoords[0])) {
     // It's a LineString
     processLineString(allCoords as LineString);
   } else if (
@@ -153,85 +280,25 @@ export const calculateCentroid = (coords: string): string => {
   return `${avgLat}, ${avgLng}`;
 };
 
+/**
+ * Calculates the centroid of coordinate JSON stored as a string.
+ *
+ * @param {string} coords - JSON string of GeoJSON coordinates.
+ * @returns {string} `"lat, lng"` average or empty string when invalid.
+ */
+export const calculateCentroid = (coords: string): string => {
+  let allCoords: unknown;
+  try {
+    allCoords = JSON.parse(coords);
+  } catch {
+    return "";
+  }
+  return calculateCentroidFromParsedCoords(allCoords);
+};
+
 /** Validates if a data entry has valid geolocation data. */
 export const isValidGeolocation = (item: DataEntry): boolean => {
-  const validGeoTypes = [
-    "LineString",
-    "MultiLineString",
-    "Point",
-    "Polygon",
-    "MultiPolygon",
-  ];
-
-  const isValidCoordinates = (
-    type: string,
-    coordinates: Geometry | string,
-  ): boolean => {
-    if (typeof coordinates === "string") {
-      try {
-        coordinates = JSON.parse(coordinates);
-      } catch (error) {
-        console.error("Error parsing coordinates:", error);
-        return false;
-      }
-    }
-
-    if (type === "Point") {
-      return (
-        Array.isArray(coordinates) &&
-        coordinates.length === 2 &&
-        coordinates.every(Number.isFinite)
-      );
-    } else if (type === "LineString" || type === "MultiLineString") {
-      return (
-        Array.isArray(coordinates) &&
-        coordinates.every(
-          (coord) =>
-            Array.isArray(coord) &&
-            coord.length === 2 &&
-            coord.every(Number.isFinite),
-        )
-      );
-    } else if (type === "Polygon") {
-      return (
-        Array.isArray(coordinates) &&
-        coordinates.every(
-          (ring) =>
-            Array.isArray(ring) &&
-            ring.every(
-              (coord) =>
-                Array.isArray(coord) &&
-                coord.length === 2 &&
-                coord.every(Number.isFinite),
-            ),
-        )
-      );
-    } else if (type === "MultiPolygon") {
-      return (
-        Array.isArray(coordinates) &&
-        coordinates.every(
-          (polygon) =>
-            Array.isArray(polygon) &&
-            polygon.every(
-              (ring) =>
-                Array.isArray(ring) &&
-                ring.every(
-                  (coord) =>
-                    Array.isArray(coord) &&
-                    coord.length === 2 &&
-                    coord.every(Number.isFinite),
-                ),
-            ),
-        )
-      );
-    }
-    return false;
-  };
-
-  return (
-    validGeoTypes.includes(item.g__type) &&
-    isValidCoordinates(item.g__type, item.g__coordinates)
-  );
+  return tryParseAlertGeoCoordinates(item) !== null;
 };
 
 /**
@@ -262,18 +329,11 @@ export const buildMinimalFeatureCollection = (
   const features: Feature[] = [];
 
   for (const entry of data) {
-    if (!hasValidCoordinates(entry)) continue;
+    const coordinates = tryParseAlertGeoCoordinates(entry);
+    if (coordinates === null) continue;
 
     const geoType = entry.g__type as string | undefined;
-    const rawCoords = entry.g__coordinates as string | undefined;
-    if (!geoType || !rawCoords) continue;
-
-    let coordinates: Position | Position[] | Position[][] | Position[][][];
-    try {
-      coordinates = JSON.parse(rawCoords);
-    } catch {
-      continue;
-    }
+    if (!geoType) continue;
 
     const geometry = {
       type: geoType,

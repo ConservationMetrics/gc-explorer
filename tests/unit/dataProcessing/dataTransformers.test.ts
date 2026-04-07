@@ -41,6 +41,13 @@ describe("prepareMapStatistics", () => {
 });
 
 describe("prepareAlertsStatistics", () => {
+  it("does not reorder the metadata array in place", () => {
+    const meta = alertsMetadata.slice();
+    prepareAlertsStatistics(alertsData, meta);
+    expect(meta[0]).toBe(alertsMetadata[0]);
+    expect(meta[1]).toBe(alertsMetadata[1]);
+  });
+
   it("should prepare alert statistics", () => {
     const result = prepareAlertsStatistics(alertsData, alertsMetadata);
 

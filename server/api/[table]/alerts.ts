@@ -10,11 +10,11 @@ import {
 } from "@/server/dataProcessing/dataFilters";
 import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
+import { parseBasemaps } from "@/server/utils";
 import {
   logServerProfilingMark,
-  parseBasemaps,
   withServerProfiling,
-} from "@/server/utils";
+} from "@/server/utils/serverProfiling";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
