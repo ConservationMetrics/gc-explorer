@@ -192,7 +192,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .scroll-indicator {
   position: absolute;
-  top: 1rem;
+  top: 1.25rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
