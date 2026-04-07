@@ -2,6 +2,7 @@
 import type { User } from "@/types";
 import { Role } from "@/types";
 import GlobeLanguagePicker from "@/components/shared/GlobeLanguagePicker.vue";
+import HeaderBrand from "@/components/shared/HeaderBrand.vue";
 import { Database } from "lucide-vue-next";
 
 const config = useRuntimeConfig();
@@ -48,29 +49,14 @@ const shouldShowConfigLink = computed(() => {
     class="bg-gradient-to-r mb-2 from-purple-100 to-purple-50 w-5/6 place-self-center mt-2 rounded-xl p-3"
   >
     <!-- Desktop Layout - show above 1000px -->
-    <div class="flex max-[1000px]:hidden relative items-end justify-around">
-      <!-- Left: GC Explorer Logo -->
-      <NuxtLink
-        to="/"
-        class="flex items-center mr-4 min-[1109px]:mr-8 min-w-fit max-w-[180px] min-[1109px]:max-w-[200px] min-[1230px]:max-w-none"
-      >
-        <img
-          src="/gcexplorer.png"
-          alt="Guardian Connector Explorer"
-          class="h-10 w-auto max-[1108px]:h-7 min-[1109px]:h-8 min-[1230px]:h-10 flex-shrink-0"
-        />
-        <div
-          class="rounded-lg px-1.5 min-[1109px]:px-2 min-[1230px]:px-4 py-2 flex-shrink min-w-0"
-        >
-          <h1 class="text-lg max-[1200px]:text-xs font-bold whitespace-nowrap">
-            Guardian Connector
-          </h1>
-        </div>
-      </NuxtLink>
+    <div
+      class="flex max-[1000px]:hidden relative items-end justify-between gap-4"
+    >
+      <HeaderBrand />
 
       <!-- Tab with Community Name -->
       <div
-        class="tab-container flex absolute left-[28%] min-[1109px]:left-[26%] min-[1230px]:left-[25%] -bottom-3 flex-col items-center t-[32%]"
+        class="tab-container flex absolute left-[34%] min-[1109px]:left-[32%] min-[1230px]:left-[28%] -bottom-3 z-10 flex-col items-center"
       >
         <NuxtLink to="/" class="tab-trigger active">
           <svg
@@ -91,9 +77,7 @@ const shouldShowConfigLink = computed(() => {
               transform="translate(-740 -2113.0982)"
             />
           </svg>
-          <span class="text-lg max-[1200px]:text-xs font-bold">{{
-            communityName
-          }}</span>
+          <span class="text-lg font-bold">{{ communityName }}</span>
           <svg
             class="right-curve"
             xmlns="http://www.w3.org/2000/svg"
@@ -116,8 +100,8 @@ const shouldShowConfigLink = computed(() => {
       </div>
 
       <!-- Right: Action buttons -->
-      <div class="flex items-center space-x-3 ml-auto mr-2">
-        <!-- Config Management (Gear Icon) -->
+      <div class="flex items-center gap-3 ml-auto mr-2 shrink-0">
+        <!-- Config Management -->
         <div v-if="shouldShowConfigLink" class="relative group">
           <NuxtLink
             to="/config"
@@ -125,7 +109,6 @@ const shouldShowConfigLink = computed(() => {
           >
             <Database class="w-5 h-5 text-gray-600" />
           </NuxtLink>
-          <!-- Tooltip -->
           <div
             class="absolute right-0 mt-2 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap"
           >
@@ -133,7 +116,7 @@ const shouldShowConfigLink = computed(() => {
           </div>
         </div>
 
-        <!-- Language Picker (Globe Icon) -->
+        <!-- Language Picker -->
         <div class="relative group">
           <GlobeLanguagePicker theme="white" variant="icon" />
           <!-- Tooltip -->
@@ -148,33 +131,9 @@ const shouldShowConfigLink = computed(() => {
 
     <!-- Mobile Layout - show below 1000px -->
     <div class="hidden max-[1000px]:flex items-center justify-between">
-      <!-- Left: GC Explorer Logo -->
-      <NuxtLink to="/" class="flex items-center min-w-0 flex-1">
-        <img
-          src="/gcexplorer.png"
-          alt="Guardian Connector Explorer"
-          class="h-10 w-auto flex-shrink-0"
-        />
-        <div class="rounded-lg px-2 min-w-0 flex-1">
-          <h1 class="text-xs sm:text-sm font-bold whitespace-nowrap">
-            Guardian Connector
-          </h1>
-        </div>
-      </NuxtLink>
+      <HeaderBrand />
 
-      <!-- Right: Config Icon and Hamburger Menu -->
-      <div class="flex items-center space-x-2">
-        <!-- Config Icon (if admin) -->
-        <div v-if="shouldShowConfigLink" class="relative">
-          <NuxtLink
-            to="/config"
-            class="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-50 transition-colors"
-          >
-            <Database class="w-5 h-5 text-gray-600" />
-          </NuxtLink>
-        </div>
-
-        <!-- Hamburger Menu Button -->
+      <div class="flex items-center gap-2">
         <button
           class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-purple-200 transition-colors"
           aria-label="Menu"
@@ -206,7 +165,7 @@ const shouldShowConfigLink = computed(() => {
       <NuxtLink
         v-if="shouldShowConfigLink"
         to="/config"
-        class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-purple-50 transition-colors mb-2"
+        class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-purple-50 transition-colors mb-2"
         @click="mobileMenuOpen = false"
       >
         <Database class="w-5 h-5 text-gray-600" />

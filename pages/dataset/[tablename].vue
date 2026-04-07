@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Views, ViewConfig, User } from "@/types";
 import { Role } from "@/types";
-import AppHeader from "@/components/shared/AppHeader.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import ViewCard from "@/components/dataset/ViewCard.vue";
 import { ChevronLeft, Settings } from "lucide-vue-next";
@@ -144,13 +143,12 @@ const isAdmin = computed(() => {
 useHead({
   title: `${fullDisplayName.value} - GuardianConnector Explorer`,
 });
+
+definePageMeta({ layout: "explorer" });
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-white">
-    <AppHeader />
-
-    <DataLoadError
+  <DataLoadError
       v-if="error"
       :title="$t('dataLoadErrorTitle')"
       :message="$t('dataLoadErrorMessage')"
@@ -361,5 +359,4 @@ useHead({
         {{ $t("accessDeniedMessage") }}
       </p>
     </div>
-  </div>
 </template>

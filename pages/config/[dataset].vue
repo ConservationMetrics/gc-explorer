@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import ConfigCard from "@/components/config/ConfigCard.vue";
-import AppHeader from "@/components/shared/AppHeader.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import type { Views, ViewConfig } from "@/types";
@@ -147,12 +146,12 @@ const { error: showErrorToast } = useToast();
 useHead({
   title: "GuardianConnector Explorer: " + t("configuration") + " - " + dataset,
 });
+
+definePageMeta({ layout: "explorer" });
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-white">
-    <AppHeader />
-    <DataLoadError
+  <DataLoadError
       v-if="error"
       :title="$t('dataLoadErrorTitle')"
       :message="$t('dataLoadErrorMessage')"
@@ -324,5 +323,4 @@ useHead({
         </div>
       </div>
     </ClientOnly>
-  </div>
 </template>

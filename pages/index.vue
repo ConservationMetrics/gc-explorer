@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Views, User } from "@/types";
 import { Role } from "@/types";
-import AppHeader from "@/components/shared/AppHeader.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
@@ -213,13 +212,12 @@ onMounted(async () => {
 useHead({
   title: "GuardianConnector Explorer",
 });
+
+definePageMeta({ layout: "explorer" });
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-white">
-    <AppHeader />
-
-    <main class="max-w-7xl mx-auto p-3 sm:p-6 w-full">
+  <main class="max-w-7xl mx-auto p-3 sm:p-6 w-full">
       <DataLoadError
         v-if="error"
         :title="$t('dataLoadErrorTitle')"
@@ -327,5 +325,4 @@ useHead({
         </div>
       </template>
     </main>
-  </div>
 </template>
