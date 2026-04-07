@@ -11,10 +11,6 @@ import {
 import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { parseBasemaps } from "@/server/utils";
-import {
-  logServerProfilingMark,
-  withServerProfiling,
-} from "@/server/utils/serverProfiling";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
@@ -43,35 +39,24 @@ export default defineEventHandler(async (event: H3Event) => {
       metadata: AlertsMetadata[];
     };
 
-    logServerProfilingMark(
-      "alerts:afterFetch",
-      { table, rowCount: mainData.length },
-      { forceGc: true },
-    );
-
-    const { mostRecentAlerts, previousAlerts } = await withServerProfiling(
-      "alerts:prepareMinimalAlertEntries",
-      () => prepareMinimalAlertEntries(mainData),
-    );
+    const { mostRecentAlerts, previousAlerts } =
+      prepareMinimalAlertEntries(mainData);
 
     const minimalAlertOptions = {
       includeProperties: ["alertID", "YYYYMM", "geographicCentroid"],
       generateId: (entry: DataEntry) => murmurhash.v3(String(entry.alertID)),
     };
 
-    const alertsGeojsonData = await withServerProfiling(
-      "alerts:buildMinimalFeatureCollection",
-      () => ({
-        mostRecentAlerts: buildMinimalFeatureCollection(
-          mostRecentAlerts,
-          minimalAlertOptions,
-        ),
-        previousAlerts: buildMinimalFeatureCollection(
-          previousAlerts,
-          minimalAlertOptions,
-        ),
-      }),
-    );
+    const alertsGeojsonData = {
+      mostRecentAlerts: buildMinimalFeatureCollection(
+        mostRecentAlerts,
+        minimalAlertOptions,
+      ),
+      previousAlerts: buildMinimalFeatureCollection(
+        previousAlerts,
+        minimalAlertOptions,
+      ),
+    };
 
     const mapeoTable = viewsConfig[table].MAPEO_TABLE;
     const mapeoCategoryIds = viewsConfig[table].MAPEO_CATEGORY_IDS;
@@ -105,23 +90,16 @@ export default defineEventHandler(async (event: H3Event) => {
       const filteredMapeoGeoData = filterGeoData(filteredMapeoDataByCategory);
 
       // Process geodata
-      mapeoData = await withServerProfiling(
-        "alerts:buildMapeoFeatureCollection",
-        () =>
-          buildMinimalFeatureCollection(filteredMapeoGeoData, {
-            idField: "_id",
-            includeAllProperties: true,
-            filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
-            isMapeoData: true,
-          }),
-      );
+      mapeoData = buildMinimalFeatureCollection(filteredMapeoGeoData, {
+        idField: "_id",
+        includeAllProperties: true,
+        filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
+        isMapeoData: true,
+      });
     }
 
     // Prepare statistics data for the alerts view
-    const alertsStatistics = await withServerProfiling(
-      "alerts:prepareAlertsStatistics",
-      () => prepareAlertsStatistics(mainData, metadata),
-    );
+    const alertsStatistics = prepareAlertsStatistics(mainData, metadata);
 
     // Parse basemaps configuration
     const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
