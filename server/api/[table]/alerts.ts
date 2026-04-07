@@ -10,7 +10,7 @@ import {
 } from "@/server/dataProcessing/dataFilters";
 import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
-import { parseBasemaps } from "@/server/utils";
+import { parseBasemaps, parseAndValidateLimit } from "@/server/utils";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
@@ -18,6 +18,7 @@ import type { FeatureCollection } from "geojson";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
+  const limit = parseAndValidateLimit(event);
 
   const {
     public: { allowedFileExtensions },
@@ -34,7 +35,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData, metadata } = (await fetchData(table)) as {
+    const { mainData, metadata } = (await fetchData(table, limit)) as {
       mainData: DataEntry[];
       metadata: AlertsMetadata[];
     };
@@ -130,6 +131,7 @@ export default defineEventHandler(async (event: H3Event) => {
       planetApiKey: viewsConfig[table].PLANET_API_KEY,
       table,
       routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
+      rowLimitReached: mainData.length >= limit,
     };
   } catch (error) {
     if (error instanceof Error) {

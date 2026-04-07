@@ -1,10 +1,12 @@
 import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import { parseAndValidateLimit } from "@/server/utils";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
+  const limit = parseAndValidateLimit(event);
 
   try {
     const viewsConfig = await fetchConfig();
@@ -12,8 +14,12 @@ export default defineEventHandler(async (event: H3Event) => {
 
     await validatePermissions(event, permission);
 
-    const { mainData, columnsData } = await fetchData(table);
-    return { data: mainData, columns: columnsData };
+    const { mainData, columnsData } = await fetchData(table, limit);
+    return {
+      data: mainData,
+      columns: columnsData,
+      rowLimitReached: mainData.length >= limit,
+    };
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error fetching data on API side:", error.message);

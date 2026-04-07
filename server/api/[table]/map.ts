@@ -6,13 +6,14 @@ import {
 import { prepareMapStatistics } from "@/server/dataProcessing/dataTransformers";
 import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
-import { parseBasemaps } from "@/server/utils";
+import { parseBasemaps, parseAndValidateLimit } from "@/server/utils";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions } from "@/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
+  const limit = parseAndValidateLimit(event);
 
   const {
     public: { allowedFileExtensions },
@@ -29,7 +30,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData } = await fetchData(table);
+    const { mainData } = await fetchData(table, limit);
 
     // Filter data to remove unwanted values per chosen column
     const dataFilteredByValues = filterOutUnwantedValues(
@@ -89,6 +90,7 @@ export default defineEventHandler(async (event: H3Event) => {
       planetApiKey: viewsConfig[table].PLANET_API_KEY,
       table,
       routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
+      rowLimitReached: mainData.length >= limit,
     };
   } catch (error) {
     if (error instanceof Error) {
