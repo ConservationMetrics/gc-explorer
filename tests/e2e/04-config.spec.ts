@@ -524,7 +524,7 @@ test("config page - table card minimize/expand functionality", async ({
   // 2. Wait for the grid to be present (indicates data has loaded)
   await page.locator(".grid").waitFor({ state: "attached", timeout: 15000 });
 
-  // 3. Look for dataset cards (cards are divs with purple background)
+  // 3. Look for dataset cards (cards are divs with violet background)
   const tableCards = page.locator("[data-testid='config-dataset-card']");
   const cardCount = await tableCards.count();
 

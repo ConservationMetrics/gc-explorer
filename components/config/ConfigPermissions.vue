@@ -85,15 +85,15 @@ watch(
         class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 transition-all duration-200"
         :class="
           routeLevelPermission === 'anyone'
-            ? 'border-purple-500 bg-purple-50'
-            : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50/50'
+            ? 'border-violet-500 bg-violet-50'
+            : 'border-gray-200 hover:border-violet-300 hover:bg-violet-50/50'
         "
       >
         <input
           v-model="routeLevelPermission"
           type="radio"
           value="anyone"
-          class="mt-0.5 flex-shrink-0 w-5 h-5 text-purple-600 border-gray-300 focus:ring-purple-500"
+          class="mt-0.5 flex-shrink-0 w-5 h-5 text-violet-600 border-gray-300 focus:ring-violet-500"
         />
         <div class="flex flex-col gap-1">
           <span class="font-semibold text-gray-700">{{
@@ -109,15 +109,15 @@ watch(
         class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 transition-all duration-200"
         :class="
           routeLevelPermission === 'guest'
-            ? 'border-purple-500 bg-purple-50'
-            : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50/50'
+            ? 'border-violet-500 bg-violet-50'
+            : 'border-gray-200 hover:border-violet-300 hover:bg-violet-50/50'
         "
       >
         <input
           v-model="routeLevelPermission"
           type="radio"
           value="guest"
-          class="mt-0.5 flex-shrink-0 w-5 h-5 text-purple-600 border-gray-300 focus:ring-purple-500"
+          class="mt-0.5 flex-shrink-0 w-5 h-5 text-violet-600 border-gray-300 focus:ring-violet-500"
         />
         <div class="flex flex-col gap-1">
           <span class="font-semibold text-gray-700">{{
@@ -133,15 +133,15 @@ watch(
         class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 transition-all duration-200"
         :class="
           routeLevelPermission === 'member'
-            ? 'border-purple-500 bg-purple-50'
-            : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50/50'
+            ? 'border-violet-500 bg-violet-50'
+            : 'border-gray-200 hover:border-violet-300 hover:bg-violet-50/50'
         "
       >
         <input
           v-model="routeLevelPermission"
           type="radio"
           value="member"
-          class="mt-0.5 flex-shrink-0 w-5 h-5 text-purple-600 border-gray-300 focus:ring-purple-500"
+          class="mt-0.5 flex-shrink-0 w-5 h-5 text-violet-600 border-gray-300 focus:ring-violet-500"
         />
         <div class="flex flex-col gap-1">
           <span class="font-semibold text-gray-700">{{
@@ -157,15 +157,15 @@ watch(
         class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 transition-all duration-200"
         :class="
           routeLevelPermission === 'admin'
-            ? 'border-purple-500 bg-purple-50'
-            : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50/50'
+            ? 'border-violet-500 bg-violet-50'
+            : 'border-gray-200 hover:border-violet-300 hover:bg-violet-50/50'
         "
       >
         <input
           v-model="routeLevelPermission"
           type="radio"
           value="admin"
-          class="mt-0.5 flex-shrink-0 w-5 h-5 text-purple-600 border-gray-300 focus:ring-purple-500"
+          class="mt-0.5 flex-shrink-0 w-5 h-5 text-violet-600 border-gray-300 focus:ring-violet-500"
         />
         <div class="flex flex-col gap-1">
           <span class="font-semibold text-gray-700">{{

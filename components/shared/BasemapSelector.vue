@@ -233,7 +233,7 @@ const emitBasemapChange = () => {
 
 .basemap-window {
   position: absolute;
-  right: 50px;
+  right: 55px;
   background-color: #fff;
   border: 1px solid #ccc;
   z-index: 1001;

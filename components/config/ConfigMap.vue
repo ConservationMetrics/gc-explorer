@@ -236,8 +236,8 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
             class="p-4 border-2 rounded-lg transition-colors"
             :class="
               index === 0
-                ? 'border-purple-300 bg-purple-50'
-                : 'border-gray-200 bg-white hover:border-purple-200'
+                ? 'border-violet-300 bg-violet-50'
+                : 'border-gray-200 bg-white hover:border-violet-200'
             "
             draggable="true"
             @dragstart="handleDragStart(index)"
@@ -254,7 +254,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
                     :class="{
                       'border-red-300 focus:ring-red-500 focus:border-red-500':
                         !isNameValid(index, basemap.name),
-                      'border-gray-300 focus:ring-purple-500 focus:border-purple-500':
+                      'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
                         isNameValid(index, basemap.name) || !basemap.name,
                     }"
                     :placeholder="$t('basemapName')"
@@ -277,7 +277,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
                 </div>
                 <input
                   :id="`${tableName}-basemap-style-${index}`"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
                   pattern="^mapbox:\/\/styles\/[^\/]+\/[^\/]+$"
                   placeholder="mapbox://styles/user/styleId"
                   :title="
@@ -309,7 +309,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
           <button
             type="button"
             data-testid="basemap-add-button"
-            class="w-full px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="w-full px-4 py-2 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="!canAddBasemap"
             @click="addBasemap"
           >
@@ -328,7 +328,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
         </label>
         <input
           :id="`${tableName}-${key}`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
           pattern="^pk\.ey.*"
           placeholder="pk.ey…"
           :title="$t('pleaseMatchFormat') + ': pk.ey… '"
@@ -357,7 +357,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
         </label>
         <input
           :id="`${tableName}-${key}`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
           type="number"
           step="any"
           :min="
@@ -405,7 +405,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
         </label>
         <select
           :id="`${tableName}-${key}`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors bg-white"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
           :value="config[key]"
           @change="
             (e) => handleInput(key, (e.target as HTMLSelectElement).value)
@@ -434,14 +434,14 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
           <input
             :id="`${tableName}-${key}`"
             type="checkbox"
-            class="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
+            class="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
             :checked="Boolean(configData[key])"
             @change="
               (e) => handleInput(key, (e.target as HTMLInputElement).checked)
             "
           />
           <span
-            class="text-gray-700 font-medium group-hover:text-purple-700 transition-colors"
+            class="text-gray-700 font-medium group-hover:text-violet-700 transition-colors"
           >
             {{ $t("enable") }}
           </span>
@@ -491,7 +491,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
         </label>
         <input
           :id="`${tableName}-${key}`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
           type="text"
           :value="config[key]"
           @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
@@ -508,7 +508,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
         </label>
         <input
           :id="`${tableName}-${key}`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
           type="text"
           placeholder="color"
           :value="config[key]"
@@ -527,7 +527,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
         </label>
         <input
           :id="`${tableName}-${key}`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
           type="text"
           placeholder="icon"
           :value="config[key]"

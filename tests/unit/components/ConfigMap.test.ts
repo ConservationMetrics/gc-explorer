@@ -503,7 +503,7 @@ describe("ConfigMap component", () => {
     expect(basemapItems.length).toBeGreaterThan(0);
     // Check that first basemap container has the default styling
     const firstBasemapContainer =
-      basemapItems[0].element.closest(".border-purple-300");
+      basemapItems[0].element.closest(".border-violet-300");
     expect(firstBasemapContainer).toBeTruthy();
   });
 

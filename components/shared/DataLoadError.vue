@@ -37,7 +37,7 @@ const handleGoBack = () => {
     class="flex min-h-[50vh] flex-col items-center justify-center gap-6 px-4 py-12"
   >
     <div
-      class="flex max-w-md flex-col items-center gap-4 rounded-xl border border-purple-200 bg-purple-50/50 p-8 text-center"
+      class="flex max-w-md flex-col items-center gap-4 rounded-xl border border-violet-200 bg-violet-50/50 p-8 text-center"
     >
       <h2 class="text-xl font-semibold text-gray-900">
         {{ title }}
@@ -49,7 +49,7 @@ const handleGoBack = () => {
         <button
           v-if="showRetry && retry"
           type="button"
-          class="inline-flex items-center justify-center rounded-lg bg-purple-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-purple-800 disabled:opacity-60"
+          class="inline-flex items-center justify-center rounded-lg bg-violet-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-violet-800 disabled:opacity-60"
           :disabled="isRetrying"
           @click="handleRetry"
         >

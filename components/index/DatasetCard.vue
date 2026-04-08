@@ -58,11 +58,11 @@ const truncateDescription = (desc: string): string => {
 <template>
   <div
     data-testid="dataset-card"
-    class="bg-purple-50 rounded-lg p-4 sm:p-6 shadow-sm border border-purple-100 overflow-hidden flex flex-col h-full"
+    class="bg-violet-50 rounded-lg p-4 sm:p-6 shadow-sm border border-violet-100 overflow-hidden flex flex-col h-full"
   >
     <div class="flex items-start mb-3">
       <div
-        class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-200 flex items-center justify-center text-white font-bold text-sm sm:text-base mr-3 flex-shrink-0"
+        class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-violet-200 flex items-center justify-center text-white font-bold text-sm sm:text-base mr-3 flex-shrink-0"
       >
         {{ String(tableName).charAt(0).toUpperCase() }}
       </div>
@@ -101,7 +101,7 @@ const truncateDescription = (desc: string): string => {
           : []"
         :key="view"
         :data-testid="`view-tag-${view}`"
-        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full flex-shrink-0"
+        class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-violet-100 text-violet-800 rounded-full flex-shrink-0"
       >
         <Map v-if="view === 'map'" class="w-3 h-3" />
         <Images v-else-if="view === 'gallery'" class="w-3 h-3" />
@@ -124,7 +124,7 @@ const truncateDescription = (desc: string): string => {
     <NuxtLink
       :to="`/dataset/${String(tableName)}`"
       data-testid="open-dataset-view-link"
-      class="mt-auto block w-full text-center px-4 py-2 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200"
+      class="mt-auto block w-full text-center px-4 py-2 sm:py-3 bg-violet-700 hover:bg-violet-800 text-white font-medium rounded-lg transition-colors duration-200"
     >
       {{ $t("openProject") }}
     </NuxtLink>

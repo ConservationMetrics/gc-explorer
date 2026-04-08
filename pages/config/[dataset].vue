@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import ConfigCard from "@/components/config/ConfigCard.vue";
-import AppHeader from "@/components/shared/AppHeader.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import type { Views, ViewConfig } from "@/types";
@@ -147,11 +146,12 @@ const { error: showErrorToast } = useToast();
 useHead({
   title: "GuardianConnector Explorer: " + t("configuration") + " - " + dataset,
 });
+
+definePageMeta({ layout: "explorer" });
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col bg-white">
-    <AppHeader />
     <DataLoadError
       v-if="error"
       :title="$t('dataLoadErrorTitle')"
@@ -167,14 +167,14 @@ useHead({
           <div class="flex items-center justify-between mb-4">
             <NuxtLink
               to="/config"
-              class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium transition-colors"
+              class="inline-flex items-center gap-2 text-violet-600 hover:text-violet-800 font-medium transition-colors"
             >
               <ChevronLeft class="w-5 h-5" />
               {{ $t("configuration") }}
             </NuxtLink>
             <NuxtLink
               :to="`/dataset/${dataset}`"
-              class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
+              class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors"
             >
               <Eye class="w-4 h-4" />
               {{ $t("viewDataset") }}
@@ -261,7 +261,7 @@ useHead({
           <select
             v-model="selectedCopySource"
             data-testid="copy-config-select"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors mb-4"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors mb-4"
           >
             <option value="" disabled>
               {{ $t("selectDataset") }}
@@ -282,7 +282,7 @@ useHead({
               :class="{
                 'bg-gray-300 text-gray-500 cursor-not-allowed':
                   !selectedCopySource,
-                'bg-purple-700 hover:bg-purple-800 text-white':
+                'bg-violet-700 hover:bg-violet-800 text-white':
                   selectedCopySource,
               }"
               @click="handleConfirmCopy"

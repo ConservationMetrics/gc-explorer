@@ -122,7 +122,7 @@ onBeforeUnmount(() => {
         <ChevronDown class="w-6 h-6 text-gray-600 animate-bounce" />
       </div>
       <button
-        class="absolute top-4 right-4 p-2.5 bg-white/80 backdrop-blur-sm hover:bg-gray-100 rounded-full transition-all duration-200 ease-in-out shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2"
+        class="absolute top-5 right-5 p-2.5 bg-white/80 backdrop-blur-sm hover:bg-gray-100 rounded-full transition-all duration-200 ease-in-out shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2"
         @click="emit('close')"
       >
         <span class="sr-only">Close</span>
@@ -192,7 +192,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .scroll-indicator {
   position: absolute;
-  top: 1rem;
+  top: 1.25rem;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
