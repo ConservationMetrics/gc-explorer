@@ -39,9 +39,9 @@ const viewRoute = computed(() => {
   <NuxtLink
     :to="viewRoute"
     :data-testid="`view-card-${view}`"
-    class="bg-purple-50 rounded-lg p-4 sm:p-6 shadow-sm border border-purple-100 hover:bg-purple-100 hover:shadow-md transition-all duration-200 flex flex-col"
+    class="bg-violet-50 rounded-lg p-4 sm:p-6 shadow-sm border border-violet-100 hover:bg-violet-100 hover:shadow-md transition-all duration-200 flex flex-col"
   >
-    <div class="mb-4 text-purple-700">
+    <div class="mb-4 text-violet-700">
       <Map v-if="showMapIcon" class="w-6 h-6 sm:w-8 sm:h-8" />
       <Images v-else-if="showGalleryIcon" class="w-6 h-6 sm:w-8 sm:h-8" />
       <TriangleAlert v-else-if="showAlertsIcon" class="w-6 h-6 sm:w-8 sm:h-8" />
@@ -56,7 +56,7 @@ const viewRoute = computed(() => {
     </p>
 
     <div class="mt-4 flex justify-end">
-      <ChevronRight class="w-5 h-5 text-purple-700" />
+      <ChevronRight class="w-5 h-5 text-violet-700" />
     </div>
   </NuxtLink>
 </template>

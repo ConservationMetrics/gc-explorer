@@ -271,14 +271,14 @@ const handleClose = () => {
 
         <div
           v-else-if="incidentDetailsError"
-          class="incident-error-state rounded-lg border border-purple-200 bg-purple-50/50 p-4 text-center"
+          class="incident-error-state rounded-lg border border-violet-200 bg-violet-50/50 p-4 text-center"
         >
           <p class="text-sm text-gray-700 mb-3">
             {{ $t("errorCouldNotLoadIncident") }}
           </p>
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded-lg bg-purple-700 px-3 py-2 text-sm font-medium text-white hover:bg-purple-800"
+            class="inline-flex items-center justify-center rounded-lg bg-violet-700 px-3 py-2 text-sm font-medium text-white hover:bg-violet-800"
             @click="emit('retryIncidentDetails', selectedIncident.id)"
           >
             {{ $t("retry") }}
@@ -554,7 +554,7 @@ const handleClose = () => {
 
           <div
             v-else-if="incidentsFetchError"
-            class="incident-error-state rounded-lg border border-purple-200 bg-purple-50/50 p-4 text-center"
+            class="incident-error-state rounded-lg border border-violet-200 bg-violet-50/50 p-4 text-center"
           >
             <p class="text-sm text-gray-700 mb-3">
               {{ $t("errorCouldNotLoadIncidents") }}
@@ -562,7 +562,7 @@ const handleClose = () => {
             <button
               v-if="retryFetchIncidents"
               type="button"
-              class="inline-flex items-center justify-center rounded-lg bg-purple-700 px-3 py-2 text-sm font-medium text-white hover:bg-purple-800"
+              class="inline-flex items-center justify-center rounded-lg bg-violet-700 px-3 py-2 text-sm font-medium text-white hover:bg-violet-800"
               @click="retryFetchIncidents()"
             >
               {{ $t("retry") }}

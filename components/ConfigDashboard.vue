@@ -123,7 +123,7 @@ watch(tableNameToAdd, (newVal) => {
     <div class="mb-6 sm:mb-8">
       <NuxtLink
         to="/"
-        class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium mb-4 transition-colors"
+        class="inline-flex items-center gap-2 text-violet-600 hover:text-violet-800 font-medium mb-4 transition-colors"
       >
         <ChevronLeft class="w-5 h-5" />
         {{ $t("availableViews") }}
@@ -141,11 +141,11 @@ watch(tableNameToAdd, (newVal) => {
         v-for="(config, tableName) in sortedViewsConfig"
         :key="tableName"
         data-testid="config-dataset-card"
-        class="bg-purple-50 rounded-lg p-4 sm:p-6 shadow-sm border border-purple-100 overflow-hidden flex flex-col h-full"
+        class="bg-violet-50 rounded-lg p-4 sm:p-6 shadow-sm border border-violet-100 overflow-hidden flex flex-col h-full"
       >
         <div class="flex items-start mb-3">
           <div
-            class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-purple-200 flex items-center justify-center text-white font-bold text-sm sm:text-base mr-3 flex-shrink-0"
+            class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-violet-200 flex items-center justify-center text-white font-bold text-sm sm:text-base mr-3 flex-shrink-0"
           >
             {{ String(tableName).charAt(0).toUpperCase() }}
           </div>
@@ -190,7 +190,7 @@ watch(tableNameToAdd, (newVal) => {
               : []"
             :key="view"
             :data-testid="`config-view-tag-${view}`"
-            class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full flex-shrink-0"
+            class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-violet-100 text-violet-800 rounded-full flex-shrink-0"
           >
             <Map v-if="view === 'map'" class="w-3 h-3" />
             <Images v-else-if="view === 'gallery'" class="w-3 h-3" />
@@ -202,7 +202,7 @@ watch(tableNameToAdd, (newVal) => {
         <NuxtLink
           :to="`/config/${tableName}`"
           data-testid="edit-dataset-view-link"
-          class="mt-auto flex items-center justify-center gap-2 w-full text-center px-4 py-2 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200"
+          class="mt-auto flex items-center justify-center gap-2 w-full text-center px-4 py-2 sm:py-3 bg-violet-700 hover:bg-violet-800 text-white font-medium rounded-lg transition-colors duration-200"
         >
           <Pencil class="w-4 h-4" />
           {{ $t("editDataset") }}
@@ -213,7 +213,7 @@ watch(tableNameToAdd, (newVal) => {
     <div class="flex justify-end mb-6">
       <button
         data-testid="add-new-dataset-view-button"
-        class="flex items-center gap-2 px-4 py-2 sm:py-3 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-lg transition-colors duration-200"
+        class="flex items-center gap-2 px-4 py-2 sm:py-3 bg-violet-700 hover:bg-violet-800 text-white font-medium rounded-lg transition-colors duration-200"
         @click="handleAddNewTable"
       >
         <Plus class="w-5 h-5" />
@@ -236,7 +236,7 @@ watch(tableNameToAdd, (newVal) => {
           <select
             v-model="tableNameToAdd"
             data-testid="config-modal-table-select"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
           >
             <option v-for="table in tableNames" :key="table" :value="table">
               {{ table }}
@@ -253,7 +253,7 @@ watch(tableNameToAdd, (newVal) => {
                 confirmButtonDisabled,
               'bg-red-500 hover:bg-red-600 text-white':
                 currentModalAction !== 'addTable' && !confirmButtonDisabled,
-              'bg-purple-700 hover:bg-purple-800 text-white':
+              'bg-violet-700 hover:bg-violet-800 text-white':
                 currentModalAction === 'addTable' && !confirmButtonDisabled,
             }"
             @click="handleConfirmButton"

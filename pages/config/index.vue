@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Views, ViewConfig } from "@/types";
-import AppHeader from "@/components/shared/AppHeader.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 
 const viewsConfig = ref<Views>({});
@@ -65,26 +64,25 @@ const { error: showErrorToast } = useToast();
 useHead({
   title: "GuardianConnector Explorer: " + t("configuration"),
 });
+
+definePageMeta({ layout: "explorer" });
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-white">
-    <AppHeader />
-    <DataLoadError
-      v-if="error"
-      :title="$t('dataLoadErrorTitle')"
-      :message="$t('dataLoadErrorMessage')"
-      :retry="() => refresh()"
+  <DataLoadError
+    v-if="error"
+    :title="$t('dataLoadErrorTitle')"
+    :message="$t('dataLoadErrorMessage')"
+    :retry="() => refresh()"
+  />
+  <ClientOnly v-else>
+    <ConfigDashboard
+      v-if="dataFetched"
+      :views-config="viewsConfig"
+      :table-names="tableNames"
+      @submit-config="submitConfig"
+      @remove-table-from-config="removeTableFromConfig"
+      @add-table-to-config="addTableToConfig"
     />
-    <ClientOnly v-else>
-      <ConfigDashboard
-        v-if="dataFetched"
-        :views-config="viewsConfig"
-        :table-names="tableNames"
-        @submit-config="submitConfig"
-        @remove-table-from-config="removeTableFromConfig"
-        @add-table-to-config="addTableToConfig"
-      />
-    </ClientOnly>
-  </div>
+  </ClientOnly>
 </template>

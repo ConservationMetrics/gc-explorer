@@ -36,11 +36,11 @@ function updateViews() {
               v-model="localViews"
               type="checkbox"
               value="map"
-              class="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
+              class="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
               @change="updateViews"
             />
             <span
-              class="text-gray-700 font-medium group-hover:text-purple-700 transition-colors"
+              class="text-gray-700 font-medium group-hover:text-violet-700 transition-colors"
             >
               {{ $t("map") }}
             </span>
@@ -50,11 +50,11 @@ function updateViews() {
               v-model="localViews"
               type="checkbox"
               value="gallery"
-              class="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
+              class="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
               @change="updateViews"
             />
             <span
-              class="text-gray-700 font-medium group-hover:text-purple-700 transition-colors"
+              class="text-gray-700 font-medium group-hover:text-violet-700 transition-colors"
             >
               {{ $t("gallery") }}
             </span>
@@ -64,11 +64,11 @@ function updateViews() {
               v-model="localViews"
               type="checkbox"
               value="alerts"
-              class="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
+              class="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
               @change="updateViews"
             />
             <span
-              class="text-gray-700 font-medium group-hover:text-purple-700 transition-colors"
+              class="text-gray-700 font-medium group-hover:text-violet-700 transition-colors"
             >
               {{ $t("alerts") }}
             </span>

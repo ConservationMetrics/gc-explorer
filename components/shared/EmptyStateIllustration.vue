@@ -11,7 +11,7 @@ defineProps<{
 }>();
 
 const baseIconClass = "w-24 h-24 sm:w-28 sm:h-28";
-const iconColorClass = "text-purple-500";
+const iconColorClass = "text-violet-500";
 </script>
 
 <template>
