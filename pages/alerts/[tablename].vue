@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
-
 import DataLoadError from "@/components/shared/DataLoadError.vue";
+import RowLimitBanner from "@/components/shared/RowLimitBanner.vue";
 import { replaceUnderscoreWithSpace } from "@/utils/identifierUtils";
 import { useIsPublic } from "@/utils/accessControls";
 import { ROW_LIMIT } from "@/utils";
-
 import type { BasemapConfig } from "@/types";
+
+const { t } = useI18n();
 
 // Extract the tablename from the route parameters
 const route = useRoute();
@@ -36,21 +37,11 @@ const mediaBasePath = ref();
 const mediaBasePathAlerts = ref();
 const planetApiKey = ref();
 
-const { t } = useI18n();
-
 const { data, error, refresh } = await useFetch(`/api/${table}/alerts`, {
   params: { limit: ROW_LIMIT },
 });
 
 if (data.value && !error.value) {
-  if (data.value.rowLimitReached) {
-    const { warning } = useToast();
-    warning(
-      t("rowLimitReachedTitle"),
-      t("rowLimitReachedMessage", { limit: ROW_LIMIT.toLocaleString() }),
-    );
-  }
-
   alertsData.value = data.value.alertsData;
   alertsStatistics.value = data.value.alertsStatistics;
   allowedFileExtensions.value = data.value.allowedFileExtensions;
@@ -103,6 +94,7 @@ useHead({
       :retry="() => refresh()"
     />
     <ClientOnly v-else>
+      <RowLimitBanner v-if="data?.rowLimitReached" :limit="ROW_LIMIT" />
       <AlertsDashboard
         v-if="dataFetched"
         :alerts-data="alertsData"

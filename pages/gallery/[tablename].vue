@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
-
 import DataLoadError from "@/components/shared/DataLoadError.vue";
+import RowLimitBanner from "@/components/shared/RowLimitBanner.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
 import { replaceUnderscoreWithSpace } from "@/utils/identifierUtils";
 import { useIsPublic } from "@/utils/accessControls";
 import { ROW_LIMIT } from "@/utils";
+
+const { t } = useI18n();
 
 // Extract the tablename from the route parameters
 const route = useRoute();
@@ -20,21 +22,11 @@ const mediaBasePath = ref();
 const mediaColumn = ref();
 const timestampColumn = ref<string | undefined>();
 
-const { t } = useI18n();
-
 const { data, error, refresh } = await useFetch(`/api/${table}/gallery`, {
   params: { limit: ROW_LIMIT },
 });
 
 if (data.value && !error.value) {
-  if (data.value.rowLimitReached) {
-    const { warning } = useToast();
-    warning(
-      t("rowLimitReachedTitle"),
-      t("rowLimitReachedMessage", { limit: ROW_LIMIT.toLocaleString() }),
-    );
-  }
-
   allowedFileExtensions.value = data.value.allowedFileExtensions;
   dataFetched.value = true;
   filterColumn.value = data.value.filterColumn;
@@ -72,6 +64,7 @@ useHead({
       :retry="() => refresh()"
     />
     <ClientOnly v-else>
+      <RowLimitBanner v-if="data?.rowLimitReached" :limit="ROW_LIMIT" />
       <GalleryView
         v-if="mediaBasePath && dataFetched"
         :allowed-file-extensions="allowedFileExtensions"

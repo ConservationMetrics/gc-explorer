@@ -22,11 +22,9 @@ describe("client pages pass ?limit to dataset API endpoints", () => {
     expect(content).toContain("params: { limit: ROW_LIMIT }");
   });
 
-  it.each(pages)("%s shows a warning toast when rowLimitReached", (page) => {
+  it.each(pages)("%s renders RowLimitBanner when rowLimitReached", (page) => {
     const content = readFileSync(resolve(page), "utf-8");
     expect(content).toContain("rowLimitReached");
-    expect(content).toContain("useToast");
-    expect(content).toContain("rowLimitReachedTitle");
-    expect(content).toContain("rowLimitReachedMessage");
+    expect(content).toContain("RowLimitBanner");
   });
 });
