@@ -39,6 +39,8 @@ const mediaColumn = ref();
 const planetApiKey = ref();
 const timestampColumn = ref<string | undefined>();
 
+const { t } = useI18n();
+
 const { data, error, refresh } = await useFetch(`/api/${table}/map`, {
   params: { limit: ROW_LIMIT },
 });
@@ -79,8 +81,6 @@ if (data.value && !error.value) {
 } else {
   console.error("Error fetching data:", error.value);
 }
-
-const { t } = useI18n();
 
 // Check if this view is publicly accessible
 const isPublic = useIsPublic(data);
