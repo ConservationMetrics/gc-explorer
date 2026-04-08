@@ -1,4 +1,7 @@
-import { calculateCentroid, isValidGeolocation } from "@/utils/geoUtils";
+import {
+  calculateCentroidFromParsedCoords,
+  tryParseDataEntryGeoCoordinates,
+} from "@/utils/geoUtils";
 import { formatLocaleDate } from "@/utils/dateUtils";
 import type {
   AlertsMetadata,
@@ -25,15 +28,21 @@ const prepareMinimalAlertEntries = (
   let latestProprietaryDate = new Date(0);
   let latestProprietaryMonthStr = "";
 
-  const validGeoData = data.filter(isValidGeolocation);
-  const proprietaryAlertData = validGeoData.filter(
-    (d) => d.data_source !== "Global Forest Watch",
-  );
-  const gfwData = validGeoData.filter(
-    (d) => d.data_source === "Global Forest Watch",
-  );
+  type GeoTagged = { item: DataEntry; parsedCoords: unknown };
+  const proprietaryAlertData: GeoTagged[] = [];
+  const gfwData: GeoTagged[] = [];
 
-  proprietaryAlertData.forEach((item) => {
+  for (const item of data) {
+    const parsedCoords = tryParseDataEntryGeoCoordinates(item);
+    if (parsedCoords === null) continue;
+    if (item.data_source === "Global Forest Watch") {
+      gfwData.push({ item, parsedCoords });
+    } else {
+      proprietaryAlertData.push({ item, parsedCoords });
+    }
+  }
+
+  proprietaryAlertData.forEach(({ item }) => {
     const formattedMonth =
       item.month_detec.length === 1 ? `0${item.month_detec}` : item.month_detec;
     const monthYearStr = `${formattedMonth}-${item.year_detec}`;
@@ -49,19 +58,27 @@ const prepareMinimalAlertEntries = (
   });
 
   let latestGfwDate = new Date(0);
-  gfwData.forEach((item) => {
+  gfwData.forEach(({ item }) => {
     const date = new Date(item.date_end_t1);
     if (date > latestGfwDate) latestGfwDate = date;
   });
 
-  const toMinimalEntry = (item: DataEntry): DataEntry => {
+  const toMinimalEntry = (
+    item: DataEntry,
+    parsedCoords: unknown,
+  ): DataEntry => {
     const formattedMonth = String(item.month_detec).padStart(2, "0");
     const entry: DataEntry = {};
 
     // Geometry fields
-    Object.keys(item).forEach((key) => {
-      if (key.startsWith("g__")) entry[key] = item[key];
-    });
+    for (const key in item) {
+      if (
+        Object.prototype.hasOwnProperty.call(item, key) &&
+        key.startsWith("g__")
+      ) {
+        entry[key] = item[key];
+      }
+    }
 
     entry._id = item._id;
     entry.alertID = item.alert_id;
@@ -69,7 +86,7 @@ const prepareMinimalAlertEntries = (
       item.data_source === "Global Forest Watch"
         ? item.year_detec + item.month_detec
         : `${item.year_detec}${formattedMonth}`;
-    entry.geographicCentroid = calculateCentroid(item.g__coordinates);
+    entry.geographicCentroid = calculateCentroidFromParsedCoords(parsedCoords);
 
     return entry;
   };
@@ -77,24 +94,24 @@ const prepareMinimalAlertEntries = (
   const mostRecentAlerts: DataEntry[] = [];
   const previousAlerts: DataEntry[] = [];
 
-  proprietaryAlertData.forEach((item) => {
+  proprietaryAlertData.forEach(({ item, parsedCoords }) => {
     const formattedMonth =
       item.month_detec.length === 1 ? `0${item.month_detec}` : item.month_detec;
     const monthYearStr = `${formattedMonth}-${item.year_detec}`;
 
     if (monthYearStr === latestProprietaryMonthStr) {
-      mostRecentAlerts.push(toMinimalEntry(item));
+      mostRecentAlerts.push(toMinimalEntry(item, parsedCoords));
     } else {
-      previousAlerts.push(toMinimalEntry(item));
+      previousAlerts.push(toMinimalEntry(item, parsedCoords));
     }
   });
 
-  gfwData.forEach((item) => {
+  gfwData.forEach(({ item, parsedCoords }) => {
     const date = new Date(item.date_end_t1);
     if (date.getTime() === latestGfwDate.getTime()) {
-      mostRecentAlerts.push(toMinimalEntry(item));
+      mostRecentAlerts.push(toMinimalEntry(item, parsedCoords));
     } else {
-      previousAlerts.push(toMinimalEntry(item));
+      previousAlerts.push(toMinimalEntry(item, parsedCoords));
     }
   });
 
@@ -143,13 +160,13 @@ const prepareAlertsStatistics = (
   } | null => {
     if (!metadata || metadata.length === 0) return null;
 
-    metadata.sort((a, b) => {
+    const sortedMeta = [...metadata].sort((a, b) => {
       if (a.year !== b.year) return a.year - b.year;
       if (a.month !== b.month) return a.month - b.month;
       return (a.day ?? 0) - (b.day ?? 0);
     });
-    const earliestMetadata = metadata[0];
-    const latestMetadata = metadata[metadata.length - 1];
+    const earliestMetadata = sortedMeta[0];
+    const latestMetadata = sortedMeta[sortedMeta.length - 1];
 
     return {
       earliestDate: new Date(
@@ -213,13 +230,14 @@ const prepareAlertsStatistics = (
     : data[0].territory_name.charAt(0).toUpperCase() +
       data[0].territory_name.slice(1);
 
-  const typeOfAlerts = Array.from(
-    new Set(
-      data
-        .map((item) => item.alert_type?.replace(/_/g, " "))
-        .filter((alertType): alertType is string => alertType !== null),
-    ),
-  );
+  const typeOfAlertsSet = new Set<string>();
+  for (const item of data) {
+    const alertType = item.alert_type?.replace(/_/g, " ");
+    if (alertType != null) {
+      typeOfAlertsSet.add(alertType);
+    }
+  }
+  const typeOfAlerts = Array.from(typeOfAlertsSet);
 
   const dataProviders = isGFW
     ? Array.from(new Set(data.map((item) => item.data_source).filter(Boolean)))
@@ -266,9 +284,11 @@ const prepareAlertsStatistics = (
   }
 
   // Create an array of all dates
-  const allDates = Array.from(
-    new Set(formattedDates.map((item) => item.dateString)),
-  );
+  const uniqueDateStrings = new Set<string>();
+  for (const fd of formattedDates) {
+    uniqueDateStrings.add(fd.dateString);
+  }
+  const allDates = Array.from(uniqueDateStrings);
 
   // Determine the date 12 months before the latest date
   const twelveMonthsBefore = new Date(latestDate);
@@ -337,27 +357,40 @@ const prepareAlertsStatistics = (
     accumulatorMap: Record<string, number>,
     property: "alerts" | "hectares",
   ) => {
-    let cumulativeValue = 0;
-    const months = Object.keys(accumulatorMap);
+    const monthKeys = Object.keys(accumulatorMap);
 
-    months.forEach((monthYear) => {
-      if (property === "alerts") {
-        const monthData = dataCollection.filter((item) => {
-          const itemMonthYear = `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
-          return itemMonthYear === monthYear;
-        });
-        cumulativeValue += monthData.length;
-      } else if (property === "hectares" && !isGFW) {
-        dataCollection.forEach((item) => {
-          const monthYearItem = `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
-          if (monthYearItem === monthYear) {
-            const hectares = parseFloat(item.area_alert_ha);
-            cumulativeValue += isNaN(hectares) ? 0 : hectares;
-          }
-        });
+    if (property === "alerts") {
+      // Bucket counts in one pass over rows, then cumulative by chart month—cheap at large N.
+      // Watch out: a `.filter` on `dataCollection` inside the month loop brings back O(m×n) /
+      // O(N^2) rescans and a new array each month.
+      const countsByMonth = new Map<string, number>();
+      for (const item of dataCollection) {
+        const key = `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
+        countsByMonth.set(key, (countsByMonth.get(key) ?? 0) + 1);
       }
-      accumulatorMap[monthYear] = parseFloat(cumulativeValue.toFixed(2));
-    });
+      let cumulativeValue = 0;
+      for (const monthYear of monthKeys) {
+        cumulativeValue += countsByMonth.get(monthYear) ?? 0;
+        accumulatorMap[monthYear] = parseFloat(cumulativeValue.toFixed(2));
+      }
+      return;
+    }
+
+    if (property === "hectares" && !isGFW) {
+      // Same as alerts: one pass to bucket, then cumulative—avoid per-month full-list filters.
+      const hectaresByMonth = new Map<string, number>();
+      for (const item of dataCollection) {
+        const key = `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
+        const hectares = parseFloat(item.area_alert_ha);
+        const add = isNaN(hectares) ? 0 : hectares;
+        hectaresByMonth.set(key, (hectaresByMonth.get(key) ?? 0) + add);
+      }
+      let cumulativeValue = 0;
+      for (const monthYear of monthKeys) {
+        cumulativeValue += hectaresByMonth.get(monthYear) ?? 0;
+        accumulatorMap[monthYear] = parseFloat(cumulativeValue.toFixed(2));
+      }
+    }
   };
 
   // Initialize alertsPerMonth and hectaresPerMonth
@@ -389,10 +422,15 @@ const prepareAlertsStatistics = (
         lastItem.day_detec,
       )
     : "N/A";
-  const recentAlertsNumber = data.filter((item) => {
-    const itemDateStr = `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
-    return itemDateStr === recentMonthYear;
-  }).length;
+  let recentAlertsNumber = 0;
+  if (recentMonthYear !== "N/A") {
+    for (const item of data) {
+      const itemDateStr = `${item.month_detec.padStart(2, "0")}-${item.year_detec}`;
+      if (itemDateStr === recentMonthYear) {
+        recentAlertsNumber++;
+      }
+    }
+  }
 
   // Calculate total number of alerts
   const alertsTotal = data.length;
