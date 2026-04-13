@@ -1,3 +1,5 @@
+import type { Feature } from "geojson";
+
 /**
  * Strips combining diacritical marks after NFD normalization (ASCII-friendly identifiers).
  *
@@ -87,4 +89,41 @@ export const titleToCamelCase = (str: string): string => {
       index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1),
     )
     .join("");
+};
+
+/**
+ * Resolves the warehouse `_id` for raw dataset export from a selected map row.
+ * Map GeoJSON features carry `_id` on `properties`; the sidebar row may expose `_id` or transformed `id`.
+ *
+ * @param featureGeojson - Optional map selection (only GeoJSON Features are read).
+ * @param displayFeature - Display row shown next to the map.
+ * @returns {string | undefined} Warehouse id, or undefined if it cannot be resolved.
+ */
+export const warehouseRecordIdForExport = (
+  featureGeojson: Feature | unknown,
+  displayFeature: Record<string, unknown>,
+): string | undefined => {
+  if (
+    featureGeojson &&
+    typeof featureGeojson === "object" &&
+    "type" in featureGeojson &&
+    featureGeojson.type === "Feature" &&
+    "properties" in featureGeojson &&
+    featureGeojson.properties &&
+    typeof featureGeojson.properties === "object"
+  ) {
+    const wid = (featureGeojson.properties as Record<string, unknown>)._id;
+    if (wid != null && String(wid) !== "") {
+      return String(wid);
+    }
+  }
+
+  if (displayFeature._id != null && String(displayFeature._id) !== "") {
+    return String(displayFeature._id);
+  }
+  if (displayFeature.id != null && String(displayFeature.id) !== "") {
+    return String(displayFeature.id);
+  }
+
+  return undefined;
 };

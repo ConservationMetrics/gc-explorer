@@ -47,4 +47,17 @@ describe("buildTableExportQueryParams", () => {
       maxDate: "202403",
     });
   });
+
+  it("includes recordId when provided for single-row export", () => {
+    expect(
+      buildTableExportQueryParams({
+        format: "csv",
+        exportPath: "export",
+        recordId: "  rec-abc  ",
+      }),
+    ).toEqual({
+      format: "csv",
+      recordId: "rec-abc",
+    });
+  });
 });

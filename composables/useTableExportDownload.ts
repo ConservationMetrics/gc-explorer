@@ -14,6 +14,7 @@ export type TableExportFormat = "csv" | "geojson" | "kml";
  * @param options.exportMinDate - Start of date range (when applicable).
  * @param options.exportMaxDate - End of date range (when applicable).
  * @param options.exportTimestampColumn - When set for spatial export, date range params are applied.
+ * @param options.recordId - When set, export only the row whose `_id` matches (raw warehouse id).
  * @returns {Record<string, string>} Query string parameters for the request.
  */
 export const buildTableExportQueryParams = (options: {
@@ -24,8 +25,13 @@ export const buildTableExportQueryParams = (options: {
   exportMinDate?: string;
   exportMaxDate?: string;
   exportTimestampColumn?: string;
+  recordId?: string;
 }): Record<string, string> => {
   const params: Record<string, string> = { format: options.format };
+  const trimmedRecordId = options.recordId?.trim();
+  if (trimmedRecordId) {
+    params.recordId = trimmedRecordId;
+  }
   if (options.exportFilterColumn && options.exportFilterValues?.length) {
     params.filterColumn = options.exportFilterColumn;
     params.filterValues = options.exportFilterValues.join(",");
@@ -74,6 +80,7 @@ export function useTableExportDownload() {
    * @param options.exportMaxDate - Optional statistics or timestamp range end.
    * @param options.exportTimestampColumn - When set, date range applies to spatial export.
    * @param options.filenamePrefix - Download basename without extension; defaults to the table name.
+   * @param options.recordId - Optional warehouse `_id` to export a single row with full raw columns.
    * @returns {Promise<void>}
    */
   const downloadTableExport = async (options: {
@@ -85,6 +92,7 @@ export function useTableExportDownload() {
     exportMaxDate?: string;
     exportTimestampColumn?: string;
     filenamePrefix?: string;
+    recordId?: string;
   }): Promise<void> => {
     const exportPath = options.exportPath ?? "export";
     const tablename = getTablename();
@@ -103,12 +111,14 @@ export function useTableExportDownload() {
         exportMinDate: options.exportMinDate,
         exportMaxDate: options.exportMaxDate,
         exportTimestampColumn: options.exportTimestampColumn,
+        recordId: options.recordId,
       });
       const blob = await $fetch<Blob>(`/api/${tablename}/${exportPath}`, {
         params,
         responseType: "blob",
       });
-      const filenameBase = options.filenamePrefix ?? tablename;
+      const filenameBase =
+        options.filenamePrefix ?? options.recordId?.trim() ?? tablename;
       triggerBrowserDownload(blob, `${filenameBase}.${options.format}`);
     } catch (error) {
       console.error(`Failed to export ${options.format}:`, error);

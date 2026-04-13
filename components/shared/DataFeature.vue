@@ -4,6 +4,7 @@ import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import { Copy, Check } from "lucide-vue-next";
 import AlertTooltip from "@/components/alerts/AlertTooltip.vue";
 import { useCopyLink } from "@/composables/useCopyLink";
+import { warehouseRecordIdForExport } from "@/utils/identifierUtils";
 
 import type { AllowedFileExtensions, DataEntry, AlertsData } from "@/types";
 import type { Feature } from "geojson";
@@ -59,6 +60,32 @@ const featureForDownload = computed((): Feature | AlertsData | null => {
 
   return null;
 });
+
+/** Warehouse `_id` for server-side raw export (see {@link warehouseRecordIdForExport}). */
+const exportRecordId = computed(() =>
+  warehouseRecordIdForExport(
+    props.featureGeojson,
+    props.feature as Record<string, unknown>,
+  ),
+);
+
+watch(
+  exportRecordId,
+  (recordId) => {
+    if (!import.meta.dev) {
+      return;
+    }
+    console.debug("[DataFeature] warehouse export recordId", {
+      recordId,
+      hasMapFeature:
+        !!props.featureGeojson &&
+        typeof props.featureGeojson === "object" &&
+        "type" in props.featureGeojson &&
+        props.featureGeojson.type === "Feature",
+    });
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -183,7 +210,11 @@ const featureForDownload = computed((): Feature | AlertsData | null => {
 
     <!-- Download section for individual feature -->
     <div v-if="featureForDownload" class="p-6 pt-0">
-      <DownloadMapData :data-for-download="featureForDownload" />
+      <DownloadMapData
+        :data-for-download="featureForDownload"
+        :export-record-id="exportRecordId"
+        :filename-prefix="exportRecordId"
+      />
     </div>
   </div>
 </template>

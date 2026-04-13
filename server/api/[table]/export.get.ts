@@ -12,7 +12,13 @@ import tokml from "tokml";
 
 import type { H3Event } from "h3";
 import type { DataEntry, ColumnEntry } from "@/types";
-import type { Feature, FeatureCollection, Geometry, Position } from "geojson";
+import type {
+  Feature,
+  FeatureCollection,
+  GeoJsonProperties,
+  Geometry,
+  Position,
+} from "geojson";
 
 const SUPPORTED_FORMATS = ["csv", "geojson", "kml"] as const;
 type ExportFormat = (typeof SUPPORTED_FORMATS)[number];
@@ -45,58 +51,114 @@ const buildCsv = (data: DataEntry[], columns: ColumnEntry[] | null): string => {
 
 /**
  * Builds a GeoJSON FeatureCollection from raw database rows.
- * Only includes records with valid coordinates. All non-geometry
- * fields are included as Feature properties.
+ * Rows without valid geometry are skipped unless `allowNullGeometry` is true
+ * (single-record export), in which case one Feature per row uses `geometry: null`
+ * and still carries all non-`g__` properties.
  *
  * @param {DataEntry[]} data - Raw database rows.
+ * @param {boolean} [allowNullGeometry] - When true, emit features with null geometry if coords are missing or invalid.
  * @returns {FeatureCollection} A valid GeoJSON FeatureCollection.
  */
-const buildGeoJson = (data: DataEntry[]): FeatureCollection => {
-  const features: Feature[] = [];
+const buildGeoJson = (
+  data: DataEntry[],
+  allowNullGeometry = false,
+): FeatureCollection => {
+  const features: Array<Feature<Geometry | null, GeoJsonProperties>> = [];
 
   for (const entry of data) {
-    if (!hasValidCoordinates(entry)) continue;
-
-    const geoType = entry.g__type as string | undefined;
-    const rawCoords = entry.g__coordinates as string | undefined;
-    if (!geoType || !rawCoords) continue;
-
-    let coordinates: Position | Position[] | Position[][] | Position[][][];
-    try {
-      coordinates = JSON.parse(rawCoords);
-    } catch {
-      continue;
-    }
-
-    const geometry: Geometry = {
-      type: geoType as Geometry["type"],
-      coordinates,
-    } as Geometry;
-
     const properties: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(entry)) {
       if (key.startsWith("g__")) continue;
       properties[key] = value;
     }
 
-    features.push({
-      type: "Feature",
-      geometry,
-      properties,
-    });
+    const geoType = entry.g__type as string | undefined;
+    const rawCoords = entry.g__coordinates as string | undefined;
+    let placed = false;
+
+    if (hasValidCoordinates(entry) && geoType && rawCoords) {
+      try {
+        const coordinates = JSON.parse(rawCoords) as
+          | Position
+          | Position[]
+          | Position[][]
+          | Position[][][];
+        const geometry: Geometry = {
+          type: geoType as Geometry["type"],
+          coordinates,
+        } as Geometry;
+        features.push({
+          type: "Feature",
+          geometry,
+          properties,
+        });
+        placed = true;
+      } catch {
+        // fall through to optional null-geometry feature
+      }
+    }
+
+    if (!placed && allowNullGeometry) {
+      const nullGeomFeature: Feature<Geometry | null, GeoJsonProperties> = {
+        type: "Feature",
+        geometry: null,
+        properties,
+      };
+      features.push(nullGeomFeature);
+    }
   }
 
   return {
     type: "FeatureCollection",
-    features,
+    features: features as Feature[],
   };
 };
 
 /**
+ * KML from properties only when geometry is missing (tokml skips invalid/null geometry).
+ *
+ * @param {Record<string, unknown>} properties - Feature properties (non-geometry columns).
+ * @param {string} documentName - Document title in the KML.
+ * @returns {string} A minimal KML document.
+ */
+const buildKmlPropertiesOnly = (
+  properties: Record<string, unknown>,
+  documentName: string,
+): string => {
+  const xmlEncode = (s: string) =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  const dataTags = Object.entries(properties)
+    .map(
+      ([k, v]) =>
+        `<Data name="${xmlEncode(k)}"><value>${xmlEncode(String(v ?? ""))}</value></Data>`,
+    )
+    .join("");
+
+  return (
+    '<?xml version="1.0" encoding="UTF-8"?>' +
+    '<kml xmlns="http://www.opengis.net/kml/2.2">' +
+    "<Document>" +
+    `<name>${xmlEncode(documentName)}</name>` +
+    "<Placemark>" +
+    "<name>Exported record</name>" +
+    "<description>No valid map geometry in source; attributes only.</description>" +
+    `<ExtendedData>${dataTags}</ExtendedData>` +
+    "</Placemark>" +
+    "</Document></kml>"
+  );
+};
+
+/**
  * Streaming export endpoint for raw dataset downloads.
- * Accepts a `format` query parameter (csv, geojson, kml) and returns
- * the dataset as a file download with appropriate Content-Type and
- * Content-Disposition headers.
+ * Accepts a `format` query parameter (csv, geojson, kml) and optional
+ * `recordId` (warehouse `_id`) to export a single row with the same raw
+ * columns as the full-dataset export. Returns the dataset as a file download
+ * with appropriate Content-Type and Content-Disposition headers.
  *
  * @param {H3Event} event - The incoming HTTP event.
  * @returns {string} The formatted export content.
@@ -120,8 +182,25 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const { mainData, columnsData } = await fetchData(table);
 
-    // Users expect all of their data when they download; therefore, we do not apply config-based filter-out (FILTER_BY_COLUMN / FILTER_OUT_VALUES). We only keep valid geo and, when provided, the user’s current map filter (filterColumn/filterValues) and date range (minDate/maxDate).
-    let dataToExport = filterGeoData(mainData);
+    const recordIdParam = (query.recordId as string | undefined)?.trim() ?? "";
+
+    let scopedData: DataEntry[] = mainData;
+    if (recordIdParam) {
+      scopedData = mainData.filter((row) => String(row._id) === recordIdParam);
+      if (scopedData.length === 0) {
+        throw createError({
+          statusCode: 404,
+          statusMessage: "Record not found",
+        });
+      }
+    }
+
+    const singleRecordExport = Boolean(recordIdParam);
+
+    // Users expect all of their data when they download; therefore, we do not apply config-based filter-out (FILTER_BY_COLUMN / FILTER_OUT_VALUES). Bulk export keeps only rows with valid geo. Single-record export keeps the full warehouse row so CSV / GeoJSON / KML all carry the same raw attributes (GeoJSON may use null geometry; see KML branch).
+    let dataToExport = singleRecordExport
+      ? scopedData
+      : filterGeoData(scopedData);
 
     const filterColumn = (query.filterColumn as string)?.trim();
     const filterValues = (query.filterValues as string)?.trim();
@@ -157,7 +236,7 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     if (format === "geojson") {
-      const geojson = buildGeoJson(dataToExport);
+      const geojson = buildGeoJson(dataToExport, singleRecordExport);
       setResponseHeader(
         event,
         "Content-Type",
@@ -172,8 +251,18 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     if (format === "kml") {
-      const geojson = buildGeoJson(dataToExport);
-      const kml = tokml(geojson);
+      const geojson = buildGeoJson(dataToExport, singleRecordExport);
+      const first = geojson.features[0];
+      const kml =
+        singleRecordExport &&
+        first?.geometry === null &&
+        first.properties &&
+        Object.keys(first.properties).length > 0
+          ? buildKmlPropertiesOnly(
+              first.properties as Record<string, unknown>,
+              table,
+            )
+          : tokml(geojson);
       setResponseHeader(
         event,
         "Content-Type",
