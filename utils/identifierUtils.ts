@@ -1,4 +1,5 @@
 import type { Feature } from "geojson";
+import type { AlertsData } from "@/types";
 
 /**
  * Strips combining diacritical marks after NFD normalization (ASCII-friendly identifiers).
@@ -99,31 +100,30 @@ export const titleToCamelCase = (str: string): string => {
  * @param displayFeature - Display row shown next to the map.
  * @returns {string | undefined} Warehouse id, or undefined if it cannot be resolved.
  */
-export const warehouseRecordIdForExport = (
-  featureGeojson: Feature | unknown,
-  displayFeature: Record<string, unknown>,
-): string | undefined => {
-  if (
-    featureGeojson &&
+const isGeoJsonFeature = (
+  featureGeojson?: Feature | AlertsData | null,
+): featureGeojson is Feature => {
+  return (
+    !!featureGeojson &&
     typeof featureGeojson === "object" &&
     "type" in featureGeojson &&
-    featureGeojson.type === "Feature" &&
-    "properties" in featureGeojson &&
-    featureGeojson.properties &&
-    typeof featureGeojson.properties === "object"
-  ) {
-    const wid = (featureGeojson.properties as Record<string, unknown>)._id;
-    if (wid != null && String(wid) !== "") {
-      return String(wid);
+    featureGeojson.type === "Feature"
+  );
+};
+
+export const warehouseRecordIdForExport = (
+  featureGeojson?: Feature | AlertsData | null,
+  displayFeature: Record<string, unknown> = {},
+): string | undefined => {
+  if (isGeoJsonFeature(featureGeojson)) {
+    const featureRecordId = String(featureGeojson.properties?._id ?? "").trim();
+    if (featureRecordId) {
+      return featureRecordId;
     }
   }
 
-  if (displayFeature._id != null && String(displayFeature._id) !== "") {
-    return String(displayFeature._id);
-  }
-  if (displayFeature.id != null && String(displayFeature.id) !== "") {
-    return String(displayFeature.id);
-  }
-
-  return undefined;
+  const displayRecordId = String(
+    displayFeature._id ?? displayFeature.id ?? "",
+  ).trim();
+  return displayRecordId || undefined;
 };

@@ -68,24 +68,6 @@ const exportRecordId = computed(() =>
     props.feature as Record<string, unknown>,
   ),
 );
-
-watch(
-  exportRecordId,
-  (recordId) => {
-    if (!import.meta.dev) {
-      return;
-    }
-    console.debug("[DataFeature] warehouse export recordId", {
-      recordId,
-      hasMapFeature:
-        !!props.featureGeojson &&
-        typeof props.featureGeojson === "object" &&
-        "type" in props.featureGeojson &&
-        props.featureGeojson.type === "Feature",
-    });
-  },
-  { immediate: true },
-);
 </script>
 
 <template>
