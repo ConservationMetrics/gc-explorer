@@ -1,3 +1,6 @@
+import type { AlertsData } from "@/types";
+import { isGeoJsonFeature } from "@/utils/geoUtils";
+
 /**
  * Strips combining diacritical marks after NFD normalization (ASCII-friendly identifiers).
  *
@@ -87,4 +90,29 @@ export const titleToCamelCase = (str: string): string => {
       index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1),
     )
     .join("");
+};
+
+/**
+ * Resolves the warehouse `_id` for raw dataset export from a selected map row.
+ * Map GeoJSON features carry `_id` on `properties`; the sidebar row may expose `_id` or transformed `id`.
+ *
+ * @param featureGeojson - Optional map selection (only GeoJSON Features are read).
+ * @param displayFeature - Display row shown next to the map.
+ * @returns {string | undefined} Warehouse id, or undefined if it cannot be resolved.
+ */
+export const warehouseRecordIdForExport = (
+  featureGeojson?: AlertsData | null | unknown,
+  displayFeature: Record<string, unknown> = {},
+): string | undefined => {
+  if (isGeoJsonFeature(featureGeojson)) {
+    const featureRecordId = String(featureGeojson.properties?._id ?? "").trim();
+    if (featureRecordId) {
+      return featureRecordId;
+    }
+  }
+
+  const displayRecordId = String(
+    displayFeature._id ?? displayFeature.id ?? "",
+  ).trim();
+  return displayRecordId || undefined;
 };

@@ -94,6 +94,16 @@ export const hasValidCoordinates = (
   });
 };
 
+/** Type guard for a GeoJSON Feature. */
+export const isGeoJsonFeature = (value: unknown): value is Feature => {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    "type" in value &&
+    value.type === "Feature"
+  );
+};
+
 type Coordinate = [number, number];
 type LineString = Coordinate[];
 type Polygon = LineString[];

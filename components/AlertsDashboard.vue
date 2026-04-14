@@ -1710,6 +1710,7 @@ onBeforeUnmount(() => {
       :allowed-file-extensions="allowedFileExtensions"
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
+      :export-table-name="isMapeo ? mapeoTable : table"
       :feature="selectedFeature"
       :feature-loading="selectedFeatureLoading"
       :feature-geojson="localAlertsData"

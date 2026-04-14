@@ -10,6 +10,9 @@ import { escapeCSVValue } from "@/utils/csvUtils";
 
 const props = defineProps<{
   dataForDownload?: Feature | FeatureCollection | AlertsData;
+  /** Warehouse `_id` for a selected map feature; triggers server export with full raw columns. */
+  exportRecordId?: string;
+  exportTableName?: string;
   exportFilterColumn?: string;
   exportFilterValues?: string[];
   exportMinDate?: string;
@@ -52,6 +55,12 @@ const isBulkDownload = computed(() => {
   );
 });
 
+/** Use the server export route for bulk data or a single record identified by `_id`. */
+const useServerExport = computed(() => {
+  const id = props.exportRecordId?.trim();
+  return isBulkDownload.value || !!id;
+});
+
 /**
  * Downloads spatial dataset files from the server export endpoint. For bulk export, the server
  * handles data formatting and streams the response; the client saves the blob to disk.
@@ -66,12 +75,14 @@ const downloadFromExportEndpoint = async (
   try {
     await downloadTableExport({
       format,
+      exportTableName: props.exportTableName,
       exportFilterColumn: props.exportFilterColumn,
       exportFilterValues: props.exportFilterValues,
       exportMinDate: props.exportMinDate,
       exportMaxDate: props.exportMaxDate,
       exportTimestampColumn: props.exportTimestampColumn,
-      filenamePrefix: props.filenamePrefix,
+      filenamePrefix: props.filenamePrefix ?? props.exportRecordId?.trim(),
+      recordId: props.exportRecordId?.trim(),
     });
   } finally {
     exportingFormat.value = null;
@@ -243,7 +254,7 @@ const downloadAlertKML = () => {
       :disabled="!!exportingFormat"
       type="button"
       @click="
-        isBulkDownload ? downloadFromExportEndpoint('csv') : downloadAlertCSV()
+        useServerExport ? downloadFromExportEndpoint('csv') : downloadAlertCSV()
       "
     >
       {{ exportingFormat === "csv" ? $t("downloading") : $t("downloadCSV") }}
@@ -253,7 +264,7 @@ const downloadAlertKML = () => {
       :disabled="!!exportingFormat"
       type="button"
       @click="
-        isBulkDownload
+        useServerExport
           ? downloadFromExportEndpoint('geojson')
           : downloadAlertGeoJSON()
       "
@@ -269,7 +280,7 @@ const downloadAlertKML = () => {
       :disabled="!!exportingFormat"
       type="button"
       @click="
-        isBulkDownload ? downloadFromExportEndpoint('kml') : downloadAlertKML()
+        useServerExport ? downloadFromExportEndpoint('kml') : downloadAlertKML()
       "
     >
       {{ exportingFormat === "kml" ? $t("downloading") : $t("downloadKML") }}

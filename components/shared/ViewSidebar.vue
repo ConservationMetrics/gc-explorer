@@ -21,6 +21,7 @@ const props = defineProps<{
   calculateHectares?: boolean;
   canToggleIcons?: boolean;
   dateOptions?: Array<string>;
+  exportTableName?: string;
   feature?: DataEntry;
   featureLoading?: boolean;
   featureGeojson?: Feature | AlertsData;
@@ -175,6 +176,7 @@ onBeforeUnmount(() => {
         <DataFeature
           v-if="feature && !featureLoading"
           :allowed-file-extensions="allowedFileExtensions"
+          :export-table-name="exportTableName"
           :feature="filteredFeature"
           :feature-geojson="featureGeojson"
           :file-paths="filePaths"
