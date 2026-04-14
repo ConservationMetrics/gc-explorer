@@ -12,6 +12,7 @@ const props = defineProps<{
   dataForDownload?: Feature | FeatureCollection | AlertsData;
   /** Warehouse `_id` for a selected map feature; triggers server export with full raw columns. */
   exportRecordId?: string;
+  exportTableName?: string;
   exportFilterColumn?: string;
   exportFilterValues?: string[];
   exportMinDate?: string;
@@ -74,6 +75,7 @@ const downloadFromExportEndpoint = async (
   try {
     await downloadTableExport({
       format,
+      exportTableName: props.exportTableName,
       exportFilterColumn: props.exportFilterColumn,
       exportFilterValues: props.exportFilterValues,
       exportMinDate: props.exportMinDate,

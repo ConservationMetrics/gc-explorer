@@ -229,5 +229,34 @@ describe("DownloadMapData component", () => {
         }),
       );
     });
+
+    it("uses an explicit export table name when provided", async () => {
+      const wrapper = mount(DownloadMapData, {
+        props: {
+          dataForDownload: {
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [-80, 43] },
+            properties: { _id: "254137982", community: "other" },
+          },
+          exportRecordId: "254137982",
+          exportTableName: "mapeo_records",
+        },
+        global: globalConfig,
+      });
+
+      const csvButton = wrapper.findAll("button")[0];
+      await csvButton.trigger("click");
+      await wrapper.vm.$nextTick();
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/mapeo_records/export",
+        expect.objectContaining({
+          params: {
+            format: "csv",
+            recordId: "254137982",
+          },
+        }),
+      );
+    });
   });
 });

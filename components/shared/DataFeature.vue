@@ -11,6 +11,7 @@ import type { Feature } from "geojson";
 
 const props = defineProps<{
   allowedFileExtensions?: AllowedFileExtensions;
+  exportTableName?: string;
   feature: DataEntry;
   featureGeojson?: Feature | AlertsData;
   filePaths?: Array<string>;
@@ -195,6 +196,7 @@ const exportRecordId = computed(() =>
       <DownloadMapData
         :data-for-download="featureForDownload"
         :export-record-id="exportRecordId"
+        :export-table-name="exportTableName"
         :filename-prefix="exportRecordId"
       />
     </div>
