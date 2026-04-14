@@ -28,7 +28,7 @@ export const buildTableExportQueryParams = (options: {
   recordId?: string;
 }): Record<string, string> => {
   const params: Record<string, string> = { format: options.format };
-  const trimmedRecordId = String(options.recordId ?? "").trim();
+  const trimmedRecordId = options.recordId?.trim();
   if (trimmedRecordId) {
     params.recordId = trimmedRecordId;
   }
@@ -64,14 +64,7 @@ export function useTableExportDownload() {
    */
   const getTablename = (): string => {
     const tablename = route.params.tablename;
-    if (Array.isArray(tablename)) {
-      const joined = tablename.map(String).join("/").trim();
-      return joined === "" ? "data" : joined;
-    }
-    if (typeof tablename === "string" && tablename.trim() !== "") {
-      return tablename.trim();
-    }
-    return "data";
+    return typeof tablename === "string" ? tablename : "data";
   };
 
   /**
@@ -104,8 +97,7 @@ export function useTableExportDownload() {
     recordId?: string;
   }): Promise<void> => {
     const exportPath = options.exportPath ?? "export";
-    const tablename =
-      String(options.exportTableName ?? "").trim() || getTablename();
+    const tablename = options.exportTableName?.trim() || getTablename();
     if (tablename === "data") {
       console.error("No table name available for export.");
       showWarningToast(t("errorNoDataToDownload"));
@@ -127,11 +119,8 @@ export function useTableExportDownload() {
         params,
         responseType: "blob",
       });
-      const recordIdForName = String(options.recordId ?? "").trim();
       const filenameBase =
-        options.filenamePrefix ??
-        (recordIdForName === "" ? undefined : recordIdForName) ??
-        tablename;
+        options.filenamePrefix ?? options.recordId?.trim() ?? tablename;
       triggerBrowserDownload(blob, `${filenameBase}.${options.format}`);
     } catch (error) {
       console.error(`Failed to export ${options.format}:`, error);

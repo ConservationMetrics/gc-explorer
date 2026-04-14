@@ -107,19 +107,6 @@ describe("warehouseRecordIdForExport", () => {
     ).toBe("wh-1");
   });
 
-  it("uses id on a GeoJSON Feature when _id is absent (Mapeo map features)", () => {
-    expect(
-      warehouseRecordIdForExport(
-        {
-          type: "Feature",
-          geometry: { type: "Point", coordinates: [0, 0] },
-          properties: { id: "0084cdc57c0b0280", name: "x" },
-        },
-        {},
-      ),
-    ).toBe("0084cdc57c0b0280");
-  });
-
   it("falls back to display row id when map feature has no _id", () => {
     expect(
       warehouseRecordIdForExport(

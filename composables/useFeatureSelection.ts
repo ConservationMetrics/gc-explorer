@@ -296,8 +296,8 @@ export function useFeatureSelection(
     if (featureObject.alertID) {
       query.alertId = featureObject.alertID;
       isMapeo.value = false;
-    } else if (featureObject.id) {
-      query.mapeoDocId = featureObject.id;
+    } else if (featureObject.id || featureObject._id) {
+      query.mapeoDocId = featureObject.id || featureObject._id;
       isMapeo.value = true;
     }
     router.replace({ query });
