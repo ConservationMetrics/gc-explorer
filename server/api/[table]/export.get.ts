@@ -115,45 +115,6 @@ const buildGeoJson = (
 };
 
 /**
- * KML from properties only when geometry is missing (tokml skips invalid/null geometry).
- *
- * @param {Record<string, unknown>} properties - Feature properties (non-geometry columns).
- * @param {string} documentName - Document title in the KML.
- * @returns {string} A minimal KML document.
- */
-const buildKmlPropertiesOnly = (
-  properties: Record<string, unknown>,
-  documentName: string,
-): string => {
-  const xmlEncode = (s: string) =>
-    s
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-
-  const dataTags = Object.entries(properties)
-    .map(
-      ([k, v]) =>
-        `<Data name="${xmlEncode(k)}"><value>${xmlEncode(String(v ?? ""))}</value></Data>`,
-    )
-    .join("");
-
-  return (
-    '<?xml version="1.0" encoding="UTF-8"?>' +
-    '<kml xmlns="http://www.opengis.net/kml/2.2">' +
-    "<Document>" +
-    `<name>${xmlEncode(documentName)}</name>` +
-    "<Placemark>" +
-    "<name>Exported record</name>" +
-    "<description>No valid map geometry in source; attributes only.</description>" +
-    `<ExtendedData>${dataTags}</ExtendedData>` +
-    "</Placemark>" +
-    "</Document></kml>"
-  );
-};
-
-/**
  * Streaming export endpoint for raw dataset downloads.
  * Accepts a `format` query parameter (csv, geojson, kml) and optional
  * `recordId` (warehouse `_id`) to export a single row with the same raw
@@ -251,18 +212,8 @@ export default defineEventHandler(async (event: H3Event) => {
     }
 
     if (format === "kml") {
-      const geojson = buildGeoJson(dataToExport, singleRecordExport);
-      const first = geojson.features[0];
-      const kml =
-        singleRecordExport &&
-        first?.geometry === null &&
-        first.properties &&
-        Object.keys(first.properties).length > 0
-          ? buildKmlPropertiesOnly(
-              first.properties as Record<string, unknown>,
-              table,
-            )
-          : tokml(geojson);
+      const geojson = buildGeoJson(dataToExport);
+      const kml = tokml(geojson);
       setResponseHeader(
         event,
         "Content-Type",

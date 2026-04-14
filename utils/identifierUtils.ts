@@ -1,5 +1,5 @@
-import type { Feature } from "geojson";
 import type { AlertsData } from "@/types";
+import { isGeoJsonFeature } from "@/utils/geoUtils";
 
 /**
  * Strips combining diacritical marks after NFD normalization (ASCII-friendly identifiers).
@@ -100,19 +100,8 @@ export const titleToCamelCase = (str: string): string => {
  * @param displayFeature - Display row shown next to the map.
  * @returns {string | undefined} Warehouse id, or undefined if it cannot be resolved.
  */
-const isGeoJsonFeature = (
-  featureGeojson?: Feature | AlertsData | null,
-): featureGeojson is Feature => {
-  return (
-    !!featureGeojson &&
-    typeof featureGeojson === "object" &&
-    "type" in featureGeojson &&
-    featureGeojson.type === "Feature"
-  );
-};
-
 export const warehouseRecordIdForExport = (
-  featureGeojson?: Feature | AlertsData | null,
+  featureGeojson?: AlertsData | null | unknown,
   displayFeature: Record<string, unknown> = {},
 ): string | undefined => {
   if (isGeoJsonFeature(featureGeojson)) {
