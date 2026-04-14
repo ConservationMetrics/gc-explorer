@@ -8,6 +8,7 @@ import {
   titleToCamelCase,
   titleToSnakeCase,
   toCamelCase,
+  warehouseRecordIdForExport,
 } from "@/utils/identifierUtils";
 
 describe("sanitizeFilenameSegment", () => {
@@ -89,5 +90,35 @@ describe("snakeToTitleCase", () => {
 describe("titleToCamelCase", () => {
   it("converts spaced title text to camelCase", () => {
     expect(titleToCamelCase("Illegal Logging")).toBe("illegalLogging");
+  });
+});
+
+describe("warehouseRecordIdForExport", () => {
+  it("prefers _id from a GeoJSON Feature", () => {
+    expect(
+      warehouseRecordIdForExport(
+        {
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [0, 0] },
+          properties: { _id: "wh-1", name: "x" },
+        },
+        { id: "display-only" },
+      ),
+    ).toBe("wh-1");
+  });
+
+  it("falls back to display row id when map feature has no _id", () => {
+    expect(
+      warehouseRecordIdForExport(
+        { type: "Feature", geometry: null, properties: { name: "a" } },
+        { id: "99" },
+      ),
+    ).toBe("99");
+  });
+
+  it("falls back to display _id when geojson is not a Feature", () => {
+    expect(warehouseRecordIdForExport(undefined, { _id: "raw-2" })).toBe(
+      "raw-2",
+    );
   });
 });

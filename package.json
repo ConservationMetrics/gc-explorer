@@ -29,7 +29,7 @@
     "@vojtechlanka/vue-tags-input": "^3.1.1",
     "chart.js": "^4.4.7",
     "drizzle-orm": "^0.44.5",
-    "lodash": "^4.17.21",
+    "lodash": "^4.18.1",
     "lucide-vue-next": "^0.516.0",
     "mapbox-gl": "^3.18.1",
     "mapbox-gl-ruler-control": "^0.0.2",
