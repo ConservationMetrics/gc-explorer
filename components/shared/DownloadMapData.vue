@@ -11,7 +11,8 @@ import { escapeCSVValue } from "@/utils/csvUtils";
 const props = defineProps<{
   dataForDownload?: Feature | FeatureCollection | AlertsData;
   /** Warehouse `_id` for a selected map feature; triggers server export with full raw columns. */
-  exportRecordId?: string;
+  exportRecordId?: string | number;
+  exportTableName?: string;
   exportFilterColumn?: string;
   exportFilterValues?: string[];
   exportMinDate?: string;
@@ -25,6 +26,11 @@ const exportingFormat = ref<string | null>(null);
 const { t } = useI18n();
 const { warning: showWarningToast } = useToast();
 const { downloadTableExport, getTablename } = useTableExportDownload();
+
+const normalizedExportRecordId = (): string | undefined => {
+  const raw = String(props.exportRecordId ?? "").trim();
+  return raw === "" ? undefined : raw;
+};
 
 /** Incoming feature data can be either a single Feature, FeatureCollection, or an AlertsData object */
 const isAlertsData = (
@@ -56,8 +62,7 @@ const isBulkDownload = computed(() => {
 
 /** Use the server export route for bulk data or a single record identified by `_id`. */
 const useServerExport = computed(() => {
-  const id = props.exportRecordId?.trim();
-  return isBulkDownload.value || !!id;
+  return isBulkDownload.value || !!normalizedExportRecordId();
 });
 
 /**
@@ -74,13 +79,14 @@ const downloadFromExportEndpoint = async (
   try {
     await downloadTableExport({
       format,
+      exportTableName: props.exportTableName,
       exportFilterColumn: props.exportFilterColumn,
       exportFilterValues: props.exportFilterValues,
       exportMinDate: props.exportMinDate,
       exportMaxDate: props.exportMaxDate,
       exportTimestampColumn: props.exportTimestampColumn,
-      filenamePrefix: props.filenamePrefix ?? props.exportRecordId?.trim(),
-      recordId: props.exportRecordId?.trim(),
+      filenamePrefix: props.filenamePrefix ?? normalizedExportRecordId(),
+      recordId: normalizedExportRecordId(),
     });
   } finally {
     exportingFormat.value = null;

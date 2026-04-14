@@ -105,7 +105,11 @@ export const warehouseRecordIdForExport = (
   displayFeature: Record<string, unknown> = {},
 ): string | undefined => {
   if (isGeoJsonFeature(featureGeojson)) {
-    const featureRecordId = String(featureGeojson.properties?._id ?? "").trim();
+    const props = featureGeojson.properties as
+      | Record<string, unknown>
+      | null
+      | undefined;
+    const featureRecordId = String(props?._id ?? props?.id ?? "").trim();
     if (featureRecordId) {
       return featureRecordId;
     }

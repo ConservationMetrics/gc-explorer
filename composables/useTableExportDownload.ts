@@ -28,7 +28,7 @@ export const buildTableExportQueryParams = (options: {
   recordId?: string;
 }): Record<string, string> => {
   const params: Record<string, string> = { format: options.format };
-  const trimmedRecordId = options.recordId?.trim();
+  const trimmedRecordId = String(options.recordId ?? "").trim();
   if (trimmedRecordId) {
     params.recordId = trimmedRecordId;
   }
@@ -64,7 +64,14 @@ export function useTableExportDownload() {
    */
   const getTablename = (): string => {
     const tablename = route.params.tablename;
-    return typeof tablename === "string" ? tablename : "data";
+    if (Array.isArray(tablename)) {
+      const joined = tablename.map(String).join("/").trim();
+      return joined === "" ? "data" : joined;
+    }
+    if (typeof tablename === "string" && tablename.trim() !== "") {
+      return tablename.trim();
+    }
+    return "data";
   };
 
   /**
@@ -79,6 +86,7 @@ export function useTableExportDownload() {
    * @param options.exportMinDate - Optional statistics or timestamp range start.
    * @param options.exportMaxDate - Optional statistics or timestamp range end.
    * @param options.exportTimestampColumn - When set, date range applies to spatial export.
+   * @param options.exportTableName - Optional table override for shared download UIs like AlertsDashboard Mapeo.
    * @param options.filenamePrefix - Download basename without extension; defaults to the table name.
    * @param options.recordId - Optional warehouse `_id` to export a single row with full raw columns.
    * @returns {Promise<void>}
@@ -86,6 +94,7 @@ export function useTableExportDownload() {
   const downloadTableExport = async (options: {
     exportPath?: string;
     format: TableExportFormat;
+    exportTableName?: string;
     exportFilterColumn?: string;
     exportFilterValues?: string[];
     exportMinDate?: string;
@@ -95,7 +104,8 @@ export function useTableExportDownload() {
     recordId?: string;
   }): Promise<void> => {
     const exportPath = options.exportPath ?? "export";
-    const tablename = getTablename();
+    const tablename =
+      String(options.exportTableName ?? "").trim() || getTablename();
     if (tablename === "data") {
       console.error("No table name available for export.");
       showWarningToast(t("errorNoDataToDownload"));
@@ -117,8 +127,11 @@ export function useTableExportDownload() {
         params,
         responseType: "blob",
       });
+      const recordIdForName = String(options.recordId ?? "").trim();
       const filenameBase =
-        options.filenamePrefix ?? options.recordId?.trim() ?? tablename;
+        options.filenamePrefix ??
+        (recordIdForName === "" ? undefined : recordIdForName) ??
+        tablename;
       triggerBrowserDownload(blob, `${filenameBase}.${options.format}`);
     } catch (error) {
       console.error(`Failed to export ${options.format}:`, error);
