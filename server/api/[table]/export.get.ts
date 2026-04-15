@@ -7,6 +7,7 @@ import {
 import { hasValidCoordinates } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { escapeCSVValue } from "@/utils/csvUtils";
+import { requireTableViewConfig } from "@/server/utils";
 // @ts-expect-error - tokml does not have types
 import tokml from "tokml";
 
@@ -138,7 +139,8 @@ export default defineEventHandler(async (event: H3Event) => {
 
   try {
     const viewsConfig = await fetchConfig();
-    const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "member";
+    const tableConfig = requireTableViewConfig(viewsConfig, table);
+    const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
 
     const { mainData, columnsData } = await fetchData(table);
@@ -173,7 +175,7 @@ export default defineEventHandler(async (event: H3Event) => {
       );
     }
 
-    const timestampColumn = viewsConfig[table]?.TIMESTAMP_COLUMN;
+    const timestampColumn = tableConfig.TIMESTAMP_COLUMN;
     const minDate = (query.minDate as string)?.trim();
     const maxDate = (query.maxDate as string)?.trim();
     if (timestampColumn && (minDate || maxDate)) {

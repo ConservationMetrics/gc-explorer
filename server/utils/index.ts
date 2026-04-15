@@ -1,10 +1,34 @@
-import type { BasemapConfig, ViewConfig } from "@/types";
+import type { BasemapConfig, ViewConfig, Views } from "@/types";
 
 import { fetchTableNames } from "@/server/database/dbOperations";
 
 export type ParsedBasemaps = {
   basemaps: BasemapConfig[];
   defaultMapboxStyle?: string;
+};
+
+/**
+ * Returns the config for a table and throws when no view is configured.
+ */
+export const requireTableViewConfig = (
+  viewsConfig: Views,
+  table: string,
+): ViewConfig => {
+  const tableConfig = viewsConfig[table];
+
+  if (!tableConfig || Object.keys(tableConfig).length === 0) {
+    const statusMessage = `No view configuration found for table "${table}"`;
+    const error = new Error(statusMessage) as Error & {
+      statusCode: number;
+      statusMessage: string;
+    };
+    error.statusCode = 404;
+    error.statusMessage = statusMessage;
+    console.error(error);
+    throw error;
+  }
+
+  return tableConfig;
 };
 
 /**

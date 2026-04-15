@@ -10,7 +10,7 @@ import {
 } from "@/server/dataProcessing/dataFilters";
 import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
-import { parseBasemaps } from "@/server/utils";
+import { parseBasemaps, requireTableViewConfig } from "@/server/utils";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
@@ -27,9 +27,10 @@ export default defineEventHandler(async (event: H3Event) => {
 
   try {
     const viewsConfig = await fetchConfig();
+    const tableConfig = requireTableViewConfig(viewsConfig, table);
 
     // Check visibility permissions
-    const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "member";
+    const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
 
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
@@ -58,8 +59,8 @@ export default defineEventHandler(async (event: H3Event) => {
       ),
     };
 
-    const mapeoTable = viewsConfig[table].MAPEO_TABLE;
-    const mapeoCategoryIds = viewsConfig[table].MAPEO_CATEGORY_IDS;
+    const mapeoTable = tableConfig.MAPEO_TABLE;
+    const mapeoCategoryIds = tableConfig.MAPEO_CATEGORY_IDS;
 
     let mapeoData: FeatureCollection | null = null;
 
@@ -71,8 +72,8 @@ export default defineEventHandler(async (event: H3Event) => {
       const filteredMapeoData = filterUnwantedKeys(
         rawMapeoData.mainData,
         rawMapeoData.columnsData,
-        viewsConfig[table].UNWANTED_COLUMNS,
-        viewsConfig[table].UNWANTED_SUBSTRINGS,
+        tableConfig.UNWANTED_COLUMNS,
+        tableConfig.UNWANTED_SUBSTRINGS,
       );
 
       // Filter Mapeo data to only show data where category matches any values in mapeoCategoryIds (a comma-separated string of values)
@@ -93,7 +94,7 @@ export default defineEventHandler(async (event: H3Event) => {
       mapeoData = buildMinimalFeatureCollection(filteredMapeoGeoData, {
         idField: "_id",
         includeAllProperties: true,
-        filterColumn: viewsConfig[table].FRONT_END_FILTER_COLUMN,
+        filterColumn: tableConfig.FRONT_END_FILTER_COLUMN,
         isMapeoData: true,
       });
     }
@@ -108,33 +109,33 @@ export default defineEventHandler(async (event: H3Event) => {
       alertsData: alertsGeojsonData,
       alertsStatistics,
       allowedFileExtensions,
-      logoUrl: viewsConfig[table].LOGO_URL,
-      mapLegendLayerIds: viewsConfig[table].MAP_LEGEND_LAYER_IDS,
-      mapbox3d: viewsConfig[table].MAPBOX_3D ?? false,
+      logoUrl: tableConfig.LOGO_URL,
+      mapLegendLayerIds: tableConfig.MAP_LEGEND_LAYER_IDS,
+      mapbox3d: tableConfig.MAPBOX_3D ?? false,
       mapbox3dTerrainExaggeration: Number(
-        viewsConfig[table].MAPBOX_3D_TERRAIN_EXAGGERATION,
+        tableConfig.MAPBOX_3D_TERRAIN_EXAGGERATION,
       ),
-      mapboxAccessToken: viewsConfig[table].MAPBOX_ACCESS_TOKEN,
-      mapboxBearing: Number(viewsConfig[table].MAPBOX_BEARING),
-      mapboxLatitude: Number(viewsConfig[table].MAPBOX_CENTER_LATITUDE),
-      mapboxLongitude: Number(viewsConfig[table].MAPBOX_CENTER_LONGITUDE),
-      mapboxPitch: Number(viewsConfig[table].MAPBOX_PITCH),
-      mapboxProjection: viewsConfig[table].MAPBOX_PROJECTION,
+      mapboxAccessToken: tableConfig.MAPBOX_ACCESS_TOKEN,
+      mapboxBearing: Number(tableConfig.MAPBOX_BEARING),
+      mapboxLatitude: Number(tableConfig.MAPBOX_CENTER_LATITUDE),
+      mapboxLongitude: Number(tableConfig.MAPBOX_CENTER_LONGITUDE),
+      mapboxPitch: Number(tableConfig.MAPBOX_PITCH),
+      mapboxProjection: tableConfig.MAPBOX_PROJECTION,
       mapboxStyle: defaultMapboxStyle,
       mapboxBasemaps: basemaps,
-      mapboxZoom: Number(viewsConfig[table].MAPBOX_ZOOM),
+      mapboxZoom: Number(tableConfig.MAPBOX_ZOOM),
       mapeoTable,
       mapeoData,
-      mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
-      mediaBasePathAlerts: viewsConfig[table].MEDIA_BASE_PATH_ALERTS,
-      planetApiKey: viewsConfig[table].PLANET_API_KEY,
+      mediaBasePath: tableConfig.MEDIA_BASE_PATH,
+      mediaBasePathAlerts: tableConfig.MEDIA_BASE_PATH_ALERTS,
+      planetApiKey: tableConfig.PLANET_API_KEY,
       table,
-      routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
+      routeLevelPermission: tableConfig.ROUTE_LEVEL_PERMISSION,
     };
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error fetching data on API side:", error.message);
-      return sendError(event, new Error(error.message));
+      return sendError(event, error);
     } else {
       console.error("Unknown error fetching data on API side:", error);
       return sendError(event, new Error("An unknown error occurred"));
