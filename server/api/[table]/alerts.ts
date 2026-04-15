@@ -1,4 +1,4 @@
-import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
 import murmurhash from "murmurhash";
 import {
   prepareAlertsStatistics,
@@ -10,7 +10,7 @@ import {
 } from "@/server/dataProcessing/dataFilters";
 import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
-import { parseBasemaps, requireTableViewConfig } from "@/server/utils";
+import { parseBasemaps } from "@/server/utils";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
@@ -26,8 +26,7 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   try {
-    const viewsConfig = await fetchConfig();
-    const tableConfig = requireTableViewConfig(viewsConfig, table);
+    const tableConfig = await fetchTableConfig(table);
 
     // Check visibility permissions
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
@@ -103,7 +102,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const alertsStatistics = prepareAlertsStatistics(mainData, metadata);
 
     // Parse basemaps configuration
-    const { basemaps, defaultMapboxStyle } = parseBasemaps(viewsConfig, table);
+    const { basemaps, defaultMapboxStyle } = parseBasemaps(tableConfig);
 
     return {
       alertsData: alertsGeojsonData,

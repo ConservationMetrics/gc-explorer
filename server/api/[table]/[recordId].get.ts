@@ -1,6 +1,5 @@
-import { fetchConfig, fetchRecord } from "@/server/database/dbOperations";
+import { fetchRecord, fetchTableConfig } from "@/server/database/dbOperations";
 import { validatePermissions } from "@/utils/accessControls";
-import { requireTableViewConfig } from "@/server/utils";
 
 import type { H3Event } from "h3";
 
@@ -15,8 +14,7 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-    const viewsConfig = await fetchConfig();
-    const tableConfig = requireTableViewConfig(viewsConfig, table);
+    const tableConfig = await fetchTableConfig(table);
 
     // Check visibility permissions
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";

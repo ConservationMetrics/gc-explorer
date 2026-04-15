@@ -12,6 +12,46 @@ import { CONFIG_LIMITS } from "@/utils";
 import { viewConfig, publicViews } from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
 
+/**
+ * Builds a 404-style error for missing table configuration.
+ *
+ * @param {string} table - Table name requested by the API route.
+ * @returns {Error & { statusCode: number; statusMessage: string }} Error object with HTTP metadata.
+ */
+const createMissingViewConfigError = (table: string) => {
+  const statusMessage = `No view configuration found for table "${table}"`;
+  const error = new Error(statusMessage) as Error & {
+    statusCode: number;
+    statusMessage: string;
+  };
+  error.statusCode = 404;
+  error.statusMessage = statusMessage;
+  return error;
+};
+
+/**
+ * Ensures the config database contains a `view_config` table before reads/writes.
+ *
+ * @returns {Promise<void>} Resolves when the table exists.
+ */
+const ensureViewConfigTableExists = async (): Promise<void> => {
+  const tableExistsResult = await configDb.execute(sql`
+    SELECT to_regclass('view_config')
+  `);
+  const tableExists =
+    (tableExistsResult[0] as { to_regclass: string | null })?.to_regclass !==
+    null;
+
+  if (!tableExists) {
+    await configDb.execute(sql`
+      CREATE TABLE view_config (
+        table_name TEXT PRIMARY KEY,
+        views_config TEXT
+      )
+    `);
+  }
+};
+
 const checkTableExists = async (
   table: string | undefined,
 ): Promise<boolean> => {
@@ -255,22 +295,7 @@ export const fetchConfig = async (): Promise<Views> => {
   }
 
   try {
-    // Check if view_config table exists in config database, create if it doesn't
-    const tableExistsResult = await configDb.execute(sql`
-      SELECT to_regclass('view_config')
-    `);
-    const tableExists =
-      (tableExistsResult[0] as { to_regclass: string | null })?.to_regclass !==
-      null;
-
-    if (!tableExists) {
-      await configDb.execute(sql`
-        CREATE TABLE view_config (
-          table_name TEXT PRIMARY KEY,
-          views_config TEXT
-        )
-      `);
-    }
+    await ensureViewConfigTableExists();
 
     const result = await configDb.select().from(viewConfig);
 
@@ -283,6 +308,53 @@ export const fetchConfig = async (): Promise<Views> => {
   } catch (error) {
     console.error("Error fetching config:", error);
     return {};
+  }
+};
+
+/**
+ * Fetches view configuration for one table only.
+ *
+ * @param {string} table - Table name to load config for.
+ * @returns {Promise<ViewConfig>} Parsed view config for the requested table.
+ * @throws {Error} When config is missing or cannot be loaded.
+ */
+export const fetchTableConfig = async (table: string): Promise<ViewConfig> => {
+  if (process.env.CI) {
+    const viewsConfig = await fetchConfig();
+    const tableConfig = viewsConfig[table];
+    if (!tableConfig || Object.keys(tableConfig).length === 0) {
+      throw createMissingViewConfigError(table);
+    }
+    return tableConfig;
+  }
+
+  try {
+    await ensureViewConfigTableExists();
+
+    const result = await configDb
+      .select({
+        viewsConfig: viewConfig.viewsConfig,
+      })
+      .from(viewConfig)
+      .where(eq(viewConfig.tableName, table))
+      .limit(1);
+
+    if (result.length === 0) {
+      throw createMissingViewConfigError(table);
+    }
+
+    const parsedConfig = JSON.parse(result[0].viewsConfig) as ViewConfig;
+    if (!parsedConfig || Object.keys(parsedConfig).length === 0) {
+      throw createMissingViewConfigError(table);
+    }
+
+    return parsedConfig;
+  } catch (error) {
+    if (error instanceof Error && "statusCode" in error) {
+      throw error;
+    }
+    console.error(`Error fetching config for table "${table}":`, error);
+    throw error;
   }
 };
 

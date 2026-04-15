@@ -1,4 +1,4 @@
-import type { BasemapConfig, ViewConfig, Views } from "@/types";
+import type { BasemapConfig, ViewConfig } from "@/types";
 
 import { fetchTableNames } from "@/server/database/dbOperations";
 
@@ -8,40 +8,11 @@ export type ParsedBasemaps = {
 };
 
 /**
- * Returns the config for a table and throws when no view is configured.
+ * Parse basemaps configuration from a table ViewConfig, with legacy fallback.
  */
-export const requireTableViewConfig = (
-  viewsConfig: Views,
-  table: string,
-): ViewConfig => {
-  const tableConfig = viewsConfig[table];
-
-  if (!tableConfig || Object.keys(tableConfig).length === 0) {
-    const statusMessage = `No view configuration found for table "${table}"`;
-    const error = new Error(statusMessage) as Error & {
-      statusCode: number;
-      statusMessage: string;
-    };
-    error.statusCode = 404;
-    error.statusMessage = statusMessage;
-    console.error(error);
-    throw error;
-  }
-
-  return tableConfig;
-};
-
-/**
- * Parse basemaps configuration from ViewConfig for a given table, with legacy fallback.
- */
-export const parseBasemaps = (
-  viewsConfig: Record<string, ViewConfig>,
-  table: string,
-): ParsedBasemaps => {
+export const parseBasemaps = (tableConfig: ViewConfig): ParsedBasemaps => {
   let basemaps: BasemapConfig[] = [];
   let defaultMapboxStyle: string | undefined;
-
-  const tableConfig = viewsConfig[table] || {};
 
   if (tableConfig.MAPBOX_BASEMAPS) {
     try {

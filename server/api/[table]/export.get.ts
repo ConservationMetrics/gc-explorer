@@ -1,4 +1,4 @@
-import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
 import {
   filterGeoData,
   filterToSelectedValues,
@@ -7,7 +7,6 @@ import {
 import { hasValidCoordinates } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { escapeCSVValue } from "@/utils/csvUtils";
-import { requireTableViewConfig } from "@/server/utils";
 // @ts-expect-error - tokml does not have types
 import tokml from "tokml";
 
@@ -138,8 +137,7 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-    const viewsConfig = await fetchConfig();
-    const tableConfig = requireTableViewConfig(viewsConfig, table);
+    const tableConfig = await fetchTableConfig(table);
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
 

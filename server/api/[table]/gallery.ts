@@ -1,11 +1,10 @@
-import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
 import {
   filterDataByExtension,
   filterUnwantedKeys,
   filterOutUnwantedValues,
 } from "@/server/dataProcessing/dataFilters";
 import { validatePermissions } from "@/utils/accessControls";
-import { requireTableViewConfig } from "@/server/utils";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, ColumnEntry } from "@/types";
@@ -20,8 +19,7 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   try {
-    const viewsConfig = await fetchConfig();
-    const tableConfig = requireTableViewConfig(viewsConfig, table);
+    const tableConfig = await fetchTableConfig(table);
 
     // Check visibility permissions
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
