@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import { requireTableViewConfig } from "@/server/utils";
 
 vi.mock("@/server/database/dbOperations", () => ({
   fetchTableNames: vi.fn(),
 }));
-
-import { requireTableViewConfig } from "@/server/utils";
 
 describe("requireTableViewConfig", () => {
   it("returns the table config when present", () => {
