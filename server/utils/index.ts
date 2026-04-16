@@ -8,7 +8,7 @@ export type ParsedBasemaps = {
 };
 
 /**
- * Parse basemaps configuration from a table ViewConfig, with legacy fallback.
+ * Parse basemaps configuration from ViewConfig for a given table, with legacy fallback.
  */
 export const parseBasemaps = (tableConfig: ViewConfig): ParsedBasemaps => {
   let basemaps: BasemapConfig[] = [];
