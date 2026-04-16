@@ -1,4 +1,4 @@
-import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
 import {
   filterDataByExtension,
   filterUnwantedKeys,
@@ -19,10 +19,10 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   try {
-    const viewsConfig = await fetchConfig();
+    const tableConfig = await fetchTableConfig(table);
 
     // Check visibility permissions
-    const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "member";
+    const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
 
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
@@ -33,25 +33,25 @@ export default defineEventHandler(async (event: H3Event) => {
     const filteredData = filterUnwantedKeys(
       mainData,
       columnsData as ColumnEntry[],
-      viewsConfig[table].UNWANTED_COLUMNS,
-      viewsConfig[table].UNWANTED_SUBSTRINGS,
+      tableConfig.UNWANTED_COLUMNS,
+      tableConfig.UNWANTED_SUBSTRINGS,
     );
     // Filter data to remove unwanted values per chosen column
     const dataFilteredByValues = filterOutUnwantedValues(
       filteredData,
-      viewsConfig[table].FILTER_BY_COLUMN,
-      viewsConfig[table].FILTER_OUT_VALUES_FROM_COLUMN,
+      tableConfig.FILTER_BY_COLUMN,
+      tableConfig.FILTER_OUT_VALUES_FROM_COLUMN,
     );
     // Filter only data with media attachments
     const dataWithFilesOnly = filterDataByExtension(
       dataFilteredByValues,
       allowedFileExtensions,
-      viewsConfig[table].MEDIA_COLUMN,
+      tableConfig.MEDIA_COLUMN,
     );
 
-    const filterColumn = viewsConfig[table].FRONT_END_FILTER_COLUMN;
-    const mediaColumn = viewsConfig[table].MEDIA_COLUMN;
-    const timestampColumn = viewsConfig[table].TIMESTAMP_COLUMN;
+    const filterColumn = tableConfig.FRONT_END_FILTER_COLUMN;
+    const mediaColumn = tableConfig.MEDIA_COLUMN;
+    const timestampColumn = tableConfig.TIMESTAMP_COLUMN;
 
     // Return minimal records: ID + columns needed for filtering and media display
     const minimalData = dataWithFilesOnly.map((entry) => {
@@ -73,18 +73,18 @@ export default defineEventHandler(async (event: H3Event) => {
       allowedFileExtensions: allowedFileExtensions,
       data: minimalData,
       filterColumn,
-      mediaBasePath: viewsConfig[table].MEDIA_BASE_PATH,
+      mediaBasePath: tableConfig.MEDIA_BASE_PATH,
       mediaColumn,
       table: table,
       timestampColumn: timestampColumn ?? undefined,
-      routeLevelPermission: viewsConfig[table].ROUTE_LEVEL_PERMISSION,
+      routeLevelPermission: tableConfig.ROUTE_LEVEL_PERMISSION,
     };
 
     return response;
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error fetching data on API side:", error.message);
-      return sendError(event, new Error(error.message));
+      return sendError(event, error);
     } else {
       console.error("Unknown error fetching data on API side:", error);
       return sendError(event, new Error("An unknown error occurred"));

@@ -1,4 +1,4 @@
-import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
 import { prepareAlertsStatistics } from "@/server/dataProcessing/dataTransformers";
 import { validatePermissions } from "@/utils/accessControls";
 import {
@@ -26,8 +26,8 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-    const viewsConfig = await fetchConfig();
-    const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "member";
+    const tableConfig = await fetchTableConfig(table);
+    const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
 
     const { mainData, metadata } = (await fetchData(table)) as {

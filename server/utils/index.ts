@@ -10,14 +10,9 @@ export type ParsedBasemaps = {
 /**
  * Parse basemaps configuration from ViewConfig for a given table, with legacy fallback.
  */
-export const parseBasemaps = (
-  viewsConfig: Record<string, ViewConfig>,
-  table: string,
-): ParsedBasemaps => {
+export const parseBasemaps = (tableConfig: ViewConfig): ParsedBasemaps => {
   let basemaps: BasemapConfig[] = [];
   let defaultMapboxStyle: string | undefined;
-
-  const tableConfig = viewsConfig[table] || {};
 
   if (tableConfig.MAPBOX_BASEMAPS) {
     try {
