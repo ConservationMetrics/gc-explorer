@@ -22,9 +22,21 @@ describe("client pages pass ?limit to dataset API endpoints", () => {
     expect(content).toContain("params: { limit: rowLimit }");
   });
 
-  it.each(pages)("%s renders RowLimitBanner when rowLimitReached", (page) => {
+  it.each(pages)("%s triggers row-limit toast via composable", (page) => {
     const content = readFileSync(resolve(page), "utf-8");
-    expect(content).toContain("rowLimitReached");
-    expect(content).toContain("RowLimitBanner");
+    expect(content).toContain("useRowLimitReachedToast(data, rowLimit)");
+  });
+});
+
+describe("row limit toast composable", () => {
+  it("uses useToast warning for partial results", () => {
+    const content = readFileSync(
+      resolve("composables/useRowLimitReachedToast.ts"),
+      "utf-8",
+    );
+    expect(content).toContain("useToast");
+    expect(content).toContain("warning");
+    expect(content).toContain("rowLimitReachedTitle");
+    expect(content).toContain("rowLimitReachedMessage");
   });
 });

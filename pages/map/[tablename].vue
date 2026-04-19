@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
-import RowLimitBanner from "@/components/shared/RowLimitBanner.vue";
 import { replaceUnderscoreWithSpace } from "@/utils/identifierUtils";
 import { useIsPublic } from "@/utils/accessControls";
 import type { BasemapConfig } from "@/types";
@@ -43,6 +42,8 @@ const timestampColumn = ref<string | undefined>();
 const { data, error, refresh } = await useFetch(`/api/${table}/map`, {
   params: { limit: rowLimit },
 });
+
+useRowLimitReachedToast(data, rowLimit);
 
 if (data.value && !error.value) {
   allowedFileExtensions.value = data.value.allowedFileExtensions;
@@ -99,7 +100,6 @@ useHead({
       :retry="() => refresh()"
     />
     <ClientOnly v-else>
-      <RowLimitBanner v-if="data?.rowLimitReached" :limit="rowLimit" />
       <MapView
         v-if="dataFetched && mapData"
         :allowed-file-extensions="allowedFileExtensions"
