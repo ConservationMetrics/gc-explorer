@@ -4,10 +4,10 @@ import DataLoadError from "@/components/shared/DataLoadError.vue";
 import RowLimitBanner from "@/components/shared/RowLimitBanner.vue";
 import { replaceUnderscoreWithSpace } from "@/utils/identifierUtils";
 import { useIsPublic } from "@/utils/accessControls";
-import { ROW_LIMIT } from "@/utils";
 import type { BasemapConfig } from "@/types";
 
 const { t } = useI18n();
+const rowLimit = useRuntimeConfig().public.rowLimit;
 
 // Extract the tablename from the route parameters
 const route = useRoute();
@@ -38,7 +38,7 @@ const mediaBasePathAlerts = ref();
 const planetApiKey = ref();
 
 const { data, error, refresh } = await useFetch(`/api/${table}/alerts`, {
-  params: { limit: ROW_LIMIT },
+  params: { limit: rowLimit },
 });
 
 if (data.value && !error.value) {
@@ -94,7 +94,7 @@ useHead({
       :retry="() => refresh()"
     />
     <ClientOnly v-else>
-      <RowLimitBanner v-if="data?.rowLimitReached" :limit="ROW_LIMIT" />
+      <RowLimitBanner v-if="data?.rowLimitReached" :limit="rowLimit" />
       <AlertsDashboard
         v-if="dataFetched"
         :alerts-data="alertsData"

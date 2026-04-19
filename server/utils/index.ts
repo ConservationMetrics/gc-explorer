@@ -3,6 +3,7 @@ import { validateRowLimit } from "@/utils";
 
 import { fetchTableNames } from "@/server/database/dbOperations";
 
+import { useRuntimeConfig } from "#imports";
 import type { H3Event } from "h3";
 
 export type ParsedBasemaps = {
@@ -17,7 +18,8 @@ export type ParsedBasemaps = {
  */
 export const parseAndValidateLimit = (event: H3Event): number => {
   const raw = getQuery(event).limit;
-  return validateRowLimit(raw);
+  const maxLimit = Number(useRuntimeConfig(event).public.rowLimit);
+  return validateRowLimit(raw, maxLimit);
 };
 
 /**

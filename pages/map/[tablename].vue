@@ -4,11 +4,11 @@ import DataLoadError from "@/components/shared/DataLoadError.vue";
 import RowLimitBanner from "@/components/shared/RowLimitBanner.vue";
 import { replaceUnderscoreWithSpace } from "@/utils/identifierUtils";
 import { useIsPublic } from "@/utils/accessControls";
-import { ROW_LIMIT } from "@/utils";
 import type { BasemapConfig } from "@/types";
 import type { FeatureCollection } from "geojson";
 
 const { t } = useI18n();
+const rowLimit = useRuntimeConfig().public.rowLimit;
 
 // Extract the tablename from the route parameters
 const route = useRoute();
@@ -41,7 +41,7 @@ const planetApiKey = ref();
 const timestampColumn = ref<string | undefined>();
 
 const { data, error, refresh } = await useFetch(`/api/${table}/map`, {
-  params: { limit: ROW_LIMIT },
+  params: { limit: rowLimit },
 });
 
 if (data.value && !error.value) {
@@ -99,7 +99,7 @@ useHead({
       :retry="() => refresh()"
     />
     <ClientOnly v-else>
-      <RowLimitBanner v-if="data?.rowLimitReached" :limit="ROW_LIMIT" />
+      <RowLimitBanner v-if="data?.rowLimitReached" :limit="rowLimit" />
       <MapView
         v-if="dataFetched && mapData"
         :allowed-file-extensions="allowedFileExtensions"

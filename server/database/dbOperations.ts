@@ -7,7 +7,7 @@ import type {
   Views,
   ViewConfig,
 } from "@/types";
-import { CONFIG_LIMITS, ROW_LIMIT } from "@/utils";
+import { CONFIG_LIMITS } from "@/utils";
 
 import { viewConfig, publicViews } from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
@@ -90,17 +90,20 @@ const fetchDataFromTable = async (
 
 export const fetchData = async (
   table: string | undefined,
-  limit: number = ROW_LIMIT,
+  limit?: number,
 ): Promise<{
   mainData: DataEntry[];
   columnsData: ColumnEntry[] | null;
   metadata: unknown[] | null;
 }> => {
+  const resolvedLimit =
+    limit ?? Number(useRuntimeConfig().public.rowLimit as number);
+
   console.log("Fetching data from", table, "...");
   const mainDataExists = await checkTableExists(table);
   let mainData: DataEntry[] = [];
   if (mainDataExists) {
-    mainData = (await fetchDataFromTable(table, limit)) as DataEntry[];
+    mainData = (await fetchDataFromTable(table, resolvedLimit)) as DataEntry[];
   } else {
     throw new Error("Main table does not exist");
   }
