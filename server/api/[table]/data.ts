@@ -1,5 +1,5 @@
-import { fetchConfig, fetchData } from "@/server/database/dbOperations";
 import { parseAndValidateLimit } from "@/server/utils";
+import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
@@ -9,8 +9,8 @@ export default defineEventHandler(async (event: H3Event) => {
   const limit = parseAndValidateLimit(event);
 
   try {
-    const viewsConfig = await fetchConfig();
-    const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "anyone";
+    const tableConfig = await fetchTableConfig(table);
+    const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "anyone";
 
     await validatePermissions(event, permission);
 
@@ -23,7 +23,7 @@ export default defineEventHandler(async (event: H3Event) => {
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error fetching data on API side:", error.message);
-      return sendError(event, new Error(error.message));
+      return sendError(event, error);
     } else {
       console.error("Unknown error fetching data on API side:", error);
       return sendError(event, new Error("An unknown error occurred"));

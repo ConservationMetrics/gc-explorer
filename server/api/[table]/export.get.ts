@@ -1,4 +1,4 @@
-import { fetchConfig, fetchData } from "@/server/database/dbOperations";
+import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
 import {
   filterGeoData,
   filterToSelectedValues,
@@ -137,8 +137,8 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-    const viewsConfig = await fetchConfig();
-    const permission = viewsConfig[table]?.ROUTE_LEVEL_PERMISSION ?? "member";
+    const tableConfig = await fetchTableConfig(table);
+    const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
 
     const { mainData, columnsData } = await fetchData(table);
@@ -173,7 +173,7 @@ export default defineEventHandler(async (event: H3Event) => {
       );
     }
 
-    const timestampColumn = viewsConfig[table]?.TIMESTAMP_COLUMN;
+    const timestampColumn = tableConfig.TIMESTAMP_COLUMN;
     const minDate = (query.minDate as string)?.trim();
     const maxDate = (query.maxDate as string)?.trim();
     if (timestampColumn && (minDate || maxDate)) {
