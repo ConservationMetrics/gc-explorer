@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
+
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { replaceUnderscoreWithSpace } from "@/utils/identifierUtils";
 import { useIsPublic } from "@/utils/accessControls";
+
 import type { BasemapConfig } from "@/types";
 
 const { t } = useI18n();
