@@ -4,6 +4,7 @@ import {
   filterUnwantedKeys,
   filterOutUnwantedValues,
 } from "@/server/dataProcessing/dataFilters";
+import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
@@ -11,6 +12,7 @@ import type { AllowedFileExtensions, ColumnEntry } from "@/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
+  const limit = parseAndValidateLimit(event);
 
   const {
     public: { allowedFileExtensions },
@@ -27,7 +29,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData, columnsData } = await fetchData(table);
+    const { mainData, columnsData } = await fetchData(table, limit);
 
     // Filter data to remove unwanted columns and substrings
     const filteredData = filterUnwantedKeys(
@@ -69,18 +71,17 @@ export default defineEventHandler(async (event: H3Event) => {
       return minimal;
     });
 
-    const response = {
-      allowedFileExtensions: allowedFileExtensions,
+    return {
+      allowedFileExtensions,
       data: minimalData,
       filterColumn,
       mediaBasePath: tableConfig.MEDIA_BASE_PATH,
       mediaColumn,
-      table: table,
+      table,
       timestampColumn: timestampColumn ?? undefined,
+      rowLimitReached: mainData.length >= limit,
       routeLevelPermission: tableConfig.ROUTE_LEVEL_PERMISSION,
     };
-
-    return response;
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error fetching data on API side:", error.message);

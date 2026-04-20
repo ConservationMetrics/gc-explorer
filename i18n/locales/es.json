@@ -232,6 +232,8 @@
   "restrictView": "¿Desea restringir esta vista?",
   "restrictViewDescription": "Cuando está restringida, solo los usuarios Miembro y Administrador pueden acceder a esta vista. Los usuarios Visor serán redirigidos a la página principal.",
   "retry": "Reintentar",
+  "rowLimitReachedTitle": "Resultados parciales",
+  "rowLimitReachedMessage": "Este conjunto de datos excede el número máximo de registros que se pueden mostrar. Solo se muestran los primeros {limit} registros en esta vista.",
   "returnToHome": "Volver al inicio",
   "satelliteUsedForDetection": "Satélite utilizado para la detección",
   "searchDatasets": "Buscar conjuntos de datos...",

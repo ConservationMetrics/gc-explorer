@@ -232,6 +232,8 @@
   "restrictView": "Deseja restringir esta visualização?",
   "restrictViewDescription": "Quando restringida, apenas usuários Membro e Administrador podem acessar esta visualização. Usuários Visualizador serão redirecionados para a página inicial.",
   "retry": "Tentar novamente",
+  "rowLimitReachedTitle": "Resultados parciais",
+  "rowLimitReachedMessage": "Este conjunto de dados excede o número máximo de registros que podem ser exibidos. Apenas os primeiros {limit} registros são mostrados nesta visualização.",
   "returnToHome": "Voltar ao início",
   "satelliteUsedForDetection": "Satélite usado para detecção",
   "searchDatasets": "Pesquisar conjuntos de dados...",

@@ -71,14 +71,16 @@ const checkTableExists = async (
 
 const fetchDataFromTable = async (
   table: string | undefined,
+  limit?: number,
 ): Promise<unknown[]> => {
   if (!table) return [];
 
   try {
     const cleanTableName = table.replace(/"/g, "");
-    const result = await warehouseDb.execute(sql`
-      SELECT * FROM ${sql.identifier(cleanTableName)}
-    `);
+    const query = limit
+      ? sql`SELECT * FROM ${sql.identifier(cleanTableName)} LIMIT ${limit}`
+      : sql`SELECT * FROM ${sql.identifier(cleanTableName)}`;
+    const result = await warehouseDb.execute(query);
     return result || [];
   } catch (error) {
     console.error("Error fetching data from table:", error);
@@ -88,16 +90,20 @@ const fetchDataFromTable = async (
 
 export const fetchData = async (
   table: string | undefined,
+  limit?: number,
 ): Promise<{
   mainData: DataEntry[];
   columnsData: ColumnEntry[] | null;
   metadata: unknown[] | null;
 }> => {
+  const resolvedLimit =
+    limit ?? Number(useRuntimeConfig().public.rowLimit as number);
+
   console.log("Fetching data from", table, "...");
   const mainDataExists = await checkTableExists(table);
   let mainData: DataEntry[] = [];
   if (mainDataExists) {
-    mainData = (await fetchDataFromTable(table)) as DataEntry[];
+    mainData = (await fetchDataFromTable(table, resolvedLimit)) as DataEntry[];
   } else {
     throw new Error("Main table does not exist");
   }

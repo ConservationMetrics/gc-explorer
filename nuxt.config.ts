@@ -131,6 +131,8 @@ export default defineNuxtConfig({
       },
     },
     public: {
+      // Max rows returned by dataset view APIs (map, gallery, alerts, etc.).
+      rowLimit: 10_000,
       allowedFileExtensions: {
         image: ["jpg", "jpeg", "png", "webp"],
         audio: ["mp3", "ogg", "wav", "m4a"],

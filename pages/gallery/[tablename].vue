@@ -6,6 +6,9 @@ import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.v
 import { replaceUnderscoreWithSpace } from "@/utils/identifierUtils";
 import { useIsPublic } from "@/utils/accessControls";
 
+const { t } = useI18n();
+const rowLimit = useRuntimeConfig().public.rowLimit;
+
 // Extract the tablename from the route parameters
 const route = useRoute();
 const tableRaw = route.params.tablename;
@@ -19,7 +22,11 @@ const mediaBasePath = ref();
 const mediaColumn = ref();
 const timestampColumn = ref<string | undefined>();
 
-const { data, error, refresh } = await useFetch(`/api/${table}/gallery`);
+const { data, error, refresh } = await useFetch(`/api/${table}/gallery`, {
+  params: { limit: rowLimit },
+});
+
+useRowLimitReachedToast(data, rowLimit);
 
 if (data.value && !error.value) {
   allowedFileExtensions.value = data.value.allowedFileExtensions;
@@ -32,8 +39,6 @@ if (data.value && !error.value) {
 } else {
   console.error("Error fetching data:", error.value);
 }
-
-const { t } = useI18n();
 
 // Check if this view is publicly accessible
 const isPublic = useIsPublic(data);

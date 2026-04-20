@@ -7,6 +7,9 @@ import { useIsPublic } from "@/utils/accessControls";
 
 import type { BasemapConfig } from "@/types";
 
+const { t } = useI18n();
+const rowLimit = useRuntimeConfig().public.rowLimit;
+
 // Extract the tablename from the route parameters
 const route = useRoute();
 const tableRaw = route.params.tablename;
@@ -35,7 +38,11 @@ const mediaBasePath = ref();
 const mediaBasePathAlerts = ref();
 const planetApiKey = ref();
 
-const { data, error, refresh } = await useFetch(`/api/${table}/alerts`);
+const { data, error, refresh } = await useFetch(`/api/${table}/alerts`, {
+  params: { limit: rowLimit },
+});
+
+useRowLimitReachedToast(data, rowLimit);
 
 if (data.value && !error.value) {
   alertsData.value = data.value.alertsData;
@@ -63,8 +70,6 @@ if (data.value && !error.value) {
 } else {
   console.error("Error fetching data:", error.value);
 }
-
-const { t } = useI18n();
 
 // Check if this view is publicly accessible
 const isPublic = useIsPublic(data);

@@ -11,6 +11,7 @@ import {
 import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { parseBasemaps } from "@/server/utils";
+import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
@@ -18,6 +19,7 @@ import type { FeatureCollection } from "geojson";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
+  const limit = parseAndValidateLimit(event);
 
   const {
     public: { allowedFileExtensions },
@@ -34,7 +36,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData, metadata } = (await fetchData(table)) as {
+    const { mainData, metadata } = (await fetchData(table, limit)) as {
       mainData: DataEntry[];
       metadata: AlertsMetadata[];
     };
@@ -129,6 +131,7 @@ export default defineEventHandler(async (event: H3Event) => {
       mediaBasePathAlerts: tableConfig.MEDIA_BASE_PATH_ALERTS,
       planetApiKey: tableConfig.PLANET_API_KEY,
       table,
+      rowLimitReached: mainData.length >= limit,
       routeLevelPermission: tableConfig.ROUTE_LEVEL_PERMISSION,
     };
   } catch (error) {
