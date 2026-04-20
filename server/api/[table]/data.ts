@@ -1,4 +1,4 @@
-import { parseAndValidateLimit } from "@/server/utils";
+import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
 import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
 import { validatePermissions } from "@/utils/accessControls";
 

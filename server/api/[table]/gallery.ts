@@ -4,7 +4,7 @@ import {
   filterUnwantedKeys,
   filterOutUnwantedValues,
 } from "@/server/dataProcessing/dataFilters";
-import { parseAndValidateLimit } from "@/server/utils";
+import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";

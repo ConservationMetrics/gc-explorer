@@ -92,31 +92,6 @@ export const getRandomColor = () => {
 };
 
 /**
- * Validates a raw limit value (from a query param) against `maxLimit`.
- * Returns the validated integer or throws an error with `statusCode: 422`.
- */
-export const validateRowLimit = (raw: unknown, maxLimit: number): number => {
-  const limit = raw != null ? Number(raw) : maxLimit;
-
-  if (!Number.isInteger(limit) || limit <= 0) {
-    throw Object.assign(new Error("limit must be a positive integer"), {
-      statusCode: 422,
-    });
-  }
-
-  if (limit > maxLimit) {
-    throw Object.assign(
-      new Error(
-        `Requested limit (${limit}) exceeds server maximum of ${maxLimit}`,
-      ),
-      { statusCode: 422 },
-    );
-  }
-
-  return limit;
-};
-
-/**
  * Character limits for dataset configuration fields
  * @type {Object}
  */

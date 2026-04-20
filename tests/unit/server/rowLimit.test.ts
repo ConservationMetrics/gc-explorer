@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { validateRowLimit } from "@/utils";
+import { validateRowLimit } from "@/server/utils/dbHelpers";
 
 /** Matches `runtimeConfig.public.rowLimit` default in `nuxt.config.ts`. */
 const DEFAULT_ROW_LIMIT = 10_000;
