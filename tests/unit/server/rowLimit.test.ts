@@ -32,9 +32,9 @@ describe("validateRowLimit", () => {
   });
 
   it("accepts limit equal to maxLimit", () => {
-    expect(
-      validateRowLimit(String(DEFAULT_ROW_LIMIT), DEFAULT_ROW_LIMIT),
-    ).toBe(DEFAULT_ROW_LIMIT);
+    expect(validateRowLimit(String(DEFAULT_ROW_LIMIT), DEFAULT_ROW_LIMIT)).toBe(
+      DEFAULT_ROW_LIMIT,
+    );
   });
 
   it("accepts numeric input", () => {

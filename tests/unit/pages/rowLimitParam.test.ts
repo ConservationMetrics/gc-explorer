@@ -16,11 +16,14 @@ describe("client pages pass ?limit to dataset API endpoints", () => {
     "pages/alerts/[tablename].vue",
   ];
 
-  it.each(pages)("%s uses runtime rowLimit and passes it to useFetch", (page) => {
-    const content = readFileSync(resolve(page), "utf-8");
-    expect(content).toContain("useRuntimeConfig().public.rowLimit");
-    expect(content).toContain("params: { limit: rowLimit }");
-  });
+  it.each(pages)(
+    "%s uses runtime rowLimit and passes it to useFetch",
+    (page) => {
+      const content = readFileSync(resolve(page), "utf-8");
+      expect(content).toContain("useRuntimeConfig().public.rowLimit");
+      expect(content).toContain("params: { limit: rowLimit }");
+    },
+  );
 
   it.each(pages)("%s triggers row-limit toast via composable", (page) => {
     const content = readFileSync(resolve(page), "utf-8");
