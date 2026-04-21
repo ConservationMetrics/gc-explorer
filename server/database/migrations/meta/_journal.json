@@ -50,6 +50,13 @@
       "when": 1768207769008,
       "tag": "0006_backfill_parent_alerts_table_incidents",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776729600000,
+      "tag": "0007_create_view_type_config_tables",
+      "breakpoints": true
     }
   ]
 }

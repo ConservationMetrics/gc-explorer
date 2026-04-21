@@ -120,6 +120,9 @@ export default defineNuxtConfig({
     dbSsl: true,
     dbTable: "",
     port: "8080",
+    maxAlertsSecondaryDatasets: 1,
+    maxMapSecondaryDatasets: 2,
+    maxGallerySecondaryDatasets: 0,
     // Session secret for nuxt-auth-utils
     sessionSecret: "your-session-secret-key-change-in-production",
     // OAuth configuration for nuxt-auth-utils
