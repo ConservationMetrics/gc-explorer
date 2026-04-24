@@ -57,6 +57,13 @@
       "when": 1776729600000,
       "tag": "0007_create_view_type_config_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776816000000,
+      "tag": "0008_backfill_view_config_alerts",
+      "breakpoints": true
     }
   ]
 }
