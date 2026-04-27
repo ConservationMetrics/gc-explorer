@@ -66,6 +66,11 @@ export interface Views {
   [key: string]: ViewConfig;
 }
 
+export interface AlertsViewDatasets {
+  primaryDataset: string;
+  secondaryDataset: string | null;
+}
+
 export type AllowedFileExtensions = {
   audio: string[];
   image: string[];

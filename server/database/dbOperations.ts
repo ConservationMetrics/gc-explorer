@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 
 import type {
+  AlertsViewDatasets,
   ColumnEntry,
   DataEntry,
   RouteLevelPermission,
@@ -9,7 +10,7 @@ import type {
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
 
-import { viewConfig, publicViews } from "./schema";
+import { viewConfig, viewConfigAlerts, publicViews } from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
 
 /**
@@ -20,6 +21,17 @@ import { configDb, warehouseDb } from "./dbConnection";
  */
 const createMissingViewConfigError = (table: string) => {
   const statusMessage = `No view configuration found for table "${table}"`;
+  const error = new Error(statusMessage) as Error & {
+    statusCode: number;
+    statusMessage: string;
+  };
+  error.statusCode = 404;
+  error.statusMessage = statusMessage;
+  return error;
+};
+
+const createMissingAlertsDatasetConfigError = (table: string) => {
+  const statusMessage = `No alerts dataset configuration found for table "${table}"`;
   const error = new Error(statusMessage) as Error & {
     statusCode: number;
     statusMessage: string;
@@ -360,6 +372,56 @@ export const fetchTableConfig = async (table: string): Promise<ViewConfig> => {
       throw error;
     }
     console.error(`Error fetching config for table "${table}":`, error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches alerts dataset linkage for one table from view_config_alerts.
+ *
+ * @param {string} table - Alerts view identifier.
+ * @returns {Promise<AlertsViewDatasets>} Primary and optional secondary dataset names.
+ * @throws {Error} When alerts dataset config is missing.
+ */
+export const fetchAlertsViewDatasets = async (
+  table: string,
+): Promise<AlertsViewDatasets> => {
+  if (process.env.CI) {
+    const viewsConfig = await fetchConfig();
+    const tableConfig = viewsConfig[table];
+    if (!tableConfig) {
+      throw createMissingAlertsDatasetConfigError(table);
+    }
+
+    return {
+      primaryDataset: table,
+      secondaryDataset: tableConfig.MAPEO_TABLE ?? null,
+    };
+  }
+
+  try {
+    const result = await configDb
+      .select({
+        primaryDataset: viewConfigAlerts.primaryDataset,
+        secondaryDataset: viewConfigAlerts.secondaryDataset,
+      })
+      .from(viewConfigAlerts)
+      .where(eq(viewConfigAlerts.viewId, table))
+      .limit(1);
+
+    if (result.length === 0 || !result[0].primaryDataset) {
+      throw createMissingAlertsDatasetConfigError(table);
+    }
+
+    return {
+      primaryDataset: result[0].primaryDataset,
+      secondaryDataset: result[0].secondaryDataset,
+    };
+  } catch (error) {
+    if (error instanceof Error && "statusCode" in error) {
+      throw error;
+    }
+    console.error(`Error fetching alerts datasets for table "${table}":`, error);
     throw error;
   }
 };
