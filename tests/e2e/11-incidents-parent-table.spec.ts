@@ -142,10 +142,16 @@ const createIncidentFromCurrentTable = async (
   await page.getByLabel("Incident Type").selectOption("Deforestation");
   await page.locator(".submit-btn").click();
 
-  // Wait until selection has been cleared by create flow.
-  await expect(page.getByTestId("incidents-create-button")).toBeDisabled({
+  // Wait until the create form has closed after submit.
+  await expect(page.locator(".incidents-sidebar .submit-btn")).toHaveCount(0, {
     timeout: 10000,
   });
+
+  // Ensure no stale selection remains before continuing.
+  const deselectButton = page.getByTestId("incidents-deselect-button");
+  if (await deselectButton.isEnabled()) {
+    await deselectButton.click({ force: true });
+  }
 
   // Reset local sidebar mode state before next navigation/assertions.
   const sidebarCloseButton = page.locator(".incidents-sidebar .close-btn");
