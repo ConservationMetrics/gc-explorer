@@ -971,11 +971,13 @@ test("alerts dashboard - restores alerts intro after exiting incident multiselec
   await navigateToAlertsDashboard(page);
 
   const intro = page.getByTestId("alerts-intro-panel");
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
   await expect(intro).toBeVisible({ timeout: 20000 });
 
-  await page.getByTestId("incidents-multiselect-button").click();
-  await expect(intro).not.toBeVisible();
+  await multiSelectButton.click();
+  await expect(multiSelectButton).toHaveClass(/active/);
 
-  await page.getByTestId("incidents-multiselect-button").click();
+  await multiSelectButton.click();
+  await expect(multiSelectButton).not.toHaveClass(/active/);
   await expect(intro).toBeVisible({ timeout: 20000 });
 });

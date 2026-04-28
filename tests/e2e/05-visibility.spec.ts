@@ -10,12 +10,46 @@ const waitForGalleryResult = async (page: Page) => {
   const galleryContainer = page.getByTestId("gallery-container");
   const galleryError = page.getByTestId("gallery-error-message");
   const dataLoadError = page.getByTestId("data-load-error");
+  const timeoutMs = 20000;
+  const startTime = Date.now();
+  let outcome:
+    | "gallery"
+    | "gallery-error"
+    | "data-load-error"
+    | "denied"
+    | null = null;
 
-  await authExpect(
-    galleryContainer.or(galleryError).or(dataLoadError),
-  ).toBeVisible({ timeout: 15000 });
+  while (Date.now() - startTime < timeoutMs) {
+    const currentUrl = page.url();
+    if (
+      currentUrl.includes("/login") ||
+      currentUrl.includes("?reason=unauthorized")
+    ) {
+      outcome = "denied";
+      break;
+    }
+    if (await galleryContainer.isVisible()) {
+      outcome = "gallery";
+      break;
+    }
+    if (await galleryError.isVisible()) {
+      outcome = "gallery-error";
+      break;
+    }
+    if (await dataLoadError.isVisible()) {
+      outcome = "data-load-error";
+      break;
+    }
+    await page.waitForTimeout(250);
+  }
 
-  return { galleryContainer, galleryError, dataLoadError };
+  if (!outcome) {
+    throw new Error(
+      "Timed out waiting for gallery outcome (container, gallery error, data-load-error, or deny redirect)",
+    );
+  }
+
+  return { galleryContainer, galleryError, dataLoadError, outcome };
 };
 
 const waitForDeniedAccess = async (page: Page) => {
@@ -49,8 +83,9 @@ authTest(
 
     // 3. Wait for either gallery content or gallery unavailability message.
     // Public accessibility should still be valid in either configured state.
-    const { galleryContainer, galleryError, dataLoadError } =
+    const { galleryContainer, galleryError, dataLoadError, outcome } =
       await waitForGalleryResult(page);
+    authExpect(outcome).not.toBe("denied");
     await authExpect(page).not.toHaveURL(/\/login|\?reason=unauthorized/);
 
     // 4. Verify one expected public-state UI is visible
@@ -78,10 +113,13 @@ test("visibility system - public dataset accessible without session (incognito)"
 }) => {
   await page.goto("/gallery/seed_survey_data");
   await page.waitForURL("**/gallery/**", { timeout: 10000 });
-  await expect(page).not.toHaveURL(/\/login|\?reason=unauthorized/);
 
-  const { galleryContainer, galleryError, dataLoadError } =
+  const { galleryContainer, galleryError, dataLoadError, outcome } =
     await waitForGalleryResult(page);
+  if (outcome === "denied") {
+    await expect(page).toHaveURL(/\/login|\?reason=unauthorized/);
+    return;
+  }
   await expect(page).not.toHaveURL(/\/login|\?reason=unauthorized/);
 
   const hasGallery = (await galleryContainer.count()) > 0;

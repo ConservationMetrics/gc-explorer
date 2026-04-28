@@ -119,7 +119,9 @@ const createIncidentFromCurrentTable = async (
 
   await page.getByTestId("incidents-create-button").click();
   await page.getByLabel("Name").fill(incidentName);
-  await page.getByLabel("Description").fill("Incident scoping test");
+  await page
+    .getByLabel("Description", { exact: true })
+    .fill("Incident scoping test");
   await page.getByLabel("Incident Type").selectOption("Deforestation");
   await page.locator(".submit-btn").click();
 };

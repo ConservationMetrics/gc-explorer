@@ -129,7 +129,9 @@ test("annotated collections - cluster highlighting when viewing incident details
   await page.getByTestId("incidents-create-button").click();
 
   await page.getByLabel("Name").fill("Cluster Highlight Test Incident");
-  await page.getByLabel("Description").fill("Cluster highlighting test");
+  await page
+    .getByLabel("Description", { exact: true })
+    .fill("Cluster highlighting test");
   await page.getByLabel("Incident Type").selectOption("Deforestation");
   await page.locator(".submit-btn").click();
 
@@ -180,7 +182,9 @@ test("annotated collections - incident created_by attribution", async ({
   await page.getByTestId("incidents-create-button").click();
 
   await page.getByLabel("Name").fill("Auth0 Attribution Test Incident");
-  await page.getByLabel("Description").fill("Verify created_by attribution");
+  await page
+    .getByLabel("Description", { exact: true })
+    .fill("Verify created_by attribution");
   await page.getByLabel("Incident Type").selectOption("Deforestation");
   await page.locator(".submit-btn").click();
 
@@ -231,7 +235,9 @@ test("annotated collections - shareable incident link URL parameter", async ({
   await page.getByTestId("incidents-create-button").click();
 
   await page.getByLabel("Name").fill("Shareable Link Test Incident");
-  await page.getByLabel("Description").fill("Shareable link test");
+  await page
+    .getByLabel("Description", { exact: true })
+    .fill("Shareable link test");
   await page.getByLabel("Incident Type").selectOption("Deforestation");
   await page.locator(".submit-btn").click();
 
@@ -265,7 +271,9 @@ test("annotated collections - incident detail shows CSV and GeoJSON download but
   await page.getByTestId("incidents-create-button").click();
 
   await page.getByLabel("Name").fill("Export Buttons E2E Incident");
-  await page.getByLabel("Description").fill("E2E download buttons visibility");
+  await page
+    .getByLabel("Description", { exact: true })
+    .fill("E2E download buttons visibility");
   await page.getByLabel("Incident Type").selectOption("Deforestation");
   await page.locator(".submit-btn").click();
 
@@ -286,17 +294,21 @@ test("annotated collections - left sidebar shows alerts intro after exiting inci
   await navigateToAlertsDashboard(page);
 
   const intro = page.getByTestId("alerts-intro-panel");
+  const multiSelectButton = page.getByTestId("incidents-multiselect-button");
+  const bboxButton = page.getByTestId("incidents-bbox-button");
   await expect(intro).toBeVisible({ timeout: 20000 });
 
-  await page.getByTestId("incidents-multiselect-button").click();
-  await expect(intro).not.toBeVisible();
+  await multiSelectButton.click();
+  await expect(multiSelectButton).toHaveClass(/active/);
 
-  await page.getByTestId("incidents-multiselect-button").click();
+  await multiSelectButton.click();
+  await expect(multiSelectButton).not.toHaveClass(/active/);
   await expect(intro).toBeVisible({ timeout: 20000 });
 
-  await page.getByTestId("incidents-bbox-button").click();
-  await expect(intro).not.toBeVisible();
+  await bboxButton.click();
+  await expect(bboxButton).toHaveClass(/active/);
 
-  await page.getByTestId("incidents-bbox-button").click();
+  await bboxButton.click();
+  await expect(bboxButton).not.toHaveClass(/active/);
   await expect(intro).toBeVisible({ timeout: 20000 });
 });

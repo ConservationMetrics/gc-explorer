@@ -1,10 +1,7 @@
 /**
  * E2E tests for dataset allowlist boundary (issue #347).
  *
- * Current behavior: unregistered table triggers fetchData then throws (viewsConfig[table]
- * undefined), so API returns 500 and no dataset payload. We test for 500 and no data.
- * Desired behavior (after allowlist fix): 403 or 404 and no payload. When that fix is
- * in place, update these tests to expect 403/404 instead of 500.
+ * Current behavior: unregistered table returns 404 and no dataset payload.
  *
  * (b) Role-based: member-only tables return 403 or redirect when unauthenticated.
  */
@@ -18,19 +15,17 @@ const UNREGISTERED_TABLE = "timelapse_data_template";
 
 /**
  * Unregistered table must not return dataset payload. Current implementation returns
- * 500 (fetchData runs, then viewsConfig[table] is undefined and throws). Equivalent
- * to "request fails" — no data leaked. TODO: when allowlist check is added, expect
- * 403 or 404 instead of 500. See https://github.com/ConservationMetrics/gc-explorer/issues/347#issuecomment-4006974561
+ * 404 and no data should be leaked in the response body.
  */
 test.describe("Dataset allowlist - unregistered table not accessible", () => {
-  test("GET /api/{unregistered_table}/map returns 500 and no dataset payload", async ({
+  test("GET /api/{unregistered_table}/map returns 404 and no dataset payload", async ({
     page,
     baseURL,
   }) => {
     const url = `${baseURL ?? "http://localhost:8080"}/api/${UNREGISTERED_TABLE}/map`;
     const response = await page.request.get(url, { failOnStatusCode: false });
 
-    expect(response.status()).toBe(500);
+    expect(response.status()).toBe(404);
     const body = await response.text();
     const mustNotContain = ['"features":', '"type":"FeatureCollection"'];
     for (const fragment of mustNotContain) {
@@ -38,38 +33,38 @@ test.describe("Dataset allowlist - unregistered table not accessible", () => {
     }
   });
 
-  test("GET /api/{unregistered_table}/data returns 500 and no dataset payload", async ({
+  test("GET /api/{unregistered_table}/data returns 404 and no dataset payload", async ({
     page,
     baseURL,
   }) => {
     const url = `${baseURL ?? "http://localhost:8080"}/api/${UNREGISTERED_TABLE}/data`;
     const response = await page.request.get(url, { failOnStatusCode: false });
 
-    expect(response.status()).toBe(500);
+    expect(response.status()).toBe(404);
     const body = await response.text();
     expect(body).not.toMatch(/"data":\s*\[/);
   });
 
-  test("GET /api/{unregistered_table}/alerts returns 500 and no dataset payload", async ({
+  test("GET /api/{unregistered_table}/alerts returns 404 and no dataset payload", async ({
     page,
     baseURL,
   }) => {
     const url = `${baseURL ?? "http://localhost:8080"}/api/${UNREGISTERED_TABLE}/alerts`;
     const response = await page.request.get(url, { failOnStatusCode: false });
 
-    expect(response.status()).toBe(500);
+    expect(response.status()).toBe(404);
     const body = await response.text();
     expect(body).not.toContain('"alertsData":');
   });
 
-  test("GET /api/{unregistered_table}/gallery returns 500 and no dataset payload", async ({
+  test("GET /api/{unregistered_table}/gallery returns 404 and no dataset payload", async ({
     page,
     baseURL,
   }) => {
     const url = `${baseURL ?? "http://localhost:8080"}/api/${UNREGISTERED_TABLE}/gallery`;
     const response = await page.request.get(url, { failOnStatusCode: false });
 
-    expect(response.status()).toBe(500);
+    expect(response.status()).toBe(404);
     const body = await response.text();
     expect(body).not.toMatch(/"data":\s*\[/);
   });
