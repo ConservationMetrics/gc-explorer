@@ -1,8 +1,8 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import type { Page } from "@playwright/test";
-import type { Position } from "geojson";
 
 const selectionModifierKey = process.platform === "darwin" ? "Meta" : "Control";
+type LngLat = [number, number];
 
 /**
  * Navigates directly to an alerts table page and waits for map readiness.
@@ -33,7 +33,7 @@ const navigateToAlertsTable = async (
  */
 const getSelectableFeatureLngLat = async (
   page: Page,
-): Promise<Position | null> => {
+): Promise<LngLat | null> => {
   return await page.evaluate(() => {
     // @ts-expect-error _testMap is exposed for E2E testing only
     const map = window._testMap;
@@ -89,6 +89,16 @@ const projectLngLatToPagePoint = async (
   }, lngLat);
 };
 
+const ensureIncidentsListVisible = async (page: Page): Promise<void> => {
+  const incidentsList = page.locator(".incidents-sidebar .incidents-list");
+
+  if (!(await incidentsList.isVisible())) {
+    await page.getByTestId("incidents-view-button").click({ force: true });
+  }
+
+  await expect(incidentsList).toBeVisible();
+};
+
 /**
  * Creates an incident by selecting one feature in current alerts view.
  *
@@ -139,12 +149,12 @@ test("incidents list is scoped by parent alerts table", async ({
   await navigateToAlertsTable(page, "gfw_alerts_viirs");
   await createIncidentFromCurrentTable(page, gfwIncident);
 
-  await page.getByTestId("incidents-view-button").click();
+  await ensureIncidentsListVisible(page);
   await expect(page.getByText(gfwIncident)).toBeVisible();
   await expect(page.getByText(fakeIncident)).toHaveCount(0);
 
   await navigateToAlertsTable(page, "fake_alerts");
-  await page.getByTestId("incidents-view-button").click();
+  await ensureIncidentsListVisible(page);
   await expect(page.getByText(fakeIncident)).toBeVisible();
   await expect(page.getByText(gfwIncident)).toHaveCount(0);
 });
