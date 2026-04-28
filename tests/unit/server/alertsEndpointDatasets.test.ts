@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mockFetchAlertsViewDatasets = vi.fn();
+const mockFetchViewDatasets = vi.fn();
 const mockFetchTableConfig = vi.fn();
 const mockFetchData = vi.fn();
 const mockValidatePermissions = vi.fn();
 
 vi.mock("@/server/database/dbOperations", () => ({
-  fetchAlertsViewDatasets: (table: string) => mockFetchAlertsViewDatasets(table),
+  fetchViewDatasets: (table: string, viewType: string) =>
+    mockFetchViewDatasets(table, viewType),
   fetchTableConfig: (table: string) => mockFetchTableConfig(table),
   fetchData: (table: string, limit?: number) => mockFetchData(table, limit),
 }));
@@ -83,19 +84,23 @@ describe("alerts endpoint dataset config", () => {
   });
 
   it("returns structured dataset fields and tolerates null secondary dataset", async () => {
-    mockFetchAlertsViewDatasets.mockResolvedValue({
+    mockFetchViewDatasets.mockResolvedValue({
       primaryDataset: "alerts_confidential",
-      secondaryDataset: null,
+      secondaryDatasets: [],
     });
 
     const { default: handler } = await import("@/server/api/[table]/alerts");
-    const response = await handler({
+    const response = (await handler({
       context: { params: { table: "alerts_confidential" } },
-    } as never);
+    } as never)) as Record<string, unknown>;
 
+    expect(mockFetchViewDatasets).toHaveBeenCalledWith(
+      "alerts_confidential",
+      "alerts",
+    );
     expect(mockFetchData).toHaveBeenCalledWith("alerts_confidential", 100);
     expect(mockFetchData).toHaveBeenCalledTimes(1);
-    expect(response.primary_dataset).toBe("alerts_confidential");
-    expect(response.secondary_dataset).toBeNull();
+    expect(response["primary_dataset"]).toBe("alerts_confidential");
+    expect(response["secondary_dataset"]).toBeNull();
   });
 });

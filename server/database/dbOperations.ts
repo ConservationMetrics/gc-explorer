@@ -1,16 +1,23 @@
 import { eq, sql } from "drizzle-orm";
 
 import type {
-  AlertsViewDatasets,
   ColumnEntry,
   DataEntry,
   RouteLevelPermission,
+  ViewDatasets,
   Views,
   ViewConfig,
+  ViewType,
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
 
-import { viewConfig, viewConfigAlerts, publicViews } from "./schema";
+import {
+  viewConfig,
+  viewConfigAlerts,
+  viewConfigGallery,
+  viewConfigMap,
+  publicViews,
+} from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
 
 /**
@@ -30,8 +37,11 @@ const createMissingViewConfigError = (table: string) => {
   return error;
 };
 
-const createMissingAlertsDatasetConfigError = (table: string) => {
-  const statusMessage = `No alerts dataset configuration found for table "${table}"`;
+const createMissingViewDatasetConfigError = (
+  table: string,
+  viewType: ViewType,
+) => {
+  const statusMessage = `No ${viewType} dataset configuration found for table "${table}"`;
   const error = new Error(statusMessage) as Error & {
     statusCode: number;
     statusMessage: string;
@@ -377,51 +387,107 @@ export const fetchTableConfig = async (table: string): Promise<ViewConfig> => {
 };
 
 /**
- * Fetches alerts dataset linkage for one table from view_config_alerts.
+ * Fetches dataset linkage for one table from view-type-specific config tables.
  *
- * @param {string} table - Alerts view identifier.
- * @returns {Promise<AlertsViewDatasets>} Primary and optional secondary dataset names.
- * @throws {Error} When alerts dataset config is missing.
+ * @param {string} table - View identifier.
+ * @param {ViewType} viewType - View type table to query.
+ * @returns {Promise<ViewDatasets>} Primary and secondary dataset names.
+ * @throws {Error} When dataset config is missing.
  */
-export const fetchAlertsViewDatasets = async (
+export const fetchViewDatasets = async (
   table: string,
-): Promise<AlertsViewDatasets> => {
+  viewType: ViewType,
+): Promise<ViewDatasets> => {
   if (process.env.CI) {
     const viewsConfig = await fetchConfig();
     const tableConfig = viewsConfig[table];
     if (!tableConfig) {
-      throw createMissingAlertsDatasetConfigError(table);
+      throw createMissingViewDatasetConfigError(table, viewType);
     }
+
+    const secondaryDatasets =
+      viewType === "alerts" && tableConfig.MAPEO_TABLE
+        ? [tableConfig.MAPEO_TABLE]
+        : [];
 
     return {
       primaryDataset: table,
-      secondaryDataset: tableConfig.MAPEO_TABLE ?? null,
+      secondaryDatasets,
     };
   }
 
   try {
+    if (viewType === "alerts") {
+      const result = await configDb
+        .select({
+          primaryDataset: viewConfigAlerts.primaryDataset,
+          secondaryDataset: viewConfigAlerts.secondaryDataset,
+        })
+        .from(viewConfigAlerts)
+        .where(eq(viewConfigAlerts.viewId, table))
+        .limit(1);
+
+      if (result.length === 0 || !result[0].primaryDataset) {
+        throw createMissingViewDatasetConfigError(table, viewType);
+      }
+
+      return {
+        primaryDataset: result[0].primaryDataset,
+        secondaryDatasets: result[0].secondaryDataset
+          ? [result[0].secondaryDataset]
+          : [],
+      };
+    }
+
+    if (viewType === "map") {
+      const result = await configDb
+        .select({
+          primaryDataset: viewConfigMap.primaryDataset,
+          secondaryDatasets: viewConfigMap.secondaryDatasets,
+        })
+        .from(viewConfigMap)
+        .where(eq(viewConfigMap.viewId, table))
+        .limit(1);
+
+      if (result.length === 0 || !result[0].primaryDataset) {
+        throw createMissingViewDatasetConfigError(table, viewType);
+      }
+
+      const secondaryDatasets = (result[0].secondaryDatasets ?? "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0);
+
+      return {
+        primaryDataset: result[0].primaryDataset,
+        secondaryDatasets,
+      };
+    }
+
     const result = await configDb
       .select({
-        primaryDataset: viewConfigAlerts.primaryDataset,
-        secondaryDataset: viewConfigAlerts.secondaryDataset,
+        primaryDataset: viewConfigGallery.primaryDataset,
       })
-      .from(viewConfigAlerts)
-      .where(eq(viewConfigAlerts.viewId, table))
+      .from(viewConfigGallery)
+      .where(eq(viewConfigGallery.viewId, table))
       .limit(1);
 
     if (result.length === 0 || !result[0].primaryDataset) {
-      throw createMissingAlertsDatasetConfigError(table);
+      throw createMissingViewDatasetConfigError(table, viewType);
     }
 
     return {
       primaryDataset: result[0].primaryDataset,
-      secondaryDataset: result[0].secondaryDataset,
+      secondaryDatasets: [],
     };
   } catch (error) {
     if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
-    console.error(`Error fetching alerts datasets for table "${table}":`, error);
+    console.error(
+      `Error fetching ${viewType} datasets for table "${table}":`,
+      error,
+    );
     throw error;
   }
 };

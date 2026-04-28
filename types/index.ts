@@ -66,9 +66,11 @@ export interface Views {
   [key: string]: ViewConfig;
 }
 
-export interface AlertsViewDatasets {
+export type ViewType = "alerts" | "map" | "gallery";
+
+export interface ViewDatasets {
   primaryDataset: string;
-  secondaryDataset: string | null;
+  secondaryDatasets: string[];
 }
 
 export type AllowedFileExtensions = {

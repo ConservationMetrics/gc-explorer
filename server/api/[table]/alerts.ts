@@ -1,5 +1,5 @@
 import {
-  fetchAlertsViewDatasets,
+  fetchViewDatasets,
   fetchData,
   fetchTableConfig,
 } from "@/server/database/dbOperations";
@@ -32,9 +32,11 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   try {
-    const { primaryDataset, secondaryDataset } = await fetchAlertsViewDatasets(
+    const { primaryDataset, secondaryDatasets } = await fetchViewDatasets(
       table,
+      "alerts",
     );
+    const secondaryDataset = secondaryDatasets[0] ?? null;
     const tableConfig = await fetchTableConfig(table);
 
     // Check visibility permissions
