@@ -91,8 +91,15 @@ const projectLngLatToPagePoint = async (
 
 const ensureIncidentsListVisible = async (page: Page): Promise<void> => {
   const incidentsList = page.locator(".incidents-sidebar .incidents-list");
+  const sidebar = page.locator(".incidents-sidebar");
 
   if (!(await incidentsList.isVisible())) {
+    await page.getByTestId("incidents-view-button").click({ force: true });
+  }
+
+  // If the sidebar is open but list view is still hidden, reset sidebar state.
+  if (!(await incidentsList.isVisible()) && (await sidebar.isVisible())) {
+    await page.locator(".incidents-sidebar .close-btn").click({ force: true });
     await page.getByTestId("incidents-view-button").click({ force: true });
   }
 
@@ -134,6 +141,17 @@ const createIncidentFromCurrentTable = async (
     .fill("Incident scoping test");
   await page.getByLabel("Incident Type").selectOption("Deforestation");
   await page.locator(".submit-btn").click();
+
+  // Wait until selection has been cleared by create flow.
+  await expect(page.getByTestId("incidents-create-button")).toBeDisabled({
+    timeout: 10000,
+  });
+
+  // Reset local sidebar mode state before next navigation/assertions.
+  const sidebarCloseButton = page.locator(".incidents-sidebar .close-btn");
+  if (await sidebarCloseButton.isVisible()) {
+    await sidebarCloseButton.click({ force: true });
+  }
 };
 
 test("incidents list is scoped by parent alerts table", async ({
