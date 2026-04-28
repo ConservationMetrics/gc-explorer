@@ -21,10 +21,13 @@ const waitForGalleryResult = async (page: Page) => {
 const waitForDeniedAccess = async (page: Page) => {
   await authExpect
     .poll(() => page.url(), { timeout: 15000 })
-    .toMatch(/(\/login|\?reason=unauthorized|\/(gallery|map)\/bcmform_responses)/);
+    .toMatch(
+      /(\/login|\?reason=unauthorized|\/(gallery|map)\/bcmform_responses)/,
+    );
 
   const deniedByRedirect =
-    page.url().includes("/login") || page.url().includes("?reason=unauthorized");
+    page.url().includes("/login") ||
+    page.url().includes("?reason=unauthorized");
 
   if (!deniedByRedirect) {
     await authExpect(page.getByTestId("data-load-error")).toBeVisible({
