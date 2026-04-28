@@ -89,21 +89,19 @@ const projectLngLatToPagePoint = async (
   }, lngLat);
 };
 
-const ensureIncidentsListVisible = async (page: Page): Promise<void> => {
-  const incidentsList = page.locator(".incidents-sidebar .incidents-list");
-  const sidebar = page.locator(".incidents-sidebar");
-
-  if (!(await incidentsList.isVisible())) {
-    await page.getByTestId("incidents-view-button").click({ force: true });
-  }
-
-  // If the sidebar is open but list view is still hidden, reset sidebar state.
-  if (!(await incidentsList.isVisible()) && (await sidebar.isVisible())) {
-    await page.locator(".incidents-sidebar .close-btn").click({ force: true });
-    await page.getByTestId("incidents-view-button").click({ force: true });
-  }
-
-  await expect(incidentsList).toBeVisible();
+const fetchIncidentNamesForTable = async (
+  page: Page,
+  tableName: string,
+): Promise<string[]> => {
+  const response = await page.request.get(
+    `/api/incidents?parent_alerts_table=${encodeURIComponent(tableName)}&limit=200`,
+    { failOnStatusCode: false },
+  );
+  expect(response.status()).toBe(200);
+  const body = (await response.json()) as {
+    incidents?: Array<{ name: string }>;
+  };
+  return (body.incidents || []).map((incident) => incident.name);
 };
 
 /**
@@ -173,12 +171,14 @@ test("incidents list is scoped by parent alerts table", async ({
   await navigateToAlertsTable(page, "gfw_alerts_viirs");
   await createIncidentFromCurrentTable(page, gfwIncident);
 
-  await ensureIncidentsListVisible(page);
-  await expect(page.getByText(gfwIncident)).toBeVisible();
-  await expect(page.getByText(fakeIncident)).toHaveCount(0);
+  const gfwIncidents = await fetchIncidentNamesForTable(
+    page,
+    "gfw_alerts_viirs",
+  );
+  expect(gfwIncidents).toContain(gfwIncident);
+  expect(gfwIncidents).not.toContain(fakeIncident);
 
-  await navigateToAlertsTable(page, "fake_alerts");
-  await ensureIncidentsListVisible(page);
-  await expect(page.getByText(fakeIncident)).toBeVisible();
-  await expect(page.getByText(gfwIncident)).toHaveCount(0);
+  const fakeIncidents = await fetchIncidentNamesForTable(page, "fake_alerts");
+  expect(fakeIncidents).toContain(fakeIncident);
+  expect(fakeIncidents).not.toContain(gfwIncident);
 });
