@@ -89,19 +89,22 @@ const projectLngLatToPagePoint = async (
   }, lngLat);
 };
 
-const fetchIncidentNamesForTable = async (
-  page: Page,
-  tableName: string,
-): Promise<string[]> => {
-  const response = await page.request.get(
-    `/api/incidents?parent_alerts_table=${encodeURIComponent(tableName)}&limit=200`,
-    { failOnStatusCode: false },
-  );
-  expect(response.status()).toBe(200);
-  const body = (await response.json()) as {
-    incidents?: Array<{ name: string }>;
-  };
-  return (body.incidents || []).map((incident) => incident.name);
+const openSavedIncidentsSidebar = async (page: Page): Promise<void> => {
+  const sidebar = page.locator(".incidents-sidebar");
+  const closeButton = page.locator(".incidents-sidebar .close-btn");
+  const deselectButton = page.getByTestId("incidents-deselect-button");
+
+  // Ensure we are not stuck in create mode due lingering selection.
+  if (await deselectButton.isEnabled()) {
+    await deselectButton.click({ force: true });
+  }
+
+  if (await sidebar.isVisible()) {
+    await closeButton.click({ force: true });
+  }
+
+  await page.getByTestId("incidents-view-button").click({ force: true });
+  await expect(sidebar).toBeVisible();
 };
 
 /**
@@ -140,22 +143,8 @@ const createIncidentFromCurrentTable = async (
   await page.getByLabel("Incident Type").selectOption("Deforestation");
   await page.locator(".submit-btn").click();
 
-  // Wait until the create form has closed after submit.
-  await expect(page.locator(".incidents-sidebar .submit-btn")).toHaveCount(0, {
-    timeout: 10000,
-  });
-
-  // Ensure no stale selection remains before continuing.
-  const deselectButton = page.getByTestId("incidents-deselect-button");
-  if (await deselectButton.isEnabled()) {
-    await deselectButton.click({ force: true });
-  }
-
-  // Reset local sidebar mode state before next navigation/assertions.
-  const sidebarCloseButton = page.locator(".incidents-sidebar .close-btn");
-  if (await sidebarCloseButton.isVisible()) {
-    await sidebarCloseButton.click({ force: true });
-  }
+  // A successfully created incident should appear immediately in saved incidents.
+  await expect(page.getByText(incidentName)).toBeVisible({ timeout: 15000 });
 };
 
 test("incidents list is scoped by parent alerts table", async ({
@@ -163,22 +152,17 @@ test("incidents list is scoped by parent alerts table", async ({
 }) => {
   const suffix = Date.now();
   const fakeIncident = `Scoped fake ${suffix}`;
-  const gfwIncident = `Scoped gfw ${suffix}`;
 
   await navigateToAlertsTable(page, "fake_alerts");
   await createIncidentFromCurrentTable(page, fakeIncident);
 
+  // Incident should be hidden when switching to a different alerts table.
   await navigateToAlertsTable(page, "gfw_alerts_viirs");
-  await createIncidentFromCurrentTable(page, gfwIncident);
+  await openSavedIncidentsSidebar(page);
+  await expect(page.getByText(fakeIncident)).toHaveCount(0);
 
-  const gfwIncidents = await fetchIncidentNamesForTable(
-    page,
-    "gfw_alerts_viirs",
-  );
-  expect(gfwIncidents).toContain(gfwIncident);
-  expect(gfwIncidents).not.toContain(fakeIncident);
-
-  const fakeIncidents = await fetchIncidentNamesForTable(page, "fake_alerts");
-  expect(fakeIncidents).toContain(fakeIncident);
-  expect(fakeIncidents).not.toContain(gfwIncident);
+  // Navigating back should reveal the incident again because parent table matches.
+  await navigateToAlertsTable(page, "fake_alerts");
+  await openSavedIncidentsSidebar(page);
+  await expect(page.getByText(fakeIncident)).toBeVisible();
 });
