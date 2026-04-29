@@ -4,12 +4,22 @@ import type {
   ColumnEntry,
   DataEntry,
   RouteLevelPermission,
+  ViewDatasets,
   Views,
   ViewConfig,
+  ViewType,
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
+import { splitCsv } from "@/utils/csvUtils";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 
-import { viewConfig, publicViews } from "./schema";
+import {
+  viewConfig,
+  viewConfigAlerts,
+  viewConfigGallery,
+  viewConfigMap,
+  publicViews,
+} from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
 
 /**
@@ -27,6 +37,93 @@ const createMissingViewConfigError = (table: string) => {
   error.statusCode = 404;
   error.statusMessage = statusMessage;
   return error;
+};
+
+const createMissingViewDatasetConfigError = (
+  table: string,
+  viewType: ViewType,
+) => {
+  const statusMessage = `No ${viewType} dataset configuration found for table "${table}"`;
+  const error = new Error(statusMessage) as Error & {
+    statusCode: number;
+    statusMessage: string;
+  };
+  error.statusCode = 404;
+  error.statusMessage = statusMessage;
+  return error;
+};
+
+type ViewDatasetSpec = {
+  table:
+    | typeof viewConfigAlerts
+    | typeof viewConfigMap
+    | typeof viewConfigGallery;
+  viewIdColumn:
+    | typeof viewConfigAlerts.viewId
+    | typeof viewConfigMap.viewId
+    | typeof viewConfigGallery.viewId;
+  primaryColumn:
+    | typeof viewConfigAlerts.primaryDataset
+    | typeof viewConfigMap.primaryDataset
+    | typeof viewConfigGallery.primaryDataset;
+  secondarySelections?: Record<string, AnyPgColumn>;
+  extractSecondary?: (row: Record<string, unknown>) => string[];
+};
+
+const VIEW_DATASET_SPECS: Record<ViewType, ViewDatasetSpec> = {
+  alerts: {
+    table: viewConfigAlerts,
+    viewIdColumn: viewConfigAlerts.viewId,
+    primaryColumn: viewConfigAlerts.primaryDataset,
+    secondarySelections: {
+      secondaryDataset: viewConfigAlerts.secondaryDataset,
+    },
+    extractSecondary: (row) => {
+      const value = row.secondaryDataset;
+      return typeof value === "string" && value.length > 0 ? [value] : [];
+    },
+  },
+  map: {
+    table: viewConfigMap,
+    viewIdColumn: viewConfigMap.viewId,
+    primaryColumn: viewConfigMap.primaryDataset,
+    secondarySelections: { secondaryDatasets: viewConfigMap.secondaryDatasets },
+    extractSecondary: (row) =>
+      splitCsv(
+        typeof row.secondaryDatasets === "string"
+          ? row.secondaryDatasets
+          : null,
+      ),
+  },
+  gallery: {
+    table: viewConfigGallery,
+    viewIdColumn: viewConfigGallery.viewId,
+    primaryColumn: viewConfigGallery.primaryDataset,
+  },
+};
+
+const queryViewDatasets = async (
+  spec: ViewDatasetSpec,
+  viewId: string,
+): Promise<ViewDatasets | null> => {
+  const [row] = (await configDb
+    .select({
+      primaryDataset: spec.primaryColumn,
+      ...(spec.secondarySelections ?? {}),
+    })
+    .from(spec.table)
+    .where(eq(spec.viewIdColumn, viewId))
+    .limit(1)) as Array<Record<string, unknown>>;
+
+  const primary = row?.primaryDataset;
+  if (typeof primary !== "string" || primary.length === 0) {
+    return null;
+  }
+
+  return {
+    primaryDataset: primary,
+    secondaryDatasets: spec.extractSecondary?.(row) ?? [],
+  };
 };
 
 /**
@@ -360,6 +457,67 @@ export const fetchTableConfig = async (table: string): Promise<ViewConfig> => {
       throw error;
     }
     console.error(`Error fetching config for table "${table}":`, error);
+    throw error;
+  }
+};
+
+/**
+ * Resolves dataset table linkage for a single view instance.
+ *
+ * This is the shared lookup used by all view endpoints that need to know which
+ * warehouse table(s) to query. It reads from the per-view-type config tables
+ * (`view_config_alerts`, `view_config_map`, `view_config_gallery`) and returns a
+ * normalized shape (`primaryDataset`, `secondaryDatasets[]`) for route handlers.
+ *
+ * Typical usage:
+ * - alerts endpoint: `fetchViewDatasets(table, "alerts")`
+ * - map endpoint: `fetchViewDatasets(table, "map")`
+ * - gallery endpoint: `fetchViewDatasets(table, "gallery")`
+ *
+ * @param {string} table - View identifier (currently `view_id` / route table param).
+ * @param {ViewType} viewType - Which view config table should be queried.
+ * @returns {Promise<ViewDatasets>} Normalized primary + secondary dataset list.
+ * @throws {Error} 404-style error when no dataset config exists for that view.
+ */
+export const fetchViewDatasets = async (
+  table: string,
+  viewType: ViewType,
+): Promise<ViewDatasets> => {
+  if (process.env.CI) {
+    const viewsConfig = await fetchConfig();
+    const tableConfig = viewsConfig[table];
+    if (!tableConfig) {
+      throw createMissingViewDatasetConfigError(table, viewType);
+    }
+
+    const secondaryDatasets =
+      viewType === "alerts" && tableConfig.MAPEO_TABLE
+        ? [tableConfig.MAPEO_TABLE]
+        : [];
+
+    return {
+      primaryDataset: table,
+      secondaryDatasets,
+    };
+  }
+
+  try {
+    const datasets = await queryViewDatasets(
+      VIEW_DATASET_SPECS[viewType],
+      table,
+    );
+    if (!datasets) {
+      throw createMissingViewDatasetConfigError(table, viewType);
+    }
+    return datasets;
+  } catch (error) {
+    if (error instanceof Error && "statusCode" in error) {
+      throw error;
+    }
+    console.error(
+      `Error fetching ${viewType} datasets for table "${table}":`,
+      error,
+    );
     throw error;
   }
 };

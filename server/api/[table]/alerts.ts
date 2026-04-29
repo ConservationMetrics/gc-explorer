@@ -1,4 +1,8 @@
-import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
+import {
+  fetchViewDatasets,
+  fetchData,
+  fetchTableConfig,
+} from "@/server/database/dbOperations";
 import murmurhash from "murmurhash";
 import {
   prepareAlertsStatistics,
@@ -28,6 +32,11 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   try {
+    const { primaryDataset, secondaryDatasets } = await fetchViewDatasets(
+      table,
+      "alerts",
+    );
+    const secondaryDataset = secondaryDatasets[0] ?? null;
     const tableConfig = await fetchTableConfig(table);
 
     // Check visibility permissions
@@ -36,7 +45,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData, metadata } = (await fetchData(table, limit)) as {
+    const { mainData, metadata } = (await fetchData(primaryDataset, limit)) as {
       mainData: DataEntry[];
       metadata: AlertsMetadata[];
     };
@@ -60,7 +69,7 @@ export default defineEventHandler(async (event: H3Event) => {
       ),
     };
 
-    const mapeoTable = tableConfig.MAPEO_TABLE;
+    const mapeoTable = secondaryDataset;
     const mapeoCategoryIds = tableConfig.MAPEO_CATEGORY_IDS;
 
     let mapeoData: FeatureCollection | null = null;
@@ -125,6 +134,8 @@ export default defineEventHandler(async (event: H3Event) => {
       mapboxStyle: defaultMapboxStyle,
       mapboxBasemaps: basemaps,
       mapboxZoom: Number(tableConfig.MAPBOX_ZOOM),
+      primary_dataset: primaryDataset,
+      secondary_dataset: secondaryDataset,
       mapeoTable,
       mapeoData,
       mediaBasePath: tableConfig.MEDIA_BASE_PATH,
