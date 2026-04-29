@@ -1,4 +1,9 @@
-import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
+import {
+  ALERTS_METADATA_PROJECTION,
+  fetchData,
+  fetchTableConfig,
+  fetchTableSqlColumns,
+} from "@/server/database/dbOperations";
 import murmurhash from "murmurhash";
 import {
   prepareAlertsStatistics,
@@ -16,6 +21,21 @@ import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
 import type { FeatureCollection } from "geojson";
+
+const ALERTS_MAIN_PROJECTION = [
+  "_id",
+  "alert_id",
+  "month_detec",
+  "year_detec",
+  "day_detec",
+  "date_end_t1",
+  "data_source",
+  "territory_name",
+  "alert_type",
+  "area_alert_ha",
+  "g__type",
+  "g__coordinates",
+];
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -36,7 +56,12 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData, metadata } = (await fetchData(table, limit)) as {
+    const { mainData, metadata } = (await fetchData(table, {
+      limit,
+      mainColumns: ALERTS_MAIN_PROJECTION,
+      includeMetadata: true,
+      metadataColumns: ALERTS_METADATA_PROJECTION,
+    })) as {
       mainData: DataEntry[];
       metadata: AlertsMetadata[];
     };
@@ -66,8 +91,12 @@ export default defineEventHandler(async (event: H3Event) => {
     let mapeoData: FeatureCollection | null = null;
 
     if (mapeoTable && mapeoCategoryIds) {
-      // Fetch Mapeo data
-      const rawMapeoData = await fetchData(mapeoTable);
+      const mapeoMainColumns = await fetchTableSqlColumns(mapeoTable);
+      // Fetch Mapeo data with explicit projection.
+      const rawMapeoData = await fetchData(mapeoTable, {
+        mainColumns: mapeoMainColumns,
+        includeColumnsData: true,
+      });
 
       // Filter data to remove unwanted columns and substrings
       const filteredMapeoData = filterUnwantedKeys(

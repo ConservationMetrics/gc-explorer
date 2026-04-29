@@ -9,7 +9,10 @@ const mockFetchData = vi.fn();
 
 vi.mock("@/server/database/dbOperations", () => ({
   fetchConfig: () => mockFetchConfig(),
-  fetchData: (table: string) => mockFetchData(table),
+  fetchData: (
+    table: string,
+    options: { mainColumns: string[]; includeColumnsData?: boolean },
+  ) => mockFetchData(table, options),
 }));
 
 vi.mock("@/utils/accessControls", () => ({
@@ -65,7 +68,10 @@ describe("GET api/[table]/export", () => {
 
   describe("CSV format", () => {
     it("builds correct CSV with headers from column metadata", async () => {
-      const { mainData, columnsData } = await mockFetchData("test_table");
+      const { mainData, columnsData } = await mockFetchData("test_table", {
+        mainColumns: ["_id", "name", "category", "g__type", "g__coordinates"],
+        includeColumnsData: true,
+      });
 
       const headers = columnsData.map(
         (column: { sql_column: string }) => column.sql_column,
@@ -99,7 +105,10 @@ describe("GET api/[table]/export", () => {
         metadata: null,
       });
 
-      const { mainData, columnsData } = await mockFetchData("test_table");
+      const { mainData, columnsData } = await mockFetchData("test_table", {
+        mainColumns: ["_id", "name", "note"],
+        includeColumnsData: true,
+      });
 
       const headers = columnsData.map(
         (column: { sql_column: string }) => column.sql_column,
@@ -120,7 +129,9 @@ describe("GET api/[table]/export", () => {
 
   describe("GeoJSON format", () => {
     it("builds valid FeatureCollection from records with coordinates", async () => {
-      const { mainData } = await mockFetchData("test_table");
+      const { mainData } = await mockFetchData("test_table", {
+        mainColumns: ["_id", "name", "category", "g__type", "g__coordinates"],
+      });
 
       const features = mainData
         .filter(
@@ -154,7 +165,9 @@ describe("GET api/[table]/export", () => {
     });
 
     it("excludes records without valid coordinates", async () => {
-      const { mainData } = await mockFetchData("test_table");
+      const { mainData } = await mockFetchData("test_table", {
+        mainColumns: ["_id", "name", "category", "g__type", "g__coordinates"],
+      });
 
       const features = mainData.filter(
         (entry: Record<string, unknown>) =>
@@ -171,7 +184,9 @@ describe("GET api/[table]/export", () => {
     });
 
     it("excludes g__ prefixed keys from feature properties", async () => {
-      const { mainData } = await mockFetchData("test_table");
+      const { mainData } = await mockFetchData("test_table", {
+        mainColumns: ["_id", "name", "category", "g__type", "g__coordinates"],
+      });
 
       const entry = mainData[0];
       const properties: Record<string, unknown> = {};
@@ -213,7 +228,9 @@ describe("GET api/[table]/export", () => {
     };
 
     it("produces valid KML with root element and namespace", async () => {
-      const { mainData } = await mockFetchData("test_table");
+      const { mainData } = await mockFetchData("test_table", {
+        mainColumns: ["_id", "name", "category", "g__type", "g__coordinates"],
+      });
       const geojson = buildGeoJsonFromData(mainData);
       const kml: string = tokml(geojson);
 
@@ -224,7 +241,9 @@ describe("GET api/[table]/export", () => {
     });
 
     it("wraps features in a Document with Placemark elements", async () => {
-      const { mainData } = await mockFetchData("test_table");
+      const { mainData } = await mockFetchData("test_table", {
+        mainColumns: ["_id", "name", "category", "g__type", "g__coordinates"],
+      });
       const geojson = buildGeoJsonFromData(mainData);
       const kml: string = tokml(geojson);
 
@@ -236,7 +255,9 @@ describe("GET api/[table]/export", () => {
     });
 
     it("includes Point coordinates in lon,lat order", async () => {
-      const { mainData } = await mockFetchData("test_table");
+      const { mainData } = await mockFetchData("test_table", {
+        mainColumns: ["_id", "name", "category", "g__type", "g__coordinates"],
+      });
       const geojson = buildGeoJsonFromData(mainData);
       const kml: string = tokml(geojson);
 
@@ -247,7 +268,9 @@ describe("GET api/[table]/export", () => {
     });
 
     it("embeds feature properties as ExtendedData", async () => {
-      const { mainData } = await mockFetchData("test_table");
+      const { mainData } = await mockFetchData("test_table", {
+        mainColumns: ["_id", "name", "category", "g__type", "g__coordinates"],
+      });
       const geojson = buildGeoJsonFromData(mainData);
       const kml: string = tokml(geojson);
 
@@ -261,7 +284,9 @@ describe("GET api/[table]/export", () => {
     });
 
     it("excludes records without coordinates", async () => {
-      const { mainData } = await mockFetchData("test_table");
+      const { mainData } = await mockFetchData("test_table", {
+        mainColumns: ["_id", "name", "category", "g__type", "g__coordinates"],
+      });
       const geojson = buildGeoJsonFromData(mainData);
       const kml: string = tokml(geojson);
 
@@ -301,7 +326,9 @@ describe("GET api/[table]/export", () => {
     it("propagates error when table does not exist", async () => {
       mockFetchData.mockRejectedValue(new Error("Main table does not exist"));
 
-      await expect(mockFetchData("nonexistent")).rejects.toThrow(
+      await expect(
+        mockFetchData("nonexistent", { mainColumns: ["_id"] }),
+      ).rejects.toThrow(
         "Main table does not exist",
       );
     });
@@ -327,7 +354,15 @@ describe("GET api/[table]/export", () => {
         metadata: null,
       });
 
-      const { mainData } = await mockFetchData("test_table");
+      const { mainData } = await mockFetchData("test_table", {
+        mainColumns: [
+          "_id",
+          "p__categoryid",
+          "g__type",
+          "g__coordinates",
+          "p__photos",
+        ],
+      });
 
       expect(mainData[0].p__categoryid).toBe("threat");
       expect(mainData[0].g__type).toBe("Point");

@@ -1,4 +1,8 @@
-import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
+import {
+  fetchData,
+  fetchTableConfig,
+  fetchTableSqlColumns,
+} from "@/server/database/dbOperations";
 import {
   filterDataByExtension,
   filterUnwantedKeys,
@@ -29,7 +33,30 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData, columnsData } = await fetchData(table, limit);
+    const filterColumn = tableConfig.FRONT_END_FILTER_COLUMN;
+    const mediaColumn = tableConfig.MEDIA_COLUMN;
+    const timestampColumn = tableConfig.TIMESTAMP_COLUMN;
+    const filterByColumn = tableConfig.FILTER_BY_COLUMN;
+
+    const projectedColumns = mediaColumn
+      ? Array.from(
+          new Set(
+            [
+              "_id",
+              filterColumn,
+              timestampColumn,
+              mediaColumn,
+              filterByColumn,
+            ].filter((column): column is string => Boolean(column)),
+          ),
+        )
+      : await fetchTableSqlColumns(table);
+
+    const { mainData, columnsData } = await fetchData(table, {
+      limit,
+      mainColumns: projectedColumns,
+      includeColumnsData: true,
+    });
 
     // Filter data to remove unwanted columns and substrings
     const filteredData = filterUnwantedKeys(
@@ -50,10 +77,6 @@ export default defineEventHandler(async (event: H3Event) => {
       allowedFileExtensions,
       tableConfig.MEDIA_COLUMN,
     );
-
-    const filterColumn = tableConfig.FRONT_END_FILTER_COLUMN;
-    const mediaColumn = tableConfig.MEDIA_COLUMN;
-    const timestampColumn = tableConfig.TIMESTAMP_COLUMN;
 
     // Return minimal records: ID + columns needed for filtering and media display
     const minimalData = dataWithFilesOnly.map((entry) => {

@@ -1,4 +1,8 @@
-import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
+import {
+  fetchData,
+  fetchTableConfig,
+  fetchTableSqlColumns,
+} from "@/server/database/dbOperations";
 import {
   filterGeoData,
   filterToSelectedValues,
@@ -141,7 +145,11 @@ export default defineEventHandler(async (event: H3Event) => {
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
 
-    const { mainData, columnsData } = await fetchData(table);
+    const mainColumns = await fetchTableSqlColumns(table);
+    const { mainData, columnsData } = await fetchData(table, {
+      mainColumns,
+      includeColumnsData: true,
+    });
 
     const recordIdParam = (query.recordId as string | undefined)?.trim() ?? "";
 

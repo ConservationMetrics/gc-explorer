@@ -9,7 +9,8 @@ const mockFetchData = vi.fn();
 
 vi.mock("@/server/database/dbOperations", () => ({
   fetchConfig: () => mockFetchConfig(),
-  fetchData: (table: string, limit?: number) => mockFetchData(table, limit),
+  fetchData: (table: string, options: { limit?: number; mainColumns: string[] }) =>
+    mockFetchData(table, options),
 }));
 
 vi.mock("@/utils/accessControls", () => ({
@@ -119,9 +120,10 @@ describe("dataset endpoints pass limit to fetchData", () => {
       metadata: null,
     });
 
-    const { mainData } = await mockFetchData("test_table", limit);
+    const options = { limit, mainColumns: ["_id", "name"] };
+    const { mainData } = await mockFetchData("test_table", options);
 
-    expect(mockFetchData).toHaveBeenCalledWith("test_table", limit);
+    expect(mockFetchData).toHaveBeenCalledWith("test_table", options);
     expect(mainData.length >= limit).toBe(true);
   });
 
@@ -138,9 +140,10 @@ describe("dataset endpoints pass limit to fetchData", () => {
       metadata: null,
     });
 
-    const { mainData } = await mockFetchData("test_table", limit);
+    const options = { limit, mainColumns: ["_id", "name"] };
+    const { mainData } = await mockFetchData("test_table", options);
 
-    expect(mockFetchData).toHaveBeenCalledWith("test_table", limit);
+    expect(mockFetchData).toHaveBeenCalledWith("test_table", options);
     expect(mainData.length >= limit).toBe(false);
   });
 });

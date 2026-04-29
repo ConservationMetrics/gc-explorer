@@ -1,4 +1,8 @@
-import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
+import {
+  ALERTS_METADATA_PROJECTION,
+  fetchData,
+  fetchTableConfig,
+} from "@/server/database/dbOperations";
 import { prepareAlertsStatistics } from "@/server/dataProcessing/dataTransformers";
 import { validatePermissions } from "@/utils/accessControls";
 import {
@@ -12,6 +16,17 @@ import type { AlertsMetadata, DataEntry } from "@/types";
 
 const SUPPORTED_FORMATS = ["csv"] as const;
 type ExportFormat = (typeof SUPPORTED_FORMATS)[number];
+const ALERTS_MAIN_PROJECTION = [
+  "_id",
+  "month_detec",
+  "year_detec",
+  "day_detec",
+  "date_end_t1",
+  "data_source",
+  "territory_name",
+  "alert_type",
+  "area_alert_ha",
+];
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -30,7 +45,11 @@ export default defineEventHandler(async (event: H3Event) => {
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
 
-    const { mainData, metadata } = (await fetchData(table)) as {
+    const { mainData, metadata } = (await fetchData(table, {
+      mainColumns: ALERTS_MAIN_PROJECTION,
+      includeMetadata: true,
+      metadataColumns: ALERTS_METADATA_PROJECTION,
+    })) as {
       mainData: DataEntry[];
       metadata: AlertsMetadata[] | null;
     };
