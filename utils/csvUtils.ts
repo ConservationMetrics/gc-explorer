@@ -23,6 +23,16 @@ export const escapeCSVValue = (value: unknown): string => {
 };
 
 /**
+ * Splits comma-separated values into a trimmed non-empty list.
+ * Useful for config fields that store list-like values in one text column.
+ */
+export const splitCsv = (value: string | null | undefined): string[] =>
+  (value ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+
+/**
  * Builds a CSV string from tabular rows with a fixed header order (like dataset export).
  * Objects and arrays are JSON-stringified for a single cell.
  */
