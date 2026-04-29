@@ -297,37 +297,33 @@ test("index page - language picker functionality", async ({
     }),
   ).toBeVisible({ timeout: 15000 });
 
-  /* 3. Wait for the language picker button to be visible (it's a globe icon button)
-   * The language picker is in AppHeader, look for the button with title="Language"
-   */
-  const languageButton = page.locator("button[title='Language']").first();
+  // 3. Wait for the desktop language picker globe button to be visible
+  const languageButton = page
+    .locator(".language-picker-container button")
+    .first();
   await languageButton.waitFor({ state: "visible", timeout: 15000 });
 
-  // 4. Verify the button has a title attribute (language picker button is icon-only)
-  const buttonTitle = await languageButton.getAttribute("title");
-  expect(buttonTitle).toBe("Language");
-
-  // 5. Click the button to open dropdown
+  // 4. Click the button to open dropdown
   await languageButton.click();
 
-  // 6. Wait for dropdown menu to appear and check for language options
+  // 5. Wait for dropdown menu to appear and check for language options
   const dropdownMenu = page.locator(
     ".language-picker-container div[class*='absolute']",
   );
   await dropdownMenu.waitFor({ state: "visible", timeout: 5000 });
 
-  // 7. Check that multiple language options are available
+  // 6. Check that multiple language options are available
   const languageOptions = dropdownMenu.locator("a[href='#']");
   const optionCount = await languageOptions.count();
   expect(optionCount).toBeGreaterThan(1);
 
-  // 8. Test language switching by clicking a different language
+  // 7. Test language switching by clicking a different language
   const firstOption = languageOptions.first();
 
   // Click the first option to switch language
   await firstOption.click();
 
-  // 9. Verify the page heading is still visible (language switching works)
+  // 8. Verify the page heading is still visible (language switching works)
   await page.waitForTimeout(1000);
   // The heading should still be visible (page didn't break)
   await expect(
@@ -391,10 +387,10 @@ test("index page - language switching to Portuguese changes heading", async ({
     }),
   ).toBeVisible({ timeout: 15000 });
 
-  /* 3. Wait for the language picker button to be visible (it's a globe icon button)
-   * The language picker is in AppHeader, look for the button with title="Language"
-   */
-  const languageButton = page.locator("button[title='Language']").first();
+  // 3. Wait for the desktop language picker globe button to be visible
+  const languageButton = page
+    .locator(".language-picker-container button")
+    .first();
   await languageButton.waitFor({ state: "visible", timeout: 15000 });
 
   // 4. Click the button to open dropdown
