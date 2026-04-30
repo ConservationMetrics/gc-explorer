@@ -52,6 +52,12 @@ const ensureViewConfigTableExists = async (): Promise<void> => {
   }
 };
 
+/**
+ * Checks whether a given table exists in the warehouse schema.
+ *
+ * @param {string | undefined} table - Table name to verify.
+ * @returns {Promise<boolean>} True when the table exists, otherwise false.
+ */
 const checkTableExists = async (
   table: string | undefined,
 ): Promise<boolean> => {
@@ -69,17 +75,68 @@ const checkTableExists = async (
   }
 };
 
+const VALID_COLUMN_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/**
+ * Normalizes and validates a projection list before a SQL read is built.
+ * Trims names, removes duplicates, rejects empty lists, and enforces safe
+ * SQL identifier shape for all projected columns.
+ *
+ * @param {string[]} columns - Candidate column names for projection.
+ * @param {string} contextLabel - Label used in validation error messages.
+ * @returns {string[]} Sanitized and deduplicated projection columns.
+ */
+const normalizeProjectionColumns = (
+  columns: string[],
+  contextLabel: string,
+): string[] => {
+  const normalized = Array.from(
+    new Set(columns.map((column) => column.trim()).filter(Boolean)),
+  );
+
+  if (normalized.length === 0) {
+    throw new Error(`Projection for ${contextLabel} cannot be empty`);
+  }
+
+  for (const column of normalized) {
+    if (!VALID_COLUMN_NAME.test(column)) {
+      throw new Error(
+        `Invalid column "${column}" in projection for ${contextLabel}`,
+      );
+    }
+  }
+
+  return normalized;
+};
+
+/**
+ * Fetches rows from a table using an explicit column projection.
+ *
+ * @param {string | undefined} table - Source table name.
+ * @param {string[]} projectionColumns - Columns to include in SELECT.
+ * @param {number} [limit] - Optional row limit for the query.
+ * @returns {Promise<unknown[]>} Result rows, or an empty array when unavailable.
+ */
 const fetchDataFromTable = async (
   table: string | undefined,
+  projectionColumns: string[],
   limit?: number,
 ): Promise<unknown[]> => {
   if (!table) return [];
 
   try {
     const cleanTableName = table.replace(/"/g, "");
+    const normalizedProjection = normalizeProjectionColumns(
+      projectionColumns,
+      cleanTableName,
+    );
+    const selectedColumns = sql.join(
+      normalizedProjection.map((column) => sql.identifier(column)),
+      sql`, `,
+    );
     const query = limit
-      ? sql`SELECT * FROM ${sql.identifier(cleanTableName)} LIMIT ${limit}`
-      : sql`SELECT * FROM ${sql.identifier(cleanTableName)}`;
+      ? sql`SELECT ${selectedColumns} FROM ${sql.identifier(cleanTableName)} LIMIT ${limit}`
+      : sql`SELECT ${selectedColumns} FROM ${sql.identifier(cleanTableName)}`;
     const result = await warehouseDb.execute(query);
     return result || [];
   } catch (error) {
@@ -88,40 +145,143 @@ const fetchDataFromTable = async (
   }
 };
 
+export type FetchDataOptions = {
+  mainColumns: string[];
+  limit?: number;
+  includeColumnsData?: boolean;
+  includeMetadata?: boolean;
+  columnsTableColumns?: string[];
+  metadataColumns?: string[];
+};
+
+export const DEFAULT_COLUMNS_TABLE_PROJECTION = [
+  "original_column",
+  "sql_column",
+];
+
+export const ALERTS_METADATA_PROJECTION = [
+  "data_source",
+  "type_alert",
+  "month",
+  "year",
+  "day",
+  "total_alerts",
+  "description_alerts",
+  "territory",
+];
+
+/**
+ * Resolves SQL column names for a table without using wildcard reads.
+ * Prefers `<table>__columns.sql_column` when available, and falls back to
+ * `information_schema.columns` in ordinal order.
+ *
+ * @param {string} table - Base table name.
+ * @returns {Promise<string[]>} Ordered list of available SQL column names.
+ */
+export const fetchTableSqlColumns = async (
+  table: string,
+): Promise<string[]> => {
+  const cleanTableName = table.replace(/"/g, "");
+  const columnsTable = `"${cleanTableName}__columns"`;
+
+  if (await checkTableExists(columnsTable)) {
+    const columns = (await fetchDataFromTable(columnsTable, [
+      "sql_column",
+    ])) as Array<{ sql_column?: unknown }>;
+    const columnNames = columns
+      .map((entry) => entry.sql_column)
+      .filter((value): value is string => typeof value === "string");
+
+    if (columnNames.length > 0) {
+      return Array.from(new Set(columnNames));
+    }
+  }
+
+  const schemaColumns = await warehouseDb.execute(sql`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = ${cleanTableName}
+    ORDER BY ordinal_position
+  `);
+
+  return Array.from(
+    new Set(
+      schemaColumns
+        .map(
+          (row: unknown) =>
+            (row as Record<string, unknown>).column_name as string | undefined,
+        )
+        .filter((column): column is string => Boolean(column)),
+    ),
+  );
+};
+
+/**
+ * Fetches projected dataset rows and optional side tables for API routes.
+ * Main-table projection is mandatory, while `__columns` and `__metadata`
+ * reads are opt-in and require explicit projections.
+ *
+ * @param {string | undefined} table - Base table name.
+ * @param {FetchDataOptions} options - Projection and inclusion settings.
+ * @returns {Promise<{ mainData: DataEntry[]; columnsData: ColumnEntry[] | null; metadata: unknown[] | null }>} Projected data payloads.
+ */
 export const fetchData = async (
   table: string | undefined,
-  limit?: number,
+  options: FetchDataOptions,
 ): Promise<{
   mainData: DataEntry[];
   columnsData: ColumnEntry[] | null;
   metadata: unknown[] | null;
 }> => {
+  // Performance rule: projection must be pushed down to DB (never SELECT *).
+  const mainProjection = normalizeProjectionColumns(
+    options.mainColumns,
+    `${table ?? "unknown table"} main table`,
+  );
   const resolvedLimit =
-    limit ?? Number(useRuntimeConfig().public.rowLimit as number);
+    options.limit ?? Number(useRuntimeConfig().public.rowLimit as number);
 
   console.log("Fetching data from", table, "...");
   const mainDataExists = await checkTableExists(table);
   let mainData: DataEntry[] = [];
   if (mainDataExists) {
-    mainData = (await fetchDataFromTable(table, resolvedLimit)) as DataEntry[];
+    mainData = (await fetchDataFromTable(
+      table,
+      mainProjection,
+      resolvedLimit,
+    )) as DataEntry[];
   } else {
     throw new Error("Main table does not exist");
   }
 
-  // Fetch mapping columns
-  const columnsTable = `"${table}__columns"`;
-  const columnsTableExists = await checkTableExists(columnsTable);
   let columnsData = null;
-  if (columnsTableExists) {
-    columnsData = (await fetchDataFromTable(columnsTable)) as ColumnEntry[];
+  if (options.includeColumnsData) {
+    const columnsProjection = normalizeProjectionColumns(
+      options.columnsTableColumns ?? [...DEFAULT_COLUMNS_TABLE_PROJECTION],
+      `${table ?? "unknown table"}__columns table`,
+    );
+    const columnsTable = `"${table}__columns"`;
+    const columnsTableExists = await checkTableExists(columnsTable);
+    if (columnsTableExists) {
+      columnsData = (await fetchDataFromTable(
+        columnsTable,
+        columnsProjection,
+      )) as ColumnEntry[];
+    }
   }
 
-  // Fetch metadata
-  const metadataTable = `"${table}__metadata"`;
-  const metadataTableExists = await checkTableExists(metadataTable);
   let metadata = null;
-  if (metadataTableExists) {
-    metadata = await fetchDataFromTable(metadataTable);
+  if (options.includeMetadata) {
+    const metadataProjection = normalizeProjectionColumns(
+      options.metadataColumns ?? [],
+      `${table ?? "unknown table"}__metadata table`,
+    );
+    const metadataTable = `"${table}__metadata"`;
+    const metadataTableExists = await checkTableExists(metadataTable);
+    if (metadataTableExists) {
+      metadata = await fetchDataFromTable(metadataTable, metadataProjection);
+    }
   }
 
   console.log("Successfully fetched data from", table, "!");

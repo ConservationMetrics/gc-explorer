@@ -1,4 +1,8 @@
-import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
+import {
+  fetchData,
+  fetchTableConfig,
+  fetchTableSqlColumns,
+} from "@/server/database/dbOperations";
 import {
   filterOutUnwantedValues,
   filterGeoData,
@@ -31,22 +35,45 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData } = await fetchData(table, limit);
+    const colorColumn = tableConfig.COLOR_COLUMN;
+    const iconColumn = tableConfig.ICON_COLUMN;
+    const filterColumn = tableConfig.FRONT_END_FILTER_COLUMN;
+    const timestampColumn = tableConfig.TIMESTAMP_COLUMN;
+    const filterByColumn = tableConfig.FILTER_BY_COLUMN;
+
+    const tableSqlColumns = await fetchTableSqlColumns(table);
+    const dateLikeColumns = tableSqlColumns.filter((column) =>
+      /(date|time|created|modified|updated)/i.test(column),
+    );
+    const mainColumns = Array.from(
+      new Set(
+        [
+          "_id",
+          "g__type",
+          "g__coordinates",
+          colorColumn,
+          iconColumn,
+          filterColumn,
+          timestampColumn,
+          filterByColumn,
+          ...dateLikeColumns,
+        ].filter((column): column is string => Boolean(column)),
+      ),
+    );
+    const { mainData } = await fetchData(table, {
+      limit,
+      mainColumns,
+    });
 
     // Filter data to remove unwanted values per chosen column
     const dataFilteredByValues = filterOutUnwantedValues(
       mainData,
-      tableConfig.FILTER_BY_COLUMN,
+      filterByColumn,
       tableConfig.FILTER_OUT_VALUES_FROM_COLUMN,
     );
 
     // Filter only data with valid geofields
     const filteredGeoData = filterGeoData(dataFilteredByValues);
-
-    const colorColumn = tableConfig.COLOR_COLUMN;
-    const iconColumn = tableConfig.ICON_COLUMN;
-    const filterColumn = tableConfig.FRONT_END_FILTER_COLUMN;
-    const timestampColumn = tableConfig.TIMESTAMP_COLUMN;
 
     // Process geodata
     const includeProperties = [colorColumn, iconColumn, timestampColumn].filter(
