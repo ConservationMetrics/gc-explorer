@@ -9,8 +9,10 @@ const mockFetchData = vi.fn();
 
 vi.mock("@/server/database/dbOperations", () => ({
   fetchConfig: () => mockFetchConfig(),
-  fetchData: (table: string, options: { limit?: number; mainColumns: string[] }) =>
-    mockFetchData(table, options),
+  fetchData: (
+    table: string,
+    options: { limit?: number; mainColumns: string[] },
+  ) => mockFetchData(table, options),
 }));
 
 vi.mock("@/utils/accessControls", () => ({

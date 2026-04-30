@@ -46,17 +46,19 @@ export default defineEventHandler(async (event: H3Event) => {
       /(date|time|created|modified|updated)/i.test(column),
     );
     const mainColumns = Array.from(
-      new Set([
-        "_id",
-        "g__type",
-        "g__coordinates",
-        colorColumn,
-        iconColumn,
-        filterColumn,
-        timestampColumn,
-        filterByColumn,
-        ...dateLikeColumns,
-      ].filter((column): column is string => Boolean(column))),
+      new Set(
+        [
+          "_id",
+          "g__type",
+          "g__coordinates",
+          colorColumn,
+          iconColumn,
+          filterColumn,
+          timestampColumn,
+          filterByColumn,
+          ...dateLikeColumns,
+        ].filter((column): column is string => Boolean(column)),
+      ),
     );
     const { mainData } = await fetchData(table, {
       limit,

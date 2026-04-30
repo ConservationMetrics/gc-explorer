@@ -328,9 +328,7 @@ describe("GET api/[table]/export", () => {
 
       await expect(
         mockFetchData("nonexistent", { mainColumns: ["_id"] }),
-      ).rejects.toThrow(
-        "Main table does not exist",
-      );
+      ).rejects.toThrow("Main table does not exist");
     });
 
     it("preserves raw untransformed values in CSV output", async () => {

@@ -178,7 +178,9 @@ export const ALERTS_METADATA_PROJECTION = [
  * @param {string} table - Base table name.
  * @returns {Promise<string[]>} Ordered list of available SQL column names.
  */
-export const fetchTableSqlColumns = async (table: string): Promise<string[]> => {
+export const fetchTableSqlColumns = async (
+  table: string,
+): Promise<string[]> => {
   const cleanTableName = table.replace(/"/g, "");
   const columnsTable = `"${cleanTableName}__columns"`;
 
