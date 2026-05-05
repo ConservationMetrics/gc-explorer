@@ -106,12 +106,7 @@ export const useIncidents = (
   const SOURCE_ID_KEYS = ["alertID", "_id", "source_id", "sourceId"] as const;
 
   const getCurrentAlertsTable = (): string | undefined => {
-    if (primaryDatasetRef?.value) {
-      return primaryDatasetRef.value;
-    }
-    const tableRaw = route.params.tablename;
-    if (!tableRaw) return undefined;
-    return Array.isArray(tableRaw) ? tableRaw.join("/") : String(tableRaw);
+    return primaryDatasetRef?.value;
   };
 
   /**
