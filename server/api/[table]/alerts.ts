@@ -1,6 +1,6 @@
 import {
   fetchViewDatasets,
-  fetchData,
+  fetchViewDatasetData,
   fetchTableConfig,
 } from "@/server/database/dbOperations";
 import murmurhash from "murmurhash";
@@ -45,7 +45,15 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData, metadata } = (await fetchData(primaryDataset, limit)) as {
+    const { primaryData, secondaryData } = await fetchViewDatasetData(
+      primaryDataset,
+      {
+        secondaryDataset,
+        limit,
+      },
+    );
+
+    const { mainData, metadata } = primaryData as {
       mainData: DataEntry[];
       metadata: AlertsMetadata[];
     };
@@ -74,9 +82,8 @@ export default defineEventHandler(async (event: H3Event) => {
 
     let mapeoData: FeatureCollection | null = null;
 
-    if (mapeoTable && mapeoCategoryIds) {
-      // Fetch Mapeo data
-      const rawMapeoData = await fetchData(mapeoTable);
+    if (mapeoTable && mapeoCategoryIds && secondaryData) {
+      const rawMapeoData = secondaryData;
 
       // Filter data to remove unwanted columns and substrings
       const filteredMapeoData = filterUnwantedKeys(
