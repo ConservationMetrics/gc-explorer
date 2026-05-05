@@ -40,7 +40,8 @@ export const useIncidents = (
   route: RouteLocationNormalizedLoaded,
   router: Router,
   mapLegendLayerIds?: Ref<string | undefined>,
-  mapeoTableRef?: Ref<string | undefined>,
+  primaryDatasetRef?: Ref<string | undefined>,
+  secondaryDatasetRef?: Ref<string | null | undefined>,
 ) => {
   // Incidents state management
   const incidents = ref<AnnotatedCollection[]>([]);
@@ -104,15 +105,8 @@ export const useIncidents = (
 
   const SOURCE_ID_KEYS = ["alertID", "_id", "source_id", "sourceId"] as const;
 
-  /**
-   * Returns current alerts table name from route params.
-   *
-   * @returns Alerts table slug string or undefined.
-   */
   const getCurrentAlertsTable = (): string | undefined => {
-    const tableRaw = route.params.tablename;
-    if (!tableRaw) return undefined;
-    return Array.isArray(tableRaw) ? tableRaw.join("/") : String(tableRaw);
+    return primaryDatasetRef?.value;
   };
 
   /**
@@ -120,7 +114,7 @@ export const useIncidents = (
    * is the warehouse table name (often the view’s MAPEO_TABLE, or `mapeo_data`)
    */
   const savedEntryIsMapeo = (entry: CollectionEntry): boolean => {
-    const configuredMapeoTable = mapeoTableRef?.value;
+    const configuredMapeoTable = secondaryDatasetRef?.value;
     return (
       entry.source_table === "mapeo_data" ||
       (!!configuredMapeoTable && entry.source_table === configuredMapeoTable)
@@ -1091,7 +1085,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
       sourceTable = (tableName as string) || "";
       featureType = "alert";
     } else if (layerId.startsWith("mapeo-data")) {
-      sourceTable = mapeoTableRef?.value ?? "";
+      sourceTable = secondaryDatasetRef?.value ?? "";
       featureType = "mapeo";
     } else if (isAdditionalSelectableLayer(layerId)) {
       sourceTable = (tableName as string) || "";

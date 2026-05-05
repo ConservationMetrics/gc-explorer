@@ -102,6 +102,12 @@ export type FetchDataOptions = {
   metadataColumns?: string[];
 };
 
+export type FetchedDatasetData = {
+  mainData: DataEntry[];
+  columnsData: ColumnEntry[] | null;
+  metadata: unknown[] | null;
+};
+
 export type Dataset = Array<DataEntry>;
 
 export type FilterValues = Array<string>;
