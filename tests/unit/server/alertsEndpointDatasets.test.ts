@@ -2,14 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockFetchViewDatasets = vi.fn();
 const mockFetchTableConfig = vi.fn();
-const mockFetchData = vi.fn();
+const mockFetchViewDatasetData = vi.fn();
 const mockValidatePermissions = vi.fn();
 
 vi.mock("@/server/database/dbOperations", () => ({
   fetchViewDatasets: (table: string, viewType: string) =>
     mockFetchViewDatasets(table, viewType),
   fetchTableConfig: (table: string) => mockFetchTableConfig(table),
-  fetchData: (table: string, limit?: number) => mockFetchData(table, limit),
+  fetchViewDatasetData: (
+    primaryDataset: string,
+    options?: { secondaryDataset?: string | null; limit?: number },
+  ) => mockFetchViewDatasetData(primaryDataset, options),
 }));
 
 vi.mock("@/utils/accessControls", () => ({
@@ -76,10 +79,13 @@ describe("alerts endpoint dataset config", () => {
       PLANET_API_KEY: "",
     });
 
-    mockFetchData.mockResolvedValue({
-      mainData: [{ _id: "1", alertID: "a1" }],
-      columnsData: null,
-      metadata: [],
+    mockFetchViewDatasetData.mockResolvedValue({
+      primaryData: {
+        mainData: [{ _id: "1", alertID: "a1" }],
+        columnsData: null,
+        metadata: [],
+      },
+      secondaryData: null,
     });
   });
 
@@ -98,8 +104,14 @@ describe("alerts endpoint dataset config", () => {
       "alerts_confidential",
       "alerts",
     );
-    expect(mockFetchData).toHaveBeenCalledWith("alerts_confidential", 100);
-    expect(mockFetchData).toHaveBeenCalledTimes(1);
+    expect(mockFetchViewDatasetData).toHaveBeenCalledWith(
+      "alerts_confidential",
+      {
+        secondaryDataset: null,
+        limit: 100,
+      },
+    );
+    expect(mockFetchViewDatasetData).toHaveBeenCalledTimes(1);
     expect(response["primary_dataset"]).toBe("alerts_confidential");
     expect(response["secondary_dataset"]).toBeNull();
   });
