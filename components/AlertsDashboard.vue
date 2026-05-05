@@ -102,11 +102,11 @@ const props = defineProps<{
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration: number;
   mapeoData: FeatureCollection | null;
-  mapeoTable?: string;
+  primaryDataset: string;
+  secondaryDataset?: string | null;
   mediaBasePath: string | undefined;
   mediaBasePathAlerts: string | undefined;
   planetApiKey: string | undefined;
-  table: string;
 }>();
 
 const localAlertsData = ref<Feature | AlertsData>(props.alertsData);
@@ -167,7 +167,8 @@ const {
   route,
   router,
   toRef(props, "mapLegendLayerIds"),
-  toRef(props, "mapeoTable"),
+  toRef(props, "primaryDataset"),
+  toRef(props, "secondaryDataset"),
 );
 
 // Use feature selection composable
@@ -206,7 +207,7 @@ watch(
     }
     if (!feature) return;
 
-    const isMapeoFeature = isMapeo.value && props.mapeoTable;
+    const isMapeoFeature = isMapeo.value && !!props.secondaryDataset;
     const isMinimalAlert = !isMapeo.value && feature.alertID && feature._id;
 
     if (!isMapeoFeature && !isMinimalAlert) return;
@@ -214,7 +215,9 @@ watch(
     const recordId = feature._id || feature.id;
     if (!recordId) return;
 
-    const fetchTable = isMapeoFeature ? props.mapeoTable! : props.table;
+    const fetchTable = isMapeoFeature
+      ? props.secondaryDataset!
+      : props.primaryDataset;
     const minimalFeature = { ...feature };
     selectedFeature.value = null;
     selectedFeatureLoading.value = true;
@@ -233,7 +236,7 @@ watch(
       );
     } else {
       displayRecord = fullRecord
-        ? transformAlertEntry(fullRecord, props.table)
+        ? transformAlertEntry(fullRecord, props.primaryDataset)
         : minimalFeature;
       imageUrl.value = [];
       if (displayRecord.t0_url)
@@ -1710,7 +1713,9 @@ onBeforeUnmount(() => {
       :allowed-file-extensions="allowedFileExtensions"
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
-      :export-table-name="isMapeo ? mapeoTable : table"
+      :export-table-name="
+        isMapeo && secondaryDataset ? secondaryDataset : primaryDataset
+      "
       :feature="selectedFeature"
       :feature-loading="selectedFeatureLoading"
       :feature-geojson="localAlertsData"

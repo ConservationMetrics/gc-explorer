@@ -67,10 +67,11 @@ const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
   mapbox3d: false,
   mapbox3dTerrainExaggeration: 1.5,
   mapeoData: null,
+  primaryDataset: "test_alerts",
+  secondaryDataset: null,
   mediaBasePath: "",
   mediaBasePathAlerts: "",
   planetApiKey: "",
-  table: "test_alerts",
 };
 
 // Mock Nuxt composables - needs to be before component import
