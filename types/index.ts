@@ -93,6 +93,12 @@ export type DataEntry = Record<string, string> & {
   normalizedId?: number;
 };
 
+export type FetchedDatasetData = {
+  mainData: DataEntry[];
+  columnsData: ColumnEntry[] | null;
+  metadata: unknown[] | null;
+};
+
 export type Dataset = Array<DataEntry>;
 
 export type FilterValues = Array<string>;

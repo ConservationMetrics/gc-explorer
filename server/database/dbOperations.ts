@@ -3,6 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import type {
   ColumnEntry,
   DataEntry,
+  FetchedDatasetData,
   RouteLevelPermission,
   ViewDatasets,
   Views,
@@ -224,6 +225,43 @@ export const fetchData = async (
   console.log("Successfully fetched data from", table, "!");
 
   return { mainData, columnsData, metadata };
+};
+
+/**
+ * Fetches primary and optional secondary dataset payloads in one DB-layer call.
+ *
+ * Endpoints that render views across multiple datasets should call this helper
+ * instead of making separate `fetchData()` calls per dataset. When
+ * `secondaryDataset` is provided, both datasets are fetched concurrently and
+ * returned in a single structured response.
+ *
+ * @param {string} primaryDataset - Required primary warehouse table name.
+ * @param {{ secondaryDataset?: string | null; limit?: number }} [options] - Optional secondary dataset and primary limit.
+ * @returns {Promise<{ primaryData: FetchedDatasetData; secondaryData: FetchedDatasetData | null }>} Fetched dataset payloads.
+ */
+export const fetchViewDatasetData = async (
+  primaryDataset: string,
+  options?: {
+    secondaryDataset?: string | null;
+    limit?: number;
+  },
+): Promise<{
+  primaryData: FetchedDatasetData;
+  secondaryData: FetchedDatasetData | null;
+}> => {
+  const primaryPromise = fetchData(primaryDataset, options?.limit);
+  if (!options?.secondaryDataset) {
+    const primaryData = (await primaryPromise) as FetchedDatasetData;
+    return { primaryData, secondaryData: null };
+  }
+
+  const secondaryPromise = fetchData(options.secondaryDataset);
+  const [primaryData, secondaryData] = (await Promise.all([
+    primaryPromise,
+    secondaryPromise,
+  ])) as [FetchedDatasetData, FetchedDatasetData];
+
+  return { primaryData, secondaryData };
 };
 
 /**
