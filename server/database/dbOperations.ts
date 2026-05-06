@@ -3,6 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import type {
   ColumnEntry,
   DataEntry,
+  FetchDataOptions,
   RouteLevelPermission,
   Views,
   ViewConfig,
@@ -143,15 +144,6 @@ const fetchDataFromTable = async (
     console.error("Error fetching data from table:", error);
     return [];
   }
-};
-
-export type FetchDataOptions = {
-  mainColumns: string[];
-  limit?: number;
-  includeColumnsData?: boolean;
-  includeMetadata?: boolean;
-  columnsTableColumns?: string[];
-  metadataColumns?: string[];
 };
 
 export const DEFAULT_COLUMNS_TABLE_PROJECTION = [

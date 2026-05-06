@@ -86,6 +86,15 @@ export type DataEntry = Record<string, string> & {
   normalizedId?: number;
 };
 
+export type FetchDataOptions = {
+  mainColumns: string[];
+  limit?: number;
+  includeColumnsData?: boolean;
+  includeMetadata?: boolean;
+  columnsTableColumns?: string[];
+  metadataColumns?: string[];
+};
+
 export type Dataset = Array<DataEntry>;
 
 export type FilterValues = Array<string>;

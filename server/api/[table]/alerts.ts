@@ -16,6 +16,7 @@ import {
 import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { parseBasemaps } from "@/server/utils";
+import { buildRequiredAlertsProjection } from "@/server/utils/alertsProjection";
 import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
 
 import type { H3Event } from "h3";
@@ -37,28 +38,14 @@ const ALERTS_MAIN_PROJECTION = [
   "g__coordinates",
 ];
 
-/**
- * Keeps preferred projection columns that exist on the target table.
- * Falls back to all available columns when none of the preferred columns exist.
- *
- * @param {string[]} preferredColumns - Columns this route wants to project.
- * @param {string[]} availableColumns - Columns available on the target table.
- * @returns {string[]} Safe projection columns to send to fetchData.
- */
-const resolveProjectedColumns = (
-  preferredColumns: string[],
-  availableColumns: string[],
-): string[] => {
-  const projectedColumns = preferredColumns.filter((columnName) =>
-    availableColumns.includes(columnName),
-  );
-
-  if (projectedColumns.length > 0) {
-    return projectedColumns;
-  }
-
-  return availableColumns;
-};
+const REQUIRED_ALERTS_MAIN_COLUMNS = [
+  "_id",
+  "alert_id",
+  "month_detec",
+  "year_detec",
+  "g__type",
+  "g__coordinates",
+];
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -80,9 +67,12 @@ export default defineEventHandler(async (event: H3Event) => {
     await validatePermissions(event, permission);
 
     const availableMainColumns = await fetchTableSqlColumns(table);
-    const alertsMainProjection = resolveProjectedColumns(
+    const alertsMainProjection = buildRequiredAlertsProjection(
+      table,
       ALERTS_MAIN_PROJECTION,
+      REQUIRED_ALERTS_MAIN_COLUMNS,
       availableMainColumns,
+      "Alerts dashboard datasets",
     );
     const availableMetadataColumns = await fetchTableSqlColumns(
       `${table}__metadata`,
