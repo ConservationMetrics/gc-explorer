@@ -9,6 +9,11 @@ Please review those before submitting pull requests or issues.
 
 Any additional or overriding rules specific to this repository are listed below.
 
+## Dependency cooldown policy
+
+New JavaScript package versions must be at least 7 days old before they can be introduced.
+If dependency resolution fails due to package age, wait and retry, or select an older version.
+
 ## Icons
 
 Use `lucide-vue-next` for UI icons (Vue components), rather than inline SVGs or other icon libraries.

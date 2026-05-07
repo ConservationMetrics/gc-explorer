@@ -8,7 +8,7 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install all dependencies (including dev dependencies for build)
 # Skip scripts to avoid Playwright installation
@@ -36,7 +36,7 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install only production dependencies
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts
