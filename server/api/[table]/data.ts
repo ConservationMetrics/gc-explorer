@@ -1,5 +1,9 @@
 import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
-import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
+import {
+  fetchData,
+  fetchTableConfig,
+  fetchTableSqlColumns,
+} from "@/server/database/dbOperations";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
@@ -14,7 +18,12 @@ export default defineEventHandler(async (event: H3Event) => {
 
     await validatePermissions(event, permission);
 
-    const { mainData, columnsData } = await fetchData(table, limit);
+    const mainColumns = await fetchTableSqlColumns(table);
+    const { mainData, columnsData } = await fetchData(table, {
+      limit,
+      mainColumns,
+      includeColumnsData: true,
+    });
     return {
       data: mainData,
       columns: columnsData,
