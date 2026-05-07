@@ -5,7 +5,7 @@ FROM node:20.15.0-slim AS builder
 WORKDIR /app
 
 # Install pnpm
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10
 
 # Copy package files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -33,7 +33,7 @@ FROM node:20.15.0-slim AS production
 WORKDIR /app
 
 # Install pnpm (needed for migrations)
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10
 
 # Copy package files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
