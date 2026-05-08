@@ -1,4 +1,8 @@
-import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
+import {
+  fetchData,
+  fetchTableConfig,
+  fetchViewDatasets,
+} from "@/server/database/dbOperations";
 import {
   filterDataByExtension,
   filterUnwantedKeys,
@@ -21,6 +25,7 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   try {
+    const { primaryDataset } = await fetchViewDatasets(table, "gallery");
     const tableConfig = await fetchTableConfig(table);
 
     // Check visibility permissions
@@ -29,7 +34,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData, columnsData } = await fetchData(table, limit);
+    const { mainData, columnsData } = await fetchData(primaryDataset, limit);
 
     // Filter data to remove unwanted columns and substrings
     const filteredData = filterUnwantedKeys(
@@ -77,6 +82,7 @@ export default defineEventHandler(async (event: H3Event) => {
       filterColumn,
       mediaBasePath: tableConfig.MEDIA_BASE_PATH,
       mediaColumn,
+      primary_dataset: primaryDataset,
       table,
       timestampColumn: timestampColumn ?? undefined,
       rowLimitReached: mainData.length >= limit,
