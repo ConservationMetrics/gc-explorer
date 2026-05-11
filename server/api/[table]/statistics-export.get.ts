@@ -1,5 +1,11 @@
-import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
+import {
+  ALERTS_METADATA_PROJECTION,
+  fetchData,
+  fetchTableConfig,
+  fetchTableSqlColumns,
+} from "@/server/database/dbOperations";
 import { prepareAlertsStatistics } from "@/server/dataProcessing/dataTransformers";
+import { buildRequiredAlertsProjection } from "@/server/utils/alertsProjection";
 import { validatePermissions } from "@/utils/accessControls";
 import {
   buildStatisticsMonthlyRows,
@@ -12,6 +18,26 @@ import type { AlertsMetadata, DataEntry } from "@/types";
 
 const SUPPORTED_FORMATS = ["csv"] as const;
 type ExportFormat = (typeof SUPPORTED_FORMATS)[number];
+const ALERTS_MAIN_PROJECTION = [
+  "_id",
+  "month_detec",
+  "year_detec",
+  "day_detec",
+  "date_end_t1",
+  "data_source",
+  "territory_name",
+  "alert_type",
+  "area_alert_ha",
+];
+
+const REQUIRED_ALERTS_STATISTICS_COLUMNS = [
+  "month_detec",
+  "year_detec",
+  "data_source",
+  "territory_name",
+  "alert_type",
+  "area_alert_ha",
+];
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -30,7 +56,26 @@ export default defineEventHandler(async (event: H3Event) => {
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
 
-    const { mainData, metadata } = (await fetchData(table)) as {
+    const availableMainColumns = await fetchTableSqlColumns(table);
+    const alertsMainProjection = buildRequiredAlertsProjection(
+      table,
+      ALERTS_MAIN_PROJECTION,
+      REQUIRED_ALERTS_STATISTICS_COLUMNS,
+      availableMainColumns,
+      "Alerts statistics exports",
+    );
+    const availableMetadataColumns = await fetchTableSqlColumns(
+      `${table}__metadata`,
+    );
+    const alertsMetadataProjection = ALERTS_METADATA_PROJECTION.filter(
+      (columnName) => availableMetadataColumns.includes(columnName),
+    );
+
+    const { mainData, metadata } = (await fetchData(table, {
+      mainColumns: alertsMainProjection,
+      includeMetadata: alertsMetadataProjection.length > 0,
+      metadataColumns: alertsMetadataProjection,
+    })) as {
       mainData: DataEntry[];
       metadata: AlertsMetadata[] | null;
     };
