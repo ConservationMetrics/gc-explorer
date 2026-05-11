@@ -71,7 +71,7 @@ const baseProps = {
   galleryData: [] as Dataset,
   mediaBasePath: "/",
   mediaColumn: "photo",
-  table: "t",
+  primaryDataset: "t",
 };
 
 describe("GalleryView empty states", () => {

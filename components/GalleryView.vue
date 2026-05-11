@@ -30,7 +30,7 @@ const props = defineProps<{
   galleryData: Dataset;
   mediaBasePath: string;
   mediaColumn?: string;
-  table: string;
+  primaryDataset: string;
   timestampColumn?: string;
 }>();
 
@@ -77,7 +77,7 @@ const paginatedData = computed<Dataset>(() => {
 const fetchFullRecords = async (ids: string[]) => {
   loading.value = true;
   try {
-    await fetchRecords(props.table, ids);
+    await fetchRecords(props.primaryDataset, ids);
   } catch (error) {
     console.error("Error batch-fetching gallery records:", error);
   } finally {
@@ -139,7 +139,7 @@ const getFullRecord = (minimalItem: DataEntry): DataEntry => {
   // Read cacheSize to trigger Vue reactivity when cache updates
   void cacheSize.value;
   const id = String(minimalItem._id);
-  return getCachedRecord(props.table, id) ?? minimalItem;
+  return getCachedRecord(props.primaryDataset, id) ?? minimalItem;
 };
 
 /** Transform raw record for display and prepare coordinates for selected feature */
