@@ -71,6 +71,13 @@
       "when": 1777420800000,
       "tag": "0009_backfill_view_config_gallery",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1777507200000,
+      "tag": "0010_backfill_view_config_map",
+      "breakpoints": true
     }
   ]
 }

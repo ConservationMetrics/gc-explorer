@@ -1,4 +1,8 @@
-import { fetchData, fetchTableConfig } from "@/server/database/dbOperations";
+import {
+  fetchData,
+  fetchTableConfig,
+  fetchViewDatasets,
+} from "@/server/database/dbOperations";
 import {
   filterOutUnwantedValues,
   filterGeoData,
@@ -23,6 +27,10 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   try {
+    const { primaryDataset, secondaryDatasets } = await fetchViewDatasets(
+      table,
+      "map",
+    );
     const tableConfig = await fetchTableConfig(table);
 
     // Check visibility permissions
@@ -31,7 +39,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const { mainData } = await fetchData(table, limit);
+    const { mainData } = await fetchData(primaryDataset, limit);
 
     // Filter data to remove unwanted values per chosen column
     const dataFilteredByValues = filterOutUnwantedValues(
@@ -89,6 +97,8 @@ export default defineEventHandler(async (event: H3Event) => {
       mediaBasePathIcons: tableConfig.MEDIA_BASE_PATH_ICONS,
       mediaColumn: tableConfig.MEDIA_COLUMN,
       planetApiKey: tableConfig.PLANET_API_KEY,
+      primary_dataset: primaryDataset,
+      secondary_datasets: secondaryDatasets,
       table,
       rowLimitReached: mainData.length >= limit,
       routeLevelPermission: tableConfig.ROUTE_LEVEL_PERMISSION,
