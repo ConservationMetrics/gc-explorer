@@ -132,6 +132,8 @@ export default defineNuxtConfig({
       },
     },
     public: {
+      // Login hero background; leave empty to use /background.jpg from public/.
+      backgroundImage: "",
       // Max rows returned by dataset view APIs (map, gallery, alerts, etc.).
       rowLimit: 10_000,
       allowedFileExtensions: {

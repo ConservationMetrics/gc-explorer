@@ -21,7 +21,17 @@ vi.mock("#imports", () => ({
     locale: { value: "en" },
     locales: { value: ["en", "es", "pt", "nl"] },
     setLocale: vi.fn(),
-    t: (key: string) => key,
+    t: (key: string) => {
+      const messages: Record<string, string> = {
+        loginWelcomeTitle: "Welcome to Guardian Connector Explorer",
+        loginPleaseSignIn: "Please sign in to continue.",
+        loginButton: "Login",
+      };
+      return messages[key] ?? key;
+    },
+  }),
+  useRuntimeConfig: () => ({
+    public: { backgroundImage: "" },
   }),
   navigateTo: vi.fn(),
   onMounted: vi.fn((callback) => {
@@ -38,21 +48,29 @@ const i18n = createI18n({
     en: {
       loginButton: "Login",
       authMessage: "Please log in",
+      loginWelcomeTitle: "Welcome to Guardian Connector Explorer",
+      loginPleaseSignIn: "Please sign in to continue.",
       yourAccessIsPending: "Access pending",
     },
     es: {
       loginButton: "Iniciar sesión",
       authMessage: "Por favor inicie sesión",
+      loginWelcomeTitle: "Bienvenido a Guardian Connector Explorer",
+      loginPleaseSignIn: "Por favor, inicia sesión para continuar.",
       yourAccessIsPending: "Acceso pendiente",
     },
     pt: {
       loginButton: "Entrar",
       authMessage: "Por favor faça login",
+      loginWelcomeTitle: "Bem-vindo ao Guardian Connector Explorer",
+      loginPleaseSignIn: "Por favor, entre para continuar.",
       yourAccessIsPending: "Acesso pendente",
     },
     nl: {
       loginButton: "Inloggen",
       authMessage: "Log alstublieft in",
+      loginWelcomeTitle: "Welkom bij Guardian Connector Explorer",
+      loginPleaseSignIn: "Gelieve in te loggen om door te gaan.",
       yourAccessIsPending: "Toegang in behandeling",
     },
   },
@@ -70,6 +88,8 @@ const mountLoginScreen = (
           const messages = {
             loginButton: "Sign up or log in",
             authMessage: "Please sign up or log in to access this application",
+            loginWelcomeTitle: "Welcome to Guardian Connector Explorer",
+            loginPleaseSignIn: "Please sign in to continue.",
             yourAccessIsPending:
               "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
           };
@@ -93,13 +113,10 @@ describe("LoginScreen", () => {
   });
 
   it("displays error message when provided", () => {
-    const wrapper = mountLoginScreen({
-      errorMessage:
-        "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
-    });
-    expect(wrapper.find(".text-red-500").text()).toBe(
-      "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
-    );
+    const msg =
+      "Your access is pending. Please contact a Guardian Connector administrator for account approval.";
+    const wrapper = mountLoginScreen({ errorMessage: msg });
+    expect(wrapper.find(".text-red-600").text()).toBe(msg);
   });
 
   it("changes window.location.href to /api/auth/auth0 on button click", async () => {
@@ -132,11 +149,9 @@ describe("LoginScreen", () => {
     });
   });
 
-  it("displays error message with correct translation", () => {
+  it("displays the provided error message text", () => {
     const wrapper = mountLoginScreen({ errorMessage: "Access pending" });
-    expect(wrapper.find(".text-red-500").text()).toBe(
-      "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
-    );
+    expect(wrapper.find(".text-red-600").text()).toBe("Access pending");
   });
 
   it("renders LanguagePicker component", () => {

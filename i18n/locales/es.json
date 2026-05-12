@@ -18,6 +18,8 @@
   "andPreviousAlertsShownIn": "y alertas anteriores mostradas en",
   "auth0LoginError": "Error al iniciar sesión con Auth0",
   "authMessage": "Por favor, regístrese o inicie sesión para acceder a esta aplicación",
+  "loginWelcomeTitle": "Bienvenido a Guardian Connector Explorer",
+  "loginPleaseSignIn": "Por favor, inicia sesión para continuar.",
   "availableViews": "Vistas de conjuntos de datos disponibles",
   "basemapName": "Nombre del mapa base",
   "basemapsDescription": "Proporcione hasta tres opciones de mapa base de Mapbox. Todos deben ser del mismo cuenta de Mapbox (e.g. accesible por el mismo token de acceso).",

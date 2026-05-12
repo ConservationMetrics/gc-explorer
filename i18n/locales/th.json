@@ -18,6 +18,8 @@
   "andPreviousAlertsShownIn": "และการแจ้งเตือนก่อนหน้าที่แสดงใน",
   "auth0LoginError": "เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย Auth0",
   "authMessage": "กรุณาลงทะเบียนหรือเข้าสู่ระบบเพื่อใช้แอปพลิเคชันนี้",
+  "loginWelcomeTitle": "ยินดีต้อนรับสู่ Guardian Connector Explorer",
+  "loginPleaseSignIn": "กรุณาเข้าสู่ระบบเพื่อดำเนินการต่อ",
   "availableViews": "มุมมองชุดข้อมูลที่มี",
   "basemapName": "ชื่อแผนที่ฐาน",
   "basemapsDescription": "ระบุตัวเลือกแผนที่พื้นหลังจาก Mapbox ได้สูงสุดสามแบบ ต้องมาจากบัญชี Mapbox เดียวกัน (เช่น ใช้ access token เดียวกันได้)",
