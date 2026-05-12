@@ -80,8 +80,9 @@ dist
 # IDE / Editor
 .idea
 
-# Service worker
+# Service worker, but not Swahili localization
 sw.*
+!i18n/locales/sw.json
 
 # macOS
 .DS_Store
