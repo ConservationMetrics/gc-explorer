@@ -18,6 +18,8 @@
   "andPreviousAlertsShownIn": "en eerdere alerts getoond in",
   "auth0LoginError": "Fout bij inloggen met Auth0",
   "authMessage": "Meld u aan of log in om toegang te krijgen tot deze applicatie",
+  "loginWelcomeTitle": "Welkom bij Guardian Connector Explorer",
+  "loginPleaseSignIn": "Gelieve in te loggen om door te gaan.",
   "availableViews": "Beschikbare dataset weergaven",
   "basemapName": "Basiskaart naam",
   "basemapsDescription": "Geef maximaal drie achtergrondkaart opties van Mapbox op. Ze moeten allemaal van dezelfde Mapbox account zijn (bijvoorbeeld toegankelijk met hetzelfde toegangstoken).",
