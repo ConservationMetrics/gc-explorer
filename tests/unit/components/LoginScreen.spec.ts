@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createI18n } from "vue-i18n";
-import Auth0Login from "@/components/Auth0Login.vue";
+import LoginScreen from "@/components/LoginScreen.vue";
 
 // Mock the composables at the top level
 vi.mock("#imports", () => ({
@@ -58,11 +58,11 @@ const i18n = createI18n({
   },
 });
 
-// Helper function to mount the Auth0Login component
-const mountAuth0Login = (
+// Helper function to mount the LoginScreen component
+const mountLoginScreen = (
   props: { errorMessage: string } = { errorMessage: "" },
 ) => {
-  return mount(Auth0Login, {
+  return mount(LoginScreen, {
     global: {
       plugins: [i18n],
       mocks: {
@@ -86,14 +86,14 @@ const mountAuth0Login = (
   });
 };
 
-describe("Auth0Login", () => {
+describe("LoginScreen", () => {
   it("renders login button", () => {
-    const wrapper = mountAuth0Login();
+    const wrapper = mountLoginScreen();
     expect(wrapper.find("[data-testid='login-button']").exists()).toBe(true);
   });
 
   it("displays error message when provided", () => {
-    const wrapper = mountAuth0Login({
+    const wrapper = mountLoginScreen({
       errorMessage:
         "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
     });
@@ -103,7 +103,7 @@ describe("Auth0Login", () => {
   });
 
   it("changes window.location.href to /api/auth/auth0 on button click", async () => {
-    const wrapper = mountAuth0Login();
+    const wrapper = mountLoginScreen();
 
     const originalLocation = window.location;
     let hrefValue = "";
@@ -133,14 +133,14 @@ describe("Auth0Login", () => {
   });
 
   it("displays error message with correct translation", () => {
-    const wrapper = mountAuth0Login({ errorMessage: "Access pending" });
+    const wrapper = mountLoginScreen({ errorMessage: "Access pending" });
     expect(wrapper.find(".text-red-500").text()).toBe(
       "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
     );
   });
 
   it("renders LanguagePicker component", () => {
-    const wrapper = mountAuth0Login();
+    const wrapper = mountLoginScreen();
     expect(wrapper.findComponent({ name: "GlobeLanguagePicker" })).toBeTruthy();
   });
 });

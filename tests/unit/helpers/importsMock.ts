@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-// Mock the composables used in Auth0Login component
+// Mock the composables used in LoginScreen component
 export const useUserSession = vi.fn(() => ({
   loggedIn: { value: false },
   session: { value: {} },

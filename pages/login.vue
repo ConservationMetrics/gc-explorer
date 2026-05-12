@@ -3,6 +3,7 @@ import { useI18n } from "vue-i18n";
 import { useAuth } from "@/composables/useAuth";
 
 const { loggedIn } = useUserSession();
+const { t } = useI18n();
 const errorMessage = ref("");
 
 onMounted(() => {
@@ -10,12 +11,11 @@ onMounted(() => {
   errorMessage.value = authError || "";
 });
 
-const { t } = useI18n();
 useHead({
   title: "GuardianConnector Explorer: " + t("login"),
 });
 </script>
 
 <template>
-  <Auth0Login :error-message="errorMessage" />
+  <LoginScreen :error-message="errorMessage" />
 </template>
