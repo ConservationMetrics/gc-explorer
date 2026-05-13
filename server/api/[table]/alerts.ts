@@ -1,7 +1,9 @@
 import {
+  ALERTS_METADATA_PROJECTION,
   fetchViewDatasets,
   fetchViewDatasetData,
   fetchTableConfig,
+  fetchTableSqlColumns,
 } from "@/server/database/dbOperations";
 import murmurhash from "murmurhash";
 import {
@@ -15,11 +17,36 @@ import {
 import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { parseBasemaps } from "@/server/utils";
+import { buildRequiredAlertsProjection } from "@/server/utils/alertsProjection";
 import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
 import type { FeatureCollection } from "geojson";
+
+const ALERTS_MAIN_PROJECTION = [
+  "_id",
+  "alert_id",
+  "month_detec",
+  "year_detec",
+  "day_detec",
+  "date_end_t1",
+  "data_source",
+  "territory_name",
+  "alert_type",
+  "area_alert_ha",
+  "g__type",
+  "g__coordinates",
+];
+
+const REQUIRED_ALERTS_MAIN_COLUMNS = [
+  "_id",
+  "alert_id",
+  "month_detec",
+  "year_detec",
+  "g__type",
+  "g__coordinates",
+];
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -45,11 +72,28 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
+    const availableMainColumns = await fetchTableSqlColumns(primaryDataset);
+    const alertsMainProjection = buildRequiredAlertsProjection(
+      table,
+      ALERTS_MAIN_PROJECTION,
+      REQUIRED_ALERTS_MAIN_COLUMNS,
+      availableMainColumns,
+      "Alerts dashboard datasets",
+    );
+    const availableMetadataColumns = await fetchTableSqlColumns(
+      `${primaryDataset}__metadata`,
+    );
+    const alertsMetadataProjection = ALERTS_METADATA_PROJECTION.filter(
+      (columnName) => availableMetadataColumns.includes(columnName),
+    );
+
     const { primaryData, secondaryData } = await fetchViewDatasetData(
       primaryDataset,
       {
         secondaryDataset,
         limit,
+        primaryMainColumns: alertsMainProjection,
+        primaryMetadataColumns: alertsMetadataProjection,
       },
     );
 

@@ -396,15 +396,19 @@ export const fetchViewDatasetData = async (
   options?: {
     secondaryDataset?: string | null;
     limit?: number;
+    primaryMainColumns?: string[];
+    primaryMetadataColumns?: string[];
+    secondaryMainColumns?: string[];
   },
 ): Promise<{
   primaryData: FetchedDatasetData;
   secondaryData: FetchedDatasetData | null;
 }> => {
-  const primaryMainColumns = await fetchTableSqlColumns(primaryDataset);
-  const primaryMetadataColumns = await fetchTableSqlColumns(
-    `${primaryDataset}__metadata`,
-  );
+  const primaryMainColumns =
+    options?.primaryMainColumns ?? (await fetchTableSqlColumns(primaryDataset));
+  const primaryMetadataColumns =
+    options?.primaryMetadataColumns ??
+    (await fetchTableSqlColumns(`${primaryDataset}__metadata`));
   const primaryPromise = fetchData(primaryDataset, {
     limit: options?.limit,
     mainColumns: primaryMainColumns,
@@ -416,9 +420,9 @@ export const fetchViewDatasetData = async (
     return { primaryData, secondaryData: null };
   }
 
-  const secondaryMainColumns = await fetchTableSqlColumns(
-    options.secondaryDataset,
-  );
+  const secondaryMainColumns =
+    options?.secondaryMainColumns ??
+    (await fetchTableSqlColumns(options.secondaryDataset));
   const secondaryPromise = fetchData(options.secondaryDataset, {
     mainColumns: secondaryMainColumns,
     includeColumnsData: true,

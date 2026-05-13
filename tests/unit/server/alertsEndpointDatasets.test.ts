@@ -2,16 +2,33 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockFetchViewDatasets = vi.fn();
 const mockFetchTableConfig = vi.fn();
+const mockFetchTableSqlColumns = vi.fn();
 const mockFetchViewDatasetData = vi.fn();
 const mockValidatePermissions = vi.fn();
 
 vi.mock("@/server/database/dbOperations", () => ({
+  ALERTS_METADATA_PROJECTION: [
+    "data_source",
+    "type_alert",
+    "month",
+    "year",
+    "day",
+    "total_alerts",
+    "description_alerts",
+    "territory",
+  ],
   fetchViewDatasets: (table: string, viewType: string) =>
     mockFetchViewDatasets(table, viewType),
   fetchTableConfig: (table: string) => mockFetchTableConfig(table),
+  fetchTableSqlColumns: (table: string) => mockFetchTableSqlColumns(table),
   fetchViewDatasetData: (
     primaryDataset: string,
-    options?: { secondaryDataset?: string | null; limit?: number },
+    options?: {
+      secondaryDataset?: string | null;
+      limit?: number;
+      primaryMainColumns?: string[];
+      primaryMetadataColumns?: string[];
+    },
   ) => mockFetchViewDatasetData(primaryDataset, options),
 }));
 
@@ -87,6 +104,24 @@ describe("alerts endpoint dataset config", () => {
       },
       secondaryData: null,
     });
+
+    mockFetchTableSqlColumns.mockImplementation((table: string) => {
+      if (table === "alerts_confidential") {
+        return Promise.resolve([
+          "_id",
+          "alert_id",
+          "month_detec",
+          "year_detec",
+          "g__type",
+          "g__coordinates",
+          "alert_type",
+        ]);
+      }
+      if (table === "alerts_confidential__metadata") {
+        return Promise.resolve(["data_source", "year", "month", "territory"]);
+      }
+      return Promise.resolve([]);
+    });
   });
 
   it("returns structured dataset fields and tolerates null secondary dataset", async () => {
@@ -106,10 +141,18 @@ describe("alerts endpoint dataset config", () => {
     );
     expect(mockFetchViewDatasetData).toHaveBeenCalledWith(
       "alerts_confidential",
-      {
+      expect.objectContaining({
         secondaryDataset: null,
         limit: 100,
-      },
+        primaryMainColumns: expect.arrayContaining([
+          "_id",
+          "alert_id",
+          "month_detec",
+          "year_detec",
+          "g__type",
+          "g__coordinates",
+        ]),
+      }),
     );
     expect(mockFetchViewDatasetData).toHaveBeenCalledTimes(1);
     expect(response["primary_dataset"]).toBe("alerts_confidential");
