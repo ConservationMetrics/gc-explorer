@@ -68,7 +68,11 @@ describe("gallery endpoint dataset config", () => {
       "seed_survey_data",
       "gallery",
     );
-    expect(mockFetchData).toHaveBeenCalledWith("seed_survey_data", 50);
+    expect(mockFetchData).toHaveBeenCalledWith("seed_survey_data", {
+      limit: 50,
+      mainColumns: ["_id", "community", "p__created", "photos"],
+      includeColumnsData: true,
+    });
     expect(response["primary_dataset"]).toBe("seed_survey_data");
   });
 });

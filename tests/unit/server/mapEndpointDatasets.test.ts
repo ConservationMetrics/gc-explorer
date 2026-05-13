@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockFetchViewDatasets = vi.fn();
 const mockFetchTableConfig = vi.fn();
+const mockFetchTableSqlColumns = vi.fn();
 const mockFetchData = vi.fn();
 const mockValidatePermissions = vi.fn();
 
@@ -9,7 +10,8 @@ vi.mock("@/server/database/dbOperations", () => ({
   fetchViewDatasets: (table: string, viewType: string) =>
     mockFetchViewDatasets(table, viewType),
   fetchTableConfig: (table: string) => mockFetchTableConfig(table),
-  fetchData: (table: string, limit?: number) => mockFetchData(table, limit),
+  fetchTableSqlColumns: (table: string) => mockFetchTableSqlColumns(table),
+  fetchData: (table: string, options: unknown) => mockFetchData(table, options),
 }));
 
 vi.mock("@/utils/accessControls", () => ({
@@ -89,6 +91,13 @@ describe("map endpoint dataset config", () => {
       columnsData: null,
       metadata: null,
     });
+
+    mockFetchTableSqlColumns.mockResolvedValue([
+      "_id",
+      "g__type",
+      "g__coordinates",
+      "p__created",
+    ]);
   });
 
   it("reads map datasets from view_config_map and exposes structured fields", async () => {
@@ -101,7 +110,18 @@ describe("map endpoint dataset config", () => {
       "bcmform_responses",
       "map",
     );
-    expect(mockFetchData).toHaveBeenCalledWith("bcmform_responses", 50);
+    expect(mockFetchData).toHaveBeenCalledWith(
+      "bcmform_responses",
+      expect.objectContaining({
+        limit: 50,
+        mainColumns: expect.arrayContaining([
+          "_id",
+          "g__type",
+          "g__coordinates",
+          "p__created",
+        ]),
+      }),
+    );
     expect(response["primary_dataset"]).toBe("bcmform_responses");
     expect(response["secondary_datasets"]).toEqual([]);
   });
