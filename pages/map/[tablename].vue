@@ -39,6 +39,7 @@ const mediaBasePath = ref();
 const mediaBasePathIcons = ref();
 const mediaColumn = ref();
 const planetApiKey = ref();
+const primaryDataset = ref("");
 const timestampColumn = ref<string | undefined>();
 
 const { data, error, refresh } = await useFetch(`/api/${table}/map`, {
@@ -71,6 +72,7 @@ if (data.value && !error.value) {
   mediaBasePathIcons.value = data.value.mediaBasePathIcons;
   mediaColumn.value = data.value.mediaColumn;
   planetApiKey.value = data.value.planetApiKey;
+  primaryDataset.value = data.value.primary_dataset;
   timestampColumn.value = data.value.timestampColumn;
 } else {
   console.error("Error fetching data:", error.value);
@@ -126,7 +128,7 @@ useHead({
         :media-base-path-icons="mediaBasePathIcons"
         :media-column="mediaColumn"
         :planet-api-key="planetApiKey"
-        :table="table"
+        :primary-dataset="primaryDataset"
         :timestamp-column="timestampColumn"
       />
     </ClientOnly>

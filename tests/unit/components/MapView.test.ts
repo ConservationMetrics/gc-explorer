@@ -93,7 +93,7 @@ const baseProps: InstanceType<typeof MapView>["$props"] = {
   mapData: baseMapData,
   mediaBasePath: "/media",
   planetApiKey: "",
-  table: "test_table",
+  primaryDataset: "test_table",
 };
 
 Object.assign(globalThis, {
