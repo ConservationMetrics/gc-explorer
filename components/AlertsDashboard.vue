@@ -16,6 +16,7 @@ import {
   applyTerrain,
   prepareMapLegendLayers,
   toggleLayerVisibility as utilsToggleLayerVisibility,
+  resolveTerrainExaggeration,
 } from "@/utils/mapGLHelpers";
 
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
@@ -100,7 +101,6 @@ const props = defineProps<{
   mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;
-  /** From config / API; JSON may carry `null` when source was invalid (e.g. NaN). */
   mapbox3dTerrainExaggeration?: number | null;
   mapeoData: FeatureCollection | null;
   mapeoTable?: string;
@@ -110,12 +110,9 @@ const props = defineProps<{
   table: string;
 }>();
 
-const terrainExaggeration = computed(() => {
-  const v = props.mapbox3dTerrainExaggeration;
-  if (v == null) return 0;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-});
+const terrainExaggeration = computed(() =>
+  resolveTerrainExaggeration(props.mapbox3dTerrainExaggeration),
+);
 
 const localAlertsData = ref<Feature | AlertsData>(props.alertsData);
 const calculateHectares = ref(false);

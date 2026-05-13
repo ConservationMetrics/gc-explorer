@@ -9,6 +9,7 @@ import {
   prepareMapLegendLayers,
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
+  resolveTerrainExaggeration,
 } from "@/utils/mapGLHelpers";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
@@ -66,13 +67,10 @@ const props = defineProps<{
   timestampColumn?: string;
 }>();
 
-/** Safe exaggeration for Mapbox terrain (finite number, default 0). */
-const terrainExaggeration = computed(() => {
-  const v = props.mapbox3dTerrainExaggeration;
-  if (v == null) return 0;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-});
+/** Safe exaggeration for Mapbox terrain (see {@link resolveTerrainExaggeration}). */
+const terrainExaggeration = computed(() =>
+  resolveTerrainExaggeration(props.mapbox3dTerrainExaggeration),
+);
 
 const { fetchRecord } = useRecordCache();
 
