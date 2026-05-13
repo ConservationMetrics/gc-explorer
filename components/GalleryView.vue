@@ -26,7 +26,7 @@ const { t } = useI18n();
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
-  filterColumn: string;
+  filterColumn?: string;
   galleryData: Dataset;
   mediaBasePath: string;
   mediaColumn?: string;
@@ -48,7 +48,8 @@ const applyAllFilters = () => {
     filterColumn: props.filterColumn,
     selectedValues: normalizeFilterValues(selectedFilterValues.value),
     getTimestamp: (item) => (col ? item[col] : null),
-    getCategory: (item) => item[props.filterColumn],
+    getCategory: (item) =>
+      props.filterColumn != null ? item[props.filterColumn] : undefined,
   });
 };
 

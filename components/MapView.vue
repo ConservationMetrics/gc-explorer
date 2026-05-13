@@ -42,7 +42,7 @@ import type {
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
   colorColumn?: string;
-  filterColumn: string;
+  filterColumn?: string;
   iconColumn?: string;
   mapStatistics: MapStatistics;
   mapLegendLayerIds?: string;
@@ -56,7 +56,7 @@ const props = defineProps<{
   mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;
-  mapbox3dTerrainExaggeration: number;
+  mapbox3dTerrainExaggeration?: number | null;
   mapData: FeatureCollection;
   mediaBasePath?: string;
   mediaBasePathIcons?: string;
@@ -65,6 +65,14 @@ const props = defineProps<{
   table: string;
   timestampColumn?: string;
 }>();
+
+/** Safe exaggeration for Mapbox terrain (finite number, default 0). */
+const terrainExaggeration = computed(() => {
+  const v = props.mapbox3dTerrainExaggeration;
+  if (v == null) return 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+});
 
 const { fetchRecord } = useRecordCache();
 
@@ -119,12 +127,12 @@ onMounted(() => {
 
   // Apply terrain whenever style loads (initial load and style changes)
   map.value.on("style.load", () => {
-    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
+    applyTerrain(map.value, props.mapbox3d, terrainExaggeration.value);
   });
 
   map.value.on("load", () => {
     // Add 3D Terrain if set (for initial load)
-    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
+    applyTerrain(map.value, props.mapbox3d, terrainExaggeration.value);
 
     // Only add controls once (on first load, not on style changes)
     if (!controlsAdded) {
@@ -438,7 +446,10 @@ const applyAllFilters = () => {
     filterColumn: props.filterColumn,
     selectedValues: normalizeFilterValues(selectedFilterValues.value),
     getTimestamp: (f) => f.properties?.[props.timestampColumn ?? ""],
-    getCategory: (f) => f.properties?.[props.filterColumn],
+    getCategory: (f) =>
+      props.filterColumn != null
+        ? f.properties?.[props.filterColumn]
+        : undefined,
   });
   filteredFeatureCollection.value = { type: "FeatureCollection", features };
   addDataToMap();

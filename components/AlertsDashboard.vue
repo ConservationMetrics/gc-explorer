@@ -100,7 +100,8 @@ const props = defineProps<{
   mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;
-  mapbox3dTerrainExaggeration: number;
+  /** From config / API; JSON may carry `null` when source was invalid (e.g. NaN). */
+  mapbox3dTerrainExaggeration?: number | null;
   mapeoData: FeatureCollection | null;
   mapeoTable?: string;
   mediaBasePath: string | undefined;
@@ -108,6 +109,13 @@ const props = defineProps<{
   planetApiKey: string | undefined;
   table: string;
 }>();
+
+const terrainExaggeration = computed(() => {
+  const v = props.mapbox3dTerrainExaggeration;
+  if (v == null) return 0;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+});
 
 const localAlertsData = ref<Feature | AlertsData>(props.alertsData);
 const calculateHectares = ref(false);
@@ -379,12 +387,12 @@ onMounted(() => {
 
   // Apply terrain whenever style loads (initial load and style changes)
   map.value.on("style.load", () => {
-    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
+    applyTerrain(map.value, props.mapbox3d, terrainExaggeration.value);
   });
 
   map.value.on("load", async () => {
     // Add 3D Terrain if set in env var (for initial load)
-    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
+    applyTerrain(map.value, props.mapbox3d, terrainExaggeration.value);
 
     // Only add controls once (on first load, not on style changes)
     if (!controlsAdded) {
