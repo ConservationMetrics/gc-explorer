@@ -36,3 +36,38 @@ export const parseAndValidateLimit = (event: H3Event): number => {
   const maxLimit = Number(useRuntimeConfig(event).public.rowLimit);
   return validateRowLimit(raw, maxLimit);
 };
+
+/**
+ * Parses a comma-separated secondary dataset list into a normalized array.
+ * Keeps first occurrence order, removes blanks, deduplicates, and enforces max.
+ */
+export const getSecondaryDatasets = (input: unknown, max = 2): string[] => {
+  if (typeof input !== "string" || max <= 0) {
+    return [];
+  }
+
+  const values = input
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+
+  const unique: string[] = [];
+  for (const value of values) {
+    if (!unique.includes(value)) {
+      unique.push(value);
+    }
+  }
+
+  return unique.slice(0, max);
+};
+
+/**
+ * Converts secondary datasets to storage form for `view_config_map.secondary_datasets`.
+ */
+export const normalizeSecondaryDatasets = (
+  input: unknown,
+  max = 2,
+): string | null => {
+  const datasets = getSecondaryDatasets(input, max);
+  return datasets.length > 0 ? datasets.join(",") : null;
+};

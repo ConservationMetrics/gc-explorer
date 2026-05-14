@@ -62,7 +62,7 @@ const props = defineProps<{
   mediaBasePathIcons?: string;
   mediaColumn?: string;
   planetApiKey?: string;
-  table: string;
+  primaryDataset: string;
   timestampColumn?: string;
 }>();
 
@@ -346,7 +346,10 @@ const addDataToMap = () => {
         // Fetch the full raw record from the single-record endpoint
         // and apply presentation transforms for display
         if (recordId) {
-          const record = await fetchRecord(props.table, recordId);
+          // TODO: Once map secondary datasets are active, resolve record source from
+          // primary/secondary dataset linkage instead of always using primaryDataset.
+          // Epic: https://github.com/ConservationMetrics/gc-explorer/issues/437
+          const record = await fetchRecord(props.primaryDataset, recordId);
           if (record) {
             const displayRecord = transformSurveyEntry(record);
             delete displayRecord["filter-color"];

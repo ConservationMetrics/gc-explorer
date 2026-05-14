@@ -66,6 +66,13 @@ export interface Views {
   [key: string]: ViewConfig;
 }
 
+export type ViewType = "alerts" | "map" | "gallery";
+
+export interface ViewDatasets {
+  primaryDataset: string;
+  secondaryDatasets: string[];
+}
+
 export type AllowedFileExtensions = {
   audio: string[];
   image: string[];
@@ -93,6 +100,12 @@ export type FetchDataOptions = {
   includeMetadata?: boolean;
   columnsTableColumns?: string[];
   metadataColumns?: string[];
+};
+
+export type FetchedDatasetData = {
+  mainData: DataEntry[];
+  columnsData: ColumnEntry[] | null;
+  metadata: unknown[] | null;
 };
 
 export type Dataset = Array<DataEntry>;

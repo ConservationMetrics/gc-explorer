@@ -1,6 +1,7 @@
 import {
   ALERTS_METADATA_PROJECTION,
-  fetchData,
+  fetchViewDatasets,
+  fetchViewDatasetData,
   fetchTableConfig,
   fetchTableSqlColumns,
 } from "@/server/database/dbOperations";
@@ -58,6 +59,11 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   try {
+    const { primaryDataset, secondaryDatasets } = await fetchViewDatasets(
+      table,
+      "alerts",
+    );
+    const secondaryDataset = secondaryDatasets[0] ?? null;
     const tableConfig = await fetchTableConfig(table);
 
     // Check visibility permissions
@@ -66,7 +72,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const availableMainColumns = await fetchTableSqlColumns(table);
+    const availableMainColumns = await fetchTableSqlColumns(primaryDataset);
     const alertsMainProjection = buildRequiredAlertsProjection(
       table,
       ALERTS_MAIN_PROJECTION,
@@ -75,18 +81,23 @@ export default defineEventHandler(async (event: H3Event) => {
       "Alerts dashboard datasets",
     );
     const availableMetadataColumns = await fetchTableSqlColumns(
-      `${table}__metadata`,
+      `${primaryDataset}__metadata`,
     );
     const alertsMetadataProjection = ALERTS_METADATA_PROJECTION.filter(
       (columnName) => availableMetadataColumns.includes(columnName),
     );
 
-    const { mainData, metadata } = (await fetchData(table, {
-      limit,
-      mainColumns: alertsMainProjection,
-      includeMetadata: alertsMetadataProjection.length > 0,
-      metadataColumns: alertsMetadataProjection,
-    })) as {
+    const { primaryData, secondaryData } = await fetchViewDatasetData(
+      primaryDataset,
+      {
+        secondaryDataset,
+        limit,
+        primaryMainColumns: alertsMainProjection,
+        primaryMetadataColumns: alertsMetadataProjection,
+      },
+    );
+
+    const { mainData, metadata } = primaryData as {
       mainData: DataEntry[];
       metadata: AlertsMetadata[];
     };
@@ -110,18 +121,13 @@ export default defineEventHandler(async (event: H3Event) => {
       ),
     };
 
-    const mapeoTable = tableConfig.MAPEO_TABLE;
+    const mapeoTable = secondaryDataset;
     const mapeoCategoryIds = tableConfig.MAPEO_CATEGORY_IDS;
 
     let mapeoData: FeatureCollection | null = null;
 
-    if (mapeoTable && mapeoCategoryIds) {
-      const mapeoMainColumns = await fetchTableSqlColumns(mapeoTable);
-      // Fetch Mapeo data with explicit projection.
-      const rawMapeoData = await fetchData(mapeoTable, {
-        mainColumns: mapeoMainColumns,
-        includeColumnsData: true,
-      });
+    if (mapeoTable && mapeoCategoryIds && secondaryData) {
+      const rawMapeoData = secondaryData;
 
       // Filter data to remove unwanted columns and substrings
       const filteredMapeoData = filterUnwantedKeys(
@@ -179,6 +185,8 @@ export default defineEventHandler(async (event: H3Event) => {
       mapboxStyle: defaultMapboxStyle,
       mapboxBasemaps: basemaps,
       mapboxZoom: Number(tableConfig.MAPBOX_ZOOM),
+      primary_dataset: primaryDataset,
+      secondary_dataset: secondaryDataset,
       mapeoTable,
       mapeoData,
       mediaBasePath: tableConfig.MEDIA_BASE_PATH,

@@ -50,6 +50,34 @@
       "when": 1768207769008,
       "tag": "0006_backfill_parent_alerts_table_incidents",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1776729600000,
+      "tag": "0007_create_view_type_config_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776816000000,
+      "tag": "0008_backfill_view_config_alerts",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777420800000,
+      "tag": "0009_backfill_view_config_gallery",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1777507200000,
+      "tag": "0010_backfill_view_config_map",
+      "breakpoints": true
     }
   ]
 }
