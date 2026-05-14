@@ -129,6 +129,96 @@ const queryViewDatasets = async (
 };
 
 /**
+ * Extracts supported view types from config.VIEWS.
+ *
+ * @param {ViewConfig} config - Parsed table config payload.
+ * @returns {Set<ViewType>} Supported view types configured for this table.
+ */
+const getConfiguredViewTypes = (config: ViewConfig): Set<ViewType> => {
+  const configured = splitCsv(config.VIEWS).map((value) => value.toLowerCase());
+  const supportedTypes: ViewType[] = ["alerts", "map", "gallery"];
+  return new Set(
+    configured.filter((value): value is ViewType =>
+      supportedTypes.includes(value as ViewType),
+    ),
+  );
+};
+
+/**
+ * Keeps per-view-type config tables in sync with one view_config row.
+ *
+ * @param {string} tableName - View identifier / table_name.
+ * @param {ViewConfig} config - Parsed config values for this table.
+ * @returns {Promise<void>} Resolves when all per-view-type rows are synced.
+ */
+const syncViewTypeConfigs = async (
+  tableName: string,
+  config: ViewConfig,
+): Promise<void> => {
+  const configuredViews = getConfiguredViewTypes(config);
+  const secondaryDataset = config.MAPEO_TABLE?.trim() || null;
+
+  if (configuredViews.has("alerts")) {
+    await configDb
+      .insert(viewConfigAlerts)
+      .values({
+        viewId: tableName,
+        primaryDataset: tableName,
+        secondaryDataset,
+      })
+      .onConflictDoUpdate({
+        target: viewConfigAlerts.viewId,
+        set: {
+          primaryDataset: tableName,
+          secondaryDataset,
+        },
+      });
+  } else {
+    await configDb
+      .delete(viewConfigAlerts)
+      .where(eq(viewConfigAlerts.viewId, tableName));
+  }
+
+  if (configuredViews.has("map")) {
+    await configDb
+      .insert(viewConfigMap)
+      .values({
+        viewId: tableName,
+        primaryDataset: tableName,
+        secondaryDatasets: null,
+      })
+      .onConflictDoUpdate({
+        target: viewConfigMap.viewId,
+        set: {
+          primaryDataset: tableName,
+          secondaryDatasets: null,
+        },
+      });
+  } else {
+    await configDb
+      .delete(viewConfigMap)
+      .where(eq(viewConfigMap.viewId, tableName));
+  }
+
+  if (configuredViews.has("gallery")) {
+    await configDb
+      .insert(viewConfigGallery)
+      .values({
+        viewId: tableName,
+        primaryDataset: tableName,
+      })
+      .onConflictDoUpdate({
+        target: viewConfigGallery.viewId,
+        set: { primaryDataset: tableName },
+      });
+  } else {
+    await configDb
+      .delete(viewConfigGallery)
+      .where(eq(viewConfigGallery.viewId, tableName));
+  }
+};
+
+/**
  * Ensures the config database contains a `view_config` table before reads/writes.
  *
  * @returns {Promise<void>} Resolves when the table exists.
@@ -800,6 +890,7 @@ export const updateConfig = async (
       })
       .where(eq(viewConfig.tableName, tableName));
 
+    await syncViewTypeConfigs(tableName, typedConfig);
     await syncPublicViews(tableName, typedConfig.ROUTE_LEVEL_PERMISSION);
   } catch (error) {
     console.error("Error updating config:", error);
@@ -813,6 +904,7 @@ export const addNewTableToConfig = async (tableName: string): Promise<void> => {
       tableName,
       viewsConfig: "{}",
     });
+    await syncViewTypeConfigs(tableName, {});
   } catch (error) {
     console.error("Error adding new table to config:", error);
     throw error;
