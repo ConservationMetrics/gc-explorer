@@ -576,7 +576,9 @@ onBeforeUnmount(() => {
     >
       {{ $t("resetMap") }}
     </button>
-    <div class="absolute top-4 right-14 z-10 flex flex-col gap-0.5">
+    <div
+      class="absolute top-16 sm:top-4 right-14 z-10 flex flex-col gap-0.5"
+    >
       <DataFilter
         v-if="filterColumn"
         :key="`filter-${filterResetKey}`"
