@@ -85,7 +85,6 @@
   "filterDataByColumn": "Filtrar dados por coluna",
   "filtering": "Filtragem",
   "filterOutValuesFromColumn": "Quais valores filtrar da coluna",
-  "frontEndFilterColumn": "Coluna para filtrar valores",
   "gallery": "Galeria",
   "galleryEmpty": "Ainda não há itens para mostrar nesta galeria.",
   "galleryNoFilterResults": "Nenhum item corresponde aos filtros atuais.",

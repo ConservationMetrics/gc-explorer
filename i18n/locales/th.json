@@ -88,7 +88,6 @@
   "filterDataByColumn": "กรองข้อมูลตามคอลัมน์",
   "filtering": "การกรอง",
   "filterOutValuesFromColumn": "ค่าที่ต้องการกรองออกจากคอลัมน์",
-  "frontEndFilterColumn": "คอลัมน์ที่ใช้กรองค่า",
   "gallery": "แกลเลอรี",
   "galleryEmpty": "ยังไม่มีรายการให้แสดงในแกลเลอรีนี้",
   "galleryNoFilterResults": "ไม่มีรายการตรงกับตัวกรองปัจจุบัน",

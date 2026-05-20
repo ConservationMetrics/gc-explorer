@@ -59,7 +59,7 @@ const handleInput = (key: string, value: string): void => {
           :for="`${tableName}-${key}`"
           class="block text-sm font-medium text-gray-700"
         >
-          {{ $t(toCamelCase(key)) }}
+          {{ $t("filterDataByColumn") }}
         </label>
         <input
           :id="`${tableName}-${key}`"

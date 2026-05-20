@@ -88,7 +88,6 @@
   "filterDataByColumn": "Filter data by column",
   "filtering": "Filtering",
   "filterOutValuesFromColumn": "Which values to filter out from the column",
-  "frontEndFilterColumn": "Column to filter values from",
   "gallery": "Gallery",
   "galleryEmpty": "There are no items to show in this gallery yet.",
   "galleryNoFilterResults": "No items match the current filters.",
