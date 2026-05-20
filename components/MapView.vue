@@ -57,7 +57,7 @@ const props = defineProps<{
   mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;
-  mapbox3dTerrainExaggeration?: number | null;
+  mapbox3dTerrainExaggeration?: number | null | undefined;
   mapData: FeatureCollection;
   mediaBasePath?: string;
   mediaBasePathIcons?: string;

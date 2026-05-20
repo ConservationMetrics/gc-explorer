@@ -101,7 +101,7 @@ const props = defineProps<{
   mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;
-  mapbox3dTerrainExaggeration?: number | null;
+  mapbox3dTerrainExaggeration?: number | null | undefined;
   mapeoData: FeatureCollection | null;
   mapeoTable?: string;
   mediaBasePath: string | undefined;
