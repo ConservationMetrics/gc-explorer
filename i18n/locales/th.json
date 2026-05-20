@@ -168,7 +168,7 @@
   "incidents.viewSavedIncidentsTooltip": "ดูเหตุการณ์ที่บันทึกไว้",
   "loading": "กำลังโหลด...",
   "login": "เข้าสู่ระบบ",
-  "loginButton": "สมัครสมาชิกหรือเข้าสู่ระบบ",
+  "loginButton": "เข้าสู่ระบบ",
   "loginError": "เกิดข้อผิดพลาดขณะพยายามเข้าสู่ระบบ",
   "logoUrl": "URL โลโก้",
   "manageDatasets": "จัดการชุดข้อมูล",
