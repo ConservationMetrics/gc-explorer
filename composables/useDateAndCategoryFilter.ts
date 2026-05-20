@@ -20,7 +20,7 @@ export interface DateAndCategoryFilterOptions<T> {
   timestampColumn?: string;
   dateMin: string;
   dateMax: string;
-  filterColumn: string;
+  filterColumn?: string;
   selectedValues: string[];
   getTimestamp: (item: T) => unknown;
   getCategory: (item: T) => unknown;

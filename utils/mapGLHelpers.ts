@@ -62,6 +62,18 @@ export const changeMapStyle = (
   }
 };
 
+/**
+ * Normalizes config/API terrain exaggeration for Mapbox.
+ * Treats null/undefined and non-finite numbers as 0 (JSON often carries `null` for NaN).
+ */
+export const resolveTerrainExaggeration = (
+  raw: number | null | undefined,
+): number => {
+  if (raw == null) return 0;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : 0;
+};
+
 /** Applies or clears 3D terrain based on flags. Safe to call after style changes. */
 export const applyTerrain = (
   map: mapboxgl.Map,

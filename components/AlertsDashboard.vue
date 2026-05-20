@@ -16,6 +16,7 @@ import {
   applyTerrain,
   prepareMapLegendLayers,
   toggleLayerVisibility as utilsToggleLayerVisibility,
+  resolveTerrainExaggeration,
 } from "@/utils/mapGLHelpers";
 
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
@@ -100,7 +101,7 @@ const props = defineProps<{
   mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;
-  mapbox3dTerrainExaggeration: number;
+  mapbox3dTerrainExaggeration?: number | null | undefined;
   mapeoData: FeatureCollection | null;
   mapeoTable?: string;
   mediaBasePath: string | undefined;
@@ -108,6 +109,10 @@ const props = defineProps<{
   planetApiKey: string | undefined;
   table: string;
 }>();
+
+const terrainExaggeration = computed(() =>
+  resolveTerrainExaggeration(props.mapbox3dTerrainExaggeration),
+);
 
 const localAlertsData = ref<Feature | AlertsData>(props.alertsData);
 const calculateHectares = ref(false);
@@ -379,12 +384,12 @@ onMounted(() => {
 
   // Apply terrain whenever style loads (initial load and style changes)
   map.value.on("style.load", () => {
-    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
+    applyTerrain(map.value, props.mapbox3d, terrainExaggeration.value);
   });
 
   map.value.on("load", async () => {
     // Add 3D Terrain if set in env var (for initial load)
-    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
+    applyTerrain(map.value, props.mapbox3d, terrainExaggeration.value);
 
     // Only add controls once (on first load, not on style changes)
     if (!controlsAdded) {

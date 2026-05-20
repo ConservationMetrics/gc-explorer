@@ -9,6 +9,7 @@ import {
   prepareMapLegendLayers,
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
+  resolveTerrainExaggeration,
 } from "@/utils/mapGLHelpers";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
@@ -42,7 +43,7 @@ import type {
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
   colorColumn?: string;
-  filterColumn: string;
+  filterColumn?: string;
   iconColumn?: string;
   mapStatistics: MapStatistics;
   mapLegendLayerIds?: string;
@@ -56,7 +57,7 @@ const props = defineProps<{
   mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;
-  mapbox3dTerrainExaggeration: number;
+  mapbox3dTerrainExaggeration?: number | null | undefined;
   mapData: FeatureCollection;
   mediaBasePath?: string;
   mediaBasePathIcons?: string;
@@ -65,6 +66,11 @@ const props = defineProps<{
   table: string;
   timestampColumn?: string;
 }>();
+
+/** Safe exaggeration for Mapbox terrain (see {@link resolveTerrainExaggeration}). */
+const terrainExaggeration = computed(() =>
+  resolveTerrainExaggeration(props.mapbox3dTerrainExaggeration),
+);
 
 const { fetchRecord } = useRecordCache();
 
@@ -119,12 +125,12 @@ onMounted(() => {
 
   // Apply terrain whenever style loads (initial load and style changes)
   map.value.on("style.load", () => {
-    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
+    applyTerrain(map.value, props.mapbox3d, terrainExaggeration.value);
   });
 
   map.value.on("load", () => {
     // Add 3D Terrain if set (for initial load)
-    applyTerrain(map.value, props.mapbox3d, props.mapbox3dTerrainExaggeration);
+    applyTerrain(map.value, props.mapbox3d, terrainExaggeration.value);
 
     // Only add controls once (on first load, not on style changes)
     if (!controlsAdded) {
@@ -438,7 +444,10 @@ const applyAllFilters = () => {
     filterColumn: props.filterColumn,
     selectedValues: normalizeFilterValues(selectedFilterValues.value),
     getTimestamp: (f) => f.properties?.[props.timestampColumn ?? ""],
-    getCategory: (f) => f.properties?.[props.filterColumn],
+    getCategory: (f) =>
+      props.filterColumn != null
+        ? f.properties?.[props.filterColumn]
+        : undefined,
   });
   filteredFeatureCollection.value = { type: "FeatureCollection", features };
   addDataToMap();
