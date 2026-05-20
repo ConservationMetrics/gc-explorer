@@ -265,7 +265,6 @@ onMounted(() => {
             type="text"
             :value="shareInputBasePath"
             placeholder="https://files.example.com/share/abc123 or abc123"
-            pattern="^(https?://[^\s]+/(?:share|api/public/dl)/[a-zA-Z0-9_-]+|[a-zA-Z0-9_-]+)$"
             @input="
               handleInput('basePath', ($event.target as HTMLInputElement).value)
             "
@@ -366,7 +365,6 @@ onMounted(() => {
             type="text"
             :value="shareInputAlerts"
             placeholder="https://files.example.com/share/abc123 or abc123"
-            pattern="^(https?://[^\s]+/(?:share|api/public/dl)/[a-zA-Z0-9_-]+|[a-zA-Z0-9_-]+)$"
             @input="
               handleInput('alerts', ($event.target as HTMLInputElement).value)
             "
@@ -467,7 +465,6 @@ onMounted(() => {
             type="text"
             :value="shareInputIcons"
             placeholder="https://files.example.com/share/abc123 or abc123"
-            pattern="^(https?://[^\s]+/(?:share|api/public/dl)/[a-zA-Z0-9_-]+|[a-zA-Z0-9_-]+)$"
             @input="
               handleInput('icons', ($event.target as HTMLInputElement).value)
             "
