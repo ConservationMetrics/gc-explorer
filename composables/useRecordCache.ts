@@ -43,11 +43,6 @@ const ensureCacheCount = (): Ref<number> => {
  * State is module-level so every consumer shares one cache keyed by `table::recordId`.
  */
 export const useRecordCache = () => {
-  const {
-    public: { appApiKey },
-  } = useRuntimeConfig();
-
-  const headers = { "x-api-key": appApiKey as string };
   const count = ensureCacheCount();
 
   /**
