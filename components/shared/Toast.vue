@@ -5,7 +5,7 @@ const props = withDefaults(defineProps<ToastOptions>(), {
   type: "info",
   duration: 5000,
   visible: false,
-  position: "top-right",
+  position: "top-center",
 });
 
 const emit = defineEmits<ToastEmits>();
@@ -34,14 +34,28 @@ watch(
 const toastClasses = computed(() => {
   switch (props.type) {
     case "success":
-      return "border-l-4 border-green-400";
+      return "border-l-4 border-l-green-600 bg-green-100 border border-green-300 ring-2 ring-green-400/50";
     case "error":
-      return "border-l-4 border-red-400";
+      return "border-l-4 border-l-red-600 bg-red-100 border border-red-300 ring-2 ring-red-400/50";
     case "warning":
-      return "border-l-4 border-yellow-400";
+      return "border-l-4 border-l-amber-500 bg-amber-50 border border-amber-200 ring-1 ring-amber-200";
     case "info":
     default:
-      return "border-l-4 border-blue-400";
+      return "border-l-4 border-l-blue-600 bg-blue-100 border border-blue-300 ring-2 ring-blue-400/50";
+  }
+});
+
+const titleClasses = computed(() => {
+  switch (props.type) {
+    case "success":
+      return "text-green-900";
+    case "error":
+      return "text-red-900";
+    case "warning":
+      return "text-amber-900";
+    case "info":
+    default:
+      return "text-blue-900";
   }
 });
 
@@ -53,7 +67,7 @@ const positionClasses = computed(() => {
     case "top-center":
       return "top-4 left-1/2 transform -translate-x-1/2";
     case "top-right":
-      return "top-4 right-4";
+      return "top-4 right-[5.5rem]";
     case "bottom-left":
       return "bottom-4 left-4";
     case "bottom-center":
@@ -61,7 +75,7 @@ const positionClasses = computed(() => {
     case "bottom-right":
       return "bottom-4 right-4";
     default:
-      return "top-4 right-4";
+      return "top-4 left-1/2 transform -translate-x-1/2";
   }
 });
 
@@ -72,7 +86,7 @@ const isExiting = ref(false);
 <template>
   <div
     v-if="isVisible"
-    class="pointer-events-auto w-full max-w-md overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 fixed z-50 transition-all duration-300 ease-out"
+    class="pointer-events-auto w-full max-w-md overflow-hidden rounded-lg shadow-[0_10px_40px_-8px_rgba(0,0,0,0.35)] fixed z-50 transition-all duration-300 ease-out"
     :class="[
       toastClasses,
       positionClasses,
@@ -99,24 +113,24 @@ const isExiting = ref(false);
           <!-- Warning Icon -->
           <TriangleAlert
             v-else-if="type === 'warning'"
-            class="h-6 w-6 text-yellow-400"
+            class="h-6 w-6 text-amber-500"
             aria-hidden="true"
           />
           <!-- Info Icon -->
           <Info v-else class="h-6 w-6 text-blue-400" aria-hidden="true" />
         </div>
         <div class="ml-3 w-0 flex-1 pt-0.5">
-          <p class="text-sm font-medium text-gray-900">
+          <p class="text-sm font-medium" :class="titleClasses">
             {{ title }}
           </p>
-          <p v-if="message" class="mt-1 text-sm text-gray-500">
+          <p v-if="message" class="mt-1 text-sm text-gray-700">
             {{ message }}
           </p>
         </div>
         <div class="ml-4 flex flex-shrink-0">
           <button
             type="button"
-            class="inline-flex rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-transform duration-150 hover:scale-110 active:scale-95"
+            class="inline-flex rounded-md bg-transparent text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-transform duration-150 hover:scale-110 active:scale-95"
             @click="close"
           >
             <span class="sr-only">Close</span>
