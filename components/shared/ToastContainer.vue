@@ -14,7 +14,7 @@ const { toasts, removeToast } = useToast();
     :message="toast.message"
     :duration="toast.duration || 0"
     :visible="true"
-    :position="toast.position || 'top-right'"
+    :position="toast.position || 'top-center'"
     :style="{ zIndex: 10000 - index }"
     @close="removeToast(toast.id)"
   />
