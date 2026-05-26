@@ -66,6 +66,8 @@ export interface Views {
   [key: string]: ViewConfig;
 }
 
+export type ViewType = "alert" | "map" | "gallery";
+
 export type AllowedFileExtensions = {
   audio: string[];
   image: string[];
@@ -73,7 +75,13 @@ export type AllowedFileExtensions = {
 };
 
 export type ConfigRow = {
+  view_id?: number;
   table_name: string;
+  view_name?: string | null;
+  view_type?: ViewType | null;
+  primary_dataset?: string | null;
+  secondary_dataset?: string | null;
+  view_config?: string | null;
   views_config: string;
 };
 
