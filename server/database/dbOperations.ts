@@ -3,8 +3,10 @@ import { eq, sql } from "drizzle-orm";
 import type {
   ColumnEntry,
   DataEntry,
+  FetchedDatasetData,
   FetchDataOptions,
   RouteLevelPermission,
+  ViewDatasets,
   Views,
   ViewConfig,
   ViewType,
@@ -22,6 +24,20 @@ import { configDb, warehouseDb } from "./dbConnection";
  */
 const createMissingViewConfigError = (table: string) => {
   const statusMessage = `No view configuration found for table "${table}"`;
+  const error = new Error(statusMessage) as Error & {
+    statusCode: number;
+    statusMessage: string;
+  };
+  error.statusCode = 404;
+  error.statusMessage = statusMessage;
+  return error;
+};
+
+const createMissingViewDatasetConfigError = (
+  table: string,
+  viewType: ViewType,
+) => {
+  const statusMessage = `No ${viewType} dataset configuration found for table "${table}"`;
   const error = new Error(statusMessage) as Error & {
     statusCode: number;
     statusMessage: string;
@@ -573,6 +589,110 @@ export const fetchTableConfig = async (table: string): Promise<ViewConfig> => {
     console.error(`Error fetching config for table "${table}":`, error);
     throw error;
   }
+};
+
+/**
+ * Resolves primary and secondary dataset table names for a configured view.
+ *
+ * @param {string} table - Route table / view identifier.
+ * @param {ViewType} viewType - Expected view type for this route.
+ * @returns {Promise<ViewDatasets>} Dataset linkage for the view.
+ */
+export const fetchViewDatasets = async (
+  table: string,
+  viewType: ViewType,
+): Promise<ViewDatasets> => {
+  if (process.env.CI) {
+    const viewsConfig = await fetchConfig();
+    const tableConfig = viewsConfig[table];
+    if (!tableConfig) {
+      throw createMissingViewDatasetConfigError(table, viewType);
+    }
+
+    const secondaryDatasets =
+      viewType === "alert" && tableConfig.MAPEO_TABLE
+        ? [tableConfig.MAPEO_TABLE]
+        : [];
+
+    return {
+      primaryDataset: table,
+      secondaryDatasets,
+    };
+  }
+
+  try {
+    await ensureViewConfigTableExists();
+
+    const result = await configDb
+      .select({
+        primaryDataset: viewConfig.primaryDataset,
+        secondaryDataset: viewConfig.secondaryDataset,
+        viewType: viewConfig.viewType,
+      })
+      .from(viewConfig)
+      .where(eq(viewConfig.tableName, table))
+      .limit(1);
+
+    const row = result[0];
+    if (
+      !row ||
+      row.viewType !== viewType ||
+      typeof row.primaryDataset !== "string" ||
+      row.primaryDataset.length === 0
+    ) {
+      throw createMissingViewDatasetConfigError(table, viewType);
+    }
+
+    return {
+      primaryDataset: row.primaryDataset,
+      secondaryDatasets: row.secondaryDataset ? [row.secondaryDataset] : [],
+    };
+  } catch (error) {
+    if (error instanceof Error && "statusCode" in error) {
+      throw error;
+    }
+    console.error(
+      `Error fetching ${viewType} datasets for table "${table}":`,
+      error,
+    );
+    throw error;
+  }
+};
+
+/**
+ * Fetches primary and optional secondary datasets in one DB-layer operation.
+ *
+ * @param {string} primaryDataset - Primary warehouse table name.
+ * @param {{ secondaryDataset?: string | null; primaryOptions: FetchDataOptions; secondaryOptions?: FetchDataOptions }} options - Dataset fetch options.
+ * @returns {Promise<{ primaryData: FetchedDatasetData; secondaryData: FetchedDatasetData | null }>} Dataset payloads.
+ */
+export const fetchViewDatasetData = async (
+  primaryDataset: string,
+  options: {
+    secondaryDataset?: string | null;
+    primaryOptions: FetchDataOptions;
+    secondaryOptions?: FetchDataOptions;
+  },
+): Promise<{
+  primaryData: FetchedDatasetData;
+  secondaryData: FetchedDatasetData | null;
+}> => {
+  const primaryPromise = fetchData(primaryDataset, options.primaryOptions);
+  if (!options.secondaryDataset || !options.secondaryOptions) {
+    const primaryData = (await primaryPromise) as FetchedDatasetData;
+    return { primaryData, secondaryData: null };
+  }
+
+  const secondaryPromise = fetchData(
+    options.secondaryDataset,
+    options.secondaryOptions,
+  );
+  const [primaryData, secondaryData] = (await Promise.all([
+    primaryPromise,
+    secondaryPromise,
+  ])) as [FetchedDatasetData, FetchedDatasetData];
+
+  return { primaryData, secondaryData };
 };
 
 /**

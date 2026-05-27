@@ -25,6 +25,8 @@ const i18n = createI18n({
     es: {},
     pt: {},
     nl: {},
+    sw: {},
+    th: {},
   },
 });
 
@@ -70,7 +72,8 @@ const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
   mediaBasePath: "",
   mediaBasePathAlerts: "",
   planetApiKey: "",
-  table: "test_alerts",
+  primaryDataset: "test_alerts",
+  secondaryDataset: null,
 };
 
 // Mock Nuxt composables - needs to be before component import
