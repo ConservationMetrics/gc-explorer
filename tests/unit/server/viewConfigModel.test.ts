@@ -37,8 +37,8 @@ describe("single-table view config model", () => {
     expect(migration).toContain('ADD COLUMN IF NOT EXISTS "view_id"');
     expect(migration).toContain("view_config\"::jsonb ->> 'MAPEO_TABLE'");
     expect(migration).toContain("THEN 'alert'");
-    expect(migration).toContain('DROP COLUMN IF EXISTS "table_name"');
-    expect(migration).toContain('DROP COLUMN IF EXISTS "views_config"');
+    expect(migration).not.toContain('DROP COLUMN IF EXISTS "table_name"');
+    expect(migration).not.toContain('DROP COLUMN IF EXISTS "views_config"');
   });
 
   it("keeps new view metadata columns synced on config writes", async () => {

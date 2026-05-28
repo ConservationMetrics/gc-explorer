@@ -95,7 +95,3 @@ END $$;
 --> statement-breakpoint
 ALTER TABLE "views"
   ADD CONSTRAINT "views_pkey" PRIMARY KEY ("view_id");
---> statement-breakpoint
-ALTER TABLE "views"
-  DROP COLUMN IF EXISTS "table_name",
-  DROP COLUMN IF EXISTS "views_config";
