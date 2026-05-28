@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { Views, ViewConfig, User } from "@/types";
+import type { ViewConfigRow, Views, ViewConfig, User } from "@/types";
 import { Role } from "@/types";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import ViewCard from "@/components/dataset/ViewCard.vue";
+import { toConfigView } from "@/utils/viewTypes";
 import { ChevronLeft, Settings } from "lucide-vue-next";
 
 const route = useRoute();
@@ -12,6 +13,7 @@ const tableName = Array.isArray(tableRaw)
   : String(tableRaw);
 
 const viewsConfig = ref<Views>({});
+const viewRows = ref<ViewConfigRow[]>([]);
 const datasetConfig = ref<ViewConfig | null>(null);
 const dataFetched = ref(false);
 const isTitleExpanded = ref(false);
@@ -28,8 +30,16 @@ const { data, error, refresh } = await useFetch("/api/config");
 if (data.value && !error.value) {
   const fetchedViewsData = data.value[0] as Views;
   viewsConfig.value = fetchedViewsData;
+  viewRows.value = (data.value[2] ?? []) as ViewConfigRow[];
 
-  if (fetchedViewsData[tableName]) {
+  const matchingRows = viewRows.value.filter(
+    (row) => row.primaryDataset === tableName,
+  );
+
+  if (matchingRows.length > 0) {
+    datasetConfig.value = matchingRows[0].viewConfig;
+    dataFetched.value = true;
+  } else if (fetchedViewsData[tableName]) {
     datasetConfig.value = fetchedViewsData[tableName];
     dataFetched.value = true;
   } else {
@@ -77,6 +87,14 @@ const canViewDataset = computed(() => {
 });
 
 const enabledViews = computed(() => {
+  const rowViews = viewRows.value
+    .filter((row) => row.primaryDataset === tableName)
+    .map((row) => toConfigView(row.viewType));
+
+  if (rowViews.length > 0) {
+    return Array.from(new Set(rowViews)).sort();
+  }
+
   if (!datasetConfig.value?.VIEWS) return [];
   return datasetConfig.value.VIEWS.split(",").map((v) => v.trim());
 });

@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import type {
   ColumnEntry,
@@ -7,9 +7,11 @@ import type {
   RouteLevelPermission,
   Views,
   ViewConfig,
+  ViewConfigRow,
   ViewType,
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
+import { toConfigView, toViewType } from "@/utils/viewTypes";
 
 import { viewConfig, publicViews } from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
@@ -82,40 +84,20 @@ const checkTableExists = async (
 };
 
 /**
- * Normalizes the legacy comma-separated VIEWS field to the new singular view_type.
- *
- * @param {ViewConfig} config - Parsed view config.
- * @returns {ViewType | null} First configured supported view type, or null.
- */
-const getPrimaryViewType = (config: ViewConfig): ViewType | null => {
-  const firstView = (config.VIEWS ?? "")
-    .split(",")
-    .map((view) => view.trim().toLowerCase())
-    .find((view) => view.length > 0);
-
-  if (firstView === "alerts" || firstView === "alert") {
-    return "alert";
-  }
-  if (firstView === "map" || firstView === "gallery") {
-    return firstView;
-  }
-  return null;
-};
-
-/**
  * Builds the new single-table view metadata columns from existing config shape.
  *
  * @param {string} primaryDataset - Dataset table used as the route identifier.
  * @param {ViewConfig} config - Parsed view config.
  * @param {string} configString - Serialized config JSON.
+ * @param {ViewType | null} viewType - View type for the row.
  * @returns New view metadata column values for views.
  */
 const buildViewConfigColumns = (
   primaryDataset: string,
   config: ViewConfig,
   configString: string,
+  viewType: ViewType | null,
 ) => {
-  const viewType = getPrimaryViewType(config);
   const secondaryDataset =
     viewType === "alert" ? config.MAPEO_TABLE?.trim() || null : null;
 
@@ -504,20 +486,54 @@ export const fetchConfig = async (): Promise<Views> => {
     };
   }
 
+  const viewRows = await fetchViewConfigRows();
+  return viewRowsToConfig(viewRows);
+};
+
+export const viewRowsToConfig = (rows: ViewConfigRow[]): Views => {
+  return rows.reduce((viewsConfig, row) => {
+    viewsConfig[row.primaryDataset] = row.viewConfig;
+    return viewsConfig;
+  }, {} as Views);
+};
+
+/**
+ * Fetches each configured view as its own row with parsed JSON config.
+ *
+ * @returns {Promise<ViewConfigRow[]>} View rows used by config management pages.
+ */
+export const fetchViewConfigRows = async (): Promise<ViewConfigRow[]> => {
+  if (process.env.CI) {
+    const viewsConfig = await fetchConfig();
+    return Object.entries(viewsConfig).map(([primaryDataset, viewConfig]) => ({
+      primaryDataset,
+      viewConfig,
+      viewId: null,
+      viewName: viewConfig.DATASET_TABLE ?? primaryDataset,
+      viewType: toViewType(viewConfig.VIEWS as string),
+      secondaryDataset:
+        toViewType(viewConfig.VIEWS as string) === "alert"
+          ? (viewConfig.MAPEO_TABLE ?? null)
+          : null,
+    }));
+  }
+
   try {
     await ensureViewConfigTableExists();
 
     const result = await configDb.select().from(viewConfig);
 
-    const viewsConfig: Views = {};
-    result.forEach((row) => {
-      viewsConfig[row.primaryDataset] = JSON.parse(row.viewConfig);
-    });
-
-    return viewsConfig;
+    return result.map((row) => ({
+      primaryDataset: row.primaryDataset,
+      secondaryDataset: row.secondaryDataset,
+      viewConfig: JSON.parse(row.viewConfig) as ViewConfig,
+      viewId: row.viewId,
+      viewName: row.viewName,
+      viewType: row.viewType as ViewType,
+    }));
   } catch (error) {
-    console.error("Error fetching config:", error);
-    return {};
+    console.error("Error fetching view config rows:", error);
+    return [];
   }
 };
 
@@ -525,10 +541,14 @@ export const fetchConfig = async (): Promise<Views> => {
  * Fetches view configuration for one table only.
  *
  * @param {string} table - Table name to load config for.
+ * @param {ViewType} [viewType] - Optional view type to disambiguate multi-view datasets.
  * @returns {Promise<ViewConfig>} Parsed view config for the requested table.
  * @throws {Error} When config is missing or cannot be loaded.
  */
-export const fetchTableConfig = async (table: string): Promise<ViewConfig> => {
+export const fetchTableConfig = async (
+  table: string,
+  viewType?: ViewType,
+): Promise<ViewConfig> => {
   if (process.env.CI) {
     const viewsConfig = await fetchConfig();
     const tableConfig = viewsConfig[table];
@@ -546,7 +566,14 @@ export const fetchTableConfig = async (table: string): Promise<ViewConfig> => {
         viewConfig: viewConfig.viewConfig,
       })
       .from(viewConfig)
-      .where(eq(viewConfig.primaryDataset, table))
+      .where(
+        viewType
+          ? and(
+              eq(viewConfig.primaryDataset, table),
+              eq(viewConfig.viewType, viewType),
+            )
+          : eq(viewConfig.primaryDataset, table),
+      )
       .limit(1);
 
     if (result.length === 0) {
@@ -605,6 +632,7 @@ export const fetchPublicViewTableNames = async (): Promise<string[]> => {
 export const updateConfig = async (
   tableName: string,
   config: unknown,
+  viewType?: ViewType,
 ): Promise<void> => {
   try {
     const typedConfig = config as ViewConfig;
@@ -628,19 +656,28 @@ export const updateConfig = async (
       }
     }
 
-    const configString = JSON.stringify(config);
+    const configViewType = toViewType(typedConfig.VIEWS as string);
+    const currentViewType = viewType ?? configViewType;
+    const configString = JSON.stringify({
+      ...typedConfig,
+      VIEWS: toConfigView(configViewType),
+    });
     const viewColumns = buildViewConfigColumns(
       tableName,
       typedConfig,
       configString,
+      configViewType,
     );
 
     await configDb
       .update(viewConfig)
-      .set({
-        ...viewColumns,
-      })
-      .where(eq(viewConfig.primaryDataset, tableName));
+      .set(viewColumns)
+      .where(
+        and(
+          eq(viewConfig.primaryDataset, tableName),
+          eq(viewConfig.viewType, currentViewType),
+        ),
+      );
 
     await syncPublicViews(tableName, typedConfig.ROUTE_LEVEL_PERMISSION);
   } catch (error) {
@@ -649,11 +686,16 @@ export const updateConfig = async (
   }
 };
 
-export const addNewTableToConfig = async (tableName: string): Promise<void> => {
+export const addNewTableToConfig = async (
+  tableName: string,
+  viewType: ViewType,
+): Promise<void> => {
   try {
-    const configString = "{}";
+    const viewConfigValue = toConfigView(viewType);
+    const newConfig = { VIEWS: viewConfigValue };
+    const configString = JSON.stringify(newConfig);
     await configDb.insert(viewConfig).values({
-      ...buildViewConfigColumns(tableName, {}, configString),
+      ...buildViewConfigColumns(tableName, newConfig, configString, viewType),
     });
   } catch (error) {
     console.error("Error adding new table to config:", error);

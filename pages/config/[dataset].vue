@@ -2,7 +2,7 @@
 import ConfigCard from "@/components/config/ConfigCard.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
-import type { Views, ViewConfig } from "@/types";
+import type { ViewConfig, ViewConfigRow, Views, ViewType } from "@/types";
 import { CheckCircle2, ChevronLeft, Copy, Eye } from "lucide-vue-next";
 
 const route = useRoute();
@@ -10,8 +10,10 @@ const datasetRaw = route.params.dataset;
 const dataset = Array.isArray(datasetRaw)
   ? datasetRaw.join("/")
   : String(datasetRaw || "");
+const viewType = computed(() => route.query.view_type as ViewType | undefined);
 
 const viewsConfig = ref<Views>({});
+const viewRows = ref<ViewConfigRow[]>([]);
 const tableNames = ref();
 const dataFetched = ref(false);
 const datasetConfig = ref<ViewConfig | null>(null);
@@ -22,11 +24,18 @@ const { data, error, refresh } = await useFetch("/api/config");
 if (data.value && !error.value) {
   const fetchedViewsData = data.value[0] as Views;
   viewsConfig.value = fetchedViewsData;
+  viewRows.value = (data.value[2] ?? []) as ViewConfigRow[];
 
   const fetchedTableNames = data.value[1] as string[];
   tableNames.value = fetchedTableNames;
-  if (fetchedViewsData[dataset]) {
-    datasetConfig.value = fetchedViewsData[dataset];
+  const matchingRow = viewRows.value.find(
+    (row) =>
+      row.primaryDataset === dataset &&
+      (!viewType.value || row.viewType === viewType.value),
+  );
+
+  if (matchingRow) {
+    datasetConfig.value = matchingRow.viewConfig;
     dataFetched.value = true;
   } else {
     const matchingKey = Object.keys(fetchedViewsData).find(
@@ -35,7 +44,7 @@ if (data.value && !error.value) {
         decodeURIComponent(key) === dataset ||
         key === decodeURIComponent(dataset),
     );
-    if (matchingKey) {
+    if (matchingKey && !viewType.value) {
       datasetConfig.value = fetchedViewsData[matchingKey];
       dataFetched.value = true;
     } else {
@@ -61,6 +70,7 @@ const submitConfig = async ({
   try {
     await $fetch(`/api/config/update_config/${tableName}`, {
       method: "POST",
+      query: viewType.value ? { view_type: viewType.value } : undefined,
       body: JSON.stringify(config),
     });
     // Update the local datasetConfig to reflect the saved state
@@ -140,6 +150,10 @@ const {
   handleConfirmCopy,
   handleCancelCopy,
 } = useCopyConfig(viewsConfig, dataset);
+
+const getCopySourceLabel = (configKey: string) => {
+  return viewsConfig.value[configKey]?.DATASET_TABLE || configKey;
+};
 
 const { t } = useI18n();
 const { error: showErrorToast } = useToast();
@@ -271,7 +285,7 @@ definePageMeta({ layout: "explorer" });
               :key="dsName"
               :value="dsName"
             >
-              {{ viewsConfig[dsName]?.DATASET_TABLE || dsName }}
+              {{ getCopySourceLabel(dsName) }}
             </option>
           </select>
           <div class="flex gap-3 justify-end">

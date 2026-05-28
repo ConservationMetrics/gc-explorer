@@ -83,6 +83,15 @@ export type ConfigRow = {
   view_config: string;
 };
 
+export type ViewConfigRow = {
+  viewId?: number | null;
+  viewName?: string | null;
+  viewType: ViewType;
+  primaryDataset: string;
+  secondaryDataset?: string | null;
+  viewConfig: ViewConfig;
+};
+
 export type ColumnEntry = {
   original_column: string;
   sql_column: string;

@@ -8,7 +8,7 @@ const props = defineProps<{
   keys: Array<string>;
 }>();
 
-const localViews = ref([...props.views]);
+const localView = ref(props.views[0] ?? "map");
 
 // Watch for changes to views and emit updates
 const emit = defineEmits(["update:views"]);
@@ -16,13 +16,13 @@ const emit = defineEmits(["update:views"]);
 watch(
   () => props.views,
   (newViews) => {
-    localViews.value = [...newViews];
+    localView.value = newViews[0] ?? "map";
   },
   { deep: true },
 );
 
 function updateViews() {
-  emit("update:views", localViews.value);
+  emit("update:views", [localView.value]);
 }
 </script>
 
@@ -33,8 +33,9 @@ function updateViews() {
         <div class="flex flex-wrap gap-4">
           <label class="flex items-center gap-2 cursor-pointer group">
             <input
-              v-model="localViews"
-              type="checkbox"
+              v-model="localView"
+              type="radio"
+              name="view-type"
               value="map"
               class="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
               @change="updateViews"
@@ -47,8 +48,9 @@ function updateViews() {
           </label>
           <label class="flex items-center gap-2 cursor-pointer group">
             <input
-              v-model="localViews"
-              type="checkbox"
+              v-model="localView"
+              type="radio"
+              name="view-type"
               value="gallery"
               class="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
               @change="updateViews"
@@ -61,8 +63,9 @@ function updateViews() {
           </label>
           <label class="flex items-center gap-2 cursor-pointer group">
             <input
-              v-model="localViews"
-              type="checkbox"
+              v-model="localView"
+              type="radio"
+              name="view-type"
               value="alerts"
               class="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
               @change="updateViews"

@@ -1,4 +1,7 @@
-import { fetchConfig } from "@/server/database/dbOperations";
+import {
+  fetchViewConfigRows,
+  viewRowsToConfig,
+} from "@/server/database/dbOperations";
 import { getFilteredTableNames } from "@/server/utils";
 import { validateUserSession } from "@/utils/accessControls";
 
@@ -8,7 +11,8 @@ export default defineEventHandler(async (event: H3Event) => {
   await validateUserSession(event);
 
   try {
-    const viewsConfig = await fetchConfig();
+    const viewRows = await fetchViewConfigRows();
+    const viewsConfig = viewRowsToConfig(viewRows);
     const tableNames = await getFilteredTableNames();
 
     // Filter out any tables that are already in viewsConfig
@@ -18,7 +22,7 @@ export default defineEventHandler(async (event: H3Event) => {
     if (process.env.CI) {
       filteredTableNames.push("seed_survey_data");
     }
-    return [viewsConfig, filteredTableNames];
+    return [viewsConfig, filteredTableNames, viewRows];
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error fetching config on API side:", error.message);

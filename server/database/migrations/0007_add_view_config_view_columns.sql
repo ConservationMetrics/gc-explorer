@@ -40,6 +40,57 @@ CREATE SEQUENCE IF NOT EXISTS "views_view_id_seq";
 --> statement-breakpoint
 ALTER SEQUENCE "views_view_id_seq" OWNED BY "views"."view_id";
 --> statement-breakpoint
+CREATE OR REPLACE FUNCTION normalize_view_config_for_type_0007(
+  source_config text,
+  normalized_view_type text
+)
+RETURNS text
+LANGUAGE SQL
+AS $$
+  SELECT CASE
+    WHEN normalized_view_type IN ('map', 'alert') THEN
+      jsonb_set(
+        source_config::jsonb,
+        '{VIEWS}',
+        to_jsonb(CASE WHEN normalized_view_type = 'alert' THEN 'alerts' ELSE normalized_view_type END),
+        true
+      )::text
+    ELSE
+      jsonb_set(
+      jsonb_set(
+      jsonb_set(
+      jsonb_set(
+      jsonb_set(
+      jsonb_set(
+      jsonb_set(
+      jsonb_set(
+      jsonb_set(
+      jsonb_set(
+      jsonb_set(
+      jsonb_set(
+      jsonb_set(
+      jsonb_set(
+      jsonb_set(
+        jsonb_set(source_config::jsonb, '{VIEWS}', to_jsonb('gallery'::text), true),
+        '{MAPBOX_STYLE}', to_jsonb(''::text), true),
+        '{MAPBOX_PROJECTION}', to_jsonb(''::text), true),
+        '{MAPBOX_ZOOM}', to_jsonb(''::text), true),
+        '{MAPBOX_CENTER_LATITUDE}', to_jsonb(''::text), true),
+        '{MAPBOX_CENTER_LONGITUDE}', to_jsonb(''::text), true),
+        '{MAPBOX_PITCH}', to_jsonb(''::text), true),
+        '{MAPBOX_BEARING}', to_jsonb(''::text), true),
+        '{MAPBOX_3D}', to_jsonb(''::text), true),
+        '{MAPBOX_3D_TERRAIN_EXAGGERATION}', to_jsonb(''::text), true),
+        '{MAPBOX_BASEMAPS}', to_jsonb(''::text), true),
+        '{MAPBOX_ACCESS_TOKEN}', to_jsonb(''::text), true),
+        '{PLANET_API_KEY}', to_jsonb(''::text), true),
+        '{MAP_LEGEND_LAYER_IDS}', to_jsonb(''::text), true),
+        '{COLOR_COLUMN}', to_jsonb(''::text), true),
+        '{ICON_COLUMN}', to_jsonb(''::text), true
+      )::text
+  END;
+$$;
+--> statement-breakpoint
 UPDATE "views"
 SET
   "view_id" = COALESCE("view_id", nextval('views_view_id_seq')),
@@ -51,13 +102,17 @@ SET
   "view_type" = COALESCE(
     NULLIF(BTRIM("view_type"), ''),
     CASE
-      WHEN BTRIM(SPLIT_PART(COALESCE("view_config"::jsonb ->> 'VIEWS', ''), ',', 1)) = 'alerts' THEN 'alert'
-      ELSE NULLIF(BTRIM(SPLIT_PART(COALESCE("view_config"::jsonb ->> 'VIEWS', ''), ',', 1)), '')
+      WHEN LOWER(BTRIM(SPLIT_PART(COALESCE("view_config"::jsonb ->> 'VIEWS', ''), ',', 1))) = 'alerts' THEN 'alert'
+      ELSE NULLIF(LOWER(BTRIM(SPLIT_PART(COALESCE("view_config"::jsonb ->> 'VIEWS', ''), ',', 1))), '')
     END
   ),
   "secondary_dataset" = COALESCE(
     NULLIF(BTRIM("secondary_dataset"), ''),
-    NULLIF(BTRIM("view_config"::jsonb ->> 'MAPEO_TABLE'), '')
+    CASE
+      WHEN LOWER(BTRIM(SPLIT_PART(COALESCE("view_config"::jsonb ->> 'VIEWS', ''), ',', 1))) IN ('alert', 'alerts')
+        THEN NULLIF(BTRIM("view_config"::jsonb ->> 'MAPEO_TABLE'), '')
+      ELSE NULL
+    END
   )
 WHERE
   "view_id" IS NULL
@@ -95,3 +150,53 @@ END $$;
 --> statement-breakpoint
 ALTER TABLE "views"
   ADD CONSTRAINT "views_pkey" PRIMARY KEY ("view_id");
+--> statement-breakpoint
+INSERT INTO "views" (
+  "view_name",
+  "view_type",
+  "primary_dataset",
+  "secondary_dataset",
+  "view_config"
+)
+SELECT
+  COALESCE(
+    NULLIF(BTRIM(base_view."view_config"::jsonb ->> 'DATASET_TABLE'), ''),
+    base_view."primary_dataset"
+  ) AS "view_name",
+  configured_view.normalized_view_type AS "view_type",
+  base_view."primary_dataset",
+  CASE
+    WHEN configured_view.normalized_view_type = 'alert'
+      THEN NULLIF(BTRIM(base_view."view_config"::jsonb ->> 'MAPEO_TABLE'), '')
+    ELSE NULL
+  END AS "secondary_dataset",
+  normalize_view_config_for_type_0007(
+    base_view."view_config",
+    configured_view.normalized_view_type
+  )
+FROM "views" base_view
+CROSS JOIN LATERAL (
+  SELECT
+    CASE
+      WHEN LOWER(BTRIM(raw_view.view_name)) IN ('alert', 'alerts') THEN 'alert'
+      ELSE LOWER(BTRIM(raw_view.view_name))
+    END AS normalized_view_type,
+    raw_view.ordinality
+  FROM UNNEST(
+    STRING_TO_ARRAY(COALESCE(base_view."view_config"::jsonb ->> 'VIEWS', ''), ',')
+  ) WITH ORDINALITY AS raw_view(view_name, ordinality)
+) configured_view
+WHERE configured_view.ordinality > 1
+  AND configured_view.normalized_view_type IN ('alert', 'map', 'gallery')
+  AND NOT EXISTS (
+    SELECT 1
+    FROM "views" existing_view
+    WHERE existing_view."primary_dataset" = base_view."primary_dataset"
+      AND existing_view."view_type" = configured_view.normalized_view_type
+  );
+--> statement-breakpoint
+UPDATE "views"
+SET "view_config" = normalize_view_config_for_type_0007("view_config", "view_type")
+WHERE "view_type" IN ('alert', 'map', 'gallery');
+--> statement-breakpoint
+DROP FUNCTION normalize_view_config_for_type_0007(text, text);

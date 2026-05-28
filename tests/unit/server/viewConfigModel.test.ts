@@ -1,57 +1,90 @@
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { toConfigView, toViewType } from "@/utils/viewTypes";
+
+const mocks = vi.hoisted(() => {
+  const where = vi.fn();
+  const set = vi.fn(() => ({ where }));
+  const update = vi.fn(() => ({ set }));
+  const onConflictDoNothing = vi.fn();
+  const values = vi.fn(() => ({ onConflictDoNothing }));
+  const insert = vi.fn(() => ({ values }));
+  const execute = vi.fn(async () => [{ to_regclass: "views" }]);
+
+  return {
+    configDb: {
+      delete: vi.fn(),
+      execute,
+      insert,
+      select: vi.fn(),
+      update,
+    },
+    warehouseDb: {
+      execute: vi.fn(),
+    },
+    insert,
+    onConflictDoNothing,
+    set,
+    update,
+    values,
+    where,
+  };
+});
+
+vi.mock("@/server/database/dbConnection", () => ({
+  configDb: mocks.configDb,
+  warehouseDb: mocks.warehouseDb,
+}));
+
+vi.mock("/server/database/dbConnection", () => ({
+  configDb: mocks.configDb,
+  warehouseDb: mocks.warehouseDb,
+}));
 
 describe("single-table view config model", () => {
-  it("adds view metadata columns in schema and migration", async () => {
-    const schema = await readFile(
-      resolve(process.cwd(), "server/database/schemas/viewConfig.ts"),
-      "utf8",
-    );
-    const migration = await readFile(
-      resolve(
-        process.cwd(),
-        "server/database/migrations/0007_add_view_config_view_columns.sql",
-      ),
-      "utf8",
-    );
-
-    expect(schema).toContain('integer("view_id")');
-    expect(schema).toContain('text("view_name")');
-    expect(schema).toContain('text("view_type")');
-    expect(schema).toContain('text("primary_dataset").notNull()');
-    expect(schema).toContain('text("secondary_dataset")');
-    expect(schema).toContain('text("view_config").notNull()');
-    expect(schema).toContain(".primaryKey().generatedByDefaultAsIdentity()");
-
-    expect(schema).toContain('pgTable("views"');
-    expect(migration).toContain(
-      'ALTER TABLE IF EXISTS "view_config" RENAME TO "views"',
-    );
-    expect(migration).toContain(
-      'ALTER TABLE "views" RENAME COLUMN "table_name" TO "primary_dataset"',
-    );
-    expect(migration).toContain(
-      'ALTER TABLE "views" RENAME COLUMN "views_config" TO "view_config"',
-    );
-    expect(migration).toContain('ADD COLUMN IF NOT EXISTS "view_id"');
-    expect(migration).toContain("view_config\"::jsonb ->> 'MAPEO_TABLE'");
-    expect(migration).toContain("THEN 'alert'");
-    expect(migration).not.toContain('DROP COLUMN IF EXISTS "table_name"');
-    expect(migration).not.toContain('DROP COLUMN IF EXISTS "views_config"');
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it("keeps new view metadata columns synced on config writes", async () => {
-    const dbOperations = await readFile(
-      resolve(process.cwd(), "server/database/dbOperations.ts"),
-      "utf8",
+  it("normalizes between config VIEWS and stored view_type values", async () => {
+    expect(toViewType("alerts")).toBe("alert");
+    expect(toViewType("alert")).toBe("alert");
+    expect(toViewType("map")).toBe("map");
+    expect(toViewType("gallery")).toBe("gallery");
+    expect(toConfigView("alert")).toBe("alerts");
+    expect(toConfigView("map")).toBe("map");
+    expect(toConfigView("gallery")).toBe("gallery");
+  });
+
+  it("writes alert view metadata and secondary dataset on config update", async () => {
+    const { updateConfig } = await import("@/server/database/dbOperations");
+
+    await updateConfig(
+      "fake_alerts",
+      {
+        DATASET_TABLE: "Fake Alerts",
+        MAPEO_TABLE: "mapeo_data",
+        ROUTE_LEVEL_PERMISSION: "anyone",
+        VIEWS: "alerts",
+      },
+      "alert",
     );
 
-    expect(dbOperations).toContain("CREATE TABLE views");
-    expect(dbOperations).toContain("const buildViewConfigColumns =");
-    expect(dbOperations).toContain('viewType === "alert"');
-    expect(dbOperations).toContain("config.MAPEO_TABLE?.trim() || null");
-    expect(dbOperations).toContain("...viewColumns");
-    expect(dbOperations).toContain("...buildViewConfigColumns");
+    expect(mocks.update).toHaveBeenCalledTimes(1);
+    expect(mocks.set).toHaveBeenCalledWith({
+      primaryDataset: "fake_alerts",
+      secondaryDataset: "mapeo_data",
+      viewConfig: JSON.stringify({
+        DATASET_TABLE: "Fake Alerts",
+        MAPEO_TABLE: "mapeo_data",
+        ROUTE_LEVEL_PERMISSION: "anyone",
+        VIEWS: "alerts",
+      }),
+      viewName: "Fake Alerts",
+      viewType: "alert",
+    });
+    expect(mocks.where).toHaveBeenCalledTimes(1);
+    expect(mocks.insert).toHaveBeenCalledTimes(1);
+    expect(mocks.values).toHaveBeenCalledWith({ tableName: "fake_alerts" });
+    expect(mocks.onConflictDoNothing).toHaveBeenCalledTimes(1);
   });
 });

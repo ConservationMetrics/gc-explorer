@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import type { Views, User } from "@/types";
+import type { ViewConfigRow, Views, User } from "@/types";
 import { Role } from "@/types";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
+import { toConfigView } from "@/utils/viewTypes";
 import { Images, Map, Search, TriangleAlert } from "lucide-vue-next";
 
 const viewsConfig = ref<Views>({});
+const viewRows = ref<ViewConfigRow[]>([]);
 
 const {
   public: { authStrategy },
@@ -23,62 +25,83 @@ const { data, error, refresh } = await useFetch("/api/config");
 if (data.value && !error.value) {
   const fetchedViewsData = data.value[0] as Views;
   viewsConfig.value = fetchedViewsData;
+  viewRows.value = (data.value[2] ?? []) as ViewConfigRow[];
 } else {
   console.error("Error fetching data:", error.value);
 }
 
+const canAccessConfig = (config: ViewConfigRow["viewConfig"]) => {
+  if (process.env.CI) return true;
+
+  const typedUser = user.value as User | null;
+  const userRole = typedUser?.userRole ?? Role.SignedIn;
+
+  if (config.ROUTE_LEVEL_PERMISSION === "guest" && userRole < Role.Guest) {
+    return false;
+  }
+  if (config.ROUTE_LEVEL_PERMISSION === "member" && userRole < Role.Member) {
+    return false;
+  }
+  if (config.ROUTE_LEVEL_PERMISSION === "admin" && userRole < Role.Admin) {
+    return false;
+  }
+  if (config.ROUTE_LEVEL_PERMISSION === undefined && userRole < Role.SignedIn) {
+    return false;
+  }
+
+  return true;
+};
+
+const combineViewRows = (rows: ViewConfigRow[]): Views => {
+  return rows.reduce((combinedConfig, row) => {
+    const existingConfig = combinedConfig[row.primaryDataset];
+    const existingViews = existingConfig?.VIEWS
+      ? existingConfig.VIEWS.split(",").map((view) => view.trim())
+      : [];
+    const viewName = toConfigView(row.viewType);
+    const views = Array.from(new Set([...existingViews, viewName])).sort();
+
+    combinedConfig[row.primaryDataset] = {
+      ...(existingConfig ?? {}),
+      ...row.viewConfig,
+      VIEWS: views.join(","),
+    };
+
+    return combinedConfig;
+  }, {} as Views);
+};
+
 /** Filter and sort the views config */
 const filteredSortedViewsConfig = computed(() => {
+  const sourceConfig = combineViewRows(
+    viewRows.value.filter((row) => canAccessConfig(row.viewConfig)),
+  );
+
   // Skip filtering in CI environment - show everything
   if (process.env.CI) {
-    return Object.keys(viewsConfig.value)
+    return Object.keys(sourceConfig)
       .filter((key) => {
-        const config = viewsConfig.value[key];
+        const config = sourceConfig[key];
         // Filter out empty configs
         return Object.keys(config).length > 0;
       })
       .sort()
       .reduce((accumulator: Views, key: string) => {
-        accumulator[key] = viewsConfig.value[key];
+        accumulator[key] = sourceConfig[key];
         return accumulator;
       }, {});
   }
 
-  const typedUser = user.value as User | null;
-  const userRole = typedUser?.userRole ?? Role.SignedIn;
-
-  return Object.keys(viewsConfig.value)
+  return Object.keys(sourceConfig)
     .filter((key) => {
-      const config = viewsConfig.value[key];
+      const config = sourceConfig[key];
       // Filter out empty configs
       if (Object.keys(config).length === 0) return false;
-      // Filter views based on user role and permission level
-      // Hide view if user role is lower than what's required
-      if (config.ROUTE_LEVEL_PERMISSION === "guest" && userRole < Role.Guest) {
-        return false;
-      }
-      if (
-        config.ROUTE_LEVEL_PERMISSION === "member" &&
-        userRole < Role.Member
-      ) {
-        return false;
-      }
-      if (config.ROUTE_LEVEL_PERMISSION === "admin" && userRole < Role.Admin) {
-        return false;
-      }
-      // base case for when ROUTE_LEVEL_PERMISSION is undefined i.e. it has never been set and user role is lower than SignedIn
-      if (
-        config.ROUTE_LEVEL_PERMISSION === undefined &&
-        userRole < Role.SignedIn
-      ) {
-        return false;
-      }
-
       return true;
     })
     .sort()
     .reduce((accumulator: Views, key: string) => {
-      accumulator[key] = viewsConfig.value[key];
+      accumulator[key] = sourceConfig[key];
       return accumulator;
     }, {});
 });

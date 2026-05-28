@@ -2,13 +2,15 @@ import { addNewTableToConfig } from "@/server/database/dbOperations";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
+import type { ViewType } from "@/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const table = event.context?.params?.table as string;
+  const viewType = getQuery(event).view_type as ViewType;
   try {
     await validatePermissions(event, "admin");
 
-    await addNewTableToConfig(table);
+    await addNewTableToConfig(table, viewType);
     return { message: "New table added successfully" };
   } catch (error) {
     if (error instanceof Error) {

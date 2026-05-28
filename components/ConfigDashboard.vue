@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
-import type { Views, ViewConfig } from "@/types";
+import type { ViewConfigRow, ViewType } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
+import { toViewType } from "@/utils/viewTypes";
 import {
   ChevronLeft,
   Images,
@@ -12,11 +13,12 @@ import {
 } from "lucide-vue-next";
 
 const props = defineProps<{
-  viewsConfig: Views;
+  viewRows: ViewConfigRow[];
   tableNames: Array<string>;
 }>();
 
 const { t } = useI18n();
+const route = useRoute();
 
 const emit = defineEmits([
   "addTableToConfig",
@@ -25,15 +27,13 @@ const emit = defineEmits([
 ]);
 
 const sortedViewsConfig = computed(() => {
-  return Object.keys(props.viewsConfig)
-    .sort()
-    .reduce(
-      (accumulator, key) => {
-        accumulator[key] = props.viewsConfig[key];
-        return accumulator;
-      },
-      {} as Record<string, ViewConfig>,
+  return [...props.viewRows].sort((first, second) => {
+    const firstName = first.viewName || first.primaryDataset;
+    const secondName = second.viewName || second.primaryDataset;
+    return `${firstName}-${first.viewType}`.localeCompare(
+      `${secondName}-${second.viewType}`,
     );
+  });
 });
 
 /**
@@ -70,6 +70,9 @@ const showModalDropdown = ref(false);
 const confirmButtonDisabled = ref(false);
 const tableNameToRemove = ref();
 const tableNameToAdd = ref();
+const viewTypeToAdd = ref<ViewType>(
+  route.query.view_type ? toViewType(route.query.view_type as string) : "map",
+);
 
 // Handlers
 const handleAddNewTable = () => {
@@ -87,7 +90,10 @@ const handleConfirmButton = () => {
     modalMessage.value = t("tableRemovedFromViews") + "!";
   } else if (currentModalAction.value === "addTable") {
     tableNameToAdd.value = tableNameToAdd.value.trim();
-    emit("addTableToConfig", tableNameToAdd.value);
+    emit("addTableToConfig", {
+      tableName: tableNameToAdd.value,
+      viewType: viewTypeToAdd.value,
+    });
     modalMessage.value = t("tableAddedToViews") + "!";
     showModalDropdown.value = false;
   }
@@ -108,6 +114,9 @@ const handleCancelButton = () => {
   tableNameToRemove.value = "";
   if (currentModalAction.value === "addTable") {
     tableNameToAdd.value = null;
+    viewTypeToAdd.value = route.query.view_type
+      ? toViewType(route.query.view_type as string)
+      : "map";
   }
   currentModalAction.value = null;
 };
@@ -138,8 +147,8 @@ watch(tableNameToAdd, (newVal) => {
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch mb-6"
     >
       <div
-        v-for="(config, tableName) in sortedViewsConfig"
-        :key="tableName"
+        v-for="row in sortedViewsConfig"
+        :key="row.viewId ?? `${row.primaryDataset}-${row.viewType}`"
         data-testid="config-dataset-card"
         class="bg-violet-50 rounded-lg p-4 sm:p-6 shadow-sm border border-violet-100 overflow-hidden flex flex-col h-full"
       >
@@ -147,7 +156,7 @@ watch(tableNameToAdd, (newVal) => {
           <div
             class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-violet-200 flex items-center justify-center text-white font-bold text-sm sm:text-base mr-3 flex-shrink-0"
           >
-            {{ String(tableName).charAt(0).toUpperCase() }}
+            {{ String(row.primaryDataset).charAt(0).toUpperCase() }}
           </div>
           <div class="flex-1 min-w-0 max-w-full overflow-hidden">
             <h2
@@ -159,12 +168,16 @@ watch(tableNameToAdd, (newVal) => {
               "
             >
               {{
-                truncateDisplayName(config.DATASET_TABLE || String(tableName))
+                truncateDisplayName(
+                  row.viewConfig.DATASET_TABLE ||
+                    row.viewName ||
+                    row.primaryDataset,
+                )
               }}
             </h2>
             <div class="h-10 mb-4">
               <p
-                v-if="config.VIEW_DESCRIPTION"
+                v-if="row.viewConfig.VIEW_DESCRIPTION"
                 class="text-sm sm:text-base text-gray-600 line-clamp-2"
                 style="
                   display: -webkit-box;
@@ -175,7 +188,7 @@ watch(tableNameToAdd, (newVal) => {
                   text-overflow: ellipsis;
                 "
               >
-                {{ truncateDescription(config.VIEW_DESCRIPTION) }}
+                {{ truncateDescription(row.viewConfig.VIEW_DESCRIPTION) }}
               </p>
             </div>
           </div>
@@ -183,8 +196,8 @@ watch(tableNameToAdd, (newVal) => {
 
         <div class="flex flex-wrap gap-1.5 mb-4 overflow-hidden">
           <span
-            v-for="view in config.VIEWS
-              ? config.VIEWS.split(',')
+            v-for="view in row.viewConfig.VIEWS
+              ? row.viewConfig.VIEWS.split(',')
                   .map((v) => v.trim())
                   .sort()
               : []"
@@ -200,7 +213,10 @@ watch(tableNameToAdd, (newVal) => {
         </div>
 
         <NuxtLink
-          :to="`/config/${tableName}`"
+          :to="{
+            path: `/config/${row.primaryDataset}`,
+            query: { view_type: row.viewType },
+          }"
           data-testid="edit-dataset-view-link"
           class="mt-auto flex items-center justify-center gap-2 w-full text-center px-4 py-2 sm:py-3 bg-violet-700 hover:bg-violet-800 text-white font-medium rounded-lg transition-colors duration-200"
         >
@@ -242,6 +258,20 @@ watch(tableNameToAdd, (newVal) => {
               {{ table }}
             </option>
           </select>
+          <div class="mt-4 flex flex-wrap gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="viewTypeToAdd" type="radio" value="map" />
+              <span>{{ $t("map") }}</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="viewTypeToAdd" type="radio" value="gallery" />
+              <span>{{ $t("gallery") }}</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="viewTypeToAdd" type="radio" value="alert" />
+              <span>{{ $t("alerts") }}</span>
+            </label>
+          </div>
         </div>
         <div v-if="showModalButtons" class="flex gap-3 justify-end">
           <button
