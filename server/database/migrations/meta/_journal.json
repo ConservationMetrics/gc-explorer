@@ -54,7 +54,7 @@
     {
       "idx": 7,
       "version": "7",
-      "when": 1779667200000,
+      "when": 1779957064887,
       "tag": "0007_add_view_config_view_columns",
       "breakpoints": true
     }

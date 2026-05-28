@@ -76,13 +76,11 @@ export type AllowedFileExtensions = {
 
 export type ConfigRow = {
   view_id?: number;
-  table_name: string;
   view_name?: string | null;
   view_type?: ViewType | null;
-  primary_dataset?: string | null;
+  primary_dataset: string;
   secondary_dataset?: string | null;
-  view_config?: string | null;
-  views_config: string;
+  view_config: string;
 };
 
 export type ColumnEntry = {

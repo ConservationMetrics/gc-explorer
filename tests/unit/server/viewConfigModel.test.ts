@@ -19,18 +19,26 @@ describe("single-table view config model", () => {
     expect(schema).toContain('integer("view_id")');
     expect(schema).toContain('text("view_name")');
     expect(schema).toContain('text("view_type")');
-    expect(schema).toContain('text("primary_dataset")');
+    expect(schema).toContain('text("primary_dataset").notNull()');
     expect(schema).toContain('text("secondary_dataset")');
-    expect(schema).toContain('text("view_config")');
+    expect(schema).toContain('text("view_config").notNull()');
+    expect(schema).toContain(".primaryKey().generatedByDefaultAsIdentity()");
 
     expect(schema).toContain('pgTable("views"');
     expect(migration).toContain(
       'ALTER TABLE IF EXISTS "view_config" RENAME TO "views"',
     );
+    expect(migration).toContain(
+      'ALTER TABLE "views" RENAME COLUMN "table_name" TO "primary_dataset"',
+    );
+    expect(migration).toContain(
+      'ALTER TABLE "views" RENAME COLUMN "views_config" TO "view_config"',
+    );
     expect(migration).toContain('ADD COLUMN IF NOT EXISTS "view_id"');
-    expect(migration).toContain('"primary_dataset" = COALESCE');
-    expect(migration).toContain("views_config\"::jsonb ->> 'MAPEO_TABLE'");
+    expect(migration).toContain("view_config\"::jsonb ->> 'MAPEO_TABLE'");
     expect(migration).toContain("THEN 'alert'");
+    expect(migration).toContain('DROP COLUMN IF EXISTS "table_name"');
+    expect(migration).toContain('DROP COLUMN IF EXISTS "views_config"');
   });
 
   it("keeps new view metadata columns synced on config writes", async () => {
