@@ -26,7 +26,10 @@ vi.mock("@/server/database/dbOperations", () => ({
     options: {
       secondaryDataset?: string | null;
       primaryOptions: { limit?: number; mainColumns: string[] };
-      secondaryOptions?: { mainColumns: string[]; includeColumnsData?: boolean };
+      secondaryOptions?: {
+        mainColumns: string[];
+        includeColumnsData?: boolean;
+      };
     },
   ) => mockFetchViewDatasetData(primaryDataset, options),
 }));
@@ -116,7 +119,12 @@ describe("alerts endpoint dataset config", () => {
         return Promise.resolve(["data_source", "year", "month", "territory"]);
       }
       if (table === "mapeo_data") {
-        return Promise.resolve(["_id", "category", "g__type", "g__coordinates"]);
+        return Promise.resolve([
+          "_id",
+          "category",
+          "g__type",
+          "g__coordinates",
+        ]);
       }
       return Promise.resolve([]);
     });
@@ -168,5 +176,39 @@ describe("alerts endpoint dataset config", () => {
     );
     expect(response["primary_dataset"]).toBe("alerts_confidential");
     expect(response["secondary_dataset"]).toBe("mapeo_data");
+  });
+
+  it("handles alerts views without a secondary Mapeo dataset", async () => {
+    mockFetchViewDatasets.mockResolvedValueOnce({
+      primaryDataset: "alerts_confidential",
+      secondaryDatasets: [],
+    });
+    mockFetchViewDatasetData.mockResolvedValueOnce({
+      primaryData: {
+        mainData: [{ _id: "1", alertID: "a1" }],
+        columnsData: null,
+        metadata: [],
+      },
+      secondaryData: null,
+    });
+
+    const { default: handler } = await import("@/server/api/[table]/alerts");
+    const response = (await handler({
+      context: { params: { table: "alerts_confidential" } },
+    } as never)) as Record<string, unknown>;
+
+    expect(mockFetchViewDatasetData).toHaveBeenCalledWith(
+      "alerts_confidential",
+      expect.objectContaining({
+        secondaryDataset: null,
+        primaryOptions: expect.objectContaining({
+          limit: 100,
+        }),
+        secondaryOptions: undefined,
+      }),
+    );
+    expect(mockFetchTableSqlColumns).not.toHaveBeenCalledWith("mapeo_data");
+    expect(response["primary_dataset"]).toBe("alerts_confidential");
+    expect(response["secondary_dataset"]).toBeNull();
   });
 });

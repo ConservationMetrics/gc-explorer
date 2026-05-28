@@ -212,7 +212,9 @@ watch(
     }
     if (!feature) return;
 
-    const isMapeoFeature = isMapeo.value && props.secondaryDataset;
+    // For alerts views, secondaryDataset is Mapeo data when configured.
+    const mapeoTable = props.secondaryDataset;
+    const isMapeoFeature = isMapeo.value && mapeoTable;
     const isMinimalAlert = !isMapeo.value && feature.alertID && feature._id;
 
     if (!isMapeoFeature && !isMinimalAlert) return;
@@ -220,9 +222,7 @@ watch(
     const recordId = feature._id || feature.id;
     if (!recordId) return;
 
-    const fetchTable = isMapeoFeature
-      ? props.secondaryDataset!
-      : props.primaryDataset;
+    const fetchTable = isMapeoFeature ? mapeoTable! : props.primaryDataset;
     const minimalFeature = { ...feature };
     selectedFeature.value = null;
     selectedFeatureLoading.value = true;
