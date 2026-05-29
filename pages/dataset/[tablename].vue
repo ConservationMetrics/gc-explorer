@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { ViewConfigRow, Views, ViewConfig, User } from "@/types";
+import type { ViewConfigRow, ViewConfig, ViewType, User } from "@/types";
 import { Role } from "@/types";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import ViewCard from "@/components/dataset/ViewCard.vue";
-import { toConfigView } from "@/utils/viewTypes";
 import { ChevronLeft, Settings } from "lucide-vue-next";
 
 const route = useRoute();
@@ -12,7 +11,6 @@ const tableName = Array.isArray(tableRaw)
   ? tableRaw.join("/")
   : String(tableRaw);
 
-const viewsConfig = ref<Views>({});
 const viewRows = ref<ViewConfigRow[]>([]);
 const datasetConfig = ref<ViewConfig | null>(null);
 const dataFetched = ref(false);
@@ -25,40 +23,20 @@ const {
 
 const { loggedIn, user } = useUserSession();
 
-const { data, error, refresh } = await useFetch("/api/config");
+const { data, error, refresh } = await useFetch<ViewConfigRow[]>(
+  `/api/config/${tableName}`,
+);
 
 if (data.value && !error.value) {
-  const fetchedViewsData = data.value[0] as Views;
-  viewsConfig.value = fetchedViewsData;
-  viewRows.value = (data.value[2] ?? []) as ViewConfigRow[];
+  viewRows.value = data.value ?? [];
 
-  // `viewRows` contains ALL rows of the entire database table.
-  // Now we filter to those whose primaryDataset is the table the user is viewing.
-  const viewsOnThisTable = allViewRows.value.filter(
-    (view) => view.primaryDataset === tableName,
-  );
-
-  if (matchingRows.length > 0) {
-    // There are multiple views on this table! Pick one arbitrarily, ignore the other.
-    datasetConfig.value = matchingRows[0].viewConfig;
-    dataFetched.value = true;
-  } else if (fetchedViewsData[tableName]) {
-    datasetConfig.value = fetchedViewsData[tableName];
-    dataFetched.value = true;
+  if (viewRows.value.length === 0) {
+    console.warn(`Dataset "${tableName}" not found in config`);
+    await navigateTo("/");
   } else {
-    const matchingKey = Object.keys(fetchedViewsData).find(
-      (key) =>
-        key === tableName ||
-        decodeURIComponent(key) === tableName ||
-        key === decodeURIComponent(tableName),
-    );
-    if (matchingKey) {
-      datasetConfig.value = fetchedViewsData[matchingKey];
-      dataFetched.value = true;
-    } else {
-      console.warn(`Dataset "${tableName}" not found in config`);
-      await navigateTo("/");
-    }
+    // Dataset-level display fields are shared across a dataset's views, so the first row is representative.
+    datasetConfig.value = viewRows.value[0].viewConfig;
+    dataFetched.value = true;
   }
 } else {
   console.error("Error fetching data:", error.value);
@@ -89,17 +67,9 @@ const canViewDataset = computed(() => {
   return true;
 });
 
-const enabledViews = computed(() => {
-  const rowViews = viewRows.value
-    .filter((row) => row.primaryDataset === tableName)
-    .map((row) => toConfigView(row.viewType));
-
-  if (rowViews.length > 0) {
-    return Array.from(new Set(rowViews)).sort();
-  }
-
-  if (!datasetConfig.value?.VIEWS) return [];
-  return datasetConfig.value.VIEWS.split(",").map((v) => v.trim());
+const enabledViews = computed<ViewType[]>(() => {
+  const types = viewRows.value.map((row) => row.viewType);
+  return Array.from(new Set(types)).sort();
 });
 
 const PAGE_TITLE_LIMIT = 70;

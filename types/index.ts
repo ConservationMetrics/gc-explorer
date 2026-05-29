@@ -54,7 +54,6 @@ export interface ViewConfig {
   PLANET_API_KEY?: string;
   UNWANTED_COLUMNS?: string;
   UNWANTED_SUBSTRINGS?: string;
-  VIEWS?: string;
   ROUTE_LEVEL_PERMISSION?: RouteLevelPermission; // Who can access this view: anyone, signed-in, member, or admin
   TIMESTAMP_COLUMN?: string; // Column used for date-range filtering (min/max) on map and gallery
   DATASET_TABLE?: string; // Display name for the dataset/table (e.g., "Fake Alerts" instead of "fake_alerts")
@@ -66,7 +65,7 @@ export interface Views {
   [key: string]: ViewConfig;
 }
 
-export type ViewType = "alert" | "map" | "gallery";
+export type ViewType = "alerts" | "map" | "gallery";
 
 export type AllowedFileExtensions = {
   audio: string[];

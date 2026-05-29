@@ -1,7 +1,4 @@
-import {
-  fetchViewConfigRows,
-  viewRowsToConfig,
-} from "@/server/database/dbOperations";
+import { fetchViewConfigRows } from "@/server/database/dbOperations";
 import { getFilteredTableNames } from "@/server/utils";
 import { validateUserSession } from "@/utils/accessControls";
 
@@ -12,17 +9,19 @@ export default defineEventHandler(async (event: H3Event) => {
 
   try {
     const viewRows = await fetchViewConfigRows();
-    const viewsConfig = viewRowsToConfig(viewRows);
     const tableNames = await getFilteredTableNames();
 
-    // Filter out any tables that are already in viewsConfig
+    // Tables already exposed as a view are not offered as new datasets to add.
+    const configuredDatasets = new Set(
+      viewRows.map((row) => row.primaryDataset),
+    );
     const filteredTableNames = tableNames.filter(
-      (name) => !Object.keys(viewsConfig).includes(name),
+      (name) => !configuredDatasets.has(name),
     );
     if (process.env.CI) {
       filteredTableNames.push("seed_survey_data");
     }
-    return [viewsConfig, filteredTableNames, viewRows];
+    return { views: viewRows, availableTables: filteredTableNames };
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error fetching config on API side:", error.message);

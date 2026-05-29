@@ -11,7 +11,6 @@ import type {
   ViewType,
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
-import { toConfigView, toViewType } from "@/utils/viewTypes";
 
 import { viewConfig, publicViews } from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
@@ -92,14 +91,14 @@ const checkTableExists = async (
  * @param {ViewType | null} viewType - View type for the row.
  * @returns New view metadata column values for views.
  */
-const buildViewConfigColumns = (
+export const buildViewConfigColumns = (
   primaryDataset: string,
   config: ViewConfig,
   configString: string,
   viewType: ViewType | null,
 ) => {
   const secondaryDataset =
-    viewType === "alert" ? config.MAPEO_TABLE?.trim() || null : null;
+    viewType === "alerts" ? config.MAPEO_TABLE?.trim() || null : null;
 
   return {
     viewName: config.DATASET_TABLE?.trim() || primaryDataset,
@@ -390,100 +389,125 @@ export const fetchTableNames = async (): Promise<string[]> => {
   }
 };
 
-export const fetchConfig = async (): Promise<Views> => {
-  // If running in CI, return hardcoded configuration for testing purposes
-  if (process.env.CI) {
-    const mapboxAccessToken =
-      process.env.MAPBOX_ACCESS_TOKEN || "{MAPBOX_ACCESS_TOKEN}";
-    const mediaBasePath = process.env.MEDIA_BASE_PATH || "{MEDIA_BASE_PATH}";
-    const planetApiKey = process.env.PLANET_API_KEY || "{PLANET_API_KEY}";
+/**
+ * Builds the per-view CI seed rows used when running without a database.
+ * Datasets that expose multiple views (e.g. map + gallery) appear as multiple
+ * rows that share the same primary_dataset.
+ *
+ * @returns {ViewConfigRow[]} Seed view rows for CI environments.
+ */
+const buildCiViewConfigRows = (): ViewConfigRow[] => {
+  const mapboxAccessToken =
+    process.env.MAPBOX_ACCESS_TOKEN || "{MAPBOX_ACCESS_TOKEN}";
+  const mediaBasePath = process.env.MEDIA_BASE_PATH || "{MEDIA_BASE_PATH}";
+  const planetApiKey = process.env.PLANET_API_KEY || "{PLANET_API_KEY}";
 
-    return {
-      seed_survey_data: {
-        VIEWS: "gallery",
-        MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
-        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
-        MAPBOX_ZOOM: 16,
-        MAPBOX_CENTER_LATITUDE: "3.44704",
-        MAPBOX_CENTER_LONGITUDE: "-76.53995",
-        MAPBOX_PROJECTION: "globe",
-        MAPBOX_BEARING: 0,
-        MAPBOX_PITCH: 0,
-        FRONT_END_FILTER_COLUMN: "community",
-        MEDIA_BASE_PATH: mediaBasePath,
-        ROUTE_LEVEL_PERMISSION: "anyone",
-        DATASET_TABLE: undefined,
-        VIEW_HEADER_IMAGE: undefined,
-        VIEW_DESCRIPTION: undefined,
-      },
-      bcmform_responses: {
-        VIEWS: "map,gallery",
-        MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
-        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
-        MAPBOX_ZOOM: 16,
-        MAPBOX_CENTER_LATITUDE: "3.44704",
-        MAPBOX_CENTER_LONGITUDE: "-76.53995",
-        MAPBOX_PROJECTION: "globe",
-        MAPBOX_BEARING: 0,
-        MAPBOX_PITCH: 0,
-        FRONT_END_FILTER_COLUMN: "community",
-        MEDIA_BASE_PATH: mediaBasePath,
-        ROUTE_LEVEL_PERMISSION: "member",
-        DATASET_TABLE: undefined,
-        VIEW_HEADER_IMAGE: undefined,
-        VIEW_DESCRIPTION: undefined,
-      },
-      fake_alerts: {
-        VIEWS: "alerts",
-        EMBED_MEDIA: "YES",
-        MEDIA_BASE_PATH_ALERTS: "",
-        MEDIA_BASE_PATH: "",
-        LOGO_URL:
-          "https://conservationmetrics.com/wp-content/themes/conservation-metrics/images/logo-conservation-metrics.png",
-        MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-streets-v12",
-        MAPBOX_PROJECTION: "globe",
-        MAPBOX_CENTER_LATITUDE: "38",
-        MAPBOX_CENTER_LONGITUDE: "-79",
-        MAPBOX_ZOOM: 7,
-        MAPBOX_PITCH: 0,
-        MAPBOX_BEARING: 0,
-        MAPBOX_3D: false,
-        MAPEO_TABLE: "mapeo_data",
-        MAPEO_CATEGORY_IDS: "threat",
-        MAP_LEGEND_LAYER_IDS: "road-primary,aerialway",
-        ALERT_RESOURCES: "NO",
-        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
-        PLANET_API_KEY: planetApiKey,
-        ROUTE_LEVEL_PERMISSION: "anyone",
-        DATASET_TABLE: undefined,
-        VIEW_HEADER_IMAGE: undefined,
-        VIEW_DESCRIPTION: undefined,
-      },
-      gfw_alerts_viirs: {
-        VIEWS: "alerts",
-        EMBED_MEDIA: "NO",
-        MEDIA_BASE_PATH_ALERTS: "",
-        MEDIA_BASE_PATH: "",
-        MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-streets-v12",
-        MAPBOX_PROJECTION: "globe",
-        MAPBOX_CENTER_LATITUDE: "1.20",
-        MAPBOX_CENTER_LONGITUDE: "34.60",
-        MAPBOX_ZOOM: 8,
-        MAPBOX_PITCH: 0,
-        MAPBOX_BEARING: 0,
-        MAPBOX_3D: false,
-        MAPEO_TABLE: "mapeo_data",
-        MAPEO_CATEGORY_IDS: "threat",
-        MAP_LEGEND_LAYER_IDS: "road-primary,aerialway",
-        ALERT_RESOURCES: "NO",
-        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
-        PLANET_API_KEY: planetApiKey,
-        ROUTE_LEVEL_PERMISSION: "anyone",
-        DATASET_TABLE: undefined,
-        VIEW_HEADER_IMAGE: undefined,
-        VIEW_DESCRIPTION: undefined,
-      },
-    };
+  const surveyConfig: ViewConfig = {
+    MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
+    MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
+    MAPBOX_ZOOM: 16,
+    MAPBOX_CENTER_LATITUDE: "3.44704",
+    MAPBOX_CENTER_LONGITUDE: "-76.53995",
+    MAPBOX_PROJECTION: "globe",
+    MAPBOX_BEARING: 0,
+    MAPBOX_PITCH: 0,
+    FRONT_END_FILTER_COLUMN: "community",
+    MEDIA_BASE_PATH: mediaBasePath,
+    ROUTE_LEVEL_PERMISSION: "anyone",
+  };
+
+  const bcmformConfig: ViewConfig = {
+    MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
+    MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
+    MAPBOX_ZOOM: 16,
+    MAPBOX_CENTER_LATITUDE: "3.44704",
+    MAPBOX_CENTER_LONGITUDE: "-76.53995",
+    MAPBOX_PROJECTION: "globe",
+    MAPBOX_BEARING: 0,
+    MAPBOX_PITCH: 0,
+    FRONT_END_FILTER_COLUMN: "community",
+    MEDIA_BASE_PATH: mediaBasePath,
+    ROUTE_LEVEL_PERMISSION: "member",
+  };
+
+  const fakeAlertsConfig: ViewConfig = {
+    EMBED_MEDIA: "YES",
+    MEDIA_BASE_PATH_ALERTS: "",
+    MEDIA_BASE_PATH: "",
+    LOGO_URL:
+      "https://conservationmetrics.com/wp-content/themes/conservation-metrics/images/logo-conservation-metrics.png",
+    MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-streets-v12",
+    MAPBOX_PROJECTION: "globe",
+    MAPBOX_CENTER_LATITUDE: "38",
+    MAPBOX_CENTER_LONGITUDE: "-79",
+    MAPBOX_ZOOM: 7,
+    MAPBOX_PITCH: 0,
+    MAPBOX_BEARING: 0,
+    MAPBOX_3D: false,
+    MAPEO_TABLE: "mapeo_data",
+    MAPEO_CATEGORY_IDS: "threat",
+    MAP_LEGEND_LAYER_IDS: "road-primary,aerialway",
+    ALERT_RESOURCES: "NO",
+    MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
+    PLANET_API_KEY: planetApiKey,
+    ROUTE_LEVEL_PERMISSION: "anyone",
+  };
+
+  const gfwAlertsConfig: ViewConfig = {
+    EMBED_MEDIA: "NO",
+    MEDIA_BASE_PATH_ALERTS: "",
+    MEDIA_BASE_PATH: "",
+    MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-streets-v12",
+    MAPBOX_PROJECTION: "globe",
+    MAPBOX_CENTER_LATITUDE: "1.20",
+    MAPBOX_CENTER_LONGITUDE: "34.60",
+    MAPBOX_ZOOM: 8,
+    MAPBOX_PITCH: 0,
+    MAPBOX_BEARING: 0,
+    MAPBOX_3D: false,
+    MAPEO_TABLE: "mapeo_data",
+    MAPEO_CATEGORY_IDS: "threat",
+    MAP_LEGEND_LAYER_IDS: "road-primary,aerialway",
+    ALERT_RESOURCES: "NO",
+    MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
+    PLANET_API_KEY: planetApiKey,
+    ROUTE_LEVEL_PERMISSION: "anyone",
+  };
+
+  /**
+   * Builds a single CI view row from a dataset, view type, and settings.
+   *
+   * @param {string} primaryDataset - Dataset table backing the view.
+   * @param {ViewType} viewType - View type for this row.
+   * @param {ViewConfig} config - Settings JSON for the view (no VIEWS key).
+   * @returns {ViewConfigRow} The assembled view row.
+   */
+  const buildRow = (
+    primaryDataset: string,
+    viewType: ViewType,
+    config: ViewConfig,
+  ): ViewConfigRow => ({
+    viewId: null,
+    viewName: config.DATASET_TABLE?.trim() || primaryDataset,
+    viewType,
+    primaryDataset,
+    secondaryDataset:
+      viewType === "alerts" ? (config.MAPEO_TABLE ?? null) : null,
+    viewConfig: config,
+  });
+
+  return [
+    buildRow("seed_survey_data", "gallery", surveyConfig),
+    buildRow("bcmform_responses", "map", bcmformConfig),
+    buildRow("bcmform_responses", "gallery", bcmformConfig),
+    buildRow("fake_alerts", "alerts", fakeAlertsConfig),
+    buildRow("gfw_alerts_viirs", "alerts", gfwAlertsConfig),
+  ];
+};
+
+export const fetchConfig = async (): Promise<Views> => {
+  if (process.env.CI) {
+    return viewRowsToConfig(buildCiViewConfigRows());
   }
 
   const viewRows = await fetchViewConfigRows();
@@ -504,18 +528,7 @@ export const viewRowsToConfig = (rows: ViewConfigRow[]): Views => {
  */
 export const fetchViewConfigRows = async (): Promise<ViewConfigRow[]> => {
   if (process.env.CI) {
-    const viewsConfig = await fetchConfig();
-    return Object.entries(viewsConfig).map(([primaryDataset, viewConfig]) => ({
-      primaryDataset,
-      viewConfig,
-      viewId: null,
-      viewName: viewConfig.DATASET_TABLE ?? primaryDataset,
-      viewType: toViewType(viewConfig.VIEWS as string),
-      secondaryDataset:
-        toViewType(viewConfig.VIEWS as string) === "alert"
-          ? (viewConfig.MAPEO_TABLE ?? null)
-          : null,
-    }));
+    return buildCiViewConfigRows();
   }
 
   try {
@@ -538,6 +551,45 @@ export const fetchViewConfigRows = async (): Promise<ViewConfigRow[]> => {
 };
 
 /**
+ * Fetches every configured view for one dataset as its own row.
+ *
+ * @param {string} primaryDataset - Dataset table whose views are loaded.
+ * @returns {Promise<ViewConfigRow[]>} View rows scoped to the dataset.
+ */
+export const fetchViewConfigRowsForTable = async (
+  primaryDataset: string,
+): Promise<ViewConfigRow[]> => {
+  if (process.env.CI) {
+    const rows = await fetchViewConfigRows();
+    return rows.filter((row) => row.primaryDataset === primaryDataset);
+  }
+
+  try {
+    await ensureViewConfigTableExists();
+
+    const result = await configDb
+      .select()
+      .from(viewConfig)
+      .where(eq(viewConfig.primaryDataset, primaryDataset));
+
+    return result.map((row) => ({
+      primaryDataset: row.primaryDataset,
+      secondaryDataset: row.secondaryDataset,
+      viewConfig: JSON.parse(row.viewConfig) as ViewConfig,
+      viewId: row.viewId,
+      viewName: row.viewName,
+      viewType: row.viewType as ViewType,
+    }));
+  } catch (error) {
+    console.error(
+      `Error fetching view config rows for table "${primaryDataset}":`,
+      error,
+    );
+    return [];
+  }
+};
+
+/**
  * Fetches view configuration for one table only.
  *
  * @param {string} table - Table name to load config for.
@@ -550,12 +602,16 @@ export const fetchTableConfig = async (
   viewType?: ViewType,
 ): Promise<ViewConfig> => {
   if (process.env.CI) {
-    const viewsConfig = await fetchConfig();
-    const tableConfig = viewsConfig[table];
-    if (!tableConfig || Object.keys(tableConfig).length === 0) {
+    const ciRowsForTable = buildCiViewConfigRows().filter(
+      (row) => row.primaryDataset === table,
+    );
+    const ciViewRow = viewType
+      ? ciRowsForTable.find((row) => row.viewType === viewType)
+      : ciRowsForTable[0];
+    if (!ciViewRow || Object.keys(ciViewRow.viewConfig).length === 0) {
       throw createMissingViewConfigError(table);
     }
-    return tableConfig;
+    return ciViewRow.viewConfig;
   }
 
   try {
@@ -656,27 +712,27 @@ export const updateConfig = async (
       }
     }
 
-    const configViewType = toViewType(typedConfig.VIEWS as string);
-    const currentViewType = viewType ?? configViewType;
-    const configString = JSON.stringify({
-      ...typedConfig,
-      VIEWS: toConfigView(configViewType),
-    });
+    // When a view type is given, it identifies which of a dataset's views to update;
+    // otherwise the update targets the dataset's single row by primary_dataset alone.
+    const currentViewType = viewType ?? null;
+    const configString = JSON.stringify(typedConfig);
     const viewColumns = buildViewConfigColumns(
       tableName,
       typedConfig,
       configString,
-      configViewType,
+      currentViewType,
     );
 
     await configDb
       .update(viewConfig)
       .set(viewColumns)
       .where(
-        and(
-          eq(viewConfig.primaryDataset, tableName),
-          eq(viewConfig.viewType, currentViewType),
-        ),
+        currentViewType
+          ? and(
+              eq(viewConfig.primaryDataset, tableName),
+              eq(viewConfig.viewType, currentViewType),
+            )
+          : eq(viewConfig.primaryDataset, tableName),
       );
 
     await syncPublicViews(tableName, typedConfig.ROUTE_LEVEL_PERMISSION);
@@ -691,8 +747,7 @@ export const addNewTableToConfig = async (
   viewType: ViewType,
 ): Promise<void> => {
   try {
-    const viewConfigValue = toConfigView(viewType);
-    const newConfig = { VIEWS: viewConfigValue };
+    const newConfig: ViewConfig = {};
     const configString = JSON.stringify(newConfig);
     await configDb.insert(viewConfig).values({
       ...buildViewConfigColumns(tableName, newConfig, configString, viewType),

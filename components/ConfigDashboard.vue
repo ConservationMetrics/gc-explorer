@@ -2,7 +2,6 @@
 import { useI18n } from "vue-i18n";
 import type { ViewConfigRow, ViewType } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
-import { toViewType } from "@/utils/viewTypes";
 import {
   ChevronLeft,
   Images,
@@ -71,7 +70,7 @@ const confirmButtonDisabled = ref(false);
 const tableNameToRemove = ref();
 const tableNameToAdd = ref();
 const viewTypeToAdd = ref<ViewType>(
-  route.query.view_type ? toViewType(route.query.view_type as string) : "map",
+  (route.query.view_type as ViewType) || "map",
 );
 
 // Handlers
@@ -114,9 +113,7 @@ const handleCancelButton = () => {
   tableNameToRemove.value = "";
   if (currentModalAction.value === "addTable") {
     tableNameToAdd.value = null;
-    viewTypeToAdd.value = route.query.view_type
-      ? toViewType(route.query.view_type as string)
-      : "map";
+    viewTypeToAdd.value = (route.query.view_type as ViewType) || "map";
   }
   currentModalAction.value = null;
 };
@@ -167,13 +164,7 @@ watch(tableNameToAdd, (newVal) => {
                 hyphens: auto;
               "
             >
-              {{
-                truncateDisplayName(
-                  row.viewConfig.DATASET_TABLE ||
-                    row.viewName ||
-                    row.primaryDataset,
-                )
-              }}
+              {{ truncateDisplayName(row.viewName || row.primaryDataset) }}
             </h2>
             <div class="h-10 mb-4">
               <p
@@ -196,19 +187,16 @@ watch(tableNameToAdd, (newVal) => {
 
         <div class="flex flex-wrap gap-1.5 mb-4 overflow-hidden">
           <span
-            v-for="view in row.viewConfig.VIEWS
-              ? row.viewConfig.VIEWS.split(',')
-                  .map((v) => v.trim())
-                  .sort()
-              : []"
-            :key="view"
-            :data-testid="`config-view-tag-${view}`"
+            :data-testid="`config-view-tag-${row.viewType}`"
             class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-violet-100 text-violet-800 rounded-full flex-shrink-0"
           >
-            <Map v-if="view === 'map'" class="w-3 h-3" />
-            <Images v-else-if="view === 'gallery'" class="w-3 h-3" />
-            <TriangleAlert v-else-if="view === 'alerts'" class="w-3 h-3" />
-            {{ $t(view) }}
+            <Map v-if="row.viewType === 'map'" class="w-3 h-3" />
+            <Images v-else-if="row.viewType === 'gallery'" class="w-3 h-3" />
+            <TriangleAlert
+              v-else-if="row.viewType === 'alerts'"
+              class="w-3 h-3"
+            />
+            {{ $t(row.viewType) }}
           </span>
         </div>
 
@@ -268,7 +256,7 @@ watch(tableNameToAdd, (newVal) => {
               <span>{{ $t("gallery") }}</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
-              <input v-model="viewTypeToAdd" type="radio" value="alert" />
+              <input v-model="viewTypeToAdd" type="radio" value="alerts" />
               <span>{{ $t("alerts") }}</span>
             </label>
           </div>

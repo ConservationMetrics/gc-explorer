@@ -846,7 +846,7 @@ test("config page - submit configuration changes", async ({
   }
 });
 
-test("config page - views configuration section", async ({
+test("config page - views configuration section displays current view type", async ({
   authenticatedPageAsAdmin: page,
 }) => {
   // 1. Navigate to the config page
@@ -873,52 +873,16 @@ test("config page - views configuration section", async ({
   // 5. Wait for form to be visible
   await page.waitForSelector("form", { timeout: 15000 });
 
-  // 6. Find radios near view labels
-  const viewLabels = page.locator("label").filter({
-    hasText: /^(Map|Gallery|Alerts)$/i,
-  });
-  const labelCount = await viewLabels.count();
+  // 6. Verify the Views section displays the current view type (read-only)
+  const viewTypeDisplay = page.locator(
+    "[data-testid='config-view-type-display']",
+  );
+  await expect(viewTypeDisplay).toBeVisible({ timeout: 10000 });
+  await expect(viewTypeDisplay).toHaveText(/^(Map|Gallery|Alerts)$/i);
 
-  if (labelCount > 0) {
-    // 7. Find radio associated with first view label
-    const firstLabel = viewLabels.first();
-    const firstRadio = firstLabel
-      .locator('input[type="radio"]')
-      .or(
-        page.locator(
-          `input[type="radio"][id*="${(await firstLabel.textContent())?.toLowerCase()}"]`,
-        ),
-      );
-
-    if ((await firstRadio.count()) > 0) {
-      // 8. Test selecting a radio
-      await firstRadio.first().click();
-      await page.waitForTimeout(500);
-
-      // 9. Verify the option is selected
-      await expect(firstRadio.first()).toHaveJSProperty("checked", true);
-
-      // 10. Check if submit button is enabled
-      const submitButton = page.locator("[data-testid='config-submit-button']");
-      const isEnabled = await submitButton.isEnabled();
-
-      if (!isEnabled) {
-        // 11. Try modifying a text field to trigger form changes
-        const textInputs = page.locator('input[type="text"], textarea');
-        const inputCount = await textInputs.count();
-
-        if (inputCount > 0) {
-          const firstTextInput = textInputs.first();
-          await firstTextInput.clear();
-          await firstTextInput.fill("test_value");
-          await page.waitForTimeout(500);
-        }
-      }
-
-      // 13. Verify submit button is now enabled (changes detected)
-      await expect(submitButton).toBeEnabled();
-    }
-  }
+  // 7. Verify the view type is immutable (no radio toggles on the edit screen)
+  const viewTypeRadios = page.locator('input[type="radio"][name="view-type"]');
+  await expect(viewTypeRadios).toHaveCount(0);
 });
 
 test("config page - conditional form sections based on views", async ({
@@ -999,6 +963,13 @@ test("config page - conditional form sections based on views", async ({
     // 16. Verify Views section is visible (should be open by default)
     const viewsSection = page.locator("*").filter({ hasText: /^Views$/i });
     await expect(viewsSection.first()).toBeVisible();
+
+    // 17. Verify the Views section displays the current (immutable) view type
+    const viewTypeDisplay = page.locator(
+      "[data-testid='config-view-type-display']",
+    );
+    await expect(viewTypeDisplay).toBeVisible();
+    await expect(viewTypeDisplay).toHaveText(/^(Map|Gallery|Alerts)$/i);
   }
 });
 

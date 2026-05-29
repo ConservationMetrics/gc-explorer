@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import type { Views, ViewConfig, ViewConfigRow, ViewType } from "@/types";
+import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 
-const viewsConfig = ref<Views>({});
 const viewRows = ref<ViewConfigRow[]>([]);
 const tableNames = ref();
 const dataFetched = ref(false);
 
-const { data, error, refresh } = await useFetch("/api/config");
+const { data, error, refresh } = await useFetch<{
+  views: ViewConfigRow[];
+  availableTables: string[];
+}>("/api/config");
 
 if (data.value && !error.value) {
-  const fetchedViewsData = data.value[0] as Views;
-  viewsConfig.value = fetchedViewsData;
-  viewRows.value = (data.value[2] ?? []) as ViewConfigRow[];
-
-  const fetchedTableNames = data.value[1] as string[];
-  tableNames.value = fetchedTableNames;
+  viewRows.value = data.value.views;
+  tableNames.value = data.value.availableTables;
   dataFetched.value = true;
 } else {
   console.error("Error fetching data:", error.value);

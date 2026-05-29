@@ -1,90 +1,93 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { toConfigView, toViewType } from "@/utils/viewTypes";
+import { describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => {
-  const where = vi.fn();
-  const set = vi.fn(() => ({ where }));
-  const update = vi.fn(() => ({ set }));
-  const onConflictDoNothing = vi.fn();
-  const values = vi.fn(() => ({ onConflictDoNothing }));
-  const insert = vi.fn(() => ({ values }));
-  const execute = vi.fn(async () => [{ to_regclass: "views" }]);
+import type { ViewConfig } from "@/types";
+import { buildViewConfigColumns } from "@/server/database/dbOperations";
 
-  return {
-    configDb: {
-      delete: vi.fn(),
-      execute,
-      insert,
-      select: vi.fn(),
-      update,
-    },
-    warehouseDb: {
-      execute: vi.fn(),
-    },
-    insert,
-    onConflictDoNothing,
-    set,
-    update,
-    values,
-    where,
-  };
-});
-
+// dbConnection instantiates Postgres clients at import time via the Nuxt
+// runtime config, which is unavailable here. Stub it so the pure helper under
+// test can be imported without a database.
 vi.mock("@/server/database/dbConnection", () => ({
-  configDb: mocks.configDb,
-  warehouseDb: mocks.warehouseDb,
+  configDb: {},
+  warehouseDb: {},
+  schema: {},
 }));
 
 vi.mock("/server/database/dbConnection", () => ({
-  configDb: mocks.configDb,
-  warehouseDb: mocks.warehouseDb,
+  configDb: {},
+  warehouseDb: {},
+  schema: {},
 }));
 
-describe("single-table view config model", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+describe("buildViewConfigColumns", () => {
+  it("sets secondaryDataset from MAPEO_TABLE and viewType for alerts views", () => {
+    const config: ViewConfig = {
+      DATASET_TABLE: "Fake Alerts",
+      MAPEO_TABLE: "mapeo_data",
+      ROUTE_LEVEL_PERMISSION: "anyone",
+    };
 
-  it("normalizes between config VIEWS and stored view_type values", async () => {
-    expect(toViewType("alerts")).toBe("alert");
-    expect(toViewType("alert")).toBe("alert");
-    expect(toViewType("map")).toBe("map");
-    expect(toViewType("gallery")).toBe("gallery");
-    expect(toConfigView("alert")).toBe("alerts");
-    expect(toConfigView("map")).toBe("map");
-    expect(toConfigView("gallery")).toBe("gallery");
-  });
-
-  it("writes alert view metadata and secondary dataset on config update", async () => {
-    const { updateConfig } = await import("@/server/database/dbOperations");
-
-    await updateConfig(
+    const columns = buildViewConfigColumns(
       "fake_alerts",
-      {
-        DATASET_TABLE: "Fake Alerts",
-        MAPEO_TABLE: "mapeo_data",
-        ROUTE_LEVEL_PERMISSION: "anyone",
-        VIEWS: "alerts",
-      },
-      "alert",
+      config,
+      JSON.stringify(config),
+      "alerts",
     );
 
-    expect(mocks.update).toHaveBeenCalledTimes(1);
-    expect(mocks.set).toHaveBeenCalledWith({
-      primaryDataset: "fake_alerts",
-      secondaryDataset: "mapeo_data",
-      viewConfig: JSON.stringify({
-        DATASET_TABLE: "Fake Alerts",
-        MAPEO_TABLE: "mapeo_data",
-        ROUTE_LEVEL_PERMISSION: "anyone",
-        VIEWS: "alerts",
-      }),
-      viewName: "Fake Alerts",
-      viewType: "alert",
-    });
-    expect(mocks.where).toHaveBeenCalledTimes(1);
-    expect(mocks.insert).toHaveBeenCalledTimes(1);
-    expect(mocks.values).toHaveBeenCalledWith({ tableName: "fake_alerts" });
-    expect(mocks.onConflictDoNothing).toHaveBeenCalledTimes(1);
+    expect(columns.viewType).toBe("alerts");
+    expect(columns.secondaryDataset).toBe("mapeo_data");
+    expect(columns.primaryDataset).toBe("fake_alerts");
+    expect(columns.viewName).toBe("Fake Alerts");
+  });
+
+  it("leaves secondaryDataset null for map and gallery views", () => {
+    const config: ViewConfig = {
+      DATASET_TABLE: "BCM Form Responses",
+      MAPEO_TABLE: "mapeo_data",
+    };
+
+    const mapColumns = buildViewConfigColumns(
+      "bcmform_responses",
+      config,
+      JSON.stringify(config),
+      "map",
+    );
+    const galleryColumns = buildViewConfigColumns(
+      "bcmform_responses",
+      config,
+      JSON.stringify(config),
+      "gallery",
+    );
+
+    expect(mapColumns.secondaryDataset).toBeNull();
+    expect(galleryColumns.secondaryDataset).toBeNull();
+  });
+
+  it("does not include a VIEWS key in the serialized view config", () => {
+    const config: ViewConfig = {
+      DATASET_TABLE: "Survey",
+      MAPBOX_ZOOM: 16,
+    };
+
+    const columns = buildViewConfigColumns(
+      "seed_survey_data",
+      config,
+      JSON.stringify(config),
+      "gallery",
+    );
+
+    expect(JSON.parse(columns.viewConfig)).not.toHaveProperty("VIEWS");
+  });
+
+  it("falls back to primaryDataset for viewName when DATASET_TABLE is absent", () => {
+    const config: ViewConfig = { MAPBOX_ZOOM: 16 };
+
+    const columns = buildViewConfigColumns(
+      "seed_survey_data",
+      config,
+      JSON.stringify(config),
+      "gallery",
+    );
+
+    expect(columns.viewName).toBe("seed_survey_data");
   });
 });

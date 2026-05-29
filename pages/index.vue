@@ -1,14 +1,21 @@
 <script setup lang="ts">
-import type { ViewConfigRow, Views, User } from "@/types";
+import type { ViewConfig, ViewConfigRow, ViewType, User } from "@/types";
 import { Role } from "@/types";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
-import { toConfigView } from "@/utils/viewTypes";
 import { Images, Map, Search, TriangleAlert } from "lucide-vue-next";
 
-const viewsConfig = ref<Views>({});
+/** A dataset grouped from one or more view rows sharing the same primaryDataset. */
+interface DatasetGroup {
+  tableName: string;
+  viewName: string;
+  config: ViewConfig;
+  viewTypes: ViewType[];
+}
+
 const viewRows = ref<ViewConfigRow[]>([]);
+const availableTables = ref<string[]>([]);
 
 const {
   public: { authStrategy },
@@ -23,14 +30,19 @@ const router = useRouter();
 const { data, error, refresh } = await useFetch("/api/config");
 
 if (data.value && !error.value) {
-  const fetchedViewsData = data.value[0] as Views;
-  viewsConfig.value = fetchedViewsData;
-  viewRows.value = (data.value[2] ?? []) as ViewConfigRow[];
+  viewRows.value = data.value.views ?? [];
+  availableTables.value = data.value.availableTables ?? [];
 } else {
   console.error("Error fetching data:", error.value);
 }
 
-const canAccessConfig = (config: ViewConfigRow["viewConfig"]) => {
+/**
+ * Determines whether the current user may access a given view based on its route-level permission.
+ *
+ * @param {ViewConfig} config - The view config whose permission level is checked.
+ * @returns {boolean} True when the user's role satisfies the config's permission requirement.
+ */
+const canAccessConfig = (config: ViewConfig) => {
   if (process.env.CI) return true;
 
   const typedUser = user.value as User | null;
@@ -52,58 +64,37 @@ const canAccessConfig = (config: ViewConfigRow["viewConfig"]) => {
   return true;
 };
 
-const combineViewRows = (rows: ViewConfigRow[]): Views => {
-  return rows.reduce((combinedConfig, row) => {
-    const existingConfig = combinedConfig[row.primaryDataset];
-    const existingViews = existingConfig?.VIEWS
-      ? existingConfig.VIEWS.split(",").map((view) => view.trim())
-      : [];
-    const viewName = toConfigView(row.viewType);
-    const views = Array.from(new Set([...existingViews, viewName])).sort();
+/**
+ * Groups permission-filtered view rows by their primaryDataset.
+ * The first row's viewConfig is used as the representative config because dataset-level
+ * display fields (DATASET_TABLE/VIEW_DESCRIPTION/ROUTE_LEVEL_PERMISSION) are shared.
+ *
+ * @returns {DatasetGroup[]} Datasets sorted by table name, each with deduped, sorted view types.
+ */
+const groupedDatasets = computed<DatasetGroup[]>(() => {
+  const groups: Record<string, DatasetGroup> = {};
 
-    combinedConfig[row.primaryDataset] = {
-      ...(existingConfig ?? {}),
-      ...row.viewConfig,
-      VIEWS: views.join(","),
-    };
+  viewRows.value
+    .filter((row) => canAccessConfig(row.viewConfig))
+    .forEach((row) => {
+      const existing = groups[row.primaryDataset];
+      if (existing) {
+        if (!existing.viewTypes.includes(row.viewType)) {
+          existing.viewTypes.push(row.viewType);
+        }
+      } else {
+        groups[row.primaryDataset] = {
+          tableName: row.primaryDataset,
+          viewName: row.viewName || row.primaryDataset,
+          config: row.viewConfig,
+          viewTypes: [row.viewType],
+        };
+      }
+    });
 
-    return combinedConfig;
-  }, {} as Views);
-};
-
-/** Filter and sort the views config */
-const filteredSortedViewsConfig = computed(() => {
-  const sourceConfig = combineViewRows(
-    viewRows.value.filter((row) => canAccessConfig(row.viewConfig)),
-  );
-
-  // Skip filtering in CI environment - show everything
-  if (process.env.CI) {
-    return Object.keys(sourceConfig)
-      .filter((key) => {
-        const config = sourceConfig[key];
-        // Filter out empty configs
-        return Object.keys(config).length > 0;
-      })
-      .sort()
-      .reduce((accumulator: Views, key: string) => {
-        accumulator[key] = sourceConfig[key];
-        return accumulator;
-      }, {});
-  }
-
-  return Object.keys(sourceConfig)
-    .filter((key) => {
-      const config = sourceConfig[key];
-      // Filter out empty configs
-      if (Object.keys(config).length === 0) return false;
-      return true;
-    })
-    .sort()
-    .reduce((accumulator: Views, key: string) => {
-      accumulator[key] = sourceConfig[key];
-      return accumulator;
-    }, {});
+  return Object.values(groups)
+    .map((group) => ({ ...group, viewTypes: [...group.viewTypes].sort() }))
+    .sort((first, second) => first.tableName.localeCompare(second.tableName));
 });
 
 const activeViewFilter = ref<string>(
@@ -137,63 +128,45 @@ watch(searchQuery, (value) => {
 /**
  * All distinct view types present across the permission-filtered datasets.
  *
- * @returns {string[]} Sorted array of unique view type strings (e.g. ["alerts", "gallery", "map"]).
+ * @returns {ViewType[]} Sorted array of unique view types (e.g. ["alerts", "gallery", "map"]).
  */
-const availableViewTypes = computed(() => {
-  const types = new Set<string>();
-  Object.values(filteredSortedViewsConfig.value).forEach((config) => {
-    if (config.VIEWS) {
-      config.VIEWS.split(",")
-        .map((v) => v.trim())
-        .forEach((v) => types.add(v));
-    }
+const availableViewTypes = computed<ViewType[]>(() => {
+  const types = new Set<ViewType>();
+  groupedDatasets.value.forEach((group) => {
+    group.viewTypes.forEach((type) => types.add(type));
   });
   return Array.from(types).sort();
 });
 
 /**
- * Applies the active view-type filter on top of the already permission-filtered config.
+ * Applies the active view-type filter on top of the already permission-filtered datasets.
  *
- * @returns {Views} The filtered views config object.
+ * @returns {DatasetGroup[]} Datasets whose view types include the active filter.
  */
-const displayedViewsConfig = computed(() => {
+const displayedDatasets = computed<DatasetGroup[]>(() => {
   if (activeViewFilter.value === "all") {
-    return filteredSortedViewsConfig.value;
+    return groupedDatasets.value;
   }
-  return Object.keys(filteredSortedViewsConfig.value)
-    .filter((key) => {
-      const config = filteredSortedViewsConfig.value[key];
-      if (!config.VIEWS) return false;
-      const views = config.VIEWS.split(",").map((v) => v.trim());
-      return views.includes(activeViewFilter.value);
-    })
-    .reduce((acc: Views, key: string) => {
-      acc[key] = filteredSortedViewsConfig.value[key];
-      return acc;
-    }, {});
+  return groupedDatasets.value.filter((group) =>
+    group.viewTypes.includes(activeViewFilter.value as ViewType),
+  );
 });
 
 /**
- * Applies search filtering on top of the view-type-filtered config.
- * Matches case-insensitively against display name (DATASET_TABLE or key) and description.
+ * Applies search filtering on top of the view-type-filtered datasets.
+ * Matches case-insensitively against display name (DATASET_TABLE or table name) and description.
  *
- * @returns {Views} The search-filtered views config object.
+ * @returns {DatasetGroup[]} The search-filtered datasets.
  */
-const searchedViewsConfig = computed(() => {
+const searchedDatasets = computed<DatasetGroup[]>(() => {
   const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return displayedViewsConfig.value;
+  if (!q) return displayedDatasets.value;
 
-  return Object.keys(displayedViewsConfig.value)
-    .filter((key) => {
-      const config = displayedViewsConfig.value[key];
-      const displayName = (config.DATASET_TABLE || key).toLowerCase();
-      const description = (config.VIEW_DESCRIPTION || "").toLowerCase();
-      return displayName.includes(q) || description.includes(q);
-    })
-    .reduce((acc: Views, key: string) => {
-      acc[key] = displayedViewsConfig.value[key];
-      return acc;
-    }, {});
+  return displayedDatasets.value.filter((group) => {
+    const displayName = group.viewName.toLowerCase();
+    const description = (group.config.VIEW_DESCRIPTION || "").toLowerCase();
+    return displayName.includes(q) || description.includes(q);
+  });
 });
 
 // Check if user should see config link
@@ -270,7 +243,7 @@ definePageMeta({ layout: "explorer" });
 
       <!-- View Type Filter & Manage Datasets -->
       <div
-        v-if="viewsConfig"
+        v-if="groupedDatasets.length"
         class="flex flex-wrap items-center justify-between gap-3 mb-4"
       >
         <div class="flex flex-wrap gap-2">
@@ -317,22 +290,21 @@ definePageMeta({ layout: "explorer" });
 
       <!-- Project Cards Grid -->
       <div
-        v-if="viewsConfig && Object.keys(searchedViewsConfig).length > 0"
+        v-if="searchedDatasets.length > 0"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch"
       >
         <DatasetCard
-          v-for="(config, tableName) in searchedViewsConfig"
-          :key="tableName"
-          :table-name="tableName"
-          :config="config"
+          v-for="dataset in searchedDatasets"
+          :key="dataset.tableName"
+          :table-name="dataset.tableName"
+          :view-name="dataset.viewName"
+          :config="dataset.config"
+          :view-types="dataset.viewTypes"
         />
       </div>
 
       <!-- No Results State -->
-      <div
-        v-else-if="viewsConfig && searchQuery.trim()"
-        class="text-center py-12"
-      >
+      <div v-else-if="searchQuery.trim()" class="text-center py-12">
         <EmptyStateIllustration variant="indexSearchNoResults" />
         <p class="text-gray-500 text-sm sm:text-base">
           {{ $t("noResultsFound") }}
@@ -340,7 +312,7 @@ definePageMeta({ layout: "explorer" });
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="!viewsConfig" class="text-center py-12">
+      <div v-else class="text-center py-12">
         <EmptyStateIllustration variant="indexNoDatasets" />
         <p class="text-gray-500 text-sm sm:text-base">
           {{ $t("noDatasetViewsAvailable") || "No dataset views available" }}

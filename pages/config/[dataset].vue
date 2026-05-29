@@ -19,42 +19,42 @@ const dataFetched = ref(false);
 const datasetConfig = ref<ViewConfig | null>(null);
 const errorMessage = ref<string | null>(null);
 
-const { data, error, refresh } = await useFetch("/api/config");
+const editedViewType = ref<ViewType | undefined>(undefined);
+
+const { data, error, refresh } = await useFetch<{
+  views: ViewConfigRow[];
+  availableTables: string[];
+}>("/api/config");
 
 if (data.value && !error.value) {
-  const fetchedViewsData = data.value[0] as Views;
-  viewsConfig.value = fetchedViewsData;
-  viewRows.value = (data.value[2] ?? []) as ViewConfigRow[];
+  const allViewRows = data.value.views;
+  viewRows.value = allViewRows;
+  tableNames.value = data.value.availableTables;
 
-  const fetchedTableNames = data.value[1] as string[];
-  tableNames.value = fetchedTableNames;
-  const matchingRow = viewRows.value.find(
+  viewsConfig.value = allViewRows.reduce((acc, row) => {
+    acc[row.primaryDataset] = row.viewConfig;
+    return acc;
+  }, {} as Views);
+
+  const editedViewRow = allViewRows.find(
     (row) =>
       row.primaryDataset === dataset &&
       (!viewType.value || row.viewType === viewType.value),
   );
 
-  if (matchingRow) {
-    datasetConfig.value = matchingRow.viewConfig;
+  if (editedViewRow) {
+    datasetConfig.value = editedViewRow.viewConfig;
+    editedViewType.value = editedViewRow.viewType;
     dataFetched.value = true;
   } else {
-    const matchingKey = Object.keys(fetchedViewsData).find(
-      (key) =>
-        key === dataset ||
-        decodeURIComponent(key) === dataset ||
-        key === decodeURIComponent(dataset),
-    );
-    if (matchingKey && !viewType.value) {
-      datasetConfig.value = fetchedViewsData[matchingKey];
-      dataFetched.value = true;
-    } else {
-      console.warn(`Dataset "${dataset}" not found in config`);
-      await navigateTo("/config");
-    }
+    console.warn(`Dataset "${dataset}" not found in config`);
+    await navigateTo("/config");
   }
 } else {
   console.error("Error fetching data:", error.value);
 }
+
+const resolvedViewType = computed(() => viewType.value ?? editedViewType.value);
 
 const showSavedModal = ref(false);
 
@@ -216,7 +216,9 @@ definePageMeta({ layout: "explorer" });
           {{ errorMessage }}
         </div>
         <ConfigCard
+          v-if="resolvedViewType"
           :table-name="dataset"
+          :view-type="resolvedViewType"
           :view-config="datasetConfig"
           :config-to-copy="configToCopy"
           @submit-config="submitConfig"

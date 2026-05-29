@@ -58,7 +58,7 @@ export default defineEventHandler(async (event: H3Event) => {
   };
 
   try {
-    const tableConfig = await fetchTableConfig(table, "alert");
+    const tableConfig = await fetchTableConfig(table, "alerts");
 
     // Check visibility permissions
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
