@@ -630,6 +630,9 @@ export const fetchTableConfig = async (
             )
           : eq(viewConfig.primaryDataset, table),
       )
+      // Deterministic pick when a dataset has multiple views and no view type is
+      // given: always the oldest view. See follow-up issue on permission semantics.
+      .orderBy(viewConfig.viewId)
       .limit(1);
 
     if (result.length === 0) {

@@ -8,6 +8,10 @@ Object.assign(globalThis, {
   useRuntimeConfig: () => ({
     public: { appApiKey: "test-key" },
   }),
+  // resolveViewTypeForTable() reads the route; off a view route it yields no
+  // view type, so requests carry no view_type query and the assertions below
+  // are unchanged.
+  useRoute: () => ({ path: "/", params: {} }),
 });
 
 // Mock $fetch

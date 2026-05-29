@@ -1,3 +1,5 @@
+import { resolveViewTypeForTable } from "@/composables/useViewType";
+
 import type { DataEntry } from "@/types";
 import type { Ref, ComputedRef } from "vue";
 
@@ -49,6 +51,7 @@ export const useRecordCache = () => {
 
   const headers = { "x-api-key": appApiKey as string };
   const count = ensureCacheCount();
+  const route = useRoute();
 
   /**
    * Fetches a single raw record by table and ID. Returns a cached copy
@@ -74,7 +77,11 @@ export const useRecordCache = () => {
       return pending.get(cacheKey)!;
     }
 
-    const request = $fetch<DataEntry>(`/api/${table}/${recordId}`, { headers })
+    const viewType = resolveViewTypeForTable(route, table);
+    const request = $fetch<DataEntry>(`/api/${table}/${recordId}`, {
+      headers,
+      ...(viewType ? { query: { view_type: viewType } } : {}),
+    })
       .then((record) => {
         cache.set(cacheKey, record);
         maybeEvictOldestCacheEntry();
@@ -132,11 +139,13 @@ export const useRecordCache = () => {
     }
 
     try {
+      const viewType = resolveViewTypeForTable(route, table);
       const batchPromises = batches.map((batch) =>
         $fetch<DataEntry[]>(`/api/${table}/records`, {
           method: "POST",
           body: { ids: batch },
           headers,
+          ...(viewType ? { query: { view_type: viewType } } : {}),
         }),
       );
       const batchResults = await Promise.all(batchPromises);
