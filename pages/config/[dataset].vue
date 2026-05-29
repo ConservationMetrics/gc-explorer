@@ -117,6 +117,9 @@ const handleConfirmRemove = async () => {
     try {
       await $fetch(`/api/config/delete_table/${tableNameToRemove.value}`, {
         method: "POST",
+        query: resolvedViewType.value
+          ? { view_type: resolvedViewType.value }
+          : undefined,
       });
       // Hide buttons and update message to show success
       showModalButtons.value = false;

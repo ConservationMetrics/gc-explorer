@@ -763,14 +763,32 @@ export const addNewTableToConfig = async (
 
 export const removeTableFromConfig = async (
   tableName: string,
+  viewType?: ViewType,
 ): Promise<void> => {
   try {
-    await configDb
-      .delete(publicViews)
-      .where(eq(publicViews.tableName, tableName));
+    // Delete just the targeted view; without a view type fall back to removing
+    // every view of the dataset.
     await configDb
       .delete(viewConfig)
+      .where(
+        viewType
+          ? and(
+              eq(viewConfig.primaryDataset, tableName),
+              eq(viewConfig.viewType, viewType),
+            )
+          : eq(viewConfig.primaryDataset, tableName),
+      );
+
+    // Only drop the dataset's public_views entry once no views remain for it.
+    const remainingViews = await configDb
+      .select({ viewId: viewConfig.viewId })
+      .from(viewConfig)
       .where(eq(viewConfig.primaryDataset, tableName));
+    if (remainingViews.length === 0) {
+      await configDb
+        .delete(publicViews)
+        .where(eq(publicViews.tableName, tableName));
+    }
   } catch (error) {
     console.error("Error removing table from config:", error);
     throw error;
