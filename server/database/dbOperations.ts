@@ -712,27 +712,30 @@ export const updateConfig = async (
       }
     }
 
-    // When a view type is given, it identifies which of a dataset's views to update;
-    // otherwise the update targets the dataset's single row by primary_dataset alone.
-    const currentViewType = viewType ?? null;
+    // A view type is required: a dataset can have several views (e.g. map +
+    // gallery), so we must identify exactly one (primary_dataset, view_type) row.
+    // Without it we would update every view of the dataset and null their type.
+    if (!viewType) {
+      throw new Error(
+        `updateConfig requires a view type for "${tableName}"; refusing to update without identifying a single view.`,
+      );
+    }
     const configString = JSON.stringify(typedConfig);
     const viewColumns = buildViewConfigColumns(
       tableName,
       typedConfig,
       configString,
-      currentViewType,
+      viewType,
     );
 
     await configDb
       .update(viewConfig)
       .set(viewColumns)
       .where(
-        currentViewType
-          ? and(
-              eq(viewConfig.primaryDataset, tableName),
-              eq(viewConfig.viewType, currentViewType),
-            )
-          : eq(viewConfig.primaryDataset, tableName),
+        and(
+          eq(viewConfig.primaryDataset, tableName),
+          eq(viewConfig.viewType, viewType),
+        ),
       );
 
     await syncPublicViews(tableName, typedConfig.ROUTE_LEVEL_PERMISSION);

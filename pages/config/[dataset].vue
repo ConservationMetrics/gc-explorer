@@ -70,7 +70,9 @@ const submitConfig = async ({
   try {
     await $fetch(`/api/config/update_config/${tableName}`, {
       method: "POST",
-      query: viewType.value ? { view_type: viewType.value } : undefined,
+      query: resolvedViewType.value
+        ? { view_type: resolvedViewType.value }
+        : undefined,
       body: JSON.stringify(config),
     });
     // Update the local datasetConfig to reflect the saved state
