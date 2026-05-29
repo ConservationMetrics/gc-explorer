@@ -32,11 +32,14 @@ if (data.value && !error.value) {
   viewsConfig.value = fetchedViewsData;
   viewRows.value = (data.value[2] ?? []) as ViewConfigRow[];
 
-  const matchingRows = viewRows.value.filter(
-    (row) => row.primaryDataset === tableName,
+  // `viewRows` contains ALL rows of the entire database table.
+  // Now we filter to those whose primaryDataset is the table the user is viewing.
+  const viewsOnThisTable = allViewRows.value.filter(
+    (view) => view.primaryDataset === tableName,
   );
 
   if (matchingRows.length > 0) {
+    // There are multiple views on this table! Pick one arbitrarily, ignore the other.
     datasetConfig.value = matchingRows[0].viewConfig;
     dataFetched.value = true;
   } else if (fetchedViewsData[tableName]) {
