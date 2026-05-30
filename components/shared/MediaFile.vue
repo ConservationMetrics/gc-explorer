@@ -92,7 +92,7 @@ const handleImageLoad = () => {
 
 const imageContainerClass = computed(() => {
   if (isGalleryVariant.value) {
-    return "w-full aspect-square overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800";
+    return "w-full h-full overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800";
   }
   return "w-full aspect-video rounded-lg bg-gray-100 dark:bg-gray-800";
 });
@@ -106,11 +106,14 @@ const imageClass = computed(() => {
 </script>
 
 <template>
-  <div>
+  <div :class="{ 'h-full w-full': isGalleryVariant }">
     <div
       v-if="isImage"
       ref="imageContainer"
-      :class="isGalleryVariant ? '' : 'mb-4'"
+      :class="[
+        isGalleryVariant ? 'h-full w-full' : '',
+        isGalleryVariant ? '' : 'mb-4',
+      ]"
     >
       <!-- Error state: Show red X icon when image fails to load (404) -->
       <div
@@ -190,7 +193,7 @@ const imageClass = computed(() => {
       v-if="isAudio"
       :class="
         isGalleryVariant
-          ? 'overflow-hidden rounded-2xl bg-violet-50 border border-violet-100 p-4 aspect-square flex items-center'
+          ? 'h-full w-full overflow-hidden rounded-2xl bg-violet-50 border border-violet-100 p-4 flex items-center'
           : 'mb-4'
       "
     >
@@ -210,7 +213,7 @@ const imageClass = computed(() => {
       v-if="isVideo"
       :class="
         isGalleryVariant
-          ? 'overflow-hidden rounded-2xl aspect-square bg-gray-100'
+          ? 'h-full w-full overflow-hidden rounded-2xl bg-gray-100'
           : 'mb-4'
       "
     >

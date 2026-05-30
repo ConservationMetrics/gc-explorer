@@ -64,6 +64,7 @@ describe("GalleryTile", () => {
       "photo.jpg",
     );
     expect(wrapper.find(".rounded-2xl").exists()).toBe(true);
+    expect(wrapper.find(".aspect-square").exists()).toBe(true);
   });
 
   it("renders audio preview through MediaFile with gallery variant", () => {

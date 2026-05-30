@@ -35,9 +35,10 @@ const handleTileKeydown = (event: KeyboardEvent) => {
     @click="handleTileClick"
     @keydown="handleTileKeydown"
   >
-    <div class="relative overflow-hidden rounded-2xl">
+    <div class="relative w-full aspect-square overflow-hidden rounded-2xl">
       <MediaFile
         v-if="previewFilePath"
+        class="h-full w-full"
         :allowed-file-extensions="allowedFileExtensions"
         :file-path="previewFilePath"
         :media-base-path="mediaBasePath"
