@@ -13,8 +13,6 @@ Object.assign(globalThis, {
   onBeforeUnmount,
 });
 
-// TODO: Add more unit tests for GalleryView behavior beyond empty states.
-
 const mockT = (key: string) => key;
 vi.mock("vue-i18n", () => ({
   useI18n: () => ({ t: mockT }),
@@ -28,7 +26,7 @@ vi.mock("@/composables/useRecordCache", () => ({
   }),
 }));
 
-const filterByDateAndCategoryMock = vi.fn();
+const filterByDateAndCategoryMock = vi.fn((data: Dataset) => data);
 vi.mock("@/composables/useDateAndCategoryFilter", () => ({
   filterByDateAndCategory: (...args: unknown[]) =>
     filterByDateAndCategoryMock(...args),
@@ -41,7 +39,7 @@ vi.mock("@/composables/useDateAndCategoryFilter", () => ({
 }));
 
 vi.mock("@/utils", () => ({
-  getFilePathsWithExtension: () => [],
+  getFilePathsWithExtension: () => ["photo.jpg"],
 }));
 
 const globalConfig = {
@@ -52,7 +50,13 @@ const globalConfig = {
       template: `<button data-testid="stub-data-filter" @click="$emit('filter', ['x'])">filter</button>`,
     },
     TimestampFilter: true,
-    DataFeature: true,
+    GalleryGrid: {
+      template: "<div data-testid='stub-gallery-grid'><slot /></div>",
+    },
+    GalleryTile: {
+      props: ["testId"],
+      template: `<div :data-testid="testId">tile</div>`,
+    },
     EmptyStateIllustration: {
       props: ["variant"],
       template:
@@ -78,6 +82,7 @@ describe("GalleryView empty states", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     filterByDateAndCategoryMock.mockReset();
+    filterByDateAndCategoryMock.mockImplementation((data: Dataset) => data);
   });
 
   it("shows galleryEmpty when gallery has no items", () => {
@@ -117,5 +122,29 @@ describe("GalleryView empty states", () => {
     expect(wrapper.get('[data-testid="stub-empty-illustration"]').text()).toBe(
       "noFilterResults",
     );
+  });
+});
+
+describe("GalleryView grid rendering", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    filterByDateAndCategoryMock.mockReset();
+    filterByDateAndCategoryMock.mockImplementation((data: Dataset) => data);
+  });
+
+  it("renders gallery tiles when filtered data is present", () => {
+    const wrapper = mount(GalleryView, {
+      props: {
+        ...baseProps,
+        galleryData: [{ _id: "1" }, { _id: "2" }] as unknown as Dataset,
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.find('[data-testid="stub-gallery-grid"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.find('[data-testid="gallery-item-0"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="gallery-item-1"]').exists()).toBe(true);
   });
 });

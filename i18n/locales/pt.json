@@ -88,6 +88,7 @@
   "gallery": "Galeria",
   "galleryEmpty": "Ainda não há itens para mostrar nesta galeria.",
   "galleryNoFilterResults": "Nenhum item corresponde aos filtros atuais.",
+  "galleryNoMedia": "Nenhuma mídia disponível",
   "galleryNotAvailable": "A visualização de galeria não está configurada para este conjunto de dados",
   "geocoordinates": "Coordenadas",
   "geographicCentroid": "Centróide geográfico",

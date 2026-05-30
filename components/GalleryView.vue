@@ -5,13 +5,12 @@ import {
   normalizeFilterValues,
   useTimestampFilter,
 } from "@/composables/useDateAndCategoryFilter";
-import { prepareCoordinatesForSelectedFeature } from "@/utils/mapGLHelpers";
 import { useRecordCache } from "@/composables/useRecordCache";
-import { transformSurveyEntry } from "@/utils/dataTransformers";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import TimestampFilter from "@/components/shared/TimestampFilter.vue";
-import DataFeature from "@/components/shared/DataFeature.vue";
+import GalleryGrid from "@/components/gallery/GalleryGrid.vue";
+import GalleryTile from "@/components/gallery/GalleryTile.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
 import { useI18n } from "vue-i18n";
 
@@ -143,15 +142,12 @@ const getFullRecord = (minimalItem: DataEntry): DataEntry => {
   return getCachedRecord(props.table, id) ?? minimalItem;
 };
 
-/** Transform raw record for display and prepare coordinates for selected feature */
-const prepareForDisplay = (feature: DataEntry): DataEntry => {
-  const transformed = transformSurveyEntry(feature);
-  if (transformed.geocoordinates) {
-    transformed.geocoordinates = prepareCoordinatesForSelectedFeature(
-      transformed.geocoordinates,
-    );
-  }
-  return transformed;
+const getRecordFilePaths = (feature: DataEntry): string[] => {
+  return getFilePathsWithExtension(
+    feature,
+    props.allowedFileExtensions,
+    props.mediaColumn,
+  );
 };
 </script>
 
@@ -159,11 +155,11 @@ const prepareForDisplay = (feature: DataEntry): DataEntry => {
   <div
     id="galleryContainer"
     data-testid="gallery-container"
-    class="gallery p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+    class="gallery p-4"
   >
     <div
       v-if="filterColumn || timestampColumn"
-      class="sticky top-10 right-10 z-10 flex flex-col gap-0.5"
+      class="sticky top-10 right-10 z-10 flex flex-col gap-0.5 mb-4"
       data-testid="filter-container"
     >
       <DataFilter
@@ -181,7 +177,7 @@ const prepareForDisplay = (feature: DataEntry): DataEntry => {
     </div>
     <div
       v-if="filteredData.length === 0"
-      class="col-span-full text-center py-12"
+      class="text-center py-12"
       data-testid="gallery-empty-state"
     >
       <EmptyStateIllustration
@@ -191,22 +187,16 @@ const prepareForDisplay = (feature: DataEntry): DataEntry => {
         {{ emptyStateMessage }}
       </p>
     </div>
-    <DataFeature
-      v-for="(feature, index) in paginatedData"
-      v-else
-      :key="feature._id ?? index"
-      :allowed-file-extensions="allowedFileExtensions"
-      :feature="prepareForDisplay(getFullRecord(feature))"
-      :file-paths="
-        getFilePathsWithExtension(
-          getFullRecord(feature),
-          allowedFileExtensions,
-          mediaColumn,
-        )
-      "
-      :media-base-path="mediaBasePath"
-      :data-testid="`gallery-item-${index}`"
-    />
+    <GalleryGrid v-else>
+      <GalleryTile
+        v-for="(feature, index) in paginatedData"
+        :key="feature._id ?? index"
+        :allowed-file-extensions="allowedFileExtensions"
+        :file-paths="getRecordFilePaths(getFullRecord(feature))"
+        :media-base-path="mediaBasePath"
+        :test-id="`gallery-item-${index}`"
+      />
+    </GalleryGrid>
     <!-- Hidden element to track pagination state for testing -->
     <div
       data-testid="pagination-info"

@@ -91,6 +91,7 @@
   "gallery": "Gallery",
   "galleryEmpty": "There are no items to show in this gallery yet.",
   "galleryNoFilterResults": "No items match the current filters.",
+  "galleryNoMedia": "No media available",
   "galleryNotAvailable": "The gallery view is not yet configured for this dataset",
   "geocoordinates": "Coordinates",
   "geographicCentroid": "Geographic centroid",
