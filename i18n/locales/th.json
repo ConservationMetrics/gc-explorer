@@ -89,6 +89,7 @@
   "filtering": "การกรอง",
   "filterOutValuesFromColumn": "ค่าที่ต้องการกรองออกจากคอลัมน์",
   "gallery": "แกลเลอรี",
+  "galleryClickToViewDetails": "คลิกเพื่อดูรายละเอียด",
   "galleryEmpty": "ยังไม่มีรายการให้แสดงในแกลเลอรีนี้",
   "galleryNoFilterResults": "ไม่มีรายการตรงกับตัวกรองปัจจุบัน",
   "galleryNoMedia": "ไม่มีสื่อ",

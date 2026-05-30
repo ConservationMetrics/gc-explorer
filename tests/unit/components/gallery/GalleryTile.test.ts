@@ -102,5 +102,42 @@ describe("GalleryTile", () => {
       true,
     );
     expect(wrapper.text()).toContain("galleryNoMedia");
+    expect(wrapper.find('[data-testid="gallery-tile-overlay"]').exists()).toBe(
+      false,
+    );
+  });
+
+  it("includes a hover overlay with click-to-view-details copy", () => {
+    const wrapper = mount(GalleryTile, {
+      props: {
+        allowedFileExtensions,
+        filePaths: ["photo.jpg"],
+        mediaBasePath: "/media",
+        testId: "gallery-item-3",
+      },
+      global: globalConfig,
+    });
+
+    const overlay = wrapper.get('[data-testid="gallery-tile-overlay"]');
+    expect(overlay.classes()).toContain("lg:group-hover:opacity-100");
+    expect(overlay.classes()).toContain("lg:group-focus-within:opacity-100");
+    expect(overlay.classes()).toContain("opacity-70");
+    expect(overlay.classes()).toContain("pointer-events-none");
+    expect(overlay.text()).toContain("galleryClickToViewDetails");
+  });
+
+  it("is keyboard focusable for the overlay affordance", () => {
+    const wrapper = mount(GalleryTile, {
+      props: {
+        allowedFileExtensions,
+        filePaths: ["photo.jpg"],
+        mediaBasePath: "/media",
+        testId: "gallery-item-4",
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.attributes("tabindex")).toBe("0");
+    expect(wrapper.attributes("role")).toBe("button");
   });
 });
