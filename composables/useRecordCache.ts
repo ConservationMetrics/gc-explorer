@@ -69,7 +69,7 @@ export const useRecordCache = () => {
       return pending.get(cacheKey)!;
     }
 
-    const request = $fetch<DataEntry>(`/api/${table}/${recordId}`, { headers })
+    const request = $fetch<DataEntry>(`/api/${table}/${recordId}`)
       .then((record) => {
         cache.set(cacheKey, record);
         maybeEvictOldestCacheEntry();
@@ -131,7 +131,6 @@ export const useRecordCache = () => {
         $fetch<DataEntry[]>(`/api/${table}/records`, {
           method: "POST",
           body: { ids: batch },
-          headers,
         }),
       );
       const batchResults = await Promise.all(batchPromises);
