@@ -55,10 +55,12 @@ useHead({
       : []),
   ],
 });
+
+definePageMeta({ layout: "explorer" });
 </script>
 
 <template>
-  <div>
+  <main class="mx-auto w-full max-w-7xl p-3 sm:p-6">
     <DataLoadError
       v-if="error"
       :title="$t('dataLoadErrorTitle')"
@@ -78,14 +80,14 @@ useHead({
       />
       <div
         v-if="!mediaBasePath && dataFetched"
-        class="text-center py-12"
+        class="py-12 text-center"
         data-testid="gallery-error-message"
       >
         <EmptyStateIllustration variant="notConfigured" />
-        <p class="text-gray-500 text-sm sm:text-base">
+        <p class="text-sm text-gray-500 sm:text-base">
           {{ $t("galleryNotAvailable") }}.
         </p>
       </div>
     </ClientOnly>
-  </div>
+  </main>
 </template>

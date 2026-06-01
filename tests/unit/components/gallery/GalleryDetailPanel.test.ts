@@ -75,6 +75,21 @@ describe("GalleryDetailPanel", () => {
     expect(dataFeature.props("embedded")).toBe(true);
   });
 
+  it("emits close when the back-to-gallery control is clicked", async () => {
+    const wrapper = mount(GalleryDetailPanel, {
+      props: {
+        allowedFileExtensions,
+        feature,
+        filePaths: ["photo.jpg"],
+        mediaBasePath: "/media",
+      },
+      global: globalConfig,
+    });
+
+    await wrapper.get('[data-testid="gallery-detail-back"]').trigger("click");
+    expect(wrapper.emitted("close")).toHaveLength(1);
+  });
+
   it("emits close when the close button is clicked", async () => {
     const wrapper = mount(GalleryDetailPanel, {
       props: {

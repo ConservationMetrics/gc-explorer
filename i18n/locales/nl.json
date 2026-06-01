@@ -89,6 +89,7 @@
   "gallery": "Galerij",
   "galleryClickToViewDetails": "Klik om details te bekijken",
   "galleryEmpty": "Er zijn nog geen items om in deze galerij te tonen.",
+  "galleryImageDetails": "Afbeeldingsdetails",
   "galleryNoFilterResults": "Geen items komen overeen met de huidige filters.",
   "galleryNotAvailable": "De galerijweergave is niet voor deze dataset geconfigureerd",
   "geocoordinates": "Coördinaten",

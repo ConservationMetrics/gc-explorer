@@ -60,8 +60,6 @@ const filteredData = ref(props.galleryData);
 const loading = ref(false);
 const selectedEntry = ref<DataEntry | null>(null);
 const selectedFilePaths = ref<string[]>([]);
-const isDetailOpen = computed(() => selectedEntry.value !== null);
-
 const isFilteredToEmpty = computed(
   () => props.galleryData.length > 0 && filteredData.value.length === 0,
 );
@@ -175,6 +173,10 @@ const openDetail = (feature: DataEntry, event?: Event) => {
   if (event?.currentTarget instanceof HTMLElement) {
     event.currentTarget.blur();
   }
+
+  if (typeof window.scrollTo === "function") {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 };
 
 const closeDetail = () => {
@@ -189,48 +191,6 @@ const closeDetail = () => {
     data-testid="gallery-container"
     class="gallery p-4"
   >
-    <div
-      v-if="filterColumn || timestampColumn"
-      class="sticky top-10 right-10 z-10 flex flex-col gap-0.5 mb-4"
-      data-testid="filter-container"
-    >
-      <DataFilter
-        v-if="filterColumn"
-        :data="galleryData"
-        :filter-column="filterColumn"
-        @filter="filterValues"
-      />
-      <TimestampFilter
-        v-if="timestampColumn"
-        :data="galleryData"
-        :timestamp-column="timestampColumn"
-        @filter="onTimestampFilter"
-      />
-    </div>
-    <div
-      v-if="filteredData.length === 0"
-      class="text-center py-12"
-      data-testid="gallery-empty-state"
-    >
-      <EmptyStateIllustration
-        :variant="isFilteredToEmpty ? 'noFilterResults' : 'empty'"
-      />
-      <p class="text-gray-500 text-sm sm:text-base">
-        {{ emptyStateMessage }}
-      </p>
-    </div>
-    <GalleryGrid v-else>
-      <GalleryTile
-        v-for="(feature, index) in paginatedData"
-        :key="feature._id ?? index"
-        :allowed-file-extensions="allowedFileExtensions"
-        :file-paths="getRecordFilePaths(getFullRecord(feature))"
-        :media-base-path="mediaBasePath"
-        :suppress-overlay="isDetailOpen"
-        :test-id="`gallery-item-${index}`"
-        @open="openDetail(feature, $event)"
-      />
-    </GalleryGrid>
     <GalleryDetailPanel
       v-if="selectedEntry"
       :allowed-file-extensions="allowedFileExtensions"
@@ -239,6 +199,49 @@ const closeDetail = () => {
       :media-base-path="mediaBasePath"
       @close="closeDetail"
     />
+    <template v-else>
+      <div
+        v-if="filterColumn || timestampColumn"
+        class="sticky top-10 right-10 z-10 mb-4 flex flex-col gap-0.5"
+        data-testid="filter-container"
+      >
+        <DataFilter
+          v-if="filterColumn"
+          :data="galleryData"
+          :filter-column="filterColumn"
+          @filter="filterValues"
+        />
+        <TimestampFilter
+          v-if="timestampColumn"
+          :data="galleryData"
+          :timestamp-column="timestampColumn"
+          @filter="onTimestampFilter"
+        />
+      </div>
+      <div
+        v-if="filteredData.length === 0"
+        class="py-12 text-center"
+        data-testid="gallery-empty-state"
+      >
+        <EmptyStateIllustration
+          :variant="isFilteredToEmpty ? 'noFilterResults' : 'empty'"
+        />
+        <p class="text-sm text-gray-500 sm:text-base">
+          {{ emptyStateMessage }}
+        </p>
+      </div>
+      <GalleryGrid v-else>
+        <GalleryTile
+          v-for="(feature, index) in paginatedData"
+          :key="feature._id ?? index"
+          :allowed-file-extensions="allowedFileExtensions"
+          :file-paths="getRecordFilePaths(getFullRecord(feature))"
+          :media-base-path="mediaBasePath"
+          :test-id="`gallery-item-${index}`"
+          @open="openDetail(feature, $event)"
+        />
+      </GalleryGrid>
+    </template>
     <!-- Hidden element to track pagination state for testing -->
     <div
       data-testid="pagination-info"

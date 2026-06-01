@@ -173,5 +173,6 @@ describe("GalleryView grid rendering", () => {
     expect(wrapper.find('[data-testid="gallery-detail-panel"]').exists()).toBe(
       true,
     );
+    expect(wrapper.find('[data-testid="gallery-item-0"]').exists()).toBe(false);
   });
 });

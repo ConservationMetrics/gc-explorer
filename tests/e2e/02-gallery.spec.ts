@@ -52,15 +52,19 @@ test("gallery page - displays gallery with media files", async ({
   await page.waitForURL("**/gallery/**", { timeout: 5000 });
   await page.waitForLoadState("networkidle");
 
-  // 8. Wait for the gallery container to be present
+  // 8. Explorer layout header (logo, community tab, language picker)
+  const logo = page.locator('img[alt="Guardian Connector Explorer"]').first();
+  await expect(logo).toBeVisible({ timeout: 10000 });
+
+  // 9. Wait for the gallery container to be present
   await page
     .getByTestId("gallery-container")
     .waitFor({ state: "attached", timeout: 10000 });
 
-  // 9. Verify gallery container is visible
+  // 10. Verify gallery container is visible
   await expect(page.getByTestId("gallery-container")).toBeVisible();
 
-  // 10. Check for gallery items (DataFeature components)
+  // 11. Check for gallery items
   const galleryItems = page.locator('[data-testid^="gallery-item-"]');
   await galleryItems.first().waitFor({ state: "visible", timeout: 10000 });
   const itemCount = await galleryItems.count();
@@ -196,9 +200,11 @@ test("gallery page - detail panel opens on tile click and closes", async ({
   const detailPanel = page.getByTestId("gallery-detail-panel");
   await expect(detailPanel).toBeVisible({ timeout: 5000 });
   await expect(page.getByTestId("gallery-detail-metadata")).toBeVisible();
+  await expect(galleryItems.first()).toBeHidden({ timeout: 3000 });
 
-  await page.getByTestId("gallery-detail-close").click();
+  await page.getByTestId("gallery-detail-back").click();
   await expect(detailPanel).toBeHidden({ timeout: 3000 });
+  await expect(galleryItems.first()).toBeVisible({ timeout: 5000 });
 });
 
 test("gallery page - audio playback functionality", async ({

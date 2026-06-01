@@ -88,6 +88,7 @@
   "gallery": "Galería",
   "galleryClickToViewDetails": "Haz clic para ver detalles",
   "galleryEmpty": "Aún no hay elementos que mostrar en esta galería.",
+  "galleryImageDetails": "Detalles de la imagen",
   "galleryNoFilterResults": "Ningún elemento coincide con los filtros actuales.",
   "galleryNotAvailable": "La vista de galería no está configurada para este conjunto de datos",
   "geocoordinates": "Coordenadas",
