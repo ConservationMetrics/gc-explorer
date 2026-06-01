@@ -101,6 +101,6 @@ describe("GalleryTile", () => {
     expect(wrapper.find('[data-testid="gallery-tile-no-media"]').exists()).toBe(
       true,
     );
-    expect(wrapper.text()).toContain("galleryNoMedia");
+    expect(wrapper.text()).toContain("galleryEmpty");
   });
 });
