@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MediaFile from "@/components/shared/MediaFile.vue";
+import GalleryMediaCarousel from "@/components/gallery/GalleryMediaCarousel.vue";
 
 import type { AllowedFileExtensions } from "@/types";
 
@@ -15,15 +15,17 @@ const emit = defineEmits<{
   open: [event: Event];
 }>();
 
-const previewFilePath = computed(() => props.filePaths[0] ?? null);
+const hasMedia = computed(() => props.filePaths.length > 0);
 
-const showOverlay = computed(
-  () => Boolean(previewFilePath.value) && !props.suppressOverlay,
-);
+const showOverlay = computed(() => hasMedia.value && !props.suppressOverlay);
 
 const handleTileClick = (event: MouseEvent) => {
   const target = event.target as HTMLElement;
-  if (target.closest("audio, video, a")) {
+  if (
+    target.closest(
+      "audio, video, a, [data-testid='gallery-carousel-prev'], [data-testid='gallery-carousel-next'], [data-testid^='gallery-carousel-dot-']",
+    )
+  ) {
     return;
   }
   emit("open", event);
@@ -47,11 +49,11 @@ const handleTileKeydown = (event: KeyboardEvent) => {
     @keydown="handleTileKeydown"
   >
     <div class="relative w-full aspect-square overflow-hidden rounded-2xl">
-      <MediaFile
-        v-if="previewFilePath"
+      <GalleryMediaCarousel
+        v-if="hasMedia"
         class="h-full w-full"
         :allowed-file-extensions="allowedFileExtensions"
-        :file-path="previewFilePath"
+        :file-paths="filePaths"
         :media-base-path="mediaBasePath"
         variant="gallery"
       />

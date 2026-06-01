@@ -25,12 +25,12 @@ vi.mock("@/composables/useOptimizedImages", () => ({
   }),
 }));
 
-vi.mock("@/components/shared/MediaFile.vue", () => ({
+vi.mock("@/components/gallery/GalleryMediaCarousel.vue", () => ({
   default: {
-    name: "MediaFile",
-    props: ["filePath", "variant"],
+    name: "GalleryMediaCarousel",
+    props: ["filePaths"],
     template:
-      '<div data-testid="stub-media-file" :data-variant="variant">{{ filePath }}</div>',
+      '<div data-testid="stub-gallery-carousel">{{ filePaths.join(",") }}</div>',
   },
 }));
 
@@ -59,8 +59,10 @@ describe("GalleryTile", () => {
     });
 
     expect(wrapper.find('[data-testid="gallery-item-0"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="stub-media-file"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="stub-media-file"]').text()).toBe(
+    expect(wrapper.find('[data-testid="stub-gallery-carousel"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.find('[data-testid="stub-gallery-carousel"]').text()).toBe(
       "photo.jpg",
     );
     expect(wrapper.find(".rounded-2xl").exists()).toBe(true);
@@ -78,14 +80,9 @@ describe("GalleryTile", () => {
       global: globalConfig,
     });
 
-    expect(wrapper.find('[data-testid="stub-media-file"]').text()).toBe(
+    expect(wrapper.find('[data-testid="stub-gallery-carousel"]').text()).toBe(
       "recording.mp3",
     );
-    expect(
-      wrapper
-        .find('[data-testid="stub-media-file"]')
-        .attributes("data-variant"),
-    ).toBe("gallery");
   });
 
   it("shows a no-media placeholder when file paths are empty", () => {
