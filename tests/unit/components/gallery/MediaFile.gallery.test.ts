@@ -60,7 +60,7 @@ describe("MediaFile gallery variant", () => {
     await wrapper.vm.$nextTick();
 
     expect(wrapper.find("a[data-lightbox]").exists()).toBe(false);
-    expect(wrapper.find(".aspect-square").exists()).toBe(true);
+    expect(wrapper.find(".h-full").exists()).toBe(true);
     expect(wrapper.text()).toContain("loading");
   });
 

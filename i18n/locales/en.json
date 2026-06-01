@@ -89,6 +89,7 @@
   "filtering": "Filtering",
   "filterOutValuesFromColumn": "Which values to filter out from the column",
   "gallery": "Gallery",
+  "galleryClickToViewDetails": "Click to view details",
   "galleryEmpty": "There are no items to show in this gallery yet.",
   "galleryNoFilterResults": "No items match the current filters.",
   "galleryNotAvailable": "The gallery view is not yet configured for this dataset",
