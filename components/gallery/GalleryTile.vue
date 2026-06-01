@@ -50,7 +50,7 @@ const handleTileKeydown = (event: KeyboardEvent) => {
         data-testid="gallery-tile-no-media"
       >
         <span class="text-sm text-violet-700 text-center">{{
-          $t("galleryNoMedia")
+          $t("galleryEmpty")
         }}</span>
       </div>
 
