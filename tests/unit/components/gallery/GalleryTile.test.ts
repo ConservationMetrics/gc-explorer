@@ -105,7 +105,7 @@ describe("GalleryTile", () => {
     );
   });
 
-  it("includes a hover overlay with click-to-view-details copy", () => {
+  it("includes a hover overlay with click-to-view-details copy", async () => {
     const wrapper = mount(GalleryTile, {
       props: {
         allowedFileExtensions,
@@ -117,11 +117,16 @@ describe("GalleryTile", () => {
     });
 
     const overlay = wrapper.get('[data-testid="gallery-tile-overlay"]');
-    expect(overlay.classes()).toContain("lg:group-hover:opacity-100");
-    expect(overlay.classes()).toContain("lg:group-focus-within:opacity-100");
     expect(overlay.classes()).toContain("opacity-70");
+    expect(overlay.classes()).toContain("lg:opacity-0");
     expect(overlay.classes()).toContain("pointer-events-none");
     expect(overlay.text()).toContain("galleryClickToViewDetails");
+
+    await wrapper.trigger("mouseenter");
+    expect(overlay.classes()).toContain("opacity-100");
+
+    await wrapper.trigger("mouseleave");
+    expect(overlay.classes()).toContain("lg:opacity-0");
   });
 
   it("hides overlay when suppressOverlay is true", () => {

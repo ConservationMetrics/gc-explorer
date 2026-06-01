@@ -51,6 +51,14 @@ const goToIndex = (index: number) => {
     currentIndex.value = index;
   }
 };
+
+/** Drop focus after carousel use so tile “view details” overlay does not stick. */
+const blurCarouselControl = (event: Event) => {
+  const control = event.currentTarget;
+  if (control instanceof HTMLElement) {
+    requestAnimationFrame(() => control.blur());
+  }
+};
 </script>
 
 <template>
@@ -71,7 +79,10 @@ const goToIndex = (index: number) => {
         class="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
         data-testid="gallery-carousel-prev"
         :aria-label="t('galleryPreviousMedia')"
-        @click.stop="goToPrevious"
+        @click.stop="
+          goToPrevious();
+          blurCarouselControl($event);
+        "
       >
         <ChevronLeft class="h-5 w-5" />
       </button>
@@ -80,7 +91,10 @@ const goToIndex = (index: number) => {
         class="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
         data-testid="gallery-carousel-next"
         :aria-label="t('galleryNextMedia')"
-        @click.stop="goToNext"
+        @click.stop="
+          goToNext();
+          blurCarouselControl($event);
+        "
       >
         <ChevronRight class="h-5 w-5" />
       </button>
@@ -110,7 +124,10 @@ const goToIndex = (index: number) => {
               })
             "
             :data-testid="`gallery-carousel-dot-${index}`"
-            @click.stop="goToIndex(index)"
+            @click.stop="
+              goToIndex(index);
+              blurCarouselControl($event);
+            "
           />
         </div>
       </div>
