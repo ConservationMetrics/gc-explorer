@@ -35,9 +35,7 @@ describe("useRecordCache", () => {
     const result = await fetchRecord("my_table", "abc");
 
     expect(result).toEqual(mockRecord);
-    expect(mockFetch).toHaveBeenCalledWith("/api/my_table/abc", {
-      headers: { "x-api-key": "test-key" },
-    });
+    expect(mockFetch).toHaveBeenCalledWith("/api/my_table/abc");
   });
 
   it("returns cached record on subsequent calls without hitting the API", async () => {
@@ -194,7 +192,6 @@ describe("useRecordCache - bulk fetch", () => {
     expect(mockFetch).toHaveBeenLastCalledWith("/api/my_table/records", {
       method: "POST",
       body: { ids: ["b2"] },
-      headers: { "x-api-key": "test-key" },
     });
   });
 
