@@ -4,11 +4,19 @@ import type { AllowedFileExtensions } from "@/types";
 import { useIntersectionObserver } from "@/composables/useIntersectionObserver";
 import { useOptimizedImages } from "@/composables/useOptimizedImages";
 
-const props = defineProps<{
-  allowedFileExtensions: AllowedFileExtensions;
-  filePath: string;
-  mediaBasePath: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    allowedFileExtensions: AllowedFileExtensions;
+    filePath: string;
+    mediaBasePath: string;
+    variant?: "default" | "gallery";
+  }>(),
+  {
+    variant: "default",
+  },
+);
+
+const isGalleryVariant = computed(() => props.variant === "gallery");
 
 /** Conditional rendering based on file extension */
 const isAudio = computed(() =>
@@ -81,15 +89,39 @@ const handleImageLoad = () => {
   imageError.value = false;
   imageLoaded.value = true;
 };
+
+const imageContainerClass = computed(() => {
+  if (isGalleryVariant.value) {
+    return "w-full h-full overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800";
+  }
+  return "w-full aspect-video rounded-lg bg-gray-100 dark:bg-gray-800";
+});
+
+const imageClass = computed(() => {
+  if (isGalleryVariant.value) {
+    return "w-full h-full object-cover";
+  }
+  return "w-full h-auto rounded-lg";
+});
 </script>
 
 <template>
-  <div>
-    <div v-if="isImage" ref="imageContainer" class="mb-4">
+  <div :class="{ 'h-full w-full': isGalleryVariant }">
+    <div
+      v-if="isImage"
+      ref="imageContainer"
+      :class="[
+        isGalleryVariant ? 'h-full w-full' : '',
+        isGalleryVariant ? '' : 'mb-4',
+      ]"
+    >
       <!-- Error state: Show red X icon when image fails to load (404) -->
       <div
         v-if="shouldLoadImage && imageError"
-        class="w-full aspect-video rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center border-2 border-red-500"
+        :class="[
+          imageContainerClass,
+          'flex items-center justify-center border-2 border-red-500',
+        ]"
       >
         <div
           class="flex flex-col items-center justify-center gap-2 text-red-500"
@@ -106,7 +138,7 @@ const handleImageLoad = () => {
         v-else-if="
           !shouldLoadImage || (shouldLoadImage && !imageLoaded && !imageError)
         "
-        class="w-full aspect-video rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
+        :class="[imageContainerClass, 'flex items-center justify-center']"
       >
         <div class="text-gray-400 text-sm">
           {{ $t("loading") || "Loading..." }}
@@ -115,7 +147,7 @@ const handleImageLoad = () => {
 
       <!-- Image container: Load and show image when in viewport -->
       <a
-        v-if="shouldLoadImage && !imageError"
+        v-if="shouldLoadImage && !imageError && !isGalleryVariant"
         :href="rawImageUrl"
         target="_blank"
         :data-lightbox="filePath"
@@ -126,14 +158,27 @@ const handleImageLoad = () => {
         <img
           :src="optimizedImageUrl"
           alt="Image"
-          class="w-full h-auto rounded-lg"
+          :class="imageClass"
           @load="handleImageLoad"
           @error="handleImageError"
         />
       </a>
 
       <div
-        v-if="filePath"
+        v-if="shouldLoadImage && !imageError && isGalleryVariant"
+        :class="[imageContainerClass, { hidden: !imageLoaded }]"
+      >
+        <img
+          :src="optimizedImageUrl"
+          alt="Image"
+          :class="imageClass"
+          @load="handleImageLoad"
+          @error="handleImageError"
+        />
+      </div>
+
+      <div
+        v-if="filePath && !isGalleryVariant"
         class="text-center flex items-center justify-center mt-2"
       >
         <span v-if="filePath.includes('t0.jpg')" class="italic">{{
@@ -144,8 +189,15 @@ const handleImageLoad = () => {
         }}</span>
       </div>
     </div>
-    <div v-if="isAudio" class="mb-4">
-      <audio controls class="w-full" preload="none">
+    <div
+      v-if="isAudio"
+      :class="
+        isGalleryVariant
+          ? 'h-full w-full overflow-hidden rounded-2xl bg-violet-50 border border-violet-100 p-4 flex items-center'
+          : 'mb-4'
+      "
+    >
+      <audio controls class="w-full" preload="none" @click.stop>
         <source
           :src="mediaBasePath + '/' + filePath"
           :type="
@@ -157,8 +209,24 @@ const handleImageLoad = () => {
         {{ $t("browserDoesntSupportAudio") }}.
       </audio>
     </div>
-    <div v-if="isVideo" class="mb-4">
-      <video controls class="w-full h-auto rounded-lg" preload="none">
+    <div
+      v-if="isVideo"
+      :class="
+        isGalleryVariant
+          ? 'h-full w-full overflow-hidden rounded-2xl bg-gray-100'
+          : 'mb-4'
+      "
+    >
+      <video
+        controls
+        :class="
+          isGalleryVariant
+            ? 'w-full h-full object-cover'
+            : 'w-full h-auto rounded-lg'
+        "
+        preload="none"
+        @click.stop
+      >
         <source
           :src="mediaBasePath + '/' + filePath"
           :type="'video/' + getExtension(filePath)"
