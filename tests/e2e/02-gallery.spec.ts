@@ -67,7 +67,7 @@ test("gallery page - displays gallery with media files", async ({
   expect(itemCount).toBeGreaterThan(0);
 });
 
-test("gallery page - displays images with lightbox functionality", async ({
+test("gallery page - displays gallery tiles with media", async ({
   authenticatedPageAsAdmin: page,
 }) => {
   // 1. Navigate to index page
@@ -123,33 +123,25 @@ test("gallery page - displays images with lightbox functionality", async ({
   // Give images time to load or error out
   await page.waitForTimeout(5000);
 
-  const visibleImageLinks = page.locator("a[data-lightbox]:not(.hidden)");
+  const tileImages = page.locator(
+    '[data-testid^="gallery-item-"] img:not(.hidden)',
+  );
   const imageFallbackCards = page.locator("div.border-red-500");
+  const noMediaTiles = page.locator('[data-testid="gallery-tile-no-media"]');
 
-  // 7. Gallery should show at least one successfully rendered image
-  // or an explicit image-not-found fallback card.
+  // 7. Gallery should show at least one rendered tile image, fallback card, or no-media placeholder.
   await expect
     .poll(
       async () =>
-        (await visibleImageLinks.count()) + (await imageFallbackCards.count()),
+        (await tileImages.count()) +
+        (await imageFallbackCards.count()) +
+        (await noMediaTiles.count()),
       { timeout: 10000 },
     )
     .toBeGreaterThan(0);
-
-  const imageCount = await visibleImageLinks.count();
-  const fallbackCount = await imageFallbackCards.count();
-  expect(imageCount > 0 || fallbackCount > 0).toBe(true);
-
-  // If images are available, verify first image has a valid lightbox link target.
-  if (imageCount > 0) {
-    const firstImage = visibleImageLinks.first();
-    const firstImageHref = await firstImage.getAttribute("href");
-    expect(firstImageHref).toBeTruthy();
-    expect(firstImageHref).toMatch(/^https?:\/\//);
-  }
 });
 
-test("gallery page - lightbox opens on image click (vendor JS loaded)", async ({
+test("gallery page - detail panel opens on tile click and closes", async ({
   authenticatedPageAsAdmin: page,
 }) => {
   await page.goto("/");
@@ -188,37 +180,25 @@ test("gallery page - lightbox opens on image click (vendor JS loaded)", async ({
     .getByTestId("gallery-container")
     .waitFor({ state: "attached", timeout: 10000 });
 
-  // Wait for images to load
-  await page.waitForTimeout(5000);
+  const galleryItems = page.locator('[data-testid^="gallery-item-"]');
+  await galleryItems.first().waitFor({ state: "visible", timeout: 15000 });
 
-  const lightboxLinks = page.locator("a[data-lightbox]:not(.hidden)");
-  const linkCount = await lightboxLinks.count();
-
-  if (linkCount === 0) {
-    console.log("No lightbox images found, skipping lightbox click test");
+  const firstTile = galleryItems.first();
+  const hasMedia = (await firstTile.locator("img, audio, video").count()) > 0;
+  if (!hasMedia) {
+    console.log("First gallery tile has no media, skipping detail panel test");
     test.skip();
     return;
   }
 
-  // Click the first lightbox-enabled image
-  await lightboxLinks.first().click();
+  await firstTile.click();
 
-  // Lightbox overlay should appear — the #lightbox container is injected by
-  // the vendor jQuery script in public/vendor/lightbox/. If the JS failed to
-  // load (e.g. compression corruption), this element won't exist.
-  const lightboxOverlay = page.locator("#lightbox");
-  await expect(lightboxOverlay).toBeVisible({ timeout: 5000 });
+  const detailPanel = page.getByTestId("gallery-detail-panel");
+  await expect(detailPanel).toBeVisible({ timeout: 5000 });
+  await expect(page.getByTestId("gallery-detail-metadata")).toBeVisible();
 
-  // The lightbox image should render
-  const lightboxImage = page.locator("#lightbox .lb-image");
-  await expect(lightboxImage).toBeVisible({ timeout: 5000 });
-
-  // Close the lightbox
-  const closeButton = page.locator("#lightbox .lb-close");
-  if ((await closeButton.count()) > 0) {
-    await closeButton.click();
-    await expect(lightboxOverlay).toBeHidden({ timeout: 3000 });
-  }
+  await page.getByTestId("gallery-detail-close").click();
+  await expect(detailPanel).toBeHidden({ timeout: 3000 });
 });
 
 test("gallery page - audio playback functionality", async ({

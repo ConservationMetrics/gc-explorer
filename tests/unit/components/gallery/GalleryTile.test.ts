@@ -127,6 +127,38 @@ describe("GalleryTile", () => {
     expect(overlay.text()).toContain("galleryClickToViewDetails");
   });
 
+  it("hides overlay when suppressOverlay is true", () => {
+    const wrapper = mount(GalleryTile, {
+      props: {
+        allowedFileExtensions,
+        filePaths: ["photo.jpg"],
+        mediaBasePath: "/media",
+        suppressOverlay: true,
+        testId: "gallery-item-5",
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.find('[data-testid="gallery-tile-overlay"]').exists()).toBe(
+      false,
+    );
+  });
+
+  it("emits open when the tile is clicked", async () => {
+    const wrapper = mount(GalleryTile, {
+      props: {
+        allowedFileExtensions,
+        filePaths: ["photo.jpg"],
+        mediaBasePath: "/media",
+        testId: "gallery-item-6",
+      },
+      global: globalConfig,
+    });
+
+    await wrapper.trigger("click");
+    expect(wrapper.emitted("open")).toHaveLength(1);
+  });
+
   it("is keyboard focusable for the overlay affordance", () => {
     const wrapper = mount(GalleryTile, {
       props: {

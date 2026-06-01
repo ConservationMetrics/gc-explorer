@@ -11,8 +11,10 @@ import type { Feature } from "geojson";
 
 const props = defineProps<{
   allowedFileExtensions?: AllowedFileExtensions;
+  embedded?: boolean;
   exportTableName?: string;
   feature: DataEntry;
+  hideMedia?: boolean;
   featureGeojson?: Feature | AlertsData;
   filePaths?: Array<string>;
   isAlert?: boolean;
@@ -73,10 +75,14 @@ const exportRecordId = computed(() =>
 
 <template>
   <div
-    class="rounded-lg border bg-card text-card-foreground shadow-sm"
+    :class="
+      embedded
+        ? 'bg-transparent'
+        : 'rounded-lg border bg-card text-card-foreground shadow-sm'
+    "
     data-testid="data-feature"
   >
-    <div class="p-6 space-y-6">
+    <div :class="embedded ? 'space-y-6' : 'p-6 space-y-6'">
       <div v-for="(value, key) in sortedFeature" :key="key">
         <div v-if="key.toLowerCase().includes('data source')" class="mb-4">
           <h1
@@ -89,7 +95,7 @@ const exportRecordId = computed(() =>
       </div>
 
       <div
-        v-if="allowedFileExtensions && setMediaBasePath()"
+        v-if="!hideMedia && allowedFileExtensions && setMediaBasePath()"
         :class="{ 'grid grid-cols-2 gap-6': isAlert }"
         data-testid="media-files-container"
       >

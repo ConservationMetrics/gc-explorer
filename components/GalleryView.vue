@@ -5,10 +5,13 @@ import {
   normalizeFilterValues,
   useTimestampFilter,
 } from "@/composables/useDateAndCategoryFilter";
+import { prepareCoordinatesForSelectedFeature } from "@/utils/mapGLHelpers";
 import { useRecordCache } from "@/composables/useRecordCache";
+import { transformSurveyEntry } from "@/utils/dataTransformers";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
 import TimestampFilter from "@/components/shared/TimestampFilter.vue";
+import GalleryDetailPanel from "@/components/gallery/GalleryDetailPanel.vue";
 import GalleryGrid from "@/components/gallery/GalleryGrid.vue";
 import GalleryTile from "@/components/gallery/GalleryTile.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
@@ -55,6 +58,9 @@ const applyAllFilters = () => {
 const selectedFilterValues = ref<FilterValues>([]);
 const filteredData = ref(props.galleryData);
 const loading = ref(false);
+const selectedEntry = ref<DataEntry | null>(null);
+const selectedFilePaths = ref<string[]>([]);
+const isDetailOpen = computed(() => selectedEntry.value !== null);
 
 const isFilteredToEmpty = computed(
   () => props.galleryData.length > 0 && filteredData.value.length === 0,
@@ -142,12 +148,38 @@ const getFullRecord = (minimalItem: DataEntry): DataEntry => {
   return getCachedRecord(props.table, id) ?? minimalItem;
 };
 
+/** Transform raw record for display and prepare coordinates for selected feature */
+const prepareForDisplay = (feature: DataEntry): DataEntry => {
+  const transformed = transformSurveyEntry(feature);
+  if (transformed.geocoordinates) {
+    transformed.geocoordinates = prepareCoordinatesForSelectedFeature(
+      transformed.geocoordinates,
+    );
+  }
+  return transformed;
+};
+
 const getRecordFilePaths = (feature: DataEntry): string[] => {
   return getFilePathsWithExtension(
     feature,
     props.allowedFileExtensions,
     props.mediaColumn,
   );
+};
+
+const openDetail = (feature: DataEntry, event?: Event) => {
+  const fullRecord = getFullRecord(feature);
+  selectedEntry.value = prepareForDisplay(fullRecord);
+  selectedFilePaths.value = getRecordFilePaths(fullRecord);
+
+  if (event?.currentTarget instanceof HTMLElement) {
+    event.currentTarget.blur();
+  }
+};
+
+const closeDetail = () => {
+  selectedEntry.value = null;
+  selectedFilePaths.value = [];
 };
 </script>
 
@@ -194,9 +226,19 @@ const getRecordFilePaths = (feature: DataEntry): string[] => {
         :allowed-file-extensions="allowedFileExtensions"
         :file-paths="getRecordFilePaths(getFullRecord(feature))"
         :media-base-path="mediaBasePath"
+        :suppress-overlay="isDetailOpen"
         :test-id="`gallery-item-${index}`"
+        @open="openDetail(feature, $event)"
       />
     </GalleryGrid>
+    <GalleryDetailPanel
+      v-if="selectedEntry"
+      :allowed-file-extensions="allowedFileExtensions"
+      :feature="selectedEntry"
+      :file-paths="selectedFilePaths"
+      :media-base-path="mediaBasePath"
+      @close="closeDetail"
+    />
     <!-- Hidden element to track pagination state for testing -->
     <div
       data-testid="pagination-info"

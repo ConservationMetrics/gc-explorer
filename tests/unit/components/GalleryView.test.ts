@@ -42,6 +42,14 @@ vi.mock("@/utils", () => ({
   getFilePathsWithExtension: () => ["photo.jpg"],
 }));
 
+vi.mock("@/utils/dataTransformers", () => ({
+  transformSurveyEntry: (entry: unknown) => entry,
+}));
+
+vi.mock("@/utils/mapGLHelpers", () => ({
+  prepareCoordinatesForSelectedFeature: (value: unknown) => value,
+}));
+
 const globalConfig = {
   mocks: { $t: mockT },
   stubs: {
@@ -54,8 +62,11 @@ const globalConfig = {
       template: "<div data-testid='stub-gallery-grid'><slot /></div>",
     },
     GalleryTile: {
-      props: ["testId"],
-      template: `<div :data-testid="testId">tile</div>`,
+      props: ["testId", "suppressOverlay"],
+      template: `<button type="button" :data-testid="testId" @click="$emit('open', $event)">tile</button>`,
+    },
+    GalleryDetailPanel: {
+      template: '<div data-testid="gallery-detail-panel"></div>',
     },
     EmptyStateIllustration: {
       props: ["variant"],
@@ -146,5 +157,21 @@ describe("GalleryView grid rendering", () => {
     );
     expect(wrapper.find('[data-testid="gallery-item-0"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="gallery-item-1"]').exists()).toBe(true);
+  });
+
+  it("opens detail panel when a tile emits open", async () => {
+    const wrapper = mount(GalleryView, {
+      props: {
+        ...baseProps,
+        galleryData: [{ _id: "1" }] as unknown as Dataset,
+      },
+      global: globalConfig,
+    });
+
+    await wrapper.get('[data-testid="gallery-item-0"]').trigger("click");
+
+    expect(wrapper.find('[data-testid="gallery-detail-panel"]').exists()).toBe(
+      true,
+    );
   });
 });

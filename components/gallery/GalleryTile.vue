@@ -7,21 +7,32 @@ const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
   filePaths: string[];
   mediaBasePath: string;
+  suppressOverlay?: boolean;
   testId: string;
 }>();
 
+const emit = defineEmits<{
+  open: [event: Event];
+}>();
+
 const previewFilePath = computed(() => props.filePaths[0] ?? null);
+
+const showOverlay = computed(
+  () => Boolean(previewFilePath.value) && !props.suppressOverlay,
+);
 
 const handleTileClick = (event: MouseEvent) => {
   const target = event.target as HTMLElement;
   if (target.closest("audio, video, a")) {
     return;
   }
+  emit("open", event);
 };
 
 const handleTileKeydown = (event: KeyboardEvent) => {
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
+    emit("open", event);
   }
 };
 </script>
@@ -55,7 +66,7 @@ const handleTileKeydown = (event: KeyboardEvent) => {
       </div>
 
       <div
-        v-if="previewFilePath"
+        v-if="showOverlay"
         class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 opacity-70 transition-opacity duration-300 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100"
         data-testid="gallery-tile-overlay"
       >
