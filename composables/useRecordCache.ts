@@ -45,11 +45,6 @@ const ensureCacheCount = (): Ref<number> => {
  * State is module-level so every consumer shares one cache keyed by `table::recordId`.
  */
 export const useRecordCache = () => {
-  const {
-    public: { appApiKey },
-  } = useRuntimeConfig();
-
-  const headers = { "x-api-key": appApiKey as string };
   const count = ensureCacheCount();
   const route = useRoute();
 
@@ -79,7 +74,6 @@ export const useRecordCache = () => {
 
     const viewType = resolveViewTypeForTable(route, table);
     const request = $fetch<DataEntry>(`/api/${table}/${recordId}`, {
-      headers,
       ...(viewType ? { query: { view_type: viewType } } : {}),
     })
       .then((record) => {
@@ -144,7 +138,6 @@ export const useRecordCache = () => {
         $fetch<DataEntry[]>(`/api/${table}/records`, {
           method: "POST",
           body: { ids: batch },
-          headers,
           ...(viewType ? { query: { view_type: viewType } } : {}),
         }),
       );
