@@ -1,18 +1,27 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { ViewConfig } from "@/types";
-import { buildViewConfigColumns } from "@/server/database/dbOperations";
+import {
+  buildViewConfigColumns,
+  updateConfig,
+} from "@/server/database/dbOperations";
 
 // dbConnection instantiates Postgres clients at import time via the Nuxt
-// runtime config, which is unavailable here. Stub it so the pure helper under
-// test can be imported without a database.
-vi.mock("@/server/database/dbConnection", () => ({
+// runtime config, which is unavailable here. Stub it so the helpers under test
+// can be imported without a database. (configDb is left as an empty object: the
+// guard under test must throw before any query is attempted on it.)
+//
+// dbOperations imports it as "./dbConnection", which Vitest resolves to the
+// project-root path "/server/database/dbConnection" — that spelling is the one
+// that actually intercepts. The "@/"-aliased spelling does not match the
+// resolved id; both are declared to be robust to how the import is written.
+// (Factories are inlined because vi.mock is hoisted above any local variables.)
+vi.mock("/server/database/dbConnection", () => ({
   configDb: {},
   warehouseDb: {},
   schema: {},
 }));
-
-vi.mock("/server/database/dbConnection", () => ({
+vi.mock("@/server/database/dbConnection", () => ({
   configDb: {},
   warehouseDb: {},
   schema: {},
@@ -89,5 +98,21 @@ describe("buildViewConfigColumns", () => {
     );
 
     expect(columns.viewName).toBe("seed_survey_data");
+  });
+});
+
+describe("updateConfig", () => {
+  it("refuses to update without a view type", async () => {
+    // A dataset can have several views, so an update must target exactly one
+    // (primary_dataset, view_type) row. Without a view type the old code matched
+    // every view of the dataset and nulled their type; the guard must reject it.
+    // updateConfig logs before rethrowing, so silence that expected error line.
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await expect(
+      updateConfig("fake_alerts", { ROUTE_LEVEL_PERMISSION: "anyone" }),
+    ).rejects.toThrow(/view type/i);
+
+    errorSpy.mockRestore();
   });
 });
