@@ -3,7 +3,7 @@ import type { User } from "@/types";
 import { Role } from "@/types";
 import GlobeLanguagePicker from "@/components/shared/GlobeLanguagePicker.vue";
 import HeaderBrand from "@/components/shared/HeaderBrand.vue";
-import { Database } from "lucide-vue-next";
+import { SlidersHorizontal } from "lucide-vue-next";
 
 const config = useRuntimeConfig();
 const { t } = useI18n();
@@ -107,7 +107,7 @@ const shouldShowConfigLink = computed(() => {
             to="/config"
             class="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
           >
-            <Database class="w-5 h-5 text-gray-600" />
+            <SlidersHorizontal class="w-5 h-5 text-gray-600" />
           </NuxtLink>
           <!-- Tooltip -->
           <div
@@ -169,7 +169,7 @@ const shouldShowConfigLink = computed(() => {
         class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-violet-50 transition-colors mb-2"
         @click="mobileMenuOpen = false"
       >
-        <Database class="w-5 h-5 text-gray-600" />
+        <SlidersHorizontal class="w-5 h-5 text-gray-600" />
         <span class="text-sm text-gray-700">{{
           $t("manageDatasets") || "Manage Datasets"
         }}</span>
