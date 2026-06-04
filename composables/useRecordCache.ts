@@ -73,9 +73,12 @@ export const useRecordCache = () => {
     }
 
     const viewType = resolveViewTypeForTable(route, table);
-    const request = $fetch<DataEntry>(`/api/${table}/${recordId}`, {
-      ...(viewType ? { query: { view_type: viewType } } : {}),
-    })
+    const url = `/api/${table}/${recordId}`;
+    const request = (
+      viewType
+        ? $fetch<DataEntry>(url, { query: { view_type: viewType } })
+        : $fetch<DataEntry>(url)
+    )
       .then((record) => {
         cache.set(cacheKey, record);
         maybeEvictOldestCacheEntry();

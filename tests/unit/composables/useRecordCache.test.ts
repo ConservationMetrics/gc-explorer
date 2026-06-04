@@ -270,7 +270,6 @@ describe("useRecordCache - view_type threading", () => {
     await fetchRecord("my_table", "abc");
 
     expect(mockFetch).toHaveBeenCalledWith("/api/my_table/abc", {
-      headers: { "x-api-key": "test-key" },
       query: { view_type: "map" },
     });
   });
@@ -285,9 +284,8 @@ describe("useRecordCache - view_type threading", () => {
     const { fetchRecord } = useRecordCache();
     await fetchRecord("mapeo_secondary", "abc");
 
-    expect(mockFetch).toHaveBeenCalledWith("/api/mapeo_secondary/abc", {
-      headers: { "x-api-key": "test-key" },
-    });
+    // No view type for a cross-table read → no options object at all.
+    expect(mockFetch).toHaveBeenCalledWith("/api/mapeo_secondary/abc");
   });
 
   it("fetchRecords sends the route's view_type for its own dataset", async () => {
@@ -303,7 +301,6 @@ describe("useRecordCache - view_type threading", () => {
     expect(mockFetch).toHaveBeenCalledWith("/api/my_table/records", {
       method: "POST",
       body: { ids: ["a1"] },
-      headers: { "x-api-key": "test-key" },
       query: { view_type: "gallery" },
     });
   });
