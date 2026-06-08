@@ -110,6 +110,11 @@ export default defineEventHandler(async (event: H3Event) => {
       ),
     };
 
+    // MAPEO_TABLE is read from the config JSON, which is also mirrored into the
+    // views.secondary_dataset column on save. This reader is the reason that column
+    // is not yet the single source of truth. TODO(single-source-of-truth): once the
+    // API returns secondary_dataset (and MAPEO_TABLE is stripped from the JSON),
+    // read it from the column instead. See deriveSecondaryDataset in dbOperations.
     const mapeoTable = tableConfig.MAPEO_TABLE;
     const mapeoCategoryIds = tableConfig.MAPEO_CATEGORY_IDS;
 

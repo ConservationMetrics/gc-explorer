@@ -19,12 +19,25 @@ CREATE TABLE views (
 -- we expand that list into one row per view type. VIEWS is parsed exactly once, here.
 INSERT INTO views (view_name, view_type, primary_dataset, secondary_dataset, view_config)
 SELECT DISTINCT ON (legacy.table_name, btrim(view_token))
+  -- view_name: NOTE these two are NOT the same thing. DATASET_TABLE is the
+  -- human-readable English DISPLAY NAME; table_name is the dataset IDENTIFIER
+  -- (also used for primary_dataset below). They are different fields, so this is
+  -- not asserting an equivalence. We coalesce only because view_name is a display
+  -- label: when an admin never set a display name, the identifier is a sensible
+  -- default label. primary_dataset always uses table_name, never DATASET_TABLE.
   COALESCE(NULLIF(btrim(legacy.views_config::jsonb ->> 'DATASET_TABLE'), ''), legacy.table_name),
   btrim(view_token),
   legacy.table_name,
+  -- secondary_dataset: derived from MAPEO_TABLE for alerts only.
   CASE WHEN btrim(view_token) = 'alerts'
        THEN NULLIF(btrim(legacy.views_config::jsonb ->> 'MAPEO_TABLE'), '')
        ELSE NULL END,
+  -- view_config: strip VIEWS (now superseded by the view_type column).
+  -- TODO(single-source-of-truth): MAPEO_TABLE is deliberately KEPT in this JSON for
+  -- now even though it is also copied into secondary_dataset above, because all
+  -- readers (alerts.ts, config edit UI) still read MAPEO_TABLE from the JSON. The
+  -- follow-up that returns primary/secondary_dataset from the API should also strip
+  -- MAPEO_TABLE here (as we do VIEWS) so secondary_dataset becomes the only source.
   (legacy.views_config::jsonb - 'VIEWS')::text
 FROM view_config legacy
 CROSS JOIN LATERAL unnest(string_to_array(legacy.views_config::jsonb ->> 'VIEWS', ',')) AS view_token

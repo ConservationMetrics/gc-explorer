@@ -45,6 +45,10 @@ export interface ViewConfig {
   MAPBOX_BASEMAPS?: string; // JSON string of BasemapConfig[]
   MAPBOX_ZOOM?: number;
   MAPEO_CATEGORY_IDS?: string;
+  // Mirrored into the views.secondary_dataset column on save (see
+  // deriveSecondaryDataset). Not yet a single source of truth; readers still use
+  // this field. TODO(single-source-of-truth): drop once the API returns/consumes
+  // secondary_dataset.
   MAPEO_TABLE?: string;
   MAP_LEGEND_LAYER_IDS?: string;
   MEDIA_BASE_PATH?: string;

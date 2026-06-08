@@ -76,6 +76,16 @@ const createDuplicateViewError = (table: string, viewType: ViewType) => {
  * can never drift from the config field it mirrors: only alerts views have a
  * secondary dataset, and a blank value normalizes to null.
  *
+ * TODO(single-source-of-truth): `MAPEO_TABLE` and `secondary_dataset` currently hold
+ * the SAME fact in two places — the value stays in the view_config JSON AND is copied
+ * into the secondary_dataset column here. They cannot drift (the column is always
+ * derived from `MAPEO_TABLE` via this one helper, and nothing writes the column
+ * independently), but today the column is effectively a write-only mirror: every
+ * reader (alerts.ts, the config edit UI) still reads `MAPEO_TABLE` from the JSON.
+ * The follow-up that returns primary/secondary_dataset from the API should make the
+ * column the only source: stop persisting `MAPEO_TABLE` in the JSON (strip it like
+ * `VIEWS`) and reconstruct it from the column on read for backward compatibility.
+ *
  * @param {ViewType} viewType - The view's type.
  * @param {ViewConfig} config - The view's settings JSON.
  * @returns {string | null} The secondary dataset, or null when not applicable.
@@ -152,9 +162,16 @@ export const buildViewConfigColumns = (
   configString: string,
   viewType: ViewType,
 ) => {
+  // secondaryDataset mirrors config.MAPEO_TABLE; configString still contains
+  // MAPEO_TABLE too. See deriveSecondaryDataset's TODO on collapsing to one source.
   const secondaryDataset = deriveSecondaryDataset(viewType, config);
 
   return {
+    // viewName falls back to primaryDataset, but NOTE they are not the same kind of
+    // value: DATASET_TABLE is the human display name and primaryDataset is the table
+    // IDENTIFIER. This is intentional — view_name is just a display label, so the
+    // identifier is a reasonable default when no display name was set. primaryDataset
+    // is set from the identifier only and never from DATASET_TABLE.
     viewName: config.DATASET_TABLE?.trim() || primaryDataset,
     viewType,
     primaryDataset,
