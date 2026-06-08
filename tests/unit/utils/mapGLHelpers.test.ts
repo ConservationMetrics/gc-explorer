@@ -31,8 +31,7 @@ const getImageData = vi.fn(() => fakeImageData);
 beforeEach(() => {
   vi.stubGlobal("Image", StubImage);
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
-    () =>
-      ({ drawImage, getImageData }) as unknown as CanvasRenderingContext2D,
+    () => ({ drawImage, getImageData }) as unknown as CanvasRenderingContext2D,
   );
   nextImageState = { shouldFail: false, naturalWidth: 100, naturalHeight: 80 };
   drawImage.mockClear();

@@ -15,9 +15,9 @@ describe("inferContentType", () => {
   });
 
   it("matches the extension case-insensitively", () => {
-    expect(
-      inferContentType("https://files.example.com/icon.SVG", null),
-    ).toBe("image/svg+xml");
+    expect(inferContentType("https://files.example.com/icon.SVG", null)).toBe(
+      "image/svg+xml",
+    );
   });
 
   it("ignores query strings and fragments when matching", () => {
