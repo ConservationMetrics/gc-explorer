@@ -88,14 +88,14 @@ const checkTableExists = async (
  * @param {string} primaryDataset - Dataset table used as the route identifier.
  * @param {ViewConfig} config - Parsed view config.
  * @param {string} configString - Serialized config JSON.
- * @param {ViewType | null} viewType - View type for the row.
+ * @param {ViewType} viewType - View type for the row.
  * @returns New view metadata column values for views.
  */
 export const buildViewConfigColumns = (
   primaryDataset: string,
   config: ViewConfig,
   configString: string,
-  viewType: ViewType | null,
+  viewType: ViewType,
 ) => {
   const secondaryDataset =
     viewType === "alerts" ? config.MAPEO_TABLE?.trim() || null : null;
