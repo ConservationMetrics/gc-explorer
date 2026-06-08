@@ -6,6 +6,7 @@ import { getFilePathsWithExtension } from "@/utils";
 import {
   changeMapStyle,
   applyTerrain,
+  loadMapIcon,
   prepareMapLegendLayers,
   prepareCoordinatesForSelectedFeature,
   toggleLayerVisibility as utilsToggleLayerVisibility,
@@ -386,7 +387,6 @@ const addDataToMap = () => {
 const loadIconImages = async () => {
   if (!props.iconColumn || !props.mediaBasePathIcons || !map.value) return;
 
-  // Get unique icon filenames from data
   const iconFilenames = new Set<string>();
   filteredFeatureCollection.value.features.forEach((feature) => {
     const iconFilename = feature.properties?.[props.iconColumn!];
@@ -395,28 +395,24 @@ const loadIconImages = async () => {
     }
   });
 
-  // Load each unique icon
   for (const filename of iconFilenames) {
     const iconId = `icon-${filename}`;
-    if (!map.value.hasImage(iconId)) {
-      try {
-        // Proxy through our server to avoid CORS issues with Mapbox Canvas API
-        const originalUrl = `${props.mediaBasePathIcons}/${filename}`;
-        const iconUrl = `/api/proxy-icon?url=${encodeURIComponent(originalUrl)}`;
-        const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.onload = () => resolve(img);
-          img.onerror = reject;
-          img.src = iconUrl;
-        });
-        // Check again before adding (in case of race condition from multiple toggles)
-        if (!map.value.hasImage(iconId)) {
-          map.value.addImage(iconId, image);
-        }
-      } catch (error) {
-        console.error(`Failed to load icon: ${filename}`, error);
+    if (map.value.hasImage(iconId)) continue;
+
+    try {
+      // Proxy through our server to avoid CORS issues with Mapbox Canvas API
+      const originalUrl = `${props.mediaBasePathIcons}/${filename}`;
+      const iconUrl = `/api/proxy-icon?url=${encodeURIComponent(originalUrl)}`;
+      const image = await loadMapIcon(
+        iconUrl,
+        filename.toLowerCase().endsWith(".svg"),
+      );
+      // Re-check before adding in case a concurrent toggle already loaded it
+      if (!map.value.hasImage(iconId)) {
+        map.value.addImage(iconId, image);
       }
+    } catch (error) {
+      console.error(`Failed to load icon: ${filename}`, error);
     }
   }
 };
