@@ -387,6 +387,7 @@ const addDataToMap = () => {
 const loadIconImages = async () => {
   if (!props.iconColumn || !props.mediaBasePathIcons || !map.value) return;
 
+  // Get unique icon filenames from data
   const iconFilenames = new Set<string>();
   filteredFeatureCollection.value.features.forEach((feature) => {
     const iconFilename = feature.properties?.[props.iconColumn!];
@@ -395,6 +396,7 @@ const loadIconImages = async () => {
     }
   });
 
+  // Load each unique icon
   for (const filename of iconFilenames) {
     const iconId = `icon-${filename}`;
     if (map.value.hasImage(iconId)) continue;

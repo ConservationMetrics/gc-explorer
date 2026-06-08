@@ -3,7 +3,7 @@ import { inferContentType } from "@/utils/mediaHelpers";
 /**
  * Proxy endpoint for loading map icons from external sources (e.g., Filebrowser).
  * Solves CORS issues when Mapbox tries to load images via the Canvas API and
- * normalizes Content-Type (see {@link inferContentType}).
+ * normalizes Content-Type (see inferContentType).
  */
 export default defineEventHandler(async (event) => {
   const url = getQuery(event).url as string | undefined;
