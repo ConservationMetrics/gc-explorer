@@ -18,7 +18,13 @@ export default defineEventHandler(async (event: H3Event) => {
         "Error adding new table to config on API side:",
         error.message,
       );
-      return sendError(event, new Error(error.message));
+      // Preserve any HTTP metadata set upstream (e.g. the 409 for a duplicate view
+      // type) instead of flattening every failure to a generic 500.
+      const statusCode = (error as { statusCode?: number }).statusCode ?? 500;
+      return sendError(
+        event,
+        createError({ statusCode, statusMessage: error.message }),
+      );
     } else {
       console.error(
         "Unknown error adding new table to config on API side:",
