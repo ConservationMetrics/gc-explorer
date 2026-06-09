@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, X } from "lucide-vue-next";
 import DataFeature from "@/components/shared/DataFeature.vue";
-import MediaFile from "@/components/shared/MediaFile.vue";
+import GalleryMediaCarousel from "@/components/gallery/GalleryMediaCarousel.vue";
 
 import type { AllowedFileExtensions, DataEntry } from "@/types";
 
@@ -16,7 +16,7 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const previewFilePath = computed(() => props.filePaths[0] ?? null);
+const hasMedia = computed(() => props.filePaths.length > 0);
 
 const handleKeydown = (event: KeyboardEvent) => {
   if (event.key === "Escape") {
@@ -76,11 +76,11 @@ onBeforeUnmount(() => {
           class="min-h-[240px] flex-1 min-w-0 overflow-hidden rounded-2xl bg-gray-50 sm:min-h-[320px] lg:min-h-[min(70vh,640px)]"
           data-testid="gallery-detail-media"
         >
-          <MediaFile
-            v-if="previewFilePath"
+          <GalleryMediaCarousel
+            v-if="hasMedia"
             class="h-full w-full min-h-[240px] sm:min-h-[320px] lg:min-h-[min(70vh,640px)]"
             :allowed-file-extensions="allowedFileExtensions"
-            :file-path="previewFilePath"
+            :file-paths="filePaths"
             :media-base-path="mediaBasePath"
             variant="gallery"
           />

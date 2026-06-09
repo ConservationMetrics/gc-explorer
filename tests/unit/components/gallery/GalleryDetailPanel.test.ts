@@ -14,11 +14,12 @@ Object.assign(globalThis, {
 
 const mockT = (key: string) => key;
 
-vi.mock("@/components/shared/MediaFile.vue", () => ({
+vi.mock("@/components/gallery/GalleryMediaCarousel.vue", () => ({
   default: {
-    name: "MediaFile",
-    props: ["filePath"],
-    template: '<div data-testid="stub-detail-media-file">{{ filePath }}</div>',
+    name: "GalleryMediaCarousel",
+    props: ["filePaths"],
+    template:
+      '<div data-testid="stub-detail-carousel">{{ filePaths.join(",") }}</div>',
   },
 }));
 
@@ -66,8 +67,8 @@ describe("GalleryDetailPanel", () => {
     expect(wrapper.find('[data-testid="gallery-detail-panel"]').exists()).toBe(
       true,
     );
-    expect(wrapper.find('[data-testid="stub-detail-media-file"]').text()).toBe(
-      "photo.jpg",
+    expect(wrapper.find('[data-testid="stub-detail-carousel"]').text()).toBe(
+      "photo.jpg,audio.mp3",
     );
 
     const dataFeature = wrapper.findComponent({ name: "DataFeature" });
