@@ -25,12 +25,12 @@ vi.mock("@/composables/useOptimizedImages", () => ({
   }),
 }));
 
-vi.mock("@/components/shared/MediaFile.vue", () => ({
+vi.mock("@/components/gallery/GalleryMediaCarousel.vue", () => ({
   default: {
-    name: "MediaFile",
-    props: ["filePath", "variant"],
+    name: "GalleryMediaCarousel",
+    props: ["filePaths"],
     template:
-      '<div data-testid="stub-media-file" :data-variant="variant">{{ filePath }}</div>',
+      '<div data-testid="stub-gallery-carousel">{{ filePaths.join(",") }}</div>',
   },
 }));
 
@@ -59,8 +59,10 @@ describe("GalleryTile", () => {
     });
 
     expect(wrapper.find('[data-testid="gallery-item-0"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="stub-media-file"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="stub-media-file"]').text()).toBe(
+    expect(wrapper.find('[data-testid="stub-gallery-carousel"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.find('[data-testid="stub-gallery-carousel"]').text()).toBe(
       "photo.jpg",
     );
     expect(wrapper.find(".rounded-2xl").exists()).toBe(true);
@@ -78,14 +80,9 @@ describe("GalleryTile", () => {
       global: globalConfig,
     });
 
-    expect(wrapper.find('[data-testid="stub-media-file"]').text()).toBe(
+    expect(wrapper.find('[data-testid="stub-gallery-carousel"]').text()).toBe(
       "recording.mp3",
     );
-    expect(
-      wrapper
-        .find('[data-testid="stub-media-file"]')
-        .attributes("data-variant"),
-    ).toBe("gallery");
   });
 
   it("shows a no-media placeholder when file paths are empty", () => {
@@ -108,7 +105,7 @@ describe("GalleryTile", () => {
     );
   });
 
-  it("includes a hover overlay with click-to-view-details copy", () => {
+  it("includes a hover overlay with click-to-view-details copy", async () => {
     const wrapper = mount(GalleryTile, {
       props: {
         allowedFileExtensions,
@@ -120,11 +117,48 @@ describe("GalleryTile", () => {
     });
 
     const overlay = wrapper.get('[data-testid="gallery-tile-overlay"]');
-    expect(overlay.classes()).toContain("lg:group-hover:opacity-100");
-    expect(overlay.classes()).toContain("lg:group-focus-within:opacity-100");
     expect(overlay.classes()).toContain("opacity-70");
+    expect(overlay.classes()).toContain("lg:opacity-0");
     expect(overlay.classes()).toContain("pointer-events-none");
     expect(overlay.text()).toContain("galleryClickToViewDetails");
+
+    await wrapper.trigger("mouseenter");
+    expect(overlay.classes()).toContain("opacity-100");
+
+    await wrapper.trigger("mouseleave");
+    expect(overlay.classes()).toContain("lg:opacity-0");
+  });
+
+  it("hides overlay when suppressOverlay is true", () => {
+    const wrapper = mount(GalleryTile, {
+      props: {
+        allowedFileExtensions,
+        filePaths: ["photo.jpg"],
+        mediaBasePath: "/media",
+        suppressOverlay: true,
+        testId: "gallery-item-5",
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.find('[data-testid="gallery-tile-overlay"]').exists()).toBe(
+      false,
+    );
+  });
+
+  it("emits open when the tile is clicked", async () => {
+    const wrapper = mount(GalleryTile, {
+      props: {
+        allowedFileExtensions,
+        filePaths: ["photo.jpg"],
+        mediaBasePath: "/media",
+        testId: "gallery-item-6",
+      },
+      global: globalConfig,
+    });
+
+    await wrapper.trigger("click");
+    expect(wrapper.emitted("open")).toHaveLength(1);
   });
 
   it("is keyboard focusable for the overlay affordance", () => {
