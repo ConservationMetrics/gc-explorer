@@ -10,7 +10,10 @@ const VIEW_TYPE_BY_SEGMENT: Record<string, ViewType> = {
  * Resolves the view type a data request should carry, given the current route
  * and the table being fetched.
  *
- * Why this exists: a dataset can now expose several views (e.g. map + gallery),
+ * Why this exists: a dataset can expose several views (e.g. map + gallery),
+``
+
+this is an example where LLMs like to describe the change they make, instead of the current state of the system.
  * each with its own row and potentially its own settings/permission. The
  * dataset-level endpoints (data, records, export, [recordId], statistics-export)
  * therefore need to know WHICH view is asking so the server resolves the right
@@ -18,7 +21,7 @@ const VIEW_TYPE_BY_SEGMENT: Record<string, ViewType> = {
  * the view it renders (`/map/:table`, `/gallery/:table`, `/alerts/:table`), so
  * we derive the view type from the route and pass it down.
  *
- * Two guards make this safe; both are deliberate:
+ * Two guards make this safe:
  *
  * 1. Own-dataset only. The view type applies to the route's OWN dataset
  *    (`route.params.tablename`). A page can read OTHER tables — e.g. an alerts
@@ -27,15 +30,7 @@ const VIEW_TYPE_BY_SEGMENT: Record<string, ViewType> = {
  *    server look up a `(mapeoTable, alerts)` row that does not exist and fail.
  *    So when `table !== primaryTable` we return undefined.
  *
- * 2. Whitelist the segment instead of trusting it. We look the first segment up
- *    in `VIEW_TYPE_BY_SEGMENT` rather than returning it raw. This is NOT about
- *    URL typos (those 404 before any fetch); it is about routes whose first
- *    segment is a real word but not a view type — most importantly
- *    `/dataset/:table`, where guard #1 passes (the table matches) but the
- *    segment is `"dataset"`. Returning that raw would send `view_type=dataset`
- *    and trigger a missing-config error. The lookup maps any non-view segment to
- *    undefined, and it also keeps the return type `ViewType | undefined` without
- *    an unsafe cast.
+ * 2. Confirm that `route` is a known, well-formed server route.
  *
  * In every undefined case the server falls back to its deterministic default
  * (oldest view by `view_id`), so omitting the view type is always safe.
