@@ -72,6 +72,8 @@ export const useRecordCache = () => {
       return pending.get(cacheKey)!;
     }
 
+    // resolveViewTypeForTable returns undefined on purpose (cross-table read, non-view
+    // route, missing :tablename) — callers omit view_type and the server uses its default.
     const viewType = resolveViewTypeForTable(route, table);
     const url = `/api/${table}/${recordId}`;
     const request = (
@@ -136,6 +138,7 @@ export const useRecordCache = () => {
     }
 
     try {
+      // Same as fetchRecord: undefined viewType → omit param (see useViewType.ts).
       const viewType = resolveViewTypeForTable(route, table);
       const batchPromises = batches.map((batch) =>
         $fetch<DataEntry[]>(`/api/${table}/records`, {
