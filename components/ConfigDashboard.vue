@@ -26,7 +26,6 @@ const emit = defineEmits([
 ]);
 
 const sortedViewsConfig = computed(() => {
-  // viewName is guaranteed non-null (views.view_name is NOT NULL), so no fallback.
   return [...props.viewRows].sort((first, second) => {
     return `${first.viewName}-${first.viewType}`.localeCompare(
       `${second.viewName}-${second.viewType}`,
