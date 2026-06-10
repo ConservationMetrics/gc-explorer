@@ -9,7 +9,7 @@ CREATE TABLE views (
   secondary_dataset text,
   view_config text NOT NULL,
   -- A dataset exposes each view type at most once, so (view_type, primary_dataset)
-  -- is the logical key. Enforce it in the DB so a dataset can never get two rows of
+  -- is the logical key. Enforce it in the DB so a primary_dataset can never get two rows of
   -- the same view type.
   CONSTRAINT views_view_type_primary_dataset_unique UNIQUE (view_type, primary_dataset)
 );
