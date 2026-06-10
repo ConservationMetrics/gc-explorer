@@ -26,11 +26,10 @@ const emit = defineEmits([
 ]);
 
 const sortedViewsConfig = computed(() => {
+  // viewName is guaranteed non-null (views.view_name is NOT NULL), so no fallback.
   return [...props.viewRows].sort((first, second) => {
-    const firstName = first.viewName || first.primaryDataset;
-    const secondName = second.viewName || second.primaryDataset;
-    return `${firstName}-${first.viewType}`.localeCompare(
-      `${secondName}-${second.viewType}`,
+    return `${first.viewName}-${first.viewType}`.localeCompare(
+      `${second.viewName}-${second.viewType}`,
     );
   });
 });
@@ -145,7 +144,7 @@ watch(tableNameToAdd, (newVal) => {
     >
       <div
         v-for="row in sortedViewsConfig"
-        :key="row.viewId ?? `${row.primaryDataset}-${row.viewType}`"
+        :key="row.viewId"
         data-testid="config-dataset-card"
         class="bg-violet-50 rounded-lg p-4 sm:p-6 shadow-sm border border-violet-100 overflow-hidden flex flex-col h-full"
       >
@@ -164,7 +163,7 @@ watch(tableNameToAdd, (newVal) => {
                 hyphens: auto;
               "
             >
-              {{ truncateDisplayName(row.viewName || row.primaryDataset) }}
+              {{ truncateDisplayName(row.viewName) }}
             </h2>
             <div class="h-10 mb-4">
               <p

@@ -87,8 +87,8 @@ export type ConfigRow = {
 };
 
 export type ViewConfigRow = {
-  viewId?: number | null;
-  viewName?: string | null;
+  viewId: number;
+  viewName: string;
   viewType: ViewType;
   primaryDataset: string;
   secondaryDataset?: string | null;

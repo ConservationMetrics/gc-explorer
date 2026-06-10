@@ -5,7 +5,7 @@ export const viewConfig = pgTable(
   "views",
   {
     viewId: integer("view_id").primaryKey().generatedByDefaultAsIdentity(),
-    viewName: text("view_name"),
+    viewName: text("view_name").notNull(),
     viewType: text("view_type").notNull(),
     primaryDataset: text("primary_dataset").notNull(),
     secondaryDataset: text("secondary_dataset"),
