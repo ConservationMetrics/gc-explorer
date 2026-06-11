@@ -15,7 +15,7 @@ import { escapeCSVValue } from "@/utils/csvUtils";
 import tokml from "tokml";
 
 import type { H3Event } from "h3";
-import type { DataEntry, ColumnEntry } from "@/types";
+import type { DataEntry, ColumnEntry, ViewType } from "@/types";
 import type {
   Feature,
   FeatureCollection,
@@ -141,7 +141,8 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-    const tableConfig = await fetchTableConfig(table);
+    const viewType = query.view_type as ViewType | undefined;
+    const tableConfig = await fetchTableConfig(table, viewType);
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
 

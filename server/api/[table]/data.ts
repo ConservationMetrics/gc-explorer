@@ -7,13 +7,15 @@ import {
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
+import type { ViewType } from "@/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
   const limit = parseAndValidateLimit(event);
+  const viewType = getQuery(event).view_type as ViewType | undefined;
 
   try {
-    const tableConfig = await fetchTableConfig(table);
+    const tableConfig = await fetchTableConfig(table, viewType);
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "anyone";
 
     await validatePermissions(event, permission);

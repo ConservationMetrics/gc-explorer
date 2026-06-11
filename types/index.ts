@@ -45,6 +45,10 @@ export interface ViewConfig {
   MAPBOX_BASEMAPS?: string; // JSON string of BasemapConfig[]
   MAPBOX_ZOOM?: number;
   MAPEO_CATEGORY_IDS?: string;
+  // Mirrored into the views.secondary_dataset column on save (see
+  // deriveSecondaryDataset). Not yet a single source of truth; readers still use
+  // this field. TODO(single-source-of-truth): drop once the API returns/consumes
+  // secondary_dataset.
   MAPEO_TABLE?: string;
   MAP_LEGEND_LAYER_IDS?: string;
   MEDIA_BASE_PATH?: string;
@@ -54,7 +58,6 @@ export interface ViewConfig {
   PLANET_API_KEY?: string;
   UNWANTED_COLUMNS?: string;
   UNWANTED_SUBSTRINGS?: string;
-  VIEWS?: string;
   ROUTE_LEVEL_PERMISSION?: RouteLevelPermission; // Who can access this view: anyone, signed-in, member, or admin
   TIMESTAMP_COLUMN?: string; // Column used for date-range filtering (min/max) on map and gallery
   DATASET_TABLE?: string; // Display name for the dataset/table (e.g., "Fake Alerts" instead of "fake_alerts")
@@ -66,6 +69,8 @@ export interface Views {
   [key: string]: ViewConfig;
 }
 
+export type ViewType = "alerts" | "map" | "gallery";
+
 export type AllowedFileExtensions = {
   audio: string[];
   image: string[];
@@ -73,8 +78,21 @@ export type AllowedFileExtensions = {
 };
 
 export type ConfigRow = {
-  table_name: string;
-  views_config: string;
+  view_id?: number;
+  view_name?: string | null;
+  view_type?: ViewType | null;
+  primary_dataset: string;
+  secondary_dataset?: string | null;
+  view_config: string;
+};
+
+export type ViewConfigRow = {
+  viewId: number;
+  viewName: string;
+  viewType: ViewType;
+  primaryDataset: string;
+  secondaryDataset?: string | null;
+  viewConfig: ViewConfig;
 };
 
 export type ColumnEntry = {

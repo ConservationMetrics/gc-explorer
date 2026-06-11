@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import type { Views, ViewConfig } from "@/types";
+import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 
-const viewsConfig = ref<Views>({});
+const viewRows = ref<ViewConfigRow[]>([]);
 const tableNames = ref();
 const dataFetched = ref(false);
 
-const { data, error, refresh } = await useFetch("/api/config");
+const { data, error, refresh } = await useFetch<{
+  views: ViewConfigRow[];
+  availableTables: string[];
+}>("/api/config");
 
 if (data.value && !error.value) {
-  const fetchedViewsData = data.value[0] as Views;
-  viewsConfig.value = fetchedViewsData;
-
-  const fetchedTableNames = data.value[1] as string[];
-  tableNames.value = fetchedTableNames;
+  viewRows.value = data.value.views;
+  tableNames.value = data.value.availableTables;
   dataFetched.value = true;
 } else {
   console.error("Error fetching data:", error.value);
@@ -48,10 +48,17 @@ const removeTableFromConfig = async (tableName: string) => {
   }
 };
 
-const addTableToConfig = async (tableName: string) => {
+const addTableToConfig = async ({
+  tableName,
+  viewType,
+}: {
+  tableName: string;
+  viewType: ViewType;
+}) => {
   try {
     await $fetch(`/api/config/new_table/${tableName}`, {
       method: "POST",
+      query: { view_type: viewType },
     });
   } catch (error) {
     console.error("Error adding table to config:", error);
@@ -78,7 +85,7 @@ definePageMeta({ layout: "explorer" });
   <ClientOnly v-else>
     <ConfigDashboard
       v-if="dataFetched"
-      :views-config="viewsConfig"
+      :view-rows="viewRows"
       :table-names="tableNames"
       @submit-config="submitConfig"
       @remove-table-from-config="removeTableFromConfig"

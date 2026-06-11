@@ -1,80 +1,34 @@
 <script setup lang="ts">
-import type { ViewConfig } from "@/types";
+import { Images, Map, TriangleAlert } from "lucide-vue-next";
 
 const props = defineProps<{
-  tableName: string;
-  config: ViewConfig;
-  views: Array<string>;
-  keys: Array<string>;
+  viewType: string;
 }>();
 
-const localViews = ref([...props.views]);
-
-// Watch for changes to views and emit updates
-const emit = defineEmits(["update:views"]);
-
-watch(
-  () => props.views,
-  (newViews) => {
-    localViews.value = [...newViews];
-  },
-  { deep: true },
-);
-
-function updateViews() {
-  emit("update:views", localViews.value);
-}
+/**
+ * Resolves the icon component that represents the current view type.
+ *
+ * @returns {object} The Lucide icon component for the view type.
+ */
+const viewTypeIcon = computed(() => {
+  if (props.viewType === "gallery") {
+    return Images;
+  }
+  if (props.viewType === "alerts") {
+    return TriangleAlert;
+  }
+  return Map;
+});
 </script>
 
 <template>
-  <div>
-    <div v-for="key in keys" :key="key">
-      <template v-if="key === 'VIEWS'">
-        <div class="flex flex-wrap gap-4">
-          <label class="flex items-center gap-2 cursor-pointer group">
-            <input
-              v-model="localViews"
-              type="checkbox"
-              value="map"
-              class="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
-              @change="updateViews"
-            />
-            <span
-              class="text-gray-700 font-medium group-hover:text-violet-700 transition-colors"
-            >
-              {{ $t("map") }}
-            </span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer group">
-            <input
-              v-model="localViews"
-              type="checkbox"
-              value="gallery"
-              class="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
-              @change="updateViews"
-            />
-            <span
-              class="text-gray-700 font-medium group-hover:text-violet-700 transition-colors"
-            >
-              {{ $t("gallery") }}
-            </span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer group">
-            <input
-              v-model="localViews"
-              type="checkbox"
-              value="alerts"
-              class="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
-              @change="updateViews"
-            />
-            <span
-              class="text-gray-700 font-medium group-hover:text-violet-700 transition-colors"
-            >
-              {{ $t("alerts") }}
-            </span>
-          </label>
-        </div>
-      </template>
+  <div class="flex flex-wrap gap-4">
+    <div
+      data-testid="config-view-type-display"
+      class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 font-medium"
+    >
+      <component :is="viewTypeIcon" class="w-4 h-4" />
+      <span>{{ $t(viewType) }}</span>
     </div>
   </div>
 </template>
