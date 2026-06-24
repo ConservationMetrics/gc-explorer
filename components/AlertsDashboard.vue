@@ -119,6 +119,7 @@ const calculateHectares = ref(false);
 const dateOptions = ref();
 const hasRulerControl = ref(false);
 const map = ref();
+const mapReady = ref(false);
 const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showSidebar = ref(true);
@@ -1406,6 +1407,7 @@ const prepareMapLegendContent = () => {
     }
 
     mapLegendContent.value = legendItems;
+    mapReady.value = true;
   });
 };
 
@@ -1702,7 +1704,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <div id="map"></div>
+    <div id="map" :data-map-ready="mapReady || undefined"></div>
     <button
       v-if="!showSidebar"
       class="absolute top-2.5 left-2.5 z-10 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
