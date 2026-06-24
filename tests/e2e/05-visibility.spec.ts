@@ -163,14 +163,10 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       });
       const publicUrl = authenticatedPageAsSignedIn.url();
       console.log("[TEST] Public dataset URL:", publicUrl);
-      console.log("[TEST] Waiting for gallery-container to be attached...");
-      // Wait for gallery container to be attached (like in gallery tests)
-      await authExpect(
-        authenticatedPageAsSignedIn.getByTestId("gallery-container"),
-      ).toBeVisible({ timeout: 10000 });
-      await authExpect(
-        authenticatedPageAsSignedIn.getByTestId("gallery-container"),
-      ).toBeVisible();
+      const publicResult = await waitForGalleryResult(
+        authenticatedPageAsSignedIn,
+      );
+      authExpect(publicResult.outcome).not.toBe("denied");
       console.log("[TEST] Successfully accessed public dataset");
 
       // Should be rejected from member dataset
@@ -207,16 +203,8 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       });
       const guestPublicUrl = authenticatedPageAsGuest.url();
       console.log("[TEST] Guest: Public dataset URL:", guestPublicUrl);
-      console.log(
-        "[TEST] Guest: Waiting for gallery-container to be attached...",
-      );
-      // Wait for gallery container to be attached (like in gallery tests)
-      await authExpect(
-        authenticatedPageAsGuest.getByTestId("gallery-container"),
-      ).toBeVisible({ timeout: 10000 });
-      await authExpect(
-        authenticatedPageAsGuest.getByTestId("gallery-container"),
-      ).toBeVisible();
+      const publicResult = await waitForGalleryResult(authenticatedPageAsGuest);
+      authExpect(publicResult.outcome).not.toBe("denied");
       console.log("[TEST] Guest: Successfully accessed public dataset");
 
       // Should be rejected from member dataset

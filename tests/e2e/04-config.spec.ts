@@ -160,7 +160,7 @@ test("config page - add new dataset view and edit it", async ({
       await editLink.click();
 
       // Wait for navigation to edit page
-      await page.waitForURL(`**/config/${selectedTableName}`, {
+      await page.waitForURL(`**/config/${selectedTableName}**`, {
         timeout: 10000,
       });
     } else {
@@ -189,7 +189,7 @@ test("config page - add new dataset view and edit it", async ({
 
   // 10. Wait for navigation to edit page (if we're not already there)
   if (selectedTableName) {
-    await page.waitForURL(`**/config/${selectedTableName.trim()}`, {
+    await page.waitForURL(`**/config/${selectedTableName.trim()}**`, {
       timeout: 10000,
     });
     await page.waitForLoadState("networkidle");
@@ -639,7 +639,7 @@ test("config page - form validation and change detection", async ({
       await editLink.click();
 
       // Wait for navigation to edit page
-      await page.waitForURL(`**/config/${tableNameToAdd}`, {
+      await page.waitForURL(`**/config/${tableNameToAdd}**`, {
         timeout: 10000,
       });
     } else {
@@ -651,7 +651,7 @@ test("config page - form validation and change detection", async ({
 
   // 7. Wait for navigation to edit page (if we haven't already)
   if (tableNameToAdd && !page.url().includes(`/config/${tableNameToAdd}`)) {
-    await page.waitForURL(`**/config/${tableNameToAdd}`, {
+    await page.waitForURL(`**/config/${tableNameToAdd}**`, {
       timeout: 10000,
     });
   }
