@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ViewConfig } from "@/types";
 import {
   buildViewConfigColumns,
+  fetchPublicViewTableNames,
   updateConfig,
 } from "@/server/database/dbOperations";
 
@@ -98,6 +99,25 @@ describe("buildViewConfigColumns", () => {
     );
 
     expect(columns.viewName).toBe("seed_survey_data");
+  });
+});
+
+describe("fetchPublicViewTableNames", () => {
+  it("returns public seed datasets in CI", async () => {
+    const previousCi = process.env.CI;
+    process.env.CI = "true";
+
+    try {
+      await expect(fetchPublicViewTableNames()).resolves.toEqual(
+        expect.arrayContaining(["seed_survey_data", "fake_alerts"]),
+      );
+    } finally {
+      if (previousCi === undefined) {
+        delete process.env.CI;
+      } else {
+        process.env.CI = previousCi;
+      }
+    }
   });
 });
 

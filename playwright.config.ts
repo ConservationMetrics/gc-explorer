@@ -7,9 +7,6 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 config({ path: resolve(__dirname, ".env.test.playwright") });
-config({ path: resolve(__dirname, ".env.test.compose") });
-
-const headless = process.env.PLAYWRIGHT_HEADLESS !== "false";
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -38,13 +35,13 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         baseURL: "http://localhost:8080",
-        headless,
+        headless: true,
       },
       dependencies: ["setup"],
     },
   ],
   use: {
     baseURL: "http://localhost:8080",
-    headless,
+    headless: true,
   },
 });

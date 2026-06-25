@@ -765,6 +765,16 @@ export const syncPublicViews = async (
  * Used by the open public_views API for middleware auth bypass.
  */
 export const fetchPublicViewTableNames = async (): Promise<string[]> => {
+  if (process.env.CI) {
+    return [
+      ...new Set(
+        buildCiViewConfigRows()
+          .filter((row) => row.viewConfig.ROUTE_LEVEL_PERMISSION === "anyone")
+          .map((row) => row.primaryDataset),
+      ),
+    ];
+  }
+
   const rows = await configDb
     .select({ tableName: publicViews.tableName })
     .from(publicViews);
