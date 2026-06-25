@@ -41,6 +41,7 @@ import type {
   AllowedFileExtensions,
   Basemap,
   BasemapConfig,
+  MapboxStyleConfig,
   MapLegendItem,
 } from "@/types";
 import type { Feature, FeatureCollection } from "geojson";
@@ -97,7 +98,7 @@ const props = defineProps<{
   mapboxLongitude: number;
   mapboxPitch: number | null;
   mapboxProjection: string;
-  mapboxStyle: string;
+  mapboxStyle: MapboxStyleConfig;
   mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;
@@ -760,7 +761,10 @@ const addAlertsData = async () => {
         }
 
         // Add cluster count label layer
-        if (!map.value.getLayer(`${layerId}-cluster-count`)) {
+        if (
+          map.value.getStyle().glyphs &&
+          !map.value.getLayer(`${layerId}-cluster-count`)
+        ) {
           map.value.addLayer({
             id: `${layerId}-cluster-count`,
             type: "symbol",
@@ -900,7 +904,10 @@ const addAlertsData = async () => {
     }
 
     // Add cluster count label
-    if (!map.value.getLayer(`${layerId}-cluster-count`)) {
+    if (
+      map.value.getStyle().glyphs &&
+      !map.value.getLayer(`${layerId}-cluster-count`)
+    ) {
       map.value.addLayer({
         id: `${layerId}-cluster-count`,
         type: "symbol",

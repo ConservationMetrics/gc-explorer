@@ -472,9 +472,20 @@ const buildCiViewConfigRows = (): ViewConfigRow[] => {
     process.env.MAPBOX_ACCESS_TOKEN || "{MAPBOX_ACCESS_TOKEN}";
   const mediaBasePath = process.env.MEDIA_BASE_PATH || "{MEDIA_BASE_PATH}";
   const planetApiKey = process.env.PLANET_API_KEY || "{PLANET_API_KEY}";
+  const ciMapStyle: NonNullable<ViewConfig["MAPBOX_STYLE"]> = {
+    version: 8,
+    sources: {},
+    layers: [
+      {
+        id: "background",
+        type: "background",
+        paint: { "background-color": "#f8fafc" },
+      },
+    ],
+  };
 
   const surveyConfig: ViewConfig = {
-    MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
+    MAPBOX_STYLE: ciMapStyle,
     MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
     MAPBOX_ZOOM: 16,
     MAPBOX_CENTER_LATITUDE: "3.44704",
@@ -488,7 +499,7 @@ const buildCiViewConfigRows = (): ViewConfigRow[] => {
   };
 
   const bcmformConfig: ViewConfig = {
-    MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
+    MAPBOX_STYLE: ciMapStyle,
     MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
     MAPBOX_ZOOM: 16,
     MAPBOX_CENTER_LATITUDE: "3.44704",
@@ -507,7 +518,7 @@ const buildCiViewConfigRows = (): ViewConfigRow[] => {
     MEDIA_BASE_PATH: "",
     LOGO_URL:
       "https://conservationmetrics.com/wp-content/themes/conservation-metrics/images/logo-conservation-metrics.png",
-    MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-streets-v12",
+    MAPBOX_STYLE: ciMapStyle,
     MAPBOX_PROJECTION: "globe",
     MAPBOX_CENTER_LATITUDE: "38",
     MAPBOX_CENTER_LONGITUDE: "-79",
@@ -528,7 +539,7 @@ const buildCiViewConfigRows = (): ViewConfigRow[] => {
     EMBED_MEDIA: "NO",
     MEDIA_BASE_PATH_ALERTS: "",
     MEDIA_BASE_PATH: "",
-    MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-streets-v12",
+    MAPBOX_STYLE: ciMapStyle,
     MAPBOX_PROJECTION: "globe",
     MAPBOX_CENTER_LATITUDE: "1.20",
     MAPBOX_CENTER_LONGITUDE: "34.60",

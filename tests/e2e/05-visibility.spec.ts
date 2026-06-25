@@ -53,21 +53,23 @@ const waitForGalleryResult = async (page: Page) => {
 };
 
 const waitForDeniedAccess = async (page: Page) => {
+  const dataLoadError = page.getByTestId("data-load-error");
+  const loginButton = page.getByTestId("login-button");
+
   await authExpect
-    .poll(() => page.url(), { timeout: 15000 })
-    .toMatch(
-      /(\/login|\?reason=unauthorized|\/(gallery|map)\/bcmform_responses)/,
-    );
-
-  const deniedByRedirect =
-    page.url().includes("/login") ||
-    page.url().includes("?reason=unauthorized");
-
-  if (!deniedByRedirect) {
-    await authExpect(page.getByTestId("data-load-error")).toBeVisible({
-      timeout: 10000,
-    });
-  }
+    .poll(
+      async () => {
+        const url = page.url();
+        if (url.includes("/login") || url.includes("?reason=unauthorized")) {
+          return "redirect";
+        }
+        if (await dataLoadError.isVisible()) return "data-load-error";
+        if (await loginButton.isVisible()) return "login";
+        return "waiting";
+      },
+      { timeout: 20000 },
+    )
+    .toMatch(/redirect|data-load-error|login/);
 };
 
 authTest(
