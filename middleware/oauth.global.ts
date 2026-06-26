@@ -2,22 +2,11 @@ import { defineNuxtRouteMiddleware, useRuntimeConfig } from "#imports";
 import type { User, RouteLevelPermission } from "@/types";
 import { Role } from "@/types";
 
-type ViewsConfigResponse = {
+type ConfigResponse = {
   views: Array<{
     primaryDataset: string;
     viewConfig: { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission };
   }>;
-};
-type LegacyConfigResponse = Record<
-  string,
-  { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission }
->;
-type ConfigResponse = ViewsConfigResponse | LegacyConfigResponse;
-
-const isViewsConfigResponse = (
-  response: ConfigResponse,
-): response is ViewsConfigResponse => {
-  return Array.isArray((response as Partial<ViewsConfigResponse>).views);
 };
 
 // Following example: https://github.com/atinux/atidone/blob/main/app/middleware/auth.ts
@@ -66,16 +55,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
       }
 
       const response = await $fetch<ConfigResponse>("/api/config");
-      const viewEntry = isViewsConfigResponse(response)
-        ? response.views?.find((view) => view.primaryDataset === tableName)
-        : undefined;
-      const legacyConfig = isViewsConfigResponse(response)
-        ? undefined
-        : response[tableName];
+      const viewEntry = response.views?.find(
+        (view) => view.primaryDataset === tableName,
+      );
       const permission: RouteLevelPermission =
-        viewEntry?.viewConfig?.ROUTE_LEVEL_PERMISSION ??
-        legacyConfig?.ROUTE_LEVEL_PERMISSION ??
-        "member";
+        viewEntry?.viewConfig?.ROUTE_LEVEL_PERMISSION ?? "member";
 
       // Authenticated from here on
       const typedUser = user.value as User;

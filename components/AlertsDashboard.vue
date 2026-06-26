@@ -1260,8 +1260,6 @@ const prepareMapCanvasContent = async () => {
   }
   await Promise.all(promises);
   prepareMapLegendContent();
-  // E2E tests wait for this after map layers and legend content are prepared.
-  mapReady.value = true;
 };
 
 /* Checks if all features in the alerts data are of type LineString. */
@@ -1367,54 +1365,58 @@ const handleBasemapChange = (newBasemap: Basemap) => {
 /** Prepares the map legend content based on available layers */
 const mapLegendContent = ref();
 const prepareMapLegendContent = () => {
-  const legendItems: MapLegendItem[] = [];
+  map.value.once("idle", () => {
+    const legendItems: MapLegendItem[] = [];
 
-  // Add mapeo-data layer first to ensure it's always on top
-  if (props.mapeoData) {
-    legendItems.push({
-      id: "mapeo-data",
-      name: "Mapeo data",
-      type: "circle",
-      color: mapeoDataColor.value || "#000000",
-      visible: true,
-    });
-  }
-
-  // Add most recent alerts as a single grouped entry
-  if (props.alertsData.mostRecentAlerts.features.length > 0) {
-    legendItems.push({
-      id: "most-recent-alerts",
-      name: "Most recent alerts",
-      type: "circle",
-      color: "#FF0000",
-      visible: true,
-    });
-  }
-
-  // Add previous alerts as a single grouped entry
-  if (props.alertsData.previousAlerts.features.length > 0) {
-    legendItems.push({
-      id: "previous-alerts",
-      name: "Previous alerts",
-      type: "circle",
-      color: "#FD8D3C",
-      visible: true,
-    });
-  }
-
-  // Add any additional layers from props.mapLegendLayerIds
-  if (props.mapLegendLayerIds) {
-    const additionalLayers = prepareMapLegendLayers(
-      map.value,
-      props.mapLegendLayerIds,
-      mapeoDataColor.value,
-    );
-    if (additionalLayers) {
-      legendItems.push(...(additionalLayers as MapLegendItem[]));
+    // Add mapeo-data layer first to ensure it's always on top
+    if (props.mapeoData) {
+      legendItems.push({
+        id: "mapeo-data",
+        name: "Mapeo data",
+        type: "circle",
+        color: mapeoDataColor.value || "#000000",
+        visible: true,
+      });
     }
-  }
 
-  mapLegendContent.value = legendItems;
+    // Add most recent alerts as a single grouped entry
+    if (props.alertsData.mostRecentAlerts.features.length > 0) {
+      legendItems.push({
+        id: "most-recent-alerts",
+        name: "Most recent alerts",
+        type: "circle",
+        color: "#FF0000",
+        visible: true,
+      });
+    }
+
+    // Add previous alerts as a single grouped entry
+    if (props.alertsData.previousAlerts.features.length > 0) {
+      legendItems.push({
+        id: "previous-alerts",
+        name: "Previous alerts",
+        type: "circle",
+        color: "#FD8D3C",
+        visible: true,
+      });
+    }
+
+    // Add any additional layers from props.mapLegendLayerIds
+    if (props.mapLegendLayerIds) {
+      const additionalLayers = prepareMapLegendLayers(
+        map.value,
+        props.mapLegendLayerIds,
+        mapeoDataColor.value,
+      );
+      if (additionalLayers) {
+        legendItems.push(...(additionalLayers as MapLegendItem[]));
+      }
+    }
+
+    mapLegendContent.value = legendItems;
+    // E2E tests wait for this after the idle-gated legend content is ready.
+    mapReady.value = true;
+  });
 };
 
 /**
