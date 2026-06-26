@@ -47,17 +47,25 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return;
       }
 
-      const response = await $fetch<{
-        views: Array<{
-          primaryDataset: string;
-          viewConfig: { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission };
-        }>;
-      }>("/api/config");
-      const viewEntry = response.views?.find(
-        (v) => v.primaryDataset === tableName,
-      );
+      const response = await $fetch<
+        | {
+            views: Array<{
+              primaryDataset: string;
+              viewConfig: { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission };
+            }>;
+          }
+        | Record<string, { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission }>
+      >("/api/config");
+      const viewEntry =
+        "views" in response
+          ? response.views?.find((v) => v.primaryDataset === tableName)
+          : undefined;
+      const legacyConfig =
+        "views" in response ? undefined : response[tableName];
       const permission: RouteLevelPermission =
-        viewEntry?.viewConfig?.ROUTE_LEVEL_PERMISSION ?? "member";
+        viewEntry?.viewConfig?.ROUTE_LEVEL_PERMISSION ??
+        legacyConfig?.ROUTE_LEVEL_PERMISSION ??
+        "member";
 
       // Authenticated from here on
       const typedUser = user.value as User;

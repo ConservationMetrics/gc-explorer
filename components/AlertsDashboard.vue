@@ -1260,6 +1260,8 @@ const prepareMapCanvasContent = async () => {
   }
   await Promise.all(promises);
   prepareMapLegendContent();
+  // E2E tests wait for this after map layers and legend content are prepared.
+  mapReady.value = true;
 };
 
 /* Checks if all features in the alerts data are of type LineString. */
@@ -1413,7 +1415,6 @@ const prepareMapLegendContent = () => {
   }
 
   mapLegendContent.value = legendItems;
-  mapReady.value = true;
 };
 
 /**
