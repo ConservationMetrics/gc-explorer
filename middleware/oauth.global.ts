@@ -2,6 +2,24 @@ import { defineNuxtRouteMiddleware, useRuntimeConfig } from "#imports";
 import type { User, RouteLevelPermission } from "@/types";
 import { Role } from "@/types";
 
+type ViewsConfigResponse = {
+  views: Array<{
+    primaryDataset: string;
+    viewConfig: { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission };
+  }>;
+};
+type LegacyConfigResponse = Record<
+  string,
+  { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission }
+>;
+type ConfigResponse = ViewsConfigResponse | LegacyConfigResponse;
+
+const isViewsConfigResponse = (
+  response: ConfigResponse,
+): response is ViewsConfigResponse => {
+  return Array.isArray((response as Partial<ViewsConfigResponse>).views);
+};
+
 // Following example: https://github.com/atinux/atidone/blob/main/app/middleware/auth.ts
 export default defineNuxtRouteMiddleware(async (to) => {
   const session = useUserSession();
@@ -47,21 +65,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return;
       }
 
-      const response = await $fetch<
-        | {
-            views: Array<{
-              primaryDataset: string;
-              viewConfig: { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission };
-            }>;
-          }
-        | Record<string, { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission }>
-      >("/api/config");
-      const viewEntry =
-        "views" in response
-          ? response.views?.find((v) => v.primaryDataset === tableName)
-          : undefined;
-      const legacyConfig =
-        "views" in response ? undefined : response[tableName];
+      const response = await $fetch<ConfigResponse>("/api/config");
+      const viewEntry = isViewsConfigResponse(response)
+        ? response.views?.find((view) => view.primaryDataset === tableName)
+        : undefined;
+      const legacyConfig = isViewsConfigResponse(response)
+        ? undefined
+        : response[tableName];
       const permission: RouteLevelPermission =
         viewEntry?.viewConfig?.ROUTE_LEVEL_PERMISSION ??
         legacyConfig?.ROUTE_LEVEL_PERMISSION ??
