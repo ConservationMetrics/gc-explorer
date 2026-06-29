@@ -158,33 +158,6 @@ const emitBasemapChange = () => {
           />
           {{ $t("yourMapboxStyleDefault") }}
         </label>
-        <!-- Standard Mapbox basemaps -->
-        <label>
-          <input
-            v-model="selectedBasemap"
-            type="radio"
-            :value="{
-              id: 'satellite-streets',
-              style: 'mapbox://styles/mapbox/satellite-streets-v12',
-            }"
-            name="basemap"
-            @change="emitBasemapChange"
-          />
-          {{ $t("mapboxSatellite") }}
-        </label>
-        <label>
-          <input
-            v-model="selectedBasemap"
-            type="radio"
-            :value="{
-              id: 'streets',
-              style: 'mapbox://styles/mapbox/streets-v12',
-            }"
-            name="basemap"
-            @change="emitBasemapChange"
-          />
-          {{ $t("mapboxStreets") }}
-        </label>
         <label v-if="planetApiKey">
           <input
             v-model="selectedBasemap"
