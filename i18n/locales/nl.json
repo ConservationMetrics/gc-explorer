@@ -2,7 +2,7 @@
   "accessDenied": "Toegang Geweigerd",
   "accessDeniedMessage": "U bent niet gemachtigd om de pagina te bekijken waartoe u probeerde toegang te krijgen. Neem contact op met een Guardian Connector-beheerder om uw rol te wijzigen om deze pagina te kunnen bekijken.",
   "accessPermissions": "Toegangsrechten",
-  "addBasemapOption": "Voeg basiskaart optie toe",
+  "addBackgroundMapOption": "Voeg achtergrondkaart optie toe",
   "addDescription": "Beschrijving toevoegen",
   "addNewTable": "Voeg nieuwe dataset weergave toe",
   "administration": "Beheer",

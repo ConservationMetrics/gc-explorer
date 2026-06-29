@@ -2,7 +2,7 @@
   "accessDenied": "Access Denied",
   "accessDeniedMessage": "You are not authorized to view the page you were trying to access. Please contact a Guardian Connector administrator to change your role in order to view this page.",
   "accessPermissions": "Access Permissions",
-  "addBasemapOption": "Add basemap option",
+  "addBackgroundMapOption": "Add background map option",
   "addDescription": "Add description",
   "addNewTable": "Add new dataset view",
   "administration": "Administration",

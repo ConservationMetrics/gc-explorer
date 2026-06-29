@@ -2,7 +2,7 @@
   "accessDenied": "ไม่ได้รับอนุญาตให้เข้าถึง",
   "accessDeniedMessage": "คุณไม่มีสิทธิเข้าถึงหน้าที่พยายามเปิด โปรดติดต่อผู้ดูแลระบบ Guardian Connector เพื่อปรับบทบาทของคุณจึงจะดูหน้านี้ได้",
   "accessPermissions": "สิทธิการเข้าถึง",
-  "addBasemapOption": "เพิ่มตัวเลือกแผนที่ฐาน",
+  "addBackgroundMapOption": "เพิ่มตัวเลือกแผนที่ฐาน",
   "addDescription": "เพิ่มคำอธิบาย",
   "addNewTable": "เพิ่มมุมมองชุดข้อมูลใหม่",
   "administration": "การบริหารจัดการ",

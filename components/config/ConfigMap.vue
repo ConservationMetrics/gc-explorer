@@ -71,7 +71,9 @@ const DEFAULT_BASEMAP: BasemapConfig = {
 const getConfiguredBasemaps = (): BasemapConfig[] | null => {
   if (props.config.MAPBOX_BASEMAPS) {
     try {
-      const parsed = JSON.parse(props.config.MAPBOX_BASEMAPS) as BasemapConfig[];
+      const parsed = JSON.parse(
+        props.config.MAPBOX_BASEMAPS,
+      ) as BasemapConfig[];
       if (parsed.length > 0) return parsed;
     } catch {
       // fall through to legacy/default handling
@@ -326,7 +328,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
             :disabled="!canAddBasemap"
             @click="addBasemap"
           >
-            + {{ $t("addBasemapOption") }}
+            + {{ $t("addBackgroundMapOption") }}
           </button>
         </div>
       </template>
