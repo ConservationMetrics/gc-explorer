@@ -2,13 +2,6 @@ import { defineNuxtRouteMiddleware, useRuntimeConfig } from "#imports";
 import type { User, RouteLevelPermission } from "@/types";
 import { Role } from "@/types";
 
-type ConfigResponse = {
-  views: Array<{
-    primaryDataset: string;
-    viewConfig: { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission };
-  }>;
-};
-
 // Following example: https://github.com/atinux/atidone/blob/main/app/middleware/auth.ts
 export default defineNuxtRouteMiddleware(async (to) => {
   const session = useUserSession();
@@ -54,12 +47,16 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return;
       }
 
-      const response = await $fetch<ConfigResponse>("/api/config");
-      const viewEntry = response.views?.find(
-        (view) => view.primaryDataset === tableName,
-      );
+      const response =
+        await $fetch<
+          [
+            Record<string, { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission }>,
+            string[],
+          ]
+        >("/api/config");
+      const [tableConfig] = response;
       const permission: RouteLevelPermission =
-        viewEntry?.viewConfig?.ROUTE_LEVEL_PERMISSION ?? "member";
+        tableConfig?.[tableName]?.ROUTE_LEVEL_PERMISSION ?? "member";
 
       // Authenticated from here on
       const typedUser = user.value as User;
