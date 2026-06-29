@@ -75,7 +75,7 @@ const viewTypeToAdd = ref<ViewType>(
 const handleAddNewTable = () => {
   confirmButtonDisabled.value = true;
   currentModalAction.value = "addTable";
-  modalMessage.value = t("selectTableToAdd") + ":";
+  modalMessage.value = t("selectDatasetToAdd") + ":";
   showModal.value = true;
   showModalButtons.value = true;
   showModalDropdown.value = true;

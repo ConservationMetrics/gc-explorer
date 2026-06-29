@@ -247,7 +247,7 @@
   "selectAlertDateRange": "เลือกช่วงวันที่การแจ้งเตือน",
   "selectBasemap": "เลือกแผนที่ฐาน",
   "selectDataset": "เลือกชุดข้อมูล...",
-  "selectTableToAdd": "เลือกตารางที่จะเพิ่ม",
+  "selectDatasetToAdd": "เลือกชุดข้อมูลที่จะเพิ่ม",
   "showIcons": "แสดงไอคอน",
   "showPoints": "แสดงจุด",
   "submit": "ส่ง",

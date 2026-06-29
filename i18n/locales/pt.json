@@ -243,7 +243,7 @@
   "selectAlertDateRange": "Selecione um intervalo de datas de alerta",
   "selectBasemap": "Selecione o mapa base",
   "selectDataset": "Selecionar um conjunto de dados...",
-  "selectTableToAdd": "Selecione a tabela para adicionar",
+  "selectDatasetToAdd": "Selecione o conjunto de dados para adicionar",
   "showIcons": "Mostrar Ícones",
   "showPoints": "Mostrar Pontos",
   "submit": "Enviar",
