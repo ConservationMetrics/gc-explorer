@@ -62,15 +62,21 @@ watch(terrainExaggeration, (value) => {
 });
 
 // Basemaps management
-const parseBasemaps = (): BasemapConfig[] => {
+const DEFAULT_BASEMAP: BasemapConfig = {
+  name: "Satellite Streets",
+  style: "mapbox://styles/mapbox/satellite-streets-v12",
+  isDefault: true,
+};
+
+const getConfiguredBasemaps = (): BasemapConfig[] | null => {
   if (props.config.MAPBOX_BASEMAPS) {
     try {
-      return JSON.parse(props.config.MAPBOX_BASEMAPS);
+      const parsed = JSON.parse(props.config.MAPBOX_BASEMAPS) as BasemapConfig[];
+      if (parsed.length > 0) return parsed;
     } catch {
-      return [];
+      // fall through to legacy/default handling
     }
   }
-  // Fallback to legacy MAPBOX_STYLE
   if (props.config.MAPBOX_STYLE) {
     return [
       {
@@ -80,7 +86,11 @@ const parseBasemaps = (): BasemapConfig[] => {
       },
     ];
   }
-  return [];
+  return null;
+};
+
+const parseBasemaps = (): BasemapConfig[] => {
+  return getConfiguredBasemaps() ?? [{ ...DEFAULT_BASEMAP }];
 };
 
 const basemaps = ref<BasemapConfig[]>(parseBasemaps());
@@ -89,6 +99,9 @@ const basemaps = ref<BasemapConfig[]>(parseBasemaps());
 onMounted(() => {
   basemaps.value = parseBasemaps();
   ensureDefault();
+  if (!getConfiguredBasemaps()) {
+    saveBasemaps();
+  }
 });
 
 watch(

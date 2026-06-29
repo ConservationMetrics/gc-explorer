@@ -89,6 +89,51 @@ describe("ConfigMap component", () => {
     expect(vm.basemaps[0].isDefault).toBe(true);
   });
 
+  it("populates Satellite Streets default when no basemap config exists", async () => {
+    const emptyConfig = {
+      MAPBOX_ACCESS_TOKEN: "",
+      MAPBOX_ZOOM: 10,
+      MAPBOX_CENTER_LATITUDE: "10",
+      MAPBOX_CENTER_LONGITUDE: "10",
+      MAPBOX_PROJECTION: "mercator",
+      MAPBOX_BEARING: 0,
+      MAPBOX_PITCH: 0,
+      MAPBOX_3D: false,
+    } as ViewConfig;
+
+    const wrapper = mount(ConfigMap, {
+      props: { ...baseProps, config: emptyConfig },
+      global: globalConfig,
+    });
+
+    await wrapper.vm.$nextTick();
+
+    const vm = wrapper.vm as unknown as {
+      basemaps: Array<{ name: string; style: string; isDefault: boolean }>;
+    };
+
+    expect(vm.basemaps).toHaveLength(1);
+    expect(vm.basemaps[0].name).toBe("Satellite Streets");
+    expect(vm.basemaps[0].style).toBe(
+      "mapbox://styles/mapbox/satellite-streets-v12",
+    );
+    expect(vm.basemaps[0].isDefault).toBe(true);
+
+    const emitted = wrapper.emitted("updateConfig");
+    expect(emitted).toBeTruthy();
+    const basemapsPayload = emitted?.find(
+      (e) => (e[0] as { MAPBOX_BASEMAPS?: string }).MAPBOX_BASEMAPS,
+    )?.[0] as { MAPBOX_BASEMAPS: string };
+    expect(basemapsPayload).toBeTruthy();
+    expect(JSON.parse(basemapsPayload.MAPBOX_BASEMAPS)).toEqual([
+      {
+        name: "Satellite Streets",
+        style: "mapbox://styles/mapbox/satellite-streets-v12",
+        isDefault: true,
+      },
+    ]);
+  });
+
   it("parses MAPBOX_BASEMAPS from config", () => {
     const configWithBasemaps = {
       ...baseProps.config,
