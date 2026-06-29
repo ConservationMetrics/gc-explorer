@@ -278,7 +278,7 @@ const handleSubmit = () => {
             @click="$emit('removeTableFromConfig', tableName)"
           >
             <Trash2 class="w-5 h-5" />
-            {{ $t("removeTable") }}
+            {{ $t("removeDatasetView") }}
           </button>
         </div>
       </form>

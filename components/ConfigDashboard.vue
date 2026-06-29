@@ -84,14 +84,14 @@ const handleAddNewTable = () => {
 const handleConfirmButton = () => {
   if (currentModalAction.value === "removeTable") {
     emit("removeTableFromConfig", tableNameToRemove.value);
-    modalMessage.value = t("tableRemovedFromViews") + "!";
+    modalMessage.value = t("datasetViewRemovedFromViews") + "!";
   } else if (currentModalAction.value === "addTable") {
     tableNameToAdd.value = tableNameToAdd.value.trim();
     emit("addTableToConfig", {
       tableName: tableNameToAdd.value,
       viewType: viewTypeToAdd.value,
     });
-    modalMessage.value = t("tableAddedToViews") + "!";
+    modalMessage.value = t("datasetViewAddedToViews") + "!";
     showModalDropdown.value = false;
   }
   showModalButtons.value = false;

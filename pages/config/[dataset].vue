@@ -102,11 +102,11 @@ const tableNameToRemove = ref<string | null>(null);
 const handleRemoveTableFromConfig = (tableName: string) => {
   tableNameToRemove.value = tableName;
   modalMessage.value =
-    t("removeTableAreYouSure") +
+    t("removeDatasetViewAreYouSure") +
     ": <strong>" +
     tableName +
     "</strong>?<br><br><em>" +
-    t("tableRemovedNote") +
+    t("datasetViewRemovedNote") +
     ".</em>";
   showModal.value = true;
   showModalButtons.value = true;
@@ -123,7 +123,7 @@ const handleConfirmRemove = async () => {
       });
       // Hide buttons and update message to show success
       showModalButtons.value = false;
-      modalMessage.value = t("tableRemovedFromViews") + "!";
+      modalMessage.value = t("datasetViewRemovedFromViews") + "!";
       // Ensure DOM updates before continuing
       await nextTick();
       // Wait 3 seconds to show success message, then navigate
