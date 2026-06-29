@@ -269,7 +269,7 @@ const handleSubmit = () => {
             }"
           >
             <Check class="w-5 h-5" />
-            {{ $t("submit") }}
+            {{ $t("save") }}
           </button>
           <button
             type="button"

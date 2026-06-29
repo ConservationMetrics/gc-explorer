@@ -238,6 +238,7 @@
   "rowLimitReachedMessage": "Este conjunto de datos excede el número máximo de registros que se pueden mostrar. Solo se muestran los primeros {limit} registros en esta vista.",
   "returnToHome": "Volver al inicio",
   "satelliteUsedForDetection": "Satélite utilizado para la detección",
+  "save": "Guardar",
   "searchDatasets": "Buscar conjuntos de datos...",
   "selectAlertDateRange": "Seleccione un rango de fechas de alerta",
   "selectBasemap": "Seleccione el mapa base",

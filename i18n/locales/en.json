@@ -242,6 +242,7 @@
   "rowLimitReachedMessage": "This dataset exceeds the maximum number of records that can be displayed. Only the first {limit} records are shown in this view.",
   "returnToHome": "Return to home",
   "satelliteUsedForDetection": "Satellite used for detection",
+  "save": "Save",
   "searchDatasets": "Search datasets...",
   "selectAlertDateRange": "Select an alert date range",
   "selectBasemap": "Select basemap",

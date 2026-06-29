@@ -242,6 +242,7 @@
   "rowLimitReachedMessage": "ชุดข้อมูลนี้เกินจำนวนระเบียนสูงสุดที่แสดงได้ แสดงเฉพาะ {limit} ระเบียบแรกในมุมมองนี้",
   "returnToHome": "กลับหน้าแรก",
   "satelliteUsedForDetection": "ดาวเทียมที่ใช้ในการตรวจจับ",
+  "save": "บันทึก",
   "searchDatasets": "ค้นหาชุดข้อมูล...",
   "selectAlertDateRange": "เลือกช่วงวันที่การแจ้งเตือน",
   "selectBasemap": "เลือกแผนที่ฐาน",
