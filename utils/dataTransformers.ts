@@ -186,8 +186,7 @@ export const transformAlertEntry = (
 
   const parsedCoords = tryParseDataEntryGeoCoordinates(entry);
   if (parsedCoords) {
-    result.geographicCentroid =
-      calculateCentroidFromParsedCoords(parsedCoords);
+    result.geographicCentroid = calculateCentroidFromParsedCoords(parsedCoords);
   }
 
   if (entry.data_source === "Global Forest Watch") {
