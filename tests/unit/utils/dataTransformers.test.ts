@@ -10,6 +10,8 @@ import {
 import { alertsData } from "@/tests/unit/fixtures/alertsData";
 import { mapeoData } from "@/tests/unit/fixtures/mapeoData";
 
+const coordPattern = /^-?\d{1,3}\.\d+, -?\d{1,3}\.\d+$/;
+
 describe("transformSurveyDataKey", () => {
   it("should remove g__ prefix and replace with geo", () => {
     expect(transformSurveyDataKey("g__coordinates")).toBe("geocoordinates");
@@ -195,6 +197,12 @@ describe("transformAlertEntry", () => {
     expect(result).not.toHaveProperty("g__coordinates");
   });
 
+  it("should compute geographicCentroid for Google Maps link", () => {
+    const result = transformAlertEntry(rawAlert, table);
+
+    expect(result.geographicCentroid).toMatch(coordPattern);
+  });
+
   it("should handle GFW records without proprietary fields", () => {
     const gfwAlert = {
       ...rawAlert,
@@ -208,5 +216,6 @@ describe("transformAlertEntry", () => {
     expect(result).not.toHaveProperty("territory");
     expect(result).not.toHaveProperty("t0_url");
     expect(result).not.toHaveProperty("alertAreaHectares");
+    expect(result.geographicCentroid).toMatch(coordPattern);
   });
 });

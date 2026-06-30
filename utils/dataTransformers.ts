@@ -1,3 +1,7 @@
+import {
+  calculateCentroidFromParsedCoords,
+  tryParseDataEntryGeoCoordinates,
+} from "@/utils/geoUtils";
 import type { DataEntry } from "@/types";
 
 const SATELLITE_LOOKUP: Record<string, string> = {
@@ -179,6 +183,11 @@ export const transformAlertEntry = (
     ? `${entry.day_detec}-${formattedMonth}-${entry.year_detec}`
     : `${formattedMonth}-${entry.year_detec}`;
   result.alertDetectionRange = `${entry.date_start_t1} to ${entry.date_end_t1}`;
+
+  const parsedCoords = tryParseDataEntryGeoCoordinates(entry);
+  if (parsedCoords) {
+    result.geographicCentroid = calculateCentroidFromParsedCoords(parsedCoords);
+  }
 
   if (entry.data_source === "Global Forest Watch") {
     return result;
