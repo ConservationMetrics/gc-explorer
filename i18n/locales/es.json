@@ -2,7 +2,7 @@
   "accessDenied": "Acceso Denegado",
   "accessDeniedMessage": "No está autorizado para ver la página a la que intentaba acceder. Por favor, contacte a un administrador de Guardian Connector para cambiar su rol y poder ver esta página.",
   "accessPermissions": "Permisos de Acceso",
-  "addBasemapOption": "Agregar opción de mapa base",
+  "addBackgroundMapOption": "Agregar opción de mapa de fondo",
   "addDescription": "Agregar descripción",
   "addNewTable": "Agregar nueva vista de conjunto de datos",
   "administration": "Administración",
