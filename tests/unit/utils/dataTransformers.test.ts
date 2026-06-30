@@ -195,6 +195,13 @@ describe("transformAlertEntry", () => {
     expect(result).not.toHaveProperty("g__coordinates");
   });
 
+  it("should compute geographicCentroid for Google Maps link", () => {
+    const result = transformAlertEntry(rawAlert, table);
+    const coordPattern = /^-?\d{1,3}\.\d+, -?\d{1,3}\.\d+$/;
+
+    expect(result.geographicCentroid).toMatch(coordPattern);
+  });
+
   it("should handle GFW records without proprietary fields", () => {
     const gfwAlert = {
       ...rawAlert,
@@ -208,5 +215,6 @@ describe("transformAlertEntry", () => {
     expect(result).not.toHaveProperty("territory");
     expect(result).not.toHaveProperty("t0_url");
     expect(result).not.toHaveProperty("alertAreaHectares");
+    expect(result.geographicCentroid).toMatch(/^-?\d{1,3}\.\d+, -?\d{1,3}\.\d+$/);
   });
 });
