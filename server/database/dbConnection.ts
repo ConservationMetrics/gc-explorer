@@ -42,7 +42,7 @@ const createConfigConnection = () => {
     ssl: useSSL ? { rejectUnauthorized: false } : false,
   });
 
-  return drizzle(queryClient, { schema });
+  return { db: drizzle(queryClient, { schema }), client: queryClient };
 };
 
 // Create connection for warehouse database
@@ -80,7 +80,9 @@ const createWarehouseConnection = () => {
   return drizzle(queryClient, { schema });
 };
 
-export const configDb = createConfigConnection();
+const configConnection = createConfigConnection();
+export const configDb = configConnection.db;
+export const configPg = configConnection.client;
 export const warehouseDb = createWarehouseConnection();
 
 export { schema };

@@ -8,6 +8,8 @@ services:
     depends_on:
       database:
         condition: service_healthy
+    volumes:
+      - ./tests/db-seed/guardianconnector.sql:/app/tests/db-seed/guardianconnector.sql:ro
     environment:
       # All the NUXT_DB_* refer to  connection details from the 'database' service below
       NUXT_DB_HOST: database
@@ -45,7 +47,8 @@ services:
       # Initialize DB on first container startup
       #   /docker-entrypoint-initdb.d is a special directory recognized by Postgres:
       #   If the data directory is empty postgres will run these files.
-      - ./tests/db-seed:/docker-entrypoint-initdb.d:ro
+      # Warehouse seed only — guardianconnector fixtures run after Nitro migrations (see backend volume)
+      - ./tests/db-seed/warehouse.sql:/docker-entrypoint-initdb.d/warehouse.sql:ro
       # Persist database data after first container startup
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -63,9 +66,7 @@ services:
         # Create guardianconnector database
         echo '🔍 Creating guardianconnector database...'
         psql -U testuser -d test_warehouse -c 'CREATE DATABASE guardianconnector;' || echo 'guardianconnector database may already exist'
-        # Initialize guardianconnector database with our schema
-        echo '🔍 Initializing guardianconnector database...'
-        psql -U testuser -d guardianconnector -f /docker-entrypoint-initdb.d/guardianconnector.sql
+        # guardianconnector fixtures are seeded after Drizzle migrations at Nitro startup
         # Log the database state
         echo '🔍 Database initialization complete'
         echo '🔍 Available databases:'
@@ -85,8 +86,8 @@ services:
         echo '🔍 mapeo_data table (first 3 rows):'
         psql -U testuser -d test_warehouse -c 'SELECT * FROM mapeo_data LIMIT 3;' || echo 'mapeo_data table does not exist'
         echo '🔍 guardianconnector tables:'
-        echo '🔍 view_config table (first 3 rows):'
-        psql -U testuser -d guardianconnector -c 'SELECT * FROM view_config LIMIT 3;' || echo 'view_config table does not exist'
+        echo '🔍 views table (first 3 rows):'
+        psql -U testuser -d guardianconnector -c 'SELECT * FROM views LIMIT 3;' || echo 'views table does not exist yet (seeded after Nitro migrations)'
         echo '🔍 annotated_collections table (first 3 rows):'
         psql -U testuser -d guardianconnector -c 'SELECT * FROM annotated_collections LIMIT 3;' || echo 'annotated_collections table does not exist'
         echo '🔍 incidents table (first 3 rows):'
