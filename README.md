@@ -60,11 +60,8 @@ $ pnpm db:migrate
 $ pnpm db:studio
 ```
 
-**Production (Docker):**
-Migrations run automatically when the container starts using the `migrate-and-start.sh` script.
-
-**CI/Testing:**
-Migrations are skipped automatically when `CI=true` is set.
+**Production (Docker), CI, and local dev:**
+Migrations run for every environment automatically when the Nuxt/Nitro server starts (`server/plugins/migrate.ts`).
 
 ## Deployment
 

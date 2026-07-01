@@ -32,7 +32,7 @@ FROM node:20.15.0-slim AS production
 # Set the working directory
 WORKDIR /app
 
-# Install pnpm (needed for migrations)
+# Install pnpm
 RUN npm install -g pnpm@10
 
 # Copy package files
@@ -41,19 +41,12 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Install only production dependencies
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
-# Install drizzle-kit for migrations (needed by migrate-and-start.sh)
-# Note: This may install some devDependencies, but they're needed for migrations
-RUN pnpm add drizzle-kit@^0.31.5 --save-dev --ignore-scripts
-
 # Copy built application from builder stage
 COPY --from=builder /app/.output ./.output
 
-# Copy migration script
+# Copy startup script and SQL migrations (Nitro plugin reads these at runtime)
 COPY --from=builder /app/migrate-and-start.sh ./migrate-and-start.sh
-
-# Copy drizzle config and migrations (needed for migrations)
-COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
-COPY --from=builder /app/server/database ./server/database
+COPY --from=builder /app/server/database/migrations ./server/database/migrations
 
 # Expose and set port 8080
 EXPOSE 8080
