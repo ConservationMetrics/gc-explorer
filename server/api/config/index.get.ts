@@ -18,9 +18,6 @@ export default defineEventHandler(async (event: H3Event) => {
     const filteredTableNames = tableNames.filter(
       (name) => !configuredDatasets.has(name),
     );
-    if (process.env.CI) {
-      filteredTableNames.push("seed_survey_data");
-    }
     return { views: viewRows, availableTables: filteredTableNames };
   } catch (error) {
     if (error instanceof Error) {

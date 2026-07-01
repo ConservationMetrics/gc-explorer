@@ -53,10 +53,6 @@ export const parseBasemaps = (tableConfig: ViewConfig): ParsedBasemaps => {
 
 /** Retrieves table names from the database, excluding those with metadata, columns, and PostGIS-related entries. */
 export const getFilteredTableNames = async () => {
-  if (process.env.CI) {
-    return ["fake_alerts", "bcmform_responses"];
-  }
-
   let tableNames = await fetchTableNames();
   tableNames = tableNames.filter(
     (name) =>
