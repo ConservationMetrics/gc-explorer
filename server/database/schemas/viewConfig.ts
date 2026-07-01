@@ -1,4 +1,10 @@
-import { integer, pgTable, text, unique, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  integer,
+  pgTable,
+  text,
+  unique,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 // Guardian Connector views table.
 export const viewConfig = pgTable(

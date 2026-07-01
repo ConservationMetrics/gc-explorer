@@ -79,10 +79,7 @@
         "views_view_type_primary_dataset_unique": {
           "name": "views_view_type_primary_dataset_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "view_type",
-            "primary_dataset"
-          ]
+          "columns": ["view_type", "primary_dataset"]
         }
       },
       "policies": {},
@@ -234,12 +231,8 @@
           "name": "collection_entries_collection_id_annotated_collections_id_fk",
           "tableFrom": "collection_entries",
           "tableTo": "annotated_collections",
-          "columnsFrom": [
-            "collection_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["collection_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -249,11 +242,7 @@
         "collection_entries_collection_id_source_table_source_id_unique": {
           "name": "collection_entries_collection_id_source_table_source_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "collection_id",
-            "source_table",
-            "source_id"
-          ]
+          "columns": ["collection_id", "source_table", "source_id"]
         }
       },
       "policies": {},
@@ -337,12 +326,8 @@
           "name": "incidents_collection_id_annotated_collections_id_fk",
           "tableFrom": "incidents",
           "tableTo": "annotated_collections",
-          "columnsFrom": [
-            "collection_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["collection_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
