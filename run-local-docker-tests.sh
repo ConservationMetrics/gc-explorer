@@ -64,7 +64,10 @@ echo "📋 Recent logs from database:"
 docker compose -f docker-compose.tests.yml logs --tail=20 database
 
 echo "🎯 Services are ready for testing!"
-echo "You can now run your tests or inspect the services."
+echo "Run E2E tests against the Docker stack:"
+echo "  NUXT_TEST=true pnpm test:e2e"
+echo ""
+echo "You can also inspect the services."
 echo ""
 echo "📋 To view logs:"
 echo "  Backend logs: docker compose -f docker-compose.tests.yml logs -f backend"
