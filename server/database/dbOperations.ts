@@ -72,7 +72,7 @@ const createDuplicateViewError = (table: string, viewType: ViewType) => {
 /**
  * Derives a view's secondary dataset (its Mapeo table) from its config. This is
  * the single source for the `MAPEO_TABLE` → `secondary_dataset` mapping, shared by
- * every place that builds a view row (live writes and the CI seed) so the column
+ * every place that builds a view row (live writes and the test fixture seed) so the column
  * can never drift from the config field it mirrors: only alerts views have a
  * secondary dataset, and a blank value normalizes to null.
  *

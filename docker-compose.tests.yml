@@ -8,8 +8,6 @@ services:
     depends_on:
       database:
         condition: service_healthy
-    volumes:
-      - ./tests/db-seed/guardianconnector.sql:/app/tests/db-seed/guardianconnector.sql:ro
     environment:
       # All the NUXT_DB_* refer to  connection details from the 'database' service below
       NUXT_DB_HOST: database
@@ -17,12 +15,12 @@ services:
       NUXT_DB_USER: testuser
       NUXT_DB_PASSWORD: testpassword
       NUXT_DATABASE: test_warehouse
+      NUXT_TEST: "true"
       # Add the secrets from GitHub Actions
       NUXT_PUBLIC_AUTH_STRATEGY: ${NUXT_PUBLIC_AUTH_STRATEGY:-auth0}
       NUXT_SESSION_SECRET: ${NUXT_SESSION_SECRET}
       NUXT_SESSION_PASSWORD: ${NUXT_SESSION_SECRET}
       NUXT_PORT: 8080
-      CI: "true"
       BASE_URL: http://localhost:8080
       MAPBOX_ACCESS_TOKEN: ${MAPBOX_ACCESS_TOKEN}
       MEDIA_BASE_PATH: ${MEDIA_BASE_PATH}
@@ -39,6 +37,8 @@ services:
 
   database:
     image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:5433:5432"
     environment:
       - POSTGRES_DB=test_warehouse
       - POSTGRES_USER=testuser
@@ -47,7 +47,7 @@ services:
       # Initialize DB on first container startup
       #   /docker-entrypoint-initdb.d is a special directory recognized by Postgres:
       #   If the data directory is empty postgres will run these files.
-      # Warehouse seed only — guardianconnector fixtures run after Nitro migrations (see backend volume)
+      # Warehouse seed only — guardianconnector fixtures are seeded by Playwright globalSetup
       - ./tests/db-seed/warehouse.sql:/docker-entrypoint-initdb.d/warehouse.sql:ro
       # Persist database data after first container startup
       - db_data:/var/lib/postgresql/data
@@ -66,7 +66,7 @@ services:
         # Create guardianconnector database
         echo '🔍 Creating guardianconnector database...'
         psql -U testuser -d test_warehouse -c 'CREATE DATABASE guardianconnector;' || echo 'guardianconnector database may already exist'
-        # guardianconnector fixtures are seeded after Drizzle migrations at Nitro startup
+        # guardianconnector fixtures are seeded by Playwright globalSetup after migrations
         # Log the database state
         echo '🔍 Database initialization complete'
         echo '🔍 Available databases:'
@@ -87,7 +87,7 @@ services:
         psql -U testuser -d test_warehouse -c 'SELECT * FROM mapeo_data LIMIT 3;' || echo 'mapeo_data table does not exist'
         echo '🔍 guardianconnector tables:'
         echo '🔍 views table (first 3 rows):'
-        psql -U testuser -d guardianconnector -c 'SELECT * FROM views LIMIT 3;' || echo 'views table does not exist yet (seeded after Nitro migrations)'
+        psql -U testuser -d guardianconnector -c 'SELECT * FROM views LIMIT 3;' || echo 'views table does not exist yet (seeded by Playwright globalSetup)'
         echo '🔍 annotated_collections table (first 3 rows):'
         psql -U testuser -d guardianconnector -c 'SELECT * FROM annotated_collections LIMIT 3;' || echo 'annotated_collections table does not exist'
         echo '🔍 incidents table (first 3 rows):'
