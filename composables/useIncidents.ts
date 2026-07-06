@@ -32,7 +32,9 @@ type IncidentDetailsResponse = {
  * @param map - Ref to the Mapbox map instance for feature highlighting and selection
  * @param route - Vue Router route object for accessing route parameters (e.g., table name)
  * @param router - Vue Router instance for programmatic navigation and query param management
- * @param apiKey - API key for authenticating requests to the incidents API
+ * @param mapLegendLayerIds - Optional comma-separated layer ids selectable for incidents.
+ * @param primaryDatasetRef - Alerts dataset table returned by the view API.
+ * @param secondaryDatasetRef - Optional Mapeo dataset table returned by the view API.
  * @returns Object containing all incidents state and functions
  */
 export const useIncidents = (
@@ -40,7 +42,8 @@ export const useIncidents = (
   route: RouteLocationNormalizedLoaded,
   router: Router,
   mapLegendLayerIds?: Ref<string | undefined>,
-  mapeoTableRef?: Ref<string | undefined>,
+  primaryDatasetRef?: Ref<string | undefined>,
+  secondaryDatasetRef?: Ref<string | null | undefined>,
 ) => {
   // Incidents state management
   const incidents = ref<AnnotatedCollection[]>([]);
@@ -110,6 +113,8 @@ export const useIncidents = (
    * @returns Alerts table slug string or undefined.
    */
   const getCurrentAlertsTable = (): string | undefined => {
+    if (primaryDatasetRef?.value) return primaryDatasetRef.value;
+
     const tableRaw = route.params.tablename;
     if (!tableRaw) return undefined;
     return Array.isArray(tableRaw) ? tableRaw.join("/") : String(tableRaw);
@@ -120,7 +125,7 @@ export const useIncidents = (
    * is the warehouse table name (often the view’s MAPEO_TABLE, or `mapeo_data`)
    */
   const savedEntryIsMapeo = (entry: CollectionEntry): boolean => {
-    const configuredMapeoTable = mapeoTableRef?.value;
+    const configuredMapeoTable = secondaryDatasetRef?.value;
     return (
       entry.source_table === "mapeo_data" ||
       (!!configuredMapeoTable && entry.source_table === configuredMapeoTable)
@@ -1064,8 +1069,8 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
    * Determines source table from layer ID and route params, extracts source ID from feature properties
    *
    * Source table determination logic:
-   * - For alert layers (containing "most-recent-alerts" or "previous-alerts"): Uses the table name from route params; feature_type "alert".
-   * - For Mapeo layers (layerId.startsWith("mapeo-data")): Uses mapeoTableRef from view config; feature_type "mapeo".
+   * - For alert layers (containing "most-recent-alerts" or "previous-alerts"): Uses the primary dataset; feature_type "alert".
+   * - For Mapeo layers (layerId.startsWith("mapeo-data")): Uses the secondary dataset; feature_type "mapeo".
    *
    * Source ID extraction:
    * - For alerts: Uses feature.properties.alertID
@@ -1081,20 +1086,19 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
     let sourceId = "";
     let featureType: CollectionEntryInput["feature_type"] = "alert";
 
-    const tableRaw = route.params.tablename;
-    const tableName = Array.isArray(tableRaw) ? tableRaw.join("/") : tableRaw;
+    const tableName = getCurrentAlertsTable();
 
     if (
       layerId.includes("most-recent-alerts") ||
       layerId.includes("previous-alerts")
     ) {
-      sourceTable = (tableName as string) || "";
+      sourceTable = tableName || "";
       featureType = "alert";
     } else if (layerId.startsWith("mapeo-data")) {
-      sourceTable = mapeoTableRef?.value ?? "";
+      sourceTable = secondaryDatasetRef?.value ?? "";
       featureType = "mapeo";
     } else if (isAdditionalSelectableLayer(layerId)) {
-      sourceTable = (tableName as string) || "";
+      sourceTable = tableName || "";
       featureType = "alert";
     }
 
@@ -1489,10 +1493,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
     const hasHighlightedSources =
       incidentModeEnabled.value &&
       (highlightedSources.value.length > 0 || selectedSources.value.length > 0);
-    const tableRaw = route.params.tablename;
-    const currentAlertsTable = Array.isArray(tableRaw)
-      ? tableRaw.join("/")
-      : (tableRaw as string | undefined);
+    const currentAlertsTable = getCurrentAlertsTable();
     // If we have a selected incident, use that (for viewing incident details)
     if (hasSelectedIncident) {
       // Clear old cluster IDs before re-finding (clusters may have merged with new IDs)
@@ -1560,10 +1561,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
     if (!map.value) return;
     if (!entries || entries.length === 0) return;
 
-    const tableRaw = route.params.tablename;
-    const currentAlertsTable = Array.isArray(tableRaw)
-      ? tableRaw.join("/")
-      : (tableRaw as string | undefined);
+    const currentAlertsTable = getCurrentAlertsTable();
 
     const alertLayers = [
       "most-recent-alerts-polygon",
