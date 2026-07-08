@@ -65,21 +65,6 @@ describe("buildViewConfigColumns", () => {
     expect(galleryColumns.secondaryDataset).toBeNull();
   });
 
-  it("does not include a VIEWS key in the serialized view config", () => {
-    const config: ViewConfig = {
-      DATASET_TABLE: "Survey",
-      MAPBOX_ZOOM: 16,
-    };
-
-    const columns = buildViewConfigColumns(
-      "seed_survey_data",
-      config,
-      "gallery",
-    );
-
-    expect(JSON.parse(columns.viewConfig)).not.toHaveProperty("VIEWS");
-  });
-
   it("falls back to primaryDataset for viewName when DATASET_TABLE is absent", () => {
     const config: ViewConfig = { MAPBOX_ZOOM: 16 };
 

@@ -90,9 +90,8 @@ const deriveSecondaryDatasetFromConfig = (
  * @returns {ViewConfig} Settings safe to serialize into views.view_config.
  */
 const toStoredViewConfig = (config: ViewConfig): ViewConfig => {
-  const storedConfig = { ...config } as ViewConfig & { VIEWS?: unknown };
+  const storedConfig = { ...config };
   delete storedConfig.MAPEO_TABLE;
-  delete storedConfig.VIEWS;
   return storedConfig;
 };
 
