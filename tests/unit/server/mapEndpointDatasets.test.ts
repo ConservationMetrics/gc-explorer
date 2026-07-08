@@ -31,7 +31,7 @@ const hoisted = vi.hoisted(() => {
     fetchData: vi.fn(),
     fetchTableConfig: vi.fn(),
     fetchTableSqlColumns: vi.fn(),
-    fetchViewDatasets: vi.fn(),
+    fetchViewTables: vi.fn(),
     filterGeoData: vi.fn(),
     filterOutUnwantedValues: vi.fn(),
     parseAndValidateLimit: vi.fn(),
@@ -45,7 +45,7 @@ vi.mock("@/server/database/dbOperations", () => ({
   fetchData: hoisted.fetchData,
   fetchTableConfig: hoisted.fetchTableConfig,
   fetchTableSqlColumns: hoisted.fetchTableSqlColumns,
-  fetchViewDatasets: hoisted.fetchViewDatasets,
+  fetchViewTables: hoisted.fetchViewTables,
 }));
 
 vi.mock("@/server/dataProcessing/dataFilters", () => ({
@@ -83,9 +83,9 @@ describe("map endpoint datasets", () => {
       FRONT_END_FILTER_COLUMN: "category",
       ROUTE_LEVEL_PERMISSION: "anyone",
     });
-    hoisted.fetchViewDatasets.mockResolvedValue({
-      primaryDataset: "map_dataset",
-      secondaryDataset: null,
+    hoisted.fetchViewTables.mockResolvedValue({
+      primaryTable: "map_dataset",
+      secondaryTable: null,
     });
     hoisted.fetchTableSqlColumns.mockResolvedValue([
       "_id",
@@ -128,7 +128,7 @@ describe("map endpoint datasets", () => {
     });
 
     expect(hoisted.fetchTableConfig).toHaveBeenCalledWith("route_map", "map");
-    expect(hoisted.fetchViewDatasets).toHaveBeenCalledWith("route_map", "map");
+    expect(hoisted.fetchViewTables).toHaveBeenCalledWith("route_map", "map");
     expect(hoisted.fetchTableSqlColumns).toHaveBeenCalledWith("map_dataset");
     expect(hoisted.fetchData).toHaveBeenCalledWith("map_dataset", {
       limit: 25,

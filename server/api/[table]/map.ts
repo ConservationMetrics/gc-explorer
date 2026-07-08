@@ -2,7 +2,7 @@ import {
   fetchData,
   fetchTableConfig,
   fetchTableSqlColumns,
-  fetchViewDatasets,
+  fetchViewTables,
 } from "@/server/database/dbOperations";
 import {
   filterOutUnwantedValues,
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
   try {
     const tableConfig = await fetchTableConfig(table, "map");
-    const { primaryDataset } = await fetchViewDatasets(table, "map");
+    const { primaryTable } = await fetchViewTables(table, "map");
 
     // Check visibility permissions
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event: H3Event) => {
     const timestampColumn = tableConfig.TIMESTAMP_COLUMN;
     const filterByColumn = tableConfig.FILTER_BY_COLUMN;
 
-    const tableSqlColumns = await fetchTableSqlColumns(primaryDataset);
+    const tableSqlColumns = await fetchTableSqlColumns(primaryTable);
     const dateLikeColumns = tableSqlColumns.filter((column) =>
       /(date|time|created|modified|updated)/i.test(column),
     );
@@ -62,7 +62,7 @@ export default defineEventHandler(async (event: H3Event) => {
         ].filter((column): column is string => Boolean(column)),
       ),
     );
-    const { mainData } = await fetchData(primaryDataset, {
+    const { mainData } = await fetchData(primaryTable, {
       limit,
       mainColumns,
     });
@@ -118,8 +118,8 @@ export default defineEventHandler(async (event: H3Event) => {
       mediaBasePathIcons: tableConfig.MEDIA_BASE_PATH_ICONS,
       mediaColumn: tableConfig.MEDIA_COLUMN,
       planetApiKey: tableConfig.PLANET_API_KEY,
-      primary_dataset: primaryDataset,
-      table: primaryDataset,
+      primary_dataset: primaryTable,
+      table: primaryTable,
       rowLimitReached: mainData.length >= limit,
       routeLevelPermission: tableConfig.ROUTE_LEVEL_PERMISSION,
     };

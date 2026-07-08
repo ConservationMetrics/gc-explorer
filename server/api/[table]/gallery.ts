@@ -2,7 +2,7 @@ import {
   fetchData,
   fetchTableConfig,
   fetchTableSqlColumns,
-  fetchViewDatasets,
+  fetchViewTables,
 } from "@/server/database/dbOperations";
 import {
   filterDataByExtension,
@@ -27,7 +27,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
   try {
     const tableConfig = await fetchTableConfig(table, "gallery");
-    const { primaryDataset } = await fetchViewDatasets(table, "gallery");
+    const { primaryTable } = await fetchViewTables(table, "gallery");
 
     // Check visibility permissions
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
@@ -52,9 +52,9 @@ export default defineEventHandler(async (event: H3Event) => {
             ].filter((column): column is string => Boolean(column)),
           ),
         )
-      : await fetchTableSqlColumns(primaryDataset);
+      : await fetchTableSqlColumns(primaryTable);
 
-    const { mainData, columnsData } = await fetchData(primaryDataset, {
+    const { mainData, columnsData } = await fetchData(primaryTable, {
       limit,
       mainColumns: projectedColumns,
       includeColumnsData: true,
@@ -102,8 +102,8 @@ export default defineEventHandler(async (event: H3Event) => {
       filterColumn,
       mediaBasePath: tableConfig.MEDIA_BASE_PATH,
       mediaColumn,
-      primary_dataset: primaryDataset,
-      table: primaryDataset,
+      primary_dataset: primaryTable,
+      table: primaryTable,
       timestampColumn: timestampColumn ?? undefined,
       rowLimitReached: mainData.length >= limit,
       routeLevelPermission: tableConfig.ROUTE_LEVEL_PERMISSION,

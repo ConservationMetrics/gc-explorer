@@ -8,7 +8,7 @@ import type {
   Views,
   ViewConfig,
   ViewConfigRow,
-  ViewDatasets,
+  ViewTables,
   ViewType,
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
@@ -123,7 +123,7 @@ const checkTableExists = async (
 /**
  * Builds the new single-table view metadata columns from existing config shape.
  *
- * @param {string} primaryDataset - Dataset table used as the route identifier.
+ * @param {string} primaryDataset - Primary warehouse table for the view.
  * @param {ViewConfig} config - Parsed view config.
  * @param {string} configString - Serialized config JSON.
  * @param {ViewType} viewType - View type for the row.
@@ -358,24 +358,24 @@ export const fetchData = async (
   return { mainData, columnsData, metadata };
 };
 
-type FetchedDatasetData = Awaited<ReturnType<typeof fetchData>>;
+type FetchedViewData = Awaited<ReturnType<typeof fetchData>>;
 
 /**
- * Fetches the typed dataset columns for one configured view.
+ * Fetches the warehouse table names configured for one view.
  *
- * @param {string} table - Primary dataset table used as the route identifier.
+ * @param {string} table - Primary dataset value to match in the views table.
  * @param {ViewType} viewType - View type to resolve.
- * @returns {Promise<ViewDatasets>} Primary and optional secondary dataset names.
+ * @returns {Promise<ViewTables>} Primary and optional secondary table names.
  * @throws {Error} When the configured view is missing.
  */
-export const fetchViewDatasets = async (
+export const fetchViewTables = async (
   table: string,
   viewType: ViewType,
-): Promise<ViewDatasets> => {
+): Promise<ViewTables> => {
   const result = await configDb
     .select({
-      primaryDataset: viewConfig.primaryDataset,
-      secondaryDataset: viewConfig.secondaryDataset,
+      primaryTable: viewConfig.primaryDataset,
+      secondaryTable: viewConfig.secondaryDataset,
     })
     .from(viewConfig)
     .where(
@@ -391,37 +391,37 @@ export const fetchViewDatasets = async (
   }
 
   return {
-    primaryDataset: result[0].primaryDataset,
-    secondaryDataset: result[0].secondaryDataset ?? null,
+    primaryTable: result[0].primaryTable,
+    secondaryTable: result[0].secondaryTable ?? null,
   };
 };
 
 /**
- * Fetches a view's primary dataset and, when configured, its secondary dataset.
+ * Fetches data from a view's primary table and, when configured, secondary table.
  *
- * @param {string} primaryDataset - Primary warehouse table name.
+ * @param {string} primaryTable - Primary warehouse table name.
  * @param {object} options - Fetch options for primary and optional secondary data.
  * @returns Primary data plus nullable secondary data.
  */
-export const fetchViewDatasetData = async (
-  primaryDataset: string,
+export const fetchViewData = async (
+  primaryTable: string,
   {
-    secondaryDataset,
+    secondaryTable,
     primaryOptions,
     secondaryOptions,
   }: {
-    secondaryDataset?: string | null;
+    secondaryTable?: string | null;
     primaryOptions: FetchDataOptions;
     secondaryOptions?: FetchDataOptions;
   },
 ): Promise<{
-  primaryData: FetchedDatasetData;
-  secondaryData: FetchedDatasetData | null;
+  primaryData: FetchedViewData;
+  secondaryData: FetchedViewData | null;
 }> => {
   const [primaryData, secondaryData] = await Promise.all([
-    fetchData(primaryDataset, primaryOptions),
-    secondaryDataset
-      ? fetchData(secondaryDataset, secondaryOptions ?? primaryOptions)
+    fetchData(primaryTable, primaryOptions),
+    secondaryTable
+      ? fetchData(secondaryTable, secondaryOptions ?? primaryOptions)
       : Promise.resolve(null),
   ]);
 

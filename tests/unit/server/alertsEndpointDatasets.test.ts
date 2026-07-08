@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  fetchViewDatasetData,
-  fetchViewDatasets,
-} from "@/server/database/dbOperations";
+import { fetchViewData, fetchViewTables } from "@/server/database/dbOperations";
 
 const hoisted = vi.hoisted(() => {
   const selectChain = {
@@ -19,8 +16,8 @@ const hoisted = vi.hoisted(() => {
     configSelect: vi.fn(() => selectChain),
     warehouseExecute: vi.fn(),
     viewRows: [] as Array<{
-      primaryDataset: string;
-      secondaryDataset: string | null;
+      primaryTable: string;
+      secondaryTable: string | null;
     }>,
   };
 });
@@ -44,7 +41,7 @@ vi.mock("@/server/database/dbConnection", () => ({
   schema: {},
 }));
 
-describe("view dataset helpers", () => {
+describe("view table and data helpers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     hoisted.viewRows = [];
@@ -60,31 +57,27 @@ describe("view dataset helpers", () => {
 
   it("returns primary and secondary datasets for the requested view", async () => {
     hoisted.viewRows = [
-      { primaryDataset: "fake_alerts", secondaryDataset: "mapeo_data" },
+      { primaryTable: "fake_alerts", secondaryTable: "mapeo_data" },
     ];
 
-    await expect(fetchViewDatasets("fake_alerts", "alerts")).resolves.toEqual({
-      primaryDataset: "fake_alerts",
-      secondaryDataset: "mapeo_data",
+    await expect(fetchViewTables("fake_alerts", "alerts")).resolves.toEqual({
+      primaryTable: "fake_alerts",
+      secondaryTable: "mapeo_data",
     });
   });
 
   it("normalizes a missing secondary dataset to null", async () => {
-    hoisted.viewRows = [
-      { primaryDataset: "gallery_data", secondaryDataset: null },
-    ];
+    hoisted.viewRows = [{ primaryTable: "gallery_data", secondaryTable: null }];
 
-    await expect(fetchViewDatasets("gallery_data", "gallery")).resolves.toEqual(
-      {
-        primaryDataset: "gallery_data",
-        secondaryDataset: null,
-      },
-    );
+    await expect(fetchViewTables("gallery_data", "gallery")).resolves.toEqual({
+      primaryTable: "gallery_data",
+      secondaryTable: null,
+    });
   });
 
   it("throws the missing-view error when no typed view row matches", async () => {
     await expect(
-      fetchViewDatasets("missing_table", "alerts"),
+      fetchViewTables("missing_table", "alerts"),
     ).rejects.toMatchObject({
       statusCode: 404,
       statusMessage: 'No view configuration found for table "missing_table"',
@@ -96,8 +89,8 @@ describe("view dataset helpers", () => {
       .mockResolvedValueOnce([{ to_regclass: "fake_alerts" }])
       .mockResolvedValueOnce([{ _id: "alert-1" }]);
 
-    const result = await fetchViewDatasetData("fake_alerts", {
-      secondaryDataset: null,
+    const result = await fetchViewData("fake_alerts", {
+      secondaryTable: null,
       primaryOptions: { mainColumns: ["_id"], limit: 10 },
     });
 
@@ -112,8 +105,8 @@ describe("view dataset helpers", () => {
       .mockResolvedValueOnce([{ _id: "alert-1" }])
       .mockResolvedValueOnce([{ _id: "mapeo-1" }]);
 
-    const result = await fetchViewDatasetData("fake_alerts", {
-      secondaryDataset: "mapeo_data",
+    const result = await fetchViewData("fake_alerts", {
+      secondaryTable: "mapeo_data",
       primaryOptions: { mainColumns: ["_id"], limit: 10 },
       secondaryOptions: { mainColumns: ["_id"], limit: 10 },
     });

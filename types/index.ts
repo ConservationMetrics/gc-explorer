@@ -95,9 +95,9 @@ export type ViewConfigRow = {
   viewConfig: ViewConfig;
 };
 
-export type ViewDatasets = {
-  primaryDataset: string;
-  secondaryDataset: string | null;
+export type ViewTables = {
+  primaryTable: string;
+  secondaryTable: string | null;
 };
 
 export type ColumnEntry = {

@@ -2,8 +2,8 @@ import {
   ALERTS_METADATA_PROJECTION,
   fetchTableConfig,
   fetchTableSqlColumns,
-  fetchViewDatasetData,
-  fetchViewDatasets,
+  fetchViewData,
+  fetchViewTables,
 } from "@/server/database/dbOperations";
 import murmurhash from "murmurhash";
 import {
@@ -60,7 +60,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
   try {
     const tableConfig = await fetchTableConfig(table, "alerts");
-    const { primaryDataset, secondaryDataset } = await fetchViewDatasets(
+    const { primaryTable, secondaryTable } = await fetchViewTables(
       table,
       "alerts",
     );
@@ -71,43 +71,41 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const availableMainColumns = await fetchTableSqlColumns(primaryDataset);
+    const availableMainColumns = await fetchTableSqlColumns(primaryTable);
     const alertsMainProjection = buildRequiredAlertsProjection(
-      primaryDataset,
+      primaryTable,
       ALERTS_MAIN_PROJECTION,
       REQUIRED_ALERTS_MAIN_COLUMNS,
       availableMainColumns,
       "Alerts dashboard datasets",
     );
     const availableMetadataColumns = await fetchTableSqlColumns(
-      `${primaryDataset}__metadata`,
+      `${primaryTable}__metadata`,
     );
     const alertsMetadataProjection = ALERTS_METADATA_PROJECTION.filter(
       (columnName) => availableMetadataColumns.includes(columnName),
     );
 
     const mapeoCategoryIds = tableConfig.MAPEO_CATEGORY_IDS;
-    const shouldFetchMapeoData = Boolean(secondaryDataset && mapeoCategoryIds);
+    const shouldFetchMapeoData = Boolean(secondaryTable && mapeoCategoryIds);
     const mapeoMainColumns = shouldFetchMapeoData
-      ? await fetchTableSqlColumns(secondaryDataset!)
+      ? await fetchTableSqlColumns(secondaryTable!)
       : [];
 
-    const { primaryData, secondaryData } = await fetchViewDatasetData(
-      primaryDataset,
-      {
-        secondaryDataset: shouldFetchMapeoData ? secondaryDataset : null,
-        primaryOptions: {
-          limit,
-          mainColumns: alertsMainProjection,
-          includeMetadata: alertsMetadataProjection.length > 0,
-          metadataColumns: alertsMetadataProjection,
-        },
-        secondaryOptions: {
-          mainColumns: mapeoMainColumns,
-          includeColumnsData: true,
-        },
+    const { primaryData, secondaryData } = await fetchViewData(primaryTable, {
+      secondaryTable: shouldFetchMapeoData ? secondaryTable : null,
+      primaryOptions: {
+        limit,
+        mainColumns: alertsMainProjection,
+        includeMetadata: alertsMetadataProjection.length > 0,
+        metadataColumns: alertsMetadataProjection,
       },
-    );
+      secondaryOptions: {
+        limit,
+        mainColumns: mapeoMainColumns,
+        includeColumnsData: true,
+      },
+    });
 
     const { mainData, metadata } = primaryData as {
       mainData: DataEntry[];
@@ -133,7 +131,7 @@ export default defineEventHandler(async (event: H3Event) => {
       ),
     };
 
-    const mapeoTable = secondaryDataset;
+    const mapeoTable = secondaryTable;
 
     let mapeoData: FeatureCollection | null = null;
 
@@ -199,9 +197,9 @@ export default defineEventHandler(async (event: H3Event) => {
       mediaBasePath: tableConfig.MEDIA_BASE_PATH,
       mediaBasePathAlerts: tableConfig.MEDIA_BASE_PATH_ALERTS,
       planetApiKey: tableConfig.PLANET_API_KEY,
-      primary_dataset: primaryDataset,
-      secondary_dataset: secondaryDataset,
-      table: primaryDataset,
+      primary_dataset: primaryTable,
+      secondary_dataset: secondaryTable,
+      table: primaryTable,
       rowLimitReached: mainData.length >= limit,
       routeLevelPermission: tableConfig.ROUTE_LEVEL_PERMISSION,
     };

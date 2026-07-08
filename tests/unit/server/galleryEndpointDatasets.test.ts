@@ -32,7 +32,7 @@ const hoisted = vi.hoisted(() => {
     fetchData: vi.fn(),
     fetchTableConfig: vi.fn(),
     fetchTableSqlColumns: vi.fn(),
-    fetchViewDatasets: vi.fn(),
+    fetchViewTables: vi.fn(),
     filterDataByExtension: vi.fn(),
     filterOutUnwantedValues: vi.fn(),
     filterUnwantedKeys: vi.fn(),
@@ -45,7 +45,7 @@ vi.mock("@/server/database/dbOperations", () => ({
   fetchData: hoisted.fetchData,
   fetchTableConfig: hoisted.fetchTableConfig,
   fetchTableSqlColumns: hoisted.fetchTableSqlColumns,
-  fetchViewDatasets: hoisted.fetchViewDatasets,
+  fetchViewTables: hoisted.fetchViewTables,
 }));
 
 vi.mock("@/server/dataProcessing/dataFilters", () => ({
@@ -72,9 +72,9 @@ describe("gallery endpoint datasets", () => {
       MEDIA_COLUMN: "photo",
       ROUTE_LEVEL_PERMISSION: "anyone",
     });
-    hoisted.fetchViewDatasets.mockResolvedValue({
-      primaryDataset: "gallery_dataset",
-      secondaryDataset: null,
+    hoisted.fetchViewTables.mockResolvedValue({
+      primaryTable: "gallery_dataset",
+      secondaryTable: null,
     });
     hoisted.fetchData.mockResolvedValue({
       mainData: [{ _id: "record-1", photo: "one.jpg" }],
@@ -95,7 +95,7 @@ describe("gallery endpoint datasets", () => {
       "route_gallery",
       "gallery",
     );
-    expect(hoisted.fetchViewDatasets).toHaveBeenCalledWith(
+    expect(hoisted.fetchViewTables).toHaveBeenCalledWith(
       "route_gallery",
       "gallery",
     );
