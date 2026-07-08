@@ -20,6 +20,7 @@ const filterColumn = ref();
 const galleryData = ref();
 const mediaBasePath = ref();
 const mediaColumn = ref();
+const primaryDataset = ref(table);
 const timestampColumn = ref<string | undefined>();
 
 const { data, error, refresh } = await useFetch(`/api/${table}/gallery`, {
@@ -35,6 +36,7 @@ if (data.value && !error.value) {
   galleryData.value = data.value.data;
   mediaBasePath.value = data.value.mediaBasePath;
   mediaColumn.value = data.value.mediaColumn;
+  primaryDataset.value = data.value.primary_dataset;
   timestampColumn.value = data.value.timestampColumn;
 } else {
   console.error("Error fetching data:", error.value);
@@ -73,7 +75,7 @@ useHead({
         :filter-column="filterColumn"
         :media-base-path="mediaBasePath"
         :media-column="mediaColumn"
-        :table="table"
+        :table="primaryDataset"
         :timestamp-column="timestampColumn"
       />
       <div
