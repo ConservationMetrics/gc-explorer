@@ -35,17 +35,13 @@ describe("buildViewConfigColumns", () => {
       ROUTE_LEVEL_PERMISSION: "anyone",
     };
 
-    const columns = buildViewConfigColumns(
-      "fake_alerts",
-      config,
-      JSON.stringify(config),
-      "alerts",
-    );
+    const columns = buildViewConfigColumns("fake_alerts", config, "alerts");
 
     expect(columns.viewType).toBe("alerts");
     expect(columns.secondaryDataset).toBe("mapeo_data");
     expect(columns.primaryDataset).toBe("fake_alerts");
     expect(columns.viewName).toBe("Fake Alerts");
+    expect(JSON.parse(columns.viewConfig)).not.toHaveProperty("MAPEO_TABLE");
   });
 
   it("leaves secondaryDataset null for map and gallery views", () => {
@@ -57,13 +53,11 @@ describe("buildViewConfigColumns", () => {
     const mapColumns = buildViewConfigColumns(
       "bcmform_responses",
       config,
-      JSON.stringify(config),
       "map",
     );
     const galleryColumns = buildViewConfigColumns(
       "bcmform_responses",
       config,
-      JSON.stringify(config),
       "gallery",
     );
 
@@ -80,7 +74,6 @@ describe("buildViewConfigColumns", () => {
     const columns = buildViewConfigColumns(
       "seed_survey_data",
       config,
-      JSON.stringify(config),
       "gallery",
     );
 
@@ -93,7 +86,6 @@ describe("buildViewConfigColumns", () => {
     const columns = buildViewConfigColumns(
       "seed_survey_data",
       config,
-      JSON.stringify(config),
       "gallery",
     );
 

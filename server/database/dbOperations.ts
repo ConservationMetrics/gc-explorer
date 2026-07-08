@@ -71,31 +71,49 @@ const createDuplicateViewError = (table: string, viewType: ViewType) => {
 };
 
 /**
- * Derives a view's secondary dataset (its Mapeo table) from its config. This is
- * the single source for the `MAPEO_TABLE` → `secondary_dataset` mapping, shared by
- * every place that builds a view row (live writes and the test fixture seed) so the column
- * can never drift from the config field it mirrors: only alerts views have a
- * secondary dataset, and a blank value normalizes to null.
- *
- * TODO(single-source-of-truth): `MAPEO_TABLE` and `secondary_dataset` currently hold
- * the SAME fact in two places — the value stays in the view_config JSON AND is copied
- * into the secondary_dataset column here. They cannot drift (the column is always
- * derived from `MAPEO_TABLE` via this one helper, and nothing writes the column
- * independently), but today the column is effectively a write-only mirror: every
- * reader (alerts.ts, the config edit UI) still reads `MAPEO_TABLE` from the JSON.
- * The follow-up that returns primary/secondary_dataset from the API should make the
- * column the only source: stop persisting `MAPEO_TABLE` in the JSON (strip it like
- * `VIEWS`) and reconstruct it from the column on read for backward compatibility.
+ * Derives the secondary_dataset column from an incoming alerts config payload.
  *
  * @param {ViewType} viewType - The view's type.
- * @param {ViewConfig} config - The view's settings JSON.
+ * @param {ViewConfig} config - The submitted view settings.
  * @returns {string | null} The secondary dataset, or null when not applicable.
  */
-const deriveSecondaryDataset = (
+const deriveSecondaryDatasetFromConfig = (
   viewType: ViewType,
   config: ViewConfig,
 ): string | null =>
   viewType === "alerts" ? config.MAPEO_TABLE?.trim() || null : null;
+
+/**
+ * Removes fields that are stored in typed view columns rather than view_config.
+ *
+ * @param {ViewConfig} config - Submitted view settings.
+ * @returns {ViewConfig} Settings safe to serialize into views.view_config.
+ */
+const toStoredViewConfig = (config: ViewConfig): ViewConfig => {
+  const storedConfig = { ...config } as ViewConfig & { VIEWS?: unknown };
+  delete storedConfig.MAPEO_TABLE;
+  delete storedConfig.VIEWS;
+  return storedConfig;
+};
+
+type ViewConfigSourceRow = Pick<
+  typeof viewConfig.$inferSelect,
+  "secondaryDataset" | "viewConfig" | "viewType"
+>;
+
+/**
+ * Parses stored config and reconstructs transient client fields from view columns.
+ *
+ * @param {ViewConfigSourceRow} row - View row from the config database.
+ * @returns {ViewConfig} Config object used by existing clients.
+ */
+const parseViewConfigRowConfig = (row: ViewConfigSourceRow): ViewConfig => {
+  const parsedConfig = JSON.parse(row.viewConfig) as ViewConfig;
+  if (row.viewType === "alerts" && row.secondaryDataset) {
+    return { ...parsedConfig, MAPEO_TABLE: row.secondaryDataset };
+  }
+  return parsedConfig;
+};
 
 /**
  * Checks whether a given table exists in the warehouse schema.
@@ -132,12 +150,10 @@ const checkTableExists = async (
 export const buildViewConfigColumns = (
   primaryDataset: string,
   config: ViewConfig,
-  configString: string,
   viewType: ViewType,
 ) => {
-  // secondaryDataset mirrors config.MAPEO_TABLE; configString still contains
-  // MAPEO_TABLE too. See deriveSecondaryDataset's TODO on collapsing to one source.
-  const secondaryDataset = deriveSecondaryDataset(viewType, config);
+  const secondaryDataset = deriveSecondaryDatasetFromConfig(viewType, config);
+  const configString = JSON.stringify(toStoredViewConfig(config));
 
   return {
     // viewName falls back to primaryDataset, but NOTE they are not the same kind of
@@ -527,7 +543,7 @@ export const fetchViewConfigRows = async (): Promise<ViewConfigRow[]> => {
     return result.map((row) => ({
       primaryDataset: row.primaryDataset,
       secondaryDataset: row.secondaryDataset,
-      viewConfig: JSON.parse(row.viewConfig) as ViewConfig,
+      viewConfig: parseViewConfigRowConfig(row),
       viewId: row.viewId,
       viewName: row.viewName,
       viewType: row.viewType as ViewType,
@@ -556,7 +572,7 @@ export const fetchViewConfigRowsForTable = async (
     return result.map((row) => ({
       primaryDataset: row.primaryDataset,
       secondaryDataset: row.secondaryDataset,
-      viewConfig: JSON.parse(row.viewConfig) as ViewConfig,
+      viewConfig: parseViewConfigRowConfig(row),
       viewId: row.viewId,
       viewName: row.viewName,
       viewType: row.viewType as ViewType,
@@ -585,7 +601,9 @@ export const fetchTableConfig = async (
   try {
     const result = await configDb
       .select({
+        secondaryDataset: viewConfig.secondaryDataset,
         viewConfig: viewConfig.viewConfig,
+        viewType: viewConfig.viewType,
       })
       .from(viewConfig)
       .where(
@@ -605,7 +623,7 @@ export const fetchTableConfig = async (
       throw createMissingViewConfigError(table);
     }
 
-    const parsedConfig = JSON.parse(result[0].viewConfig) as ViewConfig;
+    const parsedConfig = parseViewConfigRowConfig(result[0]);
     if (!parsedConfig || Object.keys(parsedConfig).length === 0) {
       throw createMissingViewConfigError(table);
     }
@@ -689,11 +707,9 @@ export const updateConfig = async (
         `updateConfig requires a view type for "${tableName}"; refusing to update without identifying a single view.`,
       );
     }
-    const configString = JSON.stringify(typedConfig);
     const viewColumns = buildViewConfigColumns(
       tableName,
       typedConfig,
-      configString,
       viewType,
     );
 
@@ -720,9 +736,8 @@ export const addNewTableToConfig = async (
 ): Promise<void> => {
   try {
     const newConfig: ViewConfig = {};
-    const configString = JSON.stringify(newConfig);
     await configDb.insert(viewConfig).values({
-      ...buildViewConfigColumns(tableName, newConfig, configString, viewType),
+      ...buildViewConfigColumns(tableName, newConfig, viewType),
     });
   } catch (error) {
     // (view_type, primary_dataset) is unique, so re-adding a view type the dataset

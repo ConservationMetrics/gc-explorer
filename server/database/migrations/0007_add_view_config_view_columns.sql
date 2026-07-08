@@ -46,11 +46,7 @@ BEGIN
            THEN NULLIF(btrim(legacy.views_config::jsonb ->> 'MAPEO_TABLE'), '')
            ELSE NULL END,
       -- view_config: strip VIEWS (now superseded by the view_type column).
-      -- TODO(single-source-of-truth): MAPEO_TABLE is deliberately KEPT in this JSON for
-      -- now even though it is also copied into secondary_dataset above, because all
-      -- readers (alerts.ts, config edit UI) still read MAPEO_TABLE from the JSON. The
-      -- follow-up that returns primary/secondary_dataset from the API should also strip
-      -- MAPEO_TABLE here (as we do VIEWS) so secondary_dataset becomes the only source.
+      -- MAPEO_TABLE is removed from view_config by migration 0009.
       (legacy.views_config::jsonb - 'VIEWS')::text
     FROM view_config legacy
     CROSS JOIN LATERAL unnest(string_to_array(legacy.views_config::jsonb ->> 'VIEWS', ',')) AS view_token
