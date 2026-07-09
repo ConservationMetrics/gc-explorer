@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ChevronLeft, X } from "lucide-vue-next";
-import DataFeature from "@/components/shared/DataFeature.vue";
+import GalleryDetailMetadata from "@/components/gallery/GalleryDetailMetadata.vue";
 import GalleryMediaCarousel from "@/components/gallery/GalleryMediaCarousel.vue";
 
-import type { AllowedFileExtensions, DataEntry } from "@/types";
+import type {
+  AllowedFileExtensions,
+  DataEntry,
+  GalleryAttachment,
+} from "@/types";
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
+  attachments: GalleryAttachment[];
   feature: DataEntry;
   filePaths: string[];
   mediaBasePath: string;
@@ -98,13 +103,12 @@ onBeforeUnmount(() => {
           class="w-full min-h-0 overflow-y-auto rounded-2xl bg-violet-50 p-4 sm:p-6 lg:w-[380px] lg:flex-shrink-0 lg:max-h-[min(70vh,640px)]"
           data-testid="gallery-detail-metadata"
         >
-          <DataFeature
+          <GalleryDetailMetadata
             :allowed-file-extensions="allowedFileExtensions"
+            :attachments="attachments"
             :feature="feature"
             :file-paths="filePaths"
             :media-base-path="mediaBasePath"
-            :embedded="true"
-            :hide-media="true"
           />
         </div>
       </div>

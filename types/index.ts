@@ -104,6 +104,19 @@ export type DataEntry = Record<string, string> & {
   normalizedId?: number;
 };
 
+/** Parsed Kobo / survey attachment metadata for gallery detail display. */
+export type GalleryAttachment = {
+  downloadLargeUrl?: string;
+  downloadMediumUrl?: string;
+  downloadSmallUrl?: string;
+  downloadUrl?: string;
+  id?: number | string;
+  mimetype?: string;
+  name: string;
+  questionXpath?: string;
+  uid?: string;
+};
+
 export type FetchDataOptions = {
   mainColumns: string[];
   limit?: number;
