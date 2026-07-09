@@ -846,7 +846,7 @@ test("config page - submit configuration changes", async ({
   }
 });
 
-test("config page - views configuration section", async ({
+test("config page - views configuration section displays current view type", async ({
   authenticatedPageAsAdmin: page,
 }) => {
   // 1. Navigate to the config page
@@ -873,58 +873,16 @@ test("config page - views configuration section", async ({
   // 5. Wait for form to be visible
   await page.waitForSelector("form", { timeout: 15000 });
 
-  // 6. Find checkboxes near view labels
-  const viewLabels = page.locator("label").filter({
-    hasText: /^(Map|Gallery|Alerts)$/i,
-  });
-  const labelCount = await viewLabels.count();
+  // 6. Verify the Views section displays the current view type (read-only)
+  const viewTypeDisplay = page.locator(
+    "[data-testid='config-view-type-display']",
+  );
+  await expect(viewTypeDisplay).toBeVisible({ timeout: 10000 });
+  await expect(viewTypeDisplay).toHaveText(/^(Map|Gallery|Alerts)$/i);
 
-  if (labelCount > 0) {
-    // 7. Find checkbox associated with first view label
-    const firstLabel = viewLabels.first();
-    const firstCheckbox = firstLabel
-      .locator('input[type="checkbox"]')
-      .or(
-        page.locator(
-          `input[type="checkbox"][id*="${(await firstLabel.textContent())?.toLowerCase()}"]`,
-        ),
-      );
-
-    if ((await firstCheckbox.count()) > 0) {
-      // 8. Test toggling a checkbox
-      const isChecked = await firstCheckbox.first().isChecked();
-
-      // 9. Toggle the checkbox
-      await firstCheckbox.first().click();
-      await page.waitForTimeout(500);
-
-      // 10. Verify the state changed
-      await expect(firstCheckbox.first()).toHaveJSProperty(
-        "checked",
-        !isChecked,
-      );
-
-      // 11. Check if submit button is enabled
-      const submitButton = page.locator("[data-testid='config-submit-button']");
-      const isEnabled = await submitButton.isEnabled();
-
-      if (!isEnabled) {
-        // 12. Try modifying a text field to trigger form changes
-        const textInputs = page.locator('input[type="text"], textarea');
-        const inputCount = await textInputs.count();
-
-        if (inputCount > 0) {
-          const firstTextInput = textInputs.first();
-          await firstTextInput.clear();
-          await firstTextInput.fill("test_value");
-          await page.waitForTimeout(500);
-        }
-      }
-
-      // 13. Verify submit button is now enabled (changes detected)
-      await expect(submitButton).toBeEnabled();
-    }
-  }
+  // 7. Verify the view type is immutable (no radio toggles on the edit screen)
+  const viewTypeRadios = page.locator('input[type="radio"][name="view-type"]');
+  await expect(viewTypeRadios).toHaveCount(0);
 });
 
 test("config page - conditional form sections based on views", async ({
@@ -1005,6 +963,13 @@ test("config page - conditional form sections based on views", async ({
     // 16. Verify Views section is visible (should be open by default)
     const viewsSection = page.locator("*").filter({ hasText: /^Views$/i });
     await expect(viewsSection.first()).toBeVisible();
+
+    // 17. Verify the Views section displays the current (immutable) view type
+    const viewTypeDisplay = page.locator(
+      "[data-testid='config-view-type-display']",
+    );
+    await expect(viewTypeDisplay).toBeVisible();
+    await expect(viewTypeDisplay).toHaveText(/^(Map|Gallery|Alerts)$/i);
   }
 });
 
@@ -1110,12 +1075,10 @@ test("config page - error handling for invalid form submission", async ({
     await page.waitForSelector("form", { timeout: 15000 });
 
     // 13. Enable Map view to show Mapbox token field (if not already enabled)
-    const mapCheckbox = page
-      .locator('input[type="checkbox"]')
-      .filter({ has: page.locator('label:has-text("Map")') });
+    const mapRadio = page.locator('label:has-text("Map") input[type="radio"]');
 
-    if ((await mapCheckbox.count()) > 0 && !(await mapCheckbox.isChecked())) {
-      await mapCheckbox.check();
+    if ((await mapRadio.count()) > 0 && !(await mapRadio.isChecked())) {
+      await mapRadio.check();
       await page.waitForTimeout(500);
     }
 
@@ -1287,15 +1250,12 @@ test("config page - basemap configuration - add and remove basemaps", async ({
     await page.waitForSelector("form", { timeout: 15000 });
 
     // 6. Enable Map view if not already enabled (to show basemap config)
-    // First find the Views section and the Map checkbox
-    const mapCheckbox = page
-      .locator('input[type="checkbox"]')
-      .filter({ has: page.locator('label:has-text("Map")') });
+    const mapRadio = page.locator('label:has-text("Map") input[type="radio"]');
 
-    if ((await mapCheckbox.count()) > 0) {
-      const isChecked = await mapCheckbox.isChecked();
+    if ((await mapRadio.count()) > 0) {
+      const isChecked = await mapRadio.isChecked();
       if (!isChecked) {
-        await mapCheckbox.check();
+        await mapRadio.check();
         await page.waitForTimeout(1000); // Wait for Map section to appear
       }
     }
@@ -1426,12 +1386,10 @@ test("config page - basemap configuration - validation", async ({
     await page.waitForSelector("form", { timeout: 15000 });
 
     // 6. Enable Map view if not already enabled
-    const mapCheckbox = page
-      .locator('input[type="checkbox"]')
-      .filter({ has: page.locator('label:has-text("Map")') });
+    const mapRadio = page.locator('label:has-text("Map") input[type="radio"]');
 
-    if ((await mapCheckbox.count()) > 0 && !(await mapCheckbox.isChecked())) {
-      await mapCheckbox.check();
+    if ((await mapRadio.count()) > 0 && !(await mapRadio.isChecked())) {
+      await mapRadio.check();
       await page.waitForTimeout(500);
     }
 
@@ -1569,12 +1527,10 @@ test("config page - basemap configuration - update name and style", async ({
     await page.waitForSelector("form", { timeout: 15000 });
 
     // 6. Enable Map view if not already enabled
-    const mapCheckbox = page
-      .locator('input[type="checkbox"]')
-      .filter({ has: page.locator('label:has-text("Map")') });
+    const mapRadio = page.locator('label:has-text("Map") input[type="radio"]');
 
-    if ((await mapCheckbox.count()) > 0 && !(await mapCheckbox.isChecked())) {
-      await mapCheckbox.check();
+    if ((await mapRadio.count()) > 0 && !(await mapRadio.isChecked())) {
+      await mapRadio.check();
       await page.waitForTimeout(500);
     }
 
@@ -1682,12 +1638,10 @@ test("config page - color column configuration", async ({
     await page.waitForSelector("form", { timeout: 15000 });
 
     // 6. Enable Map view if not already enabled (to show color column field)
-    const mapCheckbox = page
-      .locator('input[type="checkbox"]')
-      .filter({ has: page.locator('label:has-text("Map")') });
+    const mapRadio = page.locator('label:has-text("Map") input[type="radio"]');
 
-    if ((await mapCheckbox.count()) > 0 && !(await mapCheckbox.isChecked())) {
-      await mapCheckbox.check();
+    if ((await mapRadio.count()) > 0 && !(await mapRadio.isChecked())) {
+      await mapRadio.check();
       await page.waitForTimeout(500);
     }
 

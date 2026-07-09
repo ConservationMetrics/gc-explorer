@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import type { ViewConfig } from "@/types";
+import type { ViewConfig, ViewType } from "@/types";
 import { formatDisplayName, CONFIG_LIMITS } from "@/utils";
 import { Images, Map, TriangleAlert } from "lucide-vue-next";
 
 interface Props {
   tableName: string | number;
+  viewName: string;
   config: ViewConfig;
+  viewTypes: ViewType[];
 }
 
 const props = defineProps<Props>();
@@ -71,7 +73,7 @@ const truncateDescription = (desc: string): string => {
           class="text-lg sm:text-xl font-semibold text-gray-800 break-words max-w-full mb-2"
           style="overflow-wrap: anywhere; word-break: break-word; hyphens: auto"
         >
-          {{ truncateDisplayName(config.DATASET_TABLE || String(tableName)) }}
+          {{ truncateDisplayName(viewName || String(tableName)) }}
         </h2>
         <div class="h-10 mb-4">
           <p
@@ -94,11 +96,7 @@ const truncateDescription = (desc: string): string => {
 
     <div class="flex flex-wrap gap-1.5 mb-4 overflow-hidden">
       <span
-        v-for="view in config.VIEWS
-          ? config.VIEWS.split(',')
-              .map((v) => v.trim())
-              .sort()
-          : []"
+        v-for="view in [...viewTypes].sort()"
         :key="view"
         :data-testid="`view-tag-${view}`"
         class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-violet-100 text-violet-800 rounded-full flex-shrink-0"

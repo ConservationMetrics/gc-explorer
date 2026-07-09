@@ -2,7 +2,7 @@
 import ConfigCard from "@/components/config/ConfigCard.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
-import type { Views, ViewConfig } from "@/types";
+import type { ViewConfig, ViewConfigRow, Views, ViewType } from "@/types";
 import { CheckCircle2, ChevronLeft, Copy, Eye } from "lucide-vue-next";
 
 const route = useRoute();
@@ -10,42 +10,51 @@ const datasetRaw = route.params.dataset;
 const dataset = Array.isArray(datasetRaw)
   ? datasetRaw.join("/")
   : String(datasetRaw || "");
+const viewType = computed(() => route.query.view_type as ViewType | undefined);
 
 const viewsConfig = ref<Views>({});
+const viewRows = ref<ViewConfigRow[]>([]);
 const tableNames = ref();
 const dataFetched = ref(false);
 const datasetConfig = ref<ViewConfig | null>(null);
 const errorMessage = ref<string | null>(null);
 
-const { data, error, refresh } = await useFetch("/api/config");
+const editedViewType = ref<ViewType | undefined>(undefined);
+
+const { data, error, refresh } = await useFetch<{
+  views: ViewConfigRow[];
+  availableTables: string[];
+}>("/api/config");
 
 if (data.value && !error.value) {
-  const fetchedViewsData = data.value[0] as Views;
-  viewsConfig.value = fetchedViewsData;
+  const allViewRows = data.value.views;
+  viewRows.value = allViewRows;
+  tableNames.value = data.value.availableTables;
 
-  const fetchedTableNames = data.value[1] as string[];
-  tableNames.value = fetchedTableNames;
-  if (fetchedViewsData[dataset]) {
-    datasetConfig.value = fetchedViewsData[dataset];
+  viewsConfig.value = allViewRows.reduce((acc, row) => {
+    acc[row.primaryDataset] = row.viewConfig;
+    return acc;
+  }, {} as Views);
+
+  const editedViewRow = allViewRows.find(
+    (row) =>
+      row.primaryDataset === dataset &&
+      (!viewType.value || row.viewType === viewType.value),
+  );
+
+  if (editedViewRow) {
+    datasetConfig.value = editedViewRow.viewConfig;
+    editedViewType.value = editedViewRow.viewType;
     dataFetched.value = true;
   } else {
-    const matchingKey = Object.keys(fetchedViewsData).find(
-      (key) =>
-        key === dataset ||
-        decodeURIComponent(key) === dataset ||
-        key === decodeURIComponent(dataset),
-    );
-    if (matchingKey) {
-      datasetConfig.value = fetchedViewsData[matchingKey];
-      dataFetched.value = true;
-    } else {
-      console.warn(`Dataset "${dataset}" not found in config`);
-      await navigateTo("/config");
-    }
+    console.warn(`Dataset "${dataset}" not found in config`);
+    await navigateTo("/config");
   }
 } else {
   console.error("Error fetching data:", error.value);
 }
+
+const resolvedViewType = computed(() => viewType.value ?? editedViewType.value);
 
 const showSavedModal = ref(false);
 
@@ -61,6 +70,9 @@ const submitConfig = async ({
   try {
     await $fetch(`/api/config/update_config/${tableName}`, {
       method: "POST",
+      query: resolvedViewType.value
+        ? { view_type: resolvedViewType.value }
+        : undefined,
       body: JSON.stringify(config),
     });
     // Update the local datasetConfig to reflect the saved state
@@ -90,11 +102,11 @@ const tableNameToRemove = ref<string | null>(null);
 const handleRemoveTableFromConfig = (tableName: string) => {
   tableNameToRemove.value = tableName;
   modalMessage.value =
-    t("removeTableAreYouSure") +
+    t("removeDatasetViewAreYouSure") +
     ": <strong>" +
     tableName +
     "</strong>?<br><br><em>" +
-    t("tableRemovedNote") +
+    t("datasetViewRemovedNote") +
     ".</em>";
   showModal.value = true;
   showModalButtons.value = true;
@@ -105,10 +117,13 @@ const handleConfirmRemove = async () => {
     try {
       await $fetch(`/api/config/delete_table/${tableNameToRemove.value}`, {
         method: "POST",
+        query: resolvedViewType.value
+          ? { view_type: resolvedViewType.value }
+          : undefined,
       });
       // Hide buttons and update message to show success
       showModalButtons.value = false;
-      modalMessage.value = t("tableRemovedFromViews") + "!";
+      modalMessage.value = t("datasetViewRemovedFromViews") + "!";
       // Ensure DOM updates before continuing
       await nextTick();
       // Wait 3 seconds to show success message, then navigate
@@ -140,6 +155,10 @@ const {
   handleConfirmCopy,
   handleCancelCopy,
 } = useCopyConfig(viewsConfig, dataset);
+
+const getCopySourceLabel = (configKey: string) => {
+  return viewsConfig.value[configKey]?.DATASET_TABLE || configKey;
+};
 
 const { t } = useI18n();
 const { error: showErrorToast } = useToast();
@@ -202,7 +221,9 @@ definePageMeta({ layout: "explorer" });
           {{ errorMessage }}
         </div>
         <ConfigCard
+          v-if="resolvedViewType"
           :table-name="dataset"
+          :view-type="resolvedViewType"
           :view-config="datasetConfig"
           :config-to-copy="configToCopy"
           @submit-config="submitConfig"
@@ -271,7 +292,7 @@ definePageMeta({ layout: "explorer" });
               :key="dsName"
               :value="dsName"
             >
-              {{ viewsConfig[dsName]?.DATASET_TABLE || dsName }}
+              {{ getCopySourceLabel(dsName) }}
             </option>
           </select>
           <div class="flex gap-3 justify-end">

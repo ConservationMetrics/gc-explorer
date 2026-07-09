@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ViewConfig } from "@/types";
+import type { ViewConfig, ViewType } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
 import ConfigPermissions from "./ConfigPermissions.vue";
 import ConfigCollapsibleSection from "./ConfigCollapsibleSection.vue";
@@ -7,6 +7,7 @@ import { Check, Trash2 } from "lucide-vue-next";
 
 const props = defineProps<{
   tableName: string;
+  viewType: ViewType;
   viewConfig: ViewConfig;
   configToCopy: ViewConfig | null;
 }>();
@@ -14,8 +15,6 @@ const props = defineProps<{
 const emit = defineEmits(["submitConfig", "removeTableFromConfig"]);
 
 // Set keys for the different sections of the config
-const availableViews = ref<string[]>([]);
-const viewsKeys = computed(() => ["VIEWS"]);
 const mapConfigKeys = computed(() => [
   "MAPBOX_STYLE",
   "MAPBOX_ACCESS_TOKEN",
@@ -53,6 +52,9 @@ const datasetInfoKeys = computed(() => [
   "VIEW_DESCRIPTION",
 ]);
 
+// The child config components expect a `views` array; wrap the single view type
+const viewTypeList = computed(() => [props.viewType]);
+
 // On mounted, set localConfig to props.config
 const originalConfig = ref<ViewConfig>({});
 const localConfig = ref<ViewConfig>({});
@@ -61,9 +63,6 @@ onMounted(() => {
     localConfig.value = JSON.parse(JSON.stringify(props.viewConfig));
   }
   originalConfig.value = JSON.parse(JSON.stringify(localConfig.value));
-  availableViews.value = localConfig.value?.VIEWS
-    ? localConfig.value.VIEWS.split(",")
-    : [];
 });
 
 // Watch for changes to viewConfig prop and update baseline after save
@@ -73,9 +72,6 @@ watch(
     if (newConfig) {
       localConfig.value = JSON.parse(JSON.stringify(newConfig));
       originalConfig.value = JSON.parse(JSON.stringify(localConfig.value));
-      availableViews.value = localConfig.value?.VIEWS
-        ? localConfig.value.VIEWS.split(",")
-        : [];
     }
   },
   { deep: true },
@@ -87,9 +83,6 @@ watch(
   (copiedConfig) => {
     if (copiedConfig) {
       localConfig.value = JSON.parse(JSON.stringify(copiedConfig));
-      availableViews.value = localConfig.value?.VIEWS
-        ? localConfig.value.VIEWS.split(",")
-        : [];
     }
   },
 );
@@ -120,26 +113,18 @@ const isFormValid = computed(() => {
   return isMapConfigValid && isPermissionValid.value;
 });
 
-const shouldShowConfigMap = computed(() => hasView(["alerts", "map"]));
-const shouldShowConfigMedia = computed(() =>
-  hasView(["map", "gallery", "alerts"]),
+const shouldShowConfigMap = computed(
+  () => props.viewType === "alerts" || props.viewType === "map",
 );
-const shouldShowConfigAlerts = computed(() => hasView(["alerts"]));
-const shouldShowConfigFilters = computed(() => hasView(["map", "gallery"]));
-
-const hasView = (viewsArray: Array<string>) => {
-  if (!availableViews.value || availableViews.value.length === 0) {
-    return false;
-  }
-  return viewsArray.some((view) => availableViews.value.includes(view));
-};
+const shouldShowConfigMedia = computed(() =>
+  ["map", "gallery", "alerts"].includes(props.viewType),
+);
+const shouldShowConfigAlerts = computed(() => props.viewType === "alerts");
+const shouldShowConfigFilters = computed(
+  () => props.viewType === "map" || props.viewType === "gallery",
+);
 
 // Handlers for updating config and form submission
-const handleViewUpdate = (newViews: Array<string>) => {
-  availableViews.value = newViews;
-  localConfig.value.VIEWS = newViews.join(",");
-};
-
 const handleConfigUpdate = (partialUpdate: Partial<ViewConfig>) => {
   Object.assign(localConfig.value, partialUpdate);
 };
@@ -189,13 +174,7 @@ const handleSubmit = () => {
     <div class="p-6">
       <form @submit.prevent="handleSubmit">
         <ConfigCollapsibleSection :title="$t('views')" :default-open="true">
-          <ConfigViews
-            :table-name="tableName"
-            :config="localConfig"
-            :views="availableViews"
-            :keys="viewsKeys"
-            @update:views="handleViewUpdate"
-          />
+          <ConfigViews :view-type="viewType" />
         </ConfigCollapsibleSection>
 
         <ConfigCollapsibleSection
@@ -205,7 +184,7 @@ const handleSubmit = () => {
         >
           <ConfigMap
             :table-name="tableName"
-            :views="availableViews"
+            :views="viewTypeList"
             :config="localConfig"
             :keys="mapConfigKeys"
             @update-config="handleConfigUpdate"
@@ -219,7 +198,7 @@ const handleSubmit = () => {
         >
           <ConfigMedia
             :table-name="tableName"
-            :views="availableViews"
+            :views="viewTypeList"
             :config="localConfig"
             :keys="mediaKeys"
             @update-config="handleConfigUpdate"
@@ -233,7 +212,7 @@ const handleSubmit = () => {
         >
           <ConfigAlerts
             :table-name="tableName"
-            :views="availableViews"
+            :views="viewTypeList"
             :config="localConfig"
             :keys="alertKeys"
             @update-config="handleConfigUpdate"
@@ -247,7 +226,7 @@ const handleSubmit = () => {
         >
           <ConfigFilters
             :table-name="tableName"
-            :views="availableViews"
+            :views="viewTypeList"
             :config="localConfig"
             :keys="filterKeys"
             @update-config="handleConfigUpdate"
@@ -257,7 +236,7 @@ const handleSubmit = () => {
         <ConfigCollapsibleSection :title="$t('dataset')" :default-open="true">
           <ConfigDatasetInfo
             :table-name="tableName"
-            :views="availableViews"
+            :views="viewTypeList"
             :config="localConfig"
             :keys="datasetInfoKeys"
             @update-config="handleConfigUpdate"
@@ -290,7 +269,7 @@ const handleSubmit = () => {
             }"
           >
             <Check class="w-5 h-5" />
-            {{ $t("submit") }}
+            {{ $t("save") }}
           </button>
           <button
             type="button"
@@ -299,7 +278,7 @@ const handleSubmit = () => {
             @click="$emit('removeTableFromConfig', tableName)"
           >
             <Trash2 class="w-5 h-5" />
-            {{ $t("removeTable") }}
+            {{ $t("removeDatasetView") }}
           </button>
         </div>
       </form>

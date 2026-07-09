@@ -95,6 +95,39 @@ export const isValidFilebrowserInput = (input: string): boolean => {
  * // "abc123" (raw hash), "https://files.localhost/api/public/dl/"
  * // → "https://files.localhost/api/public/dl/"
  */
+const MIME_BY_EXTENSION: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  svg: "image/svg+xml",
+  webp: "image/webp",
+};
+
+/**
+ * Infers an image Content-Type from a URL's file extension, falling back to the
+ * supplied value (typically `response.headers.get('content-type')`) and finally
+ * to `application/octet-stream`.
+ *
+ * Used by the icon proxy because Filebrowser's `/api/public/dl/` endpoint
+ * serves `application/octet-stream`, which the browser refuses to render in an
+ * `<img>` (notably breaks `.svg`).
+ * @example
+ * // "https://files.example.com/api/public/dl/abc/icon.svg", null → "image/svg+xml"
+ */
+export const inferContentType = (
+  url: string,
+  fallback: string | null,
+): string => {
+  try {
+    const ext = new URL(url).pathname.split(".").pop()?.toLowerCase();
+    if (ext && MIME_BY_EXTENSION[ext]) return MIME_BY_EXTENSION[ext];
+  } catch {
+    /* not a valid URL — fall through */
+  }
+  return fallback ?? "application/octet-stream";
+};
+
 export const getBaseUrlFromInput = (
   input: string,
   defaultBaseUrl: string,

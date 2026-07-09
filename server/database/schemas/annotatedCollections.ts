@@ -6,6 +6,7 @@ import {
   boolean,
   jsonb,
   unique,
+  index,
 } from "drizzle-orm/pg-core";
 
 // Annotated Collections Tables (new tables)
@@ -20,18 +21,24 @@ export const annotatedCollections = pgTable("annotated_collections", {
   metadata: jsonb("metadata").default({}),
 });
 
-export const incidents = pgTable("incidents", {
-  collectionId: uuid("collection_id")
-    .primaryKey()
-    .references(() => annotatedCollections.id, { onDelete: "cascade" }),
-  parentAlertsTable: text("parent_alerts_table"),
-  incidentType: text("incident_type"),
-  responsibleParty: text("responsible_party"),
-  status: text("status").default("suspected"),
-  isActive: boolean("is_active").default(true),
-  impactDescription: text("impact_description"),
-  supportingEvidence: jsonb("supporting_evidence"),
-});
+export const incidents = pgTable(
+  "incidents",
+  {
+    collectionId: uuid("collection_id")
+      .primaryKey()
+      .references(() => annotatedCollections.id, { onDelete: "cascade" }),
+    parentAlertsTable: text("parent_alerts_table"),
+    incidentType: text("incident_type"),
+    responsibleParty: text("responsible_party"),
+    status: text("status").default("suspected"),
+    isActive: boolean("is_active").default(true),
+    impactDescription: text("impact_description"),
+    supportingEvidence: jsonb("supporting_evidence"),
+  },
+  (table) => [
+    index("incidents_parent_alerts_table_idx").on(table.parentAlertsTable),
+  ],
+);
 
 export const collectionEntries = pgTable(
   "collection_entries",

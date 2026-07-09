@@ -1,4 +1,5 @@
 import { useI18n, useRoute, useToast } from "#imports";
+import { resolveViewTypeForTable } from "@/composables/useViewType";
 import { triggerBrowserDownload } from "@/utils/browserDownload";
 
 export type TableExportFormat = "csv" | "geojson" | "kml";
@@ -26,11 +27,15 @@ export const buildTableExportQueryParams = (options: {
   exportMaxDate?: string;
   exportTimestampColumn?: string;
   recordId?: string;
+  viewType?: string;
 }): Record<string, string> => {
   const params: Record<string, string> = { format: options.format };
   const trimmedRecordId = options.recordId?.trim();
   if (trimmedRecordId) {
     params.recordId = trimmedRecordId;
+  }
+  if (options.viewType) {
+    params.view_type = options.viewType;
   }
   if (options.exportFilterColumn && options.exportFilterValues?.length) {
     params.filterColumn = options.exportFilterColumn;
@@ -114,6 +119,7 @@ export function useTableExportDownload() {
         exportMaxDate: options.exportMaxDate,
         exportTimestampColumn: options.exportTimestampColumn,
         recordId: options.recordId,
+        viewType: resolveViewTypeForTable(route, tablename),
       });
       const blob = await $fetch<Blob>(`/api/${tablename}/${exportPath}`, {
         params,

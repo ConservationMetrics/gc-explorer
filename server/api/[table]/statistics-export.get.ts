@@ -14,7 +14,7 @@ import {
 } from "@/utils/alertsStatistics";
 
 import type { H3Event } from "h3";
-import type { AlertsMetadata, DataEntry } from "@/types";
+import type { AlertsMetadata, DataEntry, ViewType } from "@/types";
 
 const SUPPORTED_FORMATS = ["csv"] as const;
 type ExportFormat = (typeof SUPPORTED_FORMATS)[number];
@@ -52,7 +52,8 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-    const tableConfig = await fetchTableConfig(table);
+    const viewType = query.view_type as ViewType | undefined;
+    const tableConfig = await fetchTableConfig(table, viewType);
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
 

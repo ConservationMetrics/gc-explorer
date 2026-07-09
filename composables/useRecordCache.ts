@@ -1,3 +1,5 @@
+import { resolveViewTypeForTable } from "@/composables/useViewType";
+
 import type { DataEntry } from "@/types";
 import type { Ref, ComputedRef } from "vue";
 
@@ -43,12 +45,8 @@ const ensureCacheCount = (): Ref<number> => {
  * State is module-level so every consumer shares one cache keyed by `table::recordId`.
  */
 export const useRecordCache = () => {
-  const {
-    public: { appApiKey },
-  } = useRuntimeConfig();
-
-  const headers = { "x-api-key": appApiKey as string };
   const count = ensureCacheCount();
+  const route = useRoute();
 
   /**
    * Fetches a single raw record by table and ID. Returns a cached copy
@@ -74,7 +72,15 @@ export const useRecordCache = () => {
       return pending.get(cacheKey)!;
     }
 
-    const request = $fetch<DataEntry>(`/api/${table}/${recordId}`, { headers })
+    // resolveViewTypeForTable returns undefined on purpose (cross-table read, non-view
+    // route, missing :tablename) — callers omit view_type and the server uses its default.
+    const viewType = resolveViewTypeForTable(route, table);
+    const url = `/api/${table}/${recordId}`;
+    const request = (
+      viewType
+        ? $fetch<DataEntry>(url, { query: { view_type: viewType } })
+        : $fetch<DataEntry>(url)
+    )
       .then((record) => {
         cache.set(cacheKey, record);
         maybeEvictOldestCacheEntry();
@@ -132,11 +138,13 @@ export const useRecordCache = () => {
     }
 
     try {
+      // Same as fetchRecord: undefined viewType → omit param (see useViewType.ts).
+      const viewType = resolveViewTypeForTable(route, table);
       const batchPromises = batches.map((batch) =>
         $fetch<DataEntry[]>(`/api/${table}/records`, {
           method: "POST",
           body: { ids: batch },
-          headers,
+          ...(viewType ? { query: { view_type: viewType } } : {}),
         }),
       );
       const batchResults = await Promise.all(batchPromises);

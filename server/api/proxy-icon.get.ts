@@ -1,10 +1,12 @@
+import { inferContentType } from "@/utils/mediaHelpers";
+
 /**
- * Proxy endpoint for loading map icons from external sources (e.g., Filebrowser)
- * This solves CORS issues when Mapbox tries to load images via Canvas API
+ * Proxy endpoint for loading map icons from external sources (e.g., Filebrowser).
+ * Solves CORS issues when Mapbox tries to load images via the Canvas API and
+ * normalizes Content-Type (see inferContentType).
  */
 export default defineEventHandler(async (event) => {
-  const query = getQuery(event);
-  const url = query.url as string;
+  const url = getQuery(event).url as string | undefined;
 
   if (!url) {
     throw createError({
@@ -13,34 +15,19 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  try {
-    // Fetch the image from the external source
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw createError({
-        statusCode: response.status,
-        statusMessage: `Failed to fetch image: ${response.statusText}`,
-      });
-    }
-
-    // Get the image data
-    const imageBuffer = await response.arrayBuffer();
-    const contentType = response.headers.get("content-type") || "image/png";
-
-    // Set proper headers including CORS
-    setHeaders(event, {
-      "Content-Type": contentType,
-      "Access-Control-Allow-Origin": "*",
-      "Cache-Control": "public, max-age=86400", // Cache for 24 hours
-    });
-
-    // Return the image data
-    return new Uint8Array(imageBuffer);
-  } catch (error) {
+  const response = await fetch(url);
+  if (!response.ok) {
     throw createError({
-      statusCode: 500,
-      statusMessage: `Failed to proxy image: ${error}`,
+      statusCode: response.status,
+      statusMessage: `Failed to fetch image: ${response.statusText}`,
     });
   }
+
+  setHeaders(event, {
+    "Content-Type": inferContentType(url, response.headers.get("content-type")),
+    "Access-Control-Allow-Origin": "*",
+    "Cache-Control": "public, max-age=86400",
+  });
+
+  return new Uint8Array(await response.arrayBuffer());
 });

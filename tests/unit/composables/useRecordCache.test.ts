@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ref, computed } from "vue";
 
+// useRecordCache resolves the request's view_type from the current route via
+// the Nuxt auto-imported useRoute. Tests set `mockRoute` to control it; the
+// default is a non-view route, so the original assertions carry no view_type.
+let mockRoute: { path: string; params: Record<string, unknown> } = {
+  path: "/",
+  params: {},
+};
+
 // Mock useRuntimeConfig and Vue auto-imports globally (Nuxt auto-import)
 Object.assign(globalThis, {
   ref,
@@ -8,6 +16,7 @@ Object.assign(globalThis, {
   useRuntimeConfig: () => ({
     public: { appApiKey: "test-key" },
   }),
+  useRoute: () => mockRoute,
 });
 
 // Mock $fetch
@@ -19,6 +28,7 @@ let useRecordCache: typeof import("@/composables/useRecordCache").useRecordCache
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mockRoute = { path: "/", params: {} };
 
   // Re-import to reset module-level singleton state between tests
   vi.resetModules();
@@ -35,9 +45,7 @@ describe("useRecordCache", () => {
     const result = await fetchRecord("my_table", "abc");
 
     expect(result).toEqual(mockRecord);
-    expect(mockFetch).toHaveBeenCalledWith("/api/my_table/abc", {
-      headers: { "x-api-key": "test-key" },
-    });
+    expect(mockFetch).toHaveBeenCalledWith("/api/my_table/abc");
   });
 
   it("returns cached record on subsequent calls without hitting the API", async () => {
@@ -194,7 +202,6 @@ describe("useRecordCache - bulk fetch", () => {
     expect(mockFetch).toHaveBeenLastCalledWith("/api/my_table/records", {
       method: "POST",
       body: { ids: ["b2"] },
-      headers: { "x-api-key": "test-key" },
     });
   });
 
@@ -251,5 +258,50 @@ describe("useRecordCache - invalidation", () => {
     await fetchRecord("my_table", "abc");
 
     expect(getCachedRecord("my_table", "abc")).toEqual(record);
+  });
+});
+
+describe("useRecordCache - view_type threading", () => {
+  it("fetchRecord sends the route's view_type when reading the route's own dataset", async () => {
+    mockRoute = { path: "/map/my_table", params: { tablename: "my_table" } };
+    mockFetch.mockResolvedValue({ _id: "abc" });
+
+    const { fetchRecord } = useRecordCache();
+    await fetchRecord("my_table", "abc");
+
+    expect(mockFetch).toHaveBeenCalledWith("/api/my_table/abc", {
+      query: { view_type: "map" },
+    });
+  });
+
+  it("fetchRecord omits view_type when reading a different table (e.g. an alerts page's Mapeo table)", async () => {
+    mockRoute = {
+      path: "/alerts/primary_alerts",
+      params: { tablename: "primary_alerts" },
+    };
+    mockFetch.mockResolvedValue({ _id: "abc" });
+
+    const { fetchRecord } = useRecordCache();
+    await fetchRecord("mapeo_secondary", "abc");
+
+    // No view type for a cross-table read → no options object at all.
+    expect(mockFetch).toHaveBeenCalledWith("/api/mapeo_secondary/abc");
+  });
+
+  it("fetchRecords sends the route's view_type for its own dataset", async () => {
+    mockRoute = {
+      path: "/gallery/my_table",
+      params: { tablename: "my_table" },
+    };
+    mockFetch.mockResolvedValue([{ _id: "a1" }]);
+
+    const { fetchRecords } = useRecordCache();
+    await fetchRecords("my_table", ["a1"]);
+
+    expect(mockFetch).toHaveBeenCalledWith("/api/my_table/records", {
+      method: "POST",
+      body: { ids: ["a1"] },
+      query: { view_type: "gallery" },
+    });
   });
 });

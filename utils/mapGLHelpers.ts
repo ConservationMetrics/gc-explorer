@@ -196,6 +196,40 @@ export const prepareCoordinatesForSelectedFeature = (
     .join(",");
 };
 
+/**
+ * Loads an icon image for Mapbox GL `addImage`. SVGs are rasterized to an
+ * offscreen canvas and returned as `ImageData` because Mapbox's `addImage`
+ * only accepts raster pixel data — uploading an SVG-backed `HTMLImageElement`
+ * silently fails (the texture atlas has no rendered pixel buffer for it).
+ *
+ * @param url Proxied icon URL (must serve CORS-enabled image bytes).
+ * @param isSvg Whether the icon is an SVG and therefore needs rasterization.
+ */
+export const loadMapIcon = async (
+  url: string,
+  isSvg: boolean,
+): Promise<HTMLImageElement | ImageData> => {
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.crossOrigin = "anonymous";
+    i.onload = () => resolve(i);
+    i.onerror = reject;
+    i.src = url;
+  });
+
+  if (!isSvg) return img;
+
+  const width = img.naturalWidth || 64;
+  const height = img.naturalHeight || 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Failed to get 2D canvas context");
+  ctx.drawImage(img, 0, 0, width, height);
+  return ctx.getImageData(0, 0, width, height);
+};
+
 /** Toggles the visibility of a map layer */
 export const toggleLayerVisibility = (
   map: mapboxgl.Map,

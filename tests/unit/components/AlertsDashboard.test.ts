@@ -106,6 +106,8 @@ vi.mock("vue-router", () => ({
   useRoute: () => mockRoute.value,
   useRouter: () => mockRouter,
 }));
+// useRecordCache reads the route via the Nuxt auto-imported useRoute global.
+Object.assign(globalThis, { useRoute: () => mockRoute.value });
 
 vi.mock("#imports", async () => {
   const mod = await import("../helpers/importsMock");

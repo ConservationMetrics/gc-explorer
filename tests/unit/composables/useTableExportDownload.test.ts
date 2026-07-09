@@ -60,4 +60,26 @@ describe("buildTableExportQueryParams", () => {
       recordId: "rec-abc",
     });
   });
+
+  it("includes view_type when provided so the server resolves the right view", () => {
+    expect(
+      buildTableExportQueryParams({
+        format: "csv",
+        exportPath: "export",
+        viewType: "gallery",
+      }),
+    ).toEqual({
+      format: "csv",
+      view_type: "gallery",
+    });
+  });
+
+  it("omits view_type when not provided", () => {
+    expect(
+      buildTableExportQueryParams({
+        format: "csv",
+        exportPath: "export",
+      }),
+    ).toEqual({ format: "csv" });
+  });
 });

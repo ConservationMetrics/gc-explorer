@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import type {
   ColumnEntry,
@@ -7,6 +7,8 @@ import type {
   RouteLevelPermission,
   Views,
   ViewConfig,
+  ViewConfigRow,
+  ViewType,
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
 
@@ -30,28 +32,69 @@ const createMissingViewConfigError = (table: string) => {
   return error;
 };
 
-/**
- * Ensures the config database contains a `view_config` table before reads/writes.
- *
- * @returns {Promise<void>} Resolves when the table exists.
- */
-const ensureViewConfigTableExists = async (): Promise<void> => {
-  const tableExistsResult = await configDb.execute(sql`
-    SELECT to_regclass('view_config')
-  `);
-  const tableExists =
-    (tableExistsResult[0] as { to_regclass: string | null })?.to_regclass !==
-    null;
+// Postgres SQLSTATE for a unique-constraint violation.
+const PG_UNIQUE_VIOLATION = "23505";
 
-  if (!tableExists) {
-    await configDb.execute(sql`
-      CREATE TABLE view_config (
-        table_name TEXT PRIMARY KEY,
-        views_config TEXT
-      )
-    `);
-  }
+/**
+ * True when an error is a Postgres unique-constraint violation (SQLSTATE 23505).
+ *
+ * @param {unknown} error - The caught error.
+ * @returns {boolean} Whether the error is a unique violation.
+ */
+const isUniqueViolation = (error: unknown): boolean =>
+  // `error` is `unknown` (catch clauses always are), so we cannot just read
+  // `error.code`. Each clause narrows the type step by step before that access is
+  // legal: it must be an object, not null (`typeof null === "object"`), and actually
+  // have a `code` property. Only then is reading `code` type-safe.
+  typeof error === "object" &&
+  error !== null &&
+  "code" in error &&
+  (error as { code?: unknown }).code === PG_UNIQUE_VIOLATION;
+
+/**
+ * Builds a 409-style error for adding a view type a dataset already exposes.
+ *
+ * @param {string} table - The dataset the view was being added to.
+ * @param {ViewType} viewType - The duplicate view type.
+ * @returns {Error & { statusCode: number; statusMessage: string }} Error with HTTP metadata.
+ */
+const createDuplicateViewError = (table: string, viewType: ViewType) => {
+  const statusMessage = `A "${viewType}" view already exists for "${table}".`;
+  const error = new Error(statusMessage) as Error & {
+    statusCode: number;
+    statusMessage: string;
+  };
+  error.statusCode = 409;
+  error.statusMessage = statusMessage;
+  return error;
 };
+
+/**
+ * Derives a view's secondary dataset (its Mapeo table) from its config. This is
+ * the single source for the `MAPEO_TABLE` → `secondary_dataset` mapping, shared by
+ * every place that builds a view row (live writes and the test fixture seed) so the column
+ * can never drift from the config field it mirrors: only alerts views have a
+ * secondary dataset, and a blank value normalizes to null.
+ *
+ * TODO(single-source-of-truth): `MAPEO_TABLE` and `secondary_dataset` currently hold
+ * the SAME fact in two places — the value stays in the view_config JSON AND is copied
+ * into the secondary_dataset column here. They cannot drift (the column is always
+ * derived from `MAPEO_TABLE` via this one helper, and nothing writes the column
+ * independently), but today the column is effectively a write-only mirror: every
+ * reader (alerts.ts, the config edit UI) still reads `MAPEO_TABLE` from the JSON.
+ * The follow-up that returns primary/secondary_dataset from the API should make the
+ * column the only source: stop persisting `MAPEO_TABLE` in the JSON (strip it like
+ * `VIEWS`) and reconstruct it from the column on read for backward compatibility.
+ *
+ * @param {ViewType} viewType - The view's type.
+ * @param {ViewConfig} config - The view's settings JSON.
+ * @returns {string | null} The secondary dataset, or null when not applicable.
+ */
+const deriveSecondaryDataset = (
+  viewType: ViewType,
+  config: ViewConfig,
+): string | null =>
+  viewType === "alerts" ? config.MAPEO_TABLE?.trim() || null : null;
 
 /**
  * Checks whether a given table exists in the warehouse schema.
@@ -74,6 +117,39 @@ const checkTableExists = async (
     console.error("Error checking table existence:", error);
     return false;
   }
+};
+
+/**
+ * Builds the new single-table view metadata columns from existing config shape.
+ *
+ * @param {string} primaryDataset - Dataset table used as the route identifier.
+ * @param {ViewConfig} config - Parsed view config.
+ * @param {string} configString - Serialized config JSON.
+ * @param {ViewType} viewType - View type for the row.
+ * @returns New view metadata column values for views.
+ */
+export const buildViewConfigColumns = (
+  primaryDataset: string,
+  config: ViewConfig,
+  configString: string,
+  viewType: ViewType,
+) => {
+  // secondaryDataset mirrors config.MAPEO_TABLE; configString still contains
+  // MAPEO_TABLE too. See deriveSecondaryDataset's TODO on collapsing to one source.
+  const secondaryDataset = deriveSecondaryDataset(viewType, config);
+
+  return {
+    // viewName falls back to primaryDataset, but NOTE they are not the same kind of
+    // value: DATASET_TABLE is the human display name and primaryDataset is the table
+    // IDENTIFIER. This is intentional — view_name is just a display label, so the
+    // identifier is a reasonable default when no display name was set. primaryDataset
+    // is set from the identifier only and never from DATASET_TABLE.
+    viewName: config.DATASET_TABLE?.trim() || primaryDataset,
+    viewType,
+    primaryDataset,
+    secondaryDataset,
+    viewConfig: configString,
+  };
 };
 
 const VALID_COLUMN_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -357,115 +433,69 @@ export const fetchTableNames = async (): Promise<string[]> => {
 };
 
 export const fetchConfig = async (): Promise<Views> => {
-  // If running in CI, return hardcoded configuration for testing purposes
-  if (process.env.CI) {
-    const mapboxAccessToken =
-      process.env.MAPBOX_ACCESS_TOKEN || "{MAPBOX_ACCESS_TOKEN}";
-    const mediaBasePath = process.env.MEDIA_BASE_PATH || "{MEDIA_BASE_PATH}";
-    const planetApiKey = process.env.PLANET_API_KEY || "{PLANET_API_KEY}";
+  const viewRows = await fetchViewConfigRows();
+  return viewRowsToConfig(viewRows);
+};
 
-    return {
-      seed_survey_data: {
-        VIEWS: "gallery",
-        MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
-        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
-        MAPBOX_ZOOM: 16,
-        MAPBOX_CENTER_LATITUDE: "3.44704",
-        MAPBOX_CENTER_LONGITUDE: "-76.53995",
-        MAPBOX_PROJECTION: "globe",
-        MAPBOX_BEARING: 0,
-        MAPBOX_PITCH: 0,
-        FRONT_END_FILTER_COLUMN: "community",
-        MEDIA_BASE_PATH: mediaBasePath,
-        ROUTE_LEVEL_PERMISSION: "anyone",
-        DATASET_TABLE: undefined,
-        VIEW_HEADER_IMAGE: undefined,
-        VIEW_DESCRIPTION: undefined,
-      },
-      bcmform_responses: {
-        VIEWS: "map,gallery",
-        MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
-        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
-        MAPBOX_ZOOM: 16,
-        MAPBOX_CENTER_LATITUDE: "3.44704",
-        MAPBOX_CENTER_LONGITUDE: "-76.53995",
-        MAPBOX_PROJECTION: "globe",
-        MAPBOX_BEARING: 0,
-        MAPBOX_PITCH: 0,
-        FRONT_END_FILTER_COLUMN: "community",
-        MEDIA_BASE_PATH: mediaBasePath,
-        ROUTE_LEVEL_PERMISSION: "member",
-        DATASET_TABLE: undefined,
-        VIEW_HEADER_IMAGE: undefined,
-        VIEW_DESCRIPTION: undefined,
-      },
-      fake_alerts: {
-        VIEWS: "alerts",
-        EMBED_MEDIA: "YES",
-        MEDIA_BASE_PATH_ALERTS: "",
-        MEDIA_BASE_PATH: "",
-        LOGO_URL:
-          "https://conservationmetrics.com/wp-content/themes/conservation-metrics/images/logo-conservation-metrics.png",
-        MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-streets-v12",
-        MAPBOX_PROJECTION: "globe",
-        MAPBOX_CENTER_LATITUDE: "38",
-        MAPBOX_CENTER_LONGITUDE: "-79",
-        MAPBOX_ZOOM: 7,
-        MAPBOX_PITCH: 0,
-        MAPBOX_BEARING: 0,
-        MAPBOX_3D: false,
-        MAPEO_TABLE: "mapeo_data",
-        MAPEO_CATEGORY_IDS: "threat",
-        MAP_LEGEND_LAYER_IDS: "road-primary,aerialway",
-        ALERT_RESOURCES: "NO",
-        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
-        PLANET_API_KEY: planetApiKey,
-        ROUTE_LEVEL_PERMISSION: "anyone",
-        DATASET_TABLE: undefined,
-        VIEW_HEADER_IMAGE: undefined,
-        VIEW_DESCRIPTION: undefined,
-      },
-      gfw_alerts_viirs: {
-        VIEWS: "alerts",
-        EMBED_MEDIA: "NO",
-        MEDIA_BASE_PATH_ALERTS: "",
-        MEDIA_BASE_PATH: "",
-        MAPBOX_STYLE: "mapbox://styles/mapbox/satellite-streets-v12",
-        MAPBOX_PROJECTION: "globe",
-        MAPBOX_CENTER_LATITUDE: "1.20",
-        MAPBOX_CENTER_LONGITUDE: "34.60",
-        MAPBOX_ZOOM: 8,
-        MAPBOX_PITCH: 0,
-        MAPBOX_BEARING: 0,
-        MAPBOX_3D: false,
-        MAPEO_TABLE: "mapeo_data",
-        MAPEO_CATEGORY_IDS: "threat",
-        MAP_LEGEND_LAYER_IDS: "road-primary,aerialway",
-        ALERT_RESOURCES: "NO",
-        MAPBOX_ACCESS_TOKEN: mapboxAccessToken,
-        PLANET_API_KEY: planetApiKey,
-        ROUTE_LEVEL_PERMISSION: "anyone",
-        DATASET_TABLE: undefined,
-        VIEW_HEADER_IMAGE: undefined,
-        VIEW_DESCRIPTION: undefined,
-      },
-    };
-  }
+export const viewRowsToConfig = (rows: ViewConfigRow[]): Views => {
+  return rows.reduce((viewsConfig, row) => {
+    viewsConfig[row.primaryDataset] = row.viewConfig;
+    return viewsConfig;
+  }, {} as Views);
+};
 
+/**
+ * Fetches each configured view as its own row with parsed JSON config.
+ *
+ * @returns {Promise<ViewConfigRow[]>} View rows used by config management pages.
+ */
+export const fetchViewConfigRows = async (): Promise<ViewConfigRow[]> => {
   try {
-    await ensureViewConfigTableExists();
-
     const result = await configDb.select().from(viewConfig);
 
-    const viewsConfig: Views = {};
-    result.forEach((row) => {
-      viewsConfig[row.tableName] = JSON.parse(row.viewsConfig);
-    });
-
-    return viewsConfig;
+    return result.map((row) => ({
+      primaryDataset: row.primaryDataset,
+      secondaryDataset: row.secondaryDataset,
+      viewConfig: JSON.parse(row.viewConfig) as ViewConfig,
+      viewId: row.viewId,
+      viewName: row.viewName,
+      viewType: row.viewType as ViewType,
+    }));
   } catch (error) {
-    console.error("Error fetching config:", error);
-    return {};
+    console.error("Error fetching view config rows:", error);
+    return [];
+  }
+};
+
+/**
+ * Fetches every configured view for one dataset as its own row.
+ *
+ * @param {string} primaryDataset - Dataset table whose views are loaded.
+ * @returns {Promise<ViewConfigRow[]>} View rows scoped to the dataset.
+ */
+export const fetchViewConfigRowsForTable = async (
+  primaryDataset: string,
+): Promise<ViewConfigRow[]> => {
+  try {
+    const result = await configDb
+      .select()
+      .from(viewConfig)
+      .where(eq(viewConfig.primaryDataset, primaryDataset));
+
+    return result.map((row) => ({
+      primaryDataset: row.primaryDataset,
+      secondaryDataset: row.secondaryDataset,
+      viewConfig: JSON.parse(row.viewConfig) as ViewConfig,
+      viewId: row.viewId,
+      viewName: row.viewName,
+      viewType: row.viewType as ViewType,
+    }));
+  } catch (error) {
+    console.error(
+      `Error fetching view config rows for table "${primaryDataset}":`,
+      error,
+    );
+    return [];
   }
 };
 
@@ -473,35 +503,38 @@ export const fetchConfig = async (): Promise<Views> => {
  * Fetches view configuration for one table only.
  *
  * @param {string} table - Table name to load config for.
+ * @param {ViewType} [viewType] - Optional view type to disambiguate multi-view datasets.
  * @returns {Promise<ViewConfig>} Parsed view config for the requested table.
  * @throws {Error} When config is missing or cannot be loaded.
  */
-export const fetchTableConfig = async (table: string): Promise<ViewConfig> => {
-  if (process.env.CI) {
-    const viewsConfig = await fetchConfig();
-    const tableConfig = viewsConfig[table];
-    if (!tableConfig || Object.keys(tableConfig).length === 0) {
-      throw createMissingViewConfigError(table);
-    }
-    return tableConfig;
-  }
-
+export const fetchTableConfig = async (
+  table: string,
+  viewType?: ViewType,
+): Promise<ViewConfig> => {
   try {
-    await ensureViewConfigTableExists();
-
     const result = await configDb
       .select({
-        viewsConfig: viewConfig.viewsConfig,
+        viewConfig: viewConfig.viewConfig,
       })
       .from(viewConfig)
-      .where(eq(viewConfig.tableName, table))
+      .where(
+        viewType
+          ? and(
+              eq(viewConfig.primaryDataset, table),
+              eq(viewConfig.viewType, viewType),
+            )
+          : eq(viewConfig.primaryDataset, table),
+      )
+      // Deterministic pick when a dataset has multiple views and no view type is
+      // given: always the oldest view. See follow-up issue on permission semantics.
+      .orderBy(viewConfig.viewId)
       .limit(1);
 
     if (result.length === 0) {
       throw createMissingViewConfigError(table);
     }
 
-    const parsedConfig = JSON.parse(result[0].viewsConfig) as ViewConfig;
+    const parsedConfig = JSON.parse(result[0].viewConfig) as ViewConfig;
     if (!parsedConfig || Object.keys(parsedConfig).length === 0) {
       throw createMissingViewConfigError(table);
     }
@@ -553,6 +586,7 @@ export const fetchPublicViewTableNames = async (): Promise<string[]> => {
 export const updateConfig = async (
   tableName: string,
   config: unknown,
+  viewType?: ViewType,
 ): Promise<void> => {
   try {
     const typedConfig = config as ViewConfig;
@@ -576,14 +610,31 @@ export const updateConfig = async (
       }
     }
 
-    const configString = JSON.stringify(config);
+    // A view type is required: a dataset can have several views (e.g. map +
+    // gallery), so we must identify exactly one (primary_dataset, view_type) row.
+    // Without it we would update every view of the dataset and null their type.
+    if (!viewType) {
+      throw new Error(
+        `updateConfig requires a view type for "${tableName}"; refusing to update without identifying a single view.`,
+      );
+    }
+    const configString = JSON.stringify(typedConfig);
+    const viewColumns = buildViewConfigColumns(
+      tableName,
+      typedConfig,
+      configString,
+      viewType,
+    );
 
     await configDb
       .update(viewConfig)
-      .set({
-        viewsConfig: configString,
-      })
-      .where(eq(viewConfig.tableName, tableName));
+      .set(viewColumns)
+      .where(
+        and(
+          eq(viewConfig.primaryDataset, tableName),
+          eq(viewConfig.viewType, viewType),
+        ),
+      );
 
     await syncPublicViews(tableName, typedConfig.ROUTE_LEVEL_PERMISSION);
   } catch (error) {
@@ -592,13 +643,23 @@ export const updateConfig = async (
   }
 };
 
-export const addNewTableToConfig = async (tableName: string): Promise<void> => {
+export const addNewTableToConfig = async (
+  tableName: string,
+  viewType: ViewType,
+): Promise<void> => {
   try {
+    const newConfig: ViewConfig = {};
+    const configString = JSON.stringify(newConfig);
     await configDb.insert(viewConfig).values({
-      tableName,
-      viewsConfig: "{}",
+      ...buildViewConfigColumns(tableName, newConfig, configString, viewType),
     });
   } catch (error) {
+    // (view_type, primary_dataset) is unique, so re-adding a view type the dataset
+    // already has trips a 23505. Translate it into a clear 409 instead of leaking a
+    // raw constraint error as a 500.
+    if (isUniqueViolation(error)) {
+      throw createDuplicateViewError(tableName, viewType);
+    }
     console.error("Error adding new table to config:", error);
     throw error;
   }
@@ -606,14 +667,32 @@ export const addNewTableToConfig = async (tableName: string): Promise<void> => {
 
 export const removeTableFromConfig = async (
   tableName: string,
+  viewType?: ViewType,
 ): Promise<void> => {
   try {
-    await configDb
-      .delete(publicViews)
-      .where(eq(publicViews.tableName, tableName));
+    // Delete just the targeted view; without a view type fall back to removing
+    // every view of the dataset.
     await configDb
       .delete(viewConfig)
-      .where(eq(viewConfig.tableName, tableName));
+      .where(
+        viewType
+          ? and(
+              eq(viewConfig.primaryDataset, tableName),
+              eq(viewConfig.viewType, viewType),
+            )
+          : eq(viewConfig.primaryDataset, tableName),
+      );
+
+    // Only drop the dataset's public_views entry once no views remain for it.
+    const remainingViews = await configDb
+      .select({ viewId: viewConfig.viewId })
+      .from(viewConfig)
+      .where(eq(viewConfig.primaryDataset, tableName));
+    if (remainingViews.length === 0) {
+      await configDb
+        .delete(publicViews)
+        .where(eq(publicViews.tableName, tableName));
+    }
   } catch (error) {
     console.error("Error removing table from config:", error);
     throw error;

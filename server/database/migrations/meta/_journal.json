@@ -50,6 +50,20 @@
       "when": 1768207769008,
       "tag": "0006_backfill_parent_alerts_table_incidents",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779987131693,
+      "tag": "0007_add_view_config_view_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782822317981,
+      "tag": "0008_blue_vanisher",
+      "breakpoints": true
     }
   ]
 }
