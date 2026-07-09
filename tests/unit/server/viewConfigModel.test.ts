@@ -28,37 +28,42 @@ vi.mock("@/server/database/dbConnection", () => ({
 }));
 
 describe("buildViewConfigColumns", () => {
-  it("sets secondaryDataset from MAPEO_TABLE and viewType for alerts views", () => {
+  it("sets secondaryDataset from the typed alerts field", () => {
     const config: ViewConfig = {
       DATASET_TABLE: "Fake Alerts",
-      MAPEO_TABLE: "mapeo_data",
       ROUTE_LEVEL_PERMISSION: "anyone",
     };
 
-    const columns = buildViewConfigColumns("fake_alerts", config, "alerts");
+    const columns = buildViewConfigColumns(
+      "fake_alerts",
+      config,
+      "alerts",
+      "mapeo_data",
+    );
 
     expect(columns.viewType).toBe("alerts");
     expect(columns.secondaryDataset).toBe("mapeo_data");
     expect(columns.primaryDataset).toBe("fake_alerts");
     expect(columns.viewName).toBe("Fake Alerts");
-    expect(JSON.parse(columns.viewConfig)).not.toHaveProperty("MAPEO_TABLE");
+    expect(JSON.parse(columns.viewConfig)).toEqual(config);
   });
 
   it("leaves secondaryDataset null for map and gallery views", () => {
     const config: ViewConfig = {
       DATASET_TABLE: "BCM Form Responses",
-      MAPEO_TABLE: "mapeo_data",
     };
 
     const mapColumns = buildViewConfigColumns(
       "bcmform_responses",
       config,
       "map",
+      "mapeo_data",
     );
     const galleryColumns = buildViewConfigColumns(
       "bcmform_responses",
       config,
       "gallery",
+      "mapeo_data",
     );
 
     expect(mapColumns.secondaryDataset).toBeNull();

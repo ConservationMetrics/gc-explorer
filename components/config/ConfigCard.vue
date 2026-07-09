@@ -9,6 +9,7 @@ const props = defineProps<{
   tableName: string;
   viewType: ViewType;
   viewConfig: ViewConfig;
+  secondaryDataset?: string | null;
   configToCopy: ViewConfig | null;
 }>();
 
@@ -37,7 +38,7 @@ const mediaKeys = computed(() => [
   "MEDIA_BASE_PATH_ICONS",
   "MEDIA_COLUMN",
 ]);
-const alertKeys = computed(() => ["MAPEO_CATEGORY_IDS", "MAPEO_TABLE"]);
+const alertKeys = computed(() => ["MAPEO_CATEGORY_IDS"]);
 const filterKeys = computed(() => [
   "FILTER_OUT_VALUES_FROM_COLUMN",
   "FRONT_END_FILTER_COLUMN",
@@ -58,21 +59,27 @@ const viewTypeList = computed(() => [props.viewType]);
 // On mounted, set localConfig to props.config
 const originalConfig = ref<ViewConfig>({});
 const localConfig = ref<ViewConfig>({});
+const originalSecondaryDataset = ref("");
+const localSecondaryDataset = ref("");
 onMounted(() => {
   if (props.viewConfig) {
     localConfig.value = JSON.parse(JSON.stringify(props.viewConfig));
   }
+  localSecondaryDataset.value = props.secondaryDataset ?? "";
   originalConfig.value = JSON.parse(JSON.stringify(localConfig.value));
+  originalSecondaryDataset.value = localSecondaryDataset.value;
 });
 
 // Watch for changes to viewConfig prop and update baseline after save
 watch(
-  () => props.viewConfig,
-  (newConfig) => {
+  () => [props.viewConfig, props.secondaryDataset] as const,
+  ([newConfig, newSecondaryDataset]) => {
     if (newConfig) {
       localConfig.value = JSON.parse(JSON.stringify(newConfig));
       originalConfig.value = JSON.parse(JSON.stringify(localConfig.value));
     }
+    localSecondaryDataset.value = newSecondaryDataset ?? "";
+    originalSecondaryDataset.value = localSecondaryDataset.value;
   },
   { deep: true },
 );
@@ -87,6 +94,17 @@ watch(
   },
 );
 
+const shouldShowConfigMap = computed(
+  () => props.viewType === "alerts" || props.viewType === "map",
+);
+const shouldShowConfigMedia = computed(() =>
+  ["map", "gallery", "alerts"].includes(props.viewType),
+);
+const shouldShowConfigAlerts = computed(() => props.viewType === "alerts");
+const shouldShowConfigFilters = computed(
+  () => props.viewType === "map" || props.viewType === "gallery",
+);
+
 // Form validations and helpers
 const isChanged = computed(() => {
   const localConfigFiltered = Object.fromEntries(
@@ -95,10 +113,15 @@ const isChanged = computed(() => {
   const originalConfigFiltered = Object.fromEntries(
     Object.entries(originalConfig.value).filter(([value]) => value !== ""),
   );
-  return (
+  const configChanged =
     JSON.stringify(localConfigFiltered) !==
-    JSON.stringify(originalConfigFiltered)
-  );
+    JSON.stringify(originalConfigFiltered);
+  const secondaryDatasetChanged =
+    shouldShowConfigAlerts.value &&
+    localSecondaryDataset.value.trim() !==
+      originalSecondaryDataset.value.trim();
+
+  return configChanged || secondaryDatasetChanged;
 });
 
 // Track permission validation state
@@ -113,20 +136,13 @@ const isFormValid = computed(() => {
   return isMapConfigValid && isPermissionValid.value;
 });
 
-const shouldShowConfigMap = computed(
-  () => props.viewType === "alerts" || props.viewType === "map",
-);
-const shouldShowConfigMedia = computed(() =>
-  ["map", "gallery", "alerts"].includes(props.viewType),
-);
-const shouldShowConfigAlerts = computed(() => props.viewType === "alerts");
-const shouldShowConfigFilters = computed(
-  () => props.viewType === "map" || props.viewType === "gallery",
-);
-
 // Handlers for updating config and form submission
 const handleConfigUpdate = (partialUpdate: Partial<ViewConfig>) => {
   Object.assign(localConfig.value, partialUpdate);
+};
+
+const handleSecondaryDatasetUpdate = (value: string) => {
+  localSecondaryDataset.value = value;
 };
 
 const handlePermissionValidation = (isValid: boolean) => {
@@ -158,6 +174,9 @@ const handleSubmit = () => {
   emit("submitConfig", {
     tableName: props.tableName,
     config: localConfig.value,
+    secondaryDataset: shouldShowConfigAlerts.value
+      ? localSecondaryDataset.value
+      : null,
   });
 };
 </script>
@@ -214,8 +233,10 @@ const handleSubmit = () => {
             :table-name="tableName"
             :views="viewTypeList"
             :config="localConfig"
+            :secondary-dataset="localSecondaryDataset"
             :keys="alertKeys"
             @update-config="handleConfigUpdate"
+            @update-secondary-dataset="handleSecondaryDatasetUpdate"
           />
         </ConfigCollapsibleSection>
 

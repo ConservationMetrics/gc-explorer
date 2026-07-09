@@ -45,8 +45,6 @@ export interface ViewConfig {
   MAPBOX_BASEMAPS?: string; // JSON string of BasemapConfig[]
   MAPBOX_ZOOM?: number;
   MAPEO_CATEGORY_IDS?: string;
-  // Config API/UI field backed by views.secondary_dataset.
-  MAPEO_TABLE?: string;
   MAP_LEGEND_LAYER_IDS?: string;
   MEDIA_BASE_PATH?: string;
   MEDIA_BASE_PATH_ALERTS?: string;

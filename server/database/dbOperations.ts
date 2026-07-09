@@ -71,50 +71,6 @@ const createDuplicateViewError = (table: string, viewType: ViewType) => {
 };
 
 /**
- * Derives the secondary_dataset column from an incoming alerts config payload.
- *
- * @param {ViewType} viewType - The view's type.
- * @param {ViewConfig} config - The submitted view settings.
- * @returns {string | null} The secondary dataset, or null when not applicable.
- */
-const deriveSecondaryDatasetFromConfig = (
-  viewType: ViewType,
-  config: ViewConfig,
-): string | null =>
-  viewType === "alerts" ? config.MAPEO_TABLE?.trim() || null : null;
-
-/**
- * Removes fields that are stored in typed view columns rather than view_config.
- *
- * @param {ViewConfig} config - Submitted view settings.
- * @returns {ViewConfig} Settings safe to serialize into views.view_config.
- */
-const toStoredViewConfig = (config: ViewConfig): ViewConfig => {
-  const storedConfig = { ...config };
-  delete storedConfig.MAPEO_TABLE;
-  return storedConfig;
-};
-
-type ViewConfigSourceRow = Pick<
-  typeof viewConfig.$inferSelect,
-  "secondaryDataset" | "viewConfig" | "viewType"
->;
-
-/**
- * Parses stored config and reconstructs transient client fields from view columns.
- *
- * @param {ViewConfigSourceRow} row - View row from the config database.
- * @returns {ViewConfig} Config object used by existing clients.
- */
-const parseViewConfigRowConfig = (row: ViewConfigSourceRow): ViewConfig => {
-  const parsedConfig = JSON.parse(row.viewConfig) as ViewConfig;
-  if (row.viewType === "alerts" && row.secondaryDataset) {
-    return { ...parsedConfig, MAPEO_TABLE: row.secondaryDataset };
-  }
-  return parsedConfig;
-};
-
-/**
  * Checks whether a given table exists in the warehouse schema.
  *
  * @param {string | undefined} table - Table name to verify.
@@ -138,22 +94,20 @@ const checkTableExists = async (
 };
 
 /**
- * Builds the new single-table view metadata columns from existing config shape.
+ * Builds the view metadata columns from the submitted config.
  *
  * @param {string} primaryDataset - Primary warehouse table for the view.
  * @param {ViewConfig} config - Parsed view config.
- * @param {string} configString - Serialized config JSON.
  * @param {ViewType} viewType - View type for the row.
+ * @param {string | null} [secondaryDataset] - Optional alerts companion table.
  * @returns New view metadata column values for views.
  */
 export const buildViewConfigColumns = (
   primaryDataset: string,
   config: ViewConfig,
   viewType: ViewType,
+  secondaryDataset?: string | null,
 ) => {
-  const secondaryDataset = deriveSecondaryDatasetFromConfig(viewType, config);
-  const configString = JSON.stringify(toStoredViewConfig(config));
-
   return {
     // viewName falls back to primaryDataset, but NOTE they are not the same kind of
     // value: DATASET_TABLE is the human display name and primaryDataset is the table
@@ -163,8 +117,9 @@ export const buildViewConfigColumns = (
     viewName: config.DATASET_TABLE?.trim() || primaryDataset,
     viewType,
     primaryDataset,
-    secondaryDataset,
-    viewConfig: configString,
+    secondaryDataset:
+      viewType === "alerts" ? secondaryDataset?.trim() || null : null,
+    viewConfig: JSON.stringify(config),
   };
 };
 
@@ -542,7 +497,7 @@ export const fetchViewConfigRows = async (): Promise<ViewConfigRow[]> => {
     return result.map((row) => ({
       primaryDataset: row.primaryDataset,
       secondaryDataset: row.secondaryDataset,
-      viewConfig: parseViewConfigRowConfig(row),
+      viewConfig: JSON.parse(row.viewConfig) as ViewConfig,
       viewId: row.viewId,
       viewName: row.viewName,
       viewType: row.viewType as ViewType,
@@ -571,7 +526,7 @@ export const fetchViewConfigRowsForTable = async (
     return result.map((row) => ({
       primaryDataset: row.primaryDataset,
       secondaryDataset: row.secondaryDataset,
-      viewConfig: parseViewConfigRowConfig(row),
+      viewConfig: JSON.parse(row.viewConfig) as ViewConfig,
       viewId: row.viewId,
       viewName: row.viewName,
       viewType: row.viewType as ViewType,
@@ -600,9 +555,7 @@ export const fetchTableConfig = async (
   try {
     const result = await configDb
       .select({
-        secondaryDataset: viewConfig.secondaryDataset,
         viewConfig: viewConfig.viewConfig,
-        viewType: viewConfig.viewType,
       })
       .from(viewConfig)
       .where(
@@ -622,7 +575,7 @@ export const fetchTableConfig = async (
       throw createMissingViewConfigError(table);
     }
 
-    const parsedConfig = parseViewConfigRowConfig(result[0]);
+    const parsedConfig = JSON.parse(result[0].viewConfig) as ViewConfig;
     if (!parsedConfig || Object.keys(parsedConfig).length === 0) {
       throw createMissingViewConfigError(table);
     }
@@ -675,6 +628,7 @@ export const updateConfig = async (
   tableName: string,
   config: unknown,
   viewType?: ViewType,
+  secondaryDataset?: string | null,
 ): Promise<void> => {
   try {
     const typedConfig = config as ViewConfig;
@@ -710,6 +664,7 @@ export const updateConfig = async (
       tableName,
       typedConfig,
       viewType,
+      secondaryDataset,
     );
 
     await configDb
