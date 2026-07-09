@@ -28,63 +28,46 @@ vi.mock("@/server/database/dbConnection", () => ({
 }));
 
 describe("buildViewConfigColumns", () => {
-  it("sets secondaryDataset from MAPEO_TABLE and viewType for alerts views", () => {
+  it("sets secondaryDataset from the typed alerts field", () => {
     const config: ViewConfig = {
       DATASET_TABLE: "Fake Alerts",
-      MAPEO_TABLE: "mapeo_data",
       ROUTE_LEVEL_PERMISSION: "anyone",
     };
 
     const columns = buildViewConfigColumns(
       "fake_alerts",
       config,
-      JSON.stringify(config),
       "alerts",
+      "mapeo_data",
     );
 
     expect(columns.viewType).toBe("alerts");
     expect(columns.secondaryDataset).toBe("mapeo_data");
     expect(columns.primaryDataset).toBe("fake_alerts");
     expect(columns.viewName).toBe("Fake Alerts");
+    expect(JSON.parse(columns.viewConfig)).toEqual(config);
   });
 
   it("leaves secondaryDataset null for map and gallery views", () => {
     const config: ViewConfig = {
       DATASET_TABLE: "BCM Form Responses",
-      MAPEO_TABLE: "mapeo_data",
     };
 
     const mapColumns = buildViewConfigColumns(
       "bcmform_responses",
       config,
-      JSON.stringify(config),
       "map",
+      "mapeo_data",
     );
     const galleryColumns = buildViewConfigColumns(
       "bcmform_responses",
       config,
-      JSON.stringify(config),
       "gallery",
+      "mapeo_data",
     );
 
     expect(mapColumns.secondaryDataset).toBeNull();
     expect(galleryColumns.secondaryDataset).toBeNull();
-  });
-
-  it("does not include a VIEWS key in the serialized view config", () => {
-    const config: ViewConfig = {
-      DATASET_TABLE: "Survey",
-      MAPBOX_ZOOM: 16,
-    };
-
-    const columns = buildViewConfigColumns(
-      "seed_survey_data",
-      config,
-      JSON.stringify(config),
-      "gallery",
-    );
-
-    expect(JSON.parse(columns.viewConfig)).not.toHaveProperty("VIEWS");
   });
 
   it("falls back to primaryDataset for viewName when DATASET_TABLE is absent", () => {
@@ -93,7 +76,6 @@ describe("buildViewConfigColumns", () => {
     const columns = buildViewConfigColumns(
       "seed_survey_data",
       config,
-      JSON.stringify(config),
       "gallery",
     );
 

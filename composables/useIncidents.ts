@@ -122,7 +122,7 @@ export const useIncidents = (
 
   /**
    * True when a persisted incident entry refers to mapeo rows. {@link CollectionEntry.source_table}
-   * is the warehouse table name (often the view’s MAPEO_TABLE, or `mapeo_data`)
+   * is the warehouse table name (often the view's secondary dataset, or `mapeo_data`)
    */
   const savedEntryIsMapeo = (entry: CollectionEntry): boolean => {
     const configuredMapeoTable = secondaryDatasetRef?.value;
@@ -1014,7 +1014,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
 
   /**
    * Adds a source to the selected sources list for incident creation
-   * @param sourceTable - Warehouse table (alerts route table or view MAPEO_TABLE)
+   * @param sourceTable - Warehouse table (alerts route table or secondary dataset)
    * @param sourceId - The unique identifier from the source table
    * @param featureType - "alert" or "mapeo" so the server uses alert_id or _id when fetching the row
    * @param notes - Optional notes about the source
