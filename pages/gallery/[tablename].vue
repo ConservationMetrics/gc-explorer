@@ -20,6 +20,8 @@ const filterColumn = ref();
 const galleryData = ref();
 const mediaBasePath = ref();
 const mediaColumn = ref();
+const mapboxAccessToken = ref<string | undefined>();
+const mapboxStyle = ref<string | undefined>();
 const timestampColumn = ref<string | undefined>();
 
 const { data, error, refresh } = await useFetch(`/api/${table}/gallery`, {
@@ -33,6 +35,8 @@ if (data.value && !error.value) {
   dataFetched.value = true;
   filterColumn.value = data.value.filterColumn;
   galleryData.value = data.value.data;
+  mapboxAccessToken.value = data.value.mapboxAccessToken;
+  mapboxStyle.value = data.value.mapboxStyle;
   mediaBasePath.value = data.value.mediaBasePath;
   mediaColumn.value = data.value.mediaColumn;
   timestampColumn.value = data.value.timestampColumn;
@@ -73,6 +77,8 @@ definePageMeta({ layout: "explorer" });
         :allowed-file-extensions="allowedFileExtensions"
         :gallery-data="galleryData"
         :filter-column="filterColumn"
+        :mapbox-access-token="mapboxAccessToken"
+        :mapbox-style="mapboxStyle"
         :media-base-path="mediaBasePath"
         :media-column="mediaColumn"
         :table="table"

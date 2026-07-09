@@ -12,8 +12,11 @@ import type {
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
   attachments: GalleryAttachment[];
+  centroid?: string;
   feature: DataEntry;
   filePaths: string[];
+  mapboxAccessToken?: string;
+  mapboxStyle?: string;
   mediaBasePath: string;
 }>();
 
@@ -106,8 +109,11 @@ onBeforeUnmount(() => {
           <GalleryDetailMetadata
             :allowed-file-extensions="allowedFileExtensions"
             :attachments="attachments"
+            :centroid="centroid"
             :feature="feature"
             :file-paths="filePaths"
+            :mapbox-access-token="mapboxAccessToken"
+            :mapbox-style="mapboxStyle"
             :media-base-path="mediaBasePath"
           />
         </div>

@@ -98,6 +98,7 @@
   "galleryFiles": "Adjuntos",
   "galleryGoToSlide": "Ir a la diapositiva {number} de {total}",
   "galleryImageDetails": "Detalles de la imagen",
+  "galleryLocation": "Ubicación",
   "galleryNextMedia": "Medio siguiente",
   "galleryPreviousMedia": "Medio anterior",
   "gallerySlideOf": "Diapositiva {current} de {total}",

@@ -2,6 +2,10 @@
 import { getFilePathsWithExtension } from "@/utils";
 import { parseGalleryAttachments } from "@/utils/galleryAttachments";
 import {
+  calculateCentroidFromParsedCoords,
+  tryParseDataEntryGeoCoordinates,
+} from "@/utils/geoUtils";
+import {
   filterByDateAndCategory,
   normalizeFilterValues,
   useTimestampFilter,
@@ -32,6 +36,8 @@ const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
   filterColumn?: string;
   galleryData: Dataset;
+  mapboxAccessToken?: string;
+  mapboxStyle?: string;
   mediaBasePath: string;
   mediaColumn?: string;
   table: string;
@@ -63,6 +69,7 @@ const loading = ref(false);
 const selectedEntry = ref<DataEntry | null>(null);
 const selectedFilePaths = ref<string[]>([]);
 const selectedAttachments = ref<GalleryAttachment[]>([]);
+const selectedCentroid = ref<string | undefined>();
 const isFilteredToEmpty = computed(
   () => props.galleryData.length > 0 && filteredData.value.length === 0,
 );
@@ -168,11 +175,20 @@ const getRecordFilePaths = (feature: DataEntry): string[] => {
   );
 };
 
+const getRecordCentroid = (feature: DataEntry): string | undefined => {
+  const parsedCoords = tryParseDataEntryGeoCoordinates(feature);
+  if (!parsedCoords) return undefined;
+
+  const centroid = calculateCentroidFromParsedCoords(parsedCoords);
+  return centroid || undefined;
+};
+
 const openDetail = (feature: DataEntry, event?: Event) => {
   const fullRecord = getFullRecord(feature);
   selectedEntry.value = prepareForDisplay(fullRecord);
   selectedFilePaths.value = getRecordFilePaths(fullRecord);
   selectedAttachments.value = parseGalleryAttachments(fullRecord);
+  selectedCentroid.value = getRecordCentroid(fullRecord);
 
   if (event?.currentTarget instanceof HTMLElement) {
     event.currentTarget.blur();
@@ -187,6 +203,7 @@ const closeDetail = () => {
   selectedEntry.value = null;
   selectedFilePaths.value = [];
   selectedAttachments.value = [];
+  selectedCentroid.value = undefined;
 };
 </script>
 
@@ -200,8 +217,11 @@ const closeDetail = () => {
       v-if="selectedEntry"
       :allowed-file-extensions="allowedFileExtensions"
       :attachments="selectedAttachments"
+      :centroid="selectedCentroid"
       :feature="selectedEntry"
       :file-paths="selectedFilePaths"
+      :mapbox-access-token="mapboxAccessToken"
+      :mapbox-style="mapboxStyle"
       :media-base-path="mediaBasePath"
       @close="closeDetail"
     />

@@ -99,6 +99,7 @@
   "galleryFiles": "Bijlagen",
   "galleryGoToSlide": "Ga naar dia {number} van {total}",
   "galleryImageDetails": "Afbeeldingsdetails",
+  "galleryLocation": "Locatie",
   "galleryNextMedia": "Volgende media",
   "galleryPreviousMedia": "Vorige media",
   "gallerySlideOf": "Dia {current} van {total}",

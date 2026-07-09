@@ -9,6 +9,7 @@ import {
   filterOutUnwantedValues,
 } from "@/server/dataProcessing/dataFilters";
 import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
+import { parseBasemaps } from "@/server/utils";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
@@ -78,6 +79,25 @@ export default defineEventHandler(async (event: H3Event) => {
       tableConfig.MEDIA_COLUMN,
     );
 
+    let mapboxAccessToken = tableConfig.MAPBOX_ACCESS_TOKEN;
+    let mapboxStyle =
+      parseBasemaps(tableConfig).defaultMapboxStyle ?? tableConfig.MAPBOX_STYLE;
+
+    try {
+      if (!mapboxAccessToken || !mapboxStyle) {
+        const mapConfig = await fetchTableConfig(table, "map");
+        mapboxAccessToken = mapboxAccessToken ?? mapConfig.MAPBOX_ACCESS_TOKEN;
+        if (!mapboxStyle) {
+          mapboxStyle =
+            parseBasemaps(mapConfig).defaultMapboxStyle ??
+            mapConfig.MAPBOX_STYLE;
+        }
+      }
+    } catch {
+      mapboxAccessToken = undefined;
+      mapboxStyle = undefined;
+    }
+
     // Return minimal records: ID + columns needed for filtering and media display
     const minimalData = dataWithFilesOnly.map((entry) => {
       const minimal: Record<string, unknown> = {};
@@ -98,6 +118,8 @@ export default defineEventHandler(async (event: H3Event) => {
       allowedFileExtensions,
       data: minimalData,
       filterColumn,
+      mapboxAccessToken,
+      mapboxStyle,
       mediaBasePath: tableConfig.MEDIA_BASE_PATH,
       mediaColumn,
       table,

@@ -220,6 +220,13 @@ test("gallery page - detail panel opens on tile click and closes", async ({
   const googleMapsLinks = page.getByTestId("google-maps-link");
   if ((await googleMapsLinks.count()) > 0) {
     await expect(googleMapsLinks.first()).toHaveAttribute("target", "_blank");
+
+    const minimap = page.getByTestId("gallery-detail-minimap");
+    if (await minimap.isVisible()) {
+      await expect(
+        page.getByTestId("gallery-detail-minimap-image"),
+      ).toBeVisible();
+    }
   }
 
   await expect(galleryItems.first()).toBeHidden({ timeout: 3000 });

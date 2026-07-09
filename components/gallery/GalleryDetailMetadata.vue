@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { FileAudio, FileImage, FileVideo, ExternalLink } from "lucide-vue-next";
 
+import GalleryDetailMinimap from "@/components/gallery/GalleryDetailMinimap.vue";
+
 import type {
   AllowedFileExtensions,
   DataEntry,
@@ -10,8 +12,11 @@ import type {
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
   attachments: GalleryAttachment[];
+  centroid?: string;
   feature: DataEntry;
   filePaths: string[];
+  mapboxAccessToken?: string;
+  mapboxStyle?: string;
   mediaBasePath: string;
 }>();
 
@@ -57,6 +62,17 @@ const visibleFields = computed(() =>
 
 const isCoordinateField = (key: string): boolean =>
   key === "geocoordinates" || key === "geographicCentroid";
+
+/** Index of the last visible coordinate field, for minimap placement. */
+const lastCoordinateFieldIndex = computed(() => {
+  let lastIndex = -1;
+  visibleFields.value.forEach((field, index) => {
+    if (isCoordinateField(field.key)) {
+      lastIndex = index;
+    }
+  });
+  return lastIndex;
+});
 
 const fileType = (filePath: string): "image" | "audio" | "video" | null => {
   const extension = (filePath.split(".").pop() || "").toLowerCase();
@@ -160,7 +176,7 @@ const attachmentMetaLine = (attachment: GalleryAttachment): string => {
   <div class="space-y-6" data-testid="gallery-detail-metadata-fields">
     <div class="space-y-4">
       <div
-        v-for="field in visibleFields"
+        v-for="(field, index) in visibleFields"
         :key="field.key"
         class="flex flex-col gap-0.5"
         data-testid="gallery-metadata-field"
@@ -198,8 +214,22 @@ const attachmentMetaLine = (attachment: GalleryAttachment): string => {
             >({{ $t("viewOnGoogleMaps") }})</a
           >
         </span>
+        <GalleryDetailMinimap
+          v-if="index === lastCoordinateFieldIndex"
+          class="mt-2"
+          :centroid="centroid"
+          :mapbox-access-token="mapboxAccessToken"
+          :mapbox-style="mapboxStyle"
+        />
       </div>
     </div>
+
+    <GalleryDetailMinimap
+      v-if="centroid && lastCoordinateFieldIndex < 0"
+      :centroid="centroid"
+      :mapbox-access-token="mapboxAccessToken"
+      :mapbox-style="mapboxStyle"
+    />
 
     <div
       v-if="showFilesSection"

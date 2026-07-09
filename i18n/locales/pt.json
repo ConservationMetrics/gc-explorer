@@ -98,6 +98,7 @@
   "galleryFiles": "Anexos",
   "galleryGoToSlide": "Ir para o slide {number} de {total}",
   "galleryImageDetails": "Detalhes da imagem",
+  "galleryLocation": "Localização",
   "galleryNextMedia": "Mídia seguinte",
   "galleryPreviousMedia": "Mídia anterior",
   "gallerySlideOf": "Slide {current} de {total}",
