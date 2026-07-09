@@ -17,6 +17,7 @@ const viewRows = ref<ViewConfigRow[]>([]);
 const tableNames = ref();
 const dataFetched = ref(false);
 const datasetConfig = ref<ViewConfig | null>(null);
+const secondaryDataset = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
 
 const editedViewType = ref<ViewType | undefined>(undefined);
@@ -44,6 +45,7 @@ if (data.value && !error.value) {
 
   if (editedViewRow) {
     datasetConfig.value = editedViewRow.viewConfig;
+    secondaryDataset.value = editedViewRow.secondaryDataset ?? null;
     editedViewType.value = editedViewRow.viewType;
     dataFetched.value = true;
   } else {
@@ -60,9 +62,11 @@ const showSavedModal = ref(false);
 
 const submitConfig = async ({
   config,
+  secondaryDataset: submittedSecondaryDataset,
   tableName,
 }: {
   config: ViewConfig;
+  secondaryDataset?: string | null;
   tableName: string;
 }) => {
   errorMessage.value = null;
@@ -73,11 +77,15 @@ const submitConfig = async ({
       query: resolvedViewType.value
         ? { view_type: resolvedViewType.value }
         : undefined,
-      body: JSON.stringify(config),
+      body: JSON.stringify({
+        config,
+        secondaryDataset: submittedSecondaryDataset,
+      }),
     });
     // Update the local datasetConfig to reflect the saved state
     // This will trigger the watch in ConfigCard to update originalConfig baseline thus clearing the button and applying edit
     datasetConfig.value = JSON.parse(JSON.stringify(config));
+    secondaryDataset.value = submittedSecondaryDataset ?? null;
     showSavedModal.value = true;
     setTimeout(() => {
       showSavedModal.value = false;
@@ -225,6 +233,7 @@ definePageMeta({ layout: "explorer" });
           :table-name="dataset"
           :view-type="resolvedViewType"
           :view-config="datasetConfig"
+          :secondary-dataset="secondaryDataset"
           :config-to-copy="configToCopy"
           @submit-config="submitConfig"
           @remove-table-from-config="handleRemoveTableFromConfig"

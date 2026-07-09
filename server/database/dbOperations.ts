@@ -8,6 +8,7 @@ import type {
   Views,
   ViewConfig,
   ViewConfigRow,
+  ViewTables,
   ViewType,
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
@@ -70,33 +71,6 @@ const createDuplicateViewError = (table: string, viewType: ViewType) => {
 };
 
 /**
- * Derives a view's secondary dataset (its Mapeo table) from its config. This is
- * the single source for the `MAPEO_TABLE` → `secondary_dataset` mapping, shared by
- * every place that builds a view row (live writes and the test fixture seed) so the column
- * can never drift from the config field it mirrors: only alerts views have a
- * secondary dataset, and a blank value normalizes to null.
- *
- * TODO(single-source-of-truth): `MAPEO_TABLE` and `secondary_dataset` currently hold
- * the SAME fact in two places — the value stays in the view_config JSON AND is copied
- * into the secondary_dataset column here. They cannot drift (the column is always
- * derived from `MAPEO_TABLE` via this one helper, and nothing writes the column
- * independently), but today the column is effectively a write-only mirror: every
- * reader (alerts.ts, the config edit UI) still reads `MAPEO_TABLE` from the JSON.
- * The follow-up that returns primary/secondary_dataset from the API should make the
- * column the only source: stop persisting `MAPEO_TABLE` in the JSON (strip it like
- * `VIEWS`) and reconstruct it from the column on read for backward compatibility.
- *
- * @param {ViewType} viewType - The view's type.
- * @param {ViewConfig} config - The view's settings JSON.
- * @returns {string | null} The secondary dataset, or null when not applicable.
- */
-const deriveSecondaryDataset = (
-  viewType: ViewType,
-  config: ViewConfig,
-): string | null =>
-  viewType === "alerts" ? config.MAPEO_TABLE?.trim() || null : null;
-
-/**
  * Checks whether a given table exists in the warehouse schema.
  *
  * @param {string | undefined} table - Table name to verify.
@@ -120,24 +94,20 @@ const checkTableExists = async (
 };
 
 /**
- * Builds the new single-table view metadata columns from existing config shape.
+ * Builds the view metadata columns from the submitted config.
  *
- * @param {string} primaryDataset - Dataset table used as the route identifier.
+ * @param {string} primaryDataset - Primary warehouse table for the view.
  * @param {ViewConfig} config - Parsed view config.
- * @param {string} configString - Serialized config JSON.
  * @param {ViewType} viewType - View type for the row.
+ * @param {string | null} [secondaryDataset] - Optional alerts companion table.
  * @returns New view metadata column values for views.
  */
 export const buildViewConfigColumns = (
   primaryDataset: string,
   config: ViewConfig,
-  configString: string,
   viewType: ViewType,
+  secondaryDataset?: string | null,
 ) => {
-  // secondaryDataset mirrors config.MAPEO_TABLE; configString still contains
-  // MAPEO_TABLE too. See deriveSecondaryDataset's TODO on collapsing to one source.
-  const secondaryDataset = deriveSecondaryDataset(viewType, config);
-
   return {
     // viewName falls back to primaryDataset, but NOTE they are not the same kind of
     // value: DATASET_TABLE is the human display name and primaryDataset is the table
@@ -147,8 +117,9 @@ export const buildViewConfigColumns = (
     viewName: config.DATASET_TABLE?.trim() || primaryDataset,
     viewType,
     primaryDataset,
-    secondaryDataset,
-    viewConfig: configString,
+    secondaryDataset:
+      viewType === "alerts" ? secondaryDataset?.trim() || null : null,
+    viewConfig: JSON.stringify(config),
   };
 };
 
@@ -355,6 +326,76 @@ export const fetchData = async (
   console.log("Successfully fetched data from", table, "!");
 
   return { mainData, columnsData, metadata };
+};
+
+type FetchedViewData = Awaited<ReturnType<typeof fetchData>>;
+
+/**
+ * Fetches the warehouse table names configured for one view.
+ *
+ * @param {string} table - Primary dataset value to match in the views table.
+ * @param {ViewType} viewType - View type to resolve.
+ * @returns {Promise<ViewTables>} Primary and optional secondary table names.
+ * @throws {Error} When the configured view is missing.
+ */
+export const fetchViewTables = async (
+  table: string,
+  viewType: ViewType,
+): Promise<ViewTables> => {
+  const result = await configDb
+    .select({
+      primaryTable: viewConfig.primaryDataset,
+      secondaryTable: viewConfig.secondaryDataset,
+    })
+    .from(viewConfig)
+    .where(
+      and(
+        eq(viewConfig.viewType, viewType),
+        eq(viewConfig.primaryDataset, table),
+      ),
+    )
+    .limit(1);
+
+  if (result.length === 0) {
+    throw createMissingViewConfigError(table);
+  }
+
+  return {
+    primaryTable: result[0].primaryTable,
+    secondaryTable: result[0].secondaryTable ?? null,
+  };
+};
+
+/**
+ * Fetches data from a view's primary table and, when configured, secondary table.
+ *
+ * @param {string} primaryTable - Primary warehouse table name.
+ * @param {object} options - Fetch options for primary and optional secondary data.
+ * @returns Primary data plus nullable secondary data.
+ */
+export const fetchViewData = async (
+  primaryTable: string,
+  {
+    secondaryTable,
+    primaryOptions,
+    secondaryOptions,
+  }: {
+    secondaryTable?: string | null;
+    primaryOptions: FetchDataOptions;
+    secondaryOptions?: FetchDataOptions;
+  },
+): Promise<{
+  primaryData: FetchedViewData;
+  secondaryData: FetchedViewData | null;
+}> => {
+  const [primaryData, secondaryData] = await Promise.all([
+    fetchData(primaryTable, primaryOptions),
+    secondaryTable
+      ? fetchData(secondaryTable, secondaryOptions ?? primaryOptions)
+      : Promise.resolve(null),
+  ]);
+
+  return { primaryData, secondaryData };
 };
 
 /**
@@ -587,6 +628,7 @@ export const updateConfig = async (
   tableName: string,
   config: unknown,
   viewType?: ViewType,
+  secondaryDataset?: string | null,
 ): Promise<void> => {
   try {
     const typedConfig = config as ViewConfig;
@@ -618,12 +660,11 @@ export const updateConfig = async (
         `updateConfig requires a view type for "${tableName}"; refusing to update without identifying a single view.`,
       );
     }
-    const configString = JSON.stringify(typedConfig);
     const viewColumns = buildViewConfigColumns(
       tableName,
       typedConfig,
-      configString,
       viewType,
+      secondaryDataset,
     );
 
     await configDb
@@ -649,9 +690,8 @@ export const addNewTableToConfig = async (
 ): Promise<void> => {
   try {
     const newConfig: ViewConfig = {};
-    const configString = JSON.stringify(newConfig);
     await configDb.insert(viewConfig).values({
-      ...buildViewConfigColumns(tableName, newConfig, configString, viewType),
+      ...buildViewConfigColumns(tableName, newConfig, viewType),
     });
   } catch (error) {
     // (view_type, primary_dataset) is unique, so re-adding a view type the dataset

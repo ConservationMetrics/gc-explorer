@@ -10,12 +10,14 @@ import type { ViewConfig } from "@/types";
 const props = defineProps<{
   tableName: string;
   config: ViewConfig;
+  secondaryDataset?: string | null;
   views: Array<string>;
   keys: Array<string>;
 }>();
 
 const emit = defineEmits<{
   (e: "updateConfig", payload: Partial<ViewConfig>): void;
+  (e: "updateSecondaryDataset", value: string): void;
 }>();
 
 type Tag = { text: string };
@@ -41,6 +43,25 @@ const handleTagsChanged = (key: string, newTags: Tag[]): void => {
 
 <template>
   <div class="space-y-6">
+    <div class="space-y-2">
+      <label
+        :for="`${tableName}-secondaryDataset`"
+        class="block text-sm font-medium text-gray-700"
+      >
+        {{ $t("mapeoTable") }}
+      </label>
+      <input
+        :id="`${tableName}-secondaryDataset`"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+        type="text"
+        :value="secondaryDataset ?? ''"
+        @input="
+          (e) =>
+            emit('updateSecondaryDataset', (e.target as HTMLInputElement).value)
+        "
+      />
+    </div>
+
     <div v-for="key in keys" :key="key" class="space-y-2">
       <label
         :for="`${tableName}-${key}`"
@@ -48,21 +69,7 @@ const handleTagsChanged = (key: string, newTags: Tag[]): void => {
       >
         {{ $t(toCamelCase(key)) }}
       </label>
-      <template v-if="key === 'MAPEO_TABLE'">
-        <input
-          :id="`${tableName}-${key}`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-          type="text"
-          :value="config[key]"
-          @input="
-            (e) =>
-              emit('updateConfig', {
-                [key]: (e.target as HTMLInputElement).value,
-              })
-          "
-        />
-      </template>
-      <template v-else-if="key === 'MAPEO_CATEGORY_IDS'">
+      <template v-if="key === 'MAPEO_CATEGORY_IDS'">
         <VueTagsInput
           class="tag-field"
           :tags="tags[key]"

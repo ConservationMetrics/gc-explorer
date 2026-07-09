@@ -31,13 +31,13 @@ INSERT INTO views (view_name, view_type, primary_dataset, secondary_dataset, vie
     'alerts',
     'fake_alerts',
     'mapeo_data',
-    '{"EMBED_MEDIA":"YES","MEDIA_BASE_PATH_ALERTS":"","MEDIA_BASE_PATH":"","LOGO_URL":"https://conservationmetrics.com/wp-content/themes/conservation-metrics/images/logo-conservation-metrics.png","MAPBOX_STYLE":"mapbox://styles/mapbox/satellite-streets-v12","MAPBOX_PROJECTION":"globe","MAPBOX_CENTER_LATITUDE":"38","MAPBOX_CENTER_LONGITUDE":"-79","MAPBOX_ZOOM":7,"MAPBOX_PITCH":0,"MAPBOX_BEARING":0,"MAPBOX_3D":false,"MAPEO_TABLE":"mapeo_data","MAPEO_CATEGORY_IDS":"threat","MAP_LEGEND_LAYER_IDS":"road-primary,aerialway","ALERT_RESOURCES":"NO","MAPBOX_ACCESS_TOKEN":"{MAPBOX_ACCESS_TOKEN}","PLANET_API_KEY":"{PLANET_API_KEY}","ROUTE_LEVEL_PERMISSION":"anyone"}'
+    '{"EMBED_MEDIA":"YES","MEDIA_BASE_PATH_ALERTS":"","MEDIA_BASE_PATH":"","LOGO_URL":"https://conservationmetrics.com/wp-content/themes/conservation-metrics/images/logo-conservation-metrics.png","MAPBOX_STYLE":"mapbox://styles/mapbox/satellite-streets-v12","MAPBOX_PROJECTION":"globe","MAPBOX_CENTER_LATITUDE":"38","MAPBOX_CENTER_LONGITUDE":"-79","MAPBOX_ZOOM":7,"MAPBOX_PITCH":0,"MAPBOX_BEARING":0,"MAPBOX_3D":false,"MAPEO_CATEGORY_IDS":"threat","MAP_LEGEND_LAYER_IDS":"road-primary,aerialway","ALERT_RESOURCES":"NO","MAPBOX_ACCESS_TOKEN":"{MAPBOX_ACCESS_TOKEN}","PLANET_API_KEY":"{PLANET_API_KEY}","ROUTE_LEVEL_PERMISSION":"anyone"}'
   ),
   (
     'gfw_alerts_viirs',
     'alerts',
     'gfw_alerts_viirs',
     'mapeo_data',
-    '{"EMBED_MEDIA":"NO","MEDIA_BASE_PATH_ALERTS":"","MEDIA_BASE_PATH":"","MAPBOX_STYLE":"mapbox://styles/mapbox/satellite-streets-v12","MAPBOX_PROJECTION":"globe","MAPBOX_CENTER_LATITUDE":"1.20","MAPBOX_CENTER_LONGITUDE":"34.60","MAPBOX_ZOOM":8,"MAPBOX_PITCH":0,"MAPBOX_BEARING":0,"MAPBOX_3D":false,"MAPEO_TABLE":"mapeo_data","MAPEO_CATEGORY_IDS":"threat","MAP_LEGEND_LAYER_IDS":"road-primary,aerialway","ALERT_RESOURCES":"NO","MAPBOX_ACCESS_TOKEN":"{MAPBOX_ACCESS_TOKEN}","PLANET_API_KEY":"{PLANET_API_KEY}","ROUTE_LEVEL_PERMISSION":"anyone"}'
+    '{"EMBED_MEDIA":"NO","MEDIA_BASE_PATH_ALERTS":"","MEDIA_BASE_PATH":"","MAPBOX_STYLE":"mapbox://styles/mapbox/satellite-streets-v12","MAPBOX_PROJECTION":"globe","MAPBOX_CENTER_LATITUDE":"1.20","MAPBOX_CENTER_LONGITUDE":"34.60","MAPBOX_ZOOM":8,"MAPBOX_PITCH":0,"MAPBOX_BEARING":0,"MAPBOX_3D":false,"MAPEO_CATEGORY_IDS":"threat","MAP_LEGEND_LAYER_IDS":"road-primary,aerialway","ALERT_RESOURCES":"NO","MAPBOX_ACCESS_TOKEN":"{MAPBOX_ACCESS_TOKEN}","PLANET_API_KEY":"{PLANET_API_KEY}","ROUTE_LEVEL_PERMISSION":"anyone"}'
   )
 ON CONFLICT (view_type, primary_dataset) DO NOTHING;
