@@ -200,6 +200,28 @@ test("gallery page - detail panel opens on tile click and closes", async ({
   const detailPanel = page.getByTestId("gallery-detail-panel");
   await expect(detailPanel).toBeVisible({ timeout: 5000 });
   await expect(page.getByTestId("gallery-detail-metadata")).toBeVisible();
+  await expect(
+    page.getByTestId("gallery-detail-metadata-fields"),
+  ).toBeVisible();
+
+  const metadataFields = page.getByTestId("gallery-metadata-field");
+  await expect(metadataFields.first()).toBeVisible({ timeout: 5000 });
+  expect(await metadataFields.count()).toBeGreaterThan(0);
+  await expect(page.getByTestId("data-feature")).toHaveCount(0);
+
+  const attachmentsSection = page.getByTestId("gallery-metadata-files");
+  if (await attachmentsSection.isVisible()) {
+    const attachmentCount =
+      (await page.getByTestId("gallery-metadata-attachment").count()) +
+      (await page.getByTestId("gallery-metadata-file-link").count());
+    expect(attachmentCount).toBeGreaterThan(0);
+  }
+
+  const googleMapsLinks = page.getByTestId("google-maps-link");
+  if ((await googleMapsLinks.count()) > 0) {
+    await expect(googleMapsLinks.first()).toHaveAttribute("target", "_blank");
+  }
+
   await expect(galleryItems.first()).toBeHidden({ timeout: 3000 });
 
   await page.getByTestId("gallery-detail-back").click();
@@ -525,80 +547,6 @@ test("gallery page - pagination and infinite scroll", async ({
   }
 });
 
-test("gallery page - data feature information display", async ({
-  authenticatedPageAsAdmin: page,
-}) => {
-  // 1. Navigate to gallery via proper flow
-  await page.goto("/");
-  await page.waitForLoadState("networkidle");
-
-  await page.waitForSelector("[data-testid='dataset-card']", {
-    timeout: 15000,
-  });
-
-  // Find dataset with gallery view
-  const datasetCards = page.locator("[data-testid='dataset-card']");
-  let galleryCard = null;
-  for (let i = 0; i < (await datasetCards.count()); i++) {
-    const card = datasetCards.nth(i);
-    const galleryTag = card.locator("[data-testid='view-tag-gallery']");
-    if ((await galleryTag.count()) > 0) {
-      galleryCard = card;
-      break;
-    }
-  }
-
-  if (!galleryCard) {
-    test.skip();
-    return;
-  }
-
-  // Navigate to gallery
-  await galleryCard.locator("[data-testid='open-dataset-view-link']").click();
-  await page.waitForLoadState("networkidle");
-
-  const galleryLink = page.locator('a[href^="/gallery/"]').first();
-  await galleryLink.waitFor({ state: "visible", timeout: 10000 });
-  await galleryLink.click();
-  await page.waitForURL("**/gallery/**", { timeout: 5000 });
-  await page.waitForLoadState("networkidle");
-
-  // 2. Wait for gallery container
-  await page
-    .getByTestId("gallery-container")
-    .waitFor({ state: "attached", timeout: 10000 });
-
-  // 3. Get the first gallery item
-  const firstItem = page.getByTestId("gallery-item-0");
-  await expect(firstItem).toBeVisible({ timeout: 10000 });
-
-  // 4. Check for data source heading (optional)
-  const dataSourceHeading = firstItem.getByTestId("data-source-heading");
-  if ((await dataSourceHeading.count()) > 0) {
-    await expect(dataSourceHeading).toBeVisible();
-  }
-
-  // 5. Check for feature information fields
-  const featureFields = firstItem.getByTestId("field-label");
-  await featureFields.first().waitFor({ state: "visible", timeout: 5000 });
-  const fieldCount = await featureFields.count();
-  expect(fieldCount).toBeGreaterThan(0);
-
-  // 6. Check for Google Maps links (if coordinates are present)
-  const googleMapsLinks = firstItem.getByTestId("google-maps-link");
-  const mapsLinkCount = await googleMapsLinks.count();
-
-  if (mapsLinkCount > 0) {
-    await expect(googleMapsLinks.first()).toBeVisible();
-
-    // 7. Verify Google Maps link opens in new tab
-    const targetAttribute = await googleMapsLinks
-      .first()
-      .getAttribute("target");
-    expect(targetAttribute).toBe("_blank");
-  }
-});
-
 test("gallery page - responsive grid layout", async ({
   authenticatedPageAsAdmin: page,
 }) => {
@@ -646,13 +594,13 @@ test("gallery page - responsive grid layout", async ({
   const firstItem = page.getByTestId("gallery-item-0");
   await firstItem.waitFor({ state: "visible", timeout: 10000 });
 
-  // 4. Verify gallery container has responsive grid classes
-  const classAttribute = await galleryContainer.getAttribute("class");
+  // 4. Verify gallery grid has responsive layout classes
+  const galleryGrid = page.getByTestId("gallery-grid");
+  await expect(galleryGrid).toBeVisible();
+  const classAttribute = await galleryGrid.getAttribute("class");
   expect(classAttribute).toContain("grid");
-  expect(classAttribute).toContain("grid-cols-1");
-  expect(classAttribute).toContain("md:grid-cols-2");
-  expect(classAttribute).toContain("lg:grid-cols-3");
-  expect(classAttribute).toContain("xl:grid-cols-4");
+  expect(classAttribute).toContain("grid-cols-2");
+  expect(classAttribute).toContain("lg:grid-cols-4");
 
   // 5. Test responsive behavior by changing viewport
   await page.setViewportSize({ width: 768, height: 1024 }); // tablet
