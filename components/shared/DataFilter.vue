@@ -57,10 +57,17 @@ const getUniqueFilterValues = computed(() => {
 const emitFilterSelection = () => {
   emit("filter", [...selectedFilterValue.value]);
 };
+
+/** Quoted string for the CSS `content` of the "add more" hint (keeps i18n). */
+const selectMoreLabel = computed(() => JSON.stringify(t("selectMoreOptions")));
 </script>
 
 <template>
-  <div class="filter-modal mb-2" data-testid="data-filter">
+  <div
+    class="filter-modal mb-2"
+    data-testid="data-filter"
+    :style="{ '--select-more-label': selectMoreLabel }"
+  >
     <h4 data-testid="filter-heading">
       {{ $t("filterDataByColumn") }}: <strong>{{ filterColumn }}</strong>
     </h4>
@@ -130,6 +137,39 @@ const emitFilterSelection = () => {
     padding: 5px;
 
     --vs-selected-bg: #f9f9f9;
+
+    /* These elements belong to the child component, hence :deep().
+       Stack the selected tags one per row so the box stays narrow and hugs
+       the widest tag, rather than wrapping tags mid-row and leaving a gap. */
+    :deep(.value-container.multi) {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    /* Full-width row under the tags: the click target to add more / type-ahead
+       when tags exist, and the placeholder row while nothing is selected. */
+    :deep(.search-input) {
+      min-width: 0;
+      flex-grow: 0;
+      align-self: stretch;
+      width: auto;
+    }
+
+    /* Hint over that input row prompting to add more. The library blanks the
+       real placeholder once anything is selected, so this pseudo-element fills
+       in; it's hidden while the menu is open so it never covers typed text. */
+    &:not(.open) :deep(.value-container:has(.option-box)::after) {
+      content: var(--select-more-label, "");
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      padding: var(--vs-padding);
+      color: #9ca3af;
+      font-size: var(--vs-font-size);
+      line-height: var(--vs-line-height);
+      white-space: nowrap;
+      pointer-events: none;
+    }
 
     .option-box {
       --vs-multi-value-gap: 4px;
