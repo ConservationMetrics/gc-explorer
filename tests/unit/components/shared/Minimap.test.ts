@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { mount } from "@vue/test-utils";
 import { computed, ref, watch } from "vue";
 
-import DetailMinimap from "@/components/shared/DetailMinimap.vue";
+import Minimap from "@/components/shared/Minimap.vue";
 
 Object.assign(globalThis, {
   computed,
@@ -10,9 +10,9 @@ Object.assign(globalThis, {
   watch,
 });
 
-describe("DetailMinimap", () => {
+describe("Minimap", () => {
   it("renders static map image when token and centroid are present", () => {
-    const wrapper = mount(DetailMinimap, {
+    const wrapper = mount(Minimap, {
       props: {
         alt: "Location",
         centroid: "3.447040, -76.539950",
@@ -29,7 +29,7 @@ describe("DetailMinimap", () => {
   });
 
   it("stays hidden when token or centroid is missing", () => {
-    const wrapper = mount(DetailMinimap, {
+    const wrapper = mount(Minimap, {
       props: {
         centroid: "3.447040, -76.539950",
       },
@@ -39,7 +39,7 @@ describe("DetailMinimap", () => {
   });
 
   it("hides the image after a load error", async () => {
-    const wrapper = mount(DetailMinimap, {
+    const wrapper = mount(Minimap, {
       props: {
         centroid: "3.447040, -76.539950",
         mapboxAccessToken: "pk.test",

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { buildMinimapUrl } from "@/utils/gallery/minimap";
+import { buildMinimapUrl } from "@/utils/minimap";
 
 const props = defineProps<{
   alt?: string;

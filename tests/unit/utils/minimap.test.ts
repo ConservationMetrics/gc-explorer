@@ -4,7 +4,7 @@ import {
   buildMinimapUrl,
   mapboxStyleToStaticPath,
   parseCentroidLatLng,
-} from "@/utils/gallery/minimap";
+} from "@/utils/minimap";
 
 describe("mapboxStyleToStaticPath", () => {
   it("returns default style when style is missing", () => {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FileAudio, FileDown, FileImage, FileVideo } from "lucide-vue-next";
 
-import DetailMinimap from "@/components/shared/DetailMinimap.vue";
+import Minimap from "@/components/shared/Minimap.vue";
 
 import type { AllowedFileExtensions, DataEntry } from "@/types";
 
@@ -133,7 +133,7 @@ const fileName = (filePath: string): string =>
             >({{ $t("viewOnGoogleMaps") }})</a
           >
         </span>
-        <DetailMinimap
+        <Minimap
           v-if="index === lastCoordinateFieldIndex"
           class="mt-2"
           :alt="$t('galleryLocation')"
@@ -144,7 +144,7 @@ const fileName = (filePath: string): string =>
       </div>
     </div>
 
-    <DetailMinimap
+    <Minimap
       v-if="centroid && lastCoordinateFieldIndex < 0"
       :alt="$t('galleryLocation')"
       :centroid="centroid"
