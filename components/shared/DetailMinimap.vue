@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { buildGalleryMinimapUrl } from "@/utils/galleryMinimap";
+import { buildMinimapUrl } from "@/utils/gallery/minimap";
 
 const props = defineProps<{
+  alt?: string;
   centroid?: string;
   mapboxAccessToken?: string;
   mapboxStyle?: string;
@@ -12,7 +13,7 @@ const imageVisible = ref(true);
 const imageUrl = computed(() => {
   if (!props.mapboxAccessToken || !props.centroid) return null;
 
-  return buildGalleryMinimapUrl({
+  return buildMinimapUrl({
     accessToken: props.mapboxAccessToken,
     centroid: props.centroid,
     mapboxStyle: props.mapboxStyle,
@@ -37,13 +38,13 @@ watch(
   <div
     v-if="showImage"
     class="overflow-hidden rounded-xl border border-violet-100"
-    data-testid="gallery-detail-minimap"
+    data-testid="detail-minimap"
   >
     <img
       :src="imageUrl ?? undefined"
-      :alt="$t('galleryLocation')"
+      :alt="alt ?? ''"
       class="block h-auto w-full"
-      data-testid="gallery-detail-minimap-image"
+      data-testid="detail-minimap-image"
       @error="handleImageError"
     />
   </div>

@@ -221,11 +221,9 @@ test("gallery page - detail panel opens on tile click and closes", async ({
   if ((await googleMapsLinks.count()) > 0) {
     await expect(googleMapsLinks.first()).toHaveAttribute("target", "_blank");
 
-    const minimap = page.getByTestId("gallery-detail-minimap");
+    const minimap = page.getByTestId("detail-minimap");
     if (await minimap.isVisible()) {
-      await expect(
-        page.getByTestId("gallery-detail-minimap-image"),
-      ).toBeVisible();
+      await expect(page.getByTestId("detail-minimap-image")).toBeVisible();
     }
   }
 

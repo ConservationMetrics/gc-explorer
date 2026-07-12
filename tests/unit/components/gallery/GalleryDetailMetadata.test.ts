@@ -151,9 +151,7 @@ describe("GalleryDetailMetadata", () => {
       global: globalConfig,
     });
 
-    expect(
-      wrapper.find('[data-testid="gallery-detail-minimap"]').exists(),
-    ).toBe(true);
+    expect(wrapper.find('[data-testid="detail-minimap"]').exists()).toBe(true);
   });
 
   it("renders structured file links with icons when attachments are absent", () => {

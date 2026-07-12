@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { FileAudio, FileImage, FileVideo, ExternalLink } from "lucide-vue-next";
 
-import GalleryDetailMinimap from "@/components/gallery/GalleryDetailMinimap.vue";
+import DetailMinimap from "@/components/shared/DetailMinimap.vue";
 
 import type {
   AllowedFileExtensions,
@@ -214,9 +214,10 @@ const attachmentMetaLine = (attachment: GalleryAttachment): string => {
             >({{ $t("viewOnGoogleMaps") }})</a
           >
         </span>
-        <GalleryDetailMinimap
+        <DetailMinimap
           v-if="index === lastCoordinateFieldIndex"
           class="mt-2"
+          :alt="$t('galleryLocation')"
           :centroid="centroid"
           :mapbox-access-token="mapboxAccessToken"
           :mapbox-style="mapboxStyle"
@@ -224,8 +225,9 @@ const attachmentMetaLine = (attachment: GalleryAttachment): string => {
       </div>
     </div>
 
-    <GalleryDetailMinimap
+    <DetailMinimap
       v-if="centroid && lastCoordinateFieldIndex < 0"
+      :alt="$t('galleryLocation')"
       :centroid="centroid"
       :mapbox-access-token="mapboxAccessToken"
       :mapbox-style="mapboxStyle"

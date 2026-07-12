@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
 
 import {
-  buildGalleryMinimapUrl,
+  buildMinimapUrl,
   mapboxStyleToStaticPath,
   parseCentroidLatLng,
-} from "@/utils/galleryMinimap";
+} from "@/utils/gallery/minimap";
 
 describe("mapboxStyleToStaticPath", () => {
   it("returns default style when style is missing", () => {
@@ -32,9 +32,9 @@ describe("parseCentroidLatLng", () => {
   });
 });
 
-describe("buildGalleryMinimapUrl", () => {
+describe("buildMinimapUrl", () => {
   it("builds a static image URL with pin overlay", () => {
-    const url = buildGalleryMinimapUrl({
+    const url = buildMinimapUrl({
       accessToken: "pk.test",
       centroid: "3.447040, -76.539950",
       mapboxStyle: "mapbox://styles/mapbox/satellite-streets-v12",
@@ -50,13 +50,13 @@ describe("buildGalleryMinimapUrl", () => {
 
   it("returns null when token or centroid is invalid", () => {
     expect(
-      buildGalleryMinimapUrl({
+      buildMinimapUrl({
         accessToken: "",
         centroid: "3.447040, -76.539950",
       }),
     ).toBeNull();
     expect(
-      buildGalleryMinimapUrl({
+      buildMinimapUrl({
         accessToken: "pk.test",
         centroid: "invalid",
       }),

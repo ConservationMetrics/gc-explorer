@@ -1,5 +1,5 @@
 const DEFAULT_MAPBOX_STYLE = "mapbox/satellite-streets-v12";
-const GALLERY_MINIMAP_PIN_COLOR = "7c3aed";
+const MINIMAP_PIN_COLOR = "7c3aed";
 
 /**
  * Converts a Mapbox style URL to the Static Images API style path.
@@ -38,7 +38,7 @@ export const parseCentroidLatLng = (
 };
 
 /**
- * Builds a Mapbox Static Images API URL for the gallery detail minimap.
+ * Builds a Mapbox Static Images API URL for a detail minimap.
  *
  * @param {object} options - URL builder options.
  * @param {string} options.accessToken - Mapbox access token.
@@ -49,7 +49,7 @@ export const parseCentroidLatLng = (
  * @param {number} [options.zoom] - Map zoom level.
  * @returns {string | null} Static image URL, or null when inputs are invalid.
  */
-export const buildGalleryMinimapUrl = ({
+export const buildMinimapUrl = ({
   accessToken,
   centroid,
   mapboxStyle,
@@ -71,7 +71,7 @@ export const buildGalleryMinimapUrl = ({
 
   const stylePath = mapboxStyleToStaticPath(mapboxStyle);
   const { lng, lat } = coordinates;
-  const overlay = `pin-s+${GALLERY_MINIMAP_PIN_COLOR}(${lng},${lat})`;
+  const overlay = `pin-s+${MINIMAP_PIN_COLOR}(${lng},${lat})`;
   const position = `${lng},${lat},${zoom}`;
   const size = `${width}x${height}@2x`;
 
