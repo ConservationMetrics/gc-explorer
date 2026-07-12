@@ -1,12 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { mount } from "@vue/test-utils";
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 
 import GalleryDetailMetadata from "@/components/gallery/GalleryDetailMetadata.vue";
 import type { AllowedFileExtensions, DataEntry } from "@/types";
 
 Object.assign(globalThis, {
   computed,
+  ref,
+  watch,
 });
 
 const mockT = (key: string) => key;
@@ -107,5 +109,25 @@ describe("GalleryDetailMetadata", () => {
     expect(links[1].text()).toContain("clip.mp4");
     expect(links[2].attributes("href")).toBe("/media/note.mp3");
     expect(links[2].text()).toContain("note.mp3");
+  });
+
+  it("renders minimap below coordinate fields when token and centroid are set", () => {
+    const wrapper = mount(GalleryDetailMetadata, {
+      props: {
+        allowedFileExtensions,
+        centroid: "3.44, -76.54",
+        feature: {
+          _id: "1",
+          geocoordinates: "3.44, -76.54",
+        },
+        filePaths: [],
+        mapboxAccessToken: "pk.test",
+        mapboxStyle: "mapbox://styles/mapbox/satellite-streets-v12",
+        mediaBasePath: "/media",
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.find('[data-testid="detail-minimap"]').exists()).toBe(true);
   });
 });

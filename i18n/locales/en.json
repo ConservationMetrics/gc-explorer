@@ -97,6 +97,7 @@
   "galleryFiles": "Files",
   "galleryGoToSlide": "Go to slide {number} of {total}",
   "galleryImageDetails": "Image details",
+  "galleryLocation": "Location",
   "galleryNextMedia": "Next media",
   "galleryPreviousMedia": "Previous media",
   "gallerySlideOf": "Slide {current} of {total}",

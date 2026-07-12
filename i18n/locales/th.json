@@ -97,6 +97,7 @@
   "galleryFiles": "ไฟล์",
   "galleryGoToSlide": "ไปที่สไลด์ {number} จาก {total}",
   "galleryImageDetails": "รายละเอียดรูปภาพ",
+  "galleryLocation": "ตำแหน่ง",
   "galleryNextMedia": "สื่อถัดไป",
   "galleryPreviousMedia": "สื่อก่อนหน้า",
   "gallerySlideOf": "สไลด์ {current} จาก {total}",
