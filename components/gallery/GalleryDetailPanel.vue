@@ -3,15 +3,10 @@ import { ChevronLeft, X } from "lucide-vue-next";
 import GalleryDetailMetadata from "@/components/gallery/GalleryDetailMetadata.vue";
 import GalleryMediaCarousel from "@/components/gallery/GalleryMediaCarousel.vue";
 
-import type {
-  AllowedFileExtensions,
-  DataEntry,
-  GalleryAttachment,
-} from "@/types";
+import type { AllowedFileExtensions, DataEntry } from "@/types";
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
-  attachments: GalleryAttachment[];
   feature: DataEntry;
   filePaths: string[];
   mediaBasePath: string;
@@ -105,7 +100,6 @@ onBeforeUnmount(() => {
         >
           <GalleryDetailMetadata
             :allowed-file-extensions="allowedFileExtensions"
-            :attachments="attachments"
             :feature="feature"
             :file-paths="filePaths"
             :media-base-path="mediaBasePath"

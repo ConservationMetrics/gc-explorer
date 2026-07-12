@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { getFilePathsWithExtension } from "@/utils";
-import { parseGalleryAttachments } from "@/utils/galleryAttachments";
 import {
   filterByDateAndCategory,
   normalizeFilterValues,
@@ -23,7 +22,6 @@ import type {
   Dataset,
   DataEntry,
   FilterValues,
-  GalleryAttachment,
 } from "@/types";
 
 const { t } = useI18n();
@@ -62,7 +60,6 @@ const filteredData = ref(props.galleryData);
 const loading = ref(false);
 const selectedEntry = ref<DataEntry | null>(null);
 const selectedFilePaths = ref<string[]>([]);
-const selectedAttachments = ref<GalleryAttachment[]>([]);
 const isFilteredToEmpty = computed(
   () => props.galleryData.length > 0 && filteredData.value.length === 0,
 );
@@ -172,7 +169,6 @@ const openDetail = (feature: DataEntry, event?: Event) => {
   const fullRecord = getFullRecord(feature);
   selectedEntry.value = prepareForDisplay(fullRecord);
   selectedFilePaths.value = getRecordFilePaths(fullRecord);
-  selectedAttachments.value = parseGalleryAttachments(fullRecord);
 
   if (event?.currentTarget instanceof HTMLElement) {
     event.currentTarget.blur();
@@ -186,7 +182,6 @@ const openDetail = (feature: DataEntry, event?: Event) => {
 const closeDetail = () => {
   selectedEntry.value = null;
   selectedFilePaths.value = [];
-  selectedAttachments.value = [];
 };
 </script>
 
@@ -199,7 +194,6 @@ const closeDetail = () => {
     <GalleryDetailPanel
       v-if="selectedEntry"
       :allowed-file-extensions="allowedFileExtensions"
-      :attachments="selectedAttachments"
       :feature="selectedEntry"
       :file-paths="selectedFilePaths"
       :media-base-path="mediaBasePath"

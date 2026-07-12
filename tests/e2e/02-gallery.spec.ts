@@ -209,12 +209,11 @@ test("gallery page - detail panel opens on tile click and closes", async ({
   expect(await metadataFields.count()).toBeGreaterThan(0);
   await expect(page.getByTestId("data-feature")).toHaveCount(0);
 
-  const attachmentsSection = page.getByTestId("gallery-metadata-files");
-  if (await attachmentsSection.isVisible()) {
-    const attachmentCount =
-      (await page.getByTestId("gallery-metadata-attachment").count()) +
-      (await page.getByTestId("gallery-metadata-file-link").count());
-    expect(attachmentCount).toBeGreaterThan(0);
+  const filesSection = page.getByTestId("gallery-metadata-files");
+  if (await filesSection.isVisible()) {
+    expect(
+      await page.getByTestId("gallery-metadata-file-link").count(),
+    ).toBeGreaterThan(0);
   }
 
   const googleMapsLinks = page.getByTestId("google-maps-link");

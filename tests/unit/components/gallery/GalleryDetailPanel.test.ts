@@ -26,7 +26,7 @@ vi.mock("@/components/gallery/GalleryMediaCarousel.vue", () => ({
 vi.mock("@/components/gallery/GalleryDetailMetadata.vue", () => ({
   default: {
     name: "GalleryDetailMetadata",
-    props: ["feature", "filePaths", "attachments"],
+    props: ["feature", "filePaths"],
     template: '<div data-testid="gallery-detail-metadata-fields"></div>',
   },
 }));
@@ -57,7 +57,6 @@ describe("GalleryDetailPanel", () => {
     const wrapper = mount(GalleryDetailPanel, {
       props: {
         allowedFileExtensions,
-        attachments: [],
         feature,
         filePaths: ["photo.jpg", "audio.mp3"],
         mediaBasePath: "/media",
@@ -81,7 +80,6 @@ describe("GalleryDetailPanel", () => {
     const wrapper = mount(GalleryDetailPanel, {
       props: {
         allowedFileExtensions,
-        attachments: [],
         feature,
         filePaths: ["photo.jpg"],
         mediaBasePath: "/media",
@@ -97,7 +95,6 @@ describe("GalleryDetailPanel", () => {
     const wrapper = mount(GalleryDetailPanel, {
       props: {
         allowedFileExtensions,
-        attachments: [],
         feature,
         filePaths: ["photo.jpg"],
         mediaBasePath: "/media",
@@ -113,7 +110,6 @@ describe("GalleryDetailPanel", () => {
     const wrapper = mount(GalleryDetailPanel, {
       props: {
         allowedFileExtensions,
-        attachments: [],
         feature,
         filePaths: ["photo.jpg"],
         mediaBasePath: "/media",
