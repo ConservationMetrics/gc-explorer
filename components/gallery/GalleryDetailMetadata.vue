@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FileAudio, FileImage, FileVideo, ExternalLink } from "lucide-vue-next";
+import { FileAudio, FileDown, FileImage, FileVideo } from "lucide-vue-next";
 
 import DetailMinimap from "@/components/shared/DetailMinimap.vue";
 
@@ -178,7 +178,7 @@ const fileName = (filePath: string): string =>
             <span class="min-w-0 flex-1 break-words">{{
               fileName(filePath)
             }}</span>
-            <ExternalLink
+            <FileDown
               class="h-3.5 w-3.5 shrink-0 text-violet-400 opacity-0 transition-opacity group-hover:opacity-100"
               aria-hidden="true"
             />
