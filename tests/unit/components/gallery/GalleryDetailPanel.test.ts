@@ -23,11 +23,11 @@ vi.mock("@/components/gallery/GalleryMediaCarousel.vue", () => ({
   },
 }));
 
-vi.mock("@/components/shared/DataFeature.vue", () => ({
+vi.mock("@/components/gallery/GalleryDetailMetadata.vue", () => ({
   default: {
-    name: "DataFeature",
-    props: ["hideMedia", "embedded"],
-    template: '<div data-testid="data-feature"></div>',
+    name: "GalleryDetailMetadata",
+    props: ["feature", "filePaths"],
+    template: '<div data-testid="gallery-detail-metadata-fields"></div>',
   },
 }));
 
@@ -53,7 +53,7 @@ describe("GalleryDetailPanel", () => {
     vi.clearAllMocks();
   });
 
-  it("renders first media file and metadata without duplicating media in DataFeature", () => {
+  it("renders carousel and gallery metadata without duplicating media", () => {
     const wrapper = mount(GalleryDetailPanel, {
       props: {
         allowedFileExtensions,
@@ -71,9 +71,9 @@ describe("GalleryDetailPanel", () => {
       "photo.jpg,audio.mp3",
     );
 
-    const dataFeature = wrapper.findComponent({ name: "DataFeature" });
-    expect(dataFeature.props("hideMedia")).toBe(true);
-    expect(dataFeature.props("embedded")).toBe(true);
+    const metadata = wrapper.findComponent({ name: "GalleryDetailMetadata" });
+    expect(metadata.exists()).toBe(true);
+    expect(metadata.props("filePaths")).toEqual(["photo.jpg", "audio.mp3"]);
   });
 
   it("emits close when the back-to-gallery control is clicked", async () => {

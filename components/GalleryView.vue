@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { getFilePathsWithExtension } from "@/utils";
 import {
+  calculateCentroidFromParsedCoords,
+  tryParseDataEntryGeoCoordinates,
+} from "@/utils/geoUtils";
+import {
   filterByDateAndCategory,
   normalizeFilterValues,
   useTimestampFilter,
@@ -30,6 +34,8 @@ const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
   filterColumn?: string;
   galleryData: Dataset;
+  mapboxAccessToken?: string;
+  mapboxStyle?: string;
   mediaBasePath: string;
   mediaColumn?: string;
   table: string;
@@ -60,6 +66,7 @@ const filteredData = ref(props.galleryData);
 const loading = ref(false);
 const selectedEntry = ref<DataEntry | null>(null);
 const selectedFilePaths = ref<string[]>([]);
+const selectedCentroid = ref<string | undefined>();
 const isFilteredToEmpty = computed(
   () => props.galleryData.length > 0 && filteredData.value.length === 0,
 );
@@ -165,10 +172,19 @@ const getRecordFilePaths = (feature: DataEntry): string[] => {
   );
 };
 
+const getRecordCentroid = (feature: DataEntry): string | undefined => {
+  const parsedCoords = tryParseDataEntryGeoCoordinates(feature);
+  if (!parsedCoords) return undefined;
+
+  const centroid = calculateCentroidFromParsedCoords(parsedCoords);
+  return centroid || undefined;
+};
+
 const openDetail = (feature: DataEntry, event?: Event) => {
   const fullRecord = getFullRecord(feature);
   selectedEntry.value = prepareForDisplay(fullRecord);
   selectedFilePaths.value = getRecordFilePaths(fullRecord);
+  selectedCentroid.value = getRecordCentroid(fullRecord);
 
   if (event?.currentTarget instanceof HTMLElement) {
     event.currentTarget.blur();
@@ -182,6 +198,7 @@ const openDetail = (feature: DataEntry, event?: Event) => {
 const closeDetail = () => {
   selectedEntry.value = null;
   selectedFilePaths.value = [];
+  selectedCentroid.value = undefined;
 };
 </script>
 
@@ -194,8 +211,11 @@ const closeDetail = () => {
     <GalleryDetailPanel
       v-if="selectedEntry"
       :allowed-file-extensions="allowedFileExtensions"
+      :centroid="selectedCentroid"
       :feature="selectedEntry"
       :file-paths="selectedFilePaths"
+      :mapbox-access-token="mapboxAccessToken"
+      :mapbox-style="mapboxStyle"
       :media-base-path="mediaBasePath"
       @close="closeDetail"
     />
