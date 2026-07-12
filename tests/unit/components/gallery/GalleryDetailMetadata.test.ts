@@ -3,11 +3,7 @@ import { mount } from "@vue/test-utils";
 import { computed, ref, watch } from "vue";
 
 import GalleryDetailMetadata from "@/components/gallery/GalleryDetailMetadata.vue";
-import type {
-  AllowedFileExtensions,
-  DataEntry,
-  GalleryAttachment,
-} from "@/types";
+import type { AllowedFileExtensions, DataEntry } from "@/types";
 
 Object.assign(globalThis, {
   computed,
@@ -44,7 +40,6 @@ describe("GalleryDetailMetadata", () => {
     const wrapper = mount(GalleryDetailMetadata, {
       props: {
         allowedFileExtensions,
-        attachments: [],
         feature,
         filePaths: [],
         mediaBasePath: "/media",
@@ -77,7 +72,6 @@ describe("GalleryDetailMetadata", () => {
     const wrapper = mount(GalleryDetailMetadata, {
       props: {
         allowedFileExtensions,
-        attachments: [],
         feature,
         filePaths: [],
         mediaBasePath: "/media",
@@ -91,74 +85,10 @@ describe("GalleryDetailMetadata", () => {
     expect(link.text()).toContain("viewOnGoogleMaps");
   });
 
-  it("renders parsed attachment metadata with download links", () => {
-    const attachments: GalleryAttachment[] = [
-      {
-        name: "example photo.jpg",
-        mimetype: "image/jpeg",
-        questionXpath: "photo",
-        downloadUrl: "https://example.test/original",
-        downloadLargeUrl: "https://example.test/large",
-        downloadMediumUrl: "https://example.test/medium",
-        downloadSmallUrl: "https://example.test/small",
-        id: 134806447,
-        uid: "attExampleUid",
-      },
-    ];
-
+  it("renders Filebrowser links for gallery media file paths", () => {
     const wrapper = mount(GalleryDetailMetadata, {
       props: {
         allowedFileExtensions,
-        attachments,
-        feature: { _id: "1" },
-        filePaths: ["photo.jpg"],
-        mediaBasePath: "/media",
-      },
-      global: globalConfig,
-    });
-
-    expect(wrapper.text()).toContain("galleryFiles");
-    expect(wrapper.text()).toContain("example photo.jpg");
-    expect(wrapper.text()).toContain("image/jpeg");
-    expect(wrapper.text()).toContain("photo");
-    expect(wrapper.text()).toContain("ID 134806447");
-    expect(wrapper.text()).toContain("UID attExampleUid");
-    expect(wrapper.text()).toContain("galleryDownloadOriginal");
-    expect(wrapper.text()).toContain("galleryDownloadLarge");
-
-    const links = wrapper.findAll(
-      '[data-testid="gallery-metadata-attachment-link"]',
-    );
-    expect(links.length).toBeGreaterThanOrEqual(2);
-    expect(links[0].attributes("href")).toBe("https://example.test/original");
-  });
-
-  it("renders minimap below coordinate fields when token and centroid are set", () => {
-    const wrapper = mount(GalleryDetailMetadata, {
-      props: {
-        allowedFileExtensions,
-        attachments: [],
-        centroid: "3.44, -76.54",
-        feature: {
-          _id: "1",
-          geocoordinates: "3.44, -76.54",
-        },
-        filePaths: [],
-        mapboxAccessToken: "pk.test",
-        mapboxStyle: "mapbox://styles/mapbox/satellite-streets-v12",
-        mediaBasePath: "/media",
-      },
-      global: globalConfig,
-    });
-
-    expect(wrapper.find('[data-testid="detail-minimap"]').exists()).toBe(true);
-  });
-
-  it("renders structured file links with icons when attachments are absent", () => {
-    const wrapper = mount(GalleryDetailMetadata, {
-      props: {
-        allowedFileExtensions,
-        attachments: [],
         feature: { _id: "1" },
         filePaths: ["folder/photo.jpg", "clip.mp4", "note.mp3"],
         mediaBasePath: "/media",
@@ -175,7 +105,29 @@ describe("GalleryDetailMetadata", () => {
     expect(links).toHaveLength(3);
     expect(links[0].attributes("href")).toBe("/media/folder/photo.jpg");
     expect(links[0].text()).toContain("photo.jpg");
+    expect(links[1].attributes("href")).toBe("/media/clip.mp4");
     expect(links[1].text()).toContain("clip.mp4");
+    expect(links[2].attributes("href")).toBe("/media/note.mp3");
     expect(links[2].text()).toContain("note.mp3");
+  });
+
+  it("renders minimap below coordinate fields when token and centroid are set", () => {
+    const wrapper = mount(GalleryDetailMetadata, {
+      props: {
+        allowedFileExtensions,
+        centroid: "3.44, -76.54",
+        feature: {
+          _id: "1",
+          geocoordinates: "3.44, -76.54",
+        },
+        filePaths: [],
+        mapboxAccessToken: "pk.test",
+        mapboxStyle: "mapbox://styles/mapbox/satellite-streets-v12",
+        mediaBasePath: "/media",
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.find('[data-testid="detail-minimap"]').exists()).toBe(true);
   });
 });
