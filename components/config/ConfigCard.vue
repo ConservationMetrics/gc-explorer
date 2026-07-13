@@ -192,10 +192,6 @@ const handleSubmit = () => {
     </div>
     <div class="p-6">
       <form @submit.prevent="handleSubmit">
-        <ConfigCollapsibleSection :title="$t('views')" :default-open="true">
-          <ConfigViews :view-type="viewType" />
-        </ConfigCollapsibleSection>
-
         <ConfigCollapsibleSection
           v-if="shouldShowConfigMap"
           :title="$t('map')"
