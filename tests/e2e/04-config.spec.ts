@@ -886,10 +886,7 @@ test("config page - view metadata displays current view type outside ConfigCard"
   await expect(viewTypeDisplay).toBeVisible({ timeout: 10000 });
   await expect(viewTypeDisplay).toHaveText(/^(Map|Gallery|Alerts)$/i);
 
-  // 7. Verify name / primary / secondary fields are present
-  await expect(
-    page.locator("[data-testid='view-metadata-name']"),
-  ).toBeVisible();
+  // 7. Verify primary / secondary fields are present
   await expect(
     page.locator("[data-testid='view-metadata-primary']"),
   ).toBeVisible();

@@ -191,8 +191,15 @@ const getCopySourceLabel = (configKey: string) => {
 
 const { t } = useI18n();
 const { error: showErrorToast } = useToast();
+const pageDisplayName = computed(() => viewName.value.trim() || dataset);
 useHead({
-  title: "GuardianConnector Explorer: " + t("configuration") + " - " + dataset,
+  title: computed(
+    () =>
+      "GuardianConnector Explorer: " +
+      t("configuration") +
+      " - " +
+      pageDisplayName.value,
+  ),
 });
 
 definePageMeta({ layout: "explorer" });
@@ -230,7 +237,7 @@ definePageMeta({ layout: "explorer" });
           </div>
           <div class="flex items-center justify-between">
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-              {{ $t("configuration") }} - {{ dataset }}
+              {{ $t("configuration") }} - {{ pageDisplayName }}
             </h1>
             <button
               v-if="otherDatasets.length > 0"
@@ -257,15 +264,6 @@ definePageMeta({ layout: "explorer" });
                   <component :is="viewTypeIcon" class="w-4 h-4" />
                   <span>{{ $t(resolvedViewType) }}</span>
                 </div>
-              </dd>
-            </div>
-            <div>
-              <dt class="text-gray-500">{{ $t("viewMetadataName") }}</dt>
-              <dd
-                data-testid="view-metadata-name"
-                class="mt-1 font-medium text-gray-900"
-              >
-                {{ viewName }}
               </dd>
             </div>
             <div>
