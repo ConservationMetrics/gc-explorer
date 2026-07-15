@@ -698,4 +698,66 @@ describe("ConfigMedia component", () => {
     expect(validationErrors.length).toBeGreaterThan(0);
     expect(input.classes()).toContain("border-red-300");
   });
+
+  it("populates share input when config arrives after an empty initial mount", async () => {
+    const wrapper = mount(ConfigMedia, {
+      props: {
+        ...baseProps,
+        config: {} as ViewConfig,
+      },
+      global: globalConfig,
+    });
+
+    await nextTick();
+
+    const input = wrapper.find<HTMLInputElement>(
+      'input[id="test_table-share-basePath"]',
+    );
+    expect(input.element.value).toBe("");
+
+    await wrapper.setProps({
+      config: {
+        MEDIA_BASE_PATH:
+          "https://files.demo.guardianconnector.net/api/public/dl/abc123",
+      } as ViewConfig,
+    });
+    await nextTick();
+    await nextTick();
+
+    expect(input.element.value).toBe("abc123");
+  });
+
+  it("does not emit empty MEDIA_BASE_PATH while applying a late-arriving config", async () => {
+    const wrapper = mount(ConfigMedia, {
+      props: {
+        ...baseProps,
+        config: {} as ViewConfig,
+      },
+      global: globalConfig,
+    });
+
+    await nextTick();
+
+    await wrapper.setProps({
+      config: {
+        MEDIA_BASE_PATH:
+          "https://files.demo.guardianconnector.net/api/public/dl/keep-me",
+      } as ViewConfig,
+    });
+    await nextTick();
+    await nextTick();
+
+    const mediaEmits = (wrapper.emitted("updateConfig") || []) as Array<
+      [Partial<ViewConfig>]
+    >;
+    const emptyWipes = mediaEmits.filter(
+      (payload) => payload[0]?.MEDIA_BASE_PATH === "",
+    );
+    expect(emptyWipes).toHaveLength(0);
+
+    const input = wrapper.find<HTMLInputElement>(
+      'input[id="test_table-share-basePath"]',
+    );
+    expect(input.element.value).toBe("keep-me");
+  });
 });
