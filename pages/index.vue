@@ -3,8 +3,10 @@ import type { ViewConfig, ViewConfigRow, ViewType, User } from "@/types";
 import { Role } from "@/types";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
+import SearchBar from "@/components/shared/SearchBar.vue";
+import ViewTypeFilter from "@/components/shared/ViewTypeFilter.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
-import { Images, Map, Search, TriangleAlert } from "lucide-vue-next";
+import { matchesSearchQuery, matchesViewTypeFilter } from "@/utils/viewFilters";
 
 /** A dataset grouped from one or more view rows sharing the same primaryDataset. */
 interface DatasetGroup {
@@ -144,11 +146,8 @@ const availableViewTypes = computed<ViewType[]>(() => {
  * @returns {DatasetGroup[]} Datasets whose view types include the active filter.
  */
 const displayedDatasets = computed<DatasetGroup[]>(() => {
-  if (activeViewFilter.value === "all") {
-    return groupedDatasets.value;
-  }
   return groupedDatasets.value.filter((group) =>
-    group.viewTypes.includes(activeViewFilter.value as ViewType),
+    matchesViewTypeFilter(activeViewFilter.value, group.viewTypes),
   );
 });
 
@@ -159,14 +158,13 @@ const displayedDatasets = computed<DatasetGroup[]>(() => {
  * @returns {DatasetGroup[]} The search-filtered datasets.
  */
 const searchedDatasets = computed<DatasetGroup[]>(() => {
-  const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return displayedDatasets.value;
-
-  return displayedDatasets.value.filter((group) => {
-    const displayName = group.viewName.toLowerCase();
-    const description = (group.config.VIEW_DESCRIPTION || "").toLowerCase();
-    return displayName.includes(q) || description.includes(q);
-  });
+  return displayedDatasets.value.filter((group) =>
+    matchesSearchQuery(
+      searchQuery.value,
+      group.viewName,
+      group.config.VIEW_DESCRIPTION,
+    ),
+  );
 });
 
 // Check if user should see config link
@@ -229,55 +227,17 @@ definePageMeta({ layout: "explorer" });
       </div>
 
       <!-- Search Bar -->
-      <div class="relative flex items-center mb-4">
-        <Search
-          class="absolute left-3 w-5 h-5 text-gray-400 pointer-events-none"
-        />
-        <input
-          v-model="searchQuery"
-          type="text"
-          :placeholder="$t('searchDatasets')"
-          class="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-        />
-      </div>
+      <SearchBar v-model="searchQuery" :placeholder="$t('searchDatasets')" />
 
       <!-- View Type Filter & Manage Datasets -->
       <div
         v-if="groupedDatasets.length"
         class="flex flex-wrap items-center justify-between gap-3 mb-4"
       >
-        <div class="flex flex-wrap gap-2">
-          <button
-            class="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors"
-            :class="
-              activeViewFilter === 'all'
-                ? 'bg-violet-700 text-white border-violet-700'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-            "
-            @click="activeViewFilter = 'all'"
-          >
-            {{ $t("all") }}
-          </button>
-          <button
-            v-for="viewType in availableViewTypes"
-            :key="viewType"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors capitalize"
-            :class="
-              activeViewFilter === viewType
-                ? 'bg-violet-700 text-white border-violet-700'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-            "
-            @click="activeViewFilter = viewType"
-          >
-            <Map v-if="viewType === 'map'" class="w-3.5 h-3.5" />
-            <Images v-else-if="viewType === 'gallery'" class="w-3.5 h-3.5" />
-            <TriangleAlert
-              v-else-if="viewType === 'alerts'"
-              class="w-3.5 h-3.5"
-            />
-            {{ $t(viewType) }}
-          </button>
-        </div>
+        <ViewTypeFilter
+          v-model="activeViewFilter"
+          :view-types="availableViewTypes"
+        />
         <!-- NuxtLink messes up the layout, hence the use of a regular anchor tag -->
         <a
           v-if="shouldShowConfigLink"

@@ -49,6 +49,151 @@ test("config page - displays configuration dashboard with table cards", async ({
   expect(pillCount).toBeGreaterThanOrEqual(0); // Some datasets may have no views configured
 });
 
+test("config page - search bar filters dataset view cards by name", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/config");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='config-dataset-card']", {
+    timeout: 15000,
+  });
+
+  const allCards = page.locator("[data-testid='config-dataset-card']");
+  const initialCount = await allCards.count();
+  expect(initialCount).toBeGreaterThan(0);
+
+  const searchInput = page.locator("input[type='text']");
+  await expect(searchInput).toBeVisible({ timeout: 5000 });
+
+  const firstCardHeading = page
+    .locator("[data-testid='config-dataset-card'] h2")
+    .first();
+  const headingText = await firstCardHeading.textContent();
+  const searchTerm = (headingText || "").trim().substring(0, 5);
+
+  await searchInput.fill(searchTerm);
+  await page.waitForTimeout(500);
+
+  const filteredCards = page.locator("[data-testid='config-dataset-card']");
+  const filteredCount = await filteredCards.count();
+  expect(filteredCount).toBeGreaterThan(0);
+  expect(filteredCount).toBeLessThanOrEqual(initialCount);
+});
+
+test("config page - search bar shows no results message for gibberish", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/config");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='config-dataset-card']", {
+    timeout: 15000,
+  });
+
+  const searchInput = page.locator("input[type='text']");
+  await searchInput.fill("zzzznonexistentdatasetview12345");
+  await page.waitForTimeout(500);
+
+  const cards = page.locator("[data-testid='config-dataset-card']");
+  expect(await cards.count()).toBe(0);
+
+  const noResults = page.getByText(/no datasets match/i);
+  await expect(noResults).toBeVisible({ timeout: 5000 });
+});
+
+test("config page - search persists in URL query param", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/config");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='config-dataset-card']", {
+    timeout: 15000,
+  });
+
+  const searchInput = page.locator("input[type='text']");
+  await searchInput.fill("test");
+  await page.waitForTimeout(500);
+
+  expect(page.url()).toContain("q=test");
+
+  await page.goto("/config?q=test");
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(500);
+
+  await expect(page.locator("input[type='text']")).toHaveValue("test");
+});
+
+test("config page - view type filter filters dataset view cards", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/config");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='config-dataset-card']", {
+    timeout: 15000,
+  });
+
+  const allCards = page.locator("[data-testid='config-dataset-card']");
+  const initialCount = await allCards.count();
+  expect(initialCount).toBeGreaterThan(0);
+
+  const allButton = page.getByRole("button", { name: /^all$/i });
+  await expect(allButton).toBeVisible();
+
+  const mapButton = page.getByRole("button", { name: /^map$/i });
+  if ((await mapButton.count()) === 0) {
+    return;
+  }
+
+  await mapButton.click();
+  await page.waitForTimeout(500);
+
+  const filteredCards = page.locator("[data-testid='config-dataset-card']");
+  const filteredCount = await filteredCards.count();
+  expect(filteredCount).toBeLessThanOrEqual(initialCount);
+  expect(filteredCount).toBeGreaterThan(0);
+
+  const visibleMapTags = page.locator("[data-testid='config-view-tag-map']");
+  expect(await visibleMapTags.count()).toBe(filteredCount);
+
+  await allButton.click();
+  await page.waitForTimeout(500);
+
+  expect(await allCards.count()).toBe(initialCount);
+});
+
+test("config page - view filter persists in URL query param", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/config");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='config-dataset-card']", {
+    timeout: 15000,
+  });
+
+  const mapButton = page.getByRole("button", { name: /^map$/i });
+  if ((await mapButton.count()) === 0) {
+    return;
+  }
+
+  await mapButton.click();
+  await page.waitForTimeout(500);
+
+  expect(page.url()).toContain("view=map");
+
+  await page.goto("/config?view=map");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='config-dataset-card']", {
+    timeout: 15000,
+  });
+
+  const cardCount = await page
+    .locator("[data-testid='config-dataset-card']")
+    .count();
+  const mapTagCount = await page
+    .locator("[data-testid='config-view-tag-map']")
+    .count();
+  expect(mapTagCount).toBe(cardCount);
+});
+
 test("config page - add new dataset view and edit it", async ({
   authenticatedPageAsAdmin: page,
 }) => {
