@@ -1,159 +1,45 @@
--- Guardian Connector Database Initialization
--- This file initializes the guardianconnector database with view config and annotated collections tables
+-- Guardian Connector test fixtures (data only).
+-- DDL is owned by Drizzle migrations; applied after migrate in CI (see server/plugins/migrate.ts).
 
---
--- Name: view_config; Type: TABLE; Schema: public; Owner: -
---
+INSERT INTO public_views (table_name) VALUES ('seed_survey_data') ON CONFLICT DO NOTHING;
+INSERT INTO public_views (table_name) VALUES ('fake_alerts') ON CONFLICT DO NOTHING;
 
-CREATE TABLE IF NOT EXISTS public.view_config (
-    table_name text NOT NULL,
-    views_config text NOT NULL
-);
-
---
--- Name: view_config_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.view_config
-    ADD CONSTRAINT view_config_pkey PRIMARY KEY (table_name);
-
---
--- Name: public_views; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE IF NOT EXISTS public.public_views (
-    table_name text NOT NULL PRIMARY KEY
-);
-
-INSERT INTO public.public_views (table_name) VALUES ('seed_survey_data') ON CONFLICT DO NOTHING;
-INSERT INTO public.public_views (table_name) VALUES ('fake_alerts') ON CONFLICT DO NOTHING;
-
---
--- Annotated Collections Tables
---
-
---
--- Name: annotated_collections; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE IF NOT EXISTS public.annotated_collections (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    name text NOT NULL,
-    description text,
-    collection_type text NOT NULL,
-    created_by text NOT NULL,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    metadata jsonb DEFAULT '{}'::jsonb
-);
-
---
--- Name: incidents; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE IF NOT EXISTS public.incidents (
-    collection_id uuid NOT NULL,
-    incident_type text,
-    responsible_party text,
-    status text DEFAULT 'suspected'::text,
-    is_active boolean DEFAULT true,
-    impact_description text,
-    supporting_evidence jsonb
-);
-
---
--- Name: collection_entries; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE IF NOT EXISTS public.collection_entries (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    collection_id uuid NOT NULL,
-    source_table text NOT NULL,
-    source_id text NOT NULL,
-    source_data jsonb,
-    added_by text NOT NULL,
-    added_at timestamp with time zone DEFAULT now(),
-    notes text
-);
-
---
--- Primary Key Constraints
---
-
---
--- Name: annotated_collections_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.annotated_collections
-    ADD CONSTRAINT annotated_collections_pkey PRIMARY KEY (id);
-
---
--- Name: incidents_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.incidents
-    ADD CONSTRAINT incidents_pkey PRIMARY KEY (collection_id);
-
---
--- Name: collection_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collection_entries
-    ADD CONSTRAINT collection_entries_pkey PRIMARY KEY (id);
-
---
--- Unique Constraints
---
-
---
--- Name: collection_entries_collection_id_source_table_source_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collection_entries
-    ADD CONSTRAINT collection_entries_collection_id_source_table_source_id_key UNIQUE (collection_id, source_table, source_id);
-
---
--- Foreign Key Constraints
---
-
---
--- Name: incidents_collection_id_fkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.incidents
-    ADD CONSTRAINT incidents_collection_id_fkey FOREIGN KEY (collection_id) REFERENCES public.annotated_collections(id) ON DELETE CASCADE;
-
---
--- Name: collection_entries_collection_id_fkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.collection_entries
-    ADD CONSTRAINT collection_entries_collection_id_fkey FOREIGN KEY (collection_id) REFERENCES public.annotated_collections(id) ON DELETE CASCADE;
-
---
--- Triggers
---
-
---
--- Name: update_updated_at_column; Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
- RETURNS trigger
- LANGUAGE plpgsql
-AS $function$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$function$;
-
---
--- Name: update_annotated_collections_updated_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-DROP TRIGGER IF EXISTS update_annotated_collections_updated_at ON public.annotated_collections;
-CREATE TRIGGER update_annotated_collections_updated_at
-    BEFORE UPDATE ON public.annotated_collections
-    FOR EACH ROW
-    EXECUTE FUNCTION public.update_updated_at_column();
+-- MAPBOX_STYLE uses a minimal local style object so E2E map load does not depend on
+-- remote Mapbox style API availability in CI.
+INSERT INTO views (view_name, view_type, primary_dataset, secondary_dataset, view_config) VALUES
+  (
+    'seed_survey_data',
+    'gallery',
+    'seed_survey_data',
+    NULL,
+    '{"MAPBOX_STYLE":{"version":8,"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"#f8fafc"}}]},"MAPBOX_ACCESS_TOKEN":"{MAPBOX_ACCESS_TOKEN}","MAPBOX_ZOOM":16,"MAPBOX_CENTER_LATITUDE":"3.44704","MAPBOX_CENTER_LONGITUDE":"-76.53995","MAPBOX_PROJECTION":"globe","MAPBOX_BEARING":0,"MAPBOX_PITCH":0,"FRONT_END_FILTER_COLUMN":"community","MEDIA_BASE_PATH":"{MEDIA_BASE_PATH}","ROUTE_LEVEL_PERMISSION":"anyone"}'
+  ),
+  (
+    'bcmform_responses',
+    'map',
+    'bcmform_responses',
+    NULL,
+    '{"MAPBOX_STYLE":{"version":8,"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"#f8fafc"}}]},"MAPBOX_ACCESS_TOKEN":"{MAPBOX_ACCESS_TOKEN}","MAPBOX_ZOOM":16,"MAPBOX_CENTER_LATITUDE":"3.44704","MAPBOX_CENTER_LONGITUDE":"-76.53995","MAPBOX_PROJECTION":"globe","MAPBOX_BEARING":0,"MAPBOX_PITCH":0,"FRONT_END_FILTER_COLUMN":"community","MEDIA_BASE_PATH":"{MEDIA_BASE_PATH}","ROUTE_LEVEL_PERMISSION":"member"}'
+  ),
+  (
+    'bcmform_responses',
+    'gallery',
+    'bcmform_responses',
+    NULL,
+    '{"MAPBOX_STYLE":{"version":8,"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"#f8fafc"}}]},"MAPBOX_ACCESS_TOKEN":"{MAPBOX_ACCESS_TOKEN}","MAPBOX_ZOOM":16,"MAPBOX_CENTER_LATITUDE":"3.44704","MAPBOX_CENTER_LONGITUDE":"-76.53995","MAPBOX_PROJECTION":"globe","MAPBOX_BEARING":0,"MAPBOX_PITCH":0,"FRONT_END_FILTER_COLUMN":"community","MEDIA_BASE_PATH":"{MEDIA_BASE_PATH}","ROUTE_LEVEL_PERMISSION":"member"}'
+  ),
+  (
+    'fake_alerts',
+    'alerts',
+    'fake_alerts',
+    'mapeo_data',
+    '{"EMBED_MEDIA":"YES","MEDIA_BASE_PATH_ALERTS":"","MEDIA_BASE_PATH":"","LOGO_URL":"https://conservationmetrics.com/wp-content/themes/conservation-metrics/images/logo-conservation-metrics.png","MAPBOX_STYLE":{"version":8,"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"#f8fafc"}}]},"MAPBOX_PROJECTION":"globe","MAPBOX_CENTER_LATITUDE":"38","MAPBOX_CENTER_LONGITUDE":"-79","MAPBOX_ZOOM":7,"MAPBOX_PITCH":0,"MAPBOX_BEARING":0,"MAPBOX_3D":false,"MAPEO_CATEGORY_IDS":"threat","MAP_LEGEND_LAYER_IDS":"road-primary,aerialway","ALERT_RESOURCES":"NO","MAPBOX_ACCESS_TOKEN":"{MAPBOX_ACCESS_TOKEN}","PLANET_API_KEY":"{PLANET_API_KEY}","ROUTE_LEVEL_PERMISSION":"anyone"}'
+  ),
+  (
+    'gfw_alerts_viirs',
+    'alerts',
+    'gfw_alerts_viirs',
+    'mapeo_data',
+    '{"EMBED_MEDIA":"NO","MEDIA_BASE_PATH_ALERTS":"","MEDIA_BASE_PATH":"","MAPBOX_STYLE":{"version":8,"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"#f8fafc"}}]},"MAPBOX_PROJECTION":"globe","MAPBOX_CENTER_LATITUDE":"1.20","MAPBOX_CENTER_LONGITUDE":"34.60","MAPBOX_ZOOM":8,"MAPBOX_PITCH":0,"MAPBOX_BEARING":0,"MAPBOX_3D":false,"MAPEO_CATEGORY_IDS":"threat","MAP_LEGEND_LAYER_IDS":"road-primary,aerialway","ALERT_RESOURCES":"NO","MAPBOX_ACCESS_TOKEN":"{MAPBOX_ACCESS_TOKEN}","PLANET_API_KEY":"{PLANET_API_KEY}","ROUTE_LEVEL_PERMISSION":"anyone"}'
+  )
+ON CONFLICT (view_type, primary_dataset) DO NOTHING;

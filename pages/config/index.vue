@@ -29,7 +29,7 @@ const submitConfig = async ({
   try {
     await $fetch(`/api/config/update_config/${tableName}`, {
       method: "POST",
-      body: JSON.stringify(config),
+      body: JSON.stringify({ config }),
     });
   } catch (error) {
     console.error("Error submitting request data:", error);

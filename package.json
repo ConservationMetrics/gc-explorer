@@ -19,6 +19,7 @@
     "test:e2e": "playwright test",
     "test": "pnpm run test:unit && pnpm run test:e2e",
     "db:generate": "drizzle-kit generate",
+    "db:pull": "drizzle-kit pull",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
   },

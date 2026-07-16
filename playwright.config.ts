@@ -2,15 +2,21 @@ import { defineConfig, devices } from "@playwright/test";
 import { config } from "dotenv";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { assertValidNuxtTestEnv, isNuxtTestEnv } from "./utils/nuxtTestEnv";
 
 // Load .env.test.playwright file for test environment
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 config({ path: resolve(__dirname, ".env.test.playwright") });
 
+assertValidNuxtTestEnv();
+
+const useExternalServer = isNuxtTestEnv() || Boolean(process.env.CI);
+
 export default defineConfig({
   testDir: "tests/e2e",
-  ...(process.env.CI
+  globalSetup: resolve(__dirname, "tests/e2e/global-setup.ts"),
+  ...(useExternalServer
     ? {}
     : {
         webServer: {

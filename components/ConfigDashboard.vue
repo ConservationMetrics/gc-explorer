@@ -2,6 +2,9 @@
 import { useI18n } from "vue-i18n";
 import type { ViewConfigRow, ViewType } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
+import SearchBar from "@/components/shared/SearchBar.vue";
+import ViewTypeFilter from "@/components/shared/ViewTypeFilter.vue";
+import { matchesSearchQuery, matchesViewTypeFilter } from "@/utils/viewFilters";
 import {
   ChevronLeft,
   Images,
@@ -18,6 +21,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
 
 const emit = defineEmits([
   "addTableToConfig",
@@ -31,6 +35,50 @@ const sortedViewsConfig = computed(() => {
       `${second.viewName}-${second.viewType}`,
     );
   });
+});
+
+const availableViewTypes = computed<ViewType[]>(() => {
+  const types = new Set<ViewType>();
+  sortedViewsConfig.value.forEach((row) => {
+    types.add(row.viewType);
+  });
+  return Array.from(types).sort();
+});
+
+const activeViewFilter = ref<string>(
+  typeof route.query.view === "string" ? route.query.view : "all",
+);
+
+watch(activeViewFilter, (value) => {
+  const query = { ...route.query };
+  if (value === "all") {
+    delete query.view;
+  } else {
+    query.view = value;
+  }
+  router.replace({ path: route.path, query });
+});
+
+const searchQuery = ref<string>(
+  typeof route.query.q === "string" ? route.query.q : "",
+);
+
+watch(searchQuery, (value) => {
+  const query = { ...route.query };
+  if (value) {
+    query.q = value;
+  } else {
+    delete query.q;
+  }
+  router.replace({ path: route.path, query });
+});
+
+const filteredViewsConfig = computed(() => {
+  return sortedViewsConfig.value.filter(
+    (row) =>
+      matchesViewTypeFilter(activeViewFilter.value, row.viewType) &&
+      matchesSearchQuery(searchQuery.value, row.viewName, row.primaryDataset),
+  );
 });
 
 /**
@@ -75,7 +123,7 @@ const viewTypeToAdd = ref<ViewType>(
 const handleAddNewTable = () => {
   confirmButtonDisabled.value = true;
   currentModalAction.value = "addTable";
-  modalMessage.value = t("selectTableToAdd") + ":";
+  modalMessage.value = t("selectDatasetToAdd") + ":";
   showModal.value = true;
   showModalButtons.value = true;
   showModalDropdown.value = true;
@@ -84,14 +132,14 @@ const handleAddNewTable = () => {
 const handleConfirmButton = () => {
   if (currentModalAction.value === "removeTable") {
     emit("removeTableFromConfig", tableNameToRemove.value);
-    modalMessage.value = t("tableRemovedFromViews") + "!";
+    modalMessage.value = t("datasetViewRemovedFromViews") + "!";
   } else if (currentModalAction.value === "addTable") {
     tableNameToAdd.value = tableNameToAdd.value.trim();
     emit("addTableToConfig", {
       tableName: tableNameToAdd.value,
       viewType: viewTypeToAdd.value,
     });
-    modalMessage.value = t("tableAddedToViews") + "!";
+    modalMessage.value = t("datasetViewAddedToViews") + "!";
     showModalDropdown.value = false;
   }
   showModalButtons.value = false;
@@ -137,12 +185,36 @@ watch(tableNameToAdd, (newVal) => {
       </h1>
     </div>
 
+    <SearchBar
+      v-if="sortedViewsConfig.length"
+      v-model="searchQuery"
+      :placeholder="$t('searchDatasets')"
+    />
+
     <div
-      v-if="sortedViewsConfig"
+      v-if="sortedViewsConfig.length"
+      class="flex flex-wrap items-center justify-between gap-3 mb-4"
+    >
+      <ViewTypeFilter
+        v-model="activeViewFilter"
+        :view-types="availableViewTypes"
+      />
+      <button
+        data-testid="add-new-dataset-view-button"
+        class="flex items-center gap-2 px-4 py-2 sm:py-3 bg-violet-700 hover:bg-violet-800 text-white font-medium rounded-lg transition-colors duration-200"
+        @click="handleAddNewTable"
+      >
+        <Plus class="w-5 h-5" />
+        {{ $t("addNewTable") }}
+      </button>
+    </div>
+
+    <div
+      v-if="filteredViewsConfig.length"
       class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch mb-6"
     >
       <div
-        v-for="row in sortedViewsConfig"
+        v-for="row in filteredViewsConfig"
         :key="row.viewId"
         data-testid="config-dataset-card"
         class="bg-violet-50 rounded-lg p-4 sm:p-6 shadow-sm border border-violet-100 overflow-hidden flex flex-col h-full"
@@ -212,7 +284,13 @@ watch(tableNameToAdd, (newVal) => {
       </div>
     </div>
 
-    <div class="flex justify-end mb-6">
+    <div v-else-if="sortedViewsConfig.length" class="text-center py-12 mb-6">
+      <p class="text-gray-500 text-sm sm:text-base">
+        {{ $t("noResultsFound") }}
+      </p>
+    </div>
+
+    <div v-else-if="!sortedViewsConfig.length" class="flex justify-end mb-6">
       <button
         data-testid="add-new-dataset-view-button"
         class="flex items-center gap-2 px-4 py-2 sm:py-3 bg-violet-700 hover:bg-violet-800 text-white font-medium rounded-lg transition-colors duration-200"
@@ -222,6 +300,7 @@ watch(tableNameToAdd, (newVal) => {
         {{ $t("addNewTable") }}
       </button>
     </div>
+
     <div
       v-if="showModal"
       data-testid="config-modal"

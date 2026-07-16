@@ -51,8 +51,6 @@ const handleInput = (key: string, value: string | number | boolean): void => {
   emit("updateConfig", { [key]: value });
 };
 
-const configData = props.config as Record<string, string | number | boolean>;
-
 const terrainExaggeration = ref<number>(
   (props.config.MAPBOX_3D_TERRAIN_EXAGGERATION as number) ?? 1.5,
 );
@@ -62,15 +60,23 @@ watch(terrainExaggeration, (value) => {
 });
 
 // Basemaps management
-const parseBasemaps = (): BasemapConfig[] => {
+const DEFAULT_BASEMAP: BasemapConfig = {
+  name: "Satellite Streets",
+  style: "mapbox://styles/mapbox/satellite-streets-v12",
+  isDefault: true,
+};
+
+const getConfiguredBasemaps = (): BasemapConfig[] | null => {
   if (props.config.MAPBOX_BASEMAPS) {
     try {
-      return JSON.parse(props.config.MAPBOX_BASEMAPS);
+      const parsed = JSON.parse(
+        props.config.MAPBOX_BASEMAPS,
+      ) as BasemapConfig[];
+      if (parsed.length > 0) return parsed;
     } catch {
-      return [];
+      // fall through to legacy/default handling
     }
   }
-  // Fallback to legacy MAPBOX_STYLE
   if (props.config.MAPBOX_STYLE) {
     return [
       {
@@ -80,7 +86,11 @@ const parseBasemaps = (): BasemapConfig[] => {
       },
     ];
   }
-  return [];
+  return null;
+};
+
+const parseBasemaps = (): BasemapConfig[] => {
+  return getConfiguredBasemaps() ?? [{ ...DEFAULT_BASEMAP }];
 };
 
 const basemaps = ref<BasemapConfig[]>(parseBasemaps());
@@ -89,6 +99,9 @@ const basemaps = ref<BasemapConfig[]>(parseBasemaps());
 onMounted(() => {
   basemaps.value = parseBasemaps();
   ensureDefault();
+  if (!getConfiguredBasemaps()) {
+    saveBasemaps();
+  }
 });
 
 watch(
@@ -313,7 +326,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
             :disabled="!canAddBasemap"
             @click="addBasemap"
           >
-            + {{ $t("addBasemapOption") }}
+            + {{ $t("addBackgroundMapOption") }}
           </button>
         </div>
       </template>
@@ -382,7 +395,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
                       ? 22
                       : 0
           "
-          :value="configData[key]"
+          :value="config[key]"
           @input="
             (e) => {
               const raw = (e.target as HTMLInputElement).value;
@@ -435,7 +448,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
             :id="`${tableName}-${key}`"
             type="checkbox"
             class="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
-            :checked="Boolean(configData[key])"
+            :checked="Boolean(config[key])"
             @change="
               (e) => handleInput(key, (e.target as HTMLInputElement).checked)
             "
@@ -448,7 +461,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
         </label>
 
         <!-- Terrain Exaggeration Slider (shown when 3D is enabled) -->
-        <div v-if="Boolean(configData['MAPBOX_3D'])" class="mt-4 space-y-2">
+        <div v-if="Boolean(config['MAPBOX_3D'])" class="mt-4 space-y-2">
           <label class="block text-sm font-medium text-gray-700">
             3D {{ $t("terrainExaggeration") }}
           </label>

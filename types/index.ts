@@ -1,7 +1,63 @@
 import type pg from "pg";
 
-import type { FeatureCollection } from "geojson";
+import type {
+  FeatureCollection,
+  LineString,
+  MultiLineString,
+  MultiPolygon,
+  Point,
+  Polygon,
+  Position,
+} from "geojson";
 import type { StyleSpecification } from "mapbox-gl";
+
+/**
+ * Geometry type names allowed on warehouse rows (`g__type`) for this app’s map
+ * and alerts pipelines. This is not an exhaustive GeoJSON enum (e.g. no
+ * GeometryCollection); it matches what we persist and serve through
+ * `buildMinimalFeatureCollection` and related paths.
+ */
+export const DATA_ENTRY_GEOMETRY_TYPES = [
+  "Point",
+  "LineString",
+  "MultiLineString",
+  "Polygon",
+  "MultiPolygon",
+] as const;
+
+export type DataEntryGeometryType = (typeof DATA_ENTRY_GEOMETRY_TYPES)[number];
+
+/** Supported GeoJSON geometry objects built from warehouse rows. */
+export type DataEntryGeometry =
+  | Point
+  | LineString
+  | MultiLineString
+  | Polygon
+  | MultiPolygon;
+
+/** Coordinate arrays for {@link DataEntryGeometry} (Positions may include elevation). */
+export type DataEntryGeometryCoordinates = DataEntryGeometry["coordinates"];
+
+/**
+ * Nested arrays as produced by `JSON.parse` of GeoJSON coordinates, before
+ * structural validation. Elements are either numbers (inside a Position) or
+ * nested coordinate arrays.
+ */
+export type GeoJsonCoordinateCandidate = (
+  | number
+  | GeoJsonCoordinateCandidate
+)[];
+
+/** JSON value shape returned by `JSON.parse` (excludes `undefined`). */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+export type { Position };
 
 export type DatabaseConnection = pg.Client | null;
 
@@ -48,11 +104,6 @@ export interface ViewConfig {
   MAPBOX_BASEMAPS?: string; // JSON string of BasemapConfig[]
   MAPBOX_ZOOM?: number;
   MAPEO_CATEGORY_IDS?: string;
-  // Mirrored into the views.secondary_dataset column on save (see
-  // deriveSecondaryDataset). Not yet a single source of truth; readers still use
-  // this field. TODO(single-source-of-truth): drop once the API returns/consumes
-  // secondary_dataset.
-  MAPEO_TABLE?: string;
   MAP_LEGEND_LAYER_IDS?: string;
   MEDIA_BASE_PATH?: string;
   MEDIA_BASE_PATH_ALERTS?: string;
@@ -96,6 +147,11 @@ export type ViewConfigRow = {
   primaryDataset: string;
   secondaryDataset?: string | null;
   viewConfig: ViewConfig;
+};
+
+export type ViewTables = {
+  primaryTable: string;
+  secondaryTable: string | null;
 };
 
 export type ColumnEntry = {

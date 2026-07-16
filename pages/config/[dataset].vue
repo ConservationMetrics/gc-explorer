@@ -3,7 +3,15 @@ import ConfigCard from "@/components/config/ConfigCard.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import type { ViewConfig, ViewConfigRow, Views, ViewType } from "@/types";
-import { CheckCircle2, ChevronLeft, Copy, Eye } from "lucide-vue-next";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  Copy,
+  Eye,
+  Images,
+  Map,
+  TriangleAlert,
+} from "lucide-vue-next";
 
 const route = useRoute();
 const datasetRaw = route.params.dataset;
@@ -17,6 +25,8 @@ const viewRows = ref<ViewConfigRow[]>([]);
 const tableNames = ref();
 const dataFetched = ref(false);
 const datasetConfig = ref<ViewConfig | null>(null);
+const secondaryDataset = ref<string | null>(null);
+const viewName = ref("");
 const errorMessage = ref<string | null>(null);
 
 const editedViewType = ref<ViewType | undefined>(undefined);
@@ -44,6 +54,8 @@ if (data.value && !error.value) {
 
   if (editedViewRow) {
     datasetConfig.value = editedViewRow.viewConfig;
+    secondaryDataset.value = editedViewRow.secondaryDataset ?? null;
+    viewName.value = editedViewRow.viewName;
     editedViewType.value = editedViewRow.viewType;
     dataFetched.value = true;
   } else {
@@ -56,13 +68,25 @@ if (data.value && !error.value) {
 
 const resolvedViewType = computed(() => viewType.value ?? editedViewType.value);
 
+const viewTypeIcon = computed(() => {
+  if (resolvedViewType.value === "gallery") {
+    return Images;
+  }
+  if (resolvedViewType.value === "alerts") {
+    return TriangleAlert;
+  }
+  return Map;
+});
+
 const showSavedModal = ref(false);
 
 const submitConfig = async ({
   config,
+  secondaryDataset: submittedSecondaryDataset,
   tableName,
 }: {
   config: ViewConfig;
+  secondaryDataset?: string | null;
   tableName: string;
 }) => {
   errorMessage.value = null;
@@ -73,11 +97,16 @@ const submitConfig = async ({
       query: resolvedViewType.value
         ? { view_type: resolvedViewType.value }
         : undefined,
-      body: JSON.stringify(config),
+      body: JSON.stringify({
+        config,
+        secondaryDataset: submittedSecondaryDataset,
+      }),
     });
     // Update the local datasetConfig to reflect the saved state
     // This will trigger the watch in ConfigCard to update originalConfig baseline thus clearing the button and applying edit
     datasetConfig.value = JSON.parse(JSON.stringify(config));
+    secondaryDataset.value = submittedSecondaryDataset ?? null;
+    viewName.value = config.DATASET_TABLE?.trim() || tableName;
     showSavedModal.value = true;
     setTimeout(() => {
       showSavedModal.value = false;
@@ -102,11 +131,11 @@ const tableNameToRemove = ref<string | null>(null);
 const handleRemoveTableFromConfig = (tableName: string) => {
   tableNameToRemove.value = tableName;
   modalMessage.value =
-    t("removeTableAreYouSure") +
+    t("removeDatasetViewAreYouSure") +
     ": <strong>" +
     tableName +
     "</strong>?<br><br><em>" +
-    t("tableRemovedNote") +
+    t("datasetViewRemovedNote") +
     ".</em>";
   showModal.value = true;
   showModalButtons.value = true;
@@ -123,7 +152,7 @@ const handleConfirmRemove = async () => {
       });
       // Hide buttons and update message to show success
       showModalButtons.value = false;
-      modalMessage.value = t("tableRemovedFromViews") + "!";
+      modalMessage.value = t("datasetViewRemovedFromViews") + "!";
       // Ensure DOM updates before continuing
       await nextTick();
       // Wait 3 seconds to show success message, then navigate
@@ -162,8 +191,15 @@ const getCopySourceLabel = (configKey: string) => {
 
 const { t } = useI18n();
 const { error: showErrorToast } = useToast();
+const pageDisplayName = computed(() => viewName.value.trim() || dataset);
 useHead({
-  title: "GuardianConnector Explorer: " + t("configuration") + " - " + dataset,
+  title: computed(
+    () =>
+      "GuardianConnector Explorer: " +
+      t("configuration") +
+      " - " +
+      pageDisplayName.value,
+  ),
 });
 
 definePageMeta({ layout: "explorer" });
@@ -201,7 +237,7 @@ definePageMeta({ layout: "explorer" });
           </div>
           <div class="flex items-center justify-between">
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-              {{ $t("configuration") }} - {{ dataset }}
+              {{ $t("configuration") }} - {{ pageDisplayName }}
             </h1>
             <button
               v-if="otherDatasets.length > 0"
@@ -213,6 +249,42 @@ definePageMeta({ layout: "explorer" });
               {{ $t("copyConfigFromDataset") }}
             </button>
           </div>
+          <dl
+            v-if="resolvedViewType"
+            data-testid="view-metadata"
+            class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 sm:max-w-2xl text-sm"
+          >
+            <div>
+              <dt class="text-gray-500">{{ $t("view") }}</dt>
+              <dd class="mt-1">
+                <div
+                  data-testid="config-view-type-display"
+                  class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 font-medium"
+                >
+                  <component :is="viewTypeIcon" class="w-4 h-4" />
+                  <span>{{ $t(resolvedViewType) }}</span>
+                </div>
+              </dd>
+            </div>
+            <div>
+              <dt class="text-gray-500">{{ $t("primaryDatasetLabel") }}</dt>
+              <dd
+                data-testid="view-metadata-primary"
+                class="mt-1 font-medium text-gray-900"
+              >
+                {{ dataset }}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-gray-500">{{ $t("secondaryDatasetLabel") }}</dt>
+              <dd
+                data-testid="view-metadata-secondary"
+                class="mt-1 font-medium text-gray-900"
+              >
+                {{ secondaryDataset || $t("none") }}
+              </dd>
+            </div>
+          </dl>
         </div>
         <div
           v-if="errorMessage"
@@ -225,6 +297,7 @@ definePageMeta({ layout: "explorer" });
           :table-name="dataset"
           :view-type="resolvedViewType"
           :view-config="datasetConfig"
+          :secondary-dataset="secondaryDataset"
           :config-to-copy="configToCopy"
           @submit-config="submitConfig"
           @remove-table-from-config="handleRemoveTableFromConfig"
