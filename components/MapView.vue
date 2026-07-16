@@ -37,6 +37,7 @@ import type {
   DataEntry,
   Dataset,
   FilterValues,
+  MapboxStyleConfig,
   MapLegendItem,
   MapStatistics,
 } from "@/types";
@@ -54,7 +55,7 @@ const props = defineProps<{
   mapboxLongitude: number;
   mapboxPitch: number | null;
   mapboxProjection: string;
-  mapboxStyle: string;
+  mapboxStyle: MapboxStyleConfig;
   mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;

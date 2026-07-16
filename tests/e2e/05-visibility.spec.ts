@@ -53,21 +53,23 @@ const waitForGalleryResult = async (page: Page) => {
 };
 
 const waitForDeniedAccess = async (page: Page) => {
+  const dataLoadError = page.getByTestId("data-load-error");
+  const loginButton = page.getByTestId("login-button");
+
   await authExpect
-    .poll(() => page.url(), { timeout: 15000 })
-    .toMatch(
-      /(\/login|\?reason=unauthorized|\/(gallery|map)\/bcmform_responses)/,
-    );
-
-  const deniedByRedirect =
-    page.url().includes("/login") ||
-    page.url().includes("?reason=unauthorized");
-
-  if (!deniedByRedirect) {
-    await authExpect(page.getByTestId("data-load-error")).toBeVisible({
-      timeout: 10000,
-    });
-  }
+    .poll(
+      async () => {
+        const url = page.url();
+        if (url.includes("/login") || url.includes("?reason=unauthorized")) {
+          return "redirect";
+        }
+        if (await dataLoadError.isVisible()) return "data-load-error";
+        if (await loginButton.isVisible()) return "login";
+        return "waiting";
+      },
+      { timeout: 20000 },
+    )
+    .toMatch(/redirect|data-load-error|login/);
 };
 
 authTest(
@@ -163,14 +165,10 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       });
       const publicUrl = authenticatedPageAsSignedIn.url();
       console.log("[TEST] Public dataset URL:", publicUrl);
-      console.log("[TEST] Waiting for gallery-container to be attached...");
-      // Wait for gallery container to be attached (like in gallery tests)
-      await authExpect(
-        authenticatedPageAsSignedIn.getByTestId("gallery-container"),
-      ).toBeVisible({ timeout: 10000 });
-      await authExpect(
-        authenticatedPageAsSignedIn.getByTestId("gallery-container"),
-      ).toBeVisible();
+      const publicResult = await waitForGalleryResult(
+        authenticatedPageAsSignedIn,
+      );
+      authExpect(publicResult.outcome).not.toBe("denied");
       console.log("[TEST] Successfully accessed public dataset");
 
       // Should be rejected from member dataset
@@ -207,16 +205,8 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       });
       const guestPublicUrl = authenticatedPageAsGuest.url();
       console.log("[TEST] Guest: Public dataset URL:", guestPublicUrl);
-      console.log(
-        "[TEST] Guest: Waiting for gallery-container to be attached...",
-      );
-      // Wait for gallery container to be attached (like in gallery tests)
-      await authExpect(
-        authenticatedPageAsGuest.getByTestId("gallery-container"),
-      ).toBeVisible({ timeout: 10000 });
-      await authExpect(
-        authenticatedPageAsGuest.getByTestId("gallery-container"),
-      ).toBeVisible();
+      const publicResult = await waitForGalleryResult(authenticatedPageAsGuest);
+      authExpect(publicResult.outcome).not.toBe("denied");
       console.log("[TEST] Guest: Successfully accessed public dataset");
 
       // Should be rejected from member dataset

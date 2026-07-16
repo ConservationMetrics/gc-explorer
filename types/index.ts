@@ -9,6 +9,7 @@ import type {
   Polygon,
   Position,
 } from "geojson";
+import type { StyleSpecification } from "mapbox-gl";
 
 /**
  * Geometry type names allowed on warehouse rows (`g__type`) for this app’s map
@@ -78,6 +79,8 @@ export interface Database {
 
 export type RouteLevelPermission = "anyone" | "guest" | "member" | "admin";
 
+export type MapboxStyleConfig = string | StyleSpecification;
+
 export interface ViewConfig {
   ALERT_RESOURCES?: string;
   COLOR_COLUMN?: string;
@@ -97,7 +100,7 @@ export interface ViewConfig {
   MAPBOX_CENTER_LONGITUDE?: string;
   MAPBOX_PITCH?: number;
   MAPBOX_PROJECTION?: string;
-  MAPBOX_STYLE?: string; // Deprecated: use MAPBOX_BASEMAPS instead
+  MAPBOX_STYLE?: MapboxStyleConfig; // Deprecated: use MAPBOX_BASEMAPS instead
   MAPBOX_BASEMAPS?: string; // JSON string of BasemapConfig[]
   MAPBOX_ZOOM?: number;
   MAPEO_CATEGORY_IDS?: string;
@@ -174,21 +177,21 @@ export type Dataset = Array<DataEntry>;
 export type FilterValues = Array<string>;
 export interface Basemap {
   id: string;
-  style?: string;
+  style?: MapboxStyleConfig;
   url?: string;
   monthYear?: string;
 }
 
 export interface BasemapConfig {
   name: string;
-  style: string;
+  style: MapboxStyleConfig;
   isDefault?: boolean;
 }
 
 export interface BasemapOption {
   id: string;
   name: string;
-  style?: string;
+  style?: MapboxStyleConfig;
   monthYear?: string;
 }
 

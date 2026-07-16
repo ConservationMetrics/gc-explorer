@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import Datepicker from "vue-datepicker-next";
 import "vue-datepicker-next/index.css";
+import type { PropType } from "vue";
 
-import type { Basemap, BasemapConfig } from "@/types";
+import type { Basemap, BasemapConfig, MapboxStyleConfig } from "@/types";
 import { Layers } from "lucide-vue-next";
 
 const props = defineProps({
   hasRulerControl: Boolean,
-  mapboxStyle: String,
+  mapboxStyle: [String, Object] as PropType<MapboxStyleConfig>,
   mapboxBasemaps: {
     type: Array as () => BasemapConfig[],
     default: () => [],

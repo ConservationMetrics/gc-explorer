@@ -85,29 +85,8 @@ test("alerts dashboard - layer visibility toggles", async ({
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await expect(mapCanvas).toBeVisible();
 
-  // 8. Wait for the map to be fully loaded
-  await page.waitForFunction(
-    () => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
-      return map?.isStyleLoaded() && map.loaded();
-    },
-    { timeout: 5000 },
-  );
-
-  // 9. Wait for the map legend to be prepared and visible
-  // First wait for the map to be idle (which triggers legend preparation)
-  await page.waitForFunction(
-    () => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
-      return map && !map.isMoving() && map.loaded();
-    },
-    { timeout: 10000 },
-  );
-
-  // Wait a bit more for the legend to be prepared
-  await page.waitForTimeout(2000);
+  // 8. Wait for the map to be fully loaded and ready (layers added, legend populated)
+  await page.locator("#map[data-map-ready='true']").waitFor();
 
   const mapLegend = page.getByTestId("map-legend");
 
@@ -423,15 +402,8 @@ test("alerts dashboard - LineString buffer click behavior", async ({
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await expect(mapCanvas).toBeVisible();
 
-  // 8. Wait for the map to be fully loaded
-  await page.waitForFunction(
-    () => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
-      return map?.isStyleLoaded() && map.loaded();
-    },
-    { timeout: 5000 },
-  );
+  // 8. Wait for the map to be fully loaded and ready
+  await page.locator("#map[data-map-ready='true']").waitFor();
 
   // 9. Check if LineString features exist
   const hasLineStrings = await page.evaluate(() => {
@@ -570,15 +542,8 @@ test("alerts dashboard - geometry type specific interactions", async ({
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await expect(mapCanvas).toBeVisible();
 
-  // 8. Wait for the map to be fully loaded
-  await page.waitForFunction(
-    () => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
-      return map?.isStyleLoaded() && map.loaded();
-    },
-    { timeout: 5000 },
-  );
+  // 8. Wait for the map to be fully loaded and ready
+  await page.locator("#map[data-map-ready='true']").waitFor();
 
   // 9. Test Point features (clustered circles)
   const pointFeatures = await page.evaluate(() => {
@@ -786,19 +751,8 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await expect(mapCanvas).toBeVisible();
 
-  await page.waitForFunction(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    return !!window._testMap;
-  });
-
-  await page.waitForFunction(
-    () => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
-      return map?.isStyleLoaded() && map.loaded();
-    },
-    { timeout: 5000 },
-  );
+  // Wait for the map to be fully loaded and ready
+  await page.locator("#map[data-map-ready='true']").waitFor();
 
   // Test 1: Verify cluster circles exist (instead of old symbols)
   const clusterFeatures = await page.evaluate(() => {

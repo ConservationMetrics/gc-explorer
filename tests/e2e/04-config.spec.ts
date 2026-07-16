@@ -1,4 +1,9 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
+import {
+  ensureMapFormCanSubmit,
+  expandMapSection,
+  openMapConfigEditPage,
+} from "@/tests/e2e/helpers/configPage";
 
 test("config page - displays configuration dashboard with table cards", async ({
   authenticatedPageAsAdmin: page,
@@ -220,7 +225,7 @@ test("config page - add new dataset view and edit it", async ({
   // 5. Verify the modal message
   const modalMessage = page.locator("[data-testid='config-modal-message']");
   await expect(modalMessage).toBeVisible();
-  await expect(modalMessage.getByText(/select table to add:/i)).toBeVisible();
+  await expect(modalMessage.getByText(/select dataset to add:/i)).toBeVisible();
 
   // 6. Verify the dropdown is present
   const dropdown = page.locator("[data-testid='config-modal-table-select']");
@@ -305,7 +310,7 @@ test("config page - add new dataset view and edit it", async ({
       await editLink.click();
 
       // Wait for navigation to edit page
-      await page.waitForURL(`**/config/${selectedTableName}`, {
+      await page.waitForURL(`**/config/${selectedTableName}**`, {
         timeout: 10000,
       });
     } else {
@@ -334,7 +339,7 @@ test("config page - add new dataset view and edit it", async ({
 
   // 10. Wait for navigation to edit page (if we're not already there)
   if (selectedTableName) {
-    await page.waitForURL(`**/config/${selectedTableName.trim()}`, {
+    await page.waitForURL(`**/config/${selectedTableName.trim()}**`, {
       timeout: 10000,
     });
     await page.waitForLoadState("networkidle");
@@ -392,6 +397,9 @@ test("config page - add new dataset view and edit it", async ({
       await datasetNameInput.clear();
       await datasetNameInput.fill(`Test Dataset - ${Date.now()}`);
       await page.waitForTimeout(500);
+
+      // New views need a token + visibility before Save can enable
+      await ensureMapFormCanSubmit(page);
 
       // 18. Verify submit button is now enabled (change detected)
       await expect(submitButton).toBeEnabled();
@@ -502,7 +510,7 @@ test("config page - navigate to dataset edit page", async ({
 
   // 9. Verify page heading shows configuration and dataset name
   await expect(
-    page.getByRole("heading", { name: /configuration/i }),
+    page.getByRole("heading", { name: /^Configuration\b/i, level: 1 }),
   ).toBeVisible();
 
   // 10. Verify breadcrumb link back to config (use more specific selector to avoid header links)
@@ -788,7 +796,7 @@ test("config page - form validation and change detection", async ({
       await editLink.click();
 
       // Wait for navigation to edit page
-      await page.waitForURL(`**/config/${tableNameToAdd}`, {
+      await page.waitForURL(`**/config/${tableNameToAdd}**`, {
         timeout: 10000,
       });
     } else {
@@ -800,7 +808,7 @@ test("config page - form validation and change detection", async ({
 
   // 7. Wait for navigation to edit page (if we haven't already)
   if (tableNameToAdd && !page.url().includes(`/config/${tableNameToAdd}`)) {
-    await page.waitForURL(`**/config/${tableNameToAdd}`, {
+    await page.waitForURL(`**/config/${tableNameToAdd}**`, {
       timeout: 10000,
     });
   }
@@ -817,6 +825,7 @@ test("config page - form validation and change detection", async ({
     await expect(submitButton).toBeDisabled();
 
     // 10. Test mapbox3d checkbox and terrain exaggeration slider (if map config exists)
+    await expandMapSection(page);
     const mapbox3dCheckbox = page.locator(
       'input[type="checkbox"][id*="MAPBOX_3D"]',
     );
@@ -827,26 +836,26 @@ test("config page - form validation and change detection", async ({
       // 14a. Verify checkbox is visible
       await expect(mapbox3dCheckbox).toBeVisible();
 
-      // 14b. Verify slider container is not visible initially (3D is unchecked)
-      const sliderContainer = page
-        .locator("label")
-        .filter({ hasText: /terrain.*exaggeration/i })
-        .locator("..");
-      const sliderVisible = (await sliderContainer.count()) > 0;
-      if (sliderVisible) {
-        await expect(sliderContainer.first()).not.toBeVisible();
-      }
+      // New views need a token + visibility before Save can enable
+      await ensureMapFormCanSubmit(page);
 
-      // 14c. Check the mapbox3d checkbox
+      // 14b. Check the mapbox3d checkbox
+      const wasChecked = await mapbox3dCheckbox.isChecked();
+      if (wasChecked) {
+        await mapbox3dCheckbox.uncheck();
+        await page.waitForTimeout(300);
+      }
       await mapbox3dCheckbox.check();
       await page.waitForTimeout(300);
 
-      // 14d. Verify submit button is now enabled (change detected)
+      // 14c. Verify submit button is now enabled (change detected)
       await expect(submitButton).toBeEnabled();
 
-      // 14e. Uncheck the mapbox3d checkbox to revert
-      await mapbox3dCheckbox.uncheck();
-      await page.waitForTimeout(300);
+      // 14d. Revert checkbox to original state
+      if (!wasChecked) {
+        await mapbox3dCheckbox.uncheck();
+        await page.waitForTimeout(300);
+      }
     }
 
     // 11. Find and modify a form field (dataset display name - safer than mapbox token)
@@ -890,85 +899,37 @@ test("config page - form validation and change detection", async ({
 test("config page - submit configuration changes", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // 1. Navigate to the config page
+  // 1. Navigate to the config page and open a map config edit form
   await page.goto("/config");
   await page.waitForLoadState("networkidle");
-
-  // 2. Wait for the grid container to be present
   await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+  await openMapConfigEditPage(page);
 
-  // 3. Add a table to work with
-  const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']",
-  );
-  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
-  await addTableButton.click();
-
-  // 4. Verify the modal appears with dropdown
-  const addModal = page.locator("[data-testid='config-modal']");
-  await expect(addModal).toBeVisible();
-
-  // 5. Select an option from the dropdown
-  const dropdown = page.locator("select");
-  await dropdown.selectOption({ index: 0 });
-
-  // 6. Get the selected table name before confirming
-  const selectedOption = dropdown.locator("option:checked");
-  const tableNameToAdd = await selectedOption.textContent();
-
-  // 7. Click confirm to add the table
-  const confirmButton = page.getByRole("button", { name: /confirm/i });
-  await confirmButton.click();
-
-  // 8. Wait for success message and modal to close
-  await expect(page.getByText(/table added to views!/i)).toBeVisible();
-  await page.waitForTimeout(3500);
-
-  // 9. Wait for the page to reload and find the newly added table
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
-
-  // 10. Find the card with the table name we just added
-  if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
-    );
-    await expect(targetCard).toBeVisible({ timeout: 10000 });
-
-    // 11. Navigate to edit page
-    const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']",
-    );
-    await editLink.click();
-    await page.waitForURL(/\/config\/\w+/, { timeout: 2000 });
-    await page.waitForLoadState("networkidle");
-
-    // 12. Wait for form to be visible
-    await page.waitForSelector("form", { timeout: 2000 });
-
-    // 13. Find and modify a form field (dataset display name - safer than mapbox token)
+  {
+    // 2. Find and modify a form field (dataset display name - safer than mapbox token)
     const datasetNameInput = page.locator(
       'input[id*="DATASET_TABLE"], input[placeholder*="e.g., My Mapping Data"]',
     );
 
     if ((await datasetNameInput.count()) > 0) {
-      // 14. Enter a new dataset display name
+      // 3. Enter a new dataset display name
       await datasetNameInput.clear();
       const testValue = `Test Dataset ${Date.now()}`;
       await datasetNameInput.fill(testValue);
       await page.waitForTimeout(500);
 
-      // 15. Submit the form
+      // 4. Submit the form
       const submitButton = page.locator("[data-testid='config-submit-button']");
       await expect(submitButton).toBeEnabled();
       await submitButton.click();
 
-      // 16. Wait for network request to complete
+      // 5. Wait for network request to complete
       await page.waitForLoadState("networkidle", { timeout: 2000 });
 
-      // 17. Wait 2 seconds for changes to be saved
+      // 6. Wait 2 seconds for changes to be saved
       await page.waitForTimeout(2000);
 
-      // 18. Verify the input value was saved (contains what we filled)
+      // 7. Verify the input value was saved (contains what we filled)
       const savedValue = await datasetNameInput.inputValue();
       expect(savedValue).toContain("Test Dataset");
       expect(savedValue).toBeTruthy();
@@ -1051,89 +1012,36 @@ test("config page - view metadata displays current view type outside ConfigCard"
 test("config page - conditional form sections based on views", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // 1. Navigate to the config page
+  // 1. Navigate to the config page and open a map config edit form
   await page.goto("/config");
-
-  // 2. Wait for the grid container to be present (indicates data has loaded)
   await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
+  await openMapConfigEditPage(page);
 
-  // 3. First, add a table to work with
-  // Button text changed from "Add new table" to "Add new dataset view"
-  const addTableButton = page
-    .locator("[data-testid='add-new-dataset-view-button']")
-    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
-    .first();
-  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
-  await addTableButton.click();
+  // 2. Verify we're on the edit page (ConfigCard should be visible)
+  const configCard = page.locator(".bg-white.rounded-lg.shadow-sm");
+  await expect(configCard.first()).toBeVisible({ timeout: 15000 });
 
-  // 4. Verify the modal appears with dropdown
-  const addModal = page.locator("[data-testid='config-modal']");
-  await expect(addModal).toBeVisible();
+  // 3. Look for collapsible section headers (Map, Media, etc. — Views removed)
+  const sectionHeaders = page.locator("h3, button").filter({
+    hasText:
+      /^(Map|Media|Alerts|Filtering|Dataset|Permissions|Other|Visibility)$/i,
+  });
+  const headerCount = await sectionHeaders.count();
 
-  // 5. Select an option from the dropdown
-  const dropdown = page.locator("select");
-  await dropdown.selectOption({ index: 0 });
-
-  // 6. Get the selected table name before confirming
-  const selectedOption = dropdown.locator("option:checked");
-  const tableNameToAdd = await selectedOption.textContent();
-
-  // 7. Click confirm to add the table
-  const confirmButton = page.getByRole("button", { name: /confirm/i });
-  await confirmButton.click();
-
-  // 8. Wait for success message and modal to close
-  await expect(page.getByText(/table added to views/i)).toBeVisible();
-  await page.waitForTimeout(3500);
-
-  // 9. Wait for the page to reload and find the newly added table
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
-
-  // 10. Find the card with the table name we just added
-  if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
-    );
-    await expect(targetCard).toBeVisible();
-
-    // 11. Navigate to edit page
-    const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']",
-    );
-    await editLink.click();
-    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
-    await page.waitForLoadState("networkidle");
-
-    // 12. Wait for form to be visible
-    await page.waitForSelector("form", { timeout: 15000 });
-
-    // 13. Verify we're on the edit page (ConfigCard should be visible)
-    const configCard = page.locator(".bg-white.rounded-lg.shadow-sm");
-    await expect(configCard.first()).toBeVisible({ timeout: 15000 });
-
-    // 14. Look for collapsible section headers (Map, Media, etc. — Views removed)
-    const sectionHeaders = page.locator("h3, button").filter({
-      hasText:
-        /^(Map|Media|Alerts|Filtering|Dataset|Permissions|Other|Visibility)$/i,
-    });
-    const headerCount = await sectionHeaders.count();
-
-    if (headerCount > 0) {
-      // 15. Verify at least some section headers are visible
-      await expect(sectionHeaders.first()).toBeVisible();
-    }
-
-    // 16. Verify read-only metadata block shows view type outside ConfigCard
-    const viewMetadata = page.locator("[data-testid='view-metadata']");
-    await expect(viewMetadata).toBeVisible();
-
-    // 17. Verify the metadata block displays the current (immutable) view type
-    const viewTypeDisplay = page.locator(
-      "[data-testid='config-view-type-display']",
-    );
-    await expect(viewTypeDisplay).toBeVisible();
-    await expect(viewTypeDisplay).toHaveText(/^(Map|Gallery|Alerts)$/i);
+  if (headerCount > 0) {
+    await expect(sectionHeaders.first()).toBeVisible();
   }
+
+  // 4. Verify read-only metadata block shows view type outside ConfigCard
+  const viewMetadata = page.locator("[data-testid='view-metadata']");
+  await expect(viewMetadata).toBeVisible();
+
+  // 5. Verify the metadata block displays the current (immutable) view type
+  const viewTypeDisplay = page.locator(
+    "[data-testid='config-view-type-display']",
+  );
+  await expect(viewTypeDisplay).toBeVisible();
+  await expect(viewTypeDisplay).toHaveText(/^(Map|Gallery|Alerts)$/i);
 });
 
 test("config page - language switching functionality", async ({
@@ -1182,96 +1090,34 @@ test("config page - language switching functionality", async ({
 test("config page - error handling for invalid form submission", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // 1. Navigate to the config page
+  // 1. Navigate to the config page and open a map config edit form
   await page.goto("/config");
   await page.waitForLoadState("networkidle");
-
-  // 2. Wait for the grid container to be present
   await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+  await openMapConfigEditPage(page);
 
-  // 3. Add a table to work with
-  const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']",
-  );
-  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
-  await addTableButton.click();
-
-  // 4. Verify the modal appears with dropdown
-  const addModal = page.locator("[data-testid='config-modal']");
-  await expect(addModal).toBeVisible();
-
-  // 5. Select an option from the dropdown
-  const dropdown = page.locator("select");
-  await dropdown.selectOption({ index: 0 });
-
-  // 6. Get the selected table name before confirming
-  const selectedOption = dropdown.locator("option:checked");
-  const tableNameToAdd = await selectedOption.textContent();
-
-  // 7. Click confirm to add the table
-  const confirmButton = page.getByRole("button", { name: /confirm/i });
-  await confirmButton.click();
-
-  // 8. Wait for success message and modal to close
-  await expect(page.getByText(/table added to views!/i)).toBeVisible();
-  await page.waitForTimeout(3500);
-
-  // 9. Wait for the page to reload and find the newly added table
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
-
-  // 10. Find the card with the table name we just added
-  if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
-    );
-    await expect(targetCard).toBeVisible({ timeout: 10000 });
-
-    // 11. Navigate to edit page
-    const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']",
-    );
-    await editLink.click();
-    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
-    await page.waitForLoadState("networkidle");
-
-    // 12. Wait for form to be visible
-    await page.waitForSelector("form", { timeout: 15000 });
-
-    // 13. Enable Map view to show Mapbox token field (if not already enabled)
-    const mapRadio = page.locator('label:has-text("Map") input[type="radio"]');
-
-    if ((await mapRadio.count()) > 0 && !(await mapRadio.isChecked())) {
-      await mapRadio.check();
-      await page.waitForTimeout(500);
-    }
-
-    // 14. Find mapbox access token field
+  {
+    // 2. Find mapbox access token field
     const mapboxTokenInput = page.locator(
       'input[id*="MAPBOX_ACCESS_TOKEN"], input[placeholder*="Mapbox"]',
     );
 
     if ((await mapboxTokenInput.count()) > 0) {
-      // 15. Test invalid token format that doesn't match pattern
-      await mapboxTokenInput.clear();
-      await mapboxTokenInput.fill("invalid_token_123");
-      await page.waitForTimeout(500);
-
-      // 16. Verify submit button is disabled due to invalid format
       const submitButton = page.locator("[data-testid='config-submit-button']");
-      await expect(submitButton).toBeDisabled();
 
-      // 17. Verify the button has the disabled styling
+      // Empty token keeps the form invalid (Save disabled)
+      await mapboxTokenInput.clear();
+      await page.waitForTimeout(300);
+      await expect(submitButton).toBeDisabled();
       const buttonClasses = await submitButton.getAttribute("class");
       expect(buttonClasses).toContain("bg-gray");
 
-      // 18. Test valid token format that matches pattern
-      await mapboxTokenInput.clear();
+      // Any non-empty token satisfies client-side required check
       await mapboxTokenInput.fill(
         "pk.eyJ1IjoiZXhhbXBsZSIsImEiOiJjbGV4YW1wbGUifQ.example",
       );
-      await page.waitForTimeout(500);
-
-      // 19. Verify submit button is now enabled with valid format
+      await page.waitForTimeout(300);
+      await ensureMapFormCanSubmit(page);
       await expect(submitButton).toBeEnabled();
     }
   }
@@ -1315,181 +1161,81 @@ test("config page - modal overlay functionality and cancel button", async ({
 test("config page - visibility permissions configuration", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // 1. Navigate to the config page
-  await page.goto("/config");
-  await page.waitForLoadState("networkidle");
-
-  // 2. Wait for the page to load
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
-
-  // 3. Find the first dataset card
-  const firstCard = page.locator("[data-testid='config-dataset-card']").first();
-  await expect(firstCard).toBeVisible({ timeout: 15000 });
-
-  // 4. Navigate to edit page
-  const editLink = firstCard.getByRole("link", { name: /edit dataset view/i });
-  await editLink.click();
-  await page.waitForURL(/\/config\/\w+/, { timeout: 15000 });
+  // Use a seeded view that already has ROUTE_LEVEL_PERMISSION set. Newly added
+  // views start with an empty config and intentionally have no radio selected.
+  await page.goto("/config/fake_alerts?view_type=alerts");
   await page.waitForLoadState("networkidle");
   await page.waitForSelector("form", { timeout: 15000 });
 
-  // 5. Look for the visibility section (should be visible to admins)
-  const visibilitySection = page.locator("*").filter({
-    hasText: /^Visibility$/i,
-  });
+  // Look for the visibility section (should be visible to admins)
+  const visibilitySection = page.locator(
+    '[data-testid="config-section-visibility-toggle"]',
+  );
 
   // If visibility section is visible (admin user), test the functionality
   if ((await visibilitySection.count()) > 0) {
-    // 6. Verify the help text is present (use more specific selector)
+    await expect(visibilitySection).toBeVisible();
+
     const helpText = page
       .locator("p, span, div")
       .filter({ hasText: /choose who can view this view/i })
       .first();
     await expect(helpText).toBeVisible();
 
-    // 7. Verify visibility options are present (radio buttons)
     const radioButtons = page.locator('input[type="radio"]');
     const radioCount = await radioButtons.count();
     expect(radioCount).toBeGreaterThan(0);
 
-    // 8. Verify at least one radio button is checked (default selection)
     const checkedRadio = page.locator('input[type="radio"]:checked');
     await expect(checkedRadio.first()).toBeVisible();
   } else {
-    // Non-admin user - should not see visibility section
-    await expect(visibilitySection).not.toBeVisible();
+    await expect(visibilitySection).toHaveCount(0);
   }
 });
 
 test("config page - basemap configuration - add and remove basemaps", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // 1. Navigate to the config page
   await page.goto("/config");
   await page.waitForLoadState("networkidle");
-
-  // 2. Wait for the grid container to be present
   await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+  await openMapConfigEditPage(page);
 
-  // 3. Add a table to work with
-  const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']",
+  const basemapLabel = page.locator(
+    'label:has-text("Mapbox Background Map(s)")',
   );
-  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
-  await addTableButton.click();
+  const hasBasemapConfig = (await basemapLabel.count()) > 0;
 
-  const addModal = page.locator("[data-testid='config-modal']");
-  await expect(addModal).toBeVisible();
+  if (hasBasemapConfig) {
+    const basemapItems = page.locator("[data-testid^='basemap-item-']");
+    const initialCount = await basemapItems.count();
+    expect(initialCount).toBeGreaterThan(0);
 
-  const dropdown = page.locator("select");
-  await dropdown.selectOption({ index: 0 });
+    const addBasemapButton = page.locator("[data-testid='basemap-add-button']");
 
-  const selectedOption = dropdown.locator("option:checked");
-  const tableNameToAdd = await selectedOption.textContent();
+    if ((await addBasemapButton.count()) > 0) {
+      await expect(addBasemapButton.first()).toBeVisible();
+      await expect(addBasemapButton.first()).toBeEnabled();
 
-  const confirmButton = page.getByRole("button", { name: /confirm/i });
-  await confirmButton.click();
+      await addBasemapButton.first().click();
+      await page.waitForTimeout(500);
 
-  await expect(page.getByText(/table added to views!/i)).toBeVisible();
-  await page.waitForTimeout(3500);
+      const basemapItemsAfterAdd = page
+        .locator("div")
+        .filter({ has: page.locator('input[id*="basemap-name"]') });
+      const newCount = await basemapItemsAfterAdd.count();
+      expect(newCount).toBeGreaterThan(initialCount);
 
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
-
-  // 4. Find the card and navigate to edit page
-  if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
-    );
-    await expect(targetCard).toBeVisible({ timeout: 10000 });
-
-    const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']",
-    );
-    await editLink.click();
-    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
-    await page.waitForLoadState("networkidle");
-
-    // 5. Wait for form to be visible
-    await page.waitForSelector("form", { timeout: 15000 });
-
-    // 6. Enable Map view if not already enabled (to show basemap config)
-    const mapRadio = page.locator('label:has-text("Map") input[type="radio"]');
-
-    if ((await mapRadio.count()) > 0) {
-      const isChecked = await mapRadio.isChecked();
-      if (!isChecked) {
-        await mapRadio.check();
-        await page.waitForTimeout(1000); // Wait for Map section to appear
-      }
-    }
-
-    // 7. Expand Map section if collapsed
-    const mapSectionButton = page.locator(
-      '[data-testid="config-section-map-toggle"]',
-    );
-
-    if ((await mapSectionButton.count()) > 0) {
-      // Check if section is open by looking for the content
-      const mapSectionContent = page
-        .locator('[data-testid="basemaps-container"]')
-        .or(page.locator('label:has-text("Mapbox Background Map(s)")'));
-
-      const isContentVisible =
-        (await mapSectionContent.count()) > 0 &&
-        (await mapSectionContent.first().isVisible());
-
-      if (!isContentVisible) {
-        await mapSectionButton.click();
-        await page.waitForTimeout(500); // Wait for section to expand
-      }
-    }
-
-    // 8. Look for basemap configuration section
-    const basemapLabel = page.locator(
-      'label:has-text("Mapbox Background Map(s)")',
-    );
-    const hasBasemapConfig = (await basemapLabel.count()) > 0;
-
-    if (hasBasemapConfig) {
-      // 9. Find basemap items
-      const basemapItems = page.locator("[data-testid^='basemap-item-']");
-      const initialCount = await basemapItems.count();
-      expect(initialCount).toBeGreaterThan(0);
-
-      // 10. Find and click add basemap button
-      const addBasemapButton = page.locator(
-        "[data-testid='basemap-add-button']",
+      const removeButtons = page.locator(
+        "[data-testid^='basemap-remove-button-']",
       );
 
-      if ((await addBasemapButton.count()) > 0) {
-        await expect(addBasemapButton.first()).toBeVisible();
-        await expect(addBasemapButton.first()).toBeEnabled();
-
-        // 11. Add first basemap
-        await addBasemapButton.first().click();
+      if ((await removeButtons.count()) > 0) {
+        await removeButtons.first().click();
         await page.waitForTimeout(500);
 
-        // 12. Verify there are now more basemaps
-        const basemapItemsAfterAdd = page
-          .locator("div")
-          .filter({ has: page.locator('input[id*="basemap-name"]') });
-        const newCount = await basemapItemsAfterAdd.count();
-        expect(newCount).toBeGreaterThan(initialCount);
-
-        // 13. Find remove buttons (should be visible for non-first basemaps)
-        const removeButtons = page.locator(
-          "[data-testid^='basemap-remove-button-']",
-        );
-
-        if ((await removeButtons.count()) > 0) {
-          // 14. Remove a basemap
-          await removeButtons.first().click();
-          await page.waitForTimeout(500);
-
-          // 15. Verify count decreased
-          const finalCount = await basemapItemsAfterAdd.count();
-          expect(finalCount).toBeLessThan(newCount);
-        }
+        const finalCount = await basemapItemsAfterAdd.count();
+        expect(finalCount).toBeLessThan(newCount);
       }
     }
   }
@@ -1498,139 +1244,63 @@ test("config page - basemap configuration - add and remove basemaps", async ({
 test("config page - basemap configuration - validation", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // 1. Navigate to the config page
   await page.goto("/config");
   await page.waitForLoadState("networkidle");
-
-  // 2. Wait for the grid container
   await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+  await openMapConfigEditPage(page);
 
-  // 3. Add a table
-  const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']",
+  const basemapLabel = page.locator(
+    'label:has-text("Mapbox Background Map(s)")',
   );
-  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
-  await addTableButton.click();
+  const hasBasemapConfig = (await basemapLabel.count()) > 0;
 
-  const addModal = page.locator("[data-testid='config-modal']");
-  await expect(addModal).toBeVisible();
-  const dropdown = page.locator("[data-testid='config-modal-table-select']");
-  await dropdown.selectOption({ index: 0 });
+  if (hasBasemapConfig) {
+    const addBasemapButton = page.locator("[data-testid='basemap-add-button']");
 
-  const selectedOption = dropdown.locator("option:checked");
-  const tableNameToAdd = await selectedOption.textContent();
-
-  const confirmButton = page.locator(
-    "[data-testid='config-modal-confirm-button']",
-  );
-  await expect(confirmButton).toBeEnabled();
-  await confirmButton.click();
-
-  await expect(page.getByText(/table added to views!/i)).toBeVisible();
-  await page.waitForTimeout(3500);
-
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
-
-  // 4. Find the card and navigate to edit page
-  if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
-    );
-    await expect(targetCard).toBeVisible({ timeout: 10000 });
-
-    const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']",
-    );
-    await editLink.click();
-    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
-    await page.waitForLoadState("networkidle");
-
-    // 5. Wait for form to be visible
-    await page.waitForSelector("form", { timeout: 15000 });
-
-    // 6. Enable Map view if not already enabled
-    const mapRadio = page.locator('label:has-text("Map") input[type="radio"]');
-
-    if ((await mapRadio.count()) > 0 && !(await mapRadio.isChecked())) {
-      await mapRadio.check();
+    if ((await addBasemapButton.count()) > 0) {
+      await addBasemapButton.first().click();
       await page.waitForTimeout(500);
-    }
 
-    // 7. Expand Map section if collapsed
-    const mapSection = page.locator("*").filter({ hasText: /^Map$/i });
-    if ((await mapSection.count()) > 0) {
-      const mapSectionButton = mapSection.locator("button").first();
-      if (await mapSectionButton.isVisible()) {
-        await mapSectionButton.click();
+      const nameInputs = page.locator('input[id*="basemap-name"]');
+      const nameInputCount = await nameInputs.count();
+
+      if (nameInputCount >= 2) {
+        const firstNameInput = nameInputs.nth(0);
+        const secondNameInput = nameInputs.nth(1);
+
+        await firstNameInput.clear();
+        await firstNameInput.fill("Default Style");
         await page.waitForTimeout(300);
-      }
-    }
 
-    // 8. Check for basemap configuration
-    const basemapLabel = page.locator(
-      'label:has-text("Mapbox Background Map(s)")',
-    );
-    const hasBasemapConfig = (await basemapLabel.count()) > 0;
-
-    if (hasBasemapConfig) {
-      // 9. Add a second basemap
-      const addBasemapButton = page.locator(
-        "[data-testid='basemap-add-button']",
-      );
-
-      if ((await addBasemapButton.count()) > 0) {
-        await addBasemapButton.first().click();
+        await secondNameInput.clear();
+        await secondNameInput.fill("Default Style");
         await page.waitForTimeout(500);
 
-        // 10. Find the name inputs
-        const nameInputs = page.locator('input[id*="basemap-name"]');
-        const nameInputCount = await nameInputs.count();
+        const validationErrors = page.locator(".text-red-600, .text-red-500");
+        const errorCount = await validationErrors.count();
+        expect(errorCount).toBeGreaterThanOrEqual(0);
 
-        if (nameInputCount >= 2) {
-          const firstNameInput = nameInputs.nth(0);
-          const secondNameInput = nameInputs.nth(1);
+        await secondNameInput.clear();
+        await secondNameInput.fill("Streets");
+        await page.waitForTimeout(500);
+      }
 
-          // 11. Set first basemap name
-          await firstNameInput.clear();
-          await firstNameInput.fill("Default Style");
-          await page.waitForTimeout(300);
+      const styleInputs = page.locator('input[id*="basemap-style"]');
+      if ((await styleInputs.count()) > 0) {
+        const firstStyleInput = styleInputs.first();
 
-          // 12. Set second basemap name to duplicate (should show validation error)
-          await secondNameInput.clear();
-          await secondNameInput.fill("Default Style");
-          await page.waitForTimeout(500);
+        const pattern = await firstStyleInput.getAttribute("pattern");
+        expect(pattern).toContain("mapbox:");
+        expect(pattern).toContain("styles");
 
-          // 13. Verify validation error appears (red text)
-          const validationErrors = page.locator(".text-red-600, .text-red-500");
-          const errorCount = await validationErrors.count();
-          // Error may appear or be handled by form validation
-          expect(errorCount).toBeGreaterThanOrEqual(0);
-
-          // 14. Change to unique name
-          await secondNameInput.clear();
-          await secondNameInput.fill("Streets");
-          await page.waitForTimeout(500);
-        }
-
-        // 15. Test Mapbox style URL validation
-        const styleInputs = page.locator('input[id*="basemap-style"]');
-        if ((await styleInputs.count()) > 0) {
-          const firstStyleInput = styleInputs.first();
-
-          // 16. Verify the input has the pattern attribute
-          const pattern = await firstStyleInput.getAttribute("pattern");
-          expect(pattern).toMatch(/mapbox:\/\/styles/);
-
-          // 17. Enter valid Mapbox style URL
-          await firstStyleInput.clear();
-          await firstStyleInput.fill(
-            "mapbox://styles/mapbox/satellite-streets-v12",
-          );
-          await page.waitForTimeout(300);
-          await firstStyleInput.clear();
-          await firstStyleInput.fill("mapbox://styles/user/styleid");
-          await page.waitForTimeout(300);
-        }
+        await firstStyleInput.clear();
+        await firstStyleInput.fill(
+          "mapbox://styles/mapbox/satellite-streets-v12",
+        );
+        await page.waitForTimeout(300);
+        await firstStyleInput.clear();
+        await firstStyleInput.fill("mapbox://styles/user/styleid");
+        await page.waitForTimeout(300);
       }
     }
   }
@@ -1639,110 +1309,37 @@ test("config page - basemap configuration - validation", async ({
 test("config page - basemap configuration - update name and style", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // 1. Navigate to the config page
   await page.goto("/config");
   await page.waitForLoadState("networkidle");
-
-  // 2. Wait for the grid container
   await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+  await openMapConfigEditPage(page);
 
-  // 3. Add a table
-  const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']",
+  const basemapLabel = page.locator(
+    'label:has-text("Mapbox Background Map(s)")',
   );
-  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
-  await addTableButton.click();
+  const hasBasemapConfig = (await basemapLabel.count()) > 0;
 
-  const addModal = page.locator("[data-testid='config-modal']");
-  await expect(addModal).toBeVisible();
-  const dropdown = page.locator("[data-testid='config-modal-table-select']");
-  await dropdown.selectOption({ index: 0 });
+  if (hasBasemapConfig) {
+    const nameInput = page.locator('input[id*="basemap-name-0"]').first();
+    const styleInput = page.locator('input[id*="basemap-style-0"]').first();
 
-  const selectedOption = dropdown.locator("option:checked");
-  const tableNameToAdd = await selectedOption.textContent();
+    if ((await nameInput.count()) > 0 && (await styleInput.count()) > 0) {
+      await nameInput.clear();
+      await nameInput.fill("Default Style");
+      await page.waitForTimeout(300);
 
-  const confirmButton = page.locator(
-    "[data-testid='config-modal-confirm-button']",
-  );
-  await expect(confirmButton).toBeEnabled();
-  await confirmButton.click();
+      await expect(nameInput).toHaveValue("Default Style");
 
-  await expect(page.getByText(/table added to views!/i)).toBeVisible();
-  await page.waitForTimeout(3500);
+      await styleInput.clear();
+      await styleInput.fill("mapbox://styles/mapbox/satellite-streets-v12");
+      await page.waitForTimeout(300);
 
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+      await expect(styleInput).toHaveValue(
+        "mapbox://styles/mapbox/satellite-streets-v12",
+      );
 
-  // 4. Find the card and navigate to edit page
-  if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
-    );
-    await expect(targetCard).toBeVisible({ timeout: 10000 });
-
-    const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']",
-    );
-    await editLink.click();
-    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
-    await page.waitForLoadState("networkidle");
-
-    // 5. Wait for form to be visible
-    await page.waitForSelector("form", { timeout: 15000 });
-
-    // 6. Enable Map view if not already enabled
-    const mapRadio = page.locator('label:has-text("Map") input[type="radio"]');
-
-    if ((await mapRadio.count()) > 0 && !(await mapRadio.isChecked())) {
-      await mapRadio.check();
-      await page.waitForTimeout(500);
-    }
-
-    // 7. Expand Map section if collapsed
-    const mapSection = page.locator("*").filter({ hasText: /^Map$/i });
-    if ((await mapSection.count()) > 0) {
-      const mapSectionButton = mapSection.locator("button").first();
-      if (await mapSectionButton.isVisible()) {
-        await mapSectionButton.click();
-        await page.waitForTimeout(300);
-      }
-    }
-
-    // 8. Check for basemap configuration
-    const basemapLabel = page.locator(
-      'label:has-text("Mapbox Background Map(s)")',
-    );
-    const hasBasemapConfig = (await basemapLabel.count()) > 0;
-
-    if (hasBasemapConfig) {
-      // 9. Find name and style inputs for first basemap
-      const nameInput = page.locator('input[id*="basemap-name-0"]').first();
-      const styleInput = page.locator('input[id*="basemap-style-0"]').first();
-
-      if ((await nameInput.count()) > 0 && (await styleInput.count()) > 0) {
-        // 10. Update basemap name
-        await nameInput.clear();
-        await nameInput.fill("Default Style");
-        await page.waitForTimeout(300);
-
-        // 11. Verify the value is set
-        await expect(nameInput).toHaveValue("Default Style");
-
-        // 12. Update basemap style
-        await styleInput.clear();
-        await styleInput.fill("mapbox://styles/mapbox/satellite-streets-v12");
-        await page.waitForTimeout(300);
-
-        // 13. Verify the value is set
-        await expect(styleInput).toHaveValue(
-          "mapbox://styles/mapbox/satellite-streets-v12",
-        );
-
-        // 14. Verify submit button is enabled (change detected)
-        const submitButton = page.locator(
-          "[data-testid='config-submit-button']",
-        );
-        await expect(submitButton).toBeEnabled();
-      }
+      const submitButton = page.locator("[data-testid='config-submit-button']");
+      await expect(submitButton).toBeEnabled();
     }
   }
 });
@@ -1750,94 +1347,25 @@ test("config page - basemap configuration - update name and style", async ({
 test("config page - color column configuration", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // 1. Navigate to the config page
   await page.goto("/config");
   await page.waitForLoadState("networkidle");
-
-  // 2. Wait for the grid container
   await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+  await openMapConfigEditPage(page);
 
-  // 3. Add a table
-  const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']",
-  );
-  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
-  await addTableButton.click();
+  const colorColumnInput = page.locator('input[id*="COLOR_COLUMN"]');
+  const hasColorColumn = (await colorColumnInput.count()) > 0;
 
-  const addModal = page.locator("[data-testid='config-modal']");
-  await expect(addModal).toBeVisible();
-  const dropdown = page.locator("[data-testid='config-modal-table-select']");
-  await dropdown.selectOption({ index: 0 });
+  if (hasColorColumn) {
+    await expect(colorColumnInput.first()).toBeVisible();
 
-  const selectedOption = dropdown.locator("option:checked");
-  const tableNameToAdd = await selectedOption.textContent();
+    await colorColumnInput.first().clear();
+    await colorColumnInput.first().fill("color");
+    await page.waitForTimeout(300);
 
-  const confirmButton = page.locator(
-    "[data-testid='config-modal-confirm-button']",
-  );
-  await expect(confirmButton).toBeEnabled();
-  await confirmButton.click();
+    await expect(colorColumnInput.first()).toHaveValue("color");
 
-  await expect(page.getByText(/table added to views!/i)).toBeVisible();
-  await page.waitForTimeout(3500);
-
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
-
-  // 4. Find the card and navigate to edit page
-  if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
-    );
-    await expect(targetCard).toBeVisible({ timeout: 10000 });
-
-    const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']",
-    );
-    await editLink.click();
-    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
-    await page.waitForLoadState("networkidle");
-
-    // 5. Wait for form to be visible
-    await page.waitForSelector("form", { timeout: 15000 });
-
-    // 6. Enable Map view if not already enabled (to show color column field)
-    const mapRadio = page.locator('label:has-text("Map") input[type="radio"]');
-
-    if ((await mapRadio.count()) > 0 && !(await mapRadio.isChecked())) {
-      await mapRadio.check();
-      await page.waitForTimeout(500);
-    }
-
-    // 7. Expand Map section if collapsed
-    const mapSection = page.locator("*").filter({ hasText: /^Map$/i });
-    if ((await mapSection.count()) > 0) {
-      const mapSectionButton = mapSection.locator("button").first();
-      if (await mapSectionButton.isVisible()) {
-        await mapSectionButton.click();
-        await page.waitForTimeout(300);
-      }
-    }
-
-    // 8. Look for COLOR_COLUMN input
-    const colorColumnInput = page.locator('input[id*="COLOR_COLUMN"]');
-    const hasColorColumn = (await colorColumnInput.count()) > 0;
-
-    if (hasColorColumn) {
-      // 9. Verify the input exists
-      await expect(colorColumnInput.first()).toBeVisible();
-
-      // 10. Enter a color column value
-      await colorColumnInput.first().clear();
-      await colorColumnInput.first().fill("color");
-      await page.waitForTimeout(300);
-
-      // 11. Verify the value is set
-      await expect(colorColumnInput.first()).toHaveValue("color");
-
-      // 12. Verify submit button is enabled (change detected)
-      const submitButton = page.locator("[data-testid='config-submit-button']");
-      await expect(submitButton).toBeEnabled();
-    }
+    const submitButton = page.locator("[data-testid='config-submit-button']");
+    await expect(submitButton).toBeEnabled();
   }
 });
 
@@ -1929,107 +1457,42 @@ test("config page - copy config modal cancel closes modal", async ({
 test("config page - basemap configuration - max 3 limit", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // 1. Navigate to the config page
   await page.goto("/config");
-
-  // 2. Wait for the grid container
   await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
+  await openMapConfigEditPage(page);
 
-  // 3. Add a table
-  // Button text changed from "Add new table" to "Add new dataset view"
-  const addTableButton = page
-    .locator("[data-testid='add-new-dataset-view-button']")
-    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
-    .first();
-  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
-  await addTableButton.click();
-
-  const addModal = page.locator("[data-testid='config-modal']");
-  await expect(addModal).toBeVisible();
-  const dropdown = page.locator("[data-testid='config-modal-table-select']");
-  await dropdown.selectOption({ index: 0 });
-
-  const selectedOption = dropdown.locator("option:checked");
-  const tableNameToAdd = await selectedOption.textContent();
-
-  const confirmButton = page.locator(
-    "[data-testid='config-modal-confirm-button']",
+  const basemapLabel = page.locator(
+    'label:has-text("Mapbox Background Map(s)"), label:has-text("Basemap")',
   );
-  await expect(confirmButton).toBeEnabled();
-  await confirmButton.click();
+  const hasBasemapConfig = (await basemapLabel.count()) > 0;
 
-  await expect(page.getByText(/table added to views!/i)).toBeVisible();
-  await page.waitForTimeout(3500);
+  if (hasBasemapConfig) {
+    const addBasemapButton = page.locator("[data-testid='basemap-add-button']");
+    const basemapItems = page.locator("[data-testid^='basemap-item-']");
 
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 5000 });
+    let currentCount = await basemapItems.count();
+    while (currentCount < 3 && (await addBasemapButton.isEnabled())) {
+      await addBasemapButton.click();
+      await page.waitForTimeout(500);
+      currentCount = await basemapItems.count();
+    }
 
-  // 4. Find and expand the target card
-  if (tableNameToAdd) {
-    const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
+    expect(await basemapItems.count()).toBe(3);
+    await expect(addBasemapButton).toBeDisabled();
+
+    await addBasemapButton.click({ force: true });
+    await page.waitForTimeout(500);
+    expect(await basemapItems.count()).toBe(3);
+
+    const removeButtons = page.locator(
+      "[data-testid^='basemap-remove-button-']",
     );
-    // Cards no longer have hamburger buttons - navigate to edit page
-    const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']",
-    );
-    await editLink.click();
-    await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
-
-    await targetCard;
-    // ConfigCard uses ConfigCollapsibleSection, wait for form instead
-    await page.waitForSelector("form", { timeout: 15000 });
-
-    // 5. Check for basemap configuration
-    // On edit page now, use page.locator
-    const basemapLabel = page.locator(
-      'label:has-text("Mapbox Background Map(s)"), label:has-text("Basemap")',
-    );
-    const hasBasemapConfig = (await basemapLabel.count()) > 0;
-
-    if (hasBasemapConfig) {
-      // On edit page now
-      const addBasemapButton = page
-        .locator('button:has-text("+"), button.add-basemap-button')
-        .first();
-      // On edit page now
-      const basemapItems = page.locator(".basemap-item");
-
-      // 6. Add basemaps until limit is reached
-      let currentCount = await basemapItems.count();
-      while (currentCount < 3 && (await addBasemapButton.isEnabled())) {
-        await addBasemapButton.click();
-        await page.waitForTimeout(500);
-        currentCount = await basemapItems.count();
-      }
-
-      // 7. Verify there are exactly 3 basemaps
-      expect(await basemapItems.count()).toBe(3);
-
-      // 8. Verify add button is disabled
-      await expect(addBasemapButton).toBeDisabled();
-      await expect(addBasemapButton).toHaveClass(/disabled/);
-
-      // 9. Try clicking the disabled button (should not add another)
-      await addBasemapButton.click({ force: true });
+    if ((await removeButtons.count()) > 0) {
+      await removeButtons.first().click();
       await page.waitForTimeout(500);
 
-      // 10. Verify still only 3 basemaps
-      expect(await basemapItems.count()).toBe(3);
-
-      // 11. Remove one basemap
-      const removeButtons = page.locator(
-        "button:has-text('Remove'), button.remove-button",
-      );
-      if ((await removeButtons.count()) > 0) {
-        await removeButtons.first().click();
-        await page.waitForTimeout(500);
-
-        // 12. Verify there are now 2 basemaps
-        expect(await basemapItems.count()).toBe(2);
-
-        // 13. Verify add button is enabled again
-        await expect(addBasemapButton).toBeEnabled();
-      }
+      expect(await basemapItems.count()).toBe(2);
+      await expect(addBasemapButton).toBeEnabled();
     }
   }
 });

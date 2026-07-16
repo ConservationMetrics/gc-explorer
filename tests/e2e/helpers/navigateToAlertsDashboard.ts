@@ -42,9 +42,5 @@ export const navigateToAlertsDashboard = async (page: Page): Promise<void> => {
 
   await page.locator("canvas.mapboxgl-canvas").waitFor();
 
-  await page.waitForFunction(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
-    return map?.isStyleLoaded() && map.loaded();
-  });
+  await page.locator("#map[data-map-ready='true']").waitFor();
 };

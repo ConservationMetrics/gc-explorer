@@ -41,6 +41,7 @@ import type {
   AllowedFileExtensions,
   Basemap,
   BasemapConfig,
+  MapboxStyleConfig,
   MapLegendItem,
 } from "@/types";
 import type { Feature, FeatureCollection } from "geojson";
@@ -97,7 +98,7 @@ const props = defineProps<{
   mapboxLongitude: number;
   mapboxPitch: number | null;
   mapboxProjection: string;
-  mapboxStyle: string;
+  mapboxStyle: MapboxStyleConfig;
   mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;
@@ -119,6 +120,7 @@ const calculateHectares = ref(false);
 const dateOptions = ref();
 const hasRulerControl = ref(false);
 const map = ref();
+const mapReady = ref(false);
 const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showSidebar = ref(true);
@@ -762,7 +764,10 @@ const addAlertsData = async () => {
         }
 
         // Add cluster count label layer
-        if (!map.value.getLayer(`${layerId}-cluster-count`)) {
+        if (
+          map.value.getStyle().glyphs &&
+          !map.value.getLayer(`${layerId}-cluster-count`)
+        ) {
           map.value.addLayer({
             id: `${layerId}-cluster-count`,
             type: "symbol",
@@ -902,7 +907,10 @@ const addAlertsData = async () => {
     }
 
     // Add cluster count label
-    if (!map.value.getLayer(`${layerId}-cluster-count`)) {
+    if (
+      map.value.getStyle().glyphs &&
+      !map.value.getLayer(`${layerId}-cluster-count`)
+    ) {
       map.value.addLayer({
         id: `${layerId}-cluster-count`,
         type: "symbol",
@@ -1409,6 +1417,8 @@ const prepareMapLegendContent = () => {
     }
 
     mapLegendContent.value = legendItems;
+    // E2E tests wait for this after the idle-gated legend content is ready.
+    mapReady.value = true;
   });
 };
 
@@ -1705,7 +1715,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <div id="map"></div>
+    <div id="map" :data-map-ready="mapReady || undefined"></div>
     <button
       v-if="!showSidebar"
       class="absolute top-2.5 left-2.5 z-10 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"

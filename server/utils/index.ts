@@ -1,10 +1,10 @@
-import type { BasemapConfig, ViewConfig } from "@/types";
+import type { BasemapConfig, MapboxStyleConfig, ViewConfig } from "@/types";
 
 import { fetchTableNames } from "@/server/database/dbOperations";
 
 export type ParsedBasemaps = {
   basemaps: BasemapConfig[];
-  defaultMapboxStyle?: string;
+  defaultMapboxStyle?: MapboxStyleConfig;
 };
 
 /**
@@ -12,7 +12,7 @@ export type ParsedBasemaps = {
  */
 export const parseBasemaps = (tableConfig: ViewConfig): ParsedBasemaps => {
   let basemaps: BasemapConfig[] = [];
-  let defaultMapboxStyle: string | undefined;
+  let defaultMapboxStyle: MapboxStyleConfig | undefined;
 
   if (tableConfig.MAPBOX_BASEMAPS) {
     try {
@@ -25,7 +25,7 @@ export const parseBasemaps = (tableConfig: ViewConfig): ParsedBasemaps => {
       }
     } catch {
       // If parsing fails, fall back to legacy MAPBOX_STYLE
-      defaultMapboxStyle = tableConfig.MAPBOX_STYLE as string | undefined;
+      defaultMapboxStyle = tableConfig.MAPBOX_STYLE;
       if (defaultMapboxStyle) {
         basemaps = [
           {
@@ -38,11 +38,11 @@ export const parseBasemaps = (tableConfig: ViewConfig): ParsedBasemaps => {
     }
   } else if (tableConfig.MAPBOX_STYLE) {
     // Legacy fallback
-    defaultMapboxStyle = tableConfig.MAPBOX_STYLE as string | undefined;
+    defaultMapboxStyle = tableConfig.MAPBOX_STYLE;
     basemaps = [
       {
         name: "Default Style",
-        style: defaultMapboxStyle as string,
+        style: defaultMapboxStyle,
         isDefault: true,
       },
     ];
