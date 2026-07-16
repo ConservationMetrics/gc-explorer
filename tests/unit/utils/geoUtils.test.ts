@@ -3,9 +3,33 @@ import {
   buildMinimalFeatureCollection,
   calculateCentroid,
   hasValidCoordinates,
+  isValidGeolocation,
+  isValidPosition,
   mapStatisticsFromFeatureCollection,
+  tryParseDataEntryGeoCoordinates,
 } from "@/utils/geoUtils";
 import type { FeatureCollection } from "geojson";
+import type { DataEntry } from "@/types";
+
+describe("isValidPosition", () => {
+  it("accepts [lng, lat]", () => {
+    expect(isValidPosition([-77.5733802, -1.3016433])).toBe(true);
+  });
+
+  it("accepts [lng, lat, elevation] per RFC 7946", () => {
+    expect(isValidPosition([-77.5733802, -1.3016433, 413.858])).toBe(true);
+  });
+
+  it("rejects positions with fewer than two elements", () => {
+    expect(isValidPosition([-77.5733802])).toBe(false);
+    expect(isValidPosition([])).toBe(false);
+  });
+
+  it("rejects non-finite or out-of-range lng/lat", () => {
+    expect(isValidPosition([200, 0])).toBe(false);
+    expect(isValidPosition([0, NaN])).toBe(false);
+  });
+});
 
 describe("calculateCentroid", () => {
   it("returns centroid for Point", () => {
@@ -13,10 +37,23 @@ describe("calculateCentroid", () => {
     expect(calculateCentroid(point)).toBe("3.120000, -54.280000");
   });
 
+  it("returns centroid for Point with elevation (ignores elevation)", () => {
+    const point = JSON.stringify([-77.5733802, -1.3016433, 413.858]);
+    expect(calculateCentroid(point)).toBe("-1.301643, -77.573380");
+  });
+
   it("returns centroid for LineString", () => {
     const line = JSON.stringify([
       [-54.28, 3.12],
       [-54.29, 3.13],
+    ]);
+    expect(calculateCentroid(line)).toBe("3.125000, -54.285000");
+  });
+
+  it("returns centroid for LineString with elevation", () => {
+    const line = JSON.stringify([
+      [-54.28, 3.12, 100],
+      [-54.29, 3.13, 200],
     ]);
     expect(calculateCentroid(line)).toBe("3.125000, -54.285000");
   });
@@ -80,6 +117,22 @@ describe("hasValidCoordinates", () => {
     );
   });
 
+  it("validates Point coordinates with elevation", () => {
+    expect(
+      hasValidCoordinates({
+        g__coordinates: "[-77.5733802, -1.3016433, 413.858]",
+      }),
+    ).toBe(true);
+  });
+
+  it("validates CSV Point coordinates with elevation", () => {
+    expect(
+      hasValidCoordinates({
+        g__coordinates: "-77.5733802,-1.3016433,413.858",
+      }),
+    ).toBe(true);
+  });
+
   it("validates Polygon coordinates", () => {
     const polygon =
       "[[[-80.58, 38.77], [-80.57, 38.78], [-80.59, 38.80], [-80.58, 38.77]]]";
@@ -88,6 +141,11 @@ describe("hasValidCoordinates", () => {
 
   it("validates LineString coordinates", () => {
     const line = "[[-54.28, 3.12], [-54.29, 3.13]]";
+    expect(hasValidCoordinates({ g__coordinates: line })).toBe(true);
+  });
+
+  it("validates LineString coordinates with elevation", () => {
+    const line = "[[-54.28, 3.12, 100], [-54.29, 3.13, 200]]";
     expect(hasValidCoordinates({ g__coordinates: line })).toBe(true);
   });
 
@@ -103,6 +161,40 @@ describe("hasValidCoordinates", () => {
 
   it("rejects entries with null coordinates", () => {
     expect(hasValidCoordinates({ g__coordinates: null })).toBe(false);
+  });
+});
+
+describe("tryParseDataEntryGeoCoordinates / isValidGeolocation", () => {
+  it("parses Point with elevation", () => {
+    const entry = {
+      g__type: "Point",
+      g__coordinates: "[-77.5733802, -1.3016433, 413.858]",
+    };
+    expect(isValidGeolocation(entry)).toBe(true);
+    expect(tryParseDataEntryGeoCoordinates(entry)).toEqual([
+      -77.5733802, -1.3016433, 413.858,
+    ]);
+  });
+
+  it("parses LineString with elevation on vertices", () => {
+    const entry = {
+      g__type: "LineString",
+      g__coordinates: "[[-54.28, 3.12, 100], [-54.29, 3.13, 200]]",
+    };
+    expect(isValidGeolocation(entry)).toBe(true);
+    expect(tryParseDataEntryGeoCoordinates(entry)).toEqual([
+      [-54.28, 3.12, 100],
+      [-54.29, 3.13, 200],
+    ]);
+  });
+
+  it("rejects Point with only one coordinate value", () => {
+    const entry = {
+      g__type: "Point",
+      g__coordinates: "[-77.5733802]",
+    };
+    expect(isValidGeolocation(entry)).toBe(false);
+    expect(tryParseDataEntryGeoCoordinates(entry)).toBeNull();
   });
 });
 
@@ -137,13 +229,63 @@ describe("buildMinimalFeatureCollection", () => {
       g__coordinates: "",
       name: "Delta",
     },
-  ];
+  ] as DataEntry[];
 
   it("returns a valid GeoJSON FeatureCollection", () => {
     const result = buildMinimalFeatureCollection(sampleData);
 
     expect(result.type).toBe("FeatureCollection");
     expect(Array.isArray(result.features)).toBe(true);
+  });
+
+  it("includes Points whose coordinates include elevation", () => {
+    const dataWithElevation = [
+      {
+        _id: "elev-1",
+        g__type: "Point",
+        g__coordinates: "[-77.5733802, -1.3016433, 413.858]",
+        name: "With elevation",
+      },
+      {
+        _id: "elev-2",
+        g__type: "Point",
+        g__coordinates: "[-77.5, -1.3]",
+        name: "Without elevation",
+      },
+    ];
+
+    const result = buildMinimalFeatureCollection(dataWithElevation);
+
+    expect(result.features).toHaveLength(2);
+    expect(result.features[0].geometry).toEqual({
+      type: "Point",
+      coordinates: [-77.5733802, -1.3016433, 413.858],
+    });
+    expect(result.features[1].geometry).toEqual({
+      type: "Point",
+      coordinates: [-77.5, -1.3],
+    });
+  });
+
+  it("includes LineStrings whose vertices include elevation", () => {
+    const data = [
+      {
+        _id: "line-1",
+        g__type: "LineString",
+        g__coordinates: "[[-54.28, 3.12, 100], [-54.29, 3.13, 200]]",
+      },
+    ];
+
+    const result = buildMinimalFeatureCollection(data);
+
+    expect(result.features).toHaveLength(1);
+    expect(result.features[0].geometry).toEqual({
+      type: "LineString",
+      coordinates: [
+        [-54.28, 3.12, 100],
+        [-54.29, 3.13, 200],
+      ],
+    });
   });
 
   it("skips entries with invalid or missing coordinates", () => {
@@ -218,7 +360,7 @@ describe("buildMinimalFeatureCollection", () => {
         g__type: "Point",
         g__coordinates: "[11.0, 46.0]",
       },
-    ];
+    ] as DataEntry[];
 
     const result = buildMinimalFeatureCollection(dataWithMissingFilter, {
       filterColumn: "category",
@@ -249,7 +391,7 @@ describe("buildMinimalFeatureCollection", () => {
         g__coordinates: "[12.0, 47.0]",
         color: null,
       },
-    ];
+    ] as DataEntry[];
 
     const result = buildMinimalFeatureCollection(dataWithEmptyColor, {
       includeProperties: ["color"],
@@ -283,7 +425,7 @@ describe("buildMinimalFeatureCollection", () => {
         g__coordinates: "[11.0, 46.0]",
         name: "Mapeo observation (id field)",
       },
-    ];
+    ] as DataEntry[];
 
     const result = buildMinimalFeatureCollection(mapeoData, {
       isMapeoData: true,
