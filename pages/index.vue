@@ -8,14 +8,6 @@ import ViewTypeFilter from "@/components/shared/ViewTypeFilter.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
 import { matchesSearchQuery, matchesViewTypeFilter } from "@/utils/viewFilters";
 
-/** A dataset grouped from one or more view rows sharing the same primaryDataset. */
-interface DatasetGroup {
-  tableName: string;
-  viewName: string;
-  config: ViewConfig;
-  viewTypes: ViewType[];
-}
-
 const viewRows = ref<ViewConfigRow[]>([]);
 const availableTables = ref<string[]>([]);
 
@@ -67,36 +59,19 @@ const canAccessConfig = (config: ViewConfig) => {
 };
 
 /**
- * Groups permission-filtered view rows by their primaryDataset.
- * The first row's viewConfig is used as the representative config because dataset-level
- * display fields (DATASET_TABLE/VIEW_DESCRIPTION/ROUTE_LEVEL_PERMISSION) are shared.
+ * Permission-filtered view rows, one card per view (not grouped by dataset).
+ * Sorted by view name then type, matching the config dashboard.
  *
- * @returns {DatasetGroup[]} Datasets sorted by table name, each with deduped, sorted view types.
+ * @returns {ViewConfigRow[]} Accessible views ready for filtering and display.
  */
-const groupedDatasets = computed<DatasetGroup[]>(() => {
-  const groups: Record<string, DatasetGroup> = {};
-
-  viewRows.value
+const accessibleViews = computed<ViewConfigRow[]>(() => {
+  return viewRows.value
     .filter((row) => canAccessConfig(row.viewConfig))
-    .forEach((row) => {
-      const existing = groups[row.primaryDataset];
-      if (existing) {
-        if (!existing.viewTypes.includes(row.viewType)) {
-          existing.viewTypes.push(row.viewType);
-        }
-      } else {
-        groups[row.primaryDataset] = {
-          tableName: row.primaryDataset,
-          viewName: row.viewName || row.primaryDataset,
-          config: row.viewConfig,
-          viewTypes: [row.viewType],
-        };
-      }
-    });
-
-  return Object.values(groups)
-    .map((group) => ({ ...group, viewTypes: [...group.viewTypes].sort() }))
-    .sort((first, second) => first.tableName.localeCompare(second.tableName));
+    .sort((first, second) =>
+      `${first.viewName}-${first.viewType}`.localeCompare(
+        `${second.viewName}-${second.viewType}`,
+      ),
+    );
 });
 
 const activeViewFilter = ref<string>(
@@ -128,41 +103,40 @@ watch(searchQuery, (value) => {
 });
 
 /**
- * All distinct view types present across the permission-filtered datasets.
+ * All distinct view types present across the permission-filtered views.
  *
  * @returns {ViewType[]} Sorted array of unique view types (e.g. ["alerts", "gallery", "map"]).
  */
 const availableViewTypes = computed<ViewType[]>(() => {
   const types = new Set<ViewType>();
-  groupedDatasets.value.forEach((group) => {
-    group.viewTypes.forEach((type) => types.add(type));
-  });
+  accessibleViews.value.forEach((row) => types.add(row.viewType));
   return Array.from(types).sort();
 });
 
 /**
- * Applies the active view-type filter on top of the already permission-filtered datasets.
+ * Applies the active view-type filter on top of the already permission-filtered views.
  *
- * @returns {DatasetGroup[]} Datasets whose view types include the active filter.
+ * @returns {ViewConfigRow[]} Views whose type matches the active filter.
  */
-const displayedDatasets = computed<DatasetGroup[]>(() => {
-  return groupedDatasets.value.filter((group) =>
-    matchesViewTypeFilter(activeViewFilter.value, group.viewTypes),
+const displayedViews = computed<ViewConfigRow[]>(() => {
+  return accessibleViews.value.filter((row) =>
+    matchesViewTypeFilter(activeViewFilter.value, row.viewType),
   );
 });
 
 /**
- * Applies search filtering on top of the view-type-filtered datasets.
- * Matches case-insensitively against display name (DATASET_TABLE or table name) and description.
+ * Applies search filtering on top of the view-type-filtered views.
+ * Matches case-insensitively against view name, primary dataset, and description.
  *
- * @returns {DatasetGroup[]} The search-filtered datasets.
+ * @returns {ViewConfigRow[]} The search-filtered views.
  */
-const searchedDatasets = computed<DatasetGroup[]>(() => {
-  return displayedDatasets.value.filter((group) =>
+const searchedViews = computed<ViewConfigRow[]>(() => {
+  return displayedViews.value.filter((row) =>
     matchesSearchQuery(
       searchQuery.value,
-      group.viewName,
-      group.config.VIEW_DESCRIPTION,
+      row.viewName,
+      row.primaryDataset,
+      row.viewConfig.VIEW_DESCRIPTION,
     ),
   );
 });
@@ -231,7 +205,7 @@ definePageMeta({ layout: "explorer" });
 
       <!-- View Type Filter & Manage Datasets -->
       <div
-        v-if="groupedDatasets.length"
+        v-if="accessibleViews.length"
         class="flex flex-wrap items-center justify-between gap-3 mb-4"
       >
         <ViewTypeFilter
@@ -250,16 +224,16 @@ definePageMeta({ layout: "explorer" });
 
       <!-- Project Cards Grid -->
       <div
-        v-if="searchedDatasets.length > 0"
+        v-if="searchedViews.length > 0"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch"
       >
         <DatasetCard
-          v-for="dataset in searchedDatasets"
-          :key="dataset.tableName"
-          :table-name="dataset.tableName"
-          :view-name="dataset.viewName"
-          :config="dataset.config"
-          :view-types="dataset.viewTypes"
+          v-for="row in searchedViews"
+          :key="`${row.primaryDataset}-${row.viewType}`"
+          :table-name="row.primaryDataset"
+          :view-name="row.viewName"
+          :config="row.viewConfig"
+          :view-type="row.viewType"
         />
       </div>
 
