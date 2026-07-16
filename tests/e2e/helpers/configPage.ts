@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 /** Seeded map view used when no unconfigured datasets remain. */
 export const SEEDED_MAP_CONFIG_PATH = "/config/bcmform_responses?view_type=map";
