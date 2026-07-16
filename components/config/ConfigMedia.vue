@@ -149,67 +149,77 @@ watch(mediaColumn, (newValue) => {
   }
 });
 
-// Lifecycle
-onMounted(() => {
-  if (props.config.MEDIA_BASE_PATH) {
-    const existing = props.config.MEDIA_BASE_PATH;
-    if (existing.includes("/api/public/dl/")) {
-      providerBasePath.value = "filebrowser";
-      const parts = existing.split("/api/public/dl/");
-      if (parts.length === 2) {
-        shareInputBasePath.value = parts[1].replace(/\/+$/, "");
+// Keep local media fields in sync with the config prop (including the initial value).
+watch(
+  () => props.config,
+  (config) => {
+    isInitializing.value = true;
+
+    if (config.MEDIA_BASE_PATH) {
+      const existing = config.MEDIA_BASE_PATH;
+      if (existing.includes("/api/public/dl/")) {
+        providerBasePath.value = "filebrowser";
+        const parts = existing.split("/api/public/dl/");
+        if (parts.length === 2) {
+          shareInputBasePath.value = parts[1].replace(/\/+$/, "");
+        } else {
+          providerBasePath.value = "generic";
+          shareInputBasePath.value = existing;
+        }
       } else {
         providerBasePath.value = "generic";
         shareInputBasePath.value = existing;
       }
     } else {
-      providerBasePath.value = "generic";
-      shareInputBasePath.value = existing;
+      shareInputBasePath.value = "";
     }
-  }
 
-  if (props.config.MEDIA_BASE_PATH_ALERTS) {
-    const existing = props.config.MEDIA_BASE_PATH_ALERTS;
-    if (existing.includes("/api/public/dl/")) {
-      providerAlerts.value = "filebrowser";
-      const parts = existing.split("/api/public/dl/");
-      if (parts.length === 2) {
-        shareInputAlerts.value = parts[1].replace(/\/+$/, "");
+    if (config.MEDIA_BASE_PATH_ALERTS) {
+      const existing = config.MEDIA_BASE_PATH_ALERTS;
+      if (existing.includes("/api/public/dl/")) {
+        providerAlerts.value = "filebrowser";
+        const parts = existing.split("/api/public/dl/");
+        if (parts.length === 2) {
+          shareInputAlerts.value = parts[1].replace(/\/+$/, "");
+        } else {
+          providerAlerts.value = "generic";
+          shareInputAlerts.value = existing;
+        }
       } else {
         providerAlerts.value = "generic";
         shareInputAlerts.value = existing;
       }
     } else {
-      providerAlerts.value = "generic";
-      shareInputAlerts.value = existing;
+      shareInputAlerts.value = "";
     }
-  }
 
-  if (props.config.MEDIA_BASE_PATH_ICONS) {
-    const existing = props.config.MEDIA_BASE_PATH_ICONS;
-    if (existing.includes("/api/public/dl/")) {
-      providerIcons.value = "filebrowser";
-      const parts = existing.split("/api/public/dl/");
-      if (parts.length === 2) {
-        shareInputIcons.value = parts[1].replace(/\/+$/, "");
+    if (config.MEDIA_BASE_PATH_ICONS) {
+      const existing = config.MEDIA_BASE_PATH_ICONS;
+      if (existing.includes("/api/public/dl/")) {
+        providerIcons.value = "filebrowser";
+        const parts = existing.split("/api/public/dl/");
+        if (parts.length === 2) {
+          shareInputIcons.value = parts[1].replace(/\/+$/, "");
+        } else {
+          providerIcons.value = "generic";
+          shareInputIcons.value = existing;
+        }
       } else {
         providerIcons.value = "generic";
         shareInputIcons.value = existing;
       }
     } else {
-      providerIcons.value = "generic";
-      shareInputIcons.value = existing;
+      shareInputIcons.value = "";
     }
-  }
 
-  if (props.config.MEDIA_COLUMN) {
-    mediaColumn.value = props.config.MEDIA_COLUMN;
-  }
+    mediaColumn.value = config.MEDIA_COLUMN || "";
 
-  nextTick(() => {
-    isInitializing.value = false;
-  });
-});
+    nextTick(() => {
+      isInitializing.value = false;
+    });
+  },
+  { immediate: true, deep: true },
+);
 </script>
 
 <template>

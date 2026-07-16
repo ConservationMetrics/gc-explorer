@@ -56,27 +56,43 @@ const datasetInfoKeys = computed(() => [
 // The child config components expect a `views` array; wrap the single view type
 const viewTypeList = computed(() => [props.viewType]);
 
-// On mounted, set localConfig to props.config
-const originalConfig = ref<ViewConfig>({});
-const localConfig = ref<ViewConfig>({});
-const originalSecondaryDataset = ref("");
-const localSecondaryDataset = ref("");
-onMounted(() => {
-  if (props.viewConfig) {
-    localConfig.value = JSON.parse(JSON.stringify(props.viewConfig));
-  }
-  localSecondaryDataset.value = props.secondaryDataset ?? "";
-  originalConfig.value = JSON.parse(JSON.stringify(localConfig.value));
-  originalSecondaryDataset.value = localSecondaryDataset.value;
-});
+/**
+ * Creates an editable copy of a view configuration.
+ *
+ * @param {ViewConfig} config - Configuration to copy.
+ * @returns {ViewConfig} A detached copy of the configuration.
+ */
+const cloneConfig = (config: ViewConfig): ViewConfig => {
+  return JSON.parse(JSON.stringify(config)) as ViewConfig;
+};
+
+/**
+ * Replaces a config object's contents without replacing its reactive identity.
+ *
+ * @param {ViewConfig} target - Existing reactive config object.
+ * @param {ViewConfig} source - New configuration values.
+ * @returns {void}
+ */
+const replaceConfig = (target: ViewConfig, source: ViewConfig): void => {
+  const mutableTarget = target as Record<string, unknown>;
+  Object.keys(target).forEach((key) => {
+    mutableTarget[key] = undefined;
+  });
+  Object.assign(target, cloneConfig(source));
+};
+
+const localConfig = ref<ViewConfig>(cloneConfig(props.viewConfig));
+const originalConfig = ref<ViewConfig>(cloneConfig(props.viewConfig));
+const localSecondaryDataset = ref(props.secondaryDataset ?? "");
+const originalSecondaryDataset = ref(localSecondaryDataset.value);
 
 // Watch for changes to viewConfig prop and update baseline after save
 watch(
   () => [props.viewConfig, props.secondaryDataset] as const,
   ([newConfig, newSecondaryDataset]) => {
     if (newConfig) {
-      localConfig.value = JSON.parse(JSON.stringify(newConfig));
-      originalConfig.value = JSON.parse(JSON.stringify(localConfig.value));
+      replaceConfig(localConfig.value, newConfig);
+      originalConfig.value = cloneConfig(newConfig);
     }
     localSecondaryDataset.value = newSecondaryDataset ?? "";
     originalSecondaryDataset.value = localSecondaryDataset.value;
@@ -89,7 +105,7 @@ watch(
   () => props.configToCopy,
   (copiedConfig) => {
     if (copiedConfig) {
-      localConfig.value = JSON.parse(JSON.stringify(copiedConfig));
+      replaceConfig(localConfig.value, copiedConfig);
     }
   },
 );
