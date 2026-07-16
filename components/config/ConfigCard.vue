@@ -204,14 +204,12 @@ const handleSubmit = () => {
     <div
       class="bg-gradient-to-r from-violet-100 to-violet-50 border-b border-violet-200 px-6 py-4"
     >
-      <h2 class="text-xl font-bold text-gray-800">{{ tableName }}</h2>
+      <h2 class="text-xl font-bold text-gray-800">
+        {{ $t("configurationOptions") }}
+      </h2>
     </div>
     <div class="p-6">
       <form @submit.prevent="handleSubmit">
-        <ConfigCollapsibleSection :title="$t('views')" :default-open="true">
-          <ConfigViews :view-type="viewType" />
-        </ConfigCollapsibleSection>
-
         <ConfigCollapsibleSection
           v-if="shouldShowConfigMap"
           :title="$t('map')"

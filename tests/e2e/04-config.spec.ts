@@ -556,9 +556,13 @@ test("config page - edit dataset view form structure", async ({
   });
   await expect(removeButton).toBeVisible();
 
-  // 9. Verify collapsible sections are present (Views section should be open by default)
-  const viewsSection = page.locator("text=Views").first();
-  await expect(viewsSection).toBeVisible();
+  // 9. Verify read-only view metadata is present (view type outside ConfigCard)
+  const viewMetadata = page.locator("[data-testid='view-metadata']");
+  await expect(viewMetadata).toBeVisible();
+  const viewTypeDisplay = page.locator(
+    "[data-testid='config-view-type-display']",
+  );
+  await expect(viewTypeDisplay).toBeVisible();
 
   // 10. Find and modify a form field to test change detection
   const textInputs = page.locator('input[type="text"], textarea');
@@ -991,7 +995,7 @@ test("config page - submit configuration changes", async ({
   }
 });
 
-test("config page - views configuration section displays current view type", async ({
+test("config page - view metadata displays current view type outside ConfigCard", async ({
   authenticatedPageAsAdmin: page,
 }) => {
   // 1. Navigate to the config page
@@ -1018,16 +1022,30 @@ test("config page - views configuration section displays current view type", asy
   // 5. Wait for form to be visible
   await page.waitForSelector("form", { timeout: 15000 });
 
-  // 6. Verify the Views section displays the current view type (read-only)
+  // 6. Verify read-only metadata block displays the current view type
+  const viewMetadata = page.locator("[data-testid='view-metadata']");
+  await expect(viewMetadata).toBeVisible({ timeout: 10000 });
   const viewTypeDisplay = page.locator(
     "[data-testid='config-view-type-display']",
   );
   await expect(viewTypeDisplay).toBeVisible({ timeout: 10000 });
   await expect(viewTypeDisplay).toHaveText(/^(Map|Gallery|Alerts)$/i);
 
-  // 7. Verify the view type is immutable (no radio toggles on the edit screen)
+  // 7. Verify primary / secondary fields are present
+  await expect(
+    page.locator("[data-testid='view-metadata-primary']"),
+  ).toBeVisible();
+  await expect(
+    page.locator("[data-testid='view-metadata-secondary']"),
+  ).toBeVisible();
+
+  // 8. Verify the view type is immutable (no radio toggles on the edit screen)
   const viewTypeRadios = page.locator('input[type="radio"][name="view-type"]');
   await expect(viewTypeRadios).toHaveCount(0);
+
+  // 9. Verify Views collapsible section is gone from ConfigCard
+  const viewsSection = page.locator("form").getByText(/^Views$/i);
+  await expect(viewsSection).toHaveCount(0);
 });
 
 test("config page - conditional form sections based on views", async ({
@@ -1093,10 +1111,10 @@ test("config page - conditional form sections based on views", async ({
     const configCard = page.locator(".bg-white.rounded-lg.shadow-sm");
     await expect(configCard.first()).toBeVisible({ timeout: 15000 });
 
-    // 14. Look for collapsible section headers (Views, Map, Media, etc.)
+    // 14. Look for collapsible section headers (Map, Media, etc. — Views removed)
     const sectionHeaders = page.locator("h3, button").filter({
       hasText:
-        /^(Views|Map|Media|Alerts|Filtering|Dataset|Permissions|Other)$/i,
+        /^(Map|Media|Alerts|Filtering|Dataset|Permissions|Other|Visibility)$/i,
     });
     const headerCount = await sectionHeaders.count();
 
@@ -1105,11 +1123,11 @@ test("config page - conditional form sections based on views", async ({
       await expect(sectionHeaders.first()).toBeVisible();
     }
 
-    // 16. Verify Views section is visible (should be open by default)
-    const viewsSection = page.locator("*").filter({ hasText: /^Views$/i });
-    await expect(viewsSection.first()).toBeVisible();
+    // 16. Verify read-only metadata block shows view type outside ConfigCard
+    const viewMetadata = page.locator("[data-testid='view-metadata']");
+    await expect(viewMetadata).toBeVisible();
 
-    // 17. Verify the Views section displays the current (immutable) view type
+    // 17. Verify the metadata block displays the current (immutable) view type
     const viewTypeDisplay = page.locator(
       "[data-testid='config-view-type-display']",
     );
