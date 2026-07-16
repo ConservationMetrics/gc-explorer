@@ -9,6 +9,7 @@ import type {
   MapStatistics,
   AlertsStatistics,
   DataEntry,
+  DataEntryGeometryCoordinates,
 } from "@/types";
 
 /**
@@ -28,7 +29,10 @@ const prepareMinimalAlertEntries = (
   let latestProprietaryDate = new Date(0);
   let latestProprietaryMonthStr = "";
 
-  type GeoTagged = { item: DataEntry; parsedCoords: unknown };
+  type GeoTagged = {
+    item: DataEntry;
+    parsedCoords: DataEntryGeometryCoordinates;
+  };
   const proprietaryAlertData: GeoTagged[] = [];
   const gfwData: GeoTagged[] = [];
 
@@ -65,7 +69,7 @@ const prepareMinimalAlertEntries = (
 
   const toMinimalEntry = (
     item: DataEntry,
-    parsedCoords: unknown,
+    parsedCoords: DataEntryGeometryCoordinates,
   ): DataEntry => {
     const formattedMonth = String(item.month_detec).padStart(2, "0");
     const entry: DataEntry = {};

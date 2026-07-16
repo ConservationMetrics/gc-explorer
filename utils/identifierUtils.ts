@@ -1,4 +1,5 @@
-import type { AlertsData } from "@/types";
+import type { Feature } from "geojson";
+import type { AlertsData, DataEntry } from "@/types";
 import { isGeoJsonFeature } from "@/utils/geoUtils";
 
 /**
@@ -101,8 +102,8 @@ export const titleToCamelCase = (str: string): string => {
  * @returns {string | undefined} Warehouse id, or undefined if it cannot be resolved.
  */
 export const warehouseRecordIdForExport = (
-  featureGeojson?: AlertsData | null | unknown,
-  displayFeature: Record<string, unknown> = {},
+  featureGeojson?: Feature | AlertsData | null,
+  displayFeature: DataEntry | Record<string, string | number | null> = {},
 ): string | undefined => {
   if (isGeoJsonFeature(featureGeojson)) {
     const featureRecordId = String(featureGeojson.properties?._id ?? "").trim();
