@@ -47,16 +47,18 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return;
       }
 
-      const response =
-        await $fetch<
-          [
-            Record<string, { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission }>,
-            string[],
-          ]
-        >("/api/config");
-      const [tableConfig] = response;
+      // /api/config returns { views, availableTables } after the views migration.
+      const response = await $fetch<{
+        views: Array<{
+          primaryDataset: string;
+          viewConfig: { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission };
+        }>;
+      }>("/api/config");
+      const viewEntry = response.views?.find(
+        (view) => view.primaryDataset === tableName,
+      );
       const permission: RouteLevelPermission =
-        tableConfig?.[tableName]?.ROUTE_LEVEL_PERMISSION ?? "member";
+        viewEntry?.viewConfig?.ROUTE_LEVEL_PERMISSION ?? "member";
 
       // Authenticated from here on
       const typedUser = user.value as User;
