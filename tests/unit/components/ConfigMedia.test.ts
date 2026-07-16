@@ -68,7 +68,7 @@ vi.mock("@/utils/media", () => ({
 
 // Mock window.location
 const mockLocation = {
-  hostname: "explorer.demo.guardianconnector.net",
+  hostname: "explorer.test.invalid",
 };
 
 Object.defineProperty(window, "location", {
@@ -106,7 +106,7 @@ const globalConfig = {
 describe("ConfigMedia component", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockLocation.hostname = "explorer.demo.guardianconnector.net";
+    mockLocation.hostname = "explorer.test.invalid";
   });
 
   it("renders with MEDIA_BASE_PATH key", () => {
@@ -166,8 +166,7 @@ describe("ConfigMedia component", () => {
 
   it("parses existing Filebrowser URL from config on mount", async () => {
     const configWithFilebrowser = {
-      MEDIA_BASE_PATH:
-        "https://files.demo.guardianconnector.net/api/public/dl/abc123",
+      MEDIA_BASE_PATH: "https://files.test.invalid/api/public/dl/abc123",
     } as ViewConfig;
 
     const wrapper = mount(ConfigMedia, {
@@ -271,9 +270,7 @@ describe("ConfigMedia component", () => {
     const input = wrapper.find<HTMLInputElement>(
       'input[id="test_table-share-basePath"]',
     );
-    await input.setValue(
-      "https://files.demo.guardianconnector.net/share/test-hash",
-    );
+    await input.setValue("https://files.test.invalid/share/test-hash");
 
     await nextTick();
     await wrapper.vm.$nextTick();
@@ -298,9 +295,7 @@ describe("ConfigMedia component", () => {
     const input = wrapper.find<HTMLInputElement>(
       'input[id="test_table-share-basePath"]',
     );
-    await input.setValue(
-      "https://files.demo.guardianconnector.net/api/public/dl/test-hash",
-    );
+    await input.setValue("https://files.test.invalid/api/public/dl/test-hash");
 
     await nextTick();
     await wrapper.vm.$nextTick();
@@ -471,8 +466,7 @@ describe("ConfigMedia component", () => {
 
   it("does not emit during initialization", async () => {
     const configWithFilebrowser = {
-      MEDIA_BASE_PATH:
-        "https://files.demo.guardianconnector.net/api/public/dl/abc123",
+      MEDIA_BASE_PATH: "https://files.test.invalid/api/public/dl/abc123",
     } as ViewConfig;
 
     const wrapper = mount(ConfigMedia, {
@@ -556,8 +550,7 @@ describe("ConfigMedia component", () => {
 
   it("parses existing Filebrowser URL for icons from config on mount", async () => {
     const configWithFilebrowser = {
-      MEDIA_BASE_PATH_ICONS:
-        "https://files.demo.guardianconnector.net/api/public/dl/icon123",
+      MEDIA_BASE_PATH_ICONS: "https://files.test.invalid/api/public/dl/icon123",
     } as ViewConfig;
 
     const wrapper = mount(ConfigMedia, {
@@ -717,8 +710,7 @@ describe("ConfigMedia component", () => {
 
     await wrapper.setProps({
       config: {
-        MEDIA_BASE_PATH:
-          "https://files.demo.guardianconnector.net/api/public/dl/abc123",
+        MEDIA_BASE_PATH: "https://files.test.invalid/api/public/dl/abc123",
       } as ViewConfig,
     });
     await nextTick();
@@ -740,8 +732,7 @@ describe("ConfigMedia component", () => {
 
     await wrapper.setProps({
       config: {
-        MEDIA_BASE_PATH:
-          "https://files.demo.guardianconnector.net/api/public/dl/keep-me",
+        MEDIA_BASE_PATH: "https://files.test.invalid/api/public/dl/keep-me",
       } as ViewConfig,
     });
     await nextTick();

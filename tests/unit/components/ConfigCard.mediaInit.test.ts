@@ -26,7 +26,7 @@ vi.mock("@/utils/mediaHelpers", () => ({
     }
     return input.trim();
   }),
-  deriveFilesOrigin: vi.fn(() => "https://files.demo.guardianconnector.net"),
+  deriveFilesOrigin: vi.fn(() => "https://files.test.invalid"),
   buildFilebrowserBase: vi.fn(
     (origin: string) => `${origin.replace(/\/+$/, "")}/api/public/dl/`,
   ),
@@ -41,13 +41,12 @@ vi.mock("@/utils/identifierUtils", () => ({
 }));
 
 Object.defineProperty(window, "location", {
-  value: { hostname: "explorer.demo.guardianconnector.net" },
+  value: { hostname: "explorer.test.invalid" },
   writable: true,
 });
 
 const savedMediaConfig = {
-  MEDIA_BASE_PATH:
-    "https://files.demo.guardianconnector.net/api/public/dl/saved-share",
+  MEDIA_BASE_PATH: "https://files.test.invalid/api/public/dl/saved-share",
   MEDIA_COLUMN: "photos",
   DATASET_TABLE: "Test Gallery",
   ROUTE_LEVEL_PERMISSION: "member",
