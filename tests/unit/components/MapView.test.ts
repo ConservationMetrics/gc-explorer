@@ -508,6 +508,55 @@ describe("MapView component", () => {
     expect(vm.currentBasemap.style).toBe("mapbox://styles/mapbox/satellite-v9");
   });
 
+  it("shows BasemapSelector when multiple basemaps or Planet is available", async () => {
+    const singleBasemap = [
+      {
+        name: "Streets",
+        style: "mapbox://styles/mapbox/streets-v12",
+        isDefault: true,
+      },
+    ];
+    const multipleBasemaps = [
+      ...singleBasemap,
+      {
+        name: "Satellite",
+        style: "mapbox://styles/mapbox/satellite-v9",
+        isDefault: false,
+      },
+    ];
+
+    const wrapper = mount(MapView, {
+      props: {
+        ...baseProps,
+        mapboxBasemaps: singleBasemap,
+        planetApiKey: "",
+      },
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    expect(wrapper.findComponent({ name: "BasemapSelector" }).exists()).toBe(
+      false,
+    );
+
+    await wrapper.setProps({ mapboxBasemaps: multipleBasemaps });
+    await flushPromises();
+    expect(wrapper.findComponent({ name: "BasemapSelector" }).exists()).toBe(
+      true,
+    );
+
+    await wrapper.setProps({
+      mapboxBasemaps: singleBasemap,
+      planetApiKey: "planet-key",
+    });
+    await flushPromises();
+    expect(wrapper.findComponent({ name: "BasemapSelector" }).exists()).toBe(
+      true,
+    );
+  });
+
   it("removes map on component unmount", async () => {
     const wrapper = mount(MapView, {
       props: baseProps,

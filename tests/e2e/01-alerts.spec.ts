@@ -165,9 +165,10 @@ test("alerts dashboard - basemap toggle icon is visible", async ({
   await page.goto("/alerts/fake_alerts");
   await page.waitForLoadState("networkidle");
 
-  // Wait for map to load (BasemapSelector renders after map is ready)
+  // Wait for map to load (BasemapSelector renders when >1 basemap or Planet is available)
   await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
 
+  // fake_alerts seed has PLANET_API_KEY, so selector shows even with a single Mapbox basemap
   const basemapToggle = page.locator(".basemap-toggle").first();
   await expect(basemapToggle).toBeVisible({ timeout: 10000 });
 
