@@ -1757,7 +1757,10 @@ onBeforeUnmount(() => {
       @toggle-layer-visibility="toggleLayerVisibility"
     />
     <BasemapSelector
-      v-if="showBasemapSelector"
+      v-if="
+        showBasemapSelector &&
+        ((mapboxBasemaps?.length ?? 0) > 1 || !!planetApiKey)
+      "
       :has-ruler-control="hasRulerControl"
       :mapbox-style="mapboxStyle"
       :mapbox-basemaps="mapboxBasemaps || []"
