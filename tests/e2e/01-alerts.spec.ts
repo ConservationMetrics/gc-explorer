@@ -47,19 +47,8 @@ test("alerts dashboard - layer visibility toggles", async ({
   );
   await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
   await openProjectButton.click();
+  await page.waitForURL(/\/alerts\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
-
-  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
-  const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
-
-  // 7. Click the alerts link to navigate to the alerts page
-  const href = await alertsLink.getAttribute("href");
-  console.log("Alerts link href:", href);
-  await alertsLink.click();
-
-  // 8. Ensure the route change completed
-  await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
   // Debug: Check if map container exists
   const mapContainer = page.locator("#map");
@@ -381,20 +370,8 @@ test("alerts dashboard - LineString buffer click behavior", async ({
   );
   await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
   await openProjectButton.click();
+  await page.waitForURL(/\/alerts\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
-
-  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
-  const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
-
-  // 3. Get the href first
-  const href = await alertsLink.getAttribute("href");
-
-  // 4. Navigate directly to alerts page
-  await page.goto(href!);
-
-  // 5. Ensure the route change completed
-  await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
   // 6. Wait until the map container has been added to the DOM
   await page.locator("#map").waitFor({ state: "attached", timeout: 5000 });
@@ -521,20 +498,8 @@ test("alerts dashboard - geometry type specific interactions", async ({
   );
   await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
   await openProjectButton.click();
+  await page.waitForURL(/\/alerts\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
-
-  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
-  const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
-
-  // 3. Get the href first
-  const href = await alertsLink.getAttribute("href");
-
-  // 4. Navigate directly to alerts page
-  await page.goto(href!);
-
-  // 5. Ensure the route change completed
-  await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
   // 6. Wait until the map container has been added to the DOM
   await page.locator("#map").waitFor({ state: "attached", timeout: 5000 });
@@ -735,17 +700,8 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
   );
   await openProjectButton.waitFor({ state: "visible", timeout: 10000 });
   await openProjectButton.click();
+  await page.waitForURL(/\/alerts\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
-
-  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
-  const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
-
-  // 7. Click the alerts link to navigate to the alerts page
-  const href = await alertsLink.getAttribute("href");
-  console.log("Alerts link href:", href);
-  await alertsLink.click();
-  await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
   // Wait for map to load
   await page.locator("#map").waitFor({ state: "attached", timeout: 5000 });

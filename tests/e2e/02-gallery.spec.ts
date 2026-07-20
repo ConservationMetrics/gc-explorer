@@ -36,20 +36,7 @@ test("gallery page - displays gallery with media files", async ({
   );
   await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
   await openProjectButton.click();
-  await page.waitForLoadState("networkidle");
-
-  // 5. Wait for dataset page to load and find the gallery ViewCard
-  await page.waitForSelector("main", { timeout: 15000 });
-  const galleryLink = page.locator('a[href^="/gallery/"]').first();
-  await galleryLink.waitFor({ state: "visible", timeout: 10000 });
-
-  // 6. Click the gallery link to navigate to the gallery page
-  const href = await galleryLink.getAttribute("href");
-  expect(href).toMatch(/\/gallery\/\w+/);
-  await galleryLink.click();
-
-  // 7. Wait for gallery page to load
-  await page.waitForURL("**/gallery/**", { timeout: 5000 });
+  await page.waitForURL(/\/gallery\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
 
   // 8. Wait for the gallery container to be present
@@ -100,13 +87,7 @@ test("gallery page - displays images with lightbox functionality", async ({
     "[data-testid='open-dataset-view-link']",
   );
   await openProjectButton.click();
-  await page.waitForLoadState("networkidle");
-
-  // 4. Navigate to gallery page
-  const galleryLink = page.locator('a[href^="/gallery/"]').first();
-  await galleryLink.waitFor({ state: "visible", timeout: 10000 });
-  await galleryLink.click();
-  await page.waitForURL("**/gallery/**", { timeout: 5000 });
+  await page.waitForURL(/\/gallery\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
 
   // 5. Wait for gallery container and images to load
@@ -176,12 +157,7 @@ test("gallery page - lightbox opens on image click (vendor JS loaded)", async ({
   }
 
   await galleryCard.locator("[data-testid='open-dataset-view-link']").click();
-  await page.waitForLoadState("networkidle");
-
-  const galleryLink = page.locator('a[href^="/gallery/"]').first();
-  await galleryLink.waitFor({ state: "visible", timeout: 10000 });
-  await galleryLink.click();
-  await page.waitForURL("**/gallery/**", { timeout: 5000 });
+  await page.waitForURL(/\/gallery\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
 
   await page
@@ -251,12 +227,7 @@ test("gallery page - audio playback functionality", async ({
 
   // Navigate to gallery
   await galleryCard.locator("[data-testid='open-dataset-view-link']").click();
-  await page.waitForLoadState("networkidle");
-
-  const galleryLink = page.locator('a[href^="/gallery/"]').first();
-  await galleryLink.waitFor({ state: "visible", timeout: 10000 });
-  await galleryLink.click();
-  await page.waitForURL("**/gallery/**", { timeout: 5000 });
+  await page.waitForURL(/\/gallery\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
 
   // 2. Wait for gallery container
@@ -366,12 +337,7 @@ test("gallery page - filter functionality", async ({
 
   // Navigate to gallery
   await galleryCard.locator("[data-testid='open-dataset-view-link']").click();
-  await page.waitForLoadState("networkidle");
-
-  const galleryLink = page.locator('a[href^="/gallery/"]').first();
-  await galleryLink.waitFor({ state: "visible", timeout: 10000 });
-  await galleryLink.click();
-  await page.waitForURL("**/gallery/**", { timeout: 5000 });
+  await page.waitForURL(/\/gallery\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
 
   // 2. Wait for gallery container
@@ -470,12 +436,7 @@ test("gallery page - pagination and infinite scroll", async ({
 
   // Navigate to gallery
   await galleryCard.locator("[data-testid='open-dataset-view-link']").click();
-  await page.waitForLoadState("networkidle");
-
-  const galleryLink = page.locator('a[href^="/gallery/"]').first();
-  await galleryLink.waitFor({ state: "visible", timeout: 10000 });
-  await galleryLink.click();
-  await page.waitForURL("**/gallery/**", { timeout: 5000 });
+  await page.waitForURL(/\/gallery\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
 
   // 2. Ensure gallery is loaded
@@ -569,12 +530,7 @@ test("gallery page - data feature information display", async ({
 
   // Navigate to gallery
   await galleryCard.locator("[data-testid='open-dataset-view-link']").click();
-  await page.waitForLoadState("networkidle");
-
-  const galleryLink = page.locator('a[href^="/gallery/"]').first();
-  await galleryLink.waitFor({ state: "visible", timeout: 10000 });
-  await galleryLink.click();
-  await page.waitForURL("**/gallery/**", { timeout: 5000 });
+  await page.waitForURL(/\/gallery\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
 
   // 2. Wait for gallery container
@@ -643,12 +599,7 @@ test("gallery page - responsive grid layout", async ({
 
   // Navigate to gallery
   await galleryCard.locator("[data-testid='open-dataset-view-link']").click();
-  await page.waitForLoadState("networkidle");
-
-  const galleryLink = page.locator('a[href^="/gallery/"]').first();
-  await galleryLink.waitFor({ state: "visible", timeout: 10000 });
-  await galleryLink.click();
-  await page.waitForURL("**/gallery/**", { timeout: 5000 });
+  await page.waitForURL(/\/gallery\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
 
   // 2. Wait for gallery container
@@ -714,12 +665,7 @@ test("gallery page - error handling for unavailable gallery", async ({
 
   // Navigate to gallery
   await galleryCard.locator("[data-testid='open-dataset-view-link']").click();
-  await page.waitForLoadState("networkidle");
-
-  const galleryLink = page.locator('a[href^="/gallery/"]').first();
-  await galleryLink.waitFor({ state: "visible", timeout: 10000 });
-  await galleryLink.click();
-  await page.waitForURL("**/gallery/**", { timeout: 5000 });
+  await page.waitForURL(/\/gallery\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
 
   // 2. Check for either gallery content or error message
