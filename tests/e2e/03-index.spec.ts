@@ -72,6 +72,37 @@ test("index page - displays available views and navigation flow", async ({
   expect(hasGallery || hasMap || hasAlerts).toBe(true);
 });
 
+test("index page - one card per view for datasets with multiple views", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  // Seed has bcmform_responses with both map and gallery views — expect one card each.
+  const bcmformCards = page.locator("[data-testid='dataset-card']").filter({
+    has: page.getByRole("heading", { name: /bcmform_responses/i }),
+  });
+  await expect(bcmformCards).toHaveCount(2);
+
+  const bcmformMapCards = bcmformCards.filter({
+    has: page.locator("[data-testid='view-tag-map']"),
+  });
+  const bcmformGalleryCards = bcmformCards.filter({
+    has: page.locator("[data-testid='view-tag-gallery']"),
+  });
+  await expect(bcmformMapCards).toHaveCount(1);
+  await expect(bcmformGalleryCards).toHaveCount(1);
+
+  // Each card shows exactly one view-type pill (not a multi-type group).
+  for (const card of await bcmformCards.all()) {
+    const tags = card.locator("[data-testid^='view-tag-']");
+    await expect(tags).toHaveCount(1);
+  }
+});
+
 test("index page - view type filter buttons are visible and functional", async ({
   authenticatedPageAsAdmin: page,
 }) => {
