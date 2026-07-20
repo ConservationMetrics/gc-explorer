@@ -50,12 +50,15 @@ const truncateDisplayName = (name: string): string => {
 
 const fullDescription = computed(() => props.config.VIEW_DESCRIPTION || "");
 
+/** Preview length for collapsed card descriptions (~two lines). Not the config field max. */
+const CARD_DESCRIPTION_PREVIEW = 120;
+
 const isDescriptionTruncated = computed(() => {
-  return fullDescription.value.length > CONFIG_LIMITS.VIEW_DESCRIPTION;
+  return fullDescription.value.length > CARD_DESCRIPTION_PREVIEW;
 });
 
 /**
- * Description shown on the card — full text when expanded, truncated otherwise.
+ * Description shown on the card — short preview when collapsed, full text when expanded.
  *
  * @returns {string} Description text for display.
  */
@@ -65,7 +68,7 @@ const displayDescription = computed(() => {
     return fullDescription.value;
   }
   return (
-    fullDescription.value.substring(0, CONFIG_LIMITS.VIEW_DESCRIPTION) + "..."
+    fullDescription.value.substring(0, CARD_DESCRIPTION_PREVIEW).trimEnd() + "…"
   );
 });
 
