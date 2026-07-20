@@ -1369,25 +1369,24 @@ test("config page - color column configuration", async ({
   }
 });
 
-test("config page - copy config from another dataset", async ({
+test("config page - copy config from another same-type view", async ({
   authenticatedPageAsAdmin: page,
 }) => {
+  // Seed has two gallery views (bcmform_responses, seed_survey_data). Edit the
+  // bcmform gallery card so the copy modal has a same-type peer to pick from.
   await page.goto("/config");
   await page.waitForLoadState("networkidle");
   await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
 
-  const datasetCards = page.locator("[data-testid='config-dataset-card']");
-  const cardCount = await datasetCards.count();
+  const galleryCard = page
+    .locator("[data-testid='config-dataset-card']")
+    .filter({ has: page.locator("[data-testid='config-view-tag-gallery']") })
+    .filter({ hasText: /bcmform_responses/i })
+    .first();
 
-  if (cardCount < 2) {
-    test.skip();
-    return;
-  }
-
-  const firstCard = datasetCards.first();
-  const editLink = firstCard.locator("[data-testid='edit-dataset-view-link']");
-  await editLink.click();
-  await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
+  await expect(galleryCard).toBeVisible({ timeout: 10000 });
+  await galleryCard.locator("[data-testid='edit-dataset-view-link']").click();
+  await page.waitForURL(/\/config\/bcmform_responses/, { timeout: 10000 });
   await page.waitForLoadState("networkidle");
   await page.waitForSelector("form", { timeout: 15000 });
 
@@ -1405,8 +1404,14 @@ test("config page - copy config from another dataset", async ({
   await expect(confirmButton).toBeDisabled();
 
   const dropdown = page.locator("[data-testid='copy-config-select']");
-  const options = await dropdown.locator("option:not([disabled])").all();
-  expect(options.length).toBeGreaterThan(0);
+  const optionLabels = await dropdown
+    .locator("option:not([disabled])")
+    .allTextContents();
+  expect(optionLabels.length).toBeGreaterThan(0);
+  // Same-type only: gallery peer is present; the map sibling on bcmform is not a source.
+  expect(optionLabels.some((label) => /seed_survey_data/i.test(label))).toBe(
+    true,
+  );
 
   await dropdown.selectOption({ index: 1 });
   await expect(confirmButton).toBeEnabled();
@@ -1425,17 +1430,13 @@ test("config page - copy config modal cancel closes modal", async ({
   await page.waitForLoadState("networkidle");
   await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
 
-  const datasetCards = page.locator("[data-testid='config-dataset-card']");
-  const cardCount = await datasetCards.count();
+  const galleryCard = page
+    .locator("[data-testid='config-dataset-card']")
+    .filter({ has: page.locator("[data-testid='config-view-tag-gallery']") })
+    .first();
 
-  if (cardCount < 2) {
-    test.skip();
-    return;
-  }
-
-  const firstCard = datasetCards.first();
-  const editLink = firstCard.locator("[data-testid='edit-dataset-view-link']");
-  await editLink.click();
+  await expect(galleryCard).toBeVisible({ timeout: 10000 });
+  await galleryCard.locator("[data-testid='edit-dataset-view-link']").click();
   await page.waitForURL(/\/config\/\w+/, { timeout: 10000 });
   await page.waitForLoadState("networkidle");
   await page.waitForSelector("form", { timeout: 15000 });
