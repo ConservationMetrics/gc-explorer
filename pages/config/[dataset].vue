@@ -348,7 +348,7 @@ definePageMeta({ layout: "explorer" });
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors mb-4"
           >
             <option value="" disabled>
-              {{ $t("selectDataset") }}
+              {{ $t("selectView") }}
             </option>
             <option
               v-for="source in otherCopySources"
