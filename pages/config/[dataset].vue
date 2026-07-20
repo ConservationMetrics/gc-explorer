@@ -2,7 +2,7 @@
 import ConfigCard from "@/components/config/ConfigCard.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
-import type { ViewConfig, ViewConfigRow, Views, ViewType } from "@/types";
+import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
 import {
   CheckCircle2,
   ChevronLeft,
@@ -20,7 +20,6 @@ const dataset = Array.isArray(datasetRaw)
   : String(datasetRaw || "");
 const viewType = computed(() => route.query.view_type as ViewType | undefined);
 
-const viewsConfig = ref<Views>({});
 const viewRows = ref<ViewConfigRow[]>([]);
 const tableNames = ref();
 const dataFetched = ref(false);
@@ -40,11 +39,6 @@ if (data.value && !error.value) {
   const allViewRows = data.value.views;
   viewRows.value = allViewRows;
   tableNames.value = data.value.availableTables;
-
-  viewsConfig.value = allViewRows.reduce((acc, row) => {
-    acc[row.primaryDataset] = row.viewConfig;
-    return acc;
-  }, {} as Views);
 
   const editedViewRow = allViewRows.find(
     (row) =>
@@ -179,15 +173,11 @@ const {
   showCopyModal,
   selectedCopySource,
   configToCopy,
-  otherDatasets,
+  otherCopySources,
   handleOpenCopyModal,
   handleConfirmCopy,
   handleCancelCopy,
-} = useCopyConfig(viewsConfig, dataset);
-
-const getCopySourceLabel = (configKey: string) => {
-  return viewsConfig.value[configKey]?.DATASET_TABLE || configKey;
-};
+} = useCopyConfig(viewRows, dataset, resolvedViewType);
 
 const { t } = useI18n();
 const { error: showErrorToast } = useToast();
@@ -240,7 +230,7 @@ definePageMeta({ layout: "explorer" });
               {{ $t("configuration") }} - {{ pageDisplayName }}
             </h1>
             <button
-              v-if="otherDatasets.length > 0"
+              v-if="otherCopySources.length > 0"
               data-testid="copy-config-button"
               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               @click="handleOpenCopyModal"
@@ -361,11 +351,11 @@ definePageMeta({ layout: "explorer" });
               {{ $t("selectDataset") }}
             </option>
             <option
-              v-for="dsName in otherDatasets"
-              :key="dsName"
-              :value="dsName"
+              v-for="source in otherCopySources"
+              :key="source.key"
+              :value="source.key"
             >
-              {{ getCopySourceLabel(dsName) }}
+              {{ source.label }}
             </option>
           </select>
           <div class="flex gap-3 justify-end">
