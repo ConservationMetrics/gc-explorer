@@ -70,6 +70,21 @@ describe("buildViewConfigColumns", () => {
     expect(galleryColumns.secondaryDataset).toBeNull();
   });
 
+  it("keeps alerts secondaryDataset null when omitted or blank", () => {
+    const config: ViewConfig = {
+      DATASET_TABLE: "Fake Alerts",
+    };
+
+    expect(
+      buildViewConfigColumns("fake_alerts", config, "alerts", null)
+        .secondaryDataset,
+    ).toBeNull();
+    expect(
+      buildViewConfigColumns("fake_alerts", config, "alerts", "  ")
+        .secondaryDataset,
+    ).toBeNull();
+  });
+
   it("falls back to primaryDataset for viewName when DATASET_TABLE is absent", () => {
     const config: ViewConfig = { MAPBOX_ZOOM: 16 };
 
