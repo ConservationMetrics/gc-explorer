@@ -375,7 +375,7 @@ test("config page - add new dataset view and edit it", async ({
     if ((await datasetSectionToggle.count()) > 0) {
       // Check if section is expanded by looking for the input field
       const datasetNameInputCheck = page.locator(
-        'input[id*="DATASET_TABLE"], input[placeholder*="Dataset Display Name"]',
+        'input[id*="DATASET_TABLE"], input[placeholder*="View Display Name"]',
       );
       if ((await datasetNameInputCheck.count()) === 0) {
         // Section is collapsed, expand it
@@ -386,7 +386,7 @@ test("config page - add new dataset view and edit it", async ({
 
     // 16. Find and modify a form field (Dataset display name or View header image)
     const datasetNameInput = page.locator(
-      'input[id*="DATASET_TABLE"], input[placeholder*="Dataset Display Name"]',
+      'input[id*="DATASET_TABLE"], input[placeholder*="View Display Name"]',
     );
     const viewHeaderImageInput = page.locator(
       'input[id*="VIEW_HEADER_IMAGE"], input[placeholder*="View Header Image"]',
@@ -860,7 +860,7 @@ test("config page - form validation and change detection", async ({
 
     // 11. Find and modify a form field (dataset display name - safer than mapbox token)
     const datasetNameInput = page.locator(
-      'input[id*="DATASET_TABLE"], input[placeholder*="Dataset Display Name"]',
+      'input[id*="DATASET_TABLE"], input[placeholder*="View Display Name"]',
     );
 
     if ((await datasetNameInput.count()) > 0) {

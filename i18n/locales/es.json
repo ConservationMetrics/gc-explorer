@@ -56,9 +56,6 @@
   "dataProvider": "Proveedor de datos",
   "dataProviders": "Proveedor(es) de datos",
   "dataset": "Conjunto de datos",
-  "datasetTable": "Nombre para mostrar del conjunto de datos",
-  "datasetTableDescription": "Opcional: Un nombre más agradable para este conjunto de datos",
-  "datasetTablePlaceholder": "ej., Mis Datos de Mapeo",
   "datasetViewAddedToViews": "Vista de conjunto de datos agregada a las vistas",
   "datasetViewManagement": "Gestión de Vistas de Conjuntos de Datos",
   "datasetViewRemovedFromViews": "Vista de conjunto de datos eliminada de las vistas",
@@ -271,10 +268,10 @@
   "viewDataset": "Ver Conjunto de Datos",
   "viewDescription": "Descripción de la vista",
   "viewDescriptionAlerts": "Panel que visualiza alertas en un mapa",
-  "viewDescriptionDescription": "Opcional: Descripción de este conjunto de datos",
+  "viewDescriptionDescription": "Opcional: Descripción de esta vista",
   "viewDescriptionGallery": "Galería de datos que contiene contenido multimedia (imágenes, audio, video)",
   "viewDescriptionMap": "Datos geográficos visualizados en un mapa",
-  "viewDescriptionPlaceholder": "Ingrese una descripción para este conjunto de datos...",
+  "viewDescriptionPlaceholder": "Introduzca una descripción para esta vista...",
   "viewHeaderImage": "Imagen de encabezado de la vista",
   "viewHeaderImageDescription": "Opcional: URL para la imagen de fondo del encabezado",
   "viewOnGoogleMaps": "ver en Google Maps",
@@ -291,5 +288,8 @@
   "visibilityPublicDescription": "Cualquiera con el enlace puede ver.",
   "visibilityRequired": "Por favor, seleccione un nivel de visibilidad para este conjunto de datos.",
   "yourAccessIsPending": "Su acceso está pendiente. Ponte en contacto con un administrador de Guardian Connector para la aprobación de su cuenta.",
-  "yourMapboxStyleDefault": "Mapbox - su estilo (predeterminado)"
+  "yourMapboxStyleDefault": "Mapbox - su estilo (predeterminado)",
+  "viewDisplayName": "Nombre para mostrar de la vista",
+  "viewDisplayNameDescription": "Opcional: un nombre más agradable para esta vista",
+  "viewDisplayNamePlaceholder": "ej., Mis Datos de Mapeo"
 }

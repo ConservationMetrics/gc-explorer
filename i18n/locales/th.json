@@ -60,9 +60,6 @@
   "dataProvider": "ผู้ให้ข้อมูล",
   "dataProviders": "ผู้ให้ข้อมูล",
   "dataset": "ชุดข้อมูล",
-  "datasetTable": "ชื่อที่แสดงของชุดข้อมูล",
-  "datasetTableDescription": "ไม่บังคับ: ชื่อที่แสดงที่อ่านง่ายสำหรับชุดข้อมูลนี้",
-  "datasetTablePlaceholder": "เช่น ข้อมูลการทำแผนที่ของฉัน",
   "datasetViewAddedToViews": "ชุดข้อมูลมุมมองเพิ่มเข้าไปในมุมมองแล้ว",
   "datasetViewManagement": "การจัดการมุมมองชุดข้อมูล",
   "datasetViewRemovedFromViews": "ชุดข้อมูลมุมมองนำออกจากมุมมองแล้ว",
@@ -275,10 +272,10 @@
   "viewDataset": "ดูชุดข้อมูล",
   "viewDescription": "คำอธิบายมุมมอง",
   "viewDescriptionAlerts": "แดชบอร์ดแสดงการแจ้งเตือนบนแผนที่",
-  "viewDescriptionDescription": "ไม่บังคับ: คำอธิบายของชุดข้อมูลนี้",
+  "viewDescriptionDescription": "ไม่บังคับ: คำอธิบายของมุมมองนี้",
   "viewDescriptionGallery": "แกลเลอรีข้อมูลที่มีสื่อ (รูป เสียง วิดีโอ)",
   "viewDescriptionMap": "ข้อมูลทางภูมิศาสตร์แสดงบนแผนที่",
-  "viewDescriptionPlaceholder": "ใส่คำอธิบายสำหรับชุดข้อมูลนี้...",
+  "viewDescriptionPlaceholder": "ป้อนคำอธิบายสำหรับมุมมองนี้...",
   "viewHeaderImage": "รูปหัวมุมมอง",
   "viewHeaderImageDescription": "ไม่บังคับ: URL ของรูปพื้นหลังส่วนหัว",
   "viewOnGoogleMaps": "ดูบน Google Maps",
@@ -295,5 +292,8 @@
   "visibilityPublicDescription": "ทุกคนที่มีลิงก์ดูได้",
   "visibilityRequired": "โปรดเลือกระดับการมองเห็นสำหรับชุดข้อมูลนี้",
   "yourAccessIsPending": "การเข้าถึงของคุณอยู่ระหว่างรออนุมัติ โปรดติดต่อผู้ดูแลระบบ Guardian Connector เพื่อขออนุมัติบัญชี",
-  "yourMapboxStyleDefault": "Mapbox — สไตล์ของคุณ (ค่าเริ่มต้น)"
+  "yourMapboxStyleDefault": "Mapbox — สไตล์ของคุณ (ค่าเริ่มต้น)",
+  "viewDisplayName": "ชื่อที่แสดงของมุมมอง",
+  "viewDisplayNameDescription": "ไม่บังคับ: ชื่อที่แสดงที่อ่านง่ายสำหรับมุมมองนี้",
+  "viewDisplayNamePlaceholder": "เช่น ข้อมูลการทำแผนที่ของฉัน"
 }

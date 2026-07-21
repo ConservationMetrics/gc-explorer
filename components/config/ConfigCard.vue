@@ -46,7 +46,7 @@ const filterKeys = computed(() => [
   "UNWANTED_COLUMNS",
   "UNWANTED_SUBSTRINGS",
 ]);
-const datasetInfoKeys = computed(() => [
+const viewInfoKeys = computed(() => [
   "LOGO_URL",
   "DATASET_TABLE",
   "VIEW_HEADER_IMAGE",
@@ -268,12 +268,12 @@ const handleSubmit = () => {
           />
         </ConfigCollapsibleSection>
 
-        <ConfigCollapsibleSection :title="$t('dataset')" :default-open="true">
-          <ConfigDatasetInfo
+        <ConfigCollapsibleSection :title="$t('view')" :default-open="true">
+          <ConfigViewInfo
             :table-name="tableName"
             :views="viewTypeList"
             :config="localConfig"
-            :keys="datasetInfoKeys"
+            :keys="viewInfoKeys"
             @update-config="handleConfigUpdate"
           />
         </ConfigCollapsibleSection>

@@ -42,12 +42,12 @@ const emit = defineEmits(["updateConfig"]);
           :for="`${tableName}-${key}`"
           class="block text-sm font-medium text-gray-700"
         >
-          {{ $t("datasetTable") }}
+          {{ $t("viewDisplayName") }}
         </label>
         <input
           :id="`${tableName}-${key}`"
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-          :placeholder="$t('datasetTablePlaceholder') || 'e.g., Fake Alerts'"
+          :placeholder="$t('viewDisplayNamePlaceholder')"
           type="text"
           :maxlength="CONFIG_LIMITS.DATASET_TABLE"
           :value="config[key]"
@@ -83,10 +83,7 @@ const emit = defineEmits(["updateConfig"]);
           "
         />
         <p class="text-gray-500 text-sm">
-          {{
-            $t("datasetTableDescription") ||
-            "Optional: A nicer display name for this dataset"
-          }}
+          {{ $t("viewDisplayNameDescription") }}
         </p>
       </template>
       <template v-else-if="key === 'VIEW_HEADER_IMAGE'">
@@ -128,10 +125,7 @@ const emit = defineEmits(["updateConfig"]);
           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors resize-y"
           rows="3"
           :maxlength="CONFIG_LIMITS.VIEW_DESCRIPTION"
-          :placeholder="
-            $t('viewDescriptionPlaceholder') ||
-            'Enter a description for this dataset...'
-          "
+          :placeholder="$t('viewDescriptionPlaceholder')"
           :value="config[key]"
           @input="
             (e) => {
@@ -165,10 +159,7 @@ const emit = defineEmits(["updateConfig"]);
           "
         ></textarea>
         <p class="text-gray-500 text-sm">
-          {{
-            $t("viewDescriptionDescription") ||
-            "Optional: Description of this dataset"
-          }}
+          {{ $t("viewDescriptionDescription") }}
         </p>
       </template>
     </div>

@@ -58,9 +58,6 @@
   "dataProvider": "Data provider",
   "dataProviders": "Data provider(s)",
   "dataset": "Dataset",
-  "datasetTable": "Weergavenaam dataset",
-  "datasetTableDescription": "Optioneel: Een mooiere weergavenaam voor deze dataset",
-  "datasetTablePlaceholder": "bijv., Mijn Kaartgegevens",
   "datasetViewAddedToViews": "Dataset weergave toegevoegd aan weergaven",
   "datasetViewManagement": "Dataset Weergave Beheer",
   "datasetViewRemovedFromViews": "Dataset weergave verwijderd uit weergaven",
@@ -272,10 +269,10 @@
   "viewDataset": "Dataset Bekijken",
   "viewDescription": "Weergavebeschrijving",
   "viewDescriptionAlerts": "Dashboard dat alerten op een kaart visualiseert",
-  "viewDescriptionDescription": "Optioneel: Beschrijving van deze dataset",
+  "viewDescriptionDescription": "Optioneel: Beschrijving van deze weergave",
   "viewDescriptionGallery": "Galerij met gegevens die media-inhoud bevatten (afbeeldingen, audio, video)",
   "viewDescriptionMap": "Geografische gegevens gevisualiseerd op een kaart",
-  "viewDescriptionPlaceholder": "Voer een beschrijving in voor deze dataset...",
+  "viewDescriptionPlaceholder": "Voer een beschrijving in voor deze weergave...",
   "viewHeaderImage": "Weergave headerafbeelding",
   "viewHeaderImageDescription": "Optioneel: URL voor de header achtergrondafbeelding",
   "viewOnGoogleMaps": "bekijk op Google Maps",
@@ -292,5 +289,8 @@
   "visibilityPublicDescription": "Iedereen met de link kan bekijken.",
   "visibilityRequired": "Selecteer een zichtbaarheidsniveau voor deze dataset.",
   "yourAccessIsPending": "Uw toegang is in behandeling. Neem contact op met een Guardian Connector-beheerder voor goedkeuring van je account.",
-  "yourMapboxStyleDefault": "Mapbox - uw stijl (standaard)"
+  "yourMapboxStyleDefault": "Mapbox - uw stijl (standaard)",
+  "viewDisplayName": "Weergavenaam",
+  "viewDisplayNameDescription": "Optioneel: een mooiere weergavenaam voor deze weergave",
+  "viewDisplayNamePlaceholder": "bijv., Mijn Kaartgegevens"
 }

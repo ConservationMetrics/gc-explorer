@@ -60,9 +60,6 @@
   "dataProvider": "Mtoa data",
   "dataProviders": "Mtoa (watoa) data",
   "dataset": "Seti ya data",
-  "datasetTable": "Jina la Kuonyesha la Seti ya Data",
-  "datasetTableDescription": "Hiari: Jina la kuonyesha zuri zaidi kwa seti hii ya data",
-  "datasetTablePlaceholder": "k.m., Data Yangu ya Ramani",
   "datasetViewAddedToViews": "Jedwali limeongezwa kwenye mitazamo",
   "datasetViewManagement": "Usimamizi wa Mtazamo wa Seti ya Data",
   "datasetViewRemovedFromViews": "Jedwali limeondolewa kwenye mitazamo",
@@ -275,10 +272,10 @@
   "viewDataset": "Ona Seti ya Data",
   "viewDescription": "Maelezo ya Mtazamo",
   "viewDescriptionAlerts": "Dashibodi inayoonyesha tahadhari kwenye ramani",
-  "viewDescriptionDescription": "Hiari: Maelezo ya seti hii ya data",
+  "viewDescriptionDescription": "Hiari: Maelezo ya mtazamo huu",
   "viewDescriptionGallery": "Matunzio ya data yenye maudhui ya midia (picha, sauti, video)",
   "viewDescriptionMap": "Data ya jiografia inayoonyeshwa kwenye ramani",
-  "viewDescriptionPlaceholder": "Ingiza maelezo kwa seti hii ya data...",
+  "viewDescriptionPlaceholder": "Ingiza Maelezo ya mtazamo huu...",
   "viewHeaderImage": "Picha ya Kichwa cha Mtazamo",
   "viewHeaderImageDescription": "Hiari: URL ya picha ya usuli ya kichwa",
   "viewOnGoogleMaps": "tazama kwenye Google Maps",
@@ -295,5 +292,8 @@
   "visibilityPublicDescription": "Mtu yeyote aliye na kiungo anaweza kuona.",
   "visibilityRequired": "Tafadhali chagua kiwango cha mwonekano kwa seti hii ya data.",
   "yourAccessIsPending": "Ufikiaji wako unasubiri. Tafadhali wasiliana na msimamizi wa Guardian Connector kwa idhini ya akaunti.",
-  "yourMapboxStyleDefault": "Mapbox - mtindo wako (chaguo-msingi)"
+  "yourMapboxStyleDefault": "Mapbox - mtindo wako (chaguo-msingi)",
+  "viewDisplayName": "Jina la Kuonyesha la Mtazamo",
+  "viewDisplayNameDescription": "Hiari: jina la kuonyesha zuri zaidi kwa mtazamo huu",
+  "viewDisplayNamePlaceholder": "k.m., Data Yangu ya Ramani"
 }
