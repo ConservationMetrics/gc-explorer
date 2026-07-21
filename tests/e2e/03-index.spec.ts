@@ -108,6 +108,26 @@ test("index page - one card per view for datasets with multiple views", async ({
   }
 });
 
+test("index page - admin gear links to config edit for that view", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  const gear = page.locator("[data-testid='dataset-card-config-gear']").first();
+  await expect(gear).toBeVisible({ timeout: 5000 });
+
+  const href = await gear.getAttribute("href");
+  expect(href).toMatch(/^\/config\/\w+\?view_type=(alerts|gallery|map)$/);
+
+  await gear.click();
+  await page.waitForURL(/\/config\/\w+\?view_type=/, { timeout: 15000 });
+  await expect(page.locator("form")).toBeVisible({ timeout: 15000 });
+});
+
 test("index page - view type filter buttons are visible and functional", async ({
   authenticatedPageAsAdmin: page,
 }) => {
