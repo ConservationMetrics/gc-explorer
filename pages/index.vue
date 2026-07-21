@@ -234,6 +234,7 @@ definePageMeta({ layout: "explorer" });
           :view-name="row.viewName"
           :config="row.viewConfig"
           :view-type="row.viewType"
+          :show-admin-gear="shouldShowConfigLink"
         />
       </div>
 

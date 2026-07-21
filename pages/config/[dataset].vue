@@ -218,7 +218,8 @@ definePageMeta({ layout: "explorer" });
               {{ $t("configuration") }}
             </NuxtLink>
             <NuxtLink
-              :to="`/dataset/${dataset}`"
+              v-if="resolvedViewType"
+              :to="`/${resolvedViewType}/${dataset}`"
               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors"
             >
               <Eye class="w-4 h-4" />

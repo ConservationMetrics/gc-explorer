@@ -53,9 +53,9 @@ test("index page - displays available views and navigation flow", async ({
     .first();
   await expect(openProjectButton).toBeVisible({ timeout: 15000 });
 
-  // 8. Verify the "Open Dataset View" link goes to a dataset page
+  // 8. Verify the "Open Dataset View" link goes to the view route for that card's type
   const href = await openProjectButton.getAttribute("href");
-  expect(href).toMatch(/\/dataset\/\w+/);
+  expect(href).toMatch(/^\/(alerts|gallery|map)\/\w+/);
 
   /* 9. Ensure at least one view pill (alerts, maps, or gallery) is visible
    * This checks that the pills are rendered correctly using the proper test IDs
@@ -70,6 +70,11 @@ test("index page - displays available views and navigation flow", async ({
   const hasMap = viewPillTexts.some((text) => /map/i.test(text));
   const hasAlerts = viewPillTexts.some((text) => /alerts/i.test(text));
   expect(hasGallery || hasMap || hasAlerts).toBe(true);
+
+  // 11. Clicking open navigates directly to that view (no /dataset hub)
+  await openProjectButton.click();
+  await page.waitForURL(/\/(alerts|gallery|map)\/\w+/, { timeout: 15000 });
+  expect(page.url()).not.toMatch(/\/dataset\//);
 });
 
 test("index page - one card per view for datasets with multiple views", async ({
@@ -101,6 +106,26 @@ test("index page - one card per view for datasets with multiple views", async ({
     const tags = card.locator("[data-testid^='view-tag-']");
     await expect(tags).toHaveCount(1);
   }
+});
+
+test("index page - admin gear links to config edit for that view", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  const gear = page.locator("[data-testid='dataset-card-config-gear']").first();
+  await expect(gear).toBeVisible({ timeout: 5000 });
+
+  const href = await gear.getAttribute("href");
+  expect(href).toMatch(/^\/config\/\w+\?view_type=(alerts|gallery|map)$/);
+
+  await gear.click();
+  await page.waitForURL(/\/config\/\w+\?view_type=/, { timeout: 15000 });
+  await expect(page.locator("form")).toBeVisible({ timeout: 15000 });
 });
 
 test("index page - view type filter buttons are visible and functional", async ({
