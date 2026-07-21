@@ -69,7 +69,7 @@ const mountConfigCard = () =>
         ConfigMap: true,
         ConfigAlerts: true,
         ConfigFilters: true,
-        ConfigDatasetInfo: true,
+        ConfigViewInfo: true,
         ConfigPermissions: {
           template: "<div />",
           emits: ["updateConfig", "updateValidation"],

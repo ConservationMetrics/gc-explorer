@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toCamelCase } from "@/utils/identifierUtils";
-import ConfigDatasetInfo from "./ConfigDatasetInfo.vue";
+import ConfigViewInfo from "./ConfigViewInfo.vue";
 
 import type { ViewConfig } from "@/types";
 
@@ -16,7 +16,7 @@ const emit = defineEmits(["updateConfig"]);
 const logoUrlKeys = computed(() =>
   props.keys.filter((key) => key === "LOGO_URL"),
 );
-const datasetInfoKeys = computed(() =>
+const viewInfoKeys = computed(() =>
   props.keys.filter((key) =>
     ["DATASET_TABLE", "VIEW_HEADER_IMAGE", "VIEW_DESCRIPTION"].includes(key),
   ),
@@ -48,12 +48,12 @@ const datasetInfoKeys = computed(() =>
         />
       </template>
     </div>
-    <ConfigDatasetInfo
-      v-if="datasetInfoKeys.length > 0"
+    <ConfigViewInfo
+      v-if="viewInfoKeys.length > 0"
       :table-name="tableName"
       :views="views"
       :config="config"
-      :keys="datasetInfoKeys"
+      :keys="viewInfoKeys"
       @update-config="emit('updateConfig', $event)"
     />
   </div>
