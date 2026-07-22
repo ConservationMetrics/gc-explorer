@@ -250,7 +250,7 @@ definePageMeta({ layout: "explorer" });
       <div v-else class="text-center py-12">
         <EmptyStateIllustration variant="indexNoDatasets" />
         <p class="text-gray-500 text-sm sm:text-base">
-          {{ $t("noDatasetViewsAvailable") || "No dataset views available" }}
+          {{ $t("noDatasetViewsAvailable") }}
         </p>
       </div>
     </template>

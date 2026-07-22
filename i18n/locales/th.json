@@ -207,7 +207,7 @@
   "mostRecentAlerts": "การแจ้งเตือนล่าสุด",
   "mostRecentAlertsShownIn": "การแจ้งเตือนล่าสุดบนแผนที่ใน",
   "noColumnEntry": "ไม่มีข้อมูลในคอลัมน์",
-  "noDatasetViewsAvailable": "ไม่มีมุมมองที่สามารถเข้าถึงได้สำหรับชุดข้อมูลนี้",
+  "noDatasetViewsAvailable": "ไม่มีมุมมองที่ตั้งค่าไว้สำหรับชุดข้อมูลนี้",
   "noDescriptionProvidedYet": "ยังไม่มีคำอธิบาย",
   "none": "ไม่มี",
   "noResultsFound": "ไม่มีชุดข้อมูลตรงกับการค้นหา",

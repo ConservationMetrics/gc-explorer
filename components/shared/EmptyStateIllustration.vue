@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CircleHelp, Images, X } from "lucide-vue-next";
+import { CircleHelp, Images, LayoutTemplate, X } from "lucide-vue-next";
 
 defineProps<{
   variant:
@@ -39,7 +39,7 @@ const iconColorClass = "text-violet-500";
       :class="[baseIconClass, iconColorClass]"
     />
 
-    <X
+    <LayoutTemplate
       v-else-if="variant === 'indexNoDatasets'"
       :class="[baseIconClass, iconColorClass]"
     />

@@ -207,7 +207,7 @@
   "mostRecentAlerts": "Most recent alerts",
   "mostRecentAlertsShownIn": "Most recent alerts shown on map in",
   "noColumnEntry": "No column entry",
-  "noDatasetViewsAvailable": "No views available for this dataset",
+  "noDatasetViewsAvailable": "No views have been configured yet.",
   "noDescriptionProvidedYet": "No description provided yet.",
   "none": "None",
   "noResultsFound": "No datasets match your search.",
