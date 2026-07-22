@@ -1,7 +1,6 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import {
   ensureMapFormCanSubmit,
-  expandMapSection,
   openMapConfigEditPage,
 } from "@/tests/e2e/helpers/configPage";
 
