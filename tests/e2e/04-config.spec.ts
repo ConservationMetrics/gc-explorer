@@ -240,6 +240,9 @@ test("config page - create new view via type-first flow and edit it", async ({
   await expect(submitButton).toBeEnabled({ timeout: 10000 });
   await submitButton.click();
 
+  await expect(page.locator("[data-testid='saved-modal']")).toBeVisible({
+    timeout: 10000,
+  });
   await page.waitForURL(`**/config/${selectedTableName}**`, {
     timeout: 15000,
   });

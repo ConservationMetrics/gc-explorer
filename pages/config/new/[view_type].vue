@@ -5,7 +5,7 @@ import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import { useDuplicateViewCheck } from "@/composables/useDuplicateViewCheck";
 import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
-import { ChevronLeft, Copy } from "lucide-vue-next";
+import { CheckCircle2, ChevronLeft, Copy } from "lucide-vue-next";
 
 const VALID_VIEW_TYPES: ViewType[] = ["map", "gallery", "alerts"];
 
@@ -43,6 +43,7 @@ const viewConfig = ref<ViewConfig>({});
 const secondaryDataset = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
 const isSaving = ref(false);
+const showSavedModal = ref(false);
 
 const { isDuplicate, existingView, isChecking, checkDuplicate } =
   useDuplicateViewCheck(viewType, primaryDataset);
@@ -88,7 +89,7 @@ const handleSecondaryDatasetUpdate = (value: string) => {
 };
 
 /**
- * Creates the view with the form config, then opens its edit page.
+ * Creates the view, shows the same saved confirmation as edit, then opens edit.
  *
  * @param {{ config: ViewConfig; secondaryDataset?: string | null; tableName: string }} payload
  * @returns {Promise<void>}
@@ -115,10 +116,14 @@ const submitConfig = async ({
         secondaryDataset: submittedSecondaryDataset,
       }),
     });
-    await navigateTo({
-      path: `/config/${tableName}`,
-      query: { view_type: viewType.value },
-    });
+    showSavedModal.value = true;
+    setTimeout(async () => {
+      showSavedModal.value = false;
+      await navigateTo({
+        path: `/config/${tableName}`,
+        query: { view_type: viewType.value },
+      });
+    }, 2000);
   } catch (err) {
     console.error("Error creating view:", err);
     const statusCode = (err as { statusCode?: number })?.statusCode;
@@ -315,5 +320,26 @@ definePageMeta({ layout: "explorer" });
         </div>
       </div>
     </div>
+
+    <ClientOnly>
+      <div
+        v-if="showSavedModal"
+        data-testid="saved-modal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      >
+        <div
+          data-testid="saved-modal-content"
+          class="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4 text-center"
+        >
+          <div class="mb-4">
+            <CheckCircle2 class="w-16 h-16 mx-auto text-green-500" />
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Saved!</h2>
+          <p class="text-gray-600">
+            Configuration has been saved successfully.
+          </p>
+        </div>
+      </div>
+    </ClientOnly>
   </div>
 </template>
