@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
+import type { ViewConfigRow } from "@/types";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 
 const viewRows = ref<ViewConfigRow[]>([]);
-const tableNames = ref();
 const dataFetched = ref(false);
 
 const { data, error, refresh } = await useFetch<{
@@ -13,61 +12,12 @@ const { data, error, refresh } = await useFetch<{
 
 if (data.value && !error.value) {
   viewRows.value = data.value.views;
-  tableNames.value = data.value.availableTables;
   dataFetched.value = true;
 } else {
   console.error("Error fetching data:", error.value);
 }
 
-const submitConfig = async ({
-  config,
-  tableName,
-}: {
-  config: ViewConfig;
-  tableName: string;
-}) => {
-  try {
-    await $fetch(`/api/config/update_config/${tableName}`, {
-      method: "POST",
-      body: JSON.stringify({ config }),
-    });
-  } catch (error) {
-    console.error("Error submitting request data:", error);
-    showErrorToast(t("errorCouldNotSaveChanges"));
-  }
-};
-
-const removeTableFromConfig = async (tableName: string) => {
-  try {
-    await $fetch(`/api/config/delete_table/${tableName}`, {
-      method: "POST",
-    });
-  } catch (error) {
-    console.error("Error removing table from config:", error);
-    showErrorToast(t("errorCouldNotRemoveDataset"));
-  }
-};
-
-const addTableToConfig = async ({
-  tableName,
-  viewType,
-}: {
-  tableName: string;
-  viewType: ViewType;
-}) => {
-  try {
-    await $fetch(`/api/config/new_table/${tableName}`, {
-      method: "POST",
-      query: { view_type: viewType },
-    });
-  } catch (error) {
-    console.error("Error adding table to config:", error);
-    showErrorToast(t("errorCouldNotAddDataset"));
-  }
-};
-
 const { t } = useI18n();
-const { error: showErrorToast } = useToast();
 useHead({
   title: "GuardianConnector Explorer: " + t("configuration"),
 });
@@ -83,13 +33,6 @@ definePageMeta({ layout: "explorer" });
     :retry="() => refresh()"
   />
   <ClientOnly v-else>
-    <ConfigDashboard
-      v-if="dataFetched"
-      :view-rows="viewRows"
-      :table-names="tableNames"
-      @submit-config="submitConfig"
-      @remove-table-from-config="removeTableFromConfig"
-      @add-table-to-config="addTableToConfig"
-    />
+    <ConfigDashboard v-if="dataFetched" :view-rows="viewRows" />
   </ClientOnly>
 </template>

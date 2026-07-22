@@ -9,16 +9,11 @@ export default defineEventHandler(async (event: H3Event) => {
 
   try {
     const viewRows = await fetchViewConfigRows();
+    // All warehouse tables (minus metadata/PostGIS). Per-type uniqueness is
+    // enforced on the create form via GET /api/config/:table, not by hiding
+    // datasets that already have some other view type.
     const tableNames = await getFilteredTableNames();
-
-    // Tables already exposed as a view are not offered as new datasets to add.
-    const configuredDatasets = new Set(
-      viewRows.map((row) => row.primaryDataset),
-    );
-    const filteredTableNames = tableNames.filter(
-      (name) => !configuredDatasets.has(name),
-    );
-    return { views: viewRows, availableTables: filteredTableNames };
+    return { views: viewRows, availableTables: tableNames };
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error fetching config on API side:", error.message);

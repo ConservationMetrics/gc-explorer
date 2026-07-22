@@ -199,273 +199,93 @@ test("config page - view filter persists in URL query param", async ({
   expect(mapTagCount).toBe(cardCount);
 });
 
-test("config page - add new dataset view and edit it", async ({
+test("config page - create new view via type-first flow and edit it", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // 1. Navigate to the config page
+  // seed_survey_data already has gallery; create a map view for it.
+  const selectedTableName = "seed_survey_data";
+
   await page.goto("/config");
   await page.waitForLoadState("networkidle");
-
-  // 2. Wait for page to load
-  await page.waitForLoadState("networkidle");
   await page.waitForSelector("div.max-w-7xl", { timeout: 15000 });
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 15000 });
 
-  // 3. Click the add new dataset view button
   const addTableButton = page.locator(
     "[data-testid='add-new-dataset-view-button']",
   );
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
+  await page.waitForURL("**/config/new", { timeout: 10000 });
 
-  // 4. Verify the modal appears with dropdown
-  const addModal = page.locator("[data-testid='config-modal']");
-  await expect(addModal).toBeVisible();
+  await page.locator("[data-testid='create-view-type-map']").click();
+  await page
+    .locator("[data-testid='create-primary-select']")
+    .selectOption(selectedTableName);
+  await page.locator("[data-testid='create-view-continue']").click();
+  await page.waitForURL("**/config/new/map**", { timeout: 10000 });
 
-  // 5. Verify the modal message
-  const modalMessage = page.locator("[data-testid='config-modal-message']");
-  await expect(modalMessage).toBeVisible();
-  await expect(modalMessage.getByText(/select dataset to add:/i)).toBeVisible();
+  await expect(
+    page.locator("[data-testid='create-form-primary-select']"),
+  ).toHaveValue(selectedTableName);
 
-  // 6. Verify the dropdown is present
-  const dropdown = page.locator("[data-testid='config-modal-table-select']");
-  await expect(dropdown).toBeVisible();
-
-  // 7. Check if there are any available options in the dropdown
-  const options = await dropdown.locator("option").all();
-  const availableOptions: string[] = [];
-
-  for (const option of options) {
-    const optionText = await option.textContent();
-    if (optionText && optionText.trim() && optionText.trim() !== "") {
-      availableOptions.push(optionText.trim());
-    }
+  const mapSectionToggle = page.locator(
+    '[data-testid="config-section-map-toggle"]',
+  );
+  if ((await mapSectionToggle.count()) > 0) {
+    await mapSectionToggle.click();
+    await page.waitForTimeout(300);
   }
+  await ensureMapFormCanSubmit(page);
 
-  let selectedTableName: string | null = null;
+  const submitButton = page.locator("[data-testid='config-submit-button']");
+  await expect(submitButton).toBeEnabled({ timeout: 10000 });
+  await submitButton.click();
 
-  // 8. If there are available options, add a new dataset view
-  if (availableOptions.length > 0) {
-    // Verify the confirm button is initially disabled
-    const confirmButton = page.locator(
-      "[data-testid='config-modal-confirm-button']",
-    );
-    await expect(confirmButton).toBeDisabled();
+  await page.waitForURL(`**/config/${selectedTableName}**`, {
+    timeout: 15000,
+  });
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("form", { timeout: 15000 });
 
-    // Select the first available option
-    await dropdown.selectOption({ label: availableOptions[0] });
-    selectedTableName = availableOptions[0];
+  await expect(submitButton).toBeDisabled();
 
-    // Verify the confirm button is now enabled
-    await expect(confirmButton).toBeEnabled();
-
-    // Click confirm to add the table
-    await confirmButton.click();
-
-    // Wait for modal to close
-    await expect(addModal).not.toBeVisible({ timeout: 5000 });
-
-    // Wait for page to reload/update (the card should appear after a few seconds)
-    await page.waitForTimeout(3000);
-    await page.waitForLoadState("networkidle", { timeout: 10000 });
-    await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
-
-    // Verify the dataset card with the table name we just added is rendered
-    const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${selectedTableName.trim()}")`,
-    );
-    await expect(targetCard).toBeVisible({ timeout: 10000 });
-
-    // Verify the card shows the table name in the heading
-    const cardHeading = targetCard.locator("h2");
-    await expect(cardHeading).toBeVisible();
-    await expect(cardHeading).toContainText(selectedTableName.trim(), {
-      timeout: 5000,
-    });
-  } else {
-    // No available options - all tables are already configured
-    // Close the modal and work with existing dataset views
-    const cancelButton = page.locator(
-      "[data-testid='config-modal-cancel-button']",
-    );
-    await cancelButton.click();
-    await expect(addModal).not.toBeVisible({ timeout: 5000 });
-
-    // Get the first existing dataset card
-    const existingCards = page.locator("[data-testid='config-dataset-card']");
-    const cardCount = await existingCards.count();
-
-    if (cardCount > 0) {
-      // Get the table name from the first card
-      const firstCard = existingCards.first();
-      const cardHeading = firstCard.locator("h2");
-      await expect(cardHeading).toBeVisible();
-      const headingText = await cardHeading.textContent();
-      selectedTableName = headingText?.trim() || null;
-
-      // Use the first card for editing
-      const editLink = firstCard.locator(
-        "[data-testid='edit-dataset-view-link']",
-      );
-      await editLink.click();
-
-      // Wait for navigation to edit page
-      await page.waitForURL(`**/config/${selectedTableName}**`, {
-        timeout: 10000,
-      });
-    } else {
-      // No cards at all - skip the test
-      test.skip();
-      return;
-    }
-  }
-
-  // 9. Navigate to edit page (if we haven't already)
-  if (
-    selectedTableName &&
-    !page.url().includes(`/config/${selectedTableName}`)
-  ) {
-    const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${selectedTableName.trim()}")`,
-    );
-    await expect(targetCard).toBeVisible({ timeout: 10000 });
-
-    // Click "Edit dataset view" to navigate to edit page
-    const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']",
-    );
-    await editLink.click();
-  }
-
-  // 10. Wait for navigation to edit page (if we're not already there)
-  if (selectedTableName) {
-    await page.waitForURL(`**/config/${selectedTableName.trim()}**`, {
-      timeout: 10000,
-    });
-    await page.waitForLoadState("networkidle");
-
-    // 11. Wait for form to be visible
-    await page.waitForSelector("form", { timeout: 15000 });
-    const configCard = page.locator(".bg-white.rounded-lg.shadow-sm").first();
-    await expect(configCard).toBeVisible({ timeout: 15000 });
-
-    // 12. Verify page heading shows the dataset name
-    await expect(
-      page.getByRole("heading", {
-        name: new RegExp(`configuration.*${selectedTableName.trim()}`, "i"),
-      }),
-    ).toBeVisible();
-
-    // 13. Verify breadcrumb link back to config (use more specific selector to avoid header links)
-    const configBreadcrumb = page
-      .locator('a[href="/config"]')
-      .filter({ hasText: /configuration/i })
-      .first();
-    await expect(configBreadcrumb).toBeVisible();
-
-    // 14. Verify submit button exists and is initially disabled (no changes)
-    const submitButton = page.locator("[data-testid='config-submit-button']");
-    await expect(submitButton).toBeVisible();
-    await expect(submitButton).toBeDisabled();
-
-    // 15. Expand Dataset section if not already expanded
-    const datasetSectionToggle = page.locator(
-      '[data-testid="config-section-dataset-toggle"]',
-    );
-    if ((await datasetSectionToggle.count()) > 0) {
-      // Check if section is expanded by looking for the input field
-      const datasetNameInputCheck = page.locator(
-        'input[id*="DATASET_TABLE"], input[placeholder*="View Display Name"]',
-      );
-      if ((await datasetNameInputCheck.count()) === 0) {
-        // Section is collapsed, expand it
-        await datasetSectionToggle.click();
-        await page.waitForTimeout(300);
-      }
-    }
-
-    // 16. Find and modify a form field (Dataset display name or View header image)
-    const datasetNameInput = page.locator(
+  const viewSectionToggle = page.locator(
+    '[data-testid="config-section-view-toggle"], [data-testid="config-section-dataset-toggle"]',
+  );
+  if ((await viewSectionToggle.count()) > 0) {
+    const datasetNameInputCheck = page.locator(
       'input[id*="DATASET_TABLE"], input[placeholder*="View Display Name"]',
     );
-    const viewHeaderImageInput = page.locator(
-      'input[id*="VIEW_HEADER_IMAGE"], input[placeholder*="View Header Image"]',
-    );
-
-    if ((await datasetNameInput.count()) > 0) {
-      // 17. Modify the dataset display name
-      await datasetNameInput.clear();
-      await datasetNameInput.fill(`Test Dataset - ${Date.now()}`);
-      await page.waitForTimeout(500);
-
-      // New views need a token + visibility before Save can enable
-      await ensureMapFormCanSubmit(page);
-
-      // 18. Verify submit button is now enabled (change detected)
-      await expect(submitButton).toBeEnabled();
-
-      // 19. Click submit to save changes
-      await submitButton.click();
-
-      // 20. Wait for network request to complete
-      await page.waitForLoadState("networkidle", { timeout: 10000 });
-
-      // 21. Wait for Vue reactivity to update the form state
-      // The ConfigCard watch should update originalConfig after datasetConfig is updated
-      await page.waitForTimeout(3000);
-
-      // 22. Verify the input value was saved (more reliable than button state)
-      const savedValue = await datasetNameInput.inputValue();
-      expect(savedValue).toBeTruthy();
-    } else if ((await viewHeaderImageInput.count()) > 0) {
-      // 17. Modify the view header image URL
-      await viewHeaderImageInput.clear();
-      await viewHeaderImageInput.fill(
-        "https://plus.unsplash.com/premium_photo-1676218968741-8179dd7e533f?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      );
-      await page.waitForTimeout(500);
-
-      // 18. Verify submit button is now enabled (change detected)
-      await expect(submitButton).toBeEnabled();
-
-      // 19. Click submit to save changes
-      await submitButton.click();
-
-      // 20. Wait for network request to complete
-      await page.waitForLoadState("networkidle", { timeout: 10000 });
-
-      // 21. Wait for Vue reactivity to update the form state
-      await page.waitForTimeout(3000);
-
-      // 22. Verify the input value was saved
-      const savedValue = await viewHeaderImageInput.inputValue();
-      expect(savedValue).toBeTruthy();
-    } else {
-      // If neither input exists, try modifying VIEW_DESCRIPTION
-      const descriptionInput = page.locator(
-        'textarea[id*="VIEW_DESCRIPTION"], textarea[placeholder*="description"]',
-      );
-
-      if ((await descriptionInput.count()) > 0) {
-        await descriptionInput.clear();
-        await descriptionInput.fill("Test description");
-        await page.waitForTimeout(500);
-        await expect(submitButton).toBeEnabled();
-        await submitButton.click();
-        // Wait for network request to complete
-        await page.waitForLoadState("networkidle", { timeout: 10000 });
-        // Wait for Vue reactivity to update the form state
-        await page.waitForTimeout(3000);
-      }
+    if ((await datasetNameInputCheck.count()) === 0) {
+      await viewSectionToggle.first().click();
+      await page.waitForTimeout(300);
     }
-
-    // 22. Verify we can navigate back to config dashboard
-    await configBreadcrumb.click();
-    await page.waitForURL("**/config", { timeout: 5000 });
-    await expect(
-      page.getByRole("heading", { name: /dataset view management/i }),
-    ).toBeVisible();
   }
+
+  const datasetNameInput = page.locator(
+    'input[id*="DATASET_TABLE"], input[placeholder*="View Display Name"]',
+  );
+  if ((await datasetNameInput.count()) > 0) {
+    await datasetNameInput.clear();
+    await datasetNameInput.fill(`Test Dataset - ${Date.now()}`);
+    await page.waitForTimeout(500);
+    await ensureMapFormCanSubmit(page);
+    await expect(submitButton).toBeEnabled();
+    await submitButton.click();
+    await page.waitForLoadState("networkidle", { timeout: 10000 });
+    await page.waitForTimeout(2000);
+    expect(await datasetNameInput.inputValue()).toBeTruthy();
+  }
+
+  const configBreadcrumb = page
+    .locator('a[href="/config"]')
+    .filter({ hasText: /configuration/i })
+    .first();
+  await expect(configBreadcrumb).toBeVisible();
+  await configBreadcrumb.click();
+  await page.waitForURL("**/config", { timeout: 5000 });
+  await expect(
+    page.getByRole("heading", { name: /dataset view management/i }),
+  ).toBeVisible();
 });
 
 test("config page - navigate to dataset edit page", async ({
@@ -631,41 +451,24 @@ test("config page - edit dataset view form structure", async ({
   }
 });
 
-test("config page - cancel add table modal", async ({
+test("config page - cancel create leaves database unchanged", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // 1. Navigate to the config page
-  console.log("[TEST] Step 1: Navigating to /config");
   await page.goto("/config");
   await page.waitForLoadState("networkidle");
 
-  // 2. Click the add new table button
-  console.log("[TEST] Step 2: Clicking add new table button");
-  // Button is in flex justify-end section
   const addTableButton = page
     .locator("[data-testid='add-new-dataset-view-button']")
     .first();
   await addTableButton.waitFor({ state: "visible", timeout: 10000 });
   await addTableButton.click();
-  console.log("[TEST] Step 2: Clicked add new table button");
+  await page.waitForURL("**/config/new", { timeout: 10000 });
 
-  // 3. Verify the modal appears
-  console.log("[TEST] Step 3: Checking for modal");
-  const addModal = page.locator("[data-testid='config-modal']");
-  await expect(addModal).toBeVisible();
-  console.log("[TEST] Step 3: Modal is visible");
-
-  // 4. Click the cancel button
-  console.log("[TEST] Step 4: Clicking cancel button");
-  const cancelButton = page.getByRole("button", { name: /cancel/i });
-  await cancelButton.click();
-  console.log("[TEST] Step 4: Clicked cancel button");
-
-  // 5. Verify the modal closes
-  console.log("[TEST] Step 5: Checking modal is closed");
-  await expect(addModal).not.toBeVisible();
-  console.log("[TEST] Step 5: Modal is closed");
-  console.log("[TEST] Test completed successfully");
+  await page.locator("[data-testid='create-view-cancel']").click();
+  await page.waitForURL("**/config", { timeout: 10000 });
+  await expect(
+    page.getByRole("heading", { name: /dataset view management/i }),
+  ).toBeVisible();
 });
 
 test("config page - table card minimize/expand functionality", async ({
@@ -702,197 +505,42 @@ test("config page - table card minimize/expand functionality", async ({
 test("config page - form validation and change detection", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // 1. Navigate to the config page
-  await page.goto("/config");
-  await page.waitForLoadState("networkidle");
+  await openMapConfigEditPage(page);
 
-  // 2. Wait for the grid container to be present
-  await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
+  const submitButton = page.locator("[data-testid='config-submit-button']");
+  await expect(submitButton).toBeVisible();
+  await expect(submitButton).toBeDisabled();
 
-  // 3. Add a table to work with
-  const addTableButton = page.locator(
-    "[data-testid='add-new-dataset-view-button']",
+  const viewSectionToggle = page.locator(
+    '[data-testid="config-section-view-toggle"], [data-testid="config-section-dataset-toggle"]',
   );
-  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
-  await addTableButton.click();
-
-  // 4. Verify the modal appears with dropdown
-  const addModal = page.locator("[data-testid='config-modal']");
-  await expect(addModal).toBeVisible();
-
-  // 5. Check if there are any available options in the dropdown
-  const dropdown = page.locator("[data-testid='config-modal-table-select']");
-  await expect(dropdown).toBeVisible();
-
-  const options = await dropdown.locator("option").all();
-  const availableOptions: string[] = [];
-
-  for (const option of options) {
-    const optionText = await option.textContent();
-    if (optionText && optionText.trim() && optionText.trim() !== "") {
-      availableOptions.push(optionText.trim());
-    }
-  }
-
-  let tableNameToAdd: string | null = null;
-
-  // 6. If there are available options, add a new dataset view
-  if (availableOptions.length > 0) {
-    // Select the first available option
-    await dropdown.selectOption({ label: availableOptions[0] });
-    tableNameToAdd = availableOptions[0];
-
-    // Click confirm to add the table
-    const confirmButton = page.locator(
-      "[data-testid='config-modal-confirm-button']",
-    );
-    await expect(confirmButton).toBeEnabled();
-    await confirmButton.click();
-
-    // Wait for modal to close
-    await expect(addModal).not.toBeVisible({ timeout: 5000 });
-
-    // Wait for page to reload/update
-    await page.waitForTimeout(3000);
-    await page.waitForLoadState("networkidle", { timeout: 10000 });
-    await page.locator(".grid").waitFor({ state: "attached", timeout: 10000 });
-
-    // Find the card with the table name we just added
-    const targetCard = page.locator(
-      `[data-testid='config-dataset-card']:has-text("${tableNameToAdd.trim()}")`,
-    );
-    await expect(targetCard).toBeVisible({ timeout: 10000 });
-
-    // Navigate to edit page
-    const editLink = targetCard.locator(
-      "[data-testid='edit-dataset-view-link']",
-    );
-    await editLink.click();
-  } else {
-    // No available options - all tables are already configured
-    // Close the modal and work with existing dataset views
-    const cancelButton = page.locator(
-      "[data-testid='config-modal-cancel-button']",
-    );
-    await cancelButton.click();
-    await expect(addModal).not.toBeVisible({ timeout: 5000 });
-
-    // Get the first existing dataset card
-    const existingCards = page.locator("[data-testid='config-dataset-card']");
-    const cardCount = await existingCards.count();
-
-    if (cardCount > 0) {
-      // Get the table name from the first card
-      const firstCard = existingCards.first();
-      const cardHeading = firstCard.locator("h2");
-      await expect(cardHeading).toBeVisible();
-      const headingText = await cardHeading.textContent();
-      tableNameToAdd = headingText?.trim() || null;
-
-      // Use the first card for editing
-      const editLink = firstCard.locator(
-        "[data-testid='edit-dataset-view-link']",
-      );
-      await editLink.click();
-
-      // Wait for navigation to edit page
-      await page.waitForURL(`**/config/${tableNameToAdd}**`, {
-        timeout: 10000,
-      });
-    } else {
-      // No cards at all - skip the test
-      test.skip();
-      return;
-    }
-  }
-
-  // 7. Wait for navigation to edit page (if we haven't already)
-  if (tableNameToAdd && !page.url().includes(`/config/${tableNameToAdd}`)) {
-    await page.waitForURL(`**/config/${tableNameToAdd}**`, {
-      timeout: 10000,
-    });
-  }
-
-  if (tableNameToAdd) {
-    await page.waitForLoadState("networkidle");
-
-    // 8. Wait for form content to be visible
-    await page.waitForSelector("form", { timeout: 15000 });
-
-    // 9. Verify submit button is initially disabled (no changes)
-    const submitButton = page.locator("[data-testid='config-submit-button']");
-    await expect(submitButton).toBeVisible();
-    await expect(submitButton).toBeDisabled();
-
-    // 10. Test mapbox3d checkbox and terrain exaggeration slider (if map config exists)
-    await expandMapSection(page);
-    const mapbox3dCheckbox = page.locator(
-      'input[type="checkbox"][id*="MAPBOX_3D"]',
-    );
-
-    const has3dMapConfig = (await mapbox3dCheckbox.count()) > 0;
-
-    if (has3dMapConfig) {
-      // 14a. Verify checkbox is visible
-      await expect(mapbox3dCheckbox).toBeVisible();
-
-      // New views need a token + visibility before Save can enable
-      await ensureMapFormCanSubmit(page);
-
-      // 14b. Check the mapbox3d checkbox
-      const wasChecked = await mapbox3dCheckbox.isChecked();
-      if (wasChecked) {
-        await mapbox3dCheckbox.uncheck();
-        await page.waitForTimeout(300);
-      }
-      await mapbox3dCheckbox.check();
-      await page.waitForTimeout(300);
-
-      // 14c. Verify submit button is now enabled (change detected)
-      await expect(submitButton).toBeEnabled();
-
-      // 14d. Revert checkbox to original state
-      if (!wasChecked) {
-        await mapbox3dCheckbox.uncheck();
-        await page.waitForTimeout(300);
-      }
-    }
-
-    // 11. Find and modify a form field (dataset display name - safer than mapbox token)
-    const datasetNameInput = page.locator(
+  if ((await viewSectionToggle.count()) > 0) {
+    const datasetNameInputCheck = page.locator(
       'input[id*="DATASET_TABLE"], input[placeholder*="View Display Name"]',
     );
-
-    if ((await datasetNameInput.count()) > 0) {
-      // 16. Get original value first
-      const originalValue = await datasetNameInput.inputValue();
-
-      // 17. Modify the dataset name
-      await datasetNameInput.clear();
-      await datasetNameInput.fill(`Test Dataset ${Date.now()}`);
-      await page.waitForTimeout(500);
-
-      // 18. Verify submit button is enabled (change detected)
-      await expect(submitButton).toBeEnabled();
-
-      // 19. Revert the change back to original
-      await datasetNameInput.clear();
-      if (originalValue) {
-        await datasetNameInput.fill(originalValue);
-      }
-      await page.waitForTimeout(1000); // Wait longer for change detection
-      // Note: Button might stay enabled if form has other changes, so just verify it exists
-      await expect(submitButton).toBeVisible();
-    } else {
-      // If DATASET_TABLE doesn't exist, try VIEW_DESCRIPTION
-      const descriptionInput = page.locator('textarea[id*="VIEW_DESCRIPTION"]');
-      if ((await descriptionInput.count()) > 0) {
-        await descriptionInput.clear();
-        await descriptionInput.fill("Test description");
-        await page.waitForTimeout(500);
-        await expect(submitButton).toBeEnabled();
-      }
+    if ((await datasetNameInputCheck.count()) === 0) {
+      await viewSectionToggle.first().click();
+      await page.waitForTimeout(300);
     }
+  }
+
+  const datasetNameInput = page.locator(
+    'input[id*="DATASET_TABLE"], input[placeholder*="View Display Name"]',
+  );
+  if ((await datasetNameInput.count()) > 0) {
+    const currentValue = await datasetNameInput.inputValue();
+    await datasetNameInput.clear();
+    await datasetNameInput.fill(`Changed - ${Date.now()}`);
+    await page.waitForTimeout(500);
+    await ensureMapFormCanSubmit(page);
+    await expect(submitButton).toBeEnabled();
+
+    // Revert so later tests stay stable
+    await datasetNameInput.clear();
+    if (currentValue) {
+      await datasetNameInput.fill(currentValue);
+    }
+    await page.waitForTimeout(500);
   }
 });
 
@@ -1123,39 +771,32 @@ test("config page - error handling for invalid form submission", async ({
   }
 });
 
-test("config page - modal overlay functionality and cancel button", async ({
+test("config create - deep link pre-fills primary dataset", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  // 1. Navigate to the config page
-  await page.goto("/config");
+  await page.goto("/config/new/gallery?primary=seed_survey_data");
+  await page.waitForLoadState("networkidle");
+  await expect(
+    page.locator("[data-testid='create-form-primary-select']"),
+  ).toHaveValue("seed_survey_data");
+});
 
-  // 2. Click the add new table button to open modal
-  // Button text changed from "Add new table" to "Add new dataset view"
-  const addTableButton = page
-    .locator("[data-testid='add-new-dataset-view-button']")
-    .filter({ hasText: /add.*new.*dataset.*view|add.*new.*table/i })
-    .first();
-  await addTableButton.waitFor({ state: "visible", timeout: 10000 });
-  await addTableButton.click();
+test("config create - duplicate view warning disables save", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  // seed_survey_data already has a gallery view in the seed data.
+  await page.goto("/config/new/gallery?primary=seed_survey_data");
+  await page.waitForLoadState("networkidle");
 
-  // 3. Verify the modal overlay is present (the modal itself is the overlay)
-  const addModal = page.locator("[data-testid='config-modal']");
-  await expect(addModal).toBeVisible();
-  await expect(addModal).toBeVisible({ timeout: 10000 });
-
-  // 4. Verify the modal content is visible
-  const modalContent = addModal.locator(".bg-white.rounded-lg");
-  await expect(modalContent).toBeVisible();
-
-  // 5. Click cancel to close modal
-  const cancelButton = page.locator(
-    "[data-testid='config-modal-cancel-button']",
-  );
-  await cancelButton.click();
-
-  // 6. Verify modal is hidden
-  await expect(addModal).not.toBeVisible();
-  await expect(addModal).not.toBeVisible();
+  await expect(
+    page.locator("[data-testid='create-duplicate-warning']"),
+  ).toBeVisible({ timeout: 10000 });
+  await expect(
+    page.locator("[data-testid='create-duplicate-edit-link']"),
+  ).toBeVisible();
+  await expect(
+    page.locator("[data-testid='config-submit-button']"),
+  ).toBeDisabled();
 });
 
 test("config page - visibility permissions configuration", async ({

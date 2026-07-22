@@ -140,4 +140,60 @@ describe("useCopyConfig", () => {
 
     expect(otherCopySources.value).toEqual([]);
   });
+
+  it("reacts when the current primary dataset ref changes", () => {
+    const currentViewType = ref<ViewType | undefined>("map");
+    const currentDataset = ref("dataset_a");
+    const { otherCopySources } = useCopyConfig(
+      viewRows,
+      currentDataset,
+      currentViewType,
+    );
+
+    expect(otherCopySources.value.map((source) => source.key)).toEqual([
+      copySourceKey("dataset_b", "map"),
+    ]);
+
+    currentDataset.value = "dataset_b";
+    expect(otherCopySources.value.map((source) => source.key)).toEqual([
+      copySourceKey("dataset_a", "map"),
+    ]);
+  });
+
+  it("copies secondaryDataset from the source view along with viewConfig", () => {
+    viewRows.value = [
+      makeRow({
+        viewId: 1,
+        primaryDataset: "fake_alerts",
+        viewType: "alerts",
+        viewName: "Fake Alerts",
+        viewConfig: { MAPEO_CATEGORY_IDS: "threat" },
+      }),
+      {
+        ...makeRow({
+          viewId: 2,
+          primaryDataset: "gfw_alerts_viirs",
+          viewType: "alerts",
+          viewName: "GFW Alerts",
+          viewConfig: { MAPEO_CATEGORY_IDS: "threat" },
+        }),
+        secondaryDataset: "mapeo_data",
+      },
+    ];
+
+    const currentViewType = ref<ViewType | undefined>("alerts");
+    const {
+      otherCopySources,
+      selectedCopySource,
+      handleConfirmCopy,
+      configToCopy,
+      secondaryDatasetToCopy,
+    } = useCopyConfig(viewRows, "fake_alerts", currentViewType);
+
+    selectedCopySource.value = otherCopySources.value[0].key;
+    handleConfirmCopy();
+
+    expect(configToCopy.value).toEqual({ MAPEO_CATEGORY_IDS: "threat" });
+    expect(secondaryDatasetToCopy.value).toBe("mapeo_data");
+  });
 });

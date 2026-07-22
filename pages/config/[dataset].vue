@@ -18,10 +18,15 @@ const datasetRaw = route.params.dataset;
 const dataset = Array.isArray(datasetRaw)
   ? datasetRaw.join("/")
   : String(datasetRaw || "");
+
+// Static /config/new* routes win in Nuxt; this guards odd matches if routing changes.
+if (dataset === "new") {
+  await navigateTo("/config/new");
+}
+
 const viewType = computed(() => route.query.view_type as ViewType | undefined);
 
 const viewRows = ref<ViewConfigRow[]>([]);
-const tableNames = ref();
 const dataFetched = ref(false);
 const datasetConfig = ref<ViewConfig | null>(null);
 const secondaryDataset = ref<string | null>(null);
@@ -38,7 +43,6 @@ const { data, error, refresh } = await useFetch<{
 if (data.value && !error.value) {
   const allViewRows = data.value.views;
   viewRows.value = allViewRows;
-  tableNames.value = data.value.availableTables;
 
   const editedViewRow = allViewRows.find(
     (row) =>
@@ -169,6 +173,10 @@ const handleCancelRemove = () => {
   tableNameToRemove.value = null;
 };
 
+const handleSecondaryDatasetUpdate = (value: string) => {
+  secondaryDataset.value = value.trim() === "" ? null : value;
+};
+
 const {
   showCopyModal,
   selectedCopySource,
@@ -290,8 +298,10 @@ definePageMeta({ layout: "explorer" });
           :view-config="datasetConfig"
           :secondary-dataset="secondaryDataset"
           :config-to-copy="configToCopy"
+          :secondary-editable="true"
           @submit-config="submitConfig"
           @remove-table-from-config="handleRemoveTableFromConfig"
+          @update-secondary-dataset="handleSecondaryDatasetUpdate"
         />
       </div>
       <div
