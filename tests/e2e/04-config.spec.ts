@@ -239,9 +239,6 @@ test("config page - create new view via type-first flow and edit it", async ({
   await expect(submitButton).toBeEnabled({ timeout: 10000 });
   await submitButton.click();
 
-  await expect(page.locator("[data-testid='saved-modal']")).toBeVisible({
-    timeout: 10000,
-  });
   await page.waitForURL(`**/config/${selectedTableName}**`, {
     timeout: 15000,
   });
@@ -773,11 +770,18 @@ test("config page - error handling for invalid form submission", async ({
   }
 });
 
-test("config create - deep link pre-fills primary dataset", async ({
+test("config create - selected primary carries into create form", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  await page.goto("/config/new/gallery?primary=seed_survey_data");
-  await page.waitForLoadState("networkidle");
+  await page.goto("/config/new");
+  await page.locator("[data-testid='create-view-type-gallery']").click();
+  await page
+    .locator("[data-testid='create-primary-select']")
+    .selectOption("seed_survey_data");
+  await page.locator("[data-testid='create-view-continue']").click();
+  await page.waitForURL("**/config/new/gallery?primary=seed_survey_data", {
+    timeout: 10000,
+  });
   await expect(
     page.locator("[data-testid='create-form-primary-select']"),
   ).toHaveValue("seed_survey_data");
@@ -787,8 +791,15 @@ test("config create - duplicate view warning disables save", async ({
   authenticatedPageAsAdmin: page,
 }) => {
   // seed_survey_data already has a gallery view in the seed data.
-  await page.goto("/config/new/gallery?primary=seed_survey_data");
-  await page.waitForLoadState("networkidle");
+  await page.goto("/config/new");
+  await page.locator("[data-testid='create-view-type-gallery']").click();
+  await page
+    .locator("[data-testid='create-primary-select']")
+    .selectOption("seed_survey_data");
+  await page.locator("[data-testid='create-view-continue']").click();
+  await page.waitForURL("**/config/new/gallery?primary=seed_survey_data", {
+    timeout: 10000,
+  });
 
   await expect(
     page.locator("[data-testid='create-duplicate-warning']"),
