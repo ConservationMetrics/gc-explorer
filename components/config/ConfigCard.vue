@@ -17,10 +17,6 @@ const props = withDefaults(
     showRemove?: boolean;
     /** False when the parent blocks Save (e.g. missing primary or duplicate view). */
     saveEnabled?: boolean;
-    /**
-     * Create flow only: show/edit secondary (alerts Mapeo text). Edit pages keep
-     * secondary read-only in metadata — see TODO on config/[dataset].vue.
-     */
     secondaryEditable?: boolean;
   }>(),
   {
