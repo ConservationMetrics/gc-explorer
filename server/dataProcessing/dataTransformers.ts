@@ -1,4 +1,13 @@
 import {
+  compareAsc,
+  format,
+  isAfter,
+  isEqual,
+  isWithinInterval,
+  setDate,
+} from "date-fns";
+
+import {
   calculateCentroidFromParsedCoords,
   tryParseDataEntryGeoCoordinates,
 } from "@/utils/geoUtils";
@@ -55,7 +64,7 @@ const prepareMinimalAlertEntries = (
       parseInt(formattedMonth) - 1,
     );
 
-    if (date > latestProprietaryDate) {
+    if (isAfter(date, latestProprietaryDate)) {
       latestProprietaryDate = date;
       latestProprietaryMonthStr = monthYearStr;
     }
@@ -64,7 +73,7 @@ const prepareMinimalAlertEntries = (
   let latestGfwDate = new Date(0);
   gfwData.forEach(({ item }) => {
     const date = new Date(item.date_end_t1);
-    if (date > latestGfwDate) latestGfwDate = date;
+    if (isAfter(date, latestGfwDate)) latestGfwDate = date;
   });
 
   const toMinimalEntry = (
@@ -112,7 +121,7 @@ const prepareMinimalAlertEntries = (
 
   gfwData.forEach(({ item, parsedCoords }) => {
     const date = new Date(item.date_end_t1);
-    if (date.getTime() === latestGfwDate.getTime()) {
+    if (isEqual(date, latestGfwDate)) {
       mostRecentAlerts.push(toMinimalEntry(item, parsedCoords));
     } else {
       previousAlerts.push(toMinimalEntry(item, parsedCoords));
@@ -199,7 +208,7 @@ const prepareAlertsStatistics = (
   // Handle empty data case - but still use metadata if available
   if (data.length === 0) {
     const now = new Date();
-    const currentDateStr = `${String(now.getMonth() + 1).padStart(2, "0")}-${now.getFullYear()}`;
+    const currentDateStr = format(now, "MM-yyyy");
 
     const dataProviders = getDataProvidersFromMetadata();
     const metadataDateRange = getDateRangeFromMetadata();
@@ -265,7 +274,7 @@ const prepareAlertsStatistics = (
   });
 
   // Sort dates to find the earliest and latest
-  formattedDates.sort((a, b) => a.date.getTime() - b.date.getTime());
+  formattedDates.sort((a, b) => compareAsc(a.date, b.date));
 
   let earliestDateStr, latestDateStr;
   let earliestDate: Date, latestDate: Date;
@@ -278,12 +287,10 @@ const prepareAlertsStatistics = (
     latestDateStr = metadataDateRange.latestDateStr;
   } else {
     // If metadata is null, calculate earliest and latest dates from data
-    earliestDate = formattedDates[0].date;
-    earliestDate.setDate(1);
+    earliestDate = setDate(formattedDates[0].date, 1);
     earliestDateStr = formattedDates[0].displayString;
 
-    latestDate = formattedDates[formattedDates.length - 1].date;
-    latestDate.setDate(28);
+    latestDate = setDate(formattedDates[formattedDates.length - 1].date, 28);
     latestDateStr = formattedDates[formattedDates.length - 1].displayString;
   }
 
@@ -304,7 +311,10 @@ const prepareAlertsStatistics = (
       const itemDate = new Date(
         `${item.year_detec}-${item.month_detec.padStart(2, "0")}-01`,
       );
-      return itemDate >= twelveMonthsBefore && itemDate <= latestDate;
+      return isWithinInterval(itemDate, {
+        start: twelveMonthsBefore,
+        end: latestDate,
+      });
     })
     .sort((a, b) => {
       const aDate = new Date(
@@ -313,12 +323,10 @@ const prepareAlertsStatistics = (
       const bDate = new Date(
         `${b.year_detec}-${b.month_detec.padStart(2, "0")}`,
       );
-      return aDate.getTime() - bDate.getTime();
+      return compareAsc(aDate, bDate);
     });
 
-  const twelveMonthsBeforeStr = `${
-    twelveMonthsBefore.getMonth() + 1
-  }-${twelveMonthsBefore.getFullYear()}`;
+  const twelveMonthsBeforeStr = format(twelveMonthsBefore, "M-yyyy");
 
   const getUpTo12MonthsForChart = (): string[] => {
     const months = [];

@@ -29,6 +29,7 @@
     "@turf/turf": "^7.2.0",
     "@vojtechlanka/vue-tags-input": "^3.1.1",
     "chart.js": "^4.4.7",
+    "date-fns": "^4.4.0",
     "drizzle-orm": "^0.44.5",
     "lodash": "^4.18.1",
     "lucide-vue-next": "^0.516.0",
