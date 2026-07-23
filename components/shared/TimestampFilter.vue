@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import {
+  compareAsc,
+  endOfMonth as getEndOfMonth,
+  format,
+  isValid,
+  startOfMonth,
+} from "date-fns";
 import VueSlider from "vue-3-slider-component";
 
 import type { Dataset } from "@/types";
@@ -30,7 +37,7 @@ const dateInfo = computed(() => {
       }
       if (value == null) return null;
       const date = new Date(String(value));
-      return Number.isNaN(date.getTime()) ? null : date;
+      return isValid(date) ? date : null;
     })
     .filter((date): date is Date => date !== null);
 
@@ -44,13 +51,11 @@ const dateInfo = computed(() => {
 
   const monthSet = new Set<string>();
   for (const d of dates) {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    monthSet.add(`${y}-${m}`);
+    monthSet.add(format(d, "yyyy-MM"));
   }
   const options = [...monthSet].sort();
 
-  const sortedDates = [...dates].sort((a, b) => a.getTime() - b.getTime());
+  const sortedDates = [...dates].sort(compareAsc);
   return {
     min: sortedDates[0],
     max: sortedDates[sortedDates.length - 1],
@@ -63,8 +68,7 @@ const userInteracted = ref(false);
 
 /** Parse "YYYY-MM" to last moment of that month (23:59:59.999). */
 function endOfMonth(year: number, month1Based: number): Date {
-  const d = new Date(year, month1Based, 0, 23, 59, 59, 999);
-  return d;
+  return getEndOfMonth(new Date(year, month1Based - 1));
 }
 
 /** Emit filter when range changes (options are "YYYY-MM" months). */
@@ -77,7 +81,7 @@ const emitFilter = () => {
   }
   const [startY, startM] = startStr.split("-").map(Number);
   const [endY, endM] = endStr.split("-").map(Number);
-  const start = new Date(startY, startM - 1, 1, 0, 0, 0, 0);
+  const start = startOfMonth(new Date(startY, startM - 1));
   const end = endOfMonth(endY, endM);
   emit("filter", { start, end });
 };
