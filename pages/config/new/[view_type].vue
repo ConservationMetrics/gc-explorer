@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import ConfigCard from "@/components/config/ConfigCard.vue";
-import SecondaryDatasetFields from "@/components/config/SecondaryDatasetFields.vue";
+import CopyConfigControl from "@/components/config/CopyConfigControl.vue";
+import SavedModal from "@/components/config/SavedModal.vue";
+import SelectDatasetField from "@/components/config/SelectDatasetField.vue";
+import ViewTypePill from "@/components/config/ViewTypePill.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import { useDuplicateViewCheck } from "@/composables/useDuplicateViewCheck";
 import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
-import { CheckCircle2, ChevronLeft, Copy } from "lucide-vue-next";
-
-const VALID_VIEW_TYPES: ViewType[] = ["map", "gallery", "alerts"];
+import { supportsSecondaryDataset, VIEW_TYPES } from "@/utils/viewTypes";
+import { ChevronLeft } from "lucide-vue-next";
 
 const route = useRoute();
 const { t } = useI18n();
@@ -20,7 +22,7 @@ const viewTypeParam = computed(() => {
 
 const viewType = computed(() => viewTypeParam.value as ViewType);
 const isValidViewType = computed(() =>
-  VALID_VIEW_TYPES.includes(viewType.value),
+  VIEW_TYPES.some((type) => type === viewType.value),
 );
 
 if (!isValidViewType.value) {
@@ -67,8 +69,8 @@ const saveEnabled = computed(
     !isSaving.value,
 );
 
-const showsSecondaryDataset = computed(
-  () => viewType.value === "map" || viewType.value === "alerts",
+const showsSecondaryDataset = computed(() =>
+  supportsSecondaryDataset(viewType.value),
 );
 
 watch(primaryDataset, (primary) => {
@@ -161,9 +163,10 @@ definePageMeta({ layout: "explorer" });
     <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
       {{ $t("configureNewView") }}
     </h1>
-    <p class="text-gray-600 mb-6">
-      {{ $t(viewType) }} — {{ $t("primaryDatasetLabel") }}
-    </p>
+    <div class="mb-6">
+      <p class="text-sm text-gray-500 mb-1">{{ $t("view") }}</p>
+      <ViewTypePill :view-type="viewType" />
+    </div>
 
     <DataLoadError
       v-if="error"
@@ -177,51 +180,39 @@ definePageMeta({ layout: "explorer" });
         class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6"
       >
         <div class="min-w-0 flex-1 space-y-6">
-          <div>
-            <label
-              for="create-form-primary"
-              class="block text-sm font-medium text-gray-700 mb-2"
-            >
-              {{ $t("primaryDatasetLabel") }}
-            </label>
-            <select
-              id="create-form-primary"
-              v-model="primaryDataset"
-              data-testid="create-form-primary-select"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-            >
-              <option value="">{{ $t("selectPrimaryDataset") }}</option>
-              <option
-                v-for="table in availableTables"
-                :key="table"
-                :value="table"
-              >
-                {{ table }}
-              </option>
-            </select>
-          </div>
+          <SelectDatasetField
+            id="create-form-primary"
+            v-model="primaryDataset"
+            :label="$t('primaryDatasetRequired')"
+            :options="availableTables"
+            :placeholder="$t('selectPrimaryDataset')"
+            test-id="create-form-primary-select"
+            required
+          />
 
-          <SecondaryDatasetFields
+          <SelectDatasetField
             v-if="showsSecondaryDataset"
-            table-name="create-view"
-            :secondary-dataset="secondaryDataset"
-            :available-tables="availableTables"
-            :primary-dataset="primaryDataset"
-            @update-secondary-dataset="handleSecondaryDatasetUpdate"
+            id="create-view-secondaryDataset-select"
+            :model-value="secondaryDataset"
+            :label="$t('secondaryDatasetOptional')"
+            :options="availableTables"
+            :placeholder="$t('selectSecondaryDataset')"
+            test-id="secondary-dataset-select"
+            :exclude-value="primaryDataset"
+            @update:model-value="handleSecondaryDatasetUpdate"
           />
         </div>
 
-        <div v-if="otherCopySources.length > 0" class="flex-shrink-0 sm:pt-7">
-          <button
-            type="button"
-            data-testid="copy-config-button"
-            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            @click="handleOpenCopyModal"
-          >
-            <Copy class="w-4 h-4" />
-            {{ $t("copyConfigFromDataset") }}
-          </button>
-        </div>
+        <CopyConfigControl
+          :sources="otherCopySources"
+          :show-modal="showCopyModal"
+          :selected-source="selectedCopySource"
+          button-container-class="flex-shrink-0 sm:pt-7"
+          @open="handleOpenCopyModal"
+          @confirm="handleConfirmCopy"
+          @cancel="handleCancelCopy"
+          @update:selected-source="selectedCopySource = $event"
+        />
       </div>
 
       <div
@@ -264,82 +255,6 @@ definePageMeta({ layout: "explorer" });
       />
     </template>
 
-    <div
-      v-if="showCopyModal"
-      data-testid="copy-config-modal"
-      class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-    >
-      <div
-        data-testid="copy-config-modal-content"
-        class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
-      >
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">
-          {{ $t("copyConfigFromDataset") }}
-        </h3>
-        <p class="text-sm text-gray-600 mb-4">
-          {{ $t("copyConfigDescription") }}
-        </p>
-        <select
-          v-model="selectedCopySource"
-          data-testid="copy-config-select"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors mb-4"
-        >
-          <option value="" disabled>
-            {{ $t("selectView") }}
-          </option>
-          <option
-            v-for="source in otherCopySources"
-            :key="source.key"
-            :value="source.key"
-          >
-            {{ source.label }}
-          </option>
-        </select>
-        <div class="flex gap-3 justify-end">
-          <button
-            data-testid="copy-config-confirm-button"
-            :disabled="!selectedCopySource"
-            class="px-4 py-2 font-medium rounded-lg transition-colors"
-            :class="{
-              'bg-gray-300 text-gray-500 cursor-not-allowed':
-                !selectedCopySource,
-              'bg-violet-700 hover:bg-violet-800 text-white':
-                selectedCopySource,
-            }"
-            @click="handleConfirmCopy"
-          >
-            {{ $t("confirm") }}
-          </button>
-          <button
-            data-testid="copy-config-cancel-button"
-            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
-            @click="handleCancelCopy"
-          >
-            {{ $t("cancel") }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <ClientOnly>
-      <div
-        v-if="showSavedModal"
-        data-testid="saved-modal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-      >
-        <div
-          data-testid="saved-modal-content"
-          class="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4 text-center"
-        >
-          <div class="mb-4">
-            <CheckCircle2 class="w-16 h-16 mx-auto text-green-500" />
-          </div>
-          <h2 class="text-2xl font-bold text-gray-900 mb-2">Saved!</h2>
-          <p class="text-gray-600">
-            Configuration has been saved successfully.
-          </p>
-        </div>
-      </div>
-    </ClientOnly>
+    <SavedModal :show="showSavedModal" />
   </div>
 </template>

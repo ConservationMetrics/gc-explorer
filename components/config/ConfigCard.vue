@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ViewConfig, ViewType } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
+import { supportsSecondaryDataset } from "@/utils/viewTypes";
 import ConfigPermissions from "./ConfigPermissions.vue";
 import ConfigCollapsibleSection from "./ConfigCollapsibleSection.vue";
 import { Check, Trash2 } from "lucide-vue-next";
@@ -147,8 +148,8 @@ const shouldShowConfigAlerts = computed(() => props.viewType === "alerts");
 const shouldShowConfigFilters = computed(
   () => props.viewType === "map" || props.viewType === "gallery",
 );
-const shouldUseSecondaryDataset = computed(
-  () => props.viewType === "alerts" || props.viewType === "map",
+const shouldUseSecondaryDataset = computed(() =>
+  supportsSecondaryDataset(props.viewType),
 );
 
 // Form validations and helpers

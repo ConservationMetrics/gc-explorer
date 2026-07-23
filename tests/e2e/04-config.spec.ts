@@ -225,6 +225,14 @@ test("config page - create new view via type-first flow and edit it", async ({
   await expect(
     page.locator("[data-testid='create-form-primary-select']"),
   ).toHaveValue(selectedTableName);
+  await expect(page.getByLabel("Primary dataset (required)")).toBeVisible();
+  const secondaryDatasetSelect = page.getByLabel(
+    "Secondary dataset (optional)",
+  );
+  await expect(secondaryDatasetSelect).toBeVisible();
+  await expect(secondaryDatasetSelect.locator("option:checked")).toHaveText(
+    "Select a secondary dataset…",
+  );
 
   const mapSectionToggle = page.locator(
     '[data-testid="config-section-map-toggle"]',

@@ -1,28 +1,18 @@
 <script setup lang="ts">
 import ConfigCard from "@/components/config/ConfigCard.vue";
+import CopyConfigControl from "@/components/config/CopyConfigControl.vue";
+import SavedModal from "@/components/config/SavedModal.vue";
+import ViewTypePill from "@/components/config/ViewTypePill.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
-import {
-  CheckCircle2,
-  ChevronLeft,
-  Copy,
-  Eye,
-  Images,
-  Map,
-  TriangleAlert,
-} from "lucide-vue-next";
+import { ChevronLeft, Eye } from "lucide-vue-next";
 
 const route = useRoute();
 const datasetRaw = route.params.dataset;
 const dataset = Array.isArray(datasetRaw)
   ? datasetRaw.join("/")
   : String(datasetRaw || "");
-
-// Static /config/new* routes win in Nuxt; this guards odd matches if routing changes.
-if (dataset === "new") {
-  await navigateTo("/config/new");
-}
 
 const viewType = computed(() => route.query.view_type as ViewType | undefined);
 
@@ -65,16 +55,6 @@ if (data.value && !error.value) {
 }
 
 const resolvedViewType = computed(() => viewType.value ?? editedViewType.value);
-
-const viewTypeIcon = computed(() => {
-  if (resolvedViewType.value === "gallery") {
-    return Images;
-  }
-  if (resolvedViewType.value === "alerts") {
-    return TriangleAlert;
-  }
-  return Map;
-});
 
 const showSavedModal = ref(false);
 
@@ -238,15 +218,15 @@ definePageMeta({ layout: "explorer" });
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               {{ $t("configuration") }} - {{ pageDisplayName }}
             </h1>
-            <button
-              v-if="otherCopySources.length > 0"
-              data-testid="copy-config-button"
-              class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              @click="handleOpenCopyModal"
-            >
-              <Copy class="w-4 h-4" />
-              {{ $t("copyConfigFromDataset") }}
-            </button>
+            <CopyConfigControl
+              :sources="otherCopySources"
+              :show-modal="showCopyModal"
+              :selected-source="selectedCopySource"
+              @open="handleOpenCopyModal"
+              @confirm="handleConfirmCopy"
+              @cancel="handleCancelCopy"
+              @update:selected-source="selectedCopySource = $event"
+            />
           </div>
           <dl
             v-if="resolvedViewType"
@@ -256,13 +236,7 @@ definePageMeta({ layout: "explorer" });
             <div>
               <dt class="text-gray-500">{{ $t("view") }}</dt>
               <dd class="mt-1">
-                <div
-                  data-testid="config-view-type-display"
-                  class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 font-medium"
-                >
-                  <component :is="viewTypeIcon" class="w-4 h-4" />
-                  <span>{{ $t(resolvedViewType) }}</span>
-                </div>
+                <ViewTypePill :view-type="resolvedViewType" />
               </dd>
             </div>
             <div>
@@ -337,87 +311,12 @@ definePageMeta({ layout: "explorer" });
           </div>
         </div>
       </div>
-      <!-- Copy Config Modal -->
-      <div
-        v-if="showCopyModal"
-        data-testid="copy-config-modal"
-        class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-      >
-        <div
-          data-testid="copy-config-modal-content"
-          class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
-        >
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">
-            {{ $t("copyConfigFromDataset") }}
-          </h3>
-          <p class="text-sm text-gray-600 mb-4">
-            {{ $t("copyConfigDescription") }}
-          </p>
-          <select
-            v-model="selectedCopySource"
-            data-testid="copy-config-select"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors mb-4"
-          >
-            <option value="" disabled>
-              {{ $t("selectView") }}
-            </option>
-            <option
-              v-for="source in otherCopySources"
-              :key="source.key"
-              :value="source.key"
-            >
-              {{ source.label }}
-            </option>
-          </select>
-          <div class="flex gap-3 justify-end">
-            <button
-              data-testid="copy-config-confirm-button"
-              :disabled="!selectedCopySource"
-              class="px-4 py-2 font-medium rounded-lg transition-colors"
-              :class="{
-                'bg-gray-300 text-gray-500 cursor-not-allowed':
-                  !selectedCopySource,
-                'bg-violet-700 hover:bg-violet-800 text-white':
-                  selectedCopySource,
-              }"
-              @click="handleConfirmCopy"
-            >
-              {{ $t("confirm") }}
-            </button>
-            <button
-              data-testid="copy-config-cancel-button"
-              class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
-              @click="handleCancelCopy"
-            >
-              {{ $t("cancel") }}
-            </button>
-          </div>
-        </div>
-      </div>
     </ClientOnly>
 
-    <!-- Saved! Modal -->
-    <ClientOnly>
-      <div
-        v-if="showSavedModal"
-        data-testid="saved-modal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-        @click="showSavedModal = false"
-      >
-        <div
-          data-testid="saved-modal-content"
-          class="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4 text-center"
-          @click.stop
-        >
-          <div class="mb-4">
-            <CheckCircle2 class="w-16 h-16 mx-auto text-green-500" />
-          </div>
-          <h2 class="text-2xl font-bold text-gray-900 mb-2">Saved!</h2>
-          <p class="text-gray-600">
-            Configuration has been saved successfully.
-          </p>
-        </div>
-      </div>
-    </ClientOnly>
+    <SavedModal
+      :show="showSavedModal"
+      dismissible
+      @close="showSavedModal = false"
+    />
   </div>
 </template>

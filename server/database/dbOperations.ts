@@ -12,6 +12,7 @@ import type {
   ViewType,
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
+import { supportsSecondaryDataset } from "@/utils/viewTypes";
 
 import { viewConfig, publicViews } from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
@@ -118,9 +119,9 @@ export const buildViewConfigColumns = (
     viewName: config.DATASET_TABLE?.trim() || primaryDataset,
     viewType,
     primaryDataset,
-    // Map and alerts may reference a companion warehouse table; gallery does not.
-    secondaryDataset:
-      viewType === "alerts" || viewType === "map" ? trimmedSecondary : null,
+    secondaryDataset: supportsSecondaryDataset(viewType)
+      ? trimmedSecondary
+      : null,
     viewConfig: JSON.stringify(config),
   };
 };
