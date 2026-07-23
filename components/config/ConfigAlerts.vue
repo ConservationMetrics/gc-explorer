@@ -7,13 +7,21 @@ import { updateTags } from "@/composables/useTags";
 
 import type { ViewConfig } from "@/types";
 
-const props = defineProps<{
-  tableName: string;
-  config: ViewConfig;
-  secondaryDataset?: string | null;
-  views: Array<string>;
-  keys: Array<string>;
-}>();
+const props = withDefaults(
+  defineProps<{
+    tableName: string;
+    config: ViewConfig;
+    secondaryDataset?: string | null;
+    /** Create flow: show Name of Mapeo data table (synced with secondary). */
+    showMapeoTableField?: boolean;
+    views: Array<string>;
+    keys: Array<string>;
+  }>(),
+  {
+    secondaryDataset: null,
+    showMapeoTableField: false,
+  },
+);
 
 const emit = defineEmits<{
   (e: "updateConfig", payload: Partial<ViewConfig>): void;
@@ -33,7 +41,6 @@ const { tags, handleTagsChanged: rawHandleTagsChanged } = updateTags(
   {},
 );
 
-// Strongly typed handler
 const handleTagsChanged = (key: string, newTags: Tag[]): void => {
   rawHandleTagsChanged(key, newTags);
   const values = newTags.map((tag) => tag.text).join(",");
@@ -43,7 +50,7 @@ const handleTagsChanged = (key: string, newTags: Tag[]): void => {
 
 <template>
   <div class="space-y-6">
-    <div class="space-y-2">
+    <div v-if="showMapeoTableField" class="space-y-2">
       <label
         :for="`${tableName}-secondaryDataset`"
         class="block text-sm font-medium text-gray-700"
@@ -52,12 +59,15 @@ const handleTagsChanged = (key: string, newTags: Tag[]): void => {
       </label>
       <input
         :id="`${tableName}-secondaryDataset`"
+        data-testid="secondary-dataset-text"
         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
         type="text"
         :value="secondaryDataset ?? ''"
         @input="
-          (e) =>
-            emit('updateSecondaryDataset', (e.target as HTMLInputElement).value)
+          emit(
+            'updateSecondaryDataset',
+            ($event.target as HTMLInputElement).value,
+          )
         "
       />
     </div>

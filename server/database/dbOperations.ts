@@ -12,6 +12,7 @@ import type {
   ViewType,
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
+import { supportsSecondaryDataset } from "@/utils/viewTypes";
 
 import { viewConfig, publicViews } from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
@@ -99,7 +100,7 @@ const checkTableExists = async (
  * @param {string} primaryDataset - Primary warehouse table for the view.
  * @param {ViewConfig} config - Parsed view config.
  * @param {ViewType} viewType - View type for the row.
- * @param {string | null} [secondaryDataset] - Optional alerts companion table.
+ * @param {string | null} [secondaryDataset] - Optional companion table (map/alerts).
  * @returns New view metadata column values for views.
  */
 export const buildViewConfigColumns = (
@@ -108,6 +109,7 @@ export const buildViewConfigColumns = (
   viewType: ViewType,
   secondaryDataset?: string | null,
 ) => {
+  const trimmedSecondary = secondaryDataset?.trim() || null;
   return {
     // viewName falls back to primaryDataset, but NOTE they are not the same kind of
     // value: DATASET_TABLE is the human display name and primaryDataset is the table
@@ -117,8 +119,9 @@ export const buildViewConfigColumns = (
     viewName: config.DATASET_TABLE?.trim() || primaryDataset,
     viewType,
     primaryDataset,
-    secondaryDataset:
-      viewType === "alerts" ? secondaryDataset?.trim() || null : null,
+    secondaryDataset: supportsSecondaryDataset(viewType)
+      ? trimmedSecondary
+      : null,
     viewConfig: JSON.stringify(config),
   };
 };
@@ -684,14 +687,29 @@ export const updateConfig = async (
   }
 };
 
+/**
+ * Inserts a new views row for (viewType, primaryDataset).
+ *
+ * @param {string} tableName - Primary warehouse table.
+ * @param {ViewType} viewType - View type to create.
+ * @param {ViewConfig} [config] - Optional config from the create form; defaults otherwise.
+ * @param {string | null} [secondaryDataset] - Optional alerts companion table.
+ * @returns {Promise<void>}
+ */
 export const addNewTableToConfig = async (
   tableName: string,
   viewType: ViewType,
+  config?: ViewConfig,
+  secondaryDataset?: string | null,
 ): Promise<void> => {
   try {
-    const newConfig: ViewConfig = {};
     await configDb.insert(viewConfig).values({
-      ...buildViewConfigColumns(tableName, newConfig, viewType),
+      ...buildViewConfigColumns(
+        tableName,
+        config ?? {},
+        viewType,
+        secondaryDataset,
+      ),
     });
   } catch (error) {
     // (view_type, primary_dataset) is unique, so re-adding a view type the dataset

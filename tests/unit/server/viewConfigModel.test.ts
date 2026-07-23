@@ -48,7 +48,7 @@ describe("buildViewConfigColumns", () => {
     expect(JSON.parse(columns.viewConfig)).toEqual(config);
   });
 
-  it("leaves secondaryDataset null for map and gallery views", () => {
+  it("sets secondaryDataset for map views and leaves gallery null", () => {
     const config: ViewConfig = {
       DATASET_TABLE: "BCM Form Responses",
     };
@@ -66,7 +66,7 @@ describe("buildViewConfigColumns", () => {
       "mapeo_data",
     );
 
-    expect(mapColumns.secondaryDataset).toBeNull();
+    expect(mapColumns.secondaryDataset).toBe("mapeo_data");
     expect(galleryColumns.secondaryDataset).toBeNull();
   });
 

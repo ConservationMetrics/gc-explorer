@@ -2,7 +2,12 @@ import { addNewTableToConfig } from "@/server/database/dbOperations";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
-import type { ViewType } from "@/types";
+import type { ViewConfig, ViewType } from "@/types";
+
+type NewTableBody = {
+  config?: ViewConfig;
+  secondaryDataset?: string | null;
+};
 
 export default defineEventHandler(async (event: H3Event) => {
   const table = event.context?.params?.table as string;
@@ -10,7 +15,13 @@ export default defineEventHandler(async (event: H3Event) => {
   try {
     await validatePermissions(event, "admin");
 
-    await addNewTableToConfig(table, viewType);
+    const body = (await readBody<NewTableBody>(event).catch(() => null)) ?? {};
+    await addNewTableToConfig(
+      table,
+      viewType,
+      body.config,
+      body.secondaryDataset,
+    );
     return { message: "New table added successfully" };
   } catch (error) {
     if (error instanceof Error) {

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
 import type { ViewConfigRow, ViewType } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
 import SearchBar from "@/components/shared/SearchBar.vue";
@@ -16,18 +15,10 @@ import {
 
 const props = defineProps<{
   viewRows: ViewConfigRow[];
-  tableNames: Array<string>;
 }>();
 
-const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-
-const emit = defineEmits([
-  "addTableToConfig",
-  "removeTableFromConfig",
-  "submitConfig",
-]);
 
 const sortedViewsConfig = computed(() => {
   return [...props.viewRows].sort((first, second) => {
@@ -106,68 +97,6 @@ const truncateDescription = (desc: string): string => {
     ? desc.substring(0, CONFIG_LIMITS.VIEW_DESCRIPTION) + "..."
     : desc;
 };
-
-const modalMessage = ref("");
-const currentModalAction = ref();
-const showModal = ref(false);
-const showModalButtons = ref(false);
-const showModalDropdown = ref(false);
-const confirmButtonDisabled = ref(false);
-const tableNameToRemove = ref();
-const tableNameToAdd = ref();
-const viewTypeToAdd = ref<ViewType>(
-  (route.query.view_type as ViewType) || "map",
-);
-
-// Handlers
-const handleAddNewTable = () => {
-  confirmButtonDisabled.value = true;
-  currentModalAction.value = "addTable";
-  modalMessage.value = t("selectDatasetToAdd") + ":";
-  showModal.value = true;
-  showModalButtons.value = true;
-  showModalDropdown.value = true;
-};
-
-const handleConfirmButton = () => {
-  if (currentModalAction.value === "removeTable") {
-    emit("removeTableFromConfig", tableNameToRemove.value);
-    modalMessage.value = t("datasetViewRemovedFromViews") + "!";
-  } else if (currentModalAction.value === "addTable") {
-    tableNameToAdd.value = tableNameToAdd.value.trim();
-    emit("addTableToConfig", {
-      tableName: tableNameToAdd.value,
-      viewType: viewTypeToAdd.value,
-    });
-    modalMessage.value = t("datasetViewAddedToViews") + "!";
-    showModalDropdown.value = false;
-  }
-  showModalButtons.value = false;
-  setTimeout(() => {
-    showModal.value = false;
-    currentModalAction.value = null;
-    location.reload();
-  }, 3000);
-};
-
-const handleCancelButton = () => {
-  confirmButtonDisabled.value = false;
-  modalMessage.value = "";
-  showModal.value = false;
-  showModalDropdown.value = false;
-  showModalButtons.value = false;
-  tableNameToRemove.value = "";
-  if (currentModalAction.value === "addTable") {
-    tableNameToAdd.value = null;
-    viewTypeToAdd.value = (route.query.view_type as ViewType) || "map";
-  }
-  currentModalAction.value = null;
-};
-
-// Validation for confirm button; disable if tableNameToAdd is empty
-watch(tableNameToAdd, (newVal) => {
-  confirmButtonDisabled.value = !newVal;
-});
 </script>
 
 <template>
@@ -199,14 +128,14 @@ watch(tableNameToAdd, (newVal) => {
         v-model="activeViewFilter"
         :view-types="availableViewTypes"
       />
-      <button
+      <NuxtLink
+        to="/config/new"
         data-testid="add-new-dataset-view-button"
         class="flex items-center gap-2 px-4 py-2 sm:py-3 bg-violet-700 hover:bg-violet-800 text-white font-medium rounded-lg transition-colors duration-200"
-        @click="handleAddNewTable"
       >
         <Plus class="w-5 h-5" />
         {{ $t("addNewTable") }}
-      </button>
+      </NuxtLink>
     </div>
 
     <div
@@ -291,79 +220,14 @@ watch(tableNameToAdd, (newVal) => {
     </div>
 
     <div v-else-if="!sortedViewsConfig.length" class="flex justify-end mb-6">
-      <button
+      <NuxtLink
+        to="/config/new"
         data-testid="add-new-dataset-view-button"
         class="flex items-center gap-2 px-4 py-2 sm:py-3 bg-violet-700 hover:bg-violet-800 text-white font-medium rounded-lg transition-colors duration-200"
-        @click="handleAddNewTable"
       >
         <Plus class="w-5 h-5" />
         {{ $t("addNewTable") }}
-      </button>
-    </div>
-
-    <div
-      v-if="showModal"
-      data-testid="config-modal"
-      class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-    >
-      <div
-        data-testid="config-modal-content"
-        class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
-      >
-        <p data-testid="config-modal-message" class="mb-4 text-gray-700">
-          {{ modalMessage }}
-        </p>
-        <div v-if="showModalDropdown" class="mb-4">
-          <select
-            v-model="tableNameToAdd"
-            data-testid="config-modal-table-select"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-          >
-            <option v-for="table in tableNames" :key="table" :value="table">
-              {{ table }}
-            </option>
-          </select>
-          <div class="mt-4 flex flex-wrap gap-4">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input v-model="viewTypeToAdd" type="radio" value="map" />
-              <span>{{ $t("map") }}</span>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input v-model="viewTypeToAdd" type="radio" value="gallery" />
-              <span>{{ $t("gallery") }}</span>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input v-model="viewTypeToAdd" type="radio" value="alerts" />
-              <span>{{ $t("alerts") }}</span>
-            </label>
-          </div>
-        </div>
-        <div v-if="showModalButtons" class="flex gap-3 justify-end">
-          <button
-            data-testid="config-modal-confirm-button"
-            :disabled="confirmButtonDisabled"
-            class="px-4 py-2 font-medium rounded-lg transition-colors"
-            :class="{
-              'bg-gray-300 text-gray-500 cursor-not-allowed':
-                confirmButtonDisabled,
-              'bg-red-500 hover:bg-red-600 text-white':
-                currentModalAction !== 'addTable' && !confirmButtonDisabled,
-              'bg-violet-700 hover:bg-violet-800 text-white':
-                currentModalAction === 'addTable' && !confirmButtonDisabled,
-            }"
-            @click="handleConfirmButton"
-          >
-            {{ $t("confirm") }}
-          </button>
-          <button
-            data-testid="config-modal-cancel-button"
-            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
-            @click="handleCancelButton"
-          >
-            {{ $t("cancel") }}
-          </button>
-        </div>
-      </div>
+      </NuxtLink>
     </div>
   </div>
 </template>

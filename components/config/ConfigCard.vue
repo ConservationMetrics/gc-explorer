@@ -1,19 +1,39 @@
 <script setup lang="ts">
 import type { ViewConfig, ViewType } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
+import { supportsSecondaryDataset } from "@/utils/viewTypes";
 import ConfigPermissions from "./ConfigPermissions.vue";
 import ConfigCollapsibleSection from "./ConfigCollapsibleSection.vue";
 import { Check, Trash2 } from "lucide-vue-next";
 
-const props = defineProps<{
-  tableName: string;
-  viewType: ViewType;
-  viewConfig: ViewConfig;
-  secondaryDataset?: string | null;
-  configToCopy: ViewConfig | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    tableName: string;
+    viewType: ViewType;
+    viewConfig: ViewConfig;
+    secondaryDataset?: string | null;
+    configToCopy?: ViewConfig | null;
+    /** Create flow: allow Save even when the form matches the empty baseline. */
+    allowSaveWithoutChanges?: boolean;
+    showRemove?: boolean;
+    /** False when the parent blocks Save (e.g. missing primary or duplicate view). */
+    saveEnabled?: boolean;
+    secondaryEditable?: boolean;
+  }>(),
+  {
+    configToCopy: null,
+    allowSaveWithoutChanges: false,
+    showRemove: true,
+    saveEnabled: true,
+    secondaryEditable: false,
+  },
+);
 
-const emit = defineEmits(["submitConfig", "removeTableFromConfig"]);
+const emit = defineEmits([
+  "submitConfig",
+  "removeTableFromConfig",
+  "updateSecondaryDataset",
+]);
 
 // Set keys for the different sections of the config
 const mapConfigKeys = computed(() => [
@@ -86,16 +106,24 @@ const originalConfig = ref<ViewConfig>(cloneConfig(props.viewConfig));
 const localSecondaryDataset = ref(props.secondaryDataset ?? "");
 const originalSecondaryDataset = ref(localSecondaryDataset.value);
 
-// Watch for changes to viewConfig prop and update baseline after save
+// Parent owns secondary UI (under primary); keep local in sync for Save/dirty.
 watch(
-  () => [props.viewConfig, props.secondaryDataset] as const,
-  ([newConfig, newSecondaryDataset]) => {
+  () => props.secondaryDataset,
+  (newSecondaryDataset) => {
+    localSecondaryDataset.value = newSecondaryDataset ?? "";
+  },
+);
+
+// After save (or load), reset config + secondary baselines together.
+watch(
+  () => props.viewConfig,
+  (newConfig) => {
     if (newConfig) {
       replaceConfig(localConfig.value, newConfig);
       originalConfig.value = cloneConfig(newConfig);
+      localSecondaryDataset.value = props.secondaryDataset ?? "";
+      originalSecondaryDataset.value = localSecondaryDataset.value;
     }
-    localSecondaryDataset.value = newSecondaryDataset ?? "";
-    originalSecondaryDataset.value = localSecondaryDataset.value;
   },
   { deep: true },
 );
@@ -120,6 +148,9 @@ const shouldShowConfigAlerts = computed(() => props.viewType === "alerts");
 const shouldShowConfigFilters = computed(
   () => props.viewType === "map" || props.viewType === "gallery",
 );
+const shouldUseSecondaryDataset = computed(() =>
+  supportsSecondaryDataset(props.viewType),
+);
 
 // Form validations and helpers
 const isChanged = computed(() => {
@@ -133,7 +164,8 @@ const isChanged = computed(() => {
     JSON.stringify(localConfigFiltered) !==
     JSON.stringify(originalConfigFiltered);
   const secondaryDatasetChanged =
-    shouldShowConfigAlerts.value &&
+    props.secondaryEditable &&
+    shouldUseSecondaryDataset.value &&
     localSecondaryDataset.value.trim() !==
       originalSecondaryDataset.value.trim();
 
@@ -152,6 +184,13 @@ const isFormValid = computed(() => {
   return isMapConfigValid && isPermissionValid.value;
 });
 
+const canSubmit = computed(
+  () =>
+    props.saveEnabled &&
+    isFormValid.value &&
+    (props.allowSaveWithoutChanges || isChanged.value),
+);
+
 // Handlers for updating config and form submission
 const handleConfigUpdate = (partialUpdate: Partial<ViewConfig>) => {
   Object.assign(localConfig.value, partialUpdate);
@@ -159,6 +198,7 @@ const handleConfigUpdate = (partialUpdate: Partial<ViewConfig>) => {
 
 const handleSecondaryDatasetUpdate = (value: string) => {
   localSecondaryDataset.value = value;
+  emit("updateSecondaryDataset", value);
 };
 
 const handlePermissionValidation = (isValid: boolean) => {
@@ -190,7 +230,7 @@ const handleSubmit = () => {
   emit("submitConfig", {
     tableName: props.tableName,
     config: localConfig.value,
-    secondaryDataset: shouldShowConfigAlerts.value
+    secondaryDataset: shouldUseSecondaryDataset.value
       ? localSecondaryDataset.value
       : null,
   });
@@ -248,6 +288,7 @@ const handleSubmit = () => {
             :views="viewTypeList"
             :config="localConfig"
             :secondary-dataset="localSecondaryDataset"
+            :show-mapeo-table-field="secondaryEditable"
             :keys="alertKeys"
             @update-config="handleConfigUpdate"
             @update-secondary-dataset="handleSecondaryDatasetUpdate"
@@ -294,19 +335,18 @@ const handleSubmit = () => {
           <button
             type="submit"
             data-testid="config-submit-button"
-            :disabled="!isChanged || !isFormValid"
+            :disabled="!canSubmit"
             class="flex items-center gap-2 px-6 py-3 font-medium rounded-lg transition-colors duration-200"
             :class="{
-              'bg-gray-300 text-gray-500 cursor-not-allowed':
-                !isChanged || !isFormValid,
-              'bg-violet-700 hover:bg-violet-800 text-white':
-                isChanged && isFormValid,
+              'bg-gray-300 text-gray-500 cursor-not-allowed': !canSubmit,
+              'bg-violet-700 hover:bg-violet-800 text-white': canSubmit,
             }"
           >
             <Check class="w-5 h-5" />
             {{ $t("save") }}
           </button>
           <button
+            v-if="showRemove"
             type="button"
             data-testid="config-remove-button"
             class="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors duration-200"
