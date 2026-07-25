@@ -58,7 +58,7 @@ export async function ensureMapFormCanSubmit(page: Page): Promise<void> {
   if ((await tokenInput.count()) > 0) {
     const tokenValue = await tokenInput.inputValue();
     if (!tokenValue?.trim()) {
-      await tokenInput.fill("pk.test_e2e_mapbox_access_token_value");
+      await tokenInput.fill("pk.ey_e2e_mapbox_access_token_value");
       await page.waitForTimeout(200);
     }
   }

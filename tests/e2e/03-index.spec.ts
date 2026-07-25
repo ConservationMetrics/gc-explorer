@@ -88,7 +88,10 @@ test("index page - one card per view for datasets with multiple views", async ({
 
   // Seed has bcmform_responses with both map and gallery views — expect one card each.
   const bcmformCards = page.locator("[data-testid='dataset-card']").filter({
-    has: page.getByRole("heading", { name: /bcmform_responses/i }),
+    has: page.getByRole("heading", {
+      name: "bcmform_responses",
+      exact: true,
+    }),
   });
   await expect(bcmformCards).toHaveCount(2);
 

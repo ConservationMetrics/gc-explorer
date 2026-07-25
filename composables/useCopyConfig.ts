@@ -1,9 +1,12 @@
 import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
+import type { MaybeRefOrGetter } from "vue";
+import { toValue } from "vue";
 
 export type CopyConfigSource = {
   key: string;
   label: string;
   viewConfig: ViewConfig;
+  secondaryDataset?: string | null;
 };
 
 /**
@@ -23,36 +26,42 @@ export const copySourceKey = (
  * Manages modal state, source selection, and config cloning.
  *
  * @param {Ref<ViewConfigRow[]>} viewRows - All configured view rows.
- * @param {string} currentDataset - Primary dataset of the view being edited.
- * @param {Ref<ViewType | undefined>} currentViewType - View type of the view being edited.
+ * @param {MaybeRefOrGetter<string>} currentDataset - Primary of the view being
+ *   created/edited (string or ref — ref is needed on create where primary changes).
+ * @param {MaybeRefOrGetter<ViewType | undefined>} currentViewType - View type
+ *   being created/edited.
  * @returns {object} Reactive state and handlers for the copy config modal.
  */
 export const useCopyConfig = (
   viewRows: Ref<ViewConfigRow[]>,
-  currentDataset: string,
-  currentViewType: Ref<ViewType | undefined>,
+  currentDataset: MaybeRefOrGetter<string>,
+  currentViewType: MaybeRefOrGetter<ViewType | undefined>,
 ) => {
   const showCopyModal = ref(false);
   const selectedCopySource = ref<string>("");
   const configToCopy = ref<ViewConfig | null>(null);
+  const secondaryDatasetToCopy = ref<string | null>(null);
 
   const otherCopySources = computed<CopyConfigSource[]>(() => {
-    const type = currentViewType.value;
+    const type = toValue(currentViewType);
     if (!type) {
       return [];
     }
+
+    const primary = toValue(currentDataset);
 
     return viewRows.value
       .filter(
         (row) =>
           row.viewType === type &&
-          row.primaryDataset !== currentDataset &&
+          row.primaryDataset !== primary &&
           Object.keys(row.viewConfig).length > 0,
       )
       .map((row) => ({
         key: copySourceKey(row.primaryDataset, row.viewType),
         label: row.viewName || row.primaryDataset,
         viewConfig: row.viewConfig,
+        secondaryDataset: row.secondaryDataset ?? null,
       }))
       .sort((first, second) => first.label.localeCompare(second.label));
   });
@@ -69,6 +78,7 @@ export const useCopyConfig = (
     );
     if (source) {
       configToCopy.value = JSON.parse(JSON.stringify(source.viewConfig));
+      secondaryDatasetToCopy.value = source.secondaryDataset ?? null;
     }
     showCopyModal.value = false;
   };
@@ -82,6 +92,7 @@ export const useCopyConfig = (
     showCopyModal,
     selectedCopySource,
     configToCopy,
+    secondaryDatasetToCopy,
     otherCopySources,
     handleOpenCopyModal,
     handleConfirmCopy,
