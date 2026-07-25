@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import type { ViewConfig, ViewType } from "@/types";
+import {
+  supportsSecondaryDataset,
+  type ViewConfig,
+  type ViewType,
+} from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
-import { supportsSecondaryDataset } from "@/utils/viewTypes";
 import ConfigPermissions from "./ConfigPermissions.vue";
 import ConfigCollapsibleSection from "./ConfigCollapsibleSection.vue";
 import { Check, Trash2 } from "lucide-vue-next";

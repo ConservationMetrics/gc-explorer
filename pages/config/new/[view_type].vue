@@ -3,12 +3,17 @@ import ConfigCard from "@/components/config/ConfigCard.vue";
 import CopyConfigControl from "@/components/config/CopyConfigControl.vue";
 import SavedModal from "@/components/config/SavedModal.vue";
 import SelectDatasetField from "@/components/config/SelectDatasetField.vue";
-import ViewTypePill from "@/components/config/ViewTypePill.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
+import ViewTypePill from "@/components/shared/ViewTypePill.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import { useDuplicateViewCheck } from "@/composables/useDuplicateViewCheck";
-import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
-import { supportsSecondaryDataset, VIEW_TYPES } from "@/utils/viewTypes";
+import {
+  supportsSecondaryDataset,
+  VIEW_TYPES,
+  type ViewConfig,
+  type ViewConfigRow,
+  type ViewType,
+} from "@/types";
 import { ChevronLeft } from "lucide-vue-next";
 
 const route = useRoute();

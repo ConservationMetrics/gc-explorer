@@ -2,8 +2,8 @@
 import ConfigCard from "@/components/config/ConfigCard.vue";
 import CopyConfigControl from "@/components/config/CopyConfigControl.vue";
 import SavedModal from "@/components/config/SavedModal.vue";
-import ViewTypePill from "@/components/config/ViewTypePill.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
+import ViewTypePill from "@/components/shared/ViewTypePill.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
 import { ChevronLeft, Eye } from "lucide-vue-next";

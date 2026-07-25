@@ -1,18 +1,18 @@
 import { and, eq, sql } from "drizzle-orm";
 
-import type {
-  ColumnEntry,
-  DataEntry,
-  FetchDataOptions,
-  RouteLevelPermission,
-  Views,
-  ViewConfig,
-  ViewConfigRow,
-  ViewTables,
-  ViewType,
+import {
+  supportsSecondaryDataset,
+  type ColumnEntry,
+  type DataEntry,
+  type FetchDataOptions,
+  type RouteLevelPermission,
+  type Views,
+  type ViewConfig,
+  type ViewConfigRow,
+  type ViewTables,
+  type ViewType,
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
-import { supportsSecondaryDataset } from "@/utils/viewTypes";
 
 import { viewConfig, publicViews } from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";

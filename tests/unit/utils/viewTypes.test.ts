@@ -4,7 +4,7 @@ import {
   SECONDARY_DATASET_VIEW_TYPES,
   supportsSecondaryDataset,
   VIEW_TYPES,
-} from "@/utils/viewTypes";
+} from "@/types";
 
 describe("view type capabilities", () => {
   it("declares every supported view type", () => {
