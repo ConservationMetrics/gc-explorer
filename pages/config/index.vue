@@ -5,5 +5,5 @@ definePageMeta({ layout: "explorer" });
 </script>
 
 <template>
-  <div />
+  <div></div>
 </template>

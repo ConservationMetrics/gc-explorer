@@ -7,6 +7,7 @@ import SearchBar from "@/components/shared/SearchBar.vue";
 import ViewTypeFilter from "@/components/shared/ViewTypeFilter.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
 import { matchesSearchQuery, matchesViewTypeFilter } from "@/utils/viewFilters";
+import { Plus } from "lucide-vue-next";
 
 const viewRows = ref<ViewConfigRow[]>([]);
 const availableTables = ref<string[]>([]);
@@ -236,6 +237,7 @@ definePageMeta({ layout: "explorer" });
           data-testid="add-new-dataset-view-button"
           class="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer"
         >
+          <Plus class="w-4 h-4 mr-2" />
           {{ $t("addNewTable") }}
         </a>
       </div>

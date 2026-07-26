@@ -60,6 +60,7 @@ test("config page - create new view via type-first flow and edit it", async ({
     await page.waitForTimeout(300);
   }
   await ensureMapFormCanSubmit(page);
+  await page.locator('input[type="radio"][value="anyone"]').check();
 
   const submitButton = page.locator("[data-testid='config-submit-button']");
   await expect(submitButton).toBeEnabled({ timeout: 10000 });

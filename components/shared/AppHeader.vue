@@ -114,7 +114,7 @@ const shouldShowConfigLink = computed(() => {
           <div
             class="absolute right-0 mt-2 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap"
           >
-            {{ $t("addNewTable") || "Add new dataset view" }}
+            {{ $t("addNewTable") }}
           </div>
         </div>
 
@@ -172,9 +172,7 @@ const shouldShowConfigLink = computed(() => {
         @click="mobileMenuOpen = false"
       >
         <SlidersHorizontal class="w-5 h-5 text-gray-600" />
-        <span class="text-sm text-gray-700">{{
-          $t("addNewTable") || "Add new dataset view"
-        }}</span>
+        <span class="text-sm text-gray-700">{{ $t("addNewTable") }}</span>
       </NuxtLink>
 
       <!-- Language Picker -->
