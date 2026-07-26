@@ -373,9 +373,15 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
     expect(replacement).toBeTruthy();
     await selector.selectOption(replacement!);
     await expect(submitButton).toBeEnabled();
+    const saveResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/config/update_config/") &&
+        response.request().method() === "POST",
+    );
     await submitButton.click();
+    const saveResponse = await saveResponsePromise;
+    expect(saveResponse.ok()).toBe(true);
     await expect(metadata).toHaveText(replacement!);
-    await expect(submitButton).toBeDisabled();
 
     await page.reload();
     await page.waitForSelector("form", { timeout: 15000 });
@@ -384,8 +390,14 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
 
     await selector.selectOption(originalValue);
     await expect(submitButton).toBeEnabled();
+    const restoreResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/config/update_config/") &&
+        response.request().method() === "POST",
+    );
     await submitButton.click();
-    await expect(submitButton).toBeDisabled();
+    const restoreResponse = await restoreResponsePromise;
+    expect(restoreResponse.ok()).toBe(true);
     await page.reload();
     await page.waitForSelector("form", { timeout: 15000 });
     await expect(selector).toHaveValue(originalValue);

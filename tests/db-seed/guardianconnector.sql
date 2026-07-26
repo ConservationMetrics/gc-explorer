@@ -19,7 +19,7 @@ INSERT INTO views (view_name, view_type, primary_dataset, secondary_dataset, vie
     'map',
     'bcmform_responses',
     NULL,
-    '{"MAPBOX_STYLE":{"version":8,"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"#f8fafc"}}]},"MAPBOX_ACCESS_TOKEN":"{MAPBOX_ACCESS_TOKEN}","MAPBOX_ZOOM":16,"MAPBOX_CENTER_LATITUDE":"3.44704","MAPBOX_CENTER_LONGITUDE":"-76.53995","MAPBOX_PROJECTION":"globe","MAPBOX_BEARING":0,"MAPBOX_PITCH":0,"FRONT_END_FILTER_COLUMN":"community","MEDIA_BASE_PATH":"{MEDIA_BASE_PATH}","ROUTE_LEVEL_PERMISSION":"member"}'
+    '{"MAPBOX_STYLE":{"version":8,"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"#f8fafc"}}]},"MAPBOX_BASEMAPS":"[{\"name\":\"Default Style\",\"style\":\"mapbox://styles/mapbox/satellite-streets-v12\",\"isDefault\":true}]","MAPBOX_ACCESS_TOKEN":"pk.ey_e2e_mapbox_access_token_value","MAPBOX_ZOOM":16,"MAPBOX_CENTER_LATITUDE":"3.44704","MAPBOX_CENTER_LONGITUDE":"-76.53995","MAPBOX_PROJECTION":"globe","MAPBOX_BEARING":0,"MAPBOX_PITCH":0,"FRONT_END_FILTER_COLUMN":"community","MEDIA_BASE_PATH":"http://localhost:8080/test-media","ROUTE_LEVEL_PERMISSION":"member"}'
   ),
   (
     'bcmform_responses',
@@ -33,7 +33,7 @@ INSERT INTO views (view_name, view_type, primary_dataset, secondary_dataset, vie
     'alerts',
     'fake_alerts',
     'mapeo_data',
-    '{"EMBED_MEDIA":"YES","MEDIA_BASE_PATH_ALERTS":"","MEDIA_BASE_PATH":"","LOGO_URL":"https://conservationmetrics.com/wp-content/themes/conservation-metrics/images/logo-conservation-metrics.png","MAPBOX_STYLE":{"version":8,"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"#f8fafc"}}]},"MAPBOX_PROJECTION":"globe","MAPBOX_CENTER_LATITUDE":"38","MAPBOX_CENTER_LONGITUDE":"-79","MAPBOX_ZOOM":7,"MAPBOX_PITCH":0,"MAPBOX_BEARING":0,"MAPBOX_3D":false,"MAPEO_CATEGORY_IDS":"threat","MAP_LEGEND_LAYER_IDS":"road-primary,aerialway","ALERT_RESOURCES":"NO","MAPBOX_ACCESS_TOKEN":"{MAPBOX_ACCESS_TOKEN}","PLANET_API_KEY":"{PLANET_API_KEY}","ROUTE_LEVEL_PERMISSION":"anyone"}'
+    '{"EMBED_MEDIA":"YES","MEDIA_BASE_PATH_ALERTS":"","MEDIA_BASE_PATH":"","LOGO_URL":"https://conservationmetrics.com/wp-content/themes/conservation-metrics/images/logo-conservation-metrics.png","MAPBOX_STYLE":{"version":8,"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"#f8fafc"}}]},"MAPBOX_BASEMAPS":"[{\"name\":\"Default Style\",\"style\":\"mapbox://styles/mapbox/satellite-streets-v12\",\"isDefault\":true}]","MAPBOX_PROJECTION":"globe","MAPBOX_CENTER_LATITUDE":"38","MAPBOX_CENTER_LONGITUDE":"-79","MAPBOX_ZOOM":7,"MAPBOX_PITCH":0,"MAPBOX_BEARING":0,"MAPBOX_3D":false,"MAPEO_CATEGORY_IDS":"threat","MAP_LEGEND_LAYER_IDS":"road-primary,aerialway","ALERT_RESOURCES":"NO","MAPBOX_ACCESS_TOKEN":"pk.ey_e2e_mapbox_access_token_value","PLANET_API_KEY":"{PLANET_API_KEY}","ROUTE_LEVEL_PERMISSION":"anyone"}'
   ),
   (
     'gfw_alerts_viirs',
