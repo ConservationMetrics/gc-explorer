@@ -16,7 +16,7 @@ const {
 } = useRuntimeConfig();
 
 const { loggedIn, user } = useUserSession();
-const { error: showErrorToast } = useToast();
+const { error: showErrorToast, info: showInfoToast } = useToast();
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
@@ -173,7 +173,24 @@ onMounted(async () => {
         "top-center",
       );
     }, 200);
-    router.replace({ path: route.path, query: {} });
+    const query = { ...route.query };
+    delete query.reason;
+    router.replace({ path: route.path, query });
+    return;
+  }
+
+  if (route.query.reason === "moved") {
+    setTimeout(() => {
+      showInfoToast(
+        t("pageMovedTitle"),
+        t("pageMovedMessage"),
+        8000,
+        "top-center",
+      );
+    }, 200);
+    const query = { ...route.query };
+    delete query.reason;
+    router.replace({ path: route.path, query });
   }
 });
 
