@@ -222,6 +222,8 @@
   "or": "or",
   "orange": "orange",
   "other": "Other",
+  "pageMovedMessage": "This page has moved. Please update your bookmarks.",
+  "pageMovedTitle": "Page moved",
   "password": "Password",
   "passwordIncorrect": "The password you entered is incorrect",
   "permissionLevel": "Permission level",

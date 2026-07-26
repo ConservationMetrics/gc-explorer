@@ -218,6 +218,8 @@
   "or": "o",
   "orange": "naranja",
   "other": "Otro",
+  "pageMovedMessage": "Esta página se ha movido. Actualice sus favoritos.",
+  "pageMovedTitle": "Página movida",
   "password": "Contraseña",
   "passwordIncorrect": "La contraseña que ingresó es incorrecta",
   "permissionLevel": "Nivel de permiso",
