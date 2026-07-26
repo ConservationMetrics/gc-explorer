@@ -293,9 +293,7 @@ test("config page - submit configuration changes", async ({
       await descriptionInput.fill("Test description");
       await page.waitForTimeout(500);
 
-      const submitButton = page.locator(
-        "[data-testid='config-submit-button']",
-      );
+      const submitButton = page.locator("[data-testid='config-submit-button']");
       await submitButton.click();
       const savedModal = page
         .locator("text=Saved!")
