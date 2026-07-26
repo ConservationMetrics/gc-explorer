@@ -333,6 +333,64 @@ test("config page - view metadata displays current view type outside ConfigCard"
   await expect(viewsSection).toHaveCount(0);
 });
 
+test("config page - edit secondary dataset for Alert and Map views", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  const views = [
+    {
+      path: "/config/fake_alerts?view_type=alerts",
+      primaryDataset: "fake_alerts",
+    },
+    {
+      path: "/config/bcmform_responses?view_type=map",
+      primaryDataset: "bcmform_responses",
+    },
+  ];
+
+  for (const view of views) {
+    await page.goto(view.path);
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("form", { timeout: 15000 });
+
+    const selector = page.locator(
+      "[data-testid='edit-secondary-dataset-select']",
+    );
+    const metadata = page.locator("[data-testid='view-metadata-secondary']");
+    const submitButton = page.locator("[data-testid='config-submit-button']");
+    const originalValue = await selector.inputValue();
+    const optionValues = await selector
+      .locator("option")
+      .evaluateAll((options) =>
+        options.map((option) => (option as HTMLOptionElement).value),
+      );
+    const replacement = optionValues.find(
+      (value) =>
+        value !== "" &&
+        value !== originalValue &&
+        value !== view.primaryDataset,
+    );
+
+    expect(replacement).toBeTruthy();
+    await selector.selectOption(replacement!);
+    await expect(submitButton).toBeEnabled();
+    await submitButton.click();
+    await expect(metadata).toHaveText(replacement!);
+
+    await page.reload();
+    await page.waitForSelector("form", { timeout: 15000 });
+    await expect(selector).toHaveValue(replacement!);
+    await expect(metadata).toHaveText(replacement!);
+
+    await selector.selectOption(originalValue);
+    await expect(submitButton).toBeEnabled();
+    await submitButton.click();
+    await expect(submitButton).toBeDisabled();
+    await page.reload();
+    await page.waitForSelector("form", { timeout: 15000 });
+    await expect(selector).toHaveValue(originalValue);
+  }
+});
+
 test("config page - conditional form sections based on views", async ({
   authenticatedPageAsAdmin: page,
 }) => {

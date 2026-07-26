@@ -256,7 +256,6 @@ definePageMeta({ layout: "explorer" });
         :save-enabled="saveEnabled"
         :secondary-editable="true"
         @submit-config="submitConfig"
-        @update-secondary-dataset="handleSecondaryDatasetUpdate"
       />
     </template>
 

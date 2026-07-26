@@ -2,10 +2,16 @@
 import ConfigCard from "@/components/config/ConfigCard.vue";
 import CopyConfigControl from "@/components/config/CopyConfigControl.vue";
 import SavedModal from "@/components/config/SavedModal.vue";
+import SelectDatasetField from "@/components/config/SelectDatasetField.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import ViewTypePill from "@/components/shared/ViewTypePill.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
-import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
+import {
+  supportsSecondaryDataset,
+  type ViewConfig,
+  type ViewConfigRow,
+  type ViewType,
+} from "@/types";
 import { ChevronLeft, Eye } from "lucide-vue-next";
 
 const route = useRoute();
@@ -55,6 +61,10 @@ if (data.value && !error.value) {
 }
 
 const resolvedViewType = computed(() => viewType.value ?? editedViewType.value);
+const availableTables = computed(() => data.value?.availableTables ?? []);
+const showsSecondaryDataset = computed(() =>
+  supportsSecondaryDataset(resolvedViewType.value),
+);
 
 const showSavedModal = ref(false);
 
@@ -258,6 +268,18 @@ definePageMeta({ layout: "explorer" });
               </dd>
             </div>
           </dl>
+          <SelectDatasetField
+            v-if="showsSecondaryDataset"
+            id="edit-view-secondaryDataset-select"
+            :model-value="secondaryDataset"
+            :label="$t('secondaryDatasetOptional')"
+            :options="availableTables"
+            :placeholder="$t('selectSecondaryDataset')"
+            test-id="edit-secondary-dataset-select"
+            :exclude-value="dataset"
+            class="mt-4 max-w-2xl"
+            @update:model-value="handleSecondaryDatasetUpdate"
+          />
         </div>
         <div
           v-if="errorMessage"
@@ -275,7 +297,6 @@ definePageMeta({ layout: "explorer" });
           :secondary-editable="true"
           @submit-config="submitConfig"
           @remove-table-from-config="handleRemoveTableFromConfig"
-          @update-secondary-dataset="handleSecondaryDatasetUpdate"
         />
       </div>
       <div
