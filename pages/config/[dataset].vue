@@ -48,7 +48,7 @@ if (data.value && !error.value) {
     dataFetched.value = true;
   } else {
     console.warn(`Dataset "${dataset}" not found in config`);
-    await navigateTo("/config");
+    await navigateTo("/");
   }
 } else {
   console.error("Error fetching data:", error.value);
@@ -136,7 +136,7 @@ const handleConfirmRemove = async () => {
       // Wait 3 seconds to show success message, then navigate
       setTimeout(async () => {
         showModal.value = false;
-        await navigateTo("/config");
+        await navigateTo("/");
       }, 3000);
     } catch (error) {
       console.error("Error removing table from config:", error);
@@ -199,11 +199,11 @@ definePageMeta({ layout: "explorer" });
         <div class="mb-6">
           <div class="flex items-center justify-between mb-4">
             <NuxtLink
-              to="/config"
+              to="/"
               class="inline-flex items-center gap-2 text-violet-600 hover:text-violet-800 font-medium transition-colors"
             >
               <ChevronLeft class="w-5 h-5" />
-              {{ $t("configuration") }}
+              {{ $t("availableViews") }}
             </NuxtLink>
             <NuxtLink
               v-if="resolvedViewType"

@@ -131,6 +131,21 @@ test("index page - admin gear links to config edit for that view", async ({
   await expect(page.locator("form")).toBeVisible({ timeout: 15000 });
 });
 
+test("index page - add new dataset view link navigates to create flow", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("main", { timeout: 15000 });
+
+  const addButton = page.locator(
+    "main a[data-testid='add-new-dataset-view-button']",
+  );
+  await expect(addButton).toBeVisible({ timeout: 10000 });
+  await addButton.click();
+  await page.waitForURL("**/config/new", { timeout: 10000 });
+});
+
 test("index page - view type filter buttons are visible and functional", async ({
   authenticatedPageAsAdmin: page,
 }) => {

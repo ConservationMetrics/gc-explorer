@@ -3,6 +3,10 @@ import type { Page } from "@playwright/test";
 /** Seeded map view used when no unconfigured datasets remain. */
 export const SEEDED_MAP_CONFIG_PATH = "/config/bcmform_responses?view_type=map";
 
+/** Seeded gallery view used for copy-config and gallery edit tests. */
+export const SEEDED_GALLERY_CONFIG_PATH =
+  "/config/bcmform_responses?view_type=gallery";
+
 /**
  * Expands the Map collapsible section when it is present and collapsed.
  *
@@ -41,6 +45,19 @@ export async function openMapConfigEditPage(page: Page): Promise<string> {
   await page.waitForLoadState("networkidle");
   await page.waitForSelector("form", { timeout: 15000 });
   await expandMapSection(page);
+  return "bcmform_responses";
+}
+
+/**
+ * Opens a seeded gallery view edit page.
+ *
+ * @param {Page} page - Playwright page.
+ * @returns {Promise<string>} Dataset name opened for editing.
+ */
+export async function openGalleryConfigEditPage(page: Page): Promise<string> {
+  await page.goto(SEEDED_GALLERY_CONFIG_PATH);
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("form", { timeout: 15000 });
   return "bcmform_responses";
 }
 

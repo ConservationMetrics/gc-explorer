@@ -222,6 +222,8 @@
   "or": "หรือ",
   "orange": "ส้ม",
   "other": "อื่น ๆ",
+  "pageMovedMessage": "หน้านี้ได้ย้ายแล้ว กรุณาอัปเดตบุ๊กมาร์กของคุณ",
+  "pageMovedTitle": "หน้าได้ย้ายแล้ว",
   "password": "รหัสผ่าน",
   "passwordIncorrect": "รหัสผ่านที่คุณป้อนไม่ถูกต้อง",
   "permissionLevel": "ระดับสิทธิ",
