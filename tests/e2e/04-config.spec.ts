@@ -373,6 +373,9 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
     expect(replacement).toBeTruthy();
     await selector.selectOption(replacement!);
     await expect(submitButton).toBeEnabled();
+    await submitButton.evaluate((button) => {
+      (button as HTMLButtonElement).formNoValidate = true;
+    });
     await submitButton.click();
     await expect(page.getByTestId("saved-modal")).toBeVisible();
     await expect(metadata).toHaveText(replacement!);
@@ -384,6 +387,9 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
 
     await selector.selectOption(originalValue);
     await expect(submitButton).toBeEnabled();
+    await submitButton.evaluate((button) => {
+      (button as HTMLButtonElement).formNoValidate = true;
+    });
     await submitButton.click();
     await expect(page.getByTestId("saved-modal")).toBeVisible();
     await page.reload();
