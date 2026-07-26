@@ -60,11 +60,11 @@ definePageMeta({ layout: "explorer" });
 <template>
   <div class="max-w-3xl mx-auto p-3 sm:p-6 w-full">
     <NuxtLink
-      to="/config"
+      to="/"
       class="inline-flex items-center gap-2 text-violet-600 hover:text-violet-800 font-medium mb-4 transition-colors"
     >
       <ChevronLeft class="w-5 h-5" />
-      {{ $t("datasetViewManagement") }}
+      {{ $t("availableViews") }}
     </NuxtLink>
 
     <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
@@ -145,7 +145,7 @@ definePageMeta({ layout: "explorer" });
           {{ $t("continue") }}
         </button>
         <NuxtLink
-          to="/config"
+          to="/"
           data-testid="create-view-cancel"
           class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
         >

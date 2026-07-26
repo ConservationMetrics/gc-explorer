@@ -104,7 +104,8 @@ const shouldShowConfigLink = computed(() => {
         <!-- Config Management -->
         <div v-if="shouldShowConfigLink" class="relative group">
           <NuxtLink
-            to="/config"
+            to="/config/new"
+            data-testid="add-new-dataset-view-button"
             class="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
           >
             <SlidersHorizontal class="w-5 h-5 text-gray-600" />
@@ -113,7 +114,7 @@ const shouldShowConfigLink = computed(() => {
           <div
             class="absolute right-0 mt-2 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap"
           >
-            {{ $t("manageDatasets") || "Manage Datasets" }}
+            {{ $t("addNewTable") || "Add new dataset view" }}
           </div>
         </div>
 
@@ -165,13 +166,14 @@ const shouldShowConfigLink = computed(() => {
       <!-- Config Management (if admin) -->
       <NuxtLink
         v-if="shouldShowConfigLink"
-        to="/config"
+        to="/config/new"
+        data-testid="add-new-dataset-view-button"
         class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-violet-50 transition-colors mb-2"
         @click="mobileMenuOpen = false"
       >
         <SlidersHorizontal class="w-5 h-5 text-gray-600" />
         <span class="text-sm text-gray-700">{{
-          $t("manageDatasets") || "Manage Datasets"
+          $t("addNewTable") || "Add new dataset view"
         }}</span>
       </NuxtLink>
 

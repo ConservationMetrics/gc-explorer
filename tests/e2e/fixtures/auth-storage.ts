@@ -22,7 +22,7 @@ import fs from "fs";
  * import { test, expect } from "./fixtures/auth-storage";
  *
  * test("admin can access config page", async ({ authenticatedPageAsAdmin }) => {
- *   await authenticatedPageAsAdmin.goto("/config");
+ *   await authenticatedPageAsAdmin.goto("/config/new");
  *   await expect(authenticatedPageAsAdmin.getByText("Configuration")).toBeVisible();
  * });
  * ```

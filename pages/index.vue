@@ -203,7 +203,7 @@ definePageMeta({ layout: "explorer" });
       <!-- Search Bar -->
       <SearchBar v-model="searchQuery" :placeholder="$t('searchDatasets')" />
 
-      <!-- View Type Filter & Manage Datasets -->
+      <!-- View Type Filter & Add new dataset view -->
       <div
         v-if="accessibleViews.length"
         class="flex flex-wrap items-center justify-between gap-3 mb-4"
@@ -215,10 +215,11 @@ definePageMeta({ layout: "explorer" });
         <!-- NuxtLink messes up the layout, hence the use of a regular anchor tag -->
         <a
           v-if="shouldShowConfigLink"
-          href="/config"
+          href="/config/new"
+          data-testid="add-new-dataset-view-button"
           class="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer"
         >
-          {{ $t("manageDatasets") }}
+          {{ $t("addNewTable") }}
         </a>
       </div>
 
