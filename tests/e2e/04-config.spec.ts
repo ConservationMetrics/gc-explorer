@@ -375,6 +375,7 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
     await expect(submitButton).toBeEnabled();
     await submitButton.click();
     await expect(metadata).toHaveText(replacement!);
+    await expect(submitButton).toBeDisabled();
 
     await page.reload();
     await page.waitForSelector("form", { timeout: 15000 });
