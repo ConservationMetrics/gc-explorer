@@ -30,7 +30,7 @@ test("gallery page - displays gallery with media files", async ({
 
   expect(galleryCard).not.toBeNull();
 
-  // 4. Click "Open Dataset View" on the card with gallery tag
+  // 4. Click "Open Gallery" on the card with gallery tag
   const openProjectButton = galleryCard!.locator(
     "[data-testid='open-dataset-view-link']",
   );

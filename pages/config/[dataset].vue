@@ -221,7 +221,15 @@ definePageMeta({ layout: "explorer" });
               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors"
             >
               <Eye class="w-4 h-4" />
-              {{ $t("viewDataset") }}
+              {{
+                $t("openView", {
+                  view: $t(
+                    resolvedViewType === "alerts"
+                      ? "alertsDashboard"
+                      : resolvedViewType,
+                  ),
+                })
+              }}
             </NuxtLink>
           </div>
           <div class="flex items-center justify-between">
@@ -241,7 +249,7 @@ definePageMeta({ layout: "explorer" });
           <dl
             v-if="resolvedViewType"
             data-testid="view-metadata"
-            class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 sm:max-w-2xl text-sm"
+            class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 sm:max-w-2xl text-sm"
           >
             <div>
               <dt class="text-gray-500">{{ $t("view") }}</dt>
@@ -249,22 +257,14 @@ definePageMeta({ layout: "explorer" });
                 <ViewTypePill :view-type="resolvedViewType" />
               </dd>
             </div>
-            <div>
+            <div class="min-w-0">
               <dt class="text-gray-500">{{ $t("primaryDatasetLabel") }}</dt>
               <dd
                 data-testid="view-metadata-primary"
-                class="mt-1 font-medium text-gray-900"
+                class="mt-1 font-medium text-gray-900 break-words"
+                style="overflow-wrap: anywhere"
               >
                 {{ dataset }}
-              </dd>
-            </div>
-            <div>
-              <dt class="text-gray-500">{{ $t("secondaryDatasetLabel") }}</dt>
-              <dd
-                data-testid="view-metadata-secondary"
-                class="mt-1 font-medium text-gray-900"
-              >
-                {{ secondaryDataset || $t("none") }}
               </dd>
             </div>
           </dl>

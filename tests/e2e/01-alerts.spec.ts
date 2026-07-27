@@ -41,7 +41,7 @@ test("alerts dashboard - layer visibility toggles", async ({
 
   expect(alertsCard).not.toBeNull();
 
-  // 5. Click "Open Dataset View" on the card with alerts tag
+  // 5. Click "Open Alerts Dashboard" on the card with alerts tag
   const openProjectButton = alertsCard!.locator(
     "[data-testid='open-dataset-view-link']",
   );
@@ -362,7 +362,7 @@ test("alerts dashboard - LineString buffer click behavior", async ({
 
   expect(alertsCard).not.toBeNull();
 
-  // 5. Click "Open Dataset View" on the card with alerts tag
+  // 5. Click "Open Alerts Dashboard" on the card with alerts tag
   const openProjectButton = alertsCard!.locator(
     "[data-testid='open-dataset-view-link']",
   );
@@ -490,7 +490,7 @@ test("alerts dashboard - geometry type specific interactions", async ({
 
   expect(alertsCard).not.toBeNull();
 
-  // 5. Click "Open Dataset View" on the card with alerts tag
+  // 5. Click "Open Alerts Dashboard" on the card with alerts tag
   const openProjectButton = alertsCard!.locator(
     "[data-testid='open-dataset-view-link']",
   );
@@ -692,7 +692,7 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
 
   expect(alertsCard).not.toBeNull();
 
-  // 5. Click "Open Dataset View" on the card with alerts tag
+  // 5. Click "Open Alerts Dashboard" on the card with alerts tag
   const openProjectButton = alertsCard!.locator(
     "[data-testid='open-dataset-view-link']",
   );

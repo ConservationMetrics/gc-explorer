@@ -319,12 +319,15 @@ test("config page - view metadata displays current view type outside ConfigCard"
   await expect(viewTypeDisplay).toBeVisible({ timeout: 10000 });
   await expect(viewTypeDisplay).toHaveText(/^(Map|Gallery|Alerts)$/i);
 
-  await expect(
-    page.locator("[data-testid='view-metadata-primary']"),
-  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open Map" })).toBeVisible();
+
+  const primaryMetadata = page.locator("[data-testid='view-metadata-primary']");
+  await expect(primaryMetadata).toBeVisible();
+  await expect(primaryMetadata).toHaveCSS("overflow-wrap", "anywhere");
   await expect(
     page.locator("[data-testid='view-metadata-secondary']"),
-  ).toBeVisible();
+  ).toHaveCount(0);
+  await expect(page.getByLabel("Secondary dataset (optional)")).toBeVisible();
 
   const viewTypeRadios = page.locator('input[type="radio"][name="view-type"]');
   await expect(viewTypeRadios).toHaveCount(0);
@@ -355,7 +358,6 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
     const selector = page.locator(
       "[data-testid='edit-secondary-dataset-select']",
     );
-    const metadata = page.locator("[data-testid='view-metadata-secondary']");
     const submitButton = page.locator("[data-testid='config-submit-button']");
     const originalValue = await selector.inputValue();
     const optionValues = await selector
@@ -378,12 +380,11 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
     });
     await submitButton.click();
     await expect(page.getByTestId("saved-modal")).toBeVisible();
-    await expect(metadata).toHaveText(replacement!);
+    await expect(selector).toHaveValue(replacement!);
 
     await page.reload();
     await page.waitForSelector("form", { timeout: 15000 });
     await expect(selector).toHaveValue(replacement!);
-    await expect(metadata).toHaveText(replacement!);
 
     await selector.selectOption(originalValue);
     await expect(submitButton).toBeEnabled();
