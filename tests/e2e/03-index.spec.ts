@@ -47,14 +47,30 @@ test("index page - displays available views and navigation flow", async ({
   const cardCount = await datasetCards.count();
   expect(cardCount).toBeGreaterThan(0);
 
-  // 7. Verify at least one "Open Dataset View" link is visible
-  const openProjectButton = page
+  // 7. Verify each view type has the matching Open link copy
+  const viewLinkLabels = {
+    alerts: "Open Alerts Dashboard",
+    gallery: "Open Gallery",
+    map: "Open Map",
+  };
+  for (const [viewType, label] of Object.entries(viewLinkLabels)) {
+    const card = datasetCards
+      .filter({
+        has: page.locator(`[data-testid='view-tag-${viewType}']`),
+      })
+      .first();
+    await expect(
+      card.locator("[data-testid='open-dataset-view-link']"),
+    ).toHaveText(label);
+  }
+
+  const openViewLink = page
     .locator("[data-testid='open-dataset-view-link']")
     .first();
-  await expect(openProjectButton).toBeVisible({ timeout: 15000 });
+  await expect(openViewLink).toBeVisible({ timeout: 15000 });
 
-  // 8. Verify the "Open Dataset View" link goes to the view route for that card's type
-  const href = await openProjectButton.getAttribute("href");
+  // 8. Verify the Open link goes to the view route for that card's type
+  const href = await openViewLink.getAttribute("href");
   expect(href).toMatch(/^\/(alerts|gallery|map)\/\w+/);
 
   /* 9. Ensure at least one view pill (alerts, maps, or gallery) is visible
@@ -72,7 +88,7 @@ test("index page - displays available views and navigation flow", async ({
   expect(hasGallery || hasMap || hasAlerts).toBe(true);
 
   // 11. Clicking open navigates directly to that view (no /dataset hub)
-  await openProjectButton.click();
+  await openViewLink.click();
   await page.waitForURL(/\/(alerts|gallery|map)\/\w+/, { timeout: 15000 });
   expect(page.url()).not.toMatch(/\/dataset\//);
 });

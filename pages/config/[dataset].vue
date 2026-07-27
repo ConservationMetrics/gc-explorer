@@ -221,7 +221,15 @@ definePageMeta({ layout: "explorer" });
               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors"
             >
               <Eye class="w-4 h-4" />
-              {{ $t("viewDataset") }}
+              {{
+                $t("openView", {
+                  view: $t(
+                    resolvedViewType === "alerts"
+                      ? "alertsDashboard"
+                      : resolvedViewType,
+                  ),
+                })
+              }}
             </NuxtLink>
           </div>
           <div class="flex items-center justify-between">
@@ -238,48 +246,42 @@ definePageMeta({ layout: "explorer" });
               @update:selected-source="selectedCopySource = $event"
             />
           </div>
-          <dl
+          <div
             v-if="resolvedViewType"
             data-testid="view-metadata"
-            class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 sm:max-w-2xl text-sm"
+            class="mt-4 grid grid-cols-1 gap-3 text-sm sm:max-w-2xl sm:grid-cols-2 sm:gap-x-6 sm:gap-y-4"
           >
-            <div>
-              <dt class="text-gray-500">{{ $t("view") }}</dt>
-              <dd class="mt-1">
-                <ViewTypePill :view-type="resolvedViewType" />
-              </dd>
-            </div>
-            <div>
-              <dt class="text-gray-500">{{ $t("primaryDatasetLabel") }}</dt>
-              <dd
-                data-testid="view-metadata-primary"
-                class="mt-1 font-medium text-gray-900"
-              >
-                {{ dataset }}
-              </dd>
-            </div>
-            <div>
-              <dt class="text-gray-500">{{ $t("secondaryDatasetLabel") }}</dt>
-              <dd
-                data-testid="view-metadata-secondary"
-                class="mt-1 font-medium text-gray-900"
-              >
-                {{ secondaryDataset || $t("none") }}
-              </dd>
-            </div>
-          </dl>
-          <SelectDatasetField
-            v-if="showsSecondaryDataset"
-            id="edit-view-secondaryDataset-select"
-            :model-value="secondaryDataset"
-            :label="$t('secondaryDatasetOptional')"
-            :options="availableTables"
-            :placeholder="$t('selectSecondaryDataset')"
-            test-id="edit-secondary-dataset-select"
-            :exclude-value="dataset"
-            class="mt-4 max-w-2xl"
-            @update:model-value="handleSecondaryDatasetUpdate"
-          />
+            <dl class="contents">
+              <div>
+                <dt class="text-gray-500">{{ $t("view") }}</dt>
+                <dd class="mt-1">
+                  <ViewTypePill :view-type="resolvedViewType" />
+                </dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-gray-500">{{ $t("primaryDatasetLabel") }}</dt>
+                <dd
+                  data-testid="view-metadata-primary"
+                  class="mt-1 font-medium text-gray-900 break-words"
+                  style="overflow-wrap: anywhere"
+                >
+                  {{ dataset }}
+                </dd>
+              </div>
+            </dl>
+            <SelectDatasetField
+              v-if="showsSecondaryDataset"
+              id="edit-view-secondaryDataset-select"
+              :model-value="secondaryDataset"
+              :label="$t('secondaryDatasetOptional')"
+              :options="availableTables"
+              :placeholder="$t('selectSecondaryDataset')"
+              test-id="edit-secondary-dataset-select"
+              :exclude-value="dataset"
+              class="sm:col-start-1"
+              @update:model-value="handleSecondaryDatasetUpdate"
+            />
+          </div>
         </div>
         <div
           v-if="errorMessage"

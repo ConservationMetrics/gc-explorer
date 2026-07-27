@@ -177,7 +177,11 @@ const configEditPath = computed(() => ({
         data-testid="open-dataset-view-link"
         class="mt-auto block w-full text-center px-4 py-2 sm:py-3 bg-violet-700 hover:bg-violet-800 text-white font-medium rounded-lg transition-colors duration-200"
       >
-        {{ $t("openProject") }}
+        {{
+          $t("openView", {
+            view: $t(viewType === "alerts" ? "alertsDashboard" : viewType),
+          })
+        }}
       </NuxtLink>
     </div>
   </div>
