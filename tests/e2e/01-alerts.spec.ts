@@ -152,7 +152,6 @@ test("alerts dashboard - basemap toggle icon is visible", async ({
   authenticatedPageAsAdmin: page,
 }) => {
   await page.goto("/alerts/fake_alerts");
-  await page.waitForLoadState("networkidle");
 
   // Wait for map to load (BasemapSelector renders when >1 basemap or Planet is available)
   await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
@@ -170,7 +169,6 @@ test("alerts dashboard - legend can control all alert layer types", async ({
 }) => {
   // Navigate to alerts dashboard (auth required so API returns data and #map renders)
   await page.goto("/alerts/fake_alerts");
-  await page.waitForLoadState("networkidle");
 
   // Wait for map to load (AlertsDashboard mounts inside ClientOnly after fetch)
   await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });

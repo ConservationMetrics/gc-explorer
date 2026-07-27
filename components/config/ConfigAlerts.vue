@@ -7,25 +7,15 @@ import { updateTags } from "@/composables/useTags";
 
 import type { ViewConfig } from "@/types";
 
-const props = withDefaults(
-  defineProps<{
-    tableName: string;
-    config: ViewConfig;
-    secondaryDataset?: string | null;
-    /** Create flow: show Name of Mapeo data table (synced with secondary). */
-    showMapeoTableField?: boolean;
-    views: Array<string>;
-    keys: Array<string>;
-  }>(),
-  {
-    secondaryDataset: null,
-    showMapeoTableField: false,
-  },
-);
+const props = defineProps<{
+  tableName: string;
+  config: ViewConfig;
+  views: Array<string>;
+  keys: Array<string>;
+}>();
 
 const emit = defineEmits<{
   (e: "updateConfig", payload: Partial<ViewConfig>): void;
-  (e: "updateSecondaryDataset", value: string): void;
 }>();
 
 type Tag = { text: string };
@@ -50,28 +40,6 @@ const handleTagsChanged = (key: string, newTags: Tag[]): void => {
 
 <template>
   <div class="space-y-6">
-    <div v-if="showMapeoTableField" class="space-y-2">
-      <label
-        :for="`${tableName}-secondaryDataset`"
-        class="block text-sm font-medium text-gray-700"
-      >
-        {{ $t("mapeoTable") }}
-      </label>
-      <input
-        :id="`${tableName}-secondaryDataset`"
-        data-testid="secondary-dataset-text"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-        type="text"
-        :value="secondaryDataset ?? ''"
-        @input="
-          emit(
-            'updateSecondaryDataset',
-            ($event.target as HTMLInputElement).value,
-          )
-        "
-      />
-    </div>
-
     <div v-for="key in keys" :key="key" class="space-y-2">
       <label
         :for="`${tableName}-${key}`"

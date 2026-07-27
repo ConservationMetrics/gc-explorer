@@ -32,11 +32,7 @@ const props = withDefaults(
   },
 );
 
-const emit = defineEmits([
-  "submitConfig",
-  "removeTableFromConfig",
-  "updateSecondaryDataset",
-]);
+const emit = defineEmits(["submitConfig", "removeTableFromConfig"]);
 
 // Set keys for the different sections of the config
 const mapConfigKeys = computed(() => [
@@ -199,11 +195,6 @@ const handleConfigUpdate = (partialUpdate: Partial<ViewConfig>) => {
   Object.assign(localConfig.value, partialUpdate);
 };
 
-const handleSecondaryDatasetUpdate = (value: string) => {
-  localSecondaryDataset.value = value;
-  emit("updateSecondaryDataset", value);
-};
-
 const handlePermissionValidation = (isValid: boolean) => {
   isPermissionValid.value = isValid;
 };
@@ -290,11 +281,8 @@ const handleSubmit = () => {
             :table-name="tableName"
             :views="viewTypeList"
             :config="localConfig"
-            :secondary-dataset="localSecondaryDataset"
-            :show-mapeo-table-field="secondaryEditable"
             :keys="alertKeys"
             @update-config="handleConfigUpdate"
-            @update-secondary-dataset="handleSecondaryDatasetUpdate"
           />
         </ConfigCollapsibleSection>
 
