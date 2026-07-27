@@ -329,6 +329,17 @@ test("config page - view metadata displays current view type outside ConfigCard"
   ).toHaveCount(0);
   await expect(page.getByLabel("Secondary dataset (optional)")).toBeVisible();
 
+  const secondarySelector = page.locator(
+    "[data-testid='edit-secondary-dataset-select']",
+  );
+  const [viewBox, secondaryBox] = await Promise.all([
+    viewTypeDisplay.boundingBox(),
+    secondarySelector.boundingBox(),
+  ]);
+  expect(viewBox).not.toBeNull();
+  expect(secondaryBox).not.toBeNull();
+  expect(secondaryBox!.x).toBeCloseTo(viewBox!.x, 0);
+
   const viewTypeRadios = page.locator('input[type="radio"][name="view-type"]');
   await expect(viewTypeRadios).toHaveCount(0);
 
