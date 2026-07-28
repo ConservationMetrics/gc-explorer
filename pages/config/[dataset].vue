@@ -13,12 +13,18 @@ import {
   type ViewType,
 } from "@/types";
 import { ChevronLeft, Eye } from "lucide-vue-next";
+import {
+  decodeDatasetNameFromUrl,
+  encodeDatasetNameForUrl,
+} from "@/utils/identifierUtils";
 
 const route = useRoute();
 const datasetRaw = route.params.dataset;
-const dataset = Array.isArray(datasetRaw)
-  ? datasetRaw.join("/")
-  : String(datasetRaw || "");
+const dataset = decodeDatasetNameFromUrl(
+  Array.isArray(datasetRaw)
+    ? datasetRaw.join("/")
+    : String(datasetRaw || ""),
+);
 
 const viewType = computed(() => route.query.view_type as ViewType | undefined);
 
@@ -80,7 +86,7 @@ const submitConfig = async ({
   errorMessage.value = null;
 
   try {
-    await $fetch(`/api/config/update_config/${tableName}`, {
+    await $fetch(`/api/config/update_config/${encodeDatasetNameForUrl(tableName)}`, {
       method: "POST",
       query: resolvedViewType.value
         ? { view_type: resolvedViewType.value }
@@ -132,12 +138,15 @@ const handleRemoveTableFromConfig = (tableName: string) => {
 const handleConfirmRemove = async () => {
   if (tableNameToRemove.value) {
     try {
-      await $fetch(`/api/config/delete_table/${tableNameToRemove.value}`, {
-        method: "POST",
-        query: resolvedViewType.value
-          ? { view_type: resolvedViewType.value }
-          : undefined,
-      });
+      await $fetch(
+        `/api/config/delete_table/${encodeDatasetNameForUrl(tableNameToRemove.value)}`,
+        {
+          method: "POST",
+          query: resolvedViewType.value
+            ? { view_type: resolvedViewType.value }
+            : undefined,
+        },
+      );
       // Hide buttons and update message to show success
       showModalButtons.value = false;
       modalMessage.value = t("datasetViewRemovedFromViews") + "!";
@@ -217,7 +226,7 @@ definePageMeta({ layout: "explorer" });
             </NuxtLink>
             <NuxtLink
               v-if="resolvedViewType"
-              :to="`/${resolvedViewType}/${dataset}`"
+              :to="`/${resolvedViewType}/${encodeDatasetNameForUrl(dataset)}`"
               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors"
             >
               <Eye class="w-4 h-4" />

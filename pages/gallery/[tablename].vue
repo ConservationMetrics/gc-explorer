@@ -3,7 +3,11 @@ import { useI18n } from "vue-i18n";
 
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
-import { replaceUnderscoreWithSpace } from "@/utils/identifierUtils";
+import {
+  decodeDatasetNameFromUrl,
+  encodeDatasetNameForUrl,
+  replaceUnderscoreWithSpace,
+} from "@/utils/identifierUtils";
 import { useIsPublic } from "@/utils/accessControls";
 
 const { t } = useI18n();
@@ -12,7 +16,10 @@ const rowLimit = useRuntimeConfig().public.rowLimit;
 // Extract the tablename from the route parameters
 const route = useRoute();
 const tableRaw = route.params.tablename;
-const table = Array.isArray(tableRaw) ? tableRaw.join("/") : tableRaw;
+const table = decodeDatasetNameFromUrl(
+  Array.isArray(tableRaw) ? tableRaw.join("/") : String(tableRaw || ""),
+);
+const tablePath = encodeDatasetNameForUrl(table);
 
 const allowedFileExtensions = ref();
 const dataFetched = ref(false);
@@ -23,7 +30,7 @@ const mediaColumn = ref();
 const primaryDataset = ref(table);
 const timestampColumn = ref<string | undefined>();
 
-const { data, error, refresh } = await useFetch(`/api/${table}/gallery`, {
+const { data, error, refresh } = await useFetch(`/api/${tablePath}/gallery`, {
   params: { limit: rowLimit },
 });
 

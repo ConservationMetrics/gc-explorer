@@ -15,6 +15,7 @@ import {
   type ViewType,
 } from "@/types";
 import { ChevronLeft } from "lucide-vue-next";
+import { encodeDatasetNameForUrl } from "@/utils/identifierUtils";
 
 const route = useRoute();
 const { t } = useI18n();
@@ -115,7 +116,7 @@ const submitConfig = async ({
   errorMessage.value = null;
   isSaving.value = true;
   try {
-    await $fetch(`/api/config/new_table/${tableName}`, {
+    await $fetch(`/api/config/new_table/${encodeDatasetNameForUrl(tableName)}`, {
       method: "POST",
       query: { view_type: viewType.value },
       body: JSON.stringify({
@@ -127,7 +128,7 @@ const submitConfig = async ({
     setTimeout(async () => {
       showSavedModal.value = false;
       await navigateTo({
-        path: `/config/${tableName}`,
+        path: `/config/${encodeDatasetNameForUrl(tableName)}`,
         query: { view_type: viewType.value },
       });
     }, 2000);
@@ -228,7 +229,7 @@ definePageMeta({ layout: "explorer" });
         <p class="mb-2">{{ $t("duplicateViewWarning") }}</p>
         <NuxtLink
           :to="{
-            path: `/config/${existingView.primaryDataset}`,
+            path: `/config/${encodeDatasetNameForUrl(existingView.primaryDataset)}`,
             query: { view_type: existingView.viewType },
           }"
           data-testid="create-duplicate-edit-link"

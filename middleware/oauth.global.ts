@@ -1,6 +1,7 @@
 import { defineNuxtRouteMiddleware, useRuntimeConfig } from "#imports";
 import type { User, RouteLevelPermission } from "@/types";
 import { Role } from "@/types";
+import { decodeDatasetNameFromUrl } from "@/utils/identifierUtils";
 
 // Following example: https://github.com/atinux/atidone/blob/main/app/middleware/auth.ts
 export default defineNuxtRouteMiddleware(async (to) => {
@@ -33,8 +34,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (isDatasetRoute) {
     try {
-      // Extract the table name from the last part of the path
-      const tableName = to.path.split("/").pop()!;
+      const rawTableName =
+        typeof to.params.tablename === "string"
+          ? to.params.tablename
+          : to.path.split("/").pop()!;
+      const tableName = decodeDatasetNameFromUrl(rawTableName);
       const publicTableNames = await $fetch<string[]>(
         "/api/config/public_views",
       );

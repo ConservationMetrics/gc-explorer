@@ -1,6 +1,10 @@
 import { useI18n, useRoute, useToast } from "#imports";
 import { resolveViewTypeForTable } from "@/composables/useViewType";
 import { triggerBrowserDownload } from "@/utils/browserDownload";
+import {
+  decodeDatasetNameFromUrl,
+  encodeDatasetNameForUrl,
+} from "@/utils/identifierUtils";
 
 export type TableExportFormat = "csv" | "geojson" | "kml";
 
@@ -69,7 +73,9 @@ export function useTableExportDownload() {
    */
   const getTablename = (): string => {
     const tablename = route.params.tablename;
-    return typeof tablename === "string" ? tablename : "data";
+    return typeof tablename === "string"
+      ? decodeDatasetNameFromUrl(tablename)
+      : "data";
   };
 
   /**
@@ -121,10 +127,13 @@ export function useTableExportDownload() {
         recordId: options.recordId,
         viewType: resolveViewTypeForTable(route, tablename),
       });
-      const blob = await $fetch<Blob>(`/api/${tablename}/${exportPath}`, {
-        params,
-        responseType: "blob",
-      });
+      const blob = await $fetch<Blob>(
+        `/api/${encodeDatasetNameForUrl(tablename)}/${exportPath}`,
+        {
+          params,
+          responseType: "blob",
+        },
+      );
       const filenameBase =
         options.filenamePrefix ?? options.recordId?.trim() ?? tablename;
       triggerBrowserDownload(blob, `${filenameBase}.${options.format}`);
