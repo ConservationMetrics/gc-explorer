@@ -18,7 +18,7 @@ import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { parseBasemaps } from "@/server/utils";
 import { buildRequiredAlertsProjection } from "@/server/utils/alertsProjection";
-import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
+import { parseAndValidateLimit, getTableParam } from "@/server/utils/dbHelpers";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
@@ -49,7 +49,7 @@ const REQUIRED_ALERTS_MAIN_COLUMNS = [
 ];
 
 export default defineEventHandler(async (event: H3Event) => {
-  const { table } = event.context.params as { table: string };
+  const table = getTableParam(event);
   const limit = parseAndValidateLimit(event);
 
   const {

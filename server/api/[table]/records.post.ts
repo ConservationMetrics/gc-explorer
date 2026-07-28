@@ -1,4 +1,5 @@
 import { fetchRecords, fetchTableConfig } from "@/server/database/dbOperations";
+import { getTableParam } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
@@ -7,7 +8,7 @@ import type { ViewType } from "@/types";
 const MAX_IDS = 500;
 /** NOTE: The endpoint does not guarantee that records are returned in the same order as requested IDs. Consumers must not rely on response ordering. */
 export default defineEventHandler(async (event: H3Event) => {
-  const { table } = event.context.params as { table: string };
+  const table = getTableParam(event);
   const viewType = getQuery(event).view_type as ViewType | undefined;
 
   const body = await readBody(event);

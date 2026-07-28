@@ -56,6 +56,14 @@ vi.mock("@/server/dataProcessing/dataFilters", () => ({
 
 vi.mock("@/server/utils/dbHelpers", () => ({
   parseAndValidateLimit: hoisted.parseAndValidateLimit,
+  getTableParam: (event: GalleryRouteEvent) => {
+    const table = event.context.params.table;
+    try {
+      return decodeURIComponent(table.replace(/"/g, ""));
+    } catch {
+      return table.replace(/"/g, "");
+    }
+  },
 }));
 
 vi.mock("@/utils/accessControls", () => ({

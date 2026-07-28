@@ -1,4 +1,5 @@
 import { fetchViewConfigRowsForTable } from "@/server/database/dbOperations";
+import { getTableParam } from "@/server/utils/dbHelpers";
 import { validateUserSession } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
@@ -7,7 +8,7 @@ export default defineEventHandler(async (event: H3Event) => {
   await validateUserSession(event);
 
   try {
-    const table = event.context.params?.table as string;
+    const table = getTableParam(event);
     const viewRows = await fetchViewConfigRowsForTable(table);
     return viewRows;
   } catch (error) {

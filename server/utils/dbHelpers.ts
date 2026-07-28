@@ -1,5 +1,19 @@
 import { useRuntimeConfig } from "#imports";
 import type { H3Event } from "h3";
+import { normalizeTableName } from "@/utils/identifierUtils";
+
+/**
+ * Reads and normalizes the `[table]` path param (percent-decode + strip quotes).
+ */
+export const getTableParam = (event: H3Event): string => {
+  const table = event.context.params?.table as string | undefined;
+  if (!table) {
+    throw Object.assign(new Error("Missing table path parameter"), {
+      statusCode: 400,
+    });
+  }
+  return normalizeTableName(table);
+};
 
 /**
  * Validates a raw `limit` query value against `maxLimit`.

@@ -1,12 +1,13 @@
 import { fetchRecord, fetchTableConfig } from "@/server/database/dbOperations";
+import { getTableParam } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
 import type { ViewType } from "@/types";
 
 export default defineEventHandler(async (event: H3Event) => {
-  const { table, recordId } = event.context.params as {
-    table: string;
+  const table = getTableParam(event);
+  const { recordId } = event.context.params as {
     recordId: string;
   };
   const viewType = getQuery(event).view_type as ViewType | undefined;
