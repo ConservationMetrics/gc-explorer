@@ -31,7 +31,6 @@ const { tags, handleTagsChanged: rawHandleTagsChanged } = updateTags(
   {},
 );
 
-// Strongly typed handler
 const handleTagsChanged = (key: string, newTags: Tag[]): void => {
   rawHandleTagsChanged(key, newTags);
   const values = newTags.map((tag) => tag.text).join(",");
@@ -48,21 +47,7 @@ const handleTagsChanged = (key: string, newTags: Tag[]): void => {
       >
         {{ $t(toCamelCase(key)) }}
       </label>
-      <template v-if="key === 'MAPEO_TABLE'">
-        <input
-          :id="`${tableName}-${key}`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-          type="text"
-          :value="config[key]"
-          @input="
-            (e) =>
-              emit('updateConfig', {
-                [key]: (e.target as HTMLInputElement).value,
-              })
-          "
-        />
-      </template>
-      <template v-else-if="key === 'MAPEO_CATEGORY_IDS'">
+      <template v-if="key === 'MAPEO_CATEGORY_IDS'">
         <VueTagsInput
           class="tag-field"
           :tags="tags[key]"

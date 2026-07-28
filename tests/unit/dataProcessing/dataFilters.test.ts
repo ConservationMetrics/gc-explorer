@@ -148,6 +148,26 @@ describe("filterGeoData", () => {
     // the fixture data has 3 entries, but only 2 have valid coordinates
     expect(result).toHaveLength(2);
   });
+
+  it("keeps Points whose g__coordinates include elevation", () => {
+    const data = [
+      {
+        _id: "1",
+        g__type: "Point",
+        g__coordinates: "[-77.5733802, -1.3016433, 413.858]",
+      },
+      {
+        _id: "2",
+        g__type: "Point",
+        g__coordinates: "invalid",
+      },
+    ];
+
+    const result = filterGeoData(data);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]._id).toBe("1");
+  });
 });
 
 describe("filterDataByExtension", () => {

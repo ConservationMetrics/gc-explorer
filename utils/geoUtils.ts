@@ -1,5 +1,19 @@
-import type { Geometry, Feature, FeatureCollection } from "geojson";
-import type { DataEntry, MapStatistics } from "@/types";
+import type {
+  Geometry,
+  Feature,
+  FeatureCollection,
+  GeoJsonProperties,
+  Position,
+} from "geojson";
+import type {
+  DataEntry,
+  DataEntryGeometryCoordinates,
+  DataEntryGeometryType,
+  GeoJsonCoordinateCandidate,
+  JsonValue,
+  MapStatistics,
+} from "@/types";
+import { DATA_ENTRY_GEOMETRY_TYPES } from "@/types";
 
 import murmurhash from "murmurhash";
 
@@ -32,9 +46,79 @@ export const isValidCoordinate = (coord: number): boolean => {
   return coord != null && !isNaN(coord) && coord >= -180 && coord <= 180;
 };
 
+/**
+ * GeoJSON Position: `[lng, lat]` or `[lng, lat, elevation, ...]`.
+ * @see https://datatracker.ietf.org/doc/html/rfc7946#section-3.1.1
+ */
+export const isValidPosition = (
+  coord: GeoJsonCoordinateCandidate,
+): coord is Position => {
+  if (coord.length < 2) return false;
+  if (typeof coord[0] !== "number") return false;
+  const numbers = coord as number[];
+  const [lng, lat, ...rest] = numbers;
+  if (typeof lat !== "number") return false;
+  if (!isValidCoordinate(lng) || !isValidCoordinate(lat)) return false;
+  return rest.every((n) => typeof n === "number" && Number.isFinite(n));
+};
+
+const isLineStringCoordinates = (
+  coordinates: GeoJsonCoordinateCandidate,
+): coordinates is Position[] =>
+  coordinates.length > 0 &&
+  typeof coordinates[0] !== "number" &&
+  coordinates.every(
+    (coord): coord is Position =>
+      Array.isArray(coord) && isValidPosition(coord),
+  );
+
+/** Shared shape for Polygon rings and MultiLineString parts (`Position[][]`). */
+const isPolygonOrMultiLineCoordinates = (
+  coordinates: GeoJsonCoordinateCandidate,
+): coordinates is Position[][] =>
+  coordinates.length > 0 &&
+  typeof coordinates[0] !== "number" &&
+  coordinates.every(
+    (ring): ring is Position[] =>
+      Array.isArray(ring) && isLineStringCoordinates(ring),
+  );
+
+const isMultiPolygonCoordinates = (
+  coordinates: GeoJsonCoordinateCandidate,
+): coordinates is Position[][][] =>
+  coordinates.length > 0 &&
+  typeof coordinates[0] !== "number" &&
+  coordinates.every(
+    (polygon): polygon is Position[][] =>
+      Array.isArray(polygon) && isPolygonOrMultiLineCoordinates(polygon),
+  );
+
+/**
+ * Recursively validates a GeoJSON coordinate tree (Point through MultiPolygon),
+ * accepting optional elevation on each Position.
+ */
+const isValidCoordinateTree = (
+  value: GeoJsonCoordinateCandidate,
+): value is DataEntryGeometryCoordinates => {
+  if (!Array.isArray(value) || value.length === 0) return false;
+  if (isValidPosition(value)) return true;
+  return value.every(
+    (child): child is GeoJsonCoordinateCandidate =>
+      Array.isArray(child) && isValidCoordinateTree(child),
+  );
+};
+
+/** Narrow JSON.parse results to a coordinate candidate array. */
+const asCoordinateCandidate = (
+  value: JsonValue,
+): GeoJsonCoordinateCandidate | null => {
+  if (!Array.isArray(value)) return null;
+  return value as GeoJsonCoordinateCandidate;
+};
+
 /** Determines if an object contains valid coordinate data. */
 export const hasValidCoordinates = (
-  obj: Record<string, string | number | null>,
+  obj: Record<string, string | number | null | GeoJsonCoordinateCandidate>,
 ): boolean => {
   return Object.keys(obj).some((key) => {
     if (key.toLowerCase().includes("coordinates")) {
@@ -45,7 +129,7 @@ export const hasValidCoordinates = (
         return false; // skip if coordinates are null or undefined
       }
 
-      let parsedCoordinates: number[] = [];
+      let parsedCoordinates: GeoJsonCoordinateCandidate;
 
       // Filter out data with null or empty coordinates
       if (typeof rawCoordinates === "string") {
@@ -54,7 +138,14 @@ export const hasValidCoordinates = (
         // Check if it's a JSON-like array or a simple CSV
         if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
           try {
-            parsedCoordinates = JSON.parse(trimmed);
+            const parsed = asCoordinateCandidate(
+              JSON.parse(trimmed) as JsonValue,
+            );
+            if (!parsed) {
+              console.warn("Error parsing JSON coordinates:", rawCoordinates);
+              return false;
+            }
+            parsedCoordinates = parsed;
           } catch (e) {
             console.warn("Error parsing JSON coordinates:", rawCoordinates, e);
             return false;
@@ -63,7 +154,10 @@ export const hasValidCoordinates = (
           // Try splitting as CSV string
           const splitCoordinates = trimmed.split(",");
           // Ensure each part can be converted to a valid number
-          if (splitCoordinates.every((coord) => !isNaN(Number(coord)))) {
+          if (
+            splitCoordinates.length >= 2 &&
+            splitCoordinates.every((coord) => !isNaN(Number(coord)))
+          ) {
             parsedCoordinates = splitCoordinates.map(Number);
           } else {
             console.warn("Invalid CSV coordinates:", rawCoordinates);
@@ -71,20 +165,15 @@ export const hasValidCoordinates = (
           }
         }
       } else if (Array.isArray(rawCoordinates)) {
-        parsedCoordinates = rawCoordinates.flat().map(Number);
+        parsedCoordinates = rawCoordinates;
+      } else {
+        return false;
       }
 
-      // Flatten nested coordinate arrays (Polygon, LineString, MultiPolygon)
-      // before validating individual numbers.
-      if (Array.isArray(parsedCoordinates) && parsedCoordinates.length > 0) {
-        const flatCoords = (parsedCoordinates as unknown[]).flat(
-          Infinity,
-        ) as number[];
-        return (
-          flatCoords.length > 0 &&
-          flatCoords.length % 2 === 0 &&
-          flatCoords.every(isValidCoordinate)
-        );
+      // Validate nested coordinate arrays (Point, LineString, Polygon, MultiPolygon),
+      // including optional elevation on each Position.
+      if (isValidCoordinateTree(parsedCoordinates)) {
+        return true;
       }
 
       console.warn("Coordinates array is empty or invalid:", parsedCoordinates);
@@ -95,7 +184,9 @@ export const hasValidCoordinates = (
 };
 
 /** Type guard for a GeoJSON Feature. */
-export const isGeoJsonFeature = (value: unknown): value is Feature => {
+export const isGeoJsonFeature = (
+  value: object | null | undefined,
+): value is Feature => {
   return (
     !!value &&
     typeof value === "object" &&
@@ -104,90 +195,35 @@ export const isGeoJsonFeature = (value: unknown): value is Feature => {
   );
 };
 
-type Coordinate = [number, number];
-type LineString = Coordinate[];
-type Polygon = LineString[];
-type MultiPolygon = Polygon[];
+const isDataEntryGeometryType = (type: string): type is DataEntryGeometryType =>
+  (DATA_ENTRY_GEOMETRY_TYPES as readonly string[]).includes(type);
 
 /**
  * Returns whether parsed GeoJSON coordinates match the given geometry type.
+ * Positions may include elevation per RFC 7946.
  *
- * @param {string} type - GeoJSON geometry type name.
- * @param {unknown} coordinates - Parsed coordinates (not a JSON string).
+ * @param {DataEntryGeometryType} type - GeoJSON geometry type name.
+ * @param {GeoJsonCoordinateCandidate} coordinates - Parsed coordinates (not a JSON string).
  * @returns {boolean} True when the structure is valid for `type`.
  */
 const coordinatesMatchGeoType = (
-  type: string,
-  coordinates: unknown,
-): boolean => {
+  type: DataEntryGeometryType,
+  coordinates: GeoJsonCoordinateCandidate,
+): coordinates is DataEntryGeometryCoordinates => {
   if (type === "Point") {
-    return (
-      Array.isArray(coordinates) &&
-      coordinates.length === 2 &&
-      coordinates.every(Number.isFinite)
-    );
+    return isValidPosition(coordinates);
   }
-  if (type === "LineString" || type === "MultiLineString") {
-    return (
-      Array.isArray(coordinates) &&
-      coordinates.every(
-        (coord) =>
-          Array.isArray(coord) &&
-          coord.length === 2 &&
-          coord.every(Number.isFinite),
-      )
-    );
+  if (type === "LineString") {
+    return isLineStringCoordinates(coordinates);
   }
-  if (type === "Polygon") {
-    return (
-      Array.isArray(coordinates) &&
-      coordinates.every(
-        (ring) =>
-          Array.isArray(ring) &&
-          ring.every(
-            (coord) =>
-              Array.isArray(coord) &&
-              coord.length === 2 &&
-              coord.every(Number.isFinite),
-          ),
-      )
-    );
+  if (type === "MultiLineString" || type === "Polygon") {
+    return isPolygonOrMultiLineCoordinates(coordinates);
   }
   if (type === "MultiPolygon") {
-    return (
-      Array.isArray(coordinates) &&
-      coordinates.every(
-        (polygon) =>
-          Array.isArray(polygon) &&
-          polygon.every(
-            (ring) =>
-              Array.isArray(ring) &&
-              ring.every(
-                (coord) =>
-                  Array.isArray(coord) &&
-                  coord.length === 2 &&
-                  coord.every(Number.isFinite),
-              ),
-          ),
-      )
-    );
+    return isMultiPolygonCoordinates(coordinates);
   }
   return false;
 };
-
-/**
- * Geometry type names allowed on warehouse rows (`g__type`) for this app’s map
- * and alerts pipelines. This is not an exhaustive GeoJSON enum (e.g. no
- * GeometryCollection); it matches what we persist and serve through
- * `buildMinimalFeatureCollection` and related paths.
- */
-const DATA_ENTRY_SUPPORTED_GEOMETRY_TYPES = [
-  "LineString",
-  "MultiLineString",
-  "Point",
-  "Polygon",
-  "MultiPolygon",
-] as const;
 
 /**
  * Parses `g__coordinates` once and returns the coordinate tree when it matches
@@ -198,34 +234,31 @@ const DATA_ENTRY_SUPPORTED_GEOMETRY_TYPES = [
  * (e.g. CSV-style rows).
  *
  * @param {DataEntry} item - Row with `g__type` and `g__coordinates`.
- * @returns {unknown | null} Parsed coordinates, or null if invalid.
+ * @returns {DataEntryGeometryCoordinates | null} Parsed coordinates, or null if invalid.
  */
 export const tryParseDataEntryGeoCoordinates = (
   item: DataEntry,
-): unknown | null => {
-  const type = item.g__type as string | undefined;
+): DataEntryGeometryCoordinates | null => {
+  const type = item.g__type;
   const raw = item.g__coordinates;
 
-  if (
-    !type ||
-    !DATA_ENTRY_SUPPORTED_GEOMETRY_TYPES.includes(
-      type as (typeof DATA_ENTRY_SUPPORTED_GEOMETRY_TYPES)[number],
-    ) ||
-    raw == null ||
-    raw === ""
-  ) {
+  if (!type || !isDataEntryGeometryType(type) || raw == null || raw === "") {
     return null;
   }
 
-  let parsed: unknown;
+  let parsed: GeoJsonCoordinateCandidate;
   if (typeof raw === "string") {
     try {
-      parsed = JSON.parse(raw);
+      const candidate = asCoordinateCandidate(JSON.parse(raw) as JsonValue);
+      if (!candidate) return null;
+      parsed = candidate;
     } catch {
       return null;
     }
+  } else if (Array.isArray(raw)) {
+    parsed = raw as GeoJsonCoordinateCandidate;
   } else {
-    parsed = raw;
+    return null;
   }
 
   if (!coordinatesMatchGeoType(type, parsed)) {
@@ -239,55 +272,42 @@ export const tryParseDataEntryGeoCoordinates = (
  * Computes centroid string from already-parsed GeoJSON coordinates (same shape
  * as `JSON.parse` on `g__coordinates`).
  *
- * @param {unknown} allCoords - Parsed coordinates tree.
+ * @param {DataEntryGeometryCoordinates} allCoords - Parsed coordinates tree.
  * @returns {string} `"lat, lng"` average or empty string when invalid.
  */
 export const calculateCentroidFromParsedCoords = (
-  allCoords: unknown,
+  allCoords: DataEntryGeometryCoordinates,
 ): string => {
   let totalLat = 0;
   let totalLng = 0;
   let numCoords = 0;
 
-  const processCoord = (coord: Coordinate) => {
+  const processCoord = (coord: Position) => {
     totalLng += coord[0];
     totalLat += coord[1];
     numCoords++;
   };
 
-  const processLineString = (lineString: LineString) => {
+  const processLineString = (lineString: Position[]) => {
     lineString.forEach(processCoord);
   };
 
-  const processPolygon = (polygon: Polygon) => {
+  const processPolygon = (polygon: Position[][]) => {
     polygon.forEach(processLineString);
   };
 
-  if (
-    Array.isArray(allCoords) &&
-    Array.isArray(allCoords[0]) &&
-    Array.isArray((allCoords as unknown[])[0][0]) &&
-    Array.isArray((allCoords as unknown[])[0][0][0])
-  ) {
+  if (isMultiPolygonCoordinates(allCoords)) {
     // It's a MultiPolygon
-    (allCoords as MultiPolygon).forEach(processPolygon);
-  } else if (
-    Array.isArray(allCoords) &&
-    Array.isArray(allCoords[0]) &&
-    Array.isArray((allCoords as unknown[])[0][0])
-  ) {
+    allCoords.forEach(processPolygon);
+  } else if (isPolygonOrMultiLineCoordinates(allCoords)) {
     // It's a Polygon
-    processPolygon(allCoords as Polygon);
-  } else if (Array.isArray(allCoords) && Array.isArray(allCoords[0])) {
+    processPolygon(allCoords);
+  } else if (isLineStringCoordinates(allCoords)) {
     // It's a LineString
-    processLineString(allCoords as LineString);
-  } else if (
-    Array.isArray(allCoords) &&
-    typeof allCoords[0] === "number" &&
-    typeof allCoords[1] === "number"
-  ) {
+    processLineString(allCoords);
+  } else if (isValidPosition(allCoords)) {
     // It's a Point
-    processCoord(allCoords as Coordinate);
+    processCoord(allCoords);
   } else {
     console.error("Invalid input format");
     return "";
@@ -306,10 +326,15 @@ export const calculateCentroidFromParsedCoords = (
  * @returns {string} `"lat, lng"` average or empty string when invalid.
  */
 export const calculateCentroid = (coords: string): string => {
-  let allCoords: unknown;
+  let parsed: JsonValue;
   try {
-    allCoords = JSON.parse(coords);
+    parsed = JSON.parse(coords) as JsonValue;
   } catch {
+    return "";
+  }
+  const allCoords = asCoordinateCandidate(parsed);
+  if (!allCoords || !isValidCoordinateTree(allCoords)) {
+    console.error("Invalid input format");
     return "";
   }
   return calculateCentroidFromParsedCoords(allCoords);
@@ -351,22 +376,22 @@ export const buildMinimalFeatureCollection = (
     const coordinates = tryParseDataEntryGeoCoordinates(entry);
     if (coordinates === null) continue;
 
-    const geoType = entry.g__type as string | undefined;
-    if (!geoType) continue;
+    const geoType = entry.g__type;
+    if (!geoType || !isDataEntryGeometryType(geoType)) continue;
 
     const geometry = {
       type: geoType,
       coordinates,
     } as Geometry;
 
-    const rawId = entry[idField] as string | undefined;
+    const rawId = entry[idField];
     let featureId: number | string | undefined;
 
     if (generateId) {
       featureId = generateId(entry);
     } else if (isMapeoData) {
       // Mapeo IDs can be in _id or id; validate 16-char hex before hashing
-      const mapeoId = (entry._id || entry.id) as string | undefined;
+      const mapeoId = entry._id || entry.id;
       if (
         mapeoId &&
         typeof mapeoId === "string" &&
@@ -378,7 +403,7 @@ export const buildMinimalFeatureCollection = (
       featureId = murmurhash.v3(rawId);
     }
 
-    const properties: Record<string, unknown> = {};
+    const properties: GeoJsonProperties = {};
     if (rawId) {
       properties[idField] = rawId;
     }
@@ -398,7 +423,7 @@ export const buildMinimalFeatureCollection = (
 
     if (filterColumn) {
       const rawFilterValue = entry[filterColumn];
-      const filterValue = (rawFilterValue ?? "") as string;
+      const filterValue = rawFilterValue ?? "";
       if (filterValue && !colorMap.has(filterValue)) {
         colorMap.set(filterValue, getRandomColor());
       }

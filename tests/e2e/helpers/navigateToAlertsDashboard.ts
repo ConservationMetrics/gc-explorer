@@ -33,18 +33,9 @@ export const navigateToAlertsDashboard = async (page: Page): Promise<void> => {
   expect(alertsCard).not.toBeNull();
 
   await alertsCard!.locator("[data-testid='open-dataset-view-link']").click();
-
+  await page.waitForURL(/\/alerts\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
 
-  const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  const href = await alertsLink.getAttribute("href");
-  await page.goto(href!);
-
   await page.locator("canvas.mapboxgl-canvas").waitFor();
-
-  await page.waitForFunction(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
-    return map?.isStyleLoaded() && map.loaded();
-  });
+  await page.locator("#map[data-map-ready='true']").waitFor();
 };

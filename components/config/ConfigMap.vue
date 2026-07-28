@@ -51,8 +51,6 @@ const handleInput = (key: string, value: string | number | boolean): void => {
   emit("updateConfig", { [key]: value });
 };
 
-const configData = props.config as Record<string, string | number | boolean>;
-
 const terrainExaggeration = ref<number>(
   (props.config.MAPBOX_3D_TERRAIN_EXAGGERATION as number) ?? 1.5,
 );
@@ -397,7 +395,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
                       ? 22
                       : 0
           "
-          :value="configData[key]"
+          :value="config[key]"
           @input="
             (e) => {
               const raw = (e.target as HTMLInputElement).value;
@@ -450,7 +448,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
             :id="`${tableName}-${key}`"
             type="checkbox"
             class="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
-            :checked="Boolean(configData[key])"
+            :checked="Boolean(config[key])"
             @change="
               (e) => handleInput(key, (e.target as HTMLInputElement).checked)
             "
@@ -463,7 +461,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
         </label>
 
         <!-- Terrain Exaggeration Slider (shown when 3D is enabled) -->
-        <div v-if="Boolean(configData['MAPBOX_3D'])" class="mt-4 space-y-2">
+        <div v-if="Boolean(config['MAPBOX_3D'])" class="mt-4 space-y-2">
           <label class="block text-sm font-medium text-gray-700">
             3D {{ $t("terrainExaggeration") }}
           </label>

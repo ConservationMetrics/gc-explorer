@@ -3,16 +3,11 @@ import type { ViewConfig, ViewConfigRow, ViewType, User } from "@/types";
 import { Role } from "@/types";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
+import SearchBar from "@/components/shared/SearchBar.vue";
+import ViewTypeFilter from "@/components/shared/ViewTypeFilter.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
-import { Images, Map, Search, TriangleAlert } from "lucide-vue-next";
-
-/** A dataset grouped from one or more view rows sharing the same primaryDataset. */
-interface DatasetGroup {
-  tableName: string;
-  viewName: string;
-  config: ViewConfig;
-  viewTypes: ViewType[];
-}
+import { matchesSearchQuery, matchesViewTypeFilter } from "@/utils/viewFilters";
+import { Plus } from "lucide-vue-next";
 
 const viewRows = ref<ViewConfigRow[]>([]);
 const availableTables = ref<string[]>([]);
@@ -22,7 +17,7 @@ const {
 } = useRuntimeConfig();
 
 const { loggedIn, user } = useUserSession();
-const { error: showErrorToast } = useToast();
+const { error: showErrorToast, info: showInfoToast } = useToast();
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
@@ -65,36 +60,19 @@ const canAccessConfig = (config: ViewConfig) => {
 };
 
 /**
- * Groups permission-filtered view rows by their primaryDataset.
- * The first row's viewConfig is used as the representative config because dataset-level
- * display fields (DATASET_TABLE/VIEW_DESCRIPTION/ROUTE_LEVEL_PERMISSION) are shared.
+ * Permission-filtered view rows, one card per view (not grouped by dataset).
+ * Sorted by view name then type, matching the config dashboard.
  *
- * @returns {DatasetGroup[]} Datasets sorted by table name, each with deduped, sorted view types.
+ * @returns {ViewConfigRow[]} Accessible views ready for filtering and display.
  */
-const groupedDatasets = computed<DatasetGroup[]>(() => {
-  const groups: Record<string, DatasetGroup> = {};
-
-  viewRows.value
+const accessibleViews = computed<ViewConfigRow[]>(() => {
+  return viewRows.value
     .filter((row) => canAccessConfig(row.viewConfig))
-    .forEach((row) => {
-      const existing = groups[row.primaryDataset];
-      if (existing) {
-        if (!existing.viewTypes.includes(row.viewType)) {
-          existing.viewTypes.push(row.viewType);
-        }
-      } else {
-        groups[row.primaryDataset] = {
-          tableName: row.primaryDataset,
-          viewName: row.viewName || row.primaryDataset,
-          config: row.viewConfig,
-          viewTypes: [row.viewType],
-        };
-      }
-    });
-
-  return Object.values(groups)
-    .map((group) => ({ ...group, viewTypes: [...group.viewTypes].sort() }))
-    .sort((first, second) => first.tableName.localeCompare(second.tableName));
+    .sort((first, second) =>
+      `${first.viewName}-${first.viewType}`.localeCompare(
+        `${second.viewName}-${second.viewType}`,
+      ),
+    );
 });
 
 const activeViewFilter = ref<string>(
@@ -126,47 +104,42 @@ watch(searchQuery, (value) => {
 });
 
 /**
- * All distinct view types present across the permission-filtered datasets.
+ * All distinct view types present across the permission-filtered views.
  *
  * @returns {ViewType[]} Sorted array of unique view types (e.g. ["alerts", "gallery", "map"]).
  */
 const availableViewTypes = computed<ViewType[]>(() => {
   const types = new Set<ViewType>();
-  groupedDatasets.value.forEach((group) => {
-    group.viewTypes.forEach((type) => types.add(type));
-  });
+  accessibleViews.value.forEach((row) => types.add(row.viewType));
   return Array.from(types).sort();
 });
 
 /**
- * Applies the active view-type filter on top of the already permission-filtered datasets.
+ * Applies the active view-type filter on top of the already permission-filtered views.
  *
- * @returns {DatasetGroup[]} Datasets whose view types include the active filter.
+ * @returns {ViewConfigRow[]} Views whose type matches the active filter.
  */
-const displayedDatasets = computed<DatasetGroup[]>(() => {
-  if (activeViewFilter.value === "all") {
-    return groupedDatasets.value;
-  }
-  return groupedDatasets.value.filter((group) =>
-    group.viewTypes.includes(activeViewFilter.value as ViewType),
+const displayedViews = computed<ViewConfigRow[]>(() => {
+  return accessibleViews.value.filter((row) =>
+    matchesViewTypeFilter(activeViewFilter.value, row.viewType),
   );
 });
 
 /**
- * Applies search filtering on top of the view-type-filtered datasets.
- * Matches case-insensitively against display name (DATASET_TABLE or table name) and description.
+ * Applies search filtering on top of the view-type-filtered views.
+ * Matches case-insensitively against view name, primary dataset, and description.
  *
- * @returns {DatasetGroup[]} The search-filtered datasets.
+ * @returns {ViewConfigRow[]} The search-filtered views.
  */
-const searchedDatasets = computed<DatasetGroup[]>(() => {
-  const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return displayedDatasets.value;
-
-  return displayedDatasets.value.filter((group) => {
-    const displayName = group.viewName.toLowerCase();
-    const description = (group.config.VIEW_DESCRIPTION || "").toLowerCase();
-    return displayName.includes(q) || description.includes(q);
-  });
+const searchedViews = computed<ViewConfigRow[]>(() => {
+  return displayedViews.value.filter((row) =>
+    matchesSearchQuery(
+      searchQuery.value,
+      row.viewName,
+      row.primaryDataset,
+      row.viewConfig.VIEW_DESCRIPTION,
+    ),
+  );
 });
 
 // Check if user should see config link
@@ -201,7 +174,24 @@ onMounted(async () => {
         "top-center",
       );
     }, 200);
-    router.replace({ path: route.path, query: {} });
+    const query = { ...route.query };
+    delete query.reason;
+    router.replace({ path: route.path, query });
+    return;
+  }
+
+  if (route.query.reason === "moved") {
+    setTimeout(() => {
+      showInfoToast(
+        t("pageMovedTitle"),
+        t("pageMovedMessage"),
+        8000,
+        "top-center",
+      );
+    }, 200);
+    const query = { ...route.query };
+    delete query.reason;
+    router.replace({ path: route.path, query });
   }
 });
 
@@ -229,77 +219,45 @@ definePageMeta({ layout: "explorer" });
       </div>
 
       <!-- Search Bar -->
-      <div class="relative flex items-center mb-4">
-        <Search
-          class="absolute left-3 w-5 h-5 text-gray-400 pointer-events-none"
-        />
-        <input
-          v-model="searchQuery"
-          type="text"
-          :placeholder="$t('searchDatasets')"
-          class="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-        />
-      </div>
+      <SearchBar
+        v-model="searchQuery"
+        :placeholder="$t('searchDatasetViews')"
+      />
 
-      <!-- View Type Filter & Manage Datasets -->
+      <!-- View Type Filter & Add new dataset view -->
       <div
-        v-if="groupedDatasets.length"
+        v-if="accessibleViews.length"
         class="flex flex-wrap items-center justify-between gap-3 mb-4"
       >
-        <div class="flex flex-wrap gap-2">
-          <button
-            class="inline-flex items-center px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors"
-            :class="
-              activeViewFilter === 'all'
-                ? 'bg-violet-700 text-white border-violet-700'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-            "
-            @click="activeViewFilter = 'all'"
-          >
-            {{ $t("all") }}
-          </button>
-          <button
-            v-for="viewType in availableViewTypes"
-            :key="viewType"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors capitalize"
-            :class="
-              activeViewFilter === viewType
-                ? 'bg-violet-700 text-white border-violet-700'
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-            "
-            @click="activeViewFilter = viewType"
-          >
-            <Map v-if="viewType === 'map'" class="w-3.5 h-3.5" />
-            <Images v-else-if="viewType === 'gallery'" class="w-3.5 h-3.5" />
-            <TriangleAlert
-              v-else-if="viewType === 'alerts'"
-              class="w-3.5 h-3.5"
-            />
-            {{ $t(viewType) }}
-          </button>
-        </div>
+        <ViewTypeFilter
+          v-model="activeViewFilter"
+          :view-types="availableViewTypes"
+        />
         <!-- NuxtLink messes up the layout, hence the use of a regular anchor tag -->
         <a
           v-if="shouldShowConfigLink"
-          href="/config"
+          href="/config/new"
+          data-testid="add-new-dataset-view-button"
           class="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer"
         >
-          {{ $t("manageDatasets") }}
+          <Plus class="w-4 h-4 mr-2" />
+          {{ $t("addNewDatasetView") }}
         </a>
       </div>
 
       <!-- Project Cards Grid -->
       <div
-        v-if="searchedDatasets.length > 0"
+        v-if="searchedViews.length > 0"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-stretch"
       >
         <DatasetCard
-          v-for="dataset in searchedDatasets"
-          :key="dataset.tableName"
-          :table-name="dataset.tableName"
-          :view-name="dataset.viewName"
-          :config="dataset.config"
-          :view-types="dataset.viewTypes"
+          v-for="row in searchedViews"
+          :key="`${row.primaryDataset}-${row.viewType}`"
+          :table-name="row.primaryDataset"
+          :view-name="row.viewName"
+          :config="row.viewConfig"
+          :view-type="row.viewType"
+          :show-admin-gear="shouldShowConfigLink"
         />
       </div>
 
@@ -315,7 +273,7 @@ definePageMeta({ layout: "explorer" });
       <div v-else class="text-center py-12">
         <EmptyStateIllustration variant="indexNoDatasets" />
         <p class="text-gray-500 text-sm sm:text-base">
-          {{ $t("noDatasetViewsAvailable") || "No dataset views available" }}
+          {{ $t("noDatasetViewsAvailable") }}
         </p>
       </div>
     </template>

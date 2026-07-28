@@ -1,16 +1,36 @@
 <script setup lang="ts">
-import type { ViewConfig, ViewType } from "@/types";
+import {
+  supportsSecondaryDataset,
+  type ViewConfig,
+  type ViewType,
+} from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
 import ConfigPermissions from "./ConfigPermissions.vue";
 import ConfigCollapsibleSection from "./ConfigCollapsibleSection.vue";
 import { Check, Trash2 } from "lucide-vue-next";
 
-const props = defineProps<{
-  tableName: string;
-  viewType: ViewType;
-  viewConfig: ViewConfig;
-  configToCopy: ViewConfig | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    tableName: string;
+    viewType: ViewType;
+    viewConfig: ViewConfig;
+    secondaryDataset?: string | null;
+    configToCopy?: ViewConfig | null;
+    /** Create flow: allow Save even when the form matches the empty baseline. */
+    allowSaveWithoutChanges?: boolean;
+    showRemove?: boolean;
+    /** False when the parent blocks Save (e.g. missing primary or duplicate view). */
+    saveEnabled?: boolean;
+    secondaryEditable?: boolean;
+  }>(),
+  {
+    configToCopy: null,
+    allowSaveWithoutChanges: false,
+    showRemove: true,
+    saveEnabled: true,
+    secondaryEditable: false,
+  },
+);
 
 const emit = defineEmits(["submitConfig", "removeTableFromConfig"]);
 
@@ -37,7 +57,7 @@ const mediaKeys = computed(() => [
   "MEDIA_BASE_PATH_ICONS",
   "MEDIA_COLUMN",
 ]);
-const alertKeys = computed(() => ["MAPEO_CATEGORY_IDS", "MAPEO_TABLE"]);
+const alertKeys = computed(() => ["MAPEO_CATEGORY_IDS"]);
 const filterKeys = computed(() => [
   "FILTER_OUT_VALUES_FROM_COLUMN",
   "FRONT_END_FILTER_COLUMN",
@@ -45,7 +65,7 @@ const filterKeys = computed(() => [
   "UNWANTED_COLUMNS",
   "UNWANTED_SUBSTRINGS",
 ]);
-const datasetInfoKeys = computed(() => [
+const viewInfoKeys = computed(() => [
   "LOGO_URL",
   "DATASET_TABLE",
   "VIEW_HEADER_IMAGE",
@@ -55,23 +75,53 @@ const datasetInfoKeys = computed(() => [
 // The child config components expect a `views` array; wrap the single view type
 const viewTypeList = computed(() => [props.viewType]);
 
-// On mounted, set localConfig to props.config
-const originalConfig = ref<ViewConfig>({});
-const localConfig = ref<ViewConfig>({});
-onMounted(() => {
-  if (props.viewConfig) {
-    localConfig.value = JSON.parse(JSON.stringify(props.viewConfig));
-  }
-  originalConfig.value = JSON.parse(JSON.stringify(localConfig.value));
-});
+/**
+ * Creates an editable copy of a view configuration.
+ *
+ * @param {ViewConfig} config - Configuration to copy.
+ * @returns {ViewConfig} A detached copy of the configuration.
+ */
+const cloneConfig = (config: ViewConfig): ViewConfig => {
+  return JSON.parse(JSON.stringify(config)) as ViewConfig;
+};
 
-// Watch for changes to viewConfig prop and update baseline after save
+/**
+ * Replaces a config object's contents without replacing its reactive identity.
+ *
+ * @param {ViewConfig} target - Existing reactive config object.
+ * @param {ViewConfig} source - New configuration values.
+ * @returns {void}
+ */
+const replaceConfig = (target: ViewConfig, source: ViewConfig): void => {
+  const mutableTarget = target as Record<string, unknown>;
+  Object.keys(target).forEach((key) => {
+    mutableTarget[key] = undefined;
+  });
+  Object.assign(target, cloneConfig(source));
+};
+
+const localConfig = ref<ViewConfig>(cloneConfig(props.viewConfig));
+const originalConfig = ref<ViewConfig>(cloneConfig(props.viewConfig));
+const localSecondaryDataset = ref(props.secondaryDataset ?? "");
+const originalSecondaryDataset = ref(localSecondaryDataset.value);
+
+// Parent owns secondary UI (under primary); keep local in sync for Save/dirty.
+watch(
+  () => props.secondaryDataset,
+  (newSecondaryDataset) => {
+    localSecondaryDataset.value = newSecondaryDataset ?? "";
+  },
+);
+
+// After save (or load), reset config + secondary baselines together.
 watch(
   () => props.viewConfig,
   (newConfig) => {
     if (newConfig) {
-      localConfig.value = JSON.parse(JSON.stringify(newConfig));
-      originalConfig.value = JSON.parse(JSON.stringify(localConfig.value));
+      replaceConfig(localConfig.value, newConfig);
+      originalConfig.value = cloneConfig(newConfig);
+      localSecondaryDataset.value = props.secondaryDataset ?? "";
+      originalSecondaryDataset.value = localSecondaryDataset.value;
     }
   },
   { deep: true },
@@ -82,9 +132,23 @@ watch(
   () => props.configToCopy,
   (copiedConfig) => {
     if (copiedConfig) {
-      localConfig.value = JSON.parse(JSON.stringify(copiedConfig));
+      replaceConfig(localConfig.value, copiedConfig);
     }
   },
+);
+
+const shouldShowConfigMap = computed(
+  () => props.viewType === "alerts" || props.viewType === "map",
+);
+const shouldShowConfigMedia = computed(() =>
+  ["map", "gallery", "alerts"].includes(props.viewType),
+);
+const shouldShowConfigAlerts = computed(() => props.viewType === "alerts");
+const shouldShowConfigFilters = computed(
+  () => props.viewType === "map" || props.viewType === "gallery",
+);
+const shouldUseSecondaryDataset = computed(() =>
+  supportsSecondaryDataset(props.viewType),
 );
 
 // Form validations and helpers
@@ -95,10 +159,16 @@ const isChanged = computed(() => {
   const originalConfigFiltered = Object.fromEntries(
     Object.entries(originalConfig.value).filter(([value]) => value !== ""),
   );
-  return (
+  const configChanged =
     JSON.stringify(localConfigFiltered) !==
-    JSON.stringify(originalConfigFiltered)
-  );
+    JSON.stringify(originalConfigFiltered);
+  const secondaryDatasetChanged =
+    props.secondaryEditable &&
+    shouldUseSecondaryDataset.value &&
+    localSecondaryDataset.value.trim() !==
+      originalSecondaryDataset.value.trim();
+
+  return configChanged || secondaryDatasetChanged;
 });
 
 // Track permission validation state
@@ -113,15 +183,11 @@ const isFormValid = computed(() => {
   return isMapConfigValid && isPermissionValid.value;
 });
 
-const shouldShowConfigMap = computed(
-  () => props.viewType === "alerts" || props.viewType === "map",
-);
-const shouldShowConfigMedia = computed(() =>
-  ["map", "gallery", "alerts"].includes(props.viewType),
-);
-const shouldShowConfigAlerts = computed(() => props.viewType === "alerts");
-const shouldShowConfigFilters = computed(
-  () => props.viewType === "map" || props.viewType === "gallery",
+const canSubmit = computed(
+  () =>
+    props.saveEnabled &&
+    isFormValid.value &&
+    (props.allowSaveWithoutChanges || isChanged.value),
 );
 
 // Handlers for updating config and form submission
@@ -158,6 +224,9 @@ const handleSubmit = () => {
   emit("submitConfig", {
     tableName: props.tableName,
     config: localConfig.value,
+    secondaryDataset: shouldUseSecondaryDataset.value
+      ? localSecondaryDataset.value
+      : null,
   });
 };
 </script>
@@ -169,14 +238,12 @@ const handleSubmit = () => {
     <div
       class="bg-gradient-to-r from-violet-100 to-violet-50 border-b border-violet-200 px-6 py-4"
     >
-      <h2 class="text-xl font-bold text-gray-800">{{ tableName }}</h2>
+      <h2 class="text-xl font-bold text-gray-800">
+        {{ $t("configurationOptions") }}
+      </h2>
     </div>
     <div class="p-6">
       <form @submit.prevent="handleSubmit">
-        <ConfigCollapsibleSection :title="$t('views')" :default-open="true">
-          <ConfigViews :view-type="viewType" />
-        </ConfigCollapsibleSection>
-
         <ConfigCollapsibleSection
           v-if="shouldShowConfigMap"
           :title="$t('map')"
@@ -233,12 +300,12 @@ const handleSubmit = () => {
           />
         </ConfigCollapsibleSection>
 
-        <ConfigCollapsibleSection :title="$t('dataset')" :default-open="true">
-          <ConfigDatasetInfo
+        <ConfigCollapsibleSection :title="$t('view')" :default-open="true">
+          <ConfigViewInfo
             :table-name="tableName"
             :views="viewTypeList"
             :config="localConfig"
-            :keys="datasetInfoKeys"
+            :keys="viewInfoKeys"
             @update-config="handleConfigUpdate"
           />
         </ConfigCollapsibleSection>
@@ -259,19 +326,18 @@ const handleSubmit = () => {
           <button
             type="submit"
             data-testid="config-submit-button"
-            :disabled="!isChanged || !isFormValid"
+            :disabled="!canSubmit"
             class="flex items-center gap-2 px-6 py-3 font-medium rounded-lg transition-colors duration-200"
             :class="{
-              'bg-gray-300 text-gray-500 cursor-not-allowed':
-                !isChanged || !isFormValid,
-              'bg-violet-700 hover:bg-violet-800 text-white':
-                isChanged && isFormValid,
+              'bg-gray-300 text-gray-500 cursor-not-allowed': !canSubmit,
+              'bg-violet-700 hover:bg-violet-800 text-white': canSubmit,
             }"
           >
             <Check class="w-5 h-5" />
             {{ $t("save") }}
           </button>
           <button
+            v-if="showRemove"
             type="button"
             data-testid="config-remove-button"
             class="flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-medium rounded-lg transition-colors duration-200"

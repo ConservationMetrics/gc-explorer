@@ -1,4 +1,5 @@
 import { hasValidCoordinates } from "@/utils/geoUtils";
+import { parseDateMs } from "@/utils/dateUtils";
 
 import type { ColumnEntry, DataEntry, AllowedFileExtensions } from "@/types";
 
@@ -148,16 +149,6 @@ export const filterToSelectedValues = (
   });
 };
 
-const parseDateValue = (value: unknown): number | null => {
-  if (value == null || value === "") return null;
-  const str = String(value).trim();
-  if (!str) return null;
-  const num = Number(str);
-  if (!Number.isNaN(num) && num > 0) return num;
-  const date = new Date(str);
-  return Number.isNaN(date.getTime()) ? null : date.getTime();
-};
-
 /**
  * Keeps only rows where the timestamp column value falls within [minDate, maxDate] (inclusive).
  *
@@ -176,13 +167,13 @@ export const filterByDateRange = (
   if (!timestampColumn || (!minDate && !maxDate)) {
     return data;
   }
-  const minMs = minDate ? parseDateValue(minDate) : null;
-  const maxMs = maxDate ? parseDateValue(maxDate) : null;
+  const minMs = minDate ? parseDateMs(minDate) : null;
+  const maxMs = maxDate ? parseDateMs(maxDate) : null;
   if (minDate && minMs == null) return data;
   if (maxDate && maxMs == null) return data;
 
   return data.filter((item) => {
-    const valueMs = parseDateValue(item[timestampColumn]);
+    const valueMs = parseDateMs(item[timestampColumn]);
     if (valueMs == null) return false;
     if (minMs != null && valueMs < minMs) return false;
     if (maxMs != null && valueMs > maxMs) return false;

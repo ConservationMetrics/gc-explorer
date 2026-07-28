@@ -1,3 +1,5 @@
+import { format, getDate, isValid } from "date-fns";
+
 /**
  * Parses a value to milliseconds since epoch.
  * Accepts numeric timestamps (ms) or date strings (ISO or parseable by Date).
@@ -12,7 +14,7 @@ export const parseDateMs = (value: unknown): number | null => {
   const num = Number(str);
   if (!Number.isNaN(num) && num > 0) return num;
   const date = new Date(str);
-  return Number.isNaN(date.getTime()) ? null : date.getTime();
+  return isValid(date) ? date.getTime() : null;
 };
 
 /**
@@ -44,4 +46,28 @@ export const formatDate = (date: string): string => {
     ).toLocaleDateString();
   }
   return date;
+};
+
+/**
+ * Formats a Planet monthly basemap date as "YYYY_MM".
+ *
+ * @param date - Date to format.
+ * @returns Planet month identifier.
+ */
+export const formatPlanetMonth = (date: Date): string => {
+  return format(date, "yyyy_MM");
+};
+
+/**
+ * Returns the latest available Planet monthly basemap.
+ * The previous month's basemap becomes available after the 15th.
+ *
+ * @param date - Date used to determine availability.
+ * @returns Latest available Planet month identifier.
+ */
+export const getPlanetMaxMonth = (date: Date = new Date()): string => {
+  const monthsToSubtract = getDate(date) <= 15 ? 2 : 1;
+  const maxMonth = new Date(date);
+  maxMonth.setMonth(maxMonth.getMonth() - monthsToSubtract);
+  return formatPlanetMonth(maxMonth);
 };

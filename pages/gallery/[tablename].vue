@@ -22,6 +22,7 @@ const mediaBasePath = ref();
 const mediaColumn = ref();
 const mapboxAccessToken = ref<string | undefined>();
 const mapboxStyle = ref<string | undefined>();
+const primaryDataset = ref(table);
 const timestampColumn = ref<string | undefined>();
 
 const { data, error, refresh } = await useFetch(`/api/${table}/gallery`, {
@@ -39,6 +40,7 @@ if (data.value && !error.value) {
   mapboxStyle.value = data.value.mapboxStyle;
   mediaBasePath.value = data.value.mediaBasePath;
   mediaColumn.value = data.value.mediaColumn;
+  primaryDataset.value = data.value.primary_dataset;
   timestampColumn.value = data.value.timestampColumn;
 } else {
   console.error("Error fetching data:", error.value);
@@ -81,7 +83,7 @@ definePageMeta({ layout: "explorer" });
         :mapbox-style="mapboxStyle"
         :media-base-path="mediaBasePath"
         :media-column="mediaColumn"
-        :table="table"
+        :table="primaryDataset"
         :timestamp-column="timestampColumn"
       />
       <div

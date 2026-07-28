@@ -47,15 +47,31 @@ test("index page - displays available views and navigation flow", async ({
   const cardCount = await datasetCards.count();
   expect(cardCount).toBeGreaterThan(0);
 
-  // 7. Verify at least one "Open Dataset View" link is visible
-  const openProjectButton = page
+  // 7. Verify each view type has the matching Open link copy
+  const viewLinkLabels = {
+    alerts: "Open Alerts Dashboard",
+    gallery: "Open Gallery",
+    map: "Open Map",
+  };
+  for (const [viewType, label] of Object.entries(viewLinkLabels)) {
+    const card = datasetCards
+      .filter({
+        has: page.locator(`[data-testid='view-tag-${viewType}']`),
+      })
+      .first();
+    await expect(
+      card.locator("[data-testid='open-dataset-view-link']"),
+    ).toHaveText(label);
+  }
+
+  const openViewLink = page
     .locator("[data-testid='open-dataset-view-link']")
     .first();
-  await expect(openProjectButton).toBeVisible({ timeout: 15000 });
+  await expect(openViewLink).toBeVisible({ timeout: 15000 });
 
-  // 8. Verify the "Open Dataset View" link goes to a dataset page
-  const href = await openProjectButton.getAttribute("href");
-  expect(href).toMatch(/\/dataset\/\w+/);
+  // 8. Verify the Open link goes to the view route for that card's type
+  const href = await openViewLink.getAttribute("href");
+  expect(href).toMatch(/^\/(alerts|gallery|map)\/\w+/);
 
   /* 9. Ensure at least one view pill (alerts, maps, or gallery) is visible
    * This checks that the pills are rendered correctly using the proper test IDs
@@ -70,6 +86,80 @@ test("index page - displays available views and navigation flow", async ({
   const hasMap = viewPillTexts.some((text) => /map/i.test(text));
   const hasAlerts = viewPillTexts.some((text) => /alerts/i.test(text));
   expect(hasGallery || hasMap || hasAlerts).toBe(true);
+
+  // 11. Clicking open navigates directly to that view (no /dataset hub)
+  await openViewLink.click();
+  await page.waitForURL(/\/(alerts|gallery|map)\/\w+/, { timeout: 15000 });
+  expect(page.url()).not.toMatch(/\/dataset\//);
+});
+
+test("index page - one card per view for datasets with multiple views", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  // Seed has bcmform_responses with both map and gallery views — expect one card each.
+  const bcmformCards = page.locator("[data-testid='dataset-card']").filter({
+    has: page.getByRole("heading", {
+      name: "bcmform_responses",
+      exact: true,
+    }),
+  });
+  await expect(bcmformCards).toHaveCount(2);
+
+  const bcmformMapCards = bcmformCards.filter({
+    has: page.locator("[data-testid='view-tag-map']"),
+  });
+  const bcmformGalleryCards = bcmformCards.filter({
+    has: page.locator("[data-testid='view-tag-gallery']"),
+  });
+  await expect(bcmformMapCards).toHaveCount(1);
+  await expect(bcmformGalleryCards).toHaveCount(1);
+
+  // Each card shows exactly one view-type pill (not a multi-type group).
+  for (const card of await bcmformCards.all()) {
+    const tags = card.locator("[data-testid^='view-tag-']");
+    await expect(tags).toHaveCount(1);
+  }
+});
+
+test("index page - admin gear links to config edit for that view", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("[data-testid='dataset-card']", {
+    timeout: 15000,
+  });
+
+  const gear = page.locator("[data-testid='dataset-card-config-gear']").first();
+  await expect(gear).toBeVisible({ timeout: 5000 });
+
+  const href = await gear.getAttribute("href");
+  expect(href).toMatch(/^\/config\/\w+\?view_type=(alerts|gallery|map)$/);
+
+  await gear.click();
+  await page.waitForURL(/\/config\/\w+\?view_type=/, { timeout: 15000 });
+  await expect(page.locator("form")).toBeVisible({ timeout: 15000 });
+});
+
+test("index page - add new dataset view link navigates to create flow", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("main", { timeout: 15000 });
+
+  const addButton = page.locator(
+    "main a[data-testid='add-new-dataset-view-button']",
+  );
+  await expect(addButton).toBeVisible({ timeout: 10000 });
+  await addButton.click();
+  await page.waitForURL("**/config/new", { timeout: 10000 });
 });
 
 test("index page - view type filter buttons are visible and functional", async ({
@@ -251,7 +341,7 @@ test("index page - search bar shows no results message for gibberish", async ({
   expect(cardCount).toBe(0);
 
   // No results message should appear
-  const noResults = page.getByText(/no datasets match/i);
+  const noResults = page.getByText(/no dataset views match/i);
   await expect(noResults).toBeVisible({ timeout: 5000 });
 });
 

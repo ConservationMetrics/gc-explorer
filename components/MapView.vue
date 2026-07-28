@@ -37,6 +37,7 @@ import type {
   DataEntry,
   Dataset,
   FilterValues,
+  MapboxStyleConfig,
   MapLegendItem,
   MapStatistics,
 } from "@/types";
@@ -54,7 +55,7 @@ const props = defineProps<{
   mapboxLongitude: number;
   mapboxPitch: number | null;
   mapboxProjection: string;
-  mapboxStyle: string;
+  mapboxStyle: MapboxStyleConfig;
   mapboxBasemaps?: BasemapConfig[];
   mapboxZoom: number;
   mapbox3d: boolean;
@@ -639,7 +640,10 @@ onBeforeUnmount(() => {
       @toggle-layer-visibility="toggleLayerVisibility"
     />
     <BasemapSelector
-      v-if="showBasemapSelector"
+      v-if="
+        showBasemapSelector &&
+        ((mapboxBasemaps?.length ?? 0) > 1 || !!planetApiKey)
+      "
       :mapbox-style="mapboxStyle"
       :mapbox-basemaps="mapboxBasemaps || []"
       :planet-api-key="planetApiKey"

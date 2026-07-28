@@ -41,25 +41,14 @@ test("alerts dashboard - layer visibility toggles", async ({
 
   expect(alertsCard).not.toBeNull();
 
-  // 5. Click "Open Dataset View" on the card with alerts tag
+  // 5. Click "Open Alerts Dashboard" on the card with alerts tag
   const openProjectButton = alertsCard!.locator(
     "[data-testid='open-dataset-view-link']",
   );
   await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
   await openProjectButton.click();
+  await page.waitForURL(/\/alerts\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
-
-  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
-  const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
-
-  // 7. Click the alerts link to navigate to the alerts page
-  const href = await alertsLink.getAttribute("href");
-  console.log("Alerts link href:", href);
-  await alertsLink.click();
-
-  // 8. Ensure the route change completed
-  await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
   // Debug: Check if map container exists
   const mapContainer = page.locator("#map");
@@ -85,29 +74,8 @@ test("alerts dashboard - layer visibility toggles", async ({
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await expect(mapCanvas).toBeVisible();
 
-  // 8. Wait for the map to be fully loaded
-  await page.waitForFunction(
-    () => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
-      return map?.isStyleLoaded() && map.loaded();
-    },
-    { timeout: 5000 },
-  );
-
-  // 9. Wait for the map legend to be prepared and visible
-  // First wait for the map to be idle (which triggers legend preparation)
-  await page.waitForFunction(
-    () => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
-      return map && !map.isMoving() && map.loaded();
-    },
-    { timeout: 10000 },
-  );
-
-  // Wait a bit more for the legend to be prepared
-  await page.waitForTimeout(2000);
+  // 8. Wait for the map to be fully loaded and ready (layers added, legend populated)
+  await page.locator("#map[data-map-ready='true']").waitFor();
 
   const mapLegend = page.getByTestId("map-legend");
 
@@ -184,11 +152,11 @@ test("alerts dashboard - basemap toggle icon is visible", async ({
   authenticatedPageAsAdmin: page,
 }) => {
   await page.goto("/alerts/fake_alerts");
-  await page.waitForLoadState("networkidle");
 
-  // Wait for map to load (BasemapSelector renders after map is ready)
+  // Wait for map to load (BasemapSelector renders when >1 basemap or Planet is available)
   await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
 
+  // fake_alerts seed has PLANET_API_KEY, so selector shows even with a single Mapbox basemap
   const basemapToggle = page.locator(".basemap-toggle").first();
   await expect(basemapToggle).toBeVisible({ timeout: 10000 });
 
@@ -201,7 +169,6 @@ test("alerts dashboard - legend can control all alert layer types", async ({
 }) => {
   // Navigate to alerts dashboard (auth required so API returns data and #map renders)
   await page.goto("/alerts/fake_alerts");
-  await page.waitForLoadState("networkidle");
 
   // Wait for map to load (AlertsDashboard mounts inside ClientOnly after fetch)
   await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
@@ -395,26 +362,14 @@ test("alerts dashboard - LineString buffer click behavior", async ({
 
   expect(alertsCard).not.toBeNull();
 
-  // 5. Click "Open Dataset View" on the card with alerts tag
+  // 5. Click "Open Alerts Dashboard" on the card with alerts tag
   const openProjectButton = alertsCard!.locator(
     "[data-testid='open-dataset-view-link']",
   );
   await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
   await openProjectButton.click();
+  await page.waitForURL(/\/alerts\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
-
-  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
-  const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
-
-  // 3. Get the href first
-  const href = await alertsLink.getAttribute("href");
-
-  // 4. Navigate directly to alerts page
-  await page.goto(href!);
-
-  // 5. Ensure the route change completed
-  await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
   // 6. Wait until the map container has been added to the DOM
   await page.locator("#map").waitFor({ state: "attached", timeout: 5000 });
@@ -423,15 +378,8 @@ test("alerts dashboard - LineString buffer click behavior", async ({
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await expect(mapCanvas).toBeVisible();
 
-  // 8. Wait for the map to be fully loaded
-  await page.waitForFunction(
-    () => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
-      return map?.isStyleLoaded() && map.loaded();
-    },
-    { timeout: 5000 },
-  );
+  // 8. Wait for the map to be fully loaded and ready
+  await page.locator("#map[data-map-ready='true']").waitFor();
 
   // 9. Check if LineString features exist
   const hasLineStrings = await page.evaluate(() => {
@@ -542,26 +490,14 @@ test("alerts dashboard - geometry type specific interactions", async ({
 
   expect(alertsCard).not.toBeNull();
 
-  // 5. Click "Open Dataset View" on the card with alerts tag
+  // 5. Click "Open Alerts Dashboard" on the card with alerts tag
   const openProjectButton = alertsCard!.locator(
     "[data-testid='open-dataset-view-link']",
   );
   await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
   await openProjectButton.click();
+  await page.waitForURL(/\/alerts\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
-
-  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
-  const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
-
-  // 3. Get the href first
-  const href = await alertsLink.getAttribute("href");
-
-  // 4. Navigate directly to alerts page
-  await page.goto(href!);
-
-  // 5. Ensure the route change completed
-  await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
   // 6. Wait until the map container has been added to the DOM
   await page.locator("#map").waitFor({ state: "attached", timeout: 5000 });
@@ -570,15 +506,8 @@ test("alerts dashboard - geometry type specific interactions", async ({
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await expect(mapCanvas).toBeVisible();
 
-  // 8. Wait for the map to be fully loaded
-  await page.waitForFunction(
-    () => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
-      return map?.isStyleLoaded() && map.loaded();
-    },
-    { timeout: 5000 },
-  );
+  // 8. Wait for the map to be fully loaded and ready
+  await page.locator("#map[data-map-ready='true']").waitFor();
 
   // 9. Test Point features (clustered circles)
   const pointFeatures = await page.evaluate(() => {
@@ -763,42 +692,22 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
 
   expect(alertsCard).not.toBeNull();
 
-  // 5. Click "Open Dataset View" on the card with alerts tag
+  // 5. Click "Open Alerts Dashboard" on the card with alerts tag
   const openProjectButton = alertsCard!.locator(
     "[data-testid='open-dataset-view-link']",
   );
   await openProjectButton.waitFor({ state: "visible", timeout: 10000 });
   await openProjectButton.click();
+  await page.waitForURL(/\/alerts\/\w+/, { timeout: 15000 });
   await page.waitForLoadState("networkidle");
-
-  // 6. Find the alerts link on the dataset page (ViewCard with alerts)
-  const alertsLink = page.locator('a[href^="/alerts/"]').first();
-  await alertsLink.waitFor({ state: "visible", timeout: 10000 });
-
-  // 7. Click the alerts link to navigate to the alerts page
-  const href = await alertsLink.getAttribute("href");
-  console.log("Alerts link href:", href);
-  await alertsLink.click();
-  await page.waitForURL("http://localhost:8080/alerts/*", { timeout: 5000 });
 
   // Wait for map to load
   await page.locator("#map").waitFor({ state: "attached", timeout: 5000 });
   const mapCanvas = page.locator("canvas.mapboxgl-canvas").first();
   await expect(mapCanvas).toBeVisible();
 
-  await page.waitForFunction(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    return !!window._testMap;
-  });
-
-  await page.waitForFunction(
-    () => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
-      return map?.isStyleLoaded() && map.loaded();
-    },
-    { timeout: 5000 },
-  );
+  // Wait for the map to be fully loaded and ready
+  await page.locator("#map[data-map-ready='true']").waitFor();
 
   // Test 1: Verify cluster circles exist (instead of old symbols)
   const clusterFeatures = await page.evaluate(() => {

@@ -1,22 +1,32 @@
 <script setup lang="ts">
 import ConfigCard from "@/components/config/ConfigCard.vue";
+import CopyConfigControl from "@/components/config/CopyConfigControl.vue";
+import SavedModal from "@/components/config/SavedModal.vue";
+import SelectDatasetField from "@/components/config/SelectDatasetField.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
+import ViewTypePill from "@/components/shared/ViewTypePill.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
-import type { ViewConfig, ViewConfigRow, Views, ViewType } from "@/types";
-import { CheckCircle2, ChevronLeft, Copy, Eye } from "lucide-vue-next";
+import {
+  supportsSecondaryDataset,
+  type ViewConfig,
+  type ViewConfigRow,
+  type ViewType,
+} from "@/types";
+import { ChevronLeft, Eye } from "lucide-vue-next";
 
 const route = useRoute();
 const datasetRaw = route.params.dataset;
 const dataset = Array.isArray(datasetRaw)
   ? datasetRaw.join("/")
   : String(datasetRaw || "");
+
 const viewType = computed(() => route.query.view_type as ViewType | undefined);
 
-const viewsConfig = ref<Views>({});
 const viewRows = ref<ViewConfigRow[]>([]);
-const tableNames = ref();
 const dataFetched = ref(false);
 const datasetConfig = ref<ViewConfig | null>(null);
+const secondaryDataset = ref<string | null>(null);
+const viewName = ref("");
 const errorMessage = ref<string | null>(null);
 
 const editedViewType = ref<ViewType | undefined>(undefined);
@@ -29,12 +39,6 @@ const { data, error, refresh } = await useFetch<{
 if (data.value && !error.value) {
   const allViewRows = data.value.views;
   viewRows.value = allViewRows;
-  tableNames.value = data.value.availableTables;
-
-  viewsConfig.value = allViewRows.reduce((acc, row) => {
-    acc[row.primaryDataset] = row.viewConfig;
-    return acc;
-  }, {} as Views);
 
   const editedViewRow = allViewRows.find(
     (row) =>
@@ -44,25 +48,33 @@ if (data.value && !error.value) {
 
   if (editedViewRow) {
     datasetConfig.value = editedViewRow.viewConfig;
+    secondaryDataset.value = editedViewRow.secondaryDataset ?? null;
+    viewName.value = editedViewRow.viewName;
     editedViewType.value = editedViewRow.viewType;
     dataFetched.value = true;
   } else {
     console.warn(`Dataset "${dataset}" not found in config`);
-    await navigateTo("/config");
+    await navigateTo("/");
   }
 } else {
   console.error("Error fetching data:", error.value);
 }
 
 const resolvedViewType = computed(() => viewType.value ?? editedViewType.value);
+const availableTables = computed(() => data.value?.availableTables ?? []);
+const showsSecondaryDataset = computed(() =>
+  supportsSecondaryDataset(resolvedViewType.value),
+);
 
 const showSavedModal = ref(false);
 
 const submitConfig = async ({
   config,
+  secondaryDataset: submittedSecondaryDataset,
   tableName,
 }: {
   config: ViewConfig;
+  secondaryDataset?: string | null;
   tableName: string;
 }) => {
   errorMessage.value = null;
@@ -73,11 +85,16 @@ const submitConfig = async ({
       query: resolvedViewType.value
         ? { view_type: resolvedViewType.value }
         : undefined,
-      body: JSON.stringify(config),
+      body: JSON.stringify({
+        config,
+        secondaryDataset: submittedSecondaryDataset,
+      }),
     });
     // Update the local datasetConfig to reflect the saved state
     // This will trigger the watch in ConfigCard to update originalConfig baseline thus clearing the button and applying edit
     datasetConfig.value = JSON.parse(JSON.stringify(config));
+    secondaryDataset.value = submittedSecondaryDataset ?? null;
+    viewName.value = config.DATASET_TABLE?.trim() || tableName;
     showSavedModal.value = true;
     setTimeout(() => {
       showSavedModal.value = false;
@@ -129,11 +146,11 @@ const handleConfirmRemove = async () => {
       // Wait 3 seconds to show success message, then navigate
       setTimeout(async () => {
         showModal.value = false;
-        await navigateTo("/config");
+        await navigateTo("/");
       }, 3000);
     } catch (error) {
       console.error("Error removing table from config:", error);
-      showErrorToast(t("errorCouldNotRemoveDataset"));
+      showErrorToast(t("errorCouldNotRemoveDatasetView"));
       showModal.value = false;
     }
   }
@@ -146,24 +163,31 @@ const handleCancelRemove = () => {
   tableNameToRemove.value = null;
 };
 
+const handleSecondaryDatasetUpdate = (value: string) => {
+  secondaryDataset.value = value.trim() === "" ? null : value;
+};
+
 const {
   showCopyModal,
   selectedCopySource,
   configToCopy,
-  otherDatasets,
+  otherCopySources,
   handleOpenCopyModal,
   handleConfirmCopy,
   handleCancelCopy,
-} = useCopyConfig(viewsConfig, dataset);
-
-const getCopySourceLabel = (configKey: string) => {
-  return viewsConfig.value[configKey]?.DATASET_TABLE || configKey;
-};
+} = useCopyConfig(viewRows, dataset, resolvedViewType);
 
 const { t } = useI18n();
 const { error: showErrorToast } = useToast();
+const pageDisplayName = computed(() => viewName.value.trim() || dataset);
 useHead({
-  title: "GuardianConnector Explorer: " + t("configuration") + " - " + dataset,
+  title: computed(
+    () =>
+      "GuardianConnector Explorer: " +
+      t("configuration") +
+      " - " +
+      pageDisplayName.value,
+  ),
 });
 
 definePageMeta({ layout: "explorer" });
@@ -185,33 +209,78 @@ definePageMeta({ layout: "explorer" });
         <div class="mb-6">
           <div class="flex items-center justify-between mb-4">
             <NuxtLink
-              to="/config"
+              to="/"
               class="inline-flex items-center gap-2 text-violet-600 hover:text-violet-800 font-medium transition-colors"
             >
               <ChevronLeft class="w-5 h-5" />
-              {{ $t("configuration") }}
+              {{ $t("availableViews") }}
             </NuxtLink>
             <NuxtLink
-              :to="`/dataset/${dataset}`"
+              v-if="resolvedViewType"
+              :to="`/${resolvedViewType}/${dataset}`"
               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors"
             >
               <Eye class="w-4 h-4" />
-              {{ $t("viewDataset") }}
+              {{
+                $t("openView", {
+                  view: $t(
+                    resolvedViewType === "alerts"
+                      ? "alertsDashboard"
+                      : resolvedViewType,
+                  ),
+                })
+              }}
             </NuxtLink>
           </div>
           <div class="flex items-center justify-between">
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-              {{ $t("configuration") }} - {{ dataset }}
+              {{ $t("configuration") }} - {{ pageDisplayName }}
             </h1>
-            <button
-              v-if="otherDatasets.length > 0"
-              data-testid="copy-config-button"
-              class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              @click="handleOpenCopyModal"
-            >
-              <Copy class="w-4 h-4" />
-              {{ $t("copyConfigFromDataset") }}
-            </button>
+            <CopyConfigControl
+              :sources="otherCopySources"
+              :show-modal="showCopyModal"
+              :selected-source="selectedCopySource"
+              @open="handleOpenCopyModal"
+              @confirm="handleConfirmCopy"
+              @cancel="handleCancelCopy"
+              @update:selected-source="selectedCopySource = $event"
+            />
+          </div>
+          <div
+            v-if="resolvedViewType"
+            data-testid="view-metadata"
+            class="mt-4 grid grid-cols-1 gap-3 text-sm sm:max-w-2xl sm:grid-cols-2 sm:gap-x-6 sm:gap-y-4"
+          >
+            <dl class="contents">
+              <div>
+                <dt class="text-gray-500">{{ $t("view") }}</dt>
+                <dd class="mt-1">
+                  <ViewTypePill :view-type="resolvedViewType" />
+                </dd>
+              </div>
+              <div class="min-w-0">
+                <dt class="text-gray-500">{{ $t("primaryDatasetLabel") }}</dt>
+                <dd
+                  data-testid="view-metadata-primary"
+                  class="mt-1 font-medium text-gray-900 break-words"
+                  style="overflow-wrap: anywhere"
+                >
+                  {{ dataset }}
+                </dd>
+              </div>
+            </dl>
+            <SelectDatasetField
+              v-if="showsSecondaryDataset"
+              id="edit-view-secondaryDataset-select"
+              :model-value="secondaryDataset"
+              :label="$t('secondaryDatasetOptional')"
+              :options="availableTables"
+              :placeholder="$t('selectSecondaryDataset')"
+              test-id="edit-secondary-dataset-select"
+              :exclude-value="dataset"
+              class="sm:col-start-1"
+              @update:model-value="handleSecondaryDatasetUpdate"
+            />
           </div>
         </div>
         <div
@@ -225,7 +294,9 @@ definePageMeta({ layout: "explorer" });
           :table-name="dataset"
           :view-type="resolvedViewType"
           :view-config="datasetConfig"
+          :secondary-dataset="secondaryDataset"
           :config-to-copy="configToCopy"
+          :secondary-editable="true"
           @submit-config="submitConfig"
           @remove-table-from-config="handleRemoveTableFromConfig"
         />
@@ -263,87 +334,12 @@ definePageMeta({ layout: "explorer" });
           </div>
         </div>
       </div>
-      <!-- Copy Config Modal -->
-      <div
-        v-if="showCopyModal"
-        data-testid="copy-config-modal"
-        class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-      >
-        <div
-          data-testid="copy-config-modal-content"
-          class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
-        >
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">
-            {{ $t("copyConfigFromDataset") }}
-          </h3>
-          <p class="text-sm text-gray-600 mb-4">
-            {{ $t("copyConfigDescription") }}
-          </p>
-          <select
-            v-model="selectedCopySource"
-            data-testid="copy-config-select"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors mb-4"
-          >
-            <option value="" disabled>
-              {{ $t("selectDataset") }}
-            </option>
-            <option
-              v-for="dsName in otherDatasets"
-              :key="dsName"
-              :value="dsName"
-            >
-              {{ getCopySourceLabel(dsName) }}
-            </option>
-          </select>
-          <div class="flex gap-3 justify-end">
-            <button
-              data-testid="copy-config-confirm-button"
-              :disabled="!selectedCopySource"
-              class="px-4 py-2 font-medium rounded-lg transition-colors"
-              :class="{
-                'bg-gray-300 text-gray-500 cursor-not-allowed':
-                  !selectedCopySource,
-                'bg-violet-700 hover:bg-violet-800 text-white':
-                  selectedCopySource,
-              }"
-              @click="handleConfirmCopy"
-            >
-              {{ $t("confirm") }}
-            </button>
-            <button
-              data-testid="copy-config-cancel-button"
-              class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors"
-              @click="handleCancelCopy"
-            >
-              {{ $t("cancel") }}
-            </button>
-          </div>
-        </div>
-      </div>
     </ClientOnly>
 
-    <!-- Saved! Modal -->
-    <ClientOnly>
-      <div
-        v-if="showSavedModal"
-        data-testid="saved-modal"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-        @click="showSavedModal = false"
-      >
-        <div
-          data-testid="saved-modal-content"
-          class="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4 text-center"
-          @click.stop
-        >
-          <div class="mb-4">
-            <CheckCircle2 class="w-16 h-16 mx-auto text-green-500" />
-          </div>
-          <h2 class="text-2xl font-bold text-gray-900 mb-2">Saved!</h2>
-          <p class="text-gray-600">
-            Configuration has been saved successfully.
-          </p>
-        </div>
-      </div>
-    </ClientOnly>
+    <SavedModal
+      :show="showSavedModal"
+      dismissible
+      @close="showSavedModal = false"
+    />
   </div>
 </template>

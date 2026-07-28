@@ -64,6 +64,13 @@
       "when": 1782822317981,
       "tag": "0008_blue_vanisher",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783506319409,
+      "tag": "0009_strip_mapeo_table_from_view_config",
+      "breakpoints": true
     }
   ]
 }

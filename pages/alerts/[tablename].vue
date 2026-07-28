@@ -33,7 +33,8 @@ const mapboxZoom = ref(0);
 const mapbox3d = ref(false);
 const mapbox3dTerrainExaggeration = ref(0);
 const mapeoData = ref();
-const mapeoTable = ref<string>();
+const primaryDataset = ref(table);
+const secondaryDataset = ref<string | null>(null);
 const mediaBasePath = ref();
 const mediaBasePathAlerts = ref();
 const planetApiKey = ref();
@@ -63,7 +64,8 @@ if (data.value && !error.value) {
   mapbox3d.value = data.value.mapbox3d;
   mapbox3dTerrainExaggeration.value = data.value.mapbox3dTerrainExaggeration;
   mapeoData.value = data.value.mapeoData;
-  mapeoTable.value = data.value.mapeoTable;
+  primaryDataset.value = data.value.primary_dataset;
+  secondaryDataset.value = data.value.secondary_dataset;
   mediaBasePath.value = data.value.mediaBasePath;
   mediaBasePathAlerts.value = data.value.mediaBasePathAlerts;
   planetApiKey.value = data.value.planetApiKey;
@@ -116,11 +118,11 @@ useHead({
         :mapbox3d="mapbox3d"
         :mapbox3d-terrain-exaggeration="mapbox3dTerrainExaggeration"
         :mapeo-data="mapeoData"
-        :mapeo-table="mapeoTable"
+        :primary-dataset="primaryDataset"
+        :secondary-dataset="secondaryDataset"
         :media-base-path="mediaBasePath"
         :media-base-path-alerts="mediaBasePathAlerts"
         :planet-api-key="planetApiKey"
-        :table="table"
       />
     </ClientOnly>
   </div>

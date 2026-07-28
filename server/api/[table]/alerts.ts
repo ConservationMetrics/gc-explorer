@@ -1,8 +1,9 @@
 import {
   ALERTS_METADATA_PROJECTION,
-  fetchData,
   fetchTableConfig,
   fetchTableSqlColumns,
+  fetchViewData,
+  fetchViewTables,
 } from "@/server/database/dbOperations";
 import murmurhash from "murmurhash";
 import {
@@ -59,6 +60,10 @@ export default defineEventHandler(async (event: H3Event) => {
 
   try {
     const tableConfig = await fetchTableConfig(table, "alerts");
+    const { primaryTable, secondaryTable } = await fetchViewTables(
+      table,
+      "alerts",
+    );
 
     // Check visibility permissions
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
@@ -66,27 +71,43 @@ export default defineEventHandler(async (event: H3Event) => {
     // Validate user authentication and permissions
     await validatePermissions(event, permission);
 
-    const availableMainColumns = await fetchTableSqlColumns(table);
+    const availableMainColumns = await fetchTableSqlColumns(primaryTable);
     const alertsMainProjection = buildRequiredAlertsProjection(
-      table,
+      primaryTable,
       ALERTS_MAIN_PROJECTION,
       REQUIRED_ALERTS_MAIN_COLUMNS,
       availableMainColumns,
       "Alerts dashboard datasets",
     );
     const availableMetadataColumns = await fetchTableSqlColumns(
-      `${table}__metadata`,
+      `${primaryTable}__metadata`,
     );
     const alertsMetadataProjection = ALERTS_METADATA_PROJECTION.filter(
       (columnName) => availableMetadataColumns.includes(columnName),
     );
 
-    const { mainData, metadata } = (await fetchData(table, {
-      limit,
-      mainColumns: alertsMainProjection,
-      includeMetadata: alertsMetadataProjection.length > 0,
-      metadataColumns: alertsMetadataProjection,
-    })) as {
+    const mapeoCategoryIds = tableConfig.MAPEO_CATEGORY_IDS;
+    const shouldFetchMapeoData = Boolean(secondaryTable && mapeoCategoryIds);
+    const mapeoMainColumns = shouldFetchMapeoData
+      ? await fetchTableSqlColumns(secondaryTable!)
+      : [];
+
+    const { primaryData, secondaryData } = await fetchViewData(primaryTable, {
+      secondaryTable: shouldFetchMapeoData ? secondaryTable : null,
+      primaryOptions: {
+        limit,
+        mainColumns: alertsMainProjection,
+        includeMetadata: alertsMetadataProjection.length > 0,
+        metadataColumns: alertsMetadataProjection,
+      },
+      secondaryOptions: {
+        limit,
+        mainColumns: mapeoMainColumns,
+        includeColumnsData: true,
+      },
+    });
+
+    const { mainData, metadata } = primaryData as {
       mainData: DataEntry[];
       metadata: AlertsMetadata[];
     };
@@ -110,28 +131,15 @@ export default defineEventHandler(async (event: H3Event) => {
       ),
     };
 
-    // MAPEO_TABLE is read from the config JSON, which is also mirrored into the
-    // views.secondary_dataset column on save. This reader is the reason that column
-    // is not yet the single source of truth. TODO(single-source-of-truth): once the
-    // API returns secondary_dataset (and MAPEO_TABLE is stripped from the JSON),
-    // read it from the column instead. See deriveSecondaryDataset in dbOperations.
-    const mapeoTable = tableConfig.MAPEO_TABLE;
-    const mapeoCategoryIds = tableConfig.MAPEO_CATEGORY_IDS;
+    const mapeoTable = secondaryTable;
 
     let mapeoData: FeatureCollection | null = null;
 
-    if (mapeoTable && mapeoCategoryIds) {
-      const mapeoMainColumns = await fetchTableSqlColumns(mapeoTable);
-      // Fetch Mapeo data with explicit projection.
-      const rawMapeoData = await fetchData(mapeoTable, {
-        mainColumns: mapeoMainColumns,
-        includeColumnsData: true,
-      });
-
+    if (secondaryData && mapeoCategoryIds) {
       // Filter data to remove unwanted columns and substrings
       const filteredMapeoData = filterUnwantedKeys(
-        rawMapeoData.mainData,
-        rawMapeoData.columnsData,
+        secondaryData.mainData,
+        secondaryData.columnsData,
         tableConfig.UNWANTED_COLUMNS,
         tableConfig.UNWANTED_SUBSTRINGS,
       );
@@ -189,7 +197,9 @@ export default defineEventHandler(async (event: H3Event) => {
       mediaBasePath: tableConfig.MEDIA_BASE_PATH,
       mediaBasePathAlerts: tableConfig.MEDIA_BASE_PATH_ALERTS,
       planetApiKey: tableConfig.PLANET_API_KEY,
-      table,
+      primary_dataset: primaryTable,
+      secondary_dataset: secondaryTable,
+      table: primaryTable,
       rowLimitReached: mainData.length >= limit,
       routeLevelPermission: tableConfig.ROUTE_LEVEL_PERMISSION,
     };

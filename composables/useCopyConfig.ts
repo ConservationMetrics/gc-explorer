@@ -1,29 +1,69 @@
-import type { Views, ViewConfig } from "@/types";
+import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
+import type { MaybeRefOrGetter } from "vue";
+import { toValue } from "vue";
+
+export type CopyConfigSource = {
+  key: string;
+  label: string;
+  viewConfig: ViewConfig;
+  secondaryDataset?: string | null;
+};
 
 /**
- * Composable for copying configuration from one dataset to another.
- * Manages modal state, dataset selection, and config cloning.
+ * Builds a stable lookup key for a view copy source.
  *
- * @param {Ref<Views>} viewsConfig - Reactive reference to all dataset configs.
- * @param {string} currentDataset - The current dataset key to exclude from the list.
+ * @param {string} primaryDataset - Primary dataset table name.
+ * @param {ViewType} viewType - View type of the source row.
+ * @returns {string} Key unique per (dataset, view type).
+ */
+export const copySourceKey = (
+  primaryDataset: string,
+  viewType: ViewType,
+): string => `${primaryDataset}::${viewType}`;
+
+/**
+ * Composable for copying configuration from another same-type view.
+ * Manages modal state, source selection, and config cloning.
+ *
+ * @param {Ref<ViewConfigRow[]>} viewRows - All configured view rows.
+ * @param {MaybeRefOrGetter<string>} currentDataset - Primary of the view being
+ *   created/edited (string or ref — ref is needed on create where primary changes).
+ * @param {MaybeRefOrGetter<ViewType | undefined>} currentViewType - View type
+ *   being created/edited.
  * @returns {object} Reactive state and handlers for the copy config modal.
  */
 export const useCopyConfig = (
-  viewsConfig: Ref<Views>,
-  currentDataset: string,
+  viewRows: Ref<ViewConfigRow[]>,
+  currentDataset: MaybeRefOrGetter<string>,
+  currentViewType: MaybeRefOrGetter<ViewType | undefined>,
 ) => {
   const showCopyModal = ref(false);
   const selectedCopySource = ref<string>("");
   const configToCopy = ref<ViewConfig | null>(null);
+  const secondaryDatasetToCopy = ref<string | null>(null);
 
-  const otherDatasets = computed(() => {
-    return Object.keys(viewsConfig.value)
+  const otherCopySources = computed<CopyConfigSource[]>(() => {
+    const type = toValue(currentViewType);
+    if (!type) {
+      return [];
+    }
+
+    const primary = toValue(currentDataset);
+
+    return viewRows.value
       .filter(
-        (key) =>
-          key !== currentDataset &&
-          Object.keys(viewsConfig.value[key]).length > 0,
+        (row) =>
+          row.viewType === type &&
+          row.primaryDataset !== primary &&
+          Object.keys(row.viewConfig).length > 0,
       )
-      .sort();
+      .map((row) => ({
+        key: copySourceKey(row.primaryDataset, row.viewType),
+        label: row.viewName || row.primaryDataset,
+        viewConfig: row.viewConfig,
+        secondaryDataset: row.secondaryDataset ?? null,
+      }))
+      .sort((first, second) => first.label.localeCompare(second.label));
   });
 
   const handleOpenCopyModal = () => {
@@ -33,9 +73,12 @@ export const useCopyConfig = (
 
   const handleConfirmCopy = () => {
     if (!selectedCopySource.value) return;
-    const sourceConfig = viewsConfig.value[selectedCopySource.value];
-    if (sourceConfig) {
-      configToCopy.value = JSON.parse(JSON.stringify(sourceConfig));
+    const source = otherCopySources.value.find(
+      (candidate) => candidate.key === selectedCopySource.value,
+    );
+    if (source) {
+      configToCopy.value = JSON.parse(JSON.stringify(source.viewConfig));
+      secondaryDatasetToCopy.value = source.secondaryDataset ?? null;
     }
     showCopyModal.value = false;
   };
@@ -49,7 +92,8 @@ export const useCopyConfig = (
     showCopyModal,
     selectedCopySource,
     configToCopy,
-    otherDatasets,
+    secondaryDatasetToCopy,
+    otherCopySources,
     handleOpenCopyModal,
     handleConfirmCopy,
     handleCancelCopy,

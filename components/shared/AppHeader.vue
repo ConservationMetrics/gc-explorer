@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import type { User } from "@/types";
-import { Role } from "@/types";
 import GlobeLanguagePicker from "@/components/shared/GlobeLanguagePicker.vue";
 import HeaderBrand from "@/components/shared/HeaderBrand.vue";
-import { SlidersHorizontal } from "lucide-vue-next";
 
 const config = useRuntimeConfig();
 const { t } = useI18n();
@@ -12,36 +9,11 @@ const communityName = computed(() => {
   return config.public.communityName || t("community");
 });
 
-const {
-  public: { authStrategy },
-} = useRuntimeConfig();
-
-const { loggedIn, user } = useUserSession();
-
 const mobileMenuOpen = ref(false);
 
 const toggleMobileMenu = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value;
 };
-
-const shouldShowConfigLink = computed(() => {
-  // Show config link in CI environment
-  if (process.env.CI) {
-    return true;
-  }
-
-  if (authStrategy === "none") {
-    return true;
-  }
-
-  if (authStrategy === "auth0" && loggedIn.value && user.value) {
-    const typedUser = user.value as User | null;
-    const userRole = typedUser?.userRole ?? Role.SignedIn;
-    return userRole >= Role.Admin;
-  }
-
-  return false;
-});
 </script>
 
 <template>
@@ -101,22 +73,6 @@ const shouldShowConfigLink = computed(() => {
 
       <!-- Right: Action buttons -->
       <div class="flex items-center gap-3 ml-auto mr-2 shrink-0">
-        <!-- Config Management -->
-        <div v-if="shouldShowConfigLink" class="relative group">
-          <NuxtLink
-            to="/config"
-            class="w-10 h-10 rounded-full bg-white flex items-center justify-center hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
-          >
-            <SlidersHorizontal class="w-5 h-5 text-gray-600" />
-          </NuxtLink>
-          <!-- Tooltip -->
-          <div
-            class="absolute right-0 mt-2 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap"
-          >
-            {{ $t("manageDatasets") || "Manage Datasets" }}
-          </div>
-        </div>
-
         <!-- Language Picker -->
         <div class="relative group">
           <GlobeLanguagePicker theme="white" variant="icon" />
@@ -162,19 +118,6 @@ const shouldShowConfigLink = computed(() => {
       v-if="mobileMenuOpen"
       class="hidden max-[1000px]:block mt-4 p-4 bg-white rounded-lg border border-violet-200 shadow-lg"
     >
-      <!-- Config Management (if admin) -->
-      <NuxtLink
-        v-if="shouldShowConfigLink"
-        to="/config"
-        class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-violet-50 transition-colors mb-2"
-        @click="mobileMenuOpen = false"
-      >
-        <SlidersHorizontal class="w-5 h-5 text-gray-600" />
-        <span class="text-sm text-gray-700">{{
-          $t("manageDatasets") || "Manage Datasets"
-        }}</span>
-      </NuxtLink>
-
       <!-- Language Picker -->
       <GlobeLanguagePicker variant="mobile" />
     </div>

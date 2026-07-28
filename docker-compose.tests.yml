@@ -47,12 +47,21 @@ services:
       # Initialize DB on first container startup
       #   /docker-entrypoint-initdb.d is a special directory recognized by Postgres:
       #   If the data directory is empty postgres will run these files.
+      # Create config DB before warehouse seed (alphabetical order under initdb.d)
+      - ./tests/db-seed/00-create-guardianconnector.sql:/docker-entrypoint-initdb.d/00-create-guardianconnector.sql:ro
       # Warehouse seed only — guardianconnector fixtures are seeded by Playwright globalSetup
       - ./tests/db-seed/warehouse.sql:/docker-entrypoint-initdb.d/warehouse.sql:ro
       # Persist database data after first container startup
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U testuser -d test_warehouse"]
+      # Require both DBs: guardianconnector used to be created after pg_isready in
+      # the command script, so Playwright could race and fail seed with
+      # "database guardianconnector does not exist".
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U testuser -d test_warehouse && psql -U testuser -d guardianconnector -c 'SELECT 1'",
+        ]
       interval: 2s
       timeout: 5s
       retries: 10
@@ -63,9 +72,11 @@ services:
         docker-entrypoint.sh postgres &
         # Wait for postgres to be ready
         until pg_isready -U testuser -d test_warehouse; do sleep 1; done
-        # Create guardianconnector database
+        # Ensure guardianconnector exists (init script only runs on empty volumes)
         echo '🔍 Creating guardianconnector database...'
         psql -U testuser -d test_warehouse -c 'CREATE DATABASE guardianconnector;' || echo 'guardianconnector database may already exist'
+        # Wait until guardianconnector accepts connections before we finish init logging
+        until psql -U testuser -d guardianconnector -c 'SELECT 1' >/dev/null 2>&1; do sleep 1; done
         # guardianconnector fixtures are seeded by Playwright globalSetup after migrations
         # Log the database state
         echo '🔍 Database initialization complete'
