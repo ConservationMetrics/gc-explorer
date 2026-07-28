@@ -140,16 +140,16 @@ const submitConfig = async ({
     } else if (err instanceof Error) {
       errorMessage.value = err.message;
     } else {
-      errorMessage.value = t("errorCouldNotAddDataset");
+      errorMessage.value = t("errorCouldNotAddDatasetView");
     }
-    showErrorToast(t("errorCouldNotAddDataset"));
+    showErrorToast(t("errorCouldNotAddDatasetView"));
   } finally {
     isSaving.value = false;
   }
 };
 
 useHead({
-  title: "GuardianConnector Explorer: " + t("addNewTable"),
+  title: "GuardianConnector Explorer: " + t("addNewDatasetView"),
 });
 
 definePageMeta({ layout: "explorer" });
@@ -162,7 +162,7 @@ definePageMeta({ layout: "explorer" });
       class="inline-flex items-center gap-2 text-violet-600 hover:text-violet-800 font-medium mb-4 transition-colors"
     >
       <ChevronLeft class="w-5 h-5" />
-      {{ $t("addNewTable") }}
+      {{ $t("addNewDatasetView") }}
     </NuxtLink>
 
     <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
