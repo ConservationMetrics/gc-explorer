@@ -341,7 +341,7 @@ test("index page - search bar shows no results message for gibberish", async ({
   expect(cardCount).toBe(0);
 
   // No results message should appear
-  const noResults = page.getByText(/no datasets match/i);
+  const noResults = page.getByText(/no dataset views match/i);
   await expect(noResults).toBeVisible({ timeout: 5000 });
 });
 
