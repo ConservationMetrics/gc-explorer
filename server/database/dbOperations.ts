@@ -551,7 +551,10 @@ export const fetchViewConfigRowsForTable = async (
       .select()
       .from(viewConfig)
       .where(
-        inArray(viewConfig.primaryDataset, datasetNameLookupKeys(primaryDataset)),
+        inArray(
+          viewConfig.primaryDataset,
+          datasetNameLookupKeys(primaryDataset),
+        ),
       );
 
     return result.map((row) => ({
@@ -619,7 +622,10 @@ export const fetchTableConfig = async (
     if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
-    console.error(`Error fetching config for table "${normalizedTable}":`, error);
+    console.error(
+      `Error fetching config for table "${normalizedTable}":`,
+      error,
+    );
     throw error;
   }
 };

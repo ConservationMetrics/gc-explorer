@@ -116,14 +116,17 @@ const submitConfig = async ({
   errorMessage.value = null;
   isSaving.value = true;
   try {
-    await $fetch(`/api/config/new_table/${encodeDatasetNameForUrl(tableName)}`, {
-      method: "POST",
-      query: { view_type: viewType.value },
-      body: JSON.stringify({
-        config,
-        secondaryDataset: submittedSecondaryDataset,
-      }),
-    });
+    await $fetch(
+      `/api/config/new_table/${encodeDatasetNameForUrl(tableName)}`,
+      {
+        method: "POST",
+        query: { view_type: viewType.value },
+        body: JSON.stringify({
+          config,
+          secondaryDataset: submittedSecondaryDataset,
+        }),
+      },
+    );
     showSavedModal.value = true;
     setTimeout(async () => {
       showSavedModal.value = false;

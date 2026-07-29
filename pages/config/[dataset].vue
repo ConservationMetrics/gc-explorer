@@ -21,9 +21,7 @@ import {
 const route = useRoute();
 const datasetRaw = route.params.dataset;
 const dataset = decodeDatasetNameFromUrl(
-  Array.isArray(datasetRaw)
-    ? datasetRaw.join("/")
-    : String(datasetRaw || ""),
+  Array.isArray(datasetRaw) ? datasetRaw.join("/") : String(datasetRaw || ""),
 );
 
 const viewType = computed(() => route.query.view_type as ViewType | undefined);
@@ -86,16 +84,19 @@ const submitConfig = async ({
   errorMessage.value = null;
 
   try {
-    await $fetch(`/api/config/update_config/${encodeDatasetNameForUrl(tableName)}`, {
-      method: "POST",
-      query: resolvedViewType.value
-        ? { view_type: resolvedViewType.value }
-        : undefined,
-      body: JSON.stringify({
-        config,
-        secondaryDataset: submittedSecondaryDataset,
-      }),
-    });
+    await $fetch(
+      `/api/config/update_config/${encodeDatasetNameForUrl(tableName)}`,
+      {
+        method: "POST",
+        query: resolvedViewType.value
+          ? { view_type: resolvedViewType.value }
+          : undefined,
+        body: JSON.stringify({
+          config,
+          secondaryDataset: submittedSecondaryDataset,
+        }),
+      },
+    );
     // Update the local datasetConfig to reflect the saved state
     // This will trigger the watch in ConfigCard to update originalConfig baseline thus clearing the button and applying edit
     datasetConfig.value = JSON.parse(JSON.stringify(config));
