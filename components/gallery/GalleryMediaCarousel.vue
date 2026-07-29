@@ -20,6 +20,12 @@ const hasMultiple = computed(() => props.filePaths.length > 1);
 const currentFilePath = computed(
   () => props.filePaths[currentIndex.value] ?? null,
 );
+const isCurrentAudio = computed(() => {
+  const extension = currentFilePath.value?.split(".").pop()?.toLowerCase();
+  return extension
+    ? props.allowedFileExtensions.audio.includes(extension)
+    : false;
+});
 
 const slideLabel = computed(() =>
   t("gallerySlideOf", {
@@ -76,7 +82,8 @@ const blurCarouselControl = (event: Event) => {
     <template v-if="hasMultiple">
       <button
         type="button"
-        class="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        class="absolute left-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        :class="isCurrentAudio ? 'top-2' : 'top-1/2 -translate-y-1/2'"
         data-testid="gallery-carousel-prev"
         :aria-label="t('galleryPreviousMedia')"
         @click.stop="
@@ -88,7 +95,8 @@ const blurCarouselControl = (event: Event) => {
       </button>
       <button
         type="button"
-        class="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        class="absolute right-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        :class="isCurrentAudio ? 'top-2' : 'top-1/2 -translate-y-1/2'"
         data-testid="gallery-carousel-next"
         :aria-label="t('galleryNextMedia')"
         @click.stop="
@@ -128,7 +136,7 @@ const blurCarouselControl = (event: Event) => {
               goToIndex(index);
               blurCarouselControl($event);
             "
-          />
+          ></button>
         </div>
       </div>
     </template>

@@ -59,6 +59,9 @@ describe("GalleryMediaCarousel", () => {
       true,
     );
     expect(
+      wrapper.get('[data-testid="gallery-carousel-prev"]').classes(),
+    ).toEqual(expect.arrayContaining(["top-1/2", "-translate-y-1/2"]));
+    expect(
       wrapper.findAll('[data-testid^="gallery-carousel-dot-"]'),
     ).toHaveLength(2);
   });
@@ -76,6 +79,26 @@ describe("GalleryMediaCarousel", () => {
     expect(
       wrapper.find('[data-testid="stub-carousel-media-file"]').text(),
     ).toBe("b.jpg");
+  });
+
+  it("moves 40px carousel controls to the top corners for audio slides", async () => {
+    const wrapper = mount(GalleryMediaCarousel, {
+      props: {
+        allowedFileExtensions,
+        filePaths: ["a.jpg", "recording.mp3"],
+        mediaBasePath: "/media",
+      },
+    });
+
+    await wrapper.get('[data-testid="gallery-carousel-next"]').trigger("click");
+
+    for (const testId of ["gallery-carousel-prev", "gallery-carousel-next"]) {
+      const classes = wrapper.get(`[data-testid="${testId}"]`).classes();
+      expect(classes).toEqual(
+        expect.arrayContaining(["top-2", "h-10", "w-10"]),
+      );
+      expect(classes).not.toContain("-translate-y-1/2");
+    }
   });
 
   it("does not render carousel controls for a single file", () => {
