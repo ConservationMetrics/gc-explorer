@@ -219,7 +219,10 @@ definePageMeta({ layout: "explorer" });
       </div>
 
       <!-- Search Bar -->
-      <SearchBar v-model="searchQuery" :placeholder="$t('searchDatasets')" />
+      <SearchBar
+        v-model="searchQuery"
+        :placeholder="$t('searchDatasetViews')"
+      />
 
       <!-- View Type Filter & Add new dataset view -->
       <div
@@ -238,7 +241,7 @@ definePageMeta({ layout: "explorer" });
           class="flex items-center px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors cursor-pointer"
         >
           <Plus class="w-4 h-4 mr-2" />
-          {{ $t("addNewTable") }}
+          {{ $t("addNewDatasetView") }}
         </a>
       </div>
 

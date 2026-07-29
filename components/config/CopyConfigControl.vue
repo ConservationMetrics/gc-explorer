@@ -31,7 +31,7 @@ const emit = defineEmits<{
       @click="emit('open')"
     >
       <Copy class="w-4 h-4" />
-      {{ $t("copyConfigFromDataset") }}
+      {{ $t("copyConfigFromDatasetView") }}
     </button>
 
     <div
@@ -44,7 +44,7 @@ const emit = defineEmits<{
         class="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
       >
         <h3 class="text-lg font-semibold text-gray-900 mb-2">
-          {{ $t("copyConfigFromDataset") }}
+          {{ $t("copyConfigFromDatasetView") }}
         </h3>
         <p class="text-sm text-gray-600 mb-4">
           {{ $t("copyConfigDescription") }}

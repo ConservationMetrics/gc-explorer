@@ -159,7 +159,7 @@ const handleConfirmRemove = async () => {
       }, 3000);
     } catch (error) {
       console.error("Error removing table from config:", error);
-      showErrorToast(t("errorCouldNotRemoveDataset"));
+      showErrorToast(t("errorCouldNotRemoveDatasetView"));
       showModal.value = false;
     }
   }

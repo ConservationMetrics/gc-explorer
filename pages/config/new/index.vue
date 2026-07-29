@@ -51,7 +51,7 @@ const handleContinue = async () => {
 };
 
 useHead({
-  title: "GuardianConnector Explorer: " + t("addNewTable"),
+  title: "GuardianConnector Explorer: " + t("addNewDatasetView"),
 });
 
 definePageMeta({ layout: "explorer" });
@@ -68,7 +68,7 @@ definePageMeta({ layout: "explorer" });
     </NuxtLink>
 
     <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-      {{ $t("addNewTable") }}
+      {{ $t("addNewDatasetView") }}
     </h1>
     <p class="text-gray-600 mb-8">{{ $t("createViewTypeDescription") }}</p>
 
