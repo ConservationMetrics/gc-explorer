@@ -37,13 +37,23 @@ test("gallery page - filter container and optional timestamp filter", async ({
     .getByTestId("filter-container")
     .waitFor({ state: "attached", timeout: 10000 });
 
+  const filterToggle = page.getByTestId("filter-toggle");
+  await expect(filterToggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByTestId("filter-container")).toBeHidden();
+  await expect(page.getByTestId("filter-toolbar")).not.toHaveClass(/sticky/);
+
+  await filterToggle.click();
+  await expect(filterToggle).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByTestId("filter-container")).toBeVisible();
+  await expect(page.getByTestId("clear-all-filters")).toBeVisible();
+
   const timestampFilter = page.getByTestId("timestamp-filter");
   const timestampVisible = await timestampFilter.isVisible().catch(() => false);
 
   if (timestampVisible) {
     await expect(page.getByTestId("reset-date-button")).toBeVisible();
     await expect(page.getByTestId("date-slider")).toBeVisible();
-    await page.getByTestId("reset-date-button").click();
+    await page.getByTestId("clear-all-filters").click();
     await expect(page.getByTestId("date-slider")).toBeVisible();
   }
 

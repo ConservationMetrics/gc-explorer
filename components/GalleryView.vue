@@ -67,6 +67,8 @@ const loading = ref(false);
 const selectedEntry = ref<DataEntry | null>(null);
 const selectedFilePaths = ref<string[]>([]);
 const selectedCentroid = ref<string | undefined>();
+const showFilters = ref(false);
+const filterResetKey = ref(0);
 const isFilteredToEmpty = computed(
   () => props.galleryData.length > 0 && filteredData.value.length === 0,
 );
@@ -133,6 +135,13 @@ const onTimestampFilter = (payload: {
   end: Date | null;
 }) => {
   setDateRange(payload);
+  applyAllFilters();
+};
+
+const clearAllFilters = () => {
+  selectedFilterValues.value = [];
+  setDateRange({ start: null, end: null });
+  filterResetKey.value++;
   applyAllFilters();
 };
 
@@ -222,21 +231,54 @@ const closeDetail = () => {
     <template v-else>
       <div
         v-if="filterColumn || timestampColumn"
-        class="sticky top-10 right-10 z-10 mb-4 flex flex-col gap-0.5"
-        data-testid="filter-container"
+        class="mb-4"
+        data-testid="filter-toolbar"
       >
-        <DataFilter
-          v-if="filterColumn"
-          :data="galleryData"
-          :filter-column="filterColumn"
-          @filter="filterValues"
-        />
-        <TimestampFilter
-          v-if="timestampColumn"
-          :data="galleryData"
-          :timestamp-column="timestampColumn"
-          @filter="onTimestampFilter"
-        />
+        <div class="flex justify-end">
+          <button
+            type="button"
+            class="inline-flex min-h-10 items-center justify-center rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
+            data-testid="filter-toggle"
+            aria-controls="gallery-filter-panel"
+            :aria-expanded="showFilters"
+            @click="showFilters = !showFilters"
+          >
+            {{ $t("filters") }}
+          </button>
+        </div>
+        <div
+          v-show="showFilters"
+          id="gallery-filter-panel"
+          class="gallery-filter-panel mt-3 rounded-xl border border-violet-200 bg-violet-50 p-3 shadow-sm"
+          data-testid="filter-container"
+        >
+          <div class="mb-3 flex justify-end">
+            <button
+              type="button"
+              class="inline-flex min-h-10 items-center justify-center rounded-lg border border-violet-300 bg-white px-4 py-2 text-sm font-medium text-violet-700 transition-colors hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
+              data-testid="clear-all-filters"
+              @click="clearAllFilters"
+            >
+              {{ $t("clearAll") }}
+            </button>
+          </div>
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-start">
+            <DataFilter
+              v-if="filterColumn"
+              :key="`filter-${filterResetKey}`"
+              :data="galleryData"
+              :filter-column="filterColumn"
+              @filter="filterValues"
+            />
+            <TimestampFilter
+              v-if="timestampColumn"
+              :key="`timestamp-${filterResetKey}`"
+              :data="galleryData"
+              :timestamp-column="timestampColumn"
+              @filter="onTimestampFilter"
+            />
+          </div>
+        </div>
       </div>
       <div
         v-if="filteredData.length === 0"
@@ -273,3 +315,35 @@ const closeDetail = () => {
     ></div>
   </div>
 </template>
+
+<style scoped>
+.gallery-filter-panel :deep(.filter-modal),
+.gallery-filter-panel :deep([data-testid="timestamp-filter"]) {
+  min-width: 0;
+  max-width: none;
+  width: 100%;
+  margin-bottom: 0;
+  border: 1px solid #ddd6fe;
+  background: white;
+  box-shadow: none;
+}
+
+.gallery-filter-panel :deep([data-testid="reset-date-button"]) {
+  background-color: #7c3aed;
+}
+
+.gallery-filter-panel :deep([data-testid="reset-date-button"]:hover) {
+  background-color: #6d28d9;
+}
+
+.gallery-filter-panel :deep(.vue-slider-process) {
+  background-color: #7c3aed !important;
+}
+
+@media (min-width: 1024px) {
+  .gallery-filter-panel :deep(.filter-modal),
+  .gallery-filter-panel :deep([data-testid="timestamp-filter"]) {
+    flex: 1 1 0;
+  }
+}
+</style>
