@@ -775,7 +775,6 @@ export const removeTableFromConfig = async (
   tableName: string,
   viewType?: ViewType,
 ): Promise<void> => {
-  const normalizedTable = normalizeTableName(tableName);
   try {
     // Delete just the targeted view; without a view type fall back to removing
     // every view of the dataset.
