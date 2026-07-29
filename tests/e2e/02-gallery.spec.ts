@@ -362,6 +362,9 @@ test("gallery page - filter functionality", async ({
   const filterCount = await filterContainer.count();
 
   if (filterCount > 0) {
+    await page.getByTestId("filter-toggle").click();
+    await expect(filterContainer).toBeVisible();
+
     // 4. Click the filter select to open dropdown
     await page.getByTestId("filter-select").click();
 
@@ -396,20 +399,18 @@ test("gallery page - filter functionality", async ({
     // 10. Verify filtering changed the number of items (or at least applied)
     expect(filteredCount).toBeLessThanOrEqual(initialCount);
 
-    // 11. Clear filter by clicking the X button on selected tag
-    const removeFilterButton = page.getByTestId("remove-filter-button");
-    if ((await removeFilterButton.count()) > 0) {
-      await removeFilterButton.click();
+    // 11. Clear all category and date filters
+    await page.getByTestId("clear-all-filters").click();
+    await expect(page.getByTestId("remove-filter-button")).toHaveCount(0);
 
-      // 12. Wait for filter to clear
-      await page.waitForTimeout(1500);
+    // 12. Wait for filters to clear
+    await page.waitForTimeout(1500);
 
-      // 13. Verify clearing category filter did not shrink the list (date filter may still be active)
-      const clearedItems = page.locator('[data-testid^="gallery-item-"]');
-      const clearedCount = await clearedItems.count();
-      expect(clearedCount).toBeGreaterThanOrEqual(filteredCount);
-      expect(clearedCount).toBeGreaterThan(0);
-    }
+    // 13. Verify clearing all filters restores the gallery
+    const clearedItems = page.locator('[data-testid^="gallery-item-"]');
+    const clearedCount = await clearedItems.count();
+    expect(clearedCount).toBeGreaterThanOrEqual(filteredCount);
+    expect(clearedCount).toBeGreaterThan(0);
   } else {
     // If no filter, just verify gallery loaded
     const galleryItems = page.locator('[data-testid^="gallery-item-"]');
