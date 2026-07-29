@@ -85,7 +85,7 @@ describe("MediaFile gallery variant", () => {
     expect(wrapper.get('[data-testid="gallery-audio-filename"]').text()).toBe(
       "recording.mp3",
     );
-    expect(wrapper.get("audio").classes()).toContain("w-full");
+    expect(wrapper.get("audio").classes()).toContain("w-[calc(100%_-_4rem)]");
   });
 
   it("leaves default audio rendering unchanged", () => {
@@ -102,6 +102,7 @@ describe("MediaFile gallery variant", () => {
     expect(wrapper.find('[data-testid="gallery-audio-card"]').exists()).toBe(
       false,
     );
+    expect(wrapper.get("audio").classes()).toContain("w-full");
     expect(
       wrapper.find('[data-testid="gallery-audio-filename"]').exists(),
     ).toBe(false);

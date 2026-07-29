@@ -214,7 +214,13 @@ const imageClass = computed(() => {
           {{ fileName }}
         </p>
       </template>
-      <audio controls class="w-full" preload="none" @click.stop>
+      <!-- Gallery slides inset the player so it never sits under the carousel arrows. -->
+      <audio
+        controls
+        :class="isGalleryVariant ? 'w-[calc(100%_-_4rem)]' : 'w-full'"
+        preload="none"
+        @click.stop
+      >
         <source
           :src="mediaBasePath + '/' + filePath"
           :type="
