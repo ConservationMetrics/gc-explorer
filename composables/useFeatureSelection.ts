@@ -14,7 +14,7 @@ export function useFeatureSelection(
   localAlertsData: Ref<Feature | AlertsData>,
   showSidebar: Ref<boolean>,
   showIntroPanel: Ref<boolean>,
-  isMapeo: Ref<boolean>,
+  isSecondary: Ref<boolean>,
 ) {
   // Feature selection state
   const imageCaption = ref();
@@ -288,17 +288,18 @@ export function useFeatureSelection(
       ? featureObject.alertID
       : feature.id;
 
-    // Update URL with alertId or mapeoDocId; remove incidentId so address bar matches "copy link to alert"
+    // Update URL with alertId or secondaryDocId; remove incidentId so address bar matches "copy link to alert"
     const query = { ...route.query };
     delete query.alertId;
     delete query.mapeoDocId;
+    delete query.secondaryDocId;
     delete query.incidentId;
     if (featureObject.alertID) {
       query.alertId = featureObject.alertID;
-      isMapeo.value = false;
+      isSecondary.value = false;
     } else if (featureObject.id || featureObject._id) {
-      query.mapeoDocId = featureObject.id || featureObject._id;
-      isMapeo.value = true;
+      query.secondaryDocId = featureObject._id || featureObject.id;
+      isSecondary.value = true;
     }
     router.replace({ query });
 
@@ -420,7 +421,7 @@ export function useFeatureSelection(
     } else {
       isAlert.value = false;
 
-      // If a Mapeo feature is selected, clear any cluster highlights
+      // If a secondary feature is selected, clear any cluster highlights
       if (selectedClusterId.value !== null) {
         selectedClusterId.value = null;
         selectedClusterSource.value = null;

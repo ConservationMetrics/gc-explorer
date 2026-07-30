@@ -103,7 +103,9 @@ export interface ViewConfig {
   MAPBOX_STYLE?: MapboxStyleConfig; // Deprecated: use MAPBOX_BASEMAPS instead
   MAPBOX_BASEMAPS?: string; // JSON string of BasemapConfig[]
   MAPBOX_ZOOM?: number;
+  /** @deprecated Prefer SECONDARY_CATEGORY_IDS; kept for dual-read of unmigrated configs. */
   MAPEO_CATEGORY_IDS?: string;
+  SECONDARY_CATEGORY_IDS?: string;
   MAP_LEGEND_LAYER_IDS?: string;
   MEDIA_BASE_PATH?: string;
   MEDIA_BASE_PATH_ALERTS?: string;
@@ -332,7 +334,12 @@ export interface Incident {
   };
 }
 
-export type FeatureType = "alert" | "mapeo";
+/** "mapeo" is a legacy alias for secondary features (lookup by `_id`). */
+export type FeatureType = "alert" | "secondary" | "mapeo";
+
+export const isSecondaryFeatureType = (
+  featureType: FeatureType | string | undefined,
+): boolean => featureType === "secondary" || featureType === "mapeo";
 
 export interface CollectionEntryInput {
   source_table: string;

@@ -1,5 +1,8 @@
 import type { BasemapConfig, MapboxStyleConfig, ViewConfig } from "@/types";
 
+import { sql } from "drizzle-orm";
+
+import { warehouseDb } from "@/server/database/dbConnection";
 import { fetchTableNames } from "@/server/database/dbOperations";
 
 export type ParsedBasemaps = {
@@ -62,4 +65,36 @@ export const getFilteredTableNames = async () => {
   );
 
   return tableNames;
+};
+
+/**
+ * Warehouse tables that expose both `g__type` and `g__coordinates` (plottable secondary datasets).
+ */
+export const getGeospatialTableNames = async (): Promise<string[]> => {
+  const tableNames = await getFilteredTableNames();
+  if (tableNames.length === 0) return [];
+
+  const rows = await warehouseDb.execute(sql`
+    SELECT table_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND column_name IN ('g__type', 'g__coordinates')
+      AND table_name IN (${sql.join(
+        tableNames.map((name) => sql`${name}`),
+        sql`, `,
+      )})
+    GROUP BY table_name
+    HAVING COUNT(DISTINCT column_name) = 2
+  `);
+
+  const geospatial = new Set(
+    rows
+      .map(
+        (row: unknown) =>
+          (row as Record<string, unknown>).table_name as string | undefined,
+      )
+      .filter((name): name is string => Boolean(name)),
+  );
+
+  return tableNames.filter((name) => geospatial.has(name));
 };

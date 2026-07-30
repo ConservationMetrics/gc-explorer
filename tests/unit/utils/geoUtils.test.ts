@@ -411,25 +411,23 @@ describe("buildMinimalFeatureCollection", () => {
     expect(result.features[1].id).toBe(200);
   });
 
-  it("normalizes Mapeo hex IDs to 32-bit integers when isMapeoData is true", () => {
-    const mapeoData = [
+  it("normalizes 16-char hex document IDs to 32-bit integers for Mapbox", () => {
+    const hexIdData = [
       {
         _id: "0084cdc57c0b0280",
         g__type: "Point",
         g__coordinates: "[10.5, 45.2]",
-        name: "Mapeo observation",
+        name: "Hex id observation",
       },
       {
         id: "00a1b2c3d4e5f678",
         g__type: "Point",
         g__coordinates: "[11.0, 46.0]",
-        name: "Mapeo observation (id field)",
+        name: "Hex id observation (id field)",
       },
     ] as DataEntry[];
 
-    const result = buildMinimalFeatureCollection(mapeoData, {
-      isMapeoData: true,
-    });
+    const result = buildMinimalFeatureCollection(hexIdData);
 
     expect(result.features).toHaveLength(2);
     result.features.forEach((feature) => {
@@ -438,7 +436,7 @@ describe("buildMinimalFeatureCollection", () => {
     });
   });
 
-  it("skips Mapeo ID normalization for non-hex IDs", () => {
+  it("hashes non-hex IDs via the standard murmurhash path", () => {
     const nonHexData = [
       {
         _id: "not-a-hex-id",
@@ -447,12 +445,10 @@ describe("buildMinimalFeatureCollection", () => {
       },
     ];
 
-    const result = buildMinimalFeatureCollection(nonHexData, {
-      isMapeoData: true,
-    });
+    const result = buildMinimalFeatureCollection(nonHexData);
 
     expect(result.features).toHaveLength(1);
-    expect(result.features[0].id).toBeUndefined();
+    expect(typeof result.features[0].id).toBe("number");
   });
 
   it("uses custom idField", () => {

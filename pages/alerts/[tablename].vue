@@ -39,7 +39,7 @@ const mapboxBasemaps = ref<BasemapConfig[]>([]);
 const mapboxZoom = ref(0);
 const mapbox3d = ref(false);
 const mapbox3dTerrainExaggeration = ref(0);
-const mapeoData = ref();
+const secondaryData = ref();
 const primaryDataset = ref(table);
 const secondaryDataset = ref<string | null>(null);
 const mediaBasePath = ref();
@@ -70,7 +70,7 @@ if (data.value && !error.value) {
   mapboxZoom.value = data.value.mapboxZoom;
   mapbox3d.value = data.value.mapbox3d;
   mapbox3dTerrainExaggeration.value = data.value.mapbox3dTerrainExaggeration;
-  mapeoData.value = data.value.mapeoData;
+  secondaryData.value = data.value.secondaryData;
   primaryDataset.value = data.value.primary_dataset;
   secondaryDataset.value = data.value.secondary_dataset;
   mediaBasePath.value = data.value.mediaBasePath;
@@ -124,7 +124,7 @@ useHead({
         :mapbox-zoom="mapboxZoom"
         :mapbox3d="mapbox3d"
         :mapbox3d-terrain-exaggeration="mapbox3dTerrainExaggeration"
-        :mapeo-data="mapeoData"
+        :secondary-data="secondaryData"
         :primary-dataset="primaryDataset"
         :secondary-dataset="secondaryDataset"
         :media-base-path="mediaBasePath"

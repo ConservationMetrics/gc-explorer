@@ -120,7 +120,7 @@ const getMapboxLayersForLegend = (
 export const prepareMapLegendLayers = (
   map: mapboxgl.Map,
   mapLegendLayerIds: string | null,
-  mapeoLegendColor?: string | null,
+  secondaryLegendColor?: string | null,
 ): unknown[] | undefined => {
   if (!mapLegendLayerIds || !map.isStyleLoaded()) {
     return;
@@ -154,8 +154,8 @@ export const prepareMapLegendLayers = (
       }
 
       const layerColorColumn = (layerColor as string[])[3];
-      if (Array.isArray(layerColorColumn) && mapeoLegendColor) {
-        layerColor = mapeoLegendColor;
+      if (Array.isArray(layerColorColumn) && secondaryLegendColor) {
+        layerColor = secondaryLegendColor;
       }
 
       let formattedId = layerId

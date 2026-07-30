@@ -16,7 +16,7 @@ import {
  * Creates a new annotated collection with optional incident data and collection entries
  * @param collection - The annotated collection data (without id, created_at, updated_at)
  * @param incidentData - Optional incident-specific data if collection_type is "incident"
- * @param entries - Optional array of collection entries to add. Each entry must include feature_type ("alert" | "mapeo") so the server uses alert_id for alerts and _id for mapeo.
+ * @param entries - Optional array of collection entries to add. Each entry must include feature_type ("alert" | "secondary", or legacy "mapeo") so the server uses alert_id for alerts and _id for secondary/mapeo rows.
  * @returns Promise<AnnotatedCollection> - The created annotated collection
  */
 export const createAnnotatedCollection = async (
@@ -254,7 +254,7 @@ export const updateAnnotatedCollection = async (
 /**
  * Adds collection entries to an existing annotated collection
  * @param collectionId - The annotated collection ID to add entries to
- * @param entries - Array of entries to add; each must include feature_type ("alert" | "mapeo") so the server uses alert_id or _id
+ * @param entries - Array of entries to add; each must include feature_type ("alert" | "secondary", or legacy "mapeo") so the server uses alert_id or _id
  * @param addedBy - User ID who is adding the collection entries
  * @returns Promise<CollectionEntry[]> - The added collection entries
  */

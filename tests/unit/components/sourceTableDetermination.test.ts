@@ -28,7 +28,7 @@ vi.mock("vue-router", () => ({
  *
  * If the route structure changes, this function must be updated accordingly.
  *
- * @param layerId - The layer ID (e.g., "most-recent-alerts-polygon", "mapeo-data")
+ * @param layerId - The layer ID (e.g., "most-recent-alerts-polygon", "secondary-data")
  * @param routeParams - The route params object (should contain `tablename` for alert layers)
  * @returns The source table name, or empty string if unable to determine
  */
@@ -47,8 +47,8 @@ function determineSourceTable(
     // For alert layers, use the table name from route params
     // Route structure: /alerts/[tablename]
     return (tableName as string) || "";
-  } else if (layerId === "mapeo-data") {
-    // For Mapeo layers, use hardcoded table name
+  } else if (layerId === "secondary-data") {
+    // Secondary companion table (fixture / common seed uses mapeo_data)
     return "mapeo_data";
   }
 
@@ -136,9 +136,9 @@ describe("Source Table Determination", () => {
     });
   });
 
-  describe("Mapeo layers - hardcoded table name", () => {
-    it("returns 'mapeo_data' for mapeo-data layer", () => {
-      const layerId = "mapeo-data";
+  describe("Secondary layers - companion table name", () => {
+    it("returns 'mapeo_data' for secondary-data layer", () => {
+      const layerId = "secondary-data";
       const routeParams = { tablename: "fake_alerts" }; // Should be ignored
 
       const result = determineSourceTable(layerId, routeParams);
@@ -147,7 +147,7 @@ describe("Source Table Determination", () => {
     });
 
     it("returns 'mapeo_data' even if route params are missing", () => {
-      const layerId = "mapeo-data";
+      const layerId = "secondary-data";
       const routeParams = {};
 
       const result = determineSourceTable(layerId, routeParams);
@@ -265,7 +265,7 @@ describe("Source Table Determination", () => {
       expect(result).toBe("fake_alerts");
     });
 
-    it("handles mapeo-data with different casing", () => {
+    it("handles secondary-data with different casing", () => {
       const layerId = "Mapeo-Data"; // Wrong case
       const routeParams = { tablename: "fake_alerts" };
 

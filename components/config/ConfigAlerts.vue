@@ -20,9 +20,14 @@ const emit = defineEmits<{
 
 type Tag = { text: string };
 
+const resolveCategoryIds = (config: ViewConfig): string | undefined =>
+  config.SECONDARY_CATEGORY_IDS || config.MAPEO_CATEGORY_IDS;
+
+const initialCategoryIds = resolveCategoryIds(props.config);
+
 const initialTags: Record<string, Tag[]> = {
-  MAPEO_CATEGORY_IDS: props.config.MAPEO_CATEGORY_IDS
-    ? props.config.MAPEO_CATEGORY_IDS.split(",").map((tag) => ({ text: tag }))
+  SECONDARY_CATEGORY_IDS: initialCategoryIds
+    ? initialCategoryIds.split(",").map((tag) => ({ text: tag }))
     : [],
 };
 
@@ -34,7 +39,10 @@ const { tags, handleTagsChanged: rawHandleTagsChanged } = updateTags(
 const handleTagsChanged = (key: string, newTags: Tag[]): void => {
   rawHandleTagsChanged(key, newTags);
   const values = newTags.map((tag) => tag.text).join(",");
-  emit("updateConfig", { [key]: values });
+  emit("updateConfig", {
+    SECONDARY_CATEGORY_IDS: values,
+    MAPEO_CATEGORY_IDS: undefined,
+  });
 };
 </script>
 
@@ -47,7 +55,7 @@ const handleTagsChanged = (key: string, newTags: Tag[]): void => {
       >
         {{ $t(toCamelCase(key)) }}
       </label>
-      <template v-if="key === 'MAPEO_CATEGORY_IDS'">
+      <template v-if="key === 'SECONDARY_CATEGORY_IDS'">
         <VueTagsInput
           class="tag-field"
           :tags="tags[key]"

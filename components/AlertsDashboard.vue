@@ -103,7 +103,7 @@ const props = defineProps<{
   mapboxZoom: number;
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration?: number | null | undefined;
-  mapeoData: FeatureCollection | null;
+  secondaryData: FeatureCollection | null;
   primaryDataset: string;
   secondaryDataset?: string | null;
   mediaBasePath: string | undefined;
@@ -129,7 +129,7 @@ const showSlider = ref(false);
 const route = useRoute();
 const router = useRouter();
 
-const isMapeo = ref(false);
+const isSecondary = ref(false);
 const selectedFeatureLoading = ref(false);
 
 const { fetchRecord } = useRecordCache();
@@ -197,11 +197,11 @@ const {
   localAlertsData,
   showSidebar,
   showIntroPanel,
-  isMapeo,
+  isSecondary,
 );
 
 // Fetch full record on demand when a minimal feature is selected.
-// Handles both Mapeo features and alert features — the minimal
+// Handles both secondary features and alert features — the minimal
 // FeatureCollection only carries IDs and map-rendering fields, so
 // the full record is loaded via the single-record endpoint.
 let skipNextWatch = false;
@@ -214,15 +214,15 @@ watch(
     }
     if (!feature) return;
 
-    const isMapeoFeature = isMapeo.value && props.secondaryDataset;
-    const isMinimalAlert = !isMapeo.value && feature.alertID && feature._id;
+    const isSecondaryFeature = isSecondary.value && props.secondaryDataset;
+    const isMinimalAlert = !isSecondary.value && feature.alertID && feature._id;
 
-    if (!isMapeoFeature && !isMinimalAlert) return;
+    if (!isSecondaryFeature && !isMinimalAlert) return;
 
     const recordId = feature._id || feature.id;
     if (!recordId) return;
 
-    const fetchTable = isMapeoFeature
+    const fetchTable = isSecondaryFeature
       ? props.secondaryDataset!
       : props.primaryDataset;
     const minimalFeature = { ...feature };
@@ -233,7 +233,7 @@ watch(
     skipNextWatch = true;
 
     let displayRecord: Record<string, unknown>;
-    if (isMapeoFeature) {
+    if (isSecondaryFeature) {
       displayRecord = fullRecord
         ? transformSurveyEntry(fullRecord)
         : minimalFeature;
@@ -328,26 +328,26 @@ const selectInitialAlertFeature = (alertId: string) => {
       );
       map.value.flyTo({ center: [lng, lat], zoom: 15 });
     }
-    isMapeo.value = false;
+    isSecondary.value = false;
   }
 };
 
 /**
- * Selects and zooms to a Mapeo feature based on its document ID.
- * Mapeo data arrives as a GeoJSON FeatureCollection with normalized numeric IDs
+ * Selects and zooms to a secondary feature based on its document ID.
+ * Secondary data arrives as a GeoJSON FeatureCollection with normalized numeric IDs
  * (via MurmurHash) for Mapbox feature-state compatibility.
  */
-const selectInitialMapeoFeature = (mapeoDocId: string) => {
-  const feature = props.mapeoData?.features.find(
-    (mapeoFeature) =>
-      mapeoFeature.properties?._id === mapeoDocId ||
-      mapeoFeature.properties?.id === mapeoDocId,
+const selectInitialSecondaryFeature = (secondaryDocId: string) => {
+  const feature = props.secondaryData?.features.find(
+    (secondaryFeature) =>
+      secondaryFeature.properties?._id === secondaryDocId ||
+      secondaryFeature.properties?.id === secondaryDocId,
   );
 
   if (!feature) return;
 
-  selectFeature(feature, "mapeo-data");
-  isMapeo.value = true;
+  selectFeature(feature, "secondary-data");
+  isSecondary.value = true;
   // Zoom to the feature
   if (feature.geometry.type === "Point") {
     const [lng, lat] = (feature.geometry as GeoJSON.Point).coordinates;
@@ -430,14 +430,24 @@ onMounted(() => {
       // Only show slider if there are date options
       showSlider.value = dateOptions.value && dateOptions.value.length > 0;
 
-      // Check for alertId or mapeoDocId in URL and select the corresponding feature
+      // Check for alertId or secondaryDocId in URL and select the corresponding feature
       const alertId = route.query.alertId as string;
-      const mapeoDocId = route.query.mapeoDocId as string;
+      const legacyMapeoDocId = route.query.mapeoDocId as string;
+      const secondaryDocId = (route.query.secondaryDocId ||
+        legacyMapeoDocId) as string;
+
+      // Silently migrate the legacy mapeoDocId param to secondaryDocId
+      if (legacyMapeoDocId && !route.query.secondaryDocId) {
+        const query = { ...route.query };
+        delete query.mapeoDocId;
+        query.secondaryDocId = legacyMapeoDocId;
+        router.replace({ query });
+      }
 
       if (alertId) {
         selectInitialAlertFeature(alertId);
-      } else if (mapeoDocId && props.mapeoData) {
-        selectInitialMapeoFeature(mapeoDocId);
+      } else if (secondaryDocId && props.secondaryData) {
+        selectInitialSecondaryFeature(secondaryDocId);
       }
 
       // Load incidents on dashboard initialization
@@ -469,8 +479,8 @@ const emit = defineEmits(["reset-legend-visibility"]);
 const featuresUnderCursor = ref(0);
 const hasLineStrings = ref(false);
 const hasPoints = ref(false);
-const mapeoDataColor = ref();
-const MAPEO_INTERACTIVE_LAYER_IDS = ["mapeo-data"];
+const secondaryDataColor = ref();
+const SECONDARY_INTERACTIVE_LAYER_IDS = ["secondary-data"];
 const additionalSelectableLayerIds = computed(() =>
   (props.mapLegendLayerIds || "")
     .split(",")
@@ -1151,31 +1161,31 @@ const addAlertsData = async () => {
 };
 
 /**
- * Adds (optional) Mapeo data to the map as a GeoJSON FeatureCollection source
+ * Adds (optional) secondary data to the map as a GeoJSON FeatureCollection source
  * with associated circle and symbol layers.
  */
-const addMapeoData = () => {
-  if (!props.mapeoData || props.mapeoData.features.length === 0) {
+const addSecondaryData = () => {
+  if (!props.secondaryData || props.secondaryData.features.length === 0) {
     return;
   }
 
-  mapeoDataColor.value =
-    props.mapeoData.features[0]?.properties?.["filter-color"];
+  secondaryDataColor.value =
+    props.secondaryData.features[0]?.properties?.["filter-color"];
 
   // Add the source to the map
-  if (!map.value.getSource("mapeo-data")) {
-    map.value.addSource("mapeo-data", {
+  if (!map.value.getSource("secondary-data")) {
+    map.value.addSource("secondary-data", {
       type: "geojson",
-      data: props.mapeoData,
+      data: props.secondaryData,
     });
   }
 
   // Add a layer for Point features
-  if (!map.value.getLayer("mapeo-data")) {
+  if (!map.value.getLayer("secondary-data")) {
     map.value.addLayer({
-      id: "mapeo-data",
+      id: "secondary-data",
       type: "circle",
-      source: "mapeo-data",
+      source: "secondary-data",
       filter: ["==", "$type", "Point"],
       paint: {
         "circle-radius": 6,
@@ -1203,7 +1213,7 @@ const addMapeoData = () => {
   }
 
   // Add event listeners
-  const interactiveLayers = MAPEO_INTERACTIVE_LAYER_IDS.filter((layerId) =>
+  const interactiveLayers = SECONDARY_INTERACTIVE_LAYER_IDS.filter((layerId) =>
     map.value.getLayer(layerId),
   );
 
@@ -1250,7 +1260,7 @@ const addMapeoData = () => {
   });
 };
 /**
- * Prepares the map canvas content by adding alert and Mapeo data,
+ * Prepares the map canvas content by adding alert and secondary data,
  * and the map legend.
  */
 const prepareMapCanvasContent = async () => {
@@ -1258,8 +1268,8 @@ const prepareMapCanvasContent = async () => {
   if (props.alertsData) {
     promises.push(addAlertsData());
   }
-  if (props.mapeoData) {
-    promises.push(addMapeoData());
+  if (props.secondaryData) {
+    promises.push(addSecondaryData());
   }
   await Promise.all(promises);
   prepareMapLegendContent();
@@ -1286,7 +1296,7 @@ const handleBufferClick = (e: MapMouseEvent) => {
     "previous-alerts-polygon",
     "most-recent-alerts-centroids",
     "previous-alerts-centroids",
-    ...MAPEO_INTERACTIVE_LAYER_IDS,
+    ...SECONDARY_INTERACTIVE_LAYER_IDS,
   ].filter((layerId) => map.value.getLayer(layerId));
 
   if (directHitLayers.length > 0) {
@@ -1371,13 +1381,13 @@ const prepareMapLegendContent = () => {
   map.value.once("idle", () => {
     const legendItems: MapLegendItem[] = [];
 
-    // Add mapeo-data layer first to ensure it's always on top
-    if (props.mapeoData) {
+    // Add secondary-data layer first to ensure it's always on top
+    if (props.secondaryData) {
       legendItems.push({
-        id: "mapeo-data",
-        name: "Mapeo data",
+        id: "secondary-data",
+        name: "Secondary data",
         type: "circle",
-        color: mapeoDataColor.value || "#000000",
+        color: secondaryDataColor.value || "#000000",
         visible: true,
       });
     }
@@ -1409,7 +1419,7 @@ const prepareMapLegendContent = () => {
       const additionalLayers = prepareMapLegendLayers(
         map.value,
         props.mapLegendLayerIds,
-        mapeoDataColor.value,
+        secondaryDataColor.value,
       );
       if (additionalLayers) {
         legendItems.push(...(additionalLayers as MapLegendItem[]));
@@ -1464,8 +1474,8 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
         }
       }
     });
-  } else if (item.id === "mapeo-data") {
-    MAPEO_INTERACTIVE_LAYER_IDS.forEach((layerId) => {
+  } else if (item.id === "secondary-data") {
+    SECONDARY_INTERACTIVE_LAYER_IDS.forEach((layerId) => {
       if (map.value.getLayer(layerId)) {
         map.value.setLayoutProperty(layerId, "visibility", visibility);
       }
@@ -1475,7 +1485,7 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
       }
     });
   } else {
-    // Handle individual layers (mapeo-data, etc.)
+    // Handle individual layers (secondary-data, etc.)
     utilsToggleLayerVisibility(map.value, item);
   }
 };
@@ -1681,8 +1691,8 @@ const resetToInitialState = () => {
             }
           }
         });
-      } else if (item.id === "mapeo-data") {
-        MAPEO_INTERACTIVE_LAYER_IDS.forEach((layerId) => {
+      } else if (item.id === "secondary-data") {
+        SECONDARY_INTERACTIVE_LAYER_IDS.forEach((layerId) => {
           if (map.value.getLayer(layerId)) {
             map.value.setLayoutProperty(layerId, "visibility", visibility);
           }
@@ -1696,7 +1706,7 @@ const resetToInitialState = () => {
           }
         });
       } else {
-        // Handle individual layers (mapeo-data, etc.)
+        // Handle individual layers (secondary-data, etc.)
         utilsToggleLayerVisibility(map.value, item);
       }
     });
@@ -1729,7 +1739,7 @@ onBeforeUnmount(() => {
       :calculate-hectares="calculateHectares"
       :date-options="dateOptions"
       :export-table-name="
-        isMapeo ? secondaryDataset || primaryDataset : primaryDataset
+        isSecondary ? secondaryDataset || primaryDataset : primaryDataset
       "
       :feature="selectedFeature"
       :feature-loading="selectedFeatureLoading"
@@ -1737,7 +1747,7 @@ onBeforeUnmount(() => {
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
       :is-alert="isAlert"
-      :is-mapeo="isMapeo"
+      :is-secondary="isSecondary"
       :is-alerts-dashboard="true"
       :local-alerts-data="localAlertsData"
       :logo-url="logoUrl"

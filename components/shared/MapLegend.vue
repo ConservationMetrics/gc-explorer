@@ -95,8 +95,8 @@ watch(
             </div>
             <span>
               {{
-                item.name === "Mapeo data"
-                  ? $t("mapeoData")
+                item.name === "Secondary data"
+                  ? $t("secondaryData")
                   : item.name === "Most recent alerts"
                     ? $t("mostRecentAlerts")
                     : item.name === "Previous alerts"

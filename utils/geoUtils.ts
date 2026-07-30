@@ -26,21 +26,13 @@ export interface SpatialDataOptions {
   includeAllProperties?: boolean;
   filterColumn?: string;
   generateId?: (entry: DataEntry) => number | string | undefined;
-  /**
-   * When true, enables Mapeo-specific ID normalization. Mapeo document IDs are
-   * 64-bit hex strings (e.g. "0084cdc57c0b0280") that exceed JavaScript's safe
-   * integer range (2^53 - 1). Mapbox requires feature IDs to be either Numbers
-   * or strings safely castable to Numbers; without normalization, Mapbox falls
-   * back to undefined IDs and setFeatureState() fails.
-   *
-   * This option resolves the ID from both `_id` and `id` fields (Mapeo data may
-   * use either), validates the 16-char hex format, and hashes via MurmurHash to
-   * produce a safe 32-bit integer.
-   *
-   * Reference: https://stackoverflow.com/questions/72040370/why-are-my-dataset-features-ids-undefined-in-mapbox-gl-while-i-have-set-them
-   */
-  isMapeoData?: boolean;
 }
+
+/** 16-char hex document IDs (e.g. Mapeo) exceed JS safe integers; hash for Mapbox. */
+const HEX_DOCUMENT_ID = /^[0-9a-fA-F]{16}$/;
+
+export const isHexDocumentId = (value: unknown): value is string =>
+  typeof value === "string" && HEX_DOCUMENT_ID.test(value);
 
 /** Checks if a number is a valid geographic coordinate. */
 export const isValidCoordinate = (coord: number): boolean => {
@@ -366,7 +358,6 @@ export const buildMinimalFeatureCollection = (
     includeAllProperties = false,
     filterColumn,
     generateId,
-    isMapeoData = false,
   } = options;
 
   const colorMap = new Map<string, string>();
@@ -390,18 +381,14 @@ export const buildMinimalFeatureCollection = (
 
     if (generateId) {
       featureId = generateId(entry);
-    } else if (isMapeoData) {
-      // Mapeo IDs can be in _id or id; validate 16-char hex before hashing
-      const mapeoId = entry._id || entry.id;
-      if (
-        mapeoId &&
-        typeof mapeoId === "string" &&
-        mapeoId.match(/^[0-9a-fA-F]{16}$/)
-      ) {
-        featureId = murmurhash.v3(mapeoId);
+    } else {
+      // Hex document IDs (e.g. Mapeo) may live in `_id` or `id`; hash for Mapbox.
+      const documentId = entry._id || entry.id;
+      if (isHexDocumentId(documentId)) {
+        featureId = murmurhash.v3(documentId);
+      } else if (rawId) {
+        featureId = murmurhash.v3(String(rawId));
       }
-    } else if (rawId) {
-      featureId = murmurhash.v3(rawId);
     }
 
     const properties: GeoJsonProperties = {};

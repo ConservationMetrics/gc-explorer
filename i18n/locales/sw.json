@@ -51,7 +51,6 @@
   "copyConfigDescription": "Chagua mtazamo ili kunakili thamani za usanidi wake kwenye fomu ya sasa. Unaweza kubadilisha thamani kabla ya kuhifadhi.",
   "copyConfigFromDatasetView": "Nakili usanidi kutoka mtazamo mwingine",
   "copyLink": "Nakili kiungo cha tahadhari",
-  "copyMapeoLink": "Nakili kiungo cha uchunguzi wa Mapeo",
   "created": "Imeundwa",
   "createViewTypeDescription": "Chagua aina ya mwonekano ili kuendelea. Unaweza kuchagua seti kuu ya data sasa, au kwenye ukurasa unaofuata.",
   "data": "data",
@@ -161,7 +160,6 @@
   "incidents.responsibleParty": "Mhusika wa Uwajibikaji",
   "incidents.savedIncidents": "Matukio Yaliyohifadhiwa",
   "incidents.selectedAlertsCount": "Tahadhari zilizochaguliwa: {count}",
-  "incidents.selectedMapeoCount": "Vipengele vya Mapeo vilivyochaguliwa: {count}",
   "incidents.selectedSources": "Vyanzo Vilivyochaguliwa",
   "incidents.selectFeaturesFirst": "Chagua vipengele kwanza ili kuunda tukio",
   "incidents.selectType": "Chagua aina",
@@ -189,8 +187,6 @@
   "mapboxStreets": "Mapbox Streets",
   "mapboxStyle": "Mtindo wa Mapbox",
   "mapboxZoom": "Kiwango cha kuvuta (0 hadi 22)",
-  "mapeoCategoryIds": "Vitambulisho vya jamii za Mapeo vya kuonyesha kwenye ramani ya tahadhari",
-  "mapeoData": "Data ya Mapeo",
   "mapLegend": "Hadithi ya Ramani",
   "mapLegendLayerIds": "Vitambulisho vya safu vya kuonyesha katika hadithi ya ramani",
   "media": "Midia",
@@ -303,5 +299,9 @@
   "visibilityPublicDescription": "Mtu yeyote aliye na kiungo anaweza kuona.",
   "visibilityRequired": "Tafadhali chagua kiwango cha mwonekano kwa seti hii ya data.",
   "yourAccessIsPending": "Ufikiaji wako unasubiri. Tafadhali wasiliana na msimamizi wa Guardian Connector kwa idhini ya akaunti.",
-  "yourMapboxStyleDefault": "Mapbox - mtindo wako (chaguo-msingi)"
+  "yourMapboxStyleDefault": "Mapbox - mtindo wako (chaguo-msingi)",
+  "copySecondaryLink": "Nakili kiungo cha uchunguzi wa seti ya pili",
+  "secondaryCategoryIds": "Vitambulisho vya jamii vya seti ya pili ya data vya kuonyesha kwenye ramani ya tahadhari",
+  "secondaryData": "Data ya seti ya pili",
+  "incidents.selectedSecondaryCount": "Vipengele vya seti ya pili vilivyochaguliwa: {count}"
 }

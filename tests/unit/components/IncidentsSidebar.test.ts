@@ -21,7 +21,7 @@ describe("IncidentsSidebar component", () => {
   type SelectedSource = {
     source_table: string;
     source_id: string;
-    feature_type: "alert" | "mapeo";
+    feature_type: "alert" | "secondary";
     notes?: string;
   };
 
@@ -49,7 +49,7 @@ describe("IncidentsSidebar component", () => {
   ];
 
   const mockSelectedSources: SelectedSource[] = [
-    { source_table: "mapeo_data", source_id: "source1", feature_type: "mapeo" },
+    { source_table: "mapeo_data", source_id: "source1", feature_type: "secondary" },
     { source_table: "alerts", source_id: "source2", feature_type: "alert" },
   ];
 
@@ -127,7 +127,7 @@ describe("IncidentsSidebar component", () => {
     const summary = wrapper.find(".selected-sources-summary");
     expect(summary.exists()).toBe(true);
     expect(summary.text()).toContain("incidents.selectedAlertsCount");
-    expect(summary.text()).toContain("incidents.selectedMapeoCount");
+    expect(summary.text()).toContain("incidents.selectedSecondaryCount");
   });
 
   it("emits clearSources when clear all button is clicked", async () => {
