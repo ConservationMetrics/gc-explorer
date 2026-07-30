@@ -80,7 +80,9 @@ describe("buildAttachmentContentDisposition", () => {
   it("uses ASCII fallback plus RFC 8187 filename* for Thai table names", () => {
     const filename = "comapeo_แม่ยางมิ้น_สำรวจใหม่.csv";
     const header = buildAttachmentContentDisposition(filename);
-    expect(header).toMatch(/^attachment; filename="[^"]+\.csv"; filename\*=UTF-8''/);
+    expect(header).toMatch(
+      /^attachment; filename="[^"]+\.csv"; filename\*=UTF-8''/,
+    );
     expect(header).toContain(encodeURIComponent(filename));
     expect(header).not.toMatch(/filename="[^"]*[\u0E00-\u0E7F]/);
   });

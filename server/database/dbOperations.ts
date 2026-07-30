@@ -129,7 +129,7 @@ export const buildViewConfigColumns = (
   };
 };
 
-// Unicode letters/digits/marks (Thai tone marks are Mn) — sql.identifier quotes these.
+// Unicode letters/digits/marks. sql.identifier quotes these.
 const VALID_COLUMN_NAME = /^[\p{L}_][\p{L}\p{N}\p{M}_]*$/u;
 
 /**
