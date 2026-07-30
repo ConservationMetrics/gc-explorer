@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { ViewConfig, ViewType } from "@/types";
 import { formatDisplayName, CONFIG_LIMITS } from "@/utils";
+import { encodeDatasetNameForUrl } from "@/utils/identifierUtils";
 import { Images, Map, Settings, TriangleAlert } from "lucide-vue-next";
 
 interface Props {
@@ -16,6 +17,10 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const isDescriptionExpanded = ref(false);
+
+const datasetPathSegment = computed(() =>
+  encodeDatasetNameForUrl(String(props.tableName)),
+);
 
 /**
  * Gets the formatted permission level for a table to display in the UI
@@ -75,7 +80,7 @@ const displayDescription = computed(() => {
 const headerImage = computed(() => props.config.VIEW_HEADER_IMAGE || "");
 
 const configEditPath = computed(() => ({
-  path: `/config/${String(props.tableName)}`,
+  path: `/config/${datasetPathSegment.value}`,
   query: { view_type: props.viewType },
 }));
 </script>
@@ -173,7 +178,7 @@ const configEditPath = computed(() => ({
       </div>
 
       <NuxtLink
-        :to="`/${viewType}/${String(tableName)}`"
+        :to="`/${viewType}/${datasetPathSegment}`"
         data-testid="open-dataset-view-link"
         class="mt-auto block w-full text-center px-4 py-2 sm:py-3 bg-violet-700 hover:bg-violet-800 text-white font-medium rounded-lg transition-colors duration-200"
       >

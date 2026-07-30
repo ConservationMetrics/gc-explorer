@@ -1,4 +1,5 @@
 import type { ViewType } from "@/types";
+import { decodeDatasetNameFromUrl } from "@/utils/identifierUtils";
 
 /**
  * View-type threading for dataset-level API requests.
@@ -37,11 +38,13 @@ export function resolveViewTypeForTable(
 ): ViewType | undefined {
   const primaryTable =
     typeof route.params.tablename === "string"
-      ? route.params.tablename
+      ? decodeDatasetNameFromUrl(route.params.tablename)
       : undefined;
   // Guard #1: cross-table reads (e.g. alerts page → Mapeo table) must not carry
   // the route's view type.
-  if (!primaryTable || table !== primaryTable) return undefined;
+  if (!primaryTable || decodeDatasetNameFromUrl(table) !== primaryTable) {
+    return undefined;
+  }
   // Guard #2: only known view route prefixes; e.g. /dataset/:tablename → undefined.
   const firstSegment = route.path.split("/").filter(Boolean)[0];
   return firstSegment ? VIEW_TYPE_BY_SEGMENT[firstSegment] : undefined;

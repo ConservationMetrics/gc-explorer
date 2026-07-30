@@ -13,6 +13,35 @@ const stripCombiningMarks = (value: string): string => {
 };
 
 /**
+ * Percent-encodes a dataset/table name for use as a single URL path segment.
+ * Encoding belongs on the wire only — never store the result as a DB identifier.
+ */
+export const encodeDatasetNameForUrl = (name: string): string => {
+  return encodeURIComponent(name);
+};
+
+/**
+ * Restores a dataset/table name from a URL path segment.
+ * Safe if already decoded; returns the input unchanged when decoding fails
+ * (e.g. a literal `%` that is not a valid escape).
+ */
+export const decodeDatasetNameFromUrl = (name: string): string => {
+  try {
+    return decodeURIComponent(name);
+  } catch {
+    return name;
+  }
+};
+
+/**
+ * Strips quote wrapping and percent-decodes a table/dataset name so warehouse
+ * and config lookups use the real Unicode identifier (never a URL-encoded literal).
+ */
+export const normalizeTableName = (table: string): string => {
+  return decodeDatasetNameFromUrl(table.replace(/"/g, ""));
+};
+
+/**
  * Produces a short filesystem-safe segment from a user-facing label (e.g. incident name in download filenames).
  * Strips combining marks, keeps alphanumerics plus hyphen and underscore, replaces other characters with underscores, then truncates.
  *

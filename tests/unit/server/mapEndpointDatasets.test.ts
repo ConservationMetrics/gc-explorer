@@ -71,6 +71,14 @@ vi.mock("@/server/utils", () => ({
 
 vi.mock("@/server/utils/dbHelpers", () => ({
   parseAndValidateLimit: hoisted.parseAndValidateLimit,
+  getTableParam: (event: MapRouteEvent) => {
+    const table = event.context.params.table;
+    try {
+      return decodeURIComponent(table.replace(/"/g, ""));
+    } catch {
+      return table.replace(/"/g, "");
+    }
+  },
 }));
 
 describe("map endpoint datasets", () => {
@@ -144,5 +152,27 @@ describe("map endpoint datasets", () => {
     expect(response.primary_dataset).toBe("map_dataset");
     expect(response.table).toBe("map_dataset");
     expect(response.data).toEqual({ type: "FeatureCollection", features: [] });
+  });
+
+  it("decodes percent-encoded Thai table names before config/warehouse lookups", async () => {
+    const thaiTable = "แม่ยางมิ้น_observations";
+    const encodedTable = encodeURIComponent(thaiTable);
+
+    hoisted.fetchViewTables.mockResolvedValue({
+      primaryTable: thaiTable,
+      secondaryTable: null,
+    });
+
+    await handleMapRequest({
+      context: { params: { table: encodedTable } },
+    });
+
+    expect(hoisted.fetchTableConfig).toHaveBeenCalledWith(thaiTable, "map");
+    expect(hoisted.fetchViewTables).toHaveBeenCalledWith(thaiTable, "map");
+    expect(hoisted.fetchTableSqlColumns).toHaveBeenCalledWith(thaiTable);
+    expect(hoisted.fetchData).toHaveBeenCalledWith(
+      thaiTable,
+      expect.objectContaining({ limit: 25 }),
+    );
   });
 });

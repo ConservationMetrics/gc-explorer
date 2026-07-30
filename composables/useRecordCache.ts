@@ -1,4 +1,5 @@
 import { resolveViewTypeForTable } from "@/composables/useViewType";
+import { encodeDatasetNameForUrl } from "@/utils/identifierUtils";
 
 import type { DataEntry } from "@/types";
 import type { Ref, ComputedRef } from "vue";
@@ -75,7 +76,7 @@ export const useRecordCache = () => {
     // resolveViewTypeForTable returns undefined on purpose (cross-table read, non-view
     // route, missing :tablename) — callers omit view_type and the server uses its default.
     const viewType = resolveViewTypeForTable(route, table);
-    const url = `/api/${table}/${recordId}`;
+    const url = `/api/${encodeDatasetNameForUrl(table)}/${encodeURIComponent(recordId)}`;
     const request = (
       viewType
         ? $fetch<DataEntry>(url, { query: { view_type: viewType } })
@@ -141,7 +142,7 @@ export const useRecordCache = () => {
       // Same as fetchRecord: undefined viewType → omit param (see useViewType.ts).
       const viewType = resolveViewTypeForTable(route, table);
       const batchPromises = batches.map((batch) =>
-        $fetch<DataEntry[]>(`/api/${table}/records`, {
+        $fetch<DataEntry[]>(`/api/${encodeDatasetNameForUrl(table)}/records`, {
           method: "POST",
           body: { ids: batch },
           ...(viewType ? { query: { view_type: viewType } } : {}),

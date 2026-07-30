@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   camelToSnake,
+  decodeDatasetNameFromUrl,
+  encodeDatasetNameForUrl,
+  normalizeTableName,
   replaceUnderscoreWithSpace,
   sanitizeFilenameSegment,
   snakeToTitleCase,
@@ -10,6 +13,39 @@ import {
   toCamelCase,
   warehouseRecordIdForExport,
 } from "@/utils/identifierUtils";
+
+describe("encodeDatasetNameForUrl / decodeDatasetNameFromUrl", () => {
+  const thaiTable = "แม่ยางมิ้น_observations";
+
+  it("round-trips Thai dataset names", () => {
+    const encoded = encodeDatasetNameForUrl(thaiTable);
+    expect(encoded).toContain("%");
+    expect(encoded).not.toContain("แ");
+    expect(decodeDatasetNameFromUrl(encoded)).toBe(thaiTable);
+  });
+
+  it("leaves already-decoded Unicode unchanged", () => {
+    expect(decodeDatasetNameFromUrl(thaiTable)).toBe(thaiTable);
+  });
+
+  it("leaves plain ASCII unchanged", () => {
+    expect(encodeDatasetNameForUrl("my_table")).toBe("my_table");
+    expect(decodeDatasetNameFromUrl("my_table")).toBe("my_table");
+  });
+
+  it("returns input unchanged when percent-decoding fails", () => {
+    expect(decodeDatasetNameFromUrl("100%")).toBe("100%");
+  });
+});
+
+describe("normalizeTableName", () => {
+  it("decodes percent-encoded names and strips quotes", () => {
+    const thaiTable = "แม่ยางมิ้น_observations";
+    expect(normalizeTableName(`"${encodeURIComponent(thaiTable)}"`)).toBe(
+      thaiTable,
+    );
+  });
+});
 
 describe("sanitizeFilenameSegment", () => {
   it("replaces runs of unsafe characters with a single underscore", () => {

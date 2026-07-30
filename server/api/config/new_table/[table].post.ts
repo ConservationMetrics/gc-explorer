@@ -1,4 +1,5 @@
 import { addNewTableToConfig } from "@/server/database/dbOperations";
+import { getTableParam } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
@@ -10,7 +11,7 @@ type NewTableBody = {
 };
 
 export default defineEventHandler(async (event: H3Event) => {
-  const table = event.context?.params?.table as string;
+  const table = getTableParam(event);
   const viewType = getQuery(event).view_type as ViewType;
   try {
     await validatePermissions(event, "admin");

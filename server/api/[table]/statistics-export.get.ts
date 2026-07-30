@@ -6,6 +6,7 @@ import {
 } from "@/server/database/dbOperations";
 import { prepareAlertsStatistics } from "@/server/dataProcessing/dataTransformers";
 import { buildRequiredAlertsProjection } from "@/server/utils/alertsProjection";
+import { getTableParam } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 import {
   buildStatisticsMonthlyRows,
@@ -40,7 +41,7 @@ const REQUIRED_ALERTS_STATISTICS_COLUMNS = [
 ];
 
 export default defineEventHandler(async (event: H3Event) => {
-  const { table } = event.context.params as { table: string };
+  const table = getTableParam(event);
   const query = getQuery(event);
   const format = (query.format as string)?.toLowerCase();
 

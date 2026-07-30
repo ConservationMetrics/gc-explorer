@@ -12,13 +12,13 @@ import { prepareMapStatistics } from "@/server/dataProcessing/dataTransformers";
 import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { parseBasemaps } from "@/server/utils";
-import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
+import { parseAndValidateLimit, getTableParam } from "@/server/utils/dbHelpers";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions } from "@/types";
 
 export default defineEventHandler(async (event: H3Event) => {
-  const { table } = event.context.params as { table: string };
+  const table = getTableParam(event);
   const limit = parseAndValidateLimit(event);
 
   const {

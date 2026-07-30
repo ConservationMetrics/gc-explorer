@@ -2,7 +2,11 @@
 import { useI18n } from "vue-i18n";
 
 import DataLoadError from "@/components/shared/DataLoadError.vue";
-import { replaceUnderscoreWithSpace } from "@/utils/identifierUtils";
+import {
+  decodeDatasetNameFromUrl,
+  encodeDatasetNameForUrl,
+  replaceUnderscoreWithSpace,
+} from "@/utils/identifierUtils";
 import { useIsPublic } from "@/utils/accessControls";
 
 import type { BasemapConfig } from "@/types";
@@ -13,7 +17,10 @@ const rowLimit = useRuntimeConfig().public.rowLimit;
 // Extract the tablename from the route parameters
 const route = useRoute();
 const tableRaw = route.params.tablename;
-const table = Array.isArray(tableRaw) ? tableRaw.join("/") : tableRaw;
+const table = decodeDatasetNameFromUrl(
+  Array.isArray(tableRaw) ? tableRaw.join("/") : String(tableRaw || ""),
+);
+const tablePath = encodeDatasetNameForUrl(table);
 
 const alertsData = ref();
 const alertsStatistics = ref();
@@ -39,7 +46,7 @@ const mediaBasePath = ref();
 const mediaBasePathAlerts = ref();
 const planetApiKey = ref();
 
-const { data, error, refresh } = await useFetch(`/api/${table}/alerts`, {
+const { data, error, refresh } = await useFetch(`/api/${tablePath}/alerts`, {
   params: { limit: rowLimit },
 });
 
