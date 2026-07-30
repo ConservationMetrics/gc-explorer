@@ -38,6 +38,12 @@ export const validatePermissions = async (
   // Public access requires no authentication
   if (permission === "anyone") return;
 
+  // Local/dev: authStrategy=none grants full access
+  const {
+    public: { authStrategy },
+  } = useRuntimeConfig();
+  if (authStrategy === "none") return;
+
   // Check if user is authenticated
   const session = await getUserSession(event);
 

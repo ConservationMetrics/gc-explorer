@@ -15,6 +15,7 @@ To get started, copy `.env.example` to `.env` and add your database and table in
 **Authentication strategy:** GuardianConnector Explorer supports three different authentication strategies: auth0, password (from an environmental var) with JWT key, or none. Set your authentication strategy in `NUXT_PUBLIC_AUTH_STRATEGY`.
 
 - If you are using an auth0 strategy, then you need to provide a domain, client ID, client secret, audience, and base URL.
+- If set to "none", the application will run in local/dev mode with a local Admin session seeded by the `local-auth` middleware.
 
 **Nuxt App API key:** Generate an API key to add to request headers made by the Nuxt front end. You can generate one by running `openssl rand -base64 42`.
 
