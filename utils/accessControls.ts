@@ -38,8 +38,10 @@ export const validatePermissions = async (
   // Public access requires no authentication
   if (permission === "anyone") return;
 
-  // Local/dev: authStrategy=none grants full access (local-auth middleware seeds Admin)
-  const { public: { authStrategy } } = useRuntimeConfig();
+  // Local/dev: authStrategy=none grants full access
+  const {
+    public: { authStrategy },
+  } = useRuntimeConfig();
   if (authStrategy === "none") return;
 
   // Check if user is authenticated

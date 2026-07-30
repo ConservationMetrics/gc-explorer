@@ -3,10 +3,12 @@ import { Role } from "@/types";
 
 /**
  * When NUXT_PUBLIC_AUTH_STRATEGY=none, ensure every request has a local
- * Admin session so route/API RBAC works without Auth0 (local/dev/CI).
+ * Admin session so route/API RBAC works without Auth0.
  */
 export default defineEventHandler(async (event) => {
-  const { public: { authStrategy } } = useRuntimeConfig();
+  const {
+    public: { authStrategy },
+  } = useRuntimeConfig();
   if (authStrategy !== "none") return;
 
   const session = await getUserSession(event);
