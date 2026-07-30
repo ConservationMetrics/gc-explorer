@@ -1,6 +1,9 @@
 import { useRuntimeConfig } from "#imports";
 import type { H3Event } from "h3";
-import { normalizeTableName } from "@/utils/identifierUtils";
+import {
+  decodeDatasetNameFromUrl,
+  normalizeTableName,
+} from "@/utils/identifierUtils";
 
 /**
  * Reads and normalizes the `[table]` path param (percent-decode + strip quotes).
@@ -13,6 +16,26 @@ export const getTableParam = (event: H3Event): string => {
     });
   }
   return normalizeTableName(table);
+};
+
+/**
+ * Reads and percent-decodes the `[recordId]` path param.
+ * Matches client `encodeURIComponent(recordId)` on `/api/:table/:recordId`.
+ */
+export const getRecordIdParam = (event: H3Event): string => {
+  const raw = event.context.params?.recordId;
+  if (typeof raw !== "string" || !raw.trim()) {
+    throw Object.assign(new Error("Invalid record ID"), {
+      statusCode: 400,
+    });
+  }
+  const recordId = decodeDatasetNameFromUrl(raw).trim();
+  if (!recordId) {
+    throw Object.assign(new Error("Invalid record ID"), {
+      statusCode: 400,
+    });
+  }
+  return recordId;
 };
 
 /**
