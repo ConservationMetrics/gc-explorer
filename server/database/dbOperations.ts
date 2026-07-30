@@ -21,8 +21,6 @@ import {
 import { viewConfig, publicViews } from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
 
-export { normalizeTableName };
-
 /**
  * Keys to match against views.primary_dataset when the DB may still hold a
  * percent-encoded legacy value for the same table.
