@@ -13,6 +13,7 @@ import {
   filterAlertsStatisticsByDateRange,
   statisticsRowsToCsv,
 } from "@/utils/alertsStatistics";
+import { buildAttachmentContentDisposition } from "@/utils/identifierUtils";
 
 import type { H3Event } from "h3";
 import type { AlertsMetadata, DataEntry, ViewType } from "@/types";
@@ -103,7 +104,7 @@ export default defineEventHandler(async (event: H3Event) => {
     setResponseHeader(
       event,
       "Content-Disposition",
-      `attachment; filename="${table}-statistics.csv"`,
+      buildAttachmentContentDisposition(`${table}-statistics.csv`),
     );
     return csv;
   } catch (error) {

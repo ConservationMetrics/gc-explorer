@@ -11,6 +11,7 @@ import {
 import { hasValidCoordinates } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { escapeCSVValue } from "@/utils/csvUtils";
+import { buildAttachmentContentDisposition } from "@/utils/identifierUtils";
 import { getTableParam } from "@/server/utils/dbHelpers";
 // @ts-expect-error - tokml does not have types
 import tokml from "tokml";
@@ -201,7 +202,7 @@ export default defineEventHandler(async (event: H3Event) => {
       setResponseHeader(
         event,
         "Content-Disposition",
-        `attachment; filename="${table}.csv"`,
+        buildAttachmentContentDisposition(`${table}.csv`),
       );
       return csv;
     }
@@ -216,7 +217,7 @@ export default defineEventHandler(async (event: H3Event) => {
       setResponseHeader(
         event,
         "Content-Disposition",
-        `attachment; filename="${table}.geojson"`,
+        buildAttachmentContentDisposition(`${table}.geojson`),
       );
       return geojson;
     }
@@ -232,7 +233,7 @@ export default defineEventHandler(async (event: H3Event) => {
       setResponseHeader(
         event,
         "Content-Disposition",
-        `attachment; filename="${table}.kml"`,
+        buildAttachmentContentDisposition(`${table}.kml`),
       );
       return kml;
     }
