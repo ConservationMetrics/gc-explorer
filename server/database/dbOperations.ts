@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import {
   supportsSecondaryDataset,
@@ -13,23 +13,10 @@ import {
   type ViewType,
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
-import {
-  decodeDatasetNameFromUrl,
-  normalizeTableName,
-} from "@/utils/identifierUtils";
+import { normalizeTableName } from "@/utils/identifierUtils";
 
 import { viewConfig, publicViews } from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
-
-/**
- * Keys to match against views.primary_dataset when the DB may still hold a
- * percent-encoded legacy value for the same table.
- */
-const datasetNameLookupKeys = (table: string): string[] => {
-  const raw = table.replace(/"/g, "");
-  const normalized = decodeDatasetNameFromUrl(raw);
-  return [...new Set([normalized, raw])];
-};
 
 /**
  * Builds a 404-style error for missing table configuration.
@@ -372,7 +359,7 @@ export const fetchViewTables = async (
     .where(
       and(
         eq(viewConfig.viewType, viewType),
-        inArray(viewConfig.primaryDataset, datasetNameLookupKeys(table)),
+        eq(viewConfig.primaryDataset, normalizedTable),
       ),
     )
     .limit(1);
@@ -548,12 +535,7 @@ export const fetchViewConfigRowsForTable = async (
     const result = await configDb
       .select()
       .from(viewConfig)
-      .where(
-        inArray(
-          viewConfig.primaryDataset,
-          datasetNameLookupKeys(primaryDataset),
-        ),
-      );
+      .where(eq(viewConfig.primaryDataset, normalizedDataset));
 
     return result.map((row) => ({
       primaryDataset: normalizeTableName(row.primaryDataset),
@@ -596,10 +578,10 @@ export const fetchTableConfig = async (
       .where(
         viewType
           ? and(
-              inArray(viewConfig.primaryDataset, datasetNameLookupKeys(table)),
+              eq(viewConfig.primaryDataset, normalizedTable),
               eq(viewConfig.viewType, viewType),
             )
-          : inArray(viewConfig.primaryDataset, datasetNameLookupKeys(table)),
+          : eq(viewConfig.primaryDataset, normalizedTable),
       )
       // Deterministic pick when a dataset has multiple views and no view type is
       // given: always the oldest view. See follow-up issue on permission semantics.
@@ -648,7 +630,7 @@ export const syncPublicViews = async (
     // delete affects 0 rows and does not throw; save flow continues normally.
     await configDb
       .delete(publicViews)
-      .where(inArray(publicViews.tableName, datasetNameLookupKeys(tableName)));
+      .where(eq(publicViews.tableName, normalizedTable));
   }
 };
 
@@ -716,7 +698,7 @@ export const updateConfig = async (
       .set(viewColumns)
       .where(
         and(
-          inArray(viewConfig.primaryDataset, datasetNameLookupKeys(tableName)),
+          eq(viewConfig.primaryDataset, normalizedTable),
           eq(viewConfig.viewType, viewType),
         ),
       );
@@ -773,6 +755,7 @@ export const removeTableFromConfig = async (
   tableName: string,
   viewType?: ViewType,
 ): Promise<void> => {
+  const normalizedTable = normalizeTableName(tableName);
   try {
     // Delete just the targeted view; without a view type fall back to removing
     // every view of the dataset.
@@ -781,31 +764,21 @@ export const removeTableFromConfig = async (
       .where(
         viewType
           ? and(
-              inArray(
-                viewConfig.primaryDataset,
-                datasetNameLookupKeys(tableName),
-              ),
+              eq(viewConfig.primaryDataset, normalizedTable),
               eq(viewConfig.viewType, viewType),
             )
-          : inArray(
-              viewConfig.primaryDataset,
-              datasetNameLookupKeys(tableName),
-            ),
+          : eq(viewConfig.primaryDataset, normalizedTable),
       );
 
     // Only drop the dataset's public_views entry once no views remain for it.
     const remainingViews = await configDb
       .select({ viewId: viewConfig.viewId })
       .from(viewConfig)
-      .where(
-        inArray(viewConfig.primaryDataset, datasetNameLookupKeys(tableName)),
-      );
+      .where(eq(viewConfig.primaryDataset, normalizedTable));
     if (remainingViews.length === 0) {
       await configDb
         .delete(publicViews)
-        .where(
-          inArray(publicViews.tableName, datasetNameLookupKeys(tableName)),
-        );
+        .where(eq(publicViews.tableName, normalizedTable));
     }
   } catch (error) {
     console.error("Error removing table from config:", error);
