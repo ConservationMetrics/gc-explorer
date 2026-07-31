@@ -49,7 +49,11 @@ describe("IncidentsSidebar component", () => {
   ];
 
   const mockSelectedSources: SelectedSource[] = [
-    { source_table: "mapeo_data", source_id: "source1", feature_type: "secondary" },
+    {
+      source_table: "mapeo_data",
+      source_id: "source1",
+      feature_type: "secondary",
+    },
     { source_table: "alerts", source_id: "source2", feature_type: "alert" },
   ];
 

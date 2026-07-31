@@ -1,8 +1,5 @@
 import { fetchViewConfigRows } from "@/server/database/dbOperations";
-import {
-  getFilteredTableNames,
-  getGeospatialTableNames,
-} from "@/server/utils";
+import { getFilteredTableNames, getGeospatialTableNames } from "@/server/utils";
 import { validateUserSession } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";

@@ -18,7 +18,7 @@ import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { parseBasemaps } from "@/server/utils";
 import { buildRequiredAlertsProjection } from "@/server/utils/alertsProjection";
-import { parseAndValidateLimit, getTableParam } from "@/server/utils/dbHelpers";
+import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
 
 import type { H3Event } from "h3";
 import type {
@@ -60,7 +60,7 @@ const resolveSecondaryCategoryIds = (
   tableConfig.SECONDARY_CATEGORY_IDS || tableConfig.MAPEO_CATEGORY_IDS;
 
 export default defineEventHandler(async (event: H3Event) => {
-  const table = getTableParam(event);
+  const { table } = event.context.params as { table: string };
   const limit = parseAndValidateLimit(event);
 
   const {
