@@ -129,7 +129,8 @@ export const buildViewConfigColumns = (
   };
 };
 
-const VALID_COLUMN_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+// Unicode letters/digits/marks. sql.identifier quotes these.
+const VALID_COLUMN_NAME = /^[\p{L}_][\p{L}\p{N}\p{M}_]*$/u;
 
 /**
  * Normalizes and validates a projection list before a SQL read is built.

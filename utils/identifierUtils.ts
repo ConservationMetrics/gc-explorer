@@ -61,6 +61,22 @@ export const sanitizeFilenameSegment = (
 };
 
 /**
+ * Builds a Content-Disposition attachment header safe for Unicode filenames.
+ * Node rejects non-Latin-1 header values; RFC 8187 `filename*` carries the real name
+ * while `filename` stays ASCII for legacy clients.
+ *
+ * @param filename - Download filename including extension (may contain Unicode).
+ * @returns Header value for Content-Disposition.
+ */
+export const buildAttachmentContentDisposition = (filename: string): string => {
+  const lastDot = filename.lastIndexOf(".");
+  const base = lastDot > 0 ? filename.slice(0, lastDot) : filename;
+  const ext = lastDot > 0 ? filename.slice(lastDot) : "";
+  const asciiName = `${sanitizeFilenameSegment(base, 120, "download")}${ext}`;
+  return `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+};
+
+/**
  * Converts CamelCase to snake_case, aligned with gc-scripts-hub
  * `f/common_logic/identifier_utils.py` `camel_to_snake`.
  *

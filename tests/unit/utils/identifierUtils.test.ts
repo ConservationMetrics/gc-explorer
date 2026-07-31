@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildAttachmentContentDisposition,
   camelToSnake,
   decodeDatasetNameFromUrl,
   encodeDatasetNameForUrl,
@@ -66,6 +67,24 @@ describe("sanitizeFilenameSegment", () => {
 
   it("uses fallback when the label is empty", () => {
     expect(sanitizeFilenameSegment("")).toBe("incident");
+  });
+});
+
+describe("buildAttachmentContentDisposition", () => {
+  it("keeps ASCII filenames in the legacy filename parameter", () => {
+    expect(buildAttachmentContentDisposition("my_table.csv")).toBe(
+      "attachment; filename=\"my_table.csv\"; filename*=UTF-8''my_table.csv",
+    );
+  });
+
+  it("uses ASCII fallback plus RFC 8187 filename* for Thai table names", () => {
+    const filename = "comapeo_แม่ยางมิ้น_สำรวจใหม่.csv";
+    const header = buildAttachmentContentDisposition(filename);
+    expect(header).toMatch(
+      /^attachment; filename="[^"]+\.csv"; filename\*=UTF-8''/,
+    );
+    expect(header).toContain(encodeURIComponent(filename));
+    expect(header).not.toMatch(/filename="[^"]*[\u0E00-\u0E7F]/);
   });
 });
 
