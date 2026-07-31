@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 
-import { resolveViewTypeForTable } from "@/composables/useViewType";
+import {
+  resolveRecordPermissionQuery,
+  resolveViewTypeForTable,
+} from "@/composables/useViewType";
 
 // resolveViewTypeForTable decides whether a data request should carry a
 // view_type, and which one. It encodes two deliberate guards that this suite
@@ -67,5 +70,37 @@ describe("resolveViewTypeForTable", () => {
     expect(
       resolveViewTypeForTable({ path: "/", params: {} }, "springfield"),
     ).toBeUndefined();
+  });
+});
+
+describe("resolveRecordPermissionQuery", () => {
+  it("sends view_type for the route's own dataset", () => {
+    expect(
+      resolveRecordPermissionQuery(
+        { path: "/alerts/springfield", params: { tablename: "springfield" } },
+        "springfield",
+      ),
+    ).toEqual({ view_type: "alerts" });
+  });
+
+  it("sends permission_table + view_type for companion table reads", () => {
+    expect(
+      resolveRecordPermissionQuery(
+        { path: "/alerts/springfield", params: { tablename: "springfield" } },
+        "mapeo_data",
+      ),
+    ).toEqual({
+      view_type: "alerts",
+      permission_table: "springfield",
+    });
+  });
+
+  it("returns an empty query off view routes", () => {
+    expect(
+      resolveRecordPermissionQuery(
+        { path: "/dataset/springfield", params: { tablename: "springfield" } },
+        "mapeo_data",
+      ),
+    ).toEqual({});
   });
 });

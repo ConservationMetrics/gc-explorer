@@ -612,6 +612,70 @@ export const fetchTableConfig = async (
 };
 
 /**
+ * Loads view config used to authorize a warehouse table read.
+ *
+ * Same-table reads use `dataTable` (+ optional `viewType`). Cross-table companion
+ * reads (e.g. alerts secondary dataset) pass `permissionTable` = the parent view's
+ * primary dataset plus `viewType`; `dataTable` must be that view's primary or
+ * secondary table.
+ *
+ * @param {string} dataTable - Warehouse table being read.
+ * @param {{ viewType?: ViewType; permissionTable?: string | null }} [options] - Auth scope.
+ * @returns {Promise<ViewConfig>} View config for permission checks.
+ */
+export const fetchTableConfigForDataAccess = async (
+  dataTable: string,
+  options: {
+    viewType?: ViewType;
+    permissionTable?: string | null;
+  } = {},
+): Promise<ViewConfig> => {
+  const normalizedDataTable = normalizeTableName(dataTable);
+  const permissionTable = options.permissionTable?.trim()
+    ? normalizeTableName(options.permissionTable)
+    : null;
+
+  if (!permissionTable) {
+    return fetchTableConfig(normalizedDataTable, options.viewType);
+  }
+
+  if (!options.viewType) {
+    throw Object.assign(
+      new Error("view_type is required when permission_table is set"),
+      {
+        statusCode: 400,
+        statusMessage: "view_type is required when permission_table is set",
+      },
+    );
+  }
+
+  const { primaryTable, secondaryTable } = await fetchViewTables(
+    permissionTable,
+    options.viewType,
+  );
+
+  const allowed = new Set(
+    [primaryTable, secondaryTable].filter((name): name is string =>
+      Boolean(name),
+    ),
+  );
+
+  if (!allowed.has(normalizedDataTable)) {
+    throw Object.assign(
+      new Error(
+        `Table "${normalizedDataTable}" is not part of view (${permissionTable}, ${options.viewType})`,
+      ),
+      {
+        statusCode: 403,
+        statusMessage: `Table "${normalizedDataTable}" is not part of the specified view`,
+      },
+    );
+  }
+
+  return fetchTableConfig(permissionTable, options.viewType);
+};
+
+/**
  * Keeps public_views in sync with view config: add table if permission is anyone, remove otherwise.
  * @param tableName - The table name to sync.
  * @param permission - The ROUTE_LEVEL_PERMISSION for that table.

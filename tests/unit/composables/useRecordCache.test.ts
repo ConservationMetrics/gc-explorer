@@ -274,7 +274,7 @@ describe("useRecordCache - view_type threading", () => {
     });
   });
 
-  it("fetchRecord omits view_type when reading a different table (e.g. an alerts page's Mapeo table)", async () => {
+  it("fetchRecord authorizes companion reads via the parent view (permission_table)", async () => {
     mockRoute = {
       path: "/alerts/primary_alerts",
       params: { tablename: "primary_alerts" },
@@ -284,8 +284,12 @@ describe("useRecordCache - view_type threading", () => {
     const { fetchRecord } = useRecordCache();
     await fetchRecord("mapeo_secondary", "abc");
 
-    // No view type for a cross-table read → no options object at all.
-    expect(mockFetch).toHaveBeenCalledWith("/api/mapeo_secondary/abc");
+    expect(mockFetch).toHaveBeenCalledWith("/api/mapeo_secondary/abc", {
+      query: {
+        view_type: "alerts",
+        permission_table: "primary_alerts",
+      },
+    });
   });
 
   it("fetchRecords sends the route's view_type for its own dataset", async () => {

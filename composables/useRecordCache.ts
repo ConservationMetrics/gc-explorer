@@ -1,4 +1,4 @@
-import { resolveViewTypeForTable } from "@/composables/useViewType";
+import { resolveRecordPermissionQuery } from "@/composables/useViewType";
 import { encodeDatasetNameForUrl } from "@/utils/identifierUtils";
 
 import type { DataEntry } from "@/types";
@@ -73,13 +73,13 @@ export const useRecordCache = () => {
       return pending.get(cacheKey)!;
     }
 
-    // resolveViewTypeForTable returns undefined on purpose (cross-table read, non-view
-    // route, missing :tablename) — callers omit view_type and the server uses its default.
-    const viewType = resolveViewTypeForTable(route, table);
+    // Same-table view reads send view_type; companion reads send permission_table +
+    // view_type so the parent alerts/map view authorizes the secondary table.
+    const permissionQuery = resolveRecordPermissionQuery(route, table);
     const url = `/api/${encodeDatasetNameForUrl(table)}/${encodeURIComponent(recordId)}`;
     const request = (
-      viewType
-        ? $fetch<DataEntry>(url, { query: { view_type: viewType } })
+      Object.keys(permissionQuery).length > 0
+        ? $fetch<DataEntry>(url, { query: permissionQuery })
         : $fetch<DataEntry>(url)
     )
       .then((record) => {
@@ -139,13 +139,14 @@ export const useRecordCache = () => {
     }
 
     try {
-      // Same as fetchRecord: undefined viewType → omit param (see useViewType.ts).
-      const viewType = resolveViewTypeForTable(route, table);
+      const permissionQuery = resolveRecordPermissionQuery(route, table);
       const batchPromises = batches.map((batch) =>
         $fetch<DataEntry[]>(`/api/${encodeDatasetNameForUrl(table)}/records`, {
           method: "POST",
           body: { ids: batch },
-          ...(viewType ? { query: { view_type: viewType } } : {}),
+          ...(Object.keys(permissionQuery).length > 0
+            ? { query: permissionQuery }
+            : {}),
         }),
       );
       const batchResults = await Promise.all(batchPromises);
