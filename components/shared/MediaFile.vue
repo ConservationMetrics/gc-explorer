@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { XCircle } from "lucide-vue-next";
+import { Music, XCircle } from "lucide-vue-next";
 import type { AllowedFileExtensions } from "@/types";
 import { useIntersectionObserver } from "@/composables/useIntersectionObserver";
 import { useOptimizedImages } from "@/composables/useOptimizedImages";
@@ -27,6 +27,9 @@ const isImage = computed(() =>
 );
 const isVideo = computed(() =>
   checkExtensions(props.allowedFileExtensions.video),
+);
+const fileName = computed(
+  () => props.filePath.split("/").pop() || props.filePath,
 );
 
 const getExtension = (filePath: string) => {
@@ -193,11 +196,31 @@ const imageClass = computed(() => {
       v-if="isAudio"
       :class="
         isGalleryVariant
-          ? 'h-full w-full overflow-hidden rounded-2xl bg-violet-50 border border-violet-100 p-4 flex items-center'
+          ? 'flex h-full min-h-48 w-full flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border border-violet-200 bg-violet-50 p-6 text-violet-950'
           : 'mb-4'
       "
+      :data-testid="isGalleryVariant ? 'gallery-audio-card' : undefined"
     >
-      <audio controls class="w-full" preload="none" @click.stop>
+      <template v-if="isGalleryVariant">
+        <Music
+          class="h-10 w-10 shrink-0 text-violet-600"
+          aria-hidden="true"
+          data-testid="gallery-audio-icon"
+        />
+        <p
+          class="max-w-full break-words text-center text-sm font-medium"
+          data-testid="gallery-audio-filename"
+        >
+          {{ fileName }}
+        </p>
+      </template>
+      <!-- Gallery slides inset the player so it never sits under the carousel arrows. -->
+      <audio
+        controls
+        :class="isGalleryVariant ? 'w-[calc(100%_-_4rem)]' : 'w-full'"
+        preload="none"
+        @click.stop
+      >
         <source
           :src="mediaBasePath + '/' + filePath"
           :type="

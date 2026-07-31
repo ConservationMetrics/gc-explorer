@@ -76,7 +76,7 @@ const blurCarouselControl = (event: Event) => {
     <template v-if="hasMultiple">
       <button
         type="button"
-        class="absolute left-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        class="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition-[background-color,transform] duration-150 ease-out hover:bg-black/70 active:scale-[0.96] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
         data-testid="gallery-carousel-prev"
         :aria-label="t('galleryPreviousMedia')"
         @click.stop="
@@ -88,7 +88,7 @@ const blurCarouselControl = (event: Event) => {
       </button>
       <button
         type="button"
-        class="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white transition-colors hover:bg-black/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        class="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition-[background-color,transform] duration-150 ease-out hover:bg-black/70 active:scale-[0.96] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
         data-testid="gallery-carousel-next"
         :aria-label="t('galleryNextMedia')"
         @click.stop="
@@ -128,7 +128,7 @@ const blurCarouselControl = (event: Event) => {
               goToIndex(index);
               blurCarouselControl($event);
             "
-          />
+          ></button>
         </div>
       </div>
     </template>

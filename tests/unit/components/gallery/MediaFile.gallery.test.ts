@@ -64,11 +64,11 @@ describe("MediaFile gallery variant", () => {
     expect(wrapper.text()).toContain("loading");
   });
 
-  it("wraps gallery audio in a rounded violet container", () => {
+  it("renders gallery audio as a violet card with icon and filename", () => {
     const wrapper = mount(MediaFile, {
       props: {
         allowedFileExtensions,
-        filePath: "recording.mp3",
+        filePath: "field-audio/recording.mp3",
         mediaBasePath: "/media",
         variant: "gallery",
       },
@@ -76,7 +76,35 @@ describe("MediaFile gallery variant", () => {
     });
 
     expect(wrapper.find("audio").exists()).toBe(true);
-    expect(wrapper.find(".bg-violet-50").exists()).toBe(true);
-    expect(wrapper.find(".rounded-2xl").exists()).toBe(true);
+    expect(
+      wrapper.get('[data-testid="gallery-audio-card"]').classes(),
+    ).toContain("bg-violet-50");
+    expect(wrapper.find('[data-testid="gallery-audio-icon"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.get('[data-testid="gallery-audio-filename"]').text()).toBe(
+      "recording.mp3",
+    );
+    expect(wrapper.get("audio").classes()).toContain("w-[calc(100%_-_4rem)]");
+  });
+
+  it("leaves default audio rendering unchanged", () => {
+    const wrapper = mount(MediaFile, {
+      props: {
+        allowedFileExtensions,
+        filePath: "recording.mp3",
+        mediaBasePath: "/media",
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.find("audio").exists()).toBe(true);
+    expect(wrapper.find('[data-testid="gallery-audio-card"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.get("audio").classes()).toContain("w-full");
+    expect(
+      wrapper.find('[data-testid="gallery-audio-filename"]').exists(),
+    ).toBe(false);
   });
 });
