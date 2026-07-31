@@ -84,9 +84,7 @@ describe("TimestampFilter component", () => {
     expect(filterEvents).toBeTruthy();
     expect(filterEvents!.length).toBeGreaterThanOrEqual(1);
 
-    const [{ start, end }] = filterEvents![0] as [
-      { start: Date; end: Date },
-    ];
+    const [{ start, end }] = filterEvents![0] as [{ start: Date; end: Date }];
     expect(start.getFullYear()).toBe(2024);
     expect(start.getMonth()).toBe(0);
     expect(end.getFullYear()).toBe(2024);
