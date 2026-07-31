@@ -18,6 +18,7 @@ import { DATA_ENTRY_GEOMETRY_TYPES } from "@/types";
 import murmurhash from "murmurhash";
 
 import { getRandomColor } from "@/utils";
+import { formatDateOnly } from "@/utils/dateUtils";
 
 export interface SpatialDataOptions {
   idField?: string;
@@ -506,7 +507,7 @@ export const mapStatisticsFromFeatureCollection = (
       .sort();
 
     if (dates.length > 0) {
-      dateRange = `${dates[0]} to ${dates[dates.length - 1]}`;
+      dateRange = `${formatDateOnly(dates[0])} to ${formatDateOnly(dates[dates.length - 1])}`;
     }
   }
 

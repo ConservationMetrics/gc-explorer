@@ -859,6 +859,27 @@ describe("MapView component", () => {
     expect(sidebar.props("showIcons")).toBe(false);
   });
 
+  it("passes view name and description to ViewSidebar", async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        ...baseProps,
+        viewName: "Friendly Map",
+        viewDescription: "Places worth exploring.",
+        logoUrl: "https://example.com/logo.png",
+      },
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const sidebar = wrapper.findComponent({ name: "ViewSidebar" });
+    expect(sidebar.props("viewName")).toBe("Friendly Map");
+    expect(sidebar.props("viewDescription")).toBe("Places worth exploring.");
+    expect(sidebar.props("tableName")).toBe("test_table");
+    expect(sidebar.props("logoUrl")).toBe("https://example.com/logo.png");
+  });
+
   it("handles toggle-icons event from ViewSidebar", async () => {
     const propsWithIcons = {
       ...baseProps,

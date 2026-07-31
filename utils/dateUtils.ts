@@ -1,4 +1,4 @@
-import { format, getDate, isValid } from "date-fns";
+import { format, getDate, isValid, parseISO } from "date-fns";
 
 /**
  * Parses a value to milliseconds since epoch.
@@ -15,6 +15,23 @@ export const parseDateMs = (value: unknown): number | null => {
   if (!Number.isNaN(num) && num > 0) return num;
   const date = new Date(str);
   return isValid(date) ? date.getTime() : null;
+};
+
+/**
+ * Formats ISO datetime strings (containing "T") as yyyy-MM-dd using the UTC
+ * calendar day. Leaves other values unchanged (e.g. "2025-01-10", "3/9/2024").
+ *
+ * @param value - Raw date-like string.
+ * @returns yyyy-MM-dd for ISO datetimes; otherwise the original value.
+ */
+export const formatDateOnly = (value: string): string => {
+  if (!value.includes("T")) return value;
+  const date = parseISO(value);
+  if (!isValid(date)) return value;
+  return format(
+    new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+    "yyyy-MM-dd",
+  );
 };
 
 /**

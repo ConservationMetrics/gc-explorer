@@ -48,6 +48,9 @@ const props = defineProps<{
   showSlider?: boolean;
   statsExportMinDate?: string;
   statsExportMaxDate?: string;
+  tableName?: string;
+  viewName?: string;
+  viewDescription?: string;
 }>();
 
 const isScrollable = ref(false);
@@ -115,7 +118,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="fixed top-0 left-0 h-full w-[400px] bg-white shadow-lg transform transition-transform duration-300 ease-in-out overflow-y-auto z-50 sidebar"
+    class="fixed top-0 left-0 h-full max-w-full w-[400px] bg-white shadow-lg transform transition-transform duration-300 ease-in-out overflow-y-auto z-50 sidebar"
     :class="{ 'translate-x-0': showSidebar, '-translate-x-full': !showSidebar }"
   >
     <div class="relative h-full">
@@ -161,6 +164,9 @@ onBeforeUnmount(() => {
           :show-icons="showIcons"
           :can-toggle-icons="canToggleIcons"
           :loading-icons="loadingIcons"
+          :table-name="tableName"
+          :view-name="viewName"
+          :view-description="viewDescription"
           @toggle-icons="emit('toggle-icons')"
         />
         <div
