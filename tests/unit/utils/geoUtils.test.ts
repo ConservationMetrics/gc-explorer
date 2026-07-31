@@ -572,4 +572,24 @@ describe("mapStatisticsFromFeatureCollection", () => {
     expect(result.totalFeatures).toBe(2);
     expect(result.dateRange).toBe("2025-01-01 to 2025-01-01");
   });
+
+  it("formats ISO timestamps in dateRange as yyyy-MM-dd", () => {
+    const collection: FeatureCollection = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [0, 0] },
+          properties: { created_at: "2026-07-23T07:42:48.795Z" },
+        },
+        {
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [1, 1] },
+          properties: { created_at: "2026-07-29T03:45:32.260Z" },
+        },
+      ],
+    };
+    const result = mapStatisticsFromFeatureCollection(collection);
+    expect(result.dateRange).toBe("2026-07-23 to 2026-07-29");
+  });
 });

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 
 import {
   formatDate,
+  formatDateOnly,
   formatLocaleDate,
   formatPlanetMonth,
   getPlanetMaxMonth,
@@ -25,6 +26,19 @@ describe("formatLocaleDate", () => {
   it("should format a date string to a locale date string", () => {
     expect(formatLocaleDate(1, 2024)).toBe("01-2024");
     expect(formatLocaleDate(1, 2024, 1)).toBe("01-01-2024");
+  });
+});
+
+describe("formatDateOnly", () => {
+  it("formats ISO datetimes to yyyy-MM-dd using the UTC calendar day", () => {
+    expect(formatDateOnly("2026-07-23T07:42:48.795Z")).toBe("2026-07-23");
+    expect(formatDateOnly("2026-07-29T03:45:32.260Z")).toBe("2026-07-29");
+  });
+
+  it("leaves plain dates and non-ISO values unchanged", () => {
+    expect(formatDateOnly("2025-01-10")).toBe("2025-01-10");
+    expect(formatDateOnly("3/9/2024")).toBe("3/9/2024");
+    expect(formatDateOnly("not-a-timestamp")).toBe("not-a-timestamp");
   });
 });
 
