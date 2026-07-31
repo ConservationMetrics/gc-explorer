@@ -48,6 +48,9 @@ const mediaColumn = ref();
 const planetApiKey = ref();
 const primaryDataset = ref(table);
 const timestampColumn = ref<string | undefined>();
+const logoUrl = ref<string | undefined>();
+const viewName = ref<string | undefined>();
+const viewDescription = ref<string | undefined>();
 
 const { data, error, refresh } = await useFetch(`/api/${tablePath}/map`, {
   params: { limit: rowLimit },
@@ -81,6 +84,9 @@ if (data.value && !error.value) {
   planetApiKey.value = data.value.planetApiKey;
   primaryDataset.value = data.value.primary_dataset;
   timestampColumn.value = data.value.timestampColumn;
+  logoUrl.value = data.value.logoUrl;
+  viewName.value = data.value.viewName;
+  viewDescription.value = data.value.viewDescription;
 } else {
   console.error("Error fetching data:", error.value);
 }
@@ -137,6 +143,9 @@ useHead({
         :planet-api-key="planetApiKey"
         :table="primaryDataset"
         :timestamp-column="timestampColumn"
+        :logo-url="logoUrl"
+        :view-name="viewName"
+        :view-description="viewDescription"
       />
     </ClientOnly>
   </div>

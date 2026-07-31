@@ -67,6 +67,9 @@ const props = defineProps<{
   planetApiKey?: string;
   table: string;
   timestampColumn?: string;
+  logoUrl?: string;
+  viewName?: string;
+  viewDescription?: string;
 }>();
 
 /** Safe exaggeration for Mapbox terrain (see {@link resolveTerrainExaggeration}). */
@@ -633,6 +636,10 @@ onBeforeUnmount(() => {
       :show-icons="showIcons"
       :can-toggle-icons="canToggleIcons"
       :loading-icons="loadingIcons"
+      :logo-url="logoUrl"
+      :table-name="table"
+      :view-name="viewName"
+      :view-description="viewDescription"
       @close="handleSidebarClose"
       @toggle-icons="handleToggleIcons"
     />

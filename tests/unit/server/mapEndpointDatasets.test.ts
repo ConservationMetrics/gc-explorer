@@ -90,6 +90,9 @@ describe("map endpoint datasets", () => {
       COLOR_COLUMN: "status",
       FRONT_END_FILTER_COLUMN: "category",
       ROUTE_LEVEL_PERMISSION: "anyone",
+      DATASET_TABLE: "Friendly Map Name",
+      VIEW_DESCRIPTION: "A map of interesting places.",
+      LOGO_URL: "https://example.com/logo.png",
     });
     hoisted.fetchViewTables.mockResolvedValue({
       primaryTable: "map_dataset",
@@ -151,6 +154,9 @@ describe("map endpoint datasets", () => {
     });
     expect(response.primary_dataset).toBe("map_dataset");
     expect(response.table).toBe("map_dataset");
+    expect(response.viewName).toBe("Friendly Map Name");
+    expect(response.viewDescription).toBe("A map of interesting places.");
+    expect(response.logoUrl).toBe("https://example.com/logo.png");
     expect(response.data).toEqual({ type: "FeatureCollection", features: [] });
   });
 

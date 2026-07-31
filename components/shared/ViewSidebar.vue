@@ -48,6 +48,9 @@ const props = defineProps<{
   showSlider?: boolean;
   statsExportMinDate?: string;
   statsExportMaxDate?: string;
+  tableName?: string;
+  viewName?: string;
+  viewDescription?: string;
 }>();
 
 const isScrollable = ref(false);
@@ -161,6 +164,9 @@ onBeforeUnmount(() => {
           :show-icons="showIcons"
           :can-toggle-icons="canToggleIcons"
           :loading-icons="loadingIcons"
+          :table-name="tableName"
+          :view-name="viewName"
+          :view-description="viewDescription"
           @toggle-icons="emit('toggle-icons')"
         />
         <div

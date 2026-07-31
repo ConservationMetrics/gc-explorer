@@ -99,6 +99,7 @@ export default defineEventHandler(async (event: H3Event) => {
       filterColumn,
       iconColumn,
       timestampColumn: timestampColumn ?? undefined,
+      logoUrl: tableConfig.LOGO_URL,
       mapLegendLayerIds: tableConfig.MAP_LEGEND_LAYER_IDS,
       mapStatistics,
       mapbox3d: tableConfig.MAPBOX_3D ?? false,
@@ -120,6 +121,8 @@ export default defineEventHandler(async (event: H3Event) => {
       planetApiKey: tableConfig.PLANET_API_KEY,
       primary_dataset: primaryTable,
       table: primaryTable,
+      viewDescription: tableConfig.VIEW_DESCRIPTION || undefined,
+      viewName: tableConfig.DATASET_TABLE?.trim() || undefined,
       rowLimitReached: mainData.length >= limit,
       routeLevelPermission: tableConfig.ROUTE_LEVEL_PERMISSION,
     };
