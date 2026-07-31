@@ -45,7 +45,8 @@ const fullDescription = computed(() => props.viewDescription?.trim() || "");
         />
         <h2
           v-if="displayName"
-          class="text-2xl font-semibold tracking-tight"
+          class="pr-10 text-2xl font-semibold tracking-tight break-words"
+          style="overflow-wrap: anywhere; word-break: break-word"
           data-testid="map-intro-title"
         >
           {{ displayName }}
