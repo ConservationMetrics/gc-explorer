@@ -15,8 +15,8 @@ import { decodeDatasetNameFromUrl } from "@/utils/identifierUtils";
  * routes derive `view_type` from the current page route and attach it to the
  * request. When `resolveViewTypeForTable` returns `undefined`, callers omit the
  * param; the server then falls back to its deterministic default (oldest view by
- * `view_id`). Cross-table companion reads use `resolveRecordPermissionQuery`
- * instead so permissions come from the parent view.
+ * `view_id`). Cross-table reads (e.g. alerts page fetching its Mapeo table) omit
+ * `view_type` — see guard #1 below.
  */
 const VIEW_TYPE_BY_SEGMENT: Record<string, ViewType> = {
   map: "map",
@@ -24,9 +24,9 @@ const VIEW_TYPE_BY_SEGMENT: Record<string, ViewType> = {
   alerts: "alerts",
 };
 
-export type RecordPermissionQuery = {
+type RecordFetchQuery = {
   view_type?: ViewType;
-  permission_table?: string;
+  primary_dataset?: string;
 };
 
 /**
@@ -36,10 +36,6 @@ export type RecordPermissionQuery = {
  * Returns a view type only when `table` is the route's own `:tablename` and the
  * route's first path segment is a known view prefix (`map`, `gallery`, `alerts`).
  * Otherwise returns `undefined` (callers omit the query param).
- *
- * @param {{ path: string; params: Record<string, unknown> }} route - Current page route.
- * @param {string} table - Warehouse table being fetched.
- * @returns {ViewType | undefined} View type for same-table reads, else undefined.
  */
 export function resolveViewTypeForTable(
   route: { path: string; params: Record<string, unknown> },
@@ -49,8 +45,8 @@ export function resolveViewTypeForTable(
     typeof route.params.tablename === "string"
       ? decodeDatasetNameFromUrl(route.params.tablename)
       : undefined;
-  // Guard #1: cross-table reads must not carry the route's view type alone —
-  // companion tables have no view row; use resolveRecordPermissionQuery instead.
+  // Guard #1: cross-table reads (e.g. alerts page → Mapeo table) must not carry
+  // the route's view type.
   if (!primaryTable || decodeDatasetNameFromUrl(table) !== primaryTable) {
     return undefined;
   }
@@ -60,21 +56,21 @@ export function resolveViewTypeForTable(
 }
 
 /**
- * Builds query params for record/list fetches that may target a companion table.
+ * Builds query params for record requests.
  *
- * Same-table view reads send `view_type`. Cross-table reads on a view page send
- * `permission_table` (route primary) + `view_type` so the server authorizes via
- * the parent view while reading the companion warehouse table.
+ * Requests for the view's primary dataset send `view_type`. Requests for its
+ * secondary dataset also send `primary_dataset`, which identifies the view
+ * configuration that lists the requested secondary dataset.
  *
  * @param {{ path: string; params: Record<string, unknown> }} route - Current page route.
- * @param {string} table - Warehouse table being fetched.
- * @returns {RecordPermissionQuery} Query object (possibly empty).
+ * @param {string} requestedDataset - Dataset being fetched.
+ * @returns {RecordFetchQuery} Query object (possibly empty).
  */
-export function resolveRecordPermissionQuery(
+export const resolveRecordFetchQuery = (
   route: { path: string; params: Record<string, unknown> },
-  table: string,
-): RecordPermissionQuery {
-  const primaryTable =
+  requestedDataset: string,
+): RecordFetchQuery => {
+  const primaryDataset =
     typeof route.params.tablename === "string"
       ? decodeDatasetNameFromUrl(route.params.tablename)
       : undefined;
@@ -83,16 +79,16 @@ export function resolveRecordPermissionQuery(
     ? VIEW_TYPE_BY_SEGMENT[firstSegment]
     : undefined;
 
-  if (!primaryTable || !routeViewType) {
+  if (!primaryDataset || !routeViewType) {
     return {};
   }
 
-  if (decodeDatasetNameFromUrl(table) === primaryTable) {
+  if (decodeDatasetNameFromUrl(requestedDataset) === primaryDataset) {
     return { view_type: routeViewType };
   }
 
   return {
     view_type: routeViewType,
-    permission_table: primaryTable,
+    primary_dataset: primaryDataset,
   };
-}
+};

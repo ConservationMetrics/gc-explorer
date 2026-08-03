@@ -274,7 +274,7 @@ describe("useRecordCache - view_type threading", () => {
     });
   });
 
-  it("fetchRecord authorizes companion reads via the parent view (permission_table)", async () => {
+  it("fetchRecord identifies the view when reading its secondary dataset", async () => {
     mockRoute = {
       path: "/alerts/primary_alerts",
       params: { tablename: "primary_alerts" },
@@ -287,7 +287,7 @@ describe("useRecordCache - view_type threading", () => {
     expect(mockFetch).toHaveBeenCalledWith("/api/mapeo_secondary/abc", {
       query: {
         view_type: "alerts",
-        permission_table: "primary_alerts",
+        primary_dataset: "primary_alerts",
       },
     });
   });

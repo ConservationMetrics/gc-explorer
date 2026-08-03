@@ -1,6 +1,6 @@
 import {
   fetchRecords,
-  fetchTableConfigForDataAccess,
+  fetchViewConfigForDatasetRead,
 } from "@/server/database/dbOperations";
 import { getTableParam } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
@@ -14,9 +14,9 @@ export default defineEventHandler(async (event: H3Event) => {
   const table = getTableParam(event);
   const query = getQuery(event);
   const viewType = query.view_type as ViewType | undefined;
-  const permissionTable =
-    typeof query.permission_table === "string"
-      ? query.permission_table
+  const primaryDataset =
+    typeof query.primary_dataset === "string"
+      ? query.primary_dataset
       : undefined;
 
   const body = await readBody(event);
@@ -45,9 +45,9 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-    const tableConfig = await fetchTableConfigForDataAccess(table, {
+    const tableConfig = await fetchViewConfigForDatasetRead(table, {
       viewType,
-      permissionTable,
+      primaryDataset,
     });
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);

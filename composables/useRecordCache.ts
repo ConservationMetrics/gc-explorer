@@ -1,4 +1,4 @@
-import { resolveRecordPermissionQuery } from "@/composables/useViewType";
+import { resolveRecordFetchQuery } from "@/composables/useViewType";
 import { encodeDatasetNameForUrl } from "@/utils/identifierUtils";
 
 import type { DataEntry } from "@/types";
@@ -73,13 +73,11 @@ export const useRecordCache = () => {
       return pending.get(cacheKey)!;
     }
 
-    // Same-table view reads send view_type; companion reads send permission_table +
-    // view_type so the parent alerts/map view authorizes the secondary table.
-    const permissionQuery = resolveRecordPermissionQuery(route, table);
+    const query = resolveRecordFetchQuery(route, table);
     const url = `/api/${encodeDatasetNameForUrl(table)}/${encodeURIComponent(recordId)}`;
     const request = (
-      Object.keys(permissionQuery).length > 0
-        ? $fetch<DataEntry>(url, { query: permissionQuery })
+      Object.keys(query).length > 0
+        ? $fetch<DataEntry>(url, { query })
         : $fetch<DataEntry>(url)
     )
       .then((record) => {
@@ -139,14 +137,12 @@ export const useRecordCache = () => {
     }
 
     try {
-      const permissionQuery = resolveRecordPermissionQuery(route, table);
+      const query = resolveRecordFetchQuery(route, table);
       const batchPromises = batches.map((batch) =>
         $fetch<DataEntry[]>(`/api/${encodeDatasetNameForUrl(table)}/records`, {
           method: "POST",
           body: { ids: batch },
-          ...(Object.keys(permissionQuery).length > 0
-            ? { query: permissionQuery }
-            : {}),
+          ...(Object.keys(query).length > 0 ? { query } : {}),
         }),
       );
       const batchResults = await Promise.all(batchPromises);

@@ -1,6 +1,6 @@
 import {
   fetchRecord,
-  fetchTableConfigForDataAccess,
+  fetchViewConfigForDatasetRead,
 } from "@/server/database/dbOperations";
 import { getRecordIdParam, getTableParam } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
@@ -13,15 +13,15 @@ export default defineEventHandler(async (event: H3Event) => {
   const recordId = getRecordIdParam(event);
   const query = getQuery(event);
   const viewType = query.view_type as ViewType | undefined;
-  const permissionTable =
-    typeof query.permission_table === "string"
-      ? query.permission_table
+  const primaryDataset =
+    typeof query.primary_dataset === "string"
+      ? query.primary_dataset
       : undefined;
 
   try {
-    const tableConfig = await fetchTableConfigForDataAccess(table, {
+    const tableConfig = await fetchViewConfigForDatasetRead(table, {
       viewType,
-      permissionTable,
+      primaryDataset,
     });
 
     // Check visibility permissions

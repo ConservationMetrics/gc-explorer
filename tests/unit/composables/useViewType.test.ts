@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import {
-  resolveRecordPermissionQuery,
+  resolveRecordFetchQuery,
   resolveViewTypeForTable,
 } from "@/composables/useViewType";
 
@@ -73,31 +73,31 @@ describe("resolveViewTypeForTable", () => {
   });
 });
 
-describe("resolveRecordPermissionQuery", () => {
+describe("resolveRecordFetchQuery", () => {
   it("sends view_type for the route's own dataset", () => {
     expect(
-      resolveRecordPermissionQuery(
+      resolveRecordFetchQuery(
         { path: "/alerts/springfield", params: { tablename: "springfield" } },
         "springfield",
       ),
     ).toEqual({ view_type: "alerts" });
   });
 
-  it("sends permission_table + view_type for companion table reads", () => {
+  it("identifies the view when fetching its secondary dataset", () => {
     expect(
-      resolveRecordPermissionQuery(
+      resolveRecordFetchQuery(
         { path: "/alerts/springfield", params: { tablename: "springfield" } },
         "mapeo_data",
       ),
     ).toEqual({
       view_type: "alerts",
-      permission_table: "springfield",
+      primary_dataset: "springfield",
     });
   });
 
   it("returns an empty query off view routes", () => {
     expect(
-      resolveRecordPermissionQuery(
+      resolveRecordFetchQuery(
         { path: "/dataset/springfield", params: { tablename: "springfield" } },
         "mapeo_data",
       ),

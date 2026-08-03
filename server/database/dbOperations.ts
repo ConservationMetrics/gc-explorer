@@ -612,67 +612,60 @@ export const fetchTableConfig = async (
 };
 
 /**
- * Loads view config used to authorize a warehouse table read.
+ * Returns the view config for a dataset read.
  *
- * Same-table reads use `dataTable` (+ optional `viewType`). Cross-table companion
- * reads (e.g. alerts secondary dataset) pass `permissionTable` = the parent view's
- * primary dataset plus `viewType`; `dataTable` must be that view's primary or
- * secondary table.
+ * View configs are keyed by primary dataset and view type. A secondary dataset
+ * request therefore includes both, and must match the configured secondary
+ * dataset before using that config.
  *
- * @param {string} dataTable - Warehouse table being read.
- * @param {{ viewType?: ViewType; permissionTable?: string | null }} [options] - Auth scope.
- * @returns {Promise<ViewConfig>} View config for permission checks.
+ * @param {string} requestedDataset - Warehouse dataset being read.
+ * @param {{ viewType?: ViewType; primaryDataset?: string | null }} [options] - View identity.
+ * @returns {Promise<ViewConfig>} Config for the requested dataset's view.
  */
-export const fetchTableConfigForDataAccess = async (
-  dataTable: string,
+export const fetchViewConfigForDatasetRead = async (
+  requestedDataset: string,
   options: {
     viewType?: ViewType;
-    permissionTable?: string | null;
+    primaryDataset?: string | null;
   } = {},
 ): Promise<ViewConfig> => {
-  const normalizedDataTable = normalizeTableName(dataTable);
-  const permissionTable = options.permissionTable?.trim()
-    ? normalizeTableName(options.permissionTable)
+  const normalizedRequestedDataset = normalizeTableName(requestedDataset);
+  const primaryDataset = options.primaryDataset?.trim()
+    ? normalizeTableName(options.primaryDataset)
     : null;
 
-  if (!permissionTable) {
-    return fetchTableConfig(normalizedDataTable, options.viewType);
+  if (!primaryDataset) {
+    return fetchTableConfig(normalizedRequestedDataset, options.viewType);
   }
 
   if (!options.viewType) {
     throw Object.assign(
-      new Error("view_type is required when permission_table is set"),
+      new Error("view_type is required when primary_dataset is set"),
       {
         statusCode: 400,
-        statusMessage: "view_type is required when permission_table is set",
+        statusMessage: "view_type is required when primary_dataset is set",
       },
     );
   }
 
-  const { primaryTable, secondaryTable } = await fetchViewTables(
-    permissionTable,
+  const { secondaryTable: secondaryDataset } = await fetchViewTables(
+    primaryDataset,
     options.viewType,
   );
 
-  const allowed = new Set(
-    [primaryTable, secondaryTable].filter((name): name is string =>
-      Boolean(name),
-    ),
-  );
-
-  if (!allowed.has(normalizedDataTable)) {
+  if (secondaryDataset !== normalizedRequestedDataset) {
     throw Object.assign(
       new Error(
-        `Table "${normalizedDataTable}" is not part of view (${permissionTable}, ${options.viewType})`,
+        `Dataset "${normalizedRequestedDataset}" is not the secondary dataset for view (${primaryDataset}, ${options.viewType})`,
       ),
       {
         statusCode: 403,
-        statusMessage: `Table "${normalizedDataTable}" is not part of the specified view`,
+        statusMessage: `Dataset "${normalizedRequestedDataset}" is not the configured secondary dataset`,
       },
     );
   }
 
-  return fetchTableConfig(permissionTable, options.viewType);
+  return fetchTableConfig(primaryDataset, options.viewType);
 };
 
 /**
