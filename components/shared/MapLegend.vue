@@ -95,13 +95,11 @@ watch(
             </div>
             <span>
               {{
-                item.name === "Secondary data"
-                  ? $t("secondaryData")
-                  : item.name === "Most recent alerts"
-                    ? $t("mostRecentAlerts")
-                    : item.name === "Previous alerts"
-                      ? $t("previousAlerts")
-                      : item.name
+                item.name === "Most recent alerts"
+                  ? $t("mostRecentAlerts")
+                  : item.name === "Previous alerts"
+                    ? $t("previousAlerts")
+                    : item.name
               }}
             </span>
           </label>

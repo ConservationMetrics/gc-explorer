@@ -1385,7 +1385,11 @@ const prepareMapLegendContent = () => {
     if (props.secondaryData) {
       legendItems.push({
         id: "secondary-data",
-        name: "Secondary data",
+        name: props.secondaryDataset
+          ? props.secondaryDataset
+              .replace(/_/g, " ")
+              .replace(/^\w/, (character) => character.toUpperCase())
+          : t("secondaryData"),
         type: "circle",
         color: secondaryDataColor.value || "#000000",
         visible: true,
