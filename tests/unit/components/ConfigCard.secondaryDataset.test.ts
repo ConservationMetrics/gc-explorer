@@ -76,19 +76,20 @@ describe.each<ViewType>(["alerts", "map"])(
   },
 );
 
-describe("ConfigCard alerts filter migration", () => {
-  it("maps legacy category values to generic filter config", () => {
+describe("ConfigCard alerts filter config", () => {
+  it("passes the generic filter fields to ConfigFilters", () => {
     const wrapper = mountConfigCard("alerts", {
       MAPBOX_ACCESS_TOKEN: "pk.ey.test-token",
-      MAPEO_CATEGORY_IDS: "threat",
+      FRONT_END_FILTER_COLUMN: "status",
+      SECONDARY_FILTER_VALUES: "active",
     });
 
     expect(
       wrapper.getComponent({ name: "ConfigFilters" }).props("config"),
     ).toEqual(
       expect.objectContaining({
-        FRONT_END_FILTER_COLUMN: "p__categoryid",
-        SECONDARY_FILTER_VALUES: "threat",
+        FRONT_END_FILTER_COLUMN: "status",
+        SECONDARY_FILTER_VALUES: "active",
       }),
     );
     expect(

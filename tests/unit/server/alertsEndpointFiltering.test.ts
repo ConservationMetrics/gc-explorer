@@ -172,35 +172,4 @@ describe("alerts endpoint secondary filtering", () => {
       features: [expect.objectContaining({ status: "active" })],
     });
   });
-
-  it("uses the Mapeo category column for legacy configs", async () => {
-    hoisted.fetchTableConfig.mockResolvedValue({
-      SECONDARY_CATEGORY_IDS: "threat",
-      ROUTE_LEVEL_PERMISSION: "anyone",
-    });
-    hoisted.fetchViewData.mockResolvedValue({
-      primaryData: { mainData: [], metadata: [] },
-      secondaryData: {
-        mainData: [
-          {
-            _id: "observation-1",
-            p__categoryid: "threat",
-            g__type: "Point",
-            g__coordinates: "[0,0]",
-          },
-        ],
-        columnsData: [],
-      },
-    });
-
-    await handleAlertsRequest({
-      context: { params: { table: "route_alerts" } },
-    });
-
-    expect(hoisted.filterToSelectedValues).toHaveBeenCalledWith(
-      expect.any(Array),
-      "p__categoryid",
-      "threat",
-    );
-  });
 });

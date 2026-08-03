@@ -85,18 +85,7 @@ const viewTypeList = computed(() => [props.viewType]);
  * @returns {ViewConfig} A detached copy of the configuration.
  */
 const cloneConfig = (config: ViewConfig): ViewConfig => {
-  const cloned = JSON.parse(JSON.stringify(config)) as ViewConfig;
-  const legacyFilterValues =
-    cloned.SECONDARY_CATEGORY_IDS || cloned.MAPEO_CATEGORY_IDS;
-  if (!cloned.SECONDARY_FILTER_VALUES) {
-    cloned.SECONDARY_FILTER_VALUES = legacyFilterValues;
-  }
-  if (!cloned.FRONT_END_FILTER_COLUMN && legacyFilterValues) {
-    cloned.FRONT_END_FILTER_COLUMN = "p__categoryid";
-  }
-  delete cloned.SECONDARY_CATEGORY_IDS;
-  delete cloned.MAPEO_CATEGORY_IDS;
-  return cloned;
+  return JSON.parse(JSON.stringify(config)) as ViewConfig;
 };
 
 /**

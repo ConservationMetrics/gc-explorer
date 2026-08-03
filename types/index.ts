@@ -103,10 +103,6 @@ export interface ViewConfig {
   MAPBOX_STYLE?: MapboxStyleConfig; // Deprecated: use MAPBOX_BASEMAPS instead
   MAPBOX_BASEMAPS?: string; // JSON string of BasemapConfig[]
   MAPBOX_ZOOM?: number;
-  /** @deprecated Prefer SECONDARY_FILTER_VALUES; kept for unmigrated Mapeo configs. */
-  MAPEO_CATEGORY_IDS?: string;
-  /** @deprecated Prefer SECONDARY_FILTER_VALUES. */
-  SECONDARY_CATEGORY_IDS?: string;
   SECONDARY_FILTER_VALUES?: string;
   MAP_LEGEND_LAYER_IDS?: string;
   MEDIA_BASE_PATH?: string;

@@ -22,12 +22,7 @@ import { buildRequiredAlertsProjection } from "@/server/utils/alertsProjection";
 import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
 
 import type { H3Event } from "h3";
-import type {
-  AllowedFileExtensions,
-  DataEntry,
-  AlertsMetadata,
-  ViewConfig,
-} from "@/types";
+import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
 import type { FeatureCollection } from "geojson";
 
 const ALERTS_MAIN_PROJECTION = [
@@ -53,33 +48,6 @@ const REQUIRED_ALERTS_MAIN_COLUMNS = [
   "g__type",
   "g__coordinates",
 ];
-
-/**
- * Reads secondary include values from current and legacy config keys.
- *
- * @param {ViewConfig} tableConfig - Alerts view configuration.
- * @returns {string | undefined} Comma-separated values to include.
- */
-const resolveSecondaryFilterValues = (
-  tableConfig: ViewConfig,
-): string | undefined =>
-  tableConfig.SECONDARY_FILTER_VALUES ||
-  tableConfig.SECONDARY_CATEGORY_IDS ||
-  tableConfig.MAPEO_CATEGORY_IDS;
-
-/**
- * Resolves the secondary filter column, including the implicit Mapeo column.
- *
- * @param {ViewConfig} tableConfig - Alerts view configuration.
- * @returns {string | undefined} Secondary dataset column to filter.
- */
-const resolveSecondaryFilterColumn = (
-  tableConfig: ViewConfig,
-): string | undefined =>
-  tableConfig.FRONT_END_FILTER_COLUMN ||
-  (tableConfig.SECONDARY_CATEGORY_IDS || tableConfig.MAPEO_CATEGORY_IDS
-    ? "p__categoryid"
-    : undefined);
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -119,8 +87,8 @@ export default defineEventHandler(async (event: H3Event) => {
       (columnName) => availableMetadataColumns.includes(columnName),
     );
 
-    const secondaryFilterColumn = resolveSecondaryFilterColumn(tableConfig);
-    const secondaryFilterValues = resolveSecondaryFilterValues(tableConfig);
+    const secondaryFilterColumn = tableConfig.FRONT_END_FILTER_COLUMN;
+    const secondaryFilterValues = tableConfig.SECONDARY_FILTER_VALUES;
     const shouldFetchSecondaryData = Boolean(secondaryTable);
     const secondaryMainColumns = shouldFetchSecondaryData
       ? await fetchTableSqlColumns(secondaryTable!)
