@@ -57,7 +57,10 @@ const mediaKeys = computed(() => [
   "MEDIA_BASE_PATH_ICONS",
   "MEDIA_COLUMN",
 ]);
-const alertKeys = computed(() => ["SECONDARY_CATEGORY_IDS"]);
+const alertKeys = computed(() => [
+  "FRONT_END_FILTER_COLUMN",
+  "SECONDARY_FILTER_VALUES",
+]);
 const filterKeys = computed(() => [
   "FILTER_OUT_VALUES_FROM_COLUMN",
   "FRONT_END_FILTER_COLUMN",
@@ -83,9 +86,15 @@ const viewTypeList = computed(() => [props.viewType]);
  */
 const cloneConfig = (config: ViewConfig): ViewConfig => {
   const cloned = JSON.parse(JSON.stringify(config)) as ViewConfig;
-  if (!cloned.SECONDARY_CATEGORY_IDS && cloned.MAPEO_CATEGORY_IDS) {
-    cloned.SECONDARY_CATEGORY_IDS = cloned.MAPEO_CATEGORY_IDS;
+  const legacyFilterValues =
+    cloned.SECONDARY_CATEGORY_IDS || cloned.MAPEO_CATEGORY_IDS;
+  if (!cloned.SECONDARY_FILTER_VALUES) {
+    cloned.SECONDARY_FILTER_VALUES = legacyFilterValues;
   }
+  if (!cloned.FRONT_END_FILTER_COLUMN && legacyFilterValues) {
+    cloned.FRONT_END_FILTER_COLUMN = "p__categoryid";
+  }
+  delete cloned.SECONDARY_CATEGORY_IDS;
   delete cloned.MAPEO_CATEGORY_IDS;
   return cloned;
 };

@@ -297,7 +297,7 @@
   "yourAccessIsPending": "Su acceso está pendiente. Ponte en contacto con un administrador de Guardian Connector para la aprobación de su cuenta.",
   "yourMapboxStyleDefault": "Mapbox - su estilo (predeterminado)",
   "copySecondaryLink": "Copiar enlace a la observación secundaria",
-  "secondaryCategoryIds": "IDs de categorías del conjunto de datos secundario para mostrar en el mapa de alertas",
+  "secondaryFilterValues": "Valores del conjunto de datos secundario que se mostrarán en el mapa de alertas",
   "secondaryData": "Datos secundarios",
   "incidents.selectedSecondaryCount": "Elementos secundarios seleccionados: {count}"
 }

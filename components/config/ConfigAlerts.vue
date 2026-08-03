@@ -20,14 +20,16 @@ const emit = defineEmits<{
 
 type Tag = { text: string };
 
-const resolveCategoryIds = (config: ViewConfig): string | undefined =>
-  config.SECONDARY_CATEGORY_IDS || config.MAPEO_CATEGORY_IDS;
+const resolveFilterValues = (config: ViewConfig): string | undefined =>
+  config.SECONDARY_FILTER_VALUES ||
+  config.SECONDARY_CATEGORY_IDS ||
+  config.MAPEO_CATEGORY_IDS;
 
-const initialCategoryIds = resolveCategoryIds(props.config);
+const initialFilterValues = resolveFilterValues(props.config);
 
 const initialTags: Record<string, Tag[]> = {
-  SECONDARY_CATEGORY_IDS: initialCategoryIds
-    ? initialCategoryIds.split(",").map((tag) => ({ text: tag }))
+  SECONDARY_FILTER_VALUES: initialFilterValues
+    ? initialFilterValues.split(",").map((tag) => ({ text: tag }))
     : [],
 };
 
@@ -40,22 +42,42 @@ const handleTagsChanged = (key: string, newTags: Tag[]): void => {
   rawHandleTagsChanged(key, newTags);
   const values = newTags.map((tag) => tag.text).join(",");
   emit("updateConfig", {
-    SECONDARY_CATEGORY_IDS: values,
+    SECONDARY_FILTER_VALUES: values,
+    SECONDARY_CATEGORY_IDS: undefined,
     MAPEO_CATEGORY_IDS: undefined,
   });
+};
+
+const handleInput = (key: string, value: string): void => {
+  emit("updateConfig", { [key]: value });
 };
 </script>
 
 <template>
   <div class="space-y-6">
     <div v-for="key in keys" :key="key" class="space-y-2">
-      <label
-        :for="`${tableName}-${key}`"
-        class="block text-sm font-medium text-gray-700"
-      >
-        {{ $t(toCamelCase(key)) }}
-      </label>
-      <template v-if="key === 'SECONDARY_CATEGORY_IDS'">
+      <template v-if="key === 'FRONT_END_FILTER_COLUMN'">
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t("filterDataByColumn") }}
+        </label>
+        <input
+          :id="`${tableName}-${key}`"
+          :value="config[key]"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+          type="text"
+          @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
+        />
+      </template>
+      <template v-else-if="key === 'SECONDARY_FILTER_VALUES'">
+        <label
+          :for="`${tableName}-${key}`"
+          class="block text-sm font-medium text-gray-700"
+        >
+          {{ $t(toCamelCase(key)) }}
+        </label>
         <VueTagsInput
           class="tag-field"
           :tags="tags[key]"

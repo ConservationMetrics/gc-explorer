@@ -78,6 +78,13 @@
       "when": 1783600000000,
       "tag": "0010_rename_mapeo_category_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1785781433290,
+      "tag": "0011_rename_secondary_filter_values",
+      "breakpoints": true
     }
   ]
 }

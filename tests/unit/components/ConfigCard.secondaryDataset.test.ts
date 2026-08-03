@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import { computed, nextTick, ref, watch } from "vue";
 
 import ConfigCard from "@/components/config/ConfigCard.vue";
-import type { ViewType } from "@/types";
+import type { ViewConfig, ViewType } from "@/types";
 
 Object.assign(globalThis, {
   computed,
@@ -12,21 +12,28 @@ Object.assign(globalThis, {
   watch,
 });
 
-const mountConfigCard = (viewType: ViewType) =>
+const mountConfigCard = (
+  viewType: ViewType,
+  viewConfig: ViewConfig = {
+    MAPBOX_ACCESS_TOKEN: "pk.ey.test-token",
+    ROUTE_LEVEL_PERMISSION: "member",
+  },
+) =>
   mount(ConfigCard, {
     props: {
       tableName: "primary_dataset",
       viewType,
-      viewConfig: {
-        MAPBOX_ACCESS_TOKEN: "pk.ey.test-token",
-        ROUTE_LEVEL_PERMISSION: "member",
-      },
+      viewConfig,
       secondaryDataset: "old_secondary",
       secondaryEditable: true,
     },
     global: {
       stubs: {
-        ConfigAlerts: true,
+        ConfigAlerts: {
+          name: "ConfigAlerts",
+          props: ["config"],
+          template: "<div />",
+        },
         ConfigCollapsibleSection: {
           template: "<div><slot /></div>",
         },
@@ -69,3 +76,21 @@ describe.each<ViewType>(["alerts", "map"])(
     });
   },
 );
+
+describe("ConfigCard alerts filter migration", () => {
+  it("maps legacy category values to generic filter config", () => {
+    const wrapper = mountConfigCard("alerts", {
+      MAPBOX_ACCESS_TOKEN: "pk.ey.test-token",
+      MAPEO_CATEGORY_IDS: "threat",
+    });
+
+    expect(
+      wrapper.getComponent({ name: "ConfigAlerts" }).props("config"),
+    ).toEqual(
+      expect.objectContaining({
+        FRONT_END_FILTER_COLUMN: "p__categoryid",
+        SECONDARY_FILTER_VALUES: "threat",
+      }),
+    );
+  });
+});

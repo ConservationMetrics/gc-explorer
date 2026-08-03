@@ -301,7 +301,7 @@
   "yourAccessIsPending": "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
   "yourMapboxStyleDefault": "Mapbox - your style (default)",
   "copySecondaryLink": "Copy link to secondary observation",
-  "secondaryCategoryIds": "Category IDs to show from the secondary dataset on the alerts map",
+  "secondaryFilterValues": "Values to show from the secondary dataset on the alerts map",
   "secondaryData": "Secondary data",
   "incidents.selectedSecondaryCount": "Secondary items selected: {count}"
 }

@@ -301,7 +301,7 @@
   "yourAccessIsPending": "การเข้าถึงของคุณอยู่ระหว่างรออนุมัติ โปรดติดต่อผู้ดูแลระบบ Guardian Connector เพื่อขออนุมัติบัญชี",
   "yourMapboxStyleDefault": "Mapbox — สไตล์ของคุณ (ค่าเริ่มต้น)",
   "copySecondaryLink": "คัดลอกลิงก์ไปยังการสังเกตการณ์ชุดข้อมูลรอง",
-  "secondaryCategoryIds": "Category IDs จากชุดข้อมูลรองที่จะแสดงบนแผนที่แจ้งเตือน",
+  "secondaryFilterValues": "ค่าจากชุดข้อมูลรองที่จะแสดงบนแผนที่แจ้งเตือน",
   "secondaryData": "ข้อมูลรอง",
   "incidents.selectedSecondaryCount": "เลือกรายการรอง: {count}"
 }

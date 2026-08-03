@@ -167,7 +167,7 @@ describe("useCopyConfig", () => {
         primaryDataset: "fake_alerts",
         viewType: "alerts",
         viewName: "Fake Alerts",
-        viewConfig: { SECONDARY_CATEGORY_IDS: "threat" },
+        viewConfig: { SECONDARY_FILTER_VALUES: "threat" },
       }),
       {
         ...makeRow({
@@ -175,7 +175,7 @@ describe("useCopyConfig", () => {
           primaryDataset: "gfw_alerts_viirs",
           viewType: "alerts",
           viewName: "GFW Alerts",
-          viewConfig: { SECONDARY_CATEGORY_IDS: "threat" },
+          viewConfig: { SECONDARY_FILTER_VALUES: "threat" },
         }),
         secondaryDataset: "mapeo_data",
       },
@@ -193,7 +193,7 @@ describe("useCopyConfig", () => {
     selectedCopySource.value = otherCopySources.value[0].key;
     handleConfirmCopy();
 
-    expect(configToCopy.value).toEqual({ SECONDARY_CATEGORY_IDS: "threat" });
+    expect(configToCopy.value).toEqual({ SECONDARY_FILTER_VALUES: "threat" });
     expect(secondaryDatasetToCopy.value).toBe("mapeo_data");
   });
 });
