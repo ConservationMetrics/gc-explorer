@@ -162,7 +162,10 @@ describe("alerts endpoint secondary filtering", () => {
     );
     expect(hoisted.buildMinimalFeatureCollection).toHaveBeenLastCalledWith(
       [expect.objectContaining({ status: "active" })],
-      expect.objectContaining({ filterColumn: "status" }),
+      {
+        idField: "_id",
+        includeAllProperties: true,
+      },
     );
     expect(response.secondaryData).toEqual({
       type: "FeatureCollection",

@@ -29,15 +29,14 @@ const mountConfigCard = (
     },
     global: {
       stubs: {
-        ConfigAlerts: {
-          name: "ConfigAlerts",
-          props: ["config"],
-          template: "<div />",
-        },
         ConfigCollapsibleSection: {
           template: "<div><slot /></div>",
         },
-        ConfigFilters: true,
+        ConfigFilters: {
+          name: "ConfigFilters",
+          props: ["config", "keys"],
+          template: "<div />",
+        },
         ConfigMap: true,
         ConfigMedia: true,
         ConfigPermissions: {
@@ -85,12 +84,15 @@ describe("ConfigCard alerts filter migration", () => {
     });
 
     expect(
-      wrapper.getComponent({ name: "ConfigAlerts" }).props("config"),
+      wrapper.getComponent({ name: "ConfigFilters" }).props("config"),
     ).toEqual(
       expect.objectContaining({
         FRONT_END_FILTER_COLUMN: "p__categoryid",
         SECONDARY_FILTER_VALUES: "threat",
       }),
     );
+    expect(
+      wrapper.getComponent({ name: "ConfigFilters" }).props("keys"),
+    ).toEqual(["FRONT_END_FILTER_COLUMN", "SECONDARY_FILTER_VALUES"]);
   });
 });

@@ -54,7 +54,12 @@ const REQUIRED_ALERTS_MAIN_COLUMNS = [
   "g__coordinates",
 ];
 
-/** Reads generic include values, with compatibility for category-based configs. */
+/**
+ * Reads secondary include values from current and legacy config keys.
+ *
+ * @param {ViewConfig} tableConfig - Alerts view configuration.
+ * @returns {string | undefined} Comma-separated values to include.
+ */
 const resolveSecondaryFilterValues = (
   tableConfig: ViewConfig,
 ): string | undefined =>
@@ -62,7 +67,12 @@ const resolveSecondaryFilterValues = (
   tableConfig.SECONDARY_CATEGORY_IDS ||
   tableConfig.MAPEO_CATEGORY_IDS;
 
-/** Existing Mapeo configs used p__categoryid without storing a filter column. */
+/**
+ * Resolves the secondary filter column, including the implicit Mapeo column.
+ *
+ * @param {ViewConfig} tableConfig - Alerts view configuration.
+ * @returns {string | undefined} Secondary dataset column to filter.
+ */
 const resolveSecondaryFilterColumn = (
   tableConfig: ViewConfig,
 ): string | undefined =>
@@ -180,7 +190,6 @@ export default defineEventHandler(async (event: H3Event) => {
         {
           idField: "_id",
           includeAllProperties: true,
-          filterColumn: secondaryFilterColumn,
         },
       );
 

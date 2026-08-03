@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { ref } from "vue";
 
-import ConfigAlerts from "@/components/config/ConfigAlerts.vue";
+import ConfigFilters from "@/components/config/ConfigFilters.vue";
 
 Object.assign(globalThis, { ref });
 
@@ -13,8 +13,8 @@ vi.mock("@vojtechlanka/vue-tags-input", () => ({
   },
 }));
 
-const mountConfigAlerts = () =>
-  mount(ConfigAlerts, {
+const mountConfigFilters = () =>
+  mount(ConfigFilters, {
     props: {
       tableName: "alerts_table",
       config: {
@@ -40,9 +40,9 @@ const mountConfigAlerts = () =>
     },
   });
 
-describe("ConfigAlerts", () => {
-  it("updates the secondary filter column", async () => {
-    const wrapper = mountConfigAlerts();
+describe("ConfigFilters", () => {
+  it("updates the filter column", async () => {
+    const wrapper = mountConfigFilters();
 
     await wrapper
       .get<HTMLInputElement>("#alerts_table-FRONT_END_FILTER_COLUMN")
@@ -53,15 +53,13 @@ describe("ConfigAlerts", () => {
     });
   });
 
-  it("writes generic include values and clears legacy keys", async () => {
-    const wrapper = mountConfigAlerts();
+  it("updates secondary include values", async () => {
+    const wrapper = mountConfigFilters();
 
     await wrapper.get('[data-testid="filter-values"]').trigger("click");
 
     expect(wrapper.emitted("updateConfig")?.[0]?.[0]).toEqual({
       SECONDARY_FILTER_VALUES: "active",
-      SECONDARY_CATEGORY_IDS: undefined,
-      MAPEO_CATEGORY_IDS: undefined,
     });
   });
 });
