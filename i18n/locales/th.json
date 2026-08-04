@@ -300,8 +300,8 @@
   "visibilityRequired": "โปรดเลือกระดับการมองเห็นสำหรับชุดข้อมูลนี้",
   "yourAccessIsPending": "การเข้าถึงของคุณอยู่ระหว่างรออนุมัติ โปรดติดต่อผู้ดูแลระบบ Guardian Connector เพื่อขออนุมัติบัญชี",
   "yourMapboxStyleDefault": "Mapbox — สไตล์ของคุณ (ค่าเริ่มต้น)",
-  "copySecondaryLink": "คัดลอกลิงก์ไปยังการสังเกตการณ์ชุดข้อมูลรอง",
-  "secondaryFilterValues": "ค่าจากชุดข้อมูลรองที่จะแสดงบนแผนที่แจ้งเตือน",
+  "copySecondaryLink": "คัดลอกลิงก์ไปยังฟีเจอร์นี้",
+  "secondaryFilterValues": "ค่าจากชุดข้อมูลรองที่จะรวมลงในแผนที่แจ้งเตือน",
   "secondaryData": "ข้อมูลรอง",
   "incidents.selectedSecondaryCount": "เลือกรายการรอง: {count}"
 }

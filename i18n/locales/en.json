@@ -300,8 +300,8 @@
   "visibilityRequired": "Please select a visibility level for this dataset.",
   "yourAccessIsPending": "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
   "yourMapboxStyleDefault": "Mapbox - your style (default)",
-  "copySecondaryLink": "Copy link to secondary observation",
-  "secondaryFilterValues": "Values to show from the secondary dataset on the alerts map",
+  "copySecondaryLink": "Copy link to feature",
+  "secondaryFilterValues": "Values to include from the secondary dataset on the alerts map",
   "secondaryData": "Secondary data",
   "incidents.selectedSecondaryCount": "Secondary items selected: {count}"
 }

@@ -300,8 +300,8 @@
   "visibilityRequired": "Tafadhali chagua kiwango cha mwonekano kwa seti hii ya data.",
   "yourAccessIsPending": "Ufikiaji wako unasubiri. Tafadhali wasiliana na msimamizi wa Guardian Connector kwa idhini ya akaunti.",
   "yourMapboxStyleDefault": "Mapbox - mtindo wako (chaguo-msingi)",
-  "copySecondaryLink": "Nakili kiungo cha uchunguzi wa seti ya pili",
-  "secondaryFilterValues": "Thamani za seti ya pili ya data za kuonyesha kwenye ramani ya tahadhari",
+  "copySecondaryLink": "Nakili kiungo cha kipengele",
+  "secondaryFilterValues": "Thamani za kujumuisha kutoka kwa seti ya data ya pili kwenye ramani ya arifa",
   "secondaryData": "Data ya seti ya pili",
   "incidents.selectedSecondaryCount": "Vipengele vya seti ya pili vilivyochaguliwa: {count}"
 }

@@ -296,8 +296,8 @@
   "visibilityRequired": "Por favor, seleccione un nivel de visibilidad para este conjunto de datos.",
   "yourAccessIsPending": "Su acceso está pendiente. Ponte en contacto con un administrador de Guardian Connector para la aprobación de su cuenta.",
   "yourMapboxStyleDefault": "Mapbox - su estilo (predeterminado)",
-  "copySecondaryLink": "Copiar enlace a la observación secundaria",
-  "secondaryFilterValues": "Valores del conjunto de datos secundario que se mostrarán en el mapa de alertas",
+  "copySecondaryLink": "Copiar enlace a la característica",
+  "secondaryFilterValues": "Valores del conjunto de datos secundario que se incluirán en el mapa de alertas",
   "secondaryData": "Datos secundarios",
   "incidents.selectedSecondaryCount": "Elementos secundarios seleccionados: {count}"
 }
