@@ -42,9 +42,13 @@ const primaryDataset = ref(
 const { data, error, refresh } = await useFetch<{
   views: ViewConfigRow[];
   availableTables: string[];
+  availableGeospatialTables?: string[];
 }>("/api/config");
 
 const availableTables = computed(() => data.value?.availableTables ?? []);
+const availableGeospatialTables = computed(
+  () => data.value?.availableGeospatialTables ?? availableTables.value,
+);
 const viewRows = computed(() => data.value?.views ?? []);
 
 const viewConfig = ref<ViewConfig>({});
@@ -204,7 +208,7 @@ definePageMeta({ layout: "explorer" });
             id="create-view-secondaryDataset-select"
             :model-value="secondaryDataset"
             :label="$t('secondaryDatasetOptional')"
-            :options="availableTables"
+            :options="availableGeospatialTables"
             :placeholder="$t('selectSecondaryDataset')"
             test-id="secondary-dataset-select"
             :exclude-value="primaryDataset"

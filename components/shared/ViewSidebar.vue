@@ -27,7 +27,7 @@ const props = defineProps<{
   featureGeojson?: Feature | AlertsData;
   filePaths?: Array<string>;
   isAlert?: boolean;
-  isMapeo?: boolean;
+  isSecondary?: boolean;
   isAlertsDashboard?: boolean;
   localAlertsData?: Feature | AlertsData;
   logoUrl?: string;
@@ -187,7 +187,7 @@ onBeforeUnmount(() => {
           :feature-geojson="featureGeojson"
           :file-paths="filePaths"
           :is-alert="isAlert"
-          :is-mapeo="isMapeo"
+          :is-secondary="isSecondary"
           :is-alerts-dashboard="isAlertsDashboard"
           :media-base-path="mediaBasePath"
           :media-base-path-alerts="mediaBasePathAlerts"

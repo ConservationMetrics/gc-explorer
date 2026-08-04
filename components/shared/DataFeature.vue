@@ -16,7 +16,7 @@ const props = defineProps<{
   featureGeojson?: Feature | AlertsData;
   filePaths?: Array<string>;
   isAlert?: boolean;
-  isMapeo?: boolean;
+  isSecondary?: boolean;
   isAlertsDashboard?: boolean;
   mediaBasePath?: string;
   mediaBasePathAlerts?: string;
@@ -184,8 +184,8 @@ const exportRecordId = computed(() =>
         <span>{{
           showCopied
             ? $t("copied")
-            : isMapeo
-              ? $t("copyMapeoLink")
+            : isSecondary
+              ? $t("copySecondaryLink")
               : $t("copyLink")
         }}</span>
       </button>

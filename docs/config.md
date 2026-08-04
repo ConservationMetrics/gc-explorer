@@ -96,13 +96,15 @@ List the exact column names (`UNWANTED_COLUMNS`) and/or columns containing speci
 
 ## Alerts configuration
 
-#### `MAPEO_CATEGORY_IDS` (optional, for Alerts view)
+#### Secondary dataset (optional, for Alerts / Map views)
 
-For showing Mapeo data on the Alerts Dashboard, provide a comma-separated list of `categoryId` values that you want to show.
+Choose any geospatial companion table (columns `g__type` and `g__coordinates`) as the view's secondary dataset. The config UI only lists geospatial tables. Existing views that used a Mapeo table as the companion continue to work.
 
-#### `MAPEO_TABLE` (optional, for Alerts view)
+#### `SECONDARY_CATEGORY_IDS` (optional, for Alerts view)
 
-For showing Mapeo data on the Alerts Dashboard, provide the name of the Mapeo database table.
+Optional comma-separated allowlist of category values to show from the secondary dataset on the Alerts map. Matching looks at any column whose name includes `category` (for example Mapeo's `categoryId`). If omitted, all geospatial rows from the secondary dataset are shown.
+
+> Legacy configs may still store `MAPEO_CATEGORY_IDS`; the app and migration `0010_rename_mapeo_category_ids` map that key to `SECONDARY_CATEGORY_IDS`.
 
 ## Other configuration
 

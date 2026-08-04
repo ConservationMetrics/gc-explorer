@@ -38,6 +38,7 @@ const editedViewType = ref<ViewType | undefined>(undefined);
 const { data, error, refresh } = await useFetch<{
   views: ViewConfigRow[];
   availableTables: string[];
+  availableGeospatialTables?: string[];
 }>("/api/config");
 
 if (data.value && !error.value) {
@@ -66,6 +67,9 @@ if (data.value && !error.value) {
 
 const resolvedViewType = computed(() => viewType.value ?? editedViewType.value);
 const availableTables = computed(() => data.value?.availableTables ?? []);
+const availableGeospatialTables = computed(
+  () => data.value?.availableGeospatialTables ?? availableTables.value,
+);
 const showsSecondaryDataset = computed(() =>
   supportsSecondaryDataset(resolvedViewType.value),
 );
@@ -284,7 +288,7 @@ definePageMeta({ layout: "explorer" });
               id="edit-view-secondaryDataset-select"
               :model-value="secondaryDataset"
               :label="$t('secondaryDatasetOptional')"
-              :options="availableTables"
+              :options="availableGeospatialTables"
               :placeholder="$t('selectSecondaryDataset')"
               test-id="edit-secondary-dataset-select"
               :exclude-value="dataset"

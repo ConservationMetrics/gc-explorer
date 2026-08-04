@@ -18,10 +18,15 @@ import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { parseBasemaps } from "@/server/utils";
 import { buildRequiredAlertsProjection } from "@/server/utils/alertsProjection";
-import { parseAndValidateLimit, getTableParam } from "@/server/utils/dbHelpers";
+import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
 
 import type { H3Event } from "h3";
-import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
+import type {
+  AllowedFileExtensions,
+  DataEntry,
+  AlertsMetadata,
+  ViewConfig,
+} from "@/types";
 import type { FeatureCollection } from "geojson";
 
 const ALERTS_MAIN_PROJECTION = [
@@ -48,8 +53,14 @@ const REQUIRED_ALERTS_MAIN_COLUMNS = [
   "g__coordinates",
 ];
 
+/** Prefer SECONDARY_CATEGORY_IDS; fall back to legacy MAPEO_CATEGORY_IDS. */
+const resolveSecondaryCategoryIds = (
+  tableConfig: ViewConfig,
+): string | undefined =>
+  tableConfig.SECONDARY_CATEGORY_IDS || tableConfig.MAPEO_CATEGORY_IDS;
+
 export default defineEventHandler(async (event: H3Event) => {
-  const table = getTableParam(event);
+  const { table } = event.context.params as { table: string };
   const limit = parseAndValidateLimit(event);
 
   const {
@@ -86,14 +97,14 @@ export default defineEventHandler(async (event: H3Event) => {
       (columnName) => availableMetadataColumns.includes(columnName),
     );
 
-    const mapeoCategoryIds = tableConfig.MAPEO_CATEGORY_IDS;
-    const shouldFetchMapeoData = Boolean(secondaryTable && mapeoCategoryIds);
-    const mapeoMainColumns = shouldFetchMapeoData
+    const secondaryCategoryIds = resolveSecondaryCategoryIds(tableConfig);
+    const shouldFetchSecondaryData = Boolean(secondaryTable);
+    const secondaryMainColumns = shouldFetchSecondaryData
       ? await fetchTableSqlColumns(secondaryTable!)
       : [];
 
     const { primaryData, secondaryData } = await fetchViewData(primaryTable, {
-      secondaryTable: shouldFetchMapeoData ? secondaryTable : null,
+      secondaryTable: shouldFetchSecondaryData ? secondaryTable : null,
       primaryOptions: {
         limit,
         mainColumns: alertsMainProjection,
@@ -102,7 +113,7 @@ export default defineEventHandler(async (event: H3Event) => {
       },
       secondaryOptions: {
         limit,
-        mainColumns: mapeoMainColumns,
+        mainColumns: secondaryMainColumns,
         includeColumnsData: true,
       },
     });
@@ -131,40 +142,46 @@ export default defineEventHandler(async (event: H3Event) => {
       ),
     };
 
-    const mapeoTable = secondaryTable;
+    let secondaryGeojson: FeatureCollection | null = null;
 
-    let mapeoData: FeatureCollection | null = null;
-
-    if (secondaryData && mapeoCategoryIds) {
+    if (secondaryData) {
       // Filter data to remove unwanted columns and substrings
-      const filteredMapeoData = filterUnwantedKeys(
+      let filteredSecondaryData = filterUnwantedKeys(
         secondaryData.mainData,
         secondaryData.columnsData,
         tableConfig.UNWANTED_COLUMNS,
         tableConfig.UNWANTED_SUBSTRINGS,
       );
 
-      // Filter Mapeo data to only show data where category matches any values in mapeoCategoryIds (a comma-separated string of values)
-      const filteredMapeoDataByCategory = filteredMapeoData.filter(
-        (row: DataEntry) => {
-          return Object.keys(row).some(
-            (key) =>
-              key.includes("category") &&
-              mapeoCategoryIds.split(",").includes(row[key]),
-          );
+      // Optional category allowlist: any column whose name includes "category"
+      if (secondaryCategoryIds) {
+        const allowed = secondaryCategoryIds.split(",");
+        filteredSecondaryData = filteredSecondaryData.filter(
+          (row: DataEntry) => {
+            return Object.keys(row).some(
+              (key) =>
+                key.includes("category") &&
+                allowed.includes(row[key] as string),
+            );
+          },
+        );
+      }
+
+      // Filter only data with valid geofields
+      const filteredSecondaryGeoData = filterGeoData(filteredSecondaryData);
+
+      secondaryGeojson = buildMinimalFeatureCollection(
+        filteredSecondaryGeoData,
+        {
+          idField: "_id",
+          includeAllProperties: true,
+          filterColumn: tableConfig.FRONT_END_FILTER_COLUMN,
         },
       );
 
-      // Filter only data with valid geofields
-      const filteredMapeoGeoData = filterGeoData(filteredMapeoDataByCategory);
-
-      // Process geodata
-      mapeoData = buildMinimalFeatureCollection(filteredMapeoGeoData, {
-        idField: "_id",
-        includeAllProperties: true,
-        filterColumn: tableConfig.FRONT_END_FILTER_COLUMN,
-        isMapeoData: true,
-      });
+      if (secondaryGeojson.features.length === 0) {
+        secondaryGeojson = null;
+      }
     }
 
     // Prepare statistics data for the alerts view
@@ -192,8 +209,7 @@ export default defineEventHandler(async (event: H3Event) => {
       mapboxStyle: defaultMapboxStyle,
       mapboxBasemaps: basemaps,
       mapboxZoom: Number(tableConfig.MAPBOX_ZOOM),
-      mapeoTable,
-      mapeoData,
+      secondaryData: secondaryGeojson,
       mediaBasePath: tableConfig.MEDIA_BASE_PATH,
       mediaBasePathAlerts: tableConfig.MEDIA_BASE_PATH_ALERTS,
       planetApiKey: tableConfig.PLANET_API_KEY,

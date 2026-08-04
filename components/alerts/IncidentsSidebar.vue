@@ -13,6 +13,7 @@ import {
   buildIncidentMetadataCsv,
   triggerTextDownload,
 } from "@/utils/incidentHelpers";
+import { isSecondaryFeatureType } from "@/types";
 import type {
   AnnotatedCollection,
   CollectionEntry,
@@ -127,7 +128,11 @@ const downloadIncidentFeatures = () => {
 };
 
 const showCreateForm = ref(false);
-const { showCopied, copyLink } = useCopyLink(["alertId", "mapeoDocId"]);
+const { showCopied, copyLink } = useCopyLink([
+  "alertId",
+  "mapeoDocId",
+  "secondaryDocId",
+]);
 const formData = ref({
   name: "",
   description: "",
@@ -175,12 +180,12 @@ const isLoadingMore = computed(() => props.isLoadingMore === true);
 const selectedSourceSummary = computed(() => {
   const summary = {
     alerts: 0,
-    mapeoData: 0,
+    secondary: 0,
   };
 
   props.selectedSources.forEach((source) => {
-    if (source.feature_type === "mapeo") {
-      summary.mapeoData += 1;
+    if (isSecondaryFeatureType(source.feature_type)) {
+      summary.secondary += 1;
     } else {
       summary.alerts += 1;
     }
@@ -443,8 +448,8 @@ const handleClose = () => {
             </p>
             <p>
               {{
-                $t("incidents.selectedMapeoCount", {
-                  count: selectedSourceSummary.mapeoData,
+                $t("incidents.selectedSecondaryCount", {
+                  count: selectedSourceSummary.secondary,
                 })
               }}
             </p>

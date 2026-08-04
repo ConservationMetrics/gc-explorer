@@ -48,7 +48,6 @@
   "copyConfigDescription": "Seleccione una vista para copiar sus valores de configuración en el formulario actual. Puede modificar los valores antes de guardar.",
   "copyConfigFromDatasetView": "Copiar configuración de otra vista",
   "copyLink": "Copiar enlace a la alerta",
-  "copyMapeoLink": "Copiar enlace a la observación de Mapeo",
   "created": "Creado",
   "createViewTypeDescription": "Elija un tipo de vista para continuar. Puede seleccionar un conjunto de datos principal ahora o en la página siguiente.",
   "data": "datos",
@@ -157,7 +156,6 @@
   "incidents.responsibleParty": "Parte Responsable",
   "incidents.savedIncidents": "Incidentes Guardados",
   "incidents.selectedAlertsCount": "Alertas seleccionadas: {count}",
-  "incidents.selectedMapeoCount": "Elementos de Mapeo seleccionados: {count}",
   "incidents.selectedSources": "Fuentes Seleccionadas",
   "incidents.selectFeaturesFirst": "Seleccione características primero para crear un incidente",
   "incidents.selectType": "Seleccionar tipo",
@@ -185,8 +183,6 @@
   "mapboxStreets": "Mapbox Streets",
   "mapboxStyle": "Estilo de Mapbox",
   "mapboxZoom": "Nivel de zoom (0 a 22)",
-  "mapeoCategoryIds": "IDs de categorías de Mapeo para mostrar en el mapa de alertas",
-  "mapeoData": "Datos de Mapeo",
   "mapLegend": "Leyenda del mapa",
   "mapLegendLayerIds": "IDs de capas para mostrar en la leyenda del mapa",
   "media": "Medios",
@@ -299,5 +295,9 @@
   "visibilityPublicDescription": "Cualquiera con el enlace puede ver.",
   "visibilityRequired": "Por favor, seleccione un nivel de visibilidad para este conjunto de datos.",
   "yourAccessIsPending": "Su acceso está pendiente. Ponte en contacto con un administrador de Guardian Connector para la aprobación de su cuenta.",
-  "yourMapboxStyleDefault": "Mapbox - su estilo (predeterminado)"
+  "yourMapboxStyleDefault": "Mapbox - su estilo (predeterminado)",
+  "copySecondaryLink": "Copiar enlace a la observación secundaria",
+  "secondaryCategoryIds": "IDs de categorías del conjunto de datos secundario para mostrar en el mapa de alertas",
+  "secondaryData": "Datos secundarios",
+  "incidents.selectedSecondaryCount": "Elementos secundarios seleccionados: {count}"
 }

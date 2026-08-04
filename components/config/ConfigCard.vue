@@ -57,7 +57,7 @@ const mediaKeys = computed(() => [
   "MEDIA_BASE_PATH_ICONS",
   "MEDIA_COLUMN",
 ]);
-const alertKeys = computed(() => ["MAPEO_CATEGORY_IDS"]);
+const alertKeys = computed(() => ["SECONDARY_CATEGORY_IDS"]);
 const filterKeys = computed(() => [
   "FILTER_OUT_VALUES_FROM_COLUMN",
   "FRONT_END_FILTER_COLUMN",
@@ -82,7 +82,12 @@ const viewTypeList = computed(() => [props.viewType]);
  * @returns {ViewConfig} A detached copy of the configuration.
  */
 const cloneConfig = (config: ViewConfig): ViewConfig => {
-  return JSON.parse(JSON.stringify(config)) as ViewConfig;
+  const cloned = JSON.parse(JSON.stringify(config)) as ViewConfig;
+  if (!cloned.SECONDARY_CATEGORY_IDS && cloned.MAPEO_CATEGORY_IDS) {
+    cloned.SECONDARY_CATEGORY_IDS = cloned.MAPEO_CATEGORY_IDS;
+  }
+  delete cloned.MAPEO_CATEGORY_IDS;
+  return cloned;
 };
 
 /**

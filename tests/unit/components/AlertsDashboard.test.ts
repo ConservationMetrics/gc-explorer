@@ -66,7 +66,7 @@ const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
   mapboxZoom: 2,
   mapbox3d: false,
   mapbox3dTerrainExaggeration: 1.5,
-  mapeoData: null,
+  secondaryData: null,
   primaryDataset: "test_alerts",
   secondaryDataset: "mapeo_data",
   mediaBasePath: "",
@@ -441,14 +441,14 @@ describe("AlertsDashboard component", () => {
         selectedSources: Array<{
           source_table: string;
           source_id: string;
-          feature_type: "alert" | "mapeo";
+          feature_type: "alert" | "secondary";
         }>;
       };
       vm.selectedSources = [
         {
           source_table: "mapeo_data",
           source_id: "test1",
-          feature_type: "mapeo",
+          feature_type: "secondary",
         },
       ];
       await flushPromises();

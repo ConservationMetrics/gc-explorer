@@ -49,7 +49,6 @@
   "copyConfigDescription": "Selecteer een weergave om de configuratiewaarden in het huidige formulier te kopiëren. U kunt de waarden aanpassen voordat u opslaat.",
   "copyConfigFromDatasetView": "Configuratie kopiëren van een andere weergave",
   "copyLink": "Kopieer link naar alert",
-  "copyMapeoLink": "Kopieer link naar Mapeo observatie",
   "created": "Gemaakt",
   "createViewTypeDescription": "Kies een weergavetype om verder te gaan. U kunt nu optioneel een primaire dataset kiezen, of op de volgende pagina.",
   "data": "gegevens",
@@ -158,7 +157,6 @@
   "incidents.responsibleParty": "Verantwoordelijke Partij",
   "incidents.savedIncidents": "Opgeslagen Incidenten",
   "incidents.selectedAlertsCount": "Geselecteerde alerts: {count}",
-  "incidents.selectedMapeoCount": "Geselecteerde Mapeo-items: {count}",
   "incidents.selectedSources": "Geselecteerde Bronnen",
   "incidents.selectFeaturesFirst": "Selecteer eerst objecten om een incident te maken",
   "incidents.selectType": "Selecteer type",
@@ -186,8 +184,6 @@
   "mapboxStreets": "Mapbox Streets",
   "mapboxStyle": "Mapbox stijl",
   "mapboxZoom": "Zoomniveau (0 tot 22)",
-  "mapeoCategoryIds": "Mapeo categorie-ID's om op de alertkaart te tonen",
-  "mapeoData": "Mapeo data",
   "mapLegend": "Kaartlegenda",
   "mapLegendLayerIds": "Laag-ID's om in de kaartlegenda te tonen",
   "media": "Media",
@@ -300,5 +296,9 @@
   "visibilityPublicDescription": "Iedereen met de link kan bekijken.",
   "visibilityRequired": "Selecteer een zichtbaarheidsniveau voor deze dataset.",
   "yourAccessIsPending": "Uw toegang is in behandeling. Neem contact op met een Guardian Connector-beheerder voor goedkeuring van je account.",
-  "yourMapboxStyleDefault": "Mapbox - uw stijl (standaard)"
+  "yourMapboxStyleDefault": "Mapbox - uw stijl (standaard)",
+  "copySecondaryLink": "Kopieer link naar secundaire observatie",
+  "secondaryCategoryIds": "Categorie-ID's van de secundaire dataset om op de alertkaart te tonen",
+  "secondaryData": "Secundaire data",
+  "incidents.selectedSecondaryCount": "Geselecteerde secundaire items: {count}"
 }
