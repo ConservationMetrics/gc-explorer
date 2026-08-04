@@ -125,6 +125,11 @@ export interface Views {
 
 export type ViewType = "alerts" | "map" | "gallery";
 
+export type RecordFetchQuery = {
+  view_type?: ViewType;
+  primary_dataset?: string;
+};
+
 export const VIEW_TYPES = [
   "alerts",
   "map",

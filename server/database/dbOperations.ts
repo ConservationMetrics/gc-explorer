@@ -612,6 +612,63 @@ export const fetchTableConfig = async (
 };
 
 /**
+ * Returns the view config for a dataset read.
+ *
+ * View configs are keyed by primary dataset and view type. A secondary dataset
+ * request therefore includes both, and must match the configured secondary
+ * dataset before using that config.
+ *
+ * @param {string} requestedDataset - Warehouse dataset being read.
+ * @param {{ viewType?: ViewType; primaryDataset?: string | null }} [options] - View identity.
+ * @returns {Promise<ViewConfig>} Config for the requested dataset's view.
+ */
+export const fetchViewConfigForDatasetRead = async (
+  requestedDataset: string,
+  options: {
+    viewType?: ViewType;
+    primaryDataset?: string | null;
+  } = {},
+): Promise<ViewConfig> => {
+  const normalizedRequestedDataset = normalizeTableName(requestedDataset);
+  const primaryDataset = options.primaryDataset?.trim()
+    ? normalizeTableName(options.primaryDataset)
+    : null;
+
+  if (!primaryDataset) {
+    return fetchTableConfig(normalizedRequestedDataset, options.viewType);
+  }
+
+  if (!options.viewType) {
+    throw Object.assign(
+      new Error("view_type is required when primary_dataset is set"),
+      {
+        statusCode: 400,
+        statusMessage: "view_type is required when primary_dataset is set",
+      },
+    );
+  }
+
+  const { secondaryTable: secondaryDataset } = await fetchViewTables(
+    primaryDataset,
+    options.viewType,
+  );
+
+  if (secondaryDataset !== normalizedRequestedDataset) {
+    throw Object.assign(
+      new Error(
+        `Dataset "${normalizedRequestedDataset}" is not the secondary dataset for view (${primaryDataset}, ${options.viewType})`,
+      ),
+      {
+        statusCode: 403,
+        statusMessage: `Dataset "${normalizedRequestedDataset}" is not the configured secondary dataset`,
+      },
+    );
+  }
+
+  return fetchTableConfig(primaryDataset, options.viewType);
+};
+
+/**
  * Keeps public_views in sync with view config: add table if permission is anyone, remove otherwise.
  * @param tableName - The table name to sync.
  * @param permission - The ROUTE_LEVEL_PERMISSION for that table.

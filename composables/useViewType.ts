@@ -1,4 +1,4 @@
-import type { ViewType } from "@/types";
+import type { RecordFetchQuery, ViewType } from "@/types";
 import { decodeDatasetNameFromUrl } from "@/utils/identifierUtils";
 
 /**
@@ -49,3 +49,41 @@ export function resolveViewTypeForTable(
   const firstSegment = route.path.split("/").filter(Boolean)[0];
   return firstSegment ? VIEW_TYPE_BY_SEGMENT[firstSegment] : undefined;
 }
+
+/**
+ * Builds query params for record requests.
+ *
+ * Requests for the view's primary dataset send `view_type`. Requests for its
+ * secondary dataset also send `primary_dataset`, which identifies the view
+ * configuration that lists the requested secondary dataset.
+ *
+ * @param {{ path: string; params: Record<string, unknown> }} route - Current page route.
+ * @param {string} requestedDataset - Dataset being fetched.
+ * @returns {RecordFetchQuery} Query object (possibly empty).
+ */
+export const resolveRecordFetchQuery = (
+  route: { path: string; params: Record<string, unknown> },
+  requestedDataset: string,
+): RecordFetchQuery => {
+  const primaryDataset =
+    typeof route.params.tablename === "string"
+      ? decodeDatasetNameFromUrl(route.params.tablename)
+      : undefined;
+  const firstSegment = route.path.split("/").filter(Boolean)[0];
+  const routeViewType = firstSegment
+    ? VIEW_TYPE_BY_SEGMENT[firstSegment]
+    : undefined;
+
+  if (!primaryDataset || !routeViewType) {
+    return {};
+  }
+
+  if (decodeDatasetNameFromUrl(requestedDataset) === primaryDataset) {
+    return { view_type: routeViewType };
+  }
+
+  return {
+    view_type: routeViewType,
+    primary_dataset: primaryDataset,
+  };
+};

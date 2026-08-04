@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 
-import { resolveViewTypeForTable } from "@/composables/useViewType";
+import {
+  resolveRecordFetchQuery,
+  resolveViewTypeForTable,
+} from "@/composables/useViewType";
 
 // resolveViewTypeForTable decides whether a data request should carry a
 // view_type, and which one. It encodes two deliberate guards that this suite
@@ -67,5 +70,37 @@ describe("resolveViewTypeForTable", () => {
     expect(
       resolveViewTypeForTable({ path: "/", params: {} }, "springfield"),
     ).toBeUndefined();
+  });
+});
+
+describe("resolveRecordFetchQuery", () => {
+  it("sends view_type for the route's own dataset", () => {
+    expect(
+      resolveRecordFetchQuery(
+        { path: "/alerts/springfield", params: { tablename: "springfield" } },
+        "springfield",
+      ),
+    ).toEqual({ view_type: "alerts" });
+  });
+
+  it("identifies the view when fetching its secondary dataset", () => {
+    expect(
+      resolveRecordFetchQuery(
+        { path: "/alerts/springfield", params: { tablename: "springfield" } },
+        "mapeo_data",
+      ),
+    ).toEqual({
+      view_type: "alerts",
+      primary_dataset: "springfield",
+    });
+  });
+
+  it("returns an empty query off view routes", () => {
+    expect(
+      resolveRecordFetchQuery(
+        { path: "/dataset/springfield", params: { tablename: "springfield" } },
+        "mapeo_data",
+      ),
+    ).toEqual({});
   });
 });
