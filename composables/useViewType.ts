@@ -1,4 +1,4 @@
-import type { ViewType } from "@/types";
+import type { RecordFetchQuery, ViewType } from "@/types";
 import { decodeDatasetNameFromUrl } from "@/utils/identifierUtils";
 
 /**
@@ -22,11 +22,6 @@ const VIEW_TYPE_BY_SEGMENT: Record<string, ViewType> = {
   map: "map",
   gallery: "gallery",
   alerts: "alerts",
-};
-
-type RecordFetchQuery = {
-  view_type?: ViewType;
-  primary_dataset?: string;
 };
 
 /**
