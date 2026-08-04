@@ -13,6 +13,7 @@ import {
 import {
   filterUnwantedKeys,
   filterGeoData,
+  filterToSelectedValues,
 } from "@/server/dataProcessing/dataFilters";
 import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
@@ -21,12 +22,7 @@ import { buildRequiredAlertsProjection } from "@/server/utils/alertsProjection";
 import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
 
 import type { H3Event } from "h3";
-import type {
-  AllowedFileExtensions,
-  DataEntry,
-  AlertsMetadata,
-  ViewConfig,
-} from "@/types";
+import type { AllowedFileExtensions, DataEntry, AlertsMetadata } from "@/types";
 import type { FeatureCollection } from "geojson";
 
 const ALERTS_MAIN_PROJECTION = [
@@ -52,12 +48,6 @@ const REQUIRED_ALERTS_MAIN_COLUMNS = [
   "g__type",
   "g__coordinates",
 ];
-
-/** Prefer SECONDARY_CATEGORY_IDS; fall back to legacy MAPEO_CATEGORY_IDS. */
-const resolveSecondaryCategoryIds = (
-  tableConfig: ViewConfig,
-): string | undefined =>
-  tableConfig.SECONDARY_CATEGORY_IDS || tableConfig.MAPEO_CATEGORY_IDS;
 
 export default defineEventHandler(async (event: H3Event) => {
   const { table } = event.context.params as { table: string };
@@ -97,7 +87,8 @@ export default defineEventHandler(async (event: H3Event) => {
       (columnName) => availableMetadataColumns.includes(columnName),
     );
 
-    const secondaryCategoryIds = resolveSecondaryCategoryIds(tableConfig);
+    const secondaryFilterColumn = tableConfig.FRONT_END_FILTER_COLUMN;
+    const secondaryFilterValues = tableConfig.SECONDARY_FILTER_VALUES;
     const shouldFetchSecondaryData = Boolean(secondaryTable);
     const secondaryMainColumns = shouldFetchSecondaryData
       ? await fetchTableSqlColumns(secondaryTable!)
@@ -153,19 +144,11 @@ export default defineEventHandler(async (event: H3Event) => {
         tableConfig.UNWANTED_SUBSTRINGS,
       );
 
-      // Optional category allowlist: any column whose name includes "category"
-      if (secondaryCategoryIds) {
-        const allowed = secondaryCategoryIds.split(",");
-        filteredSecondaryData = filteredSecondaryData.filter(
-          (row: DataEntry) => {
-            return Object.keys(row).some(
-              (key) =>
-                key.includes("category") &&
-                allowed.includes(row[key] as string),
-            );
-          },
-        );
-      }
+      filteredSecondaryData = filterToSelectedValues(
+        filteredSecondaryData,
+        secondaryFilterColumn,
+        secondaryFilterValues,
+      );
 
       // Filter only data with valid geofields
       const filteredSecondaryGeoData = filterGeoData(filteredSecondaryData);
@@ -175,7 +158,6 @@ export default defineEventHandler(async (event: H3Event) => {
         {
           idField: "_id",
           includeAllProperties: true,
-          filterColumn: tableConfig.FRONT_END_FILTER_COLUMN,
         },
       );
 

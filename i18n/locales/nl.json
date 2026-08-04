@@ -298,7 +298,7 @@
   "yourAccessIsPending": "Uw toegang is in behandeling. Neem contact op met een Guardian Connector-beheerder voor goedkeuring van je account.",
   "yourMapboxStyleDefault": "Mapbox - uw stijl (standaard)",
   "copySecondaryLink": "Kopieer link naar secundaire observatie",
-  "secondaryCategoryIds": "Categorie-ID's van de secundaire dataset om op de alertkaart te tonen",
+  "secondaryFilterValues": "Waarden uit de secundaire dataset om op de alertkaart te tonen",
   "secondaryData": "Secundaire data",
   "incidents.selectedSecondaryCount": "Geselecteerde secundaire items: {count}"
 }

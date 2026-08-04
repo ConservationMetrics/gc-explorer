@@ -27,6 +27,11 @@ const initialTags: Record<string, Tag[]> = {
         text: tag,
       }))
     : [],
+  SECONDARY_FILTER_VALUES: props.config.SECONDARY_FILTER_VALUES
+    ? props.config.SECONDARY_FILTER_VALUES.split(",").map((tag) => ({
+        text: tag,
+      }))
+    : [],
   UNWANTED_COLUMNS: props.config.UNWANTED_COLUMNS
     ? props.config.UNWANTED_COLUMNS.split(",").map((tag) => ({ text: tag }))
     : [],
@@ -88,6 +93,7 @@ const handleInput = (key: string, value: string): void => {
       <template
         v-else-if="
           key === 'FILTER_OUT_VALUES_FROM_COLUMN' ||
+          key === 'SECONDARY_FILTER_VALUES' ||
           key === 'UNWANTED_COLUMNS' ||
           key === 'UNWANTED_SUBSTRINGS'
         "

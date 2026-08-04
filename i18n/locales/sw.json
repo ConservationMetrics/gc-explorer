@@ -301,7 +301,7 @@
   "yourAccessIsPending": "Ufikiaji wako unasubiri. Tafadhali wasiliana na msimamizi wa Guardian Connector kwa idhini ya akaunti.",
   "yourMapboxStyleDefault": "Mapbox - mtindo wako (chaguo-msingi)",
   "copySecondaryLink": "Nakili kiungo cha uchunguzi wa seti ya pili",
-  "secondaryCategoryIds": "Vitambulisho vya jamii vya seti ya pili ya data vya kuonyesha kwenye ramani ya tahadhari",
+  "secondaryFilterValues": "Thamani za seti ya pili ya data za kuonyesha kwenye ramani ya tahadhari",
   "secondaryData": "Data ya seti ya pili",
   "incidents.selectedSecondaryCount": "Vipengele vya seti ya pili vilivyochaguliwa: {count}"
 }

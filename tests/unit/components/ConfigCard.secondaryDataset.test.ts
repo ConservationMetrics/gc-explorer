@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import { computed, nextTick, ref, watch } from "vue";
 
 import ConfigCard from "@/components/config/ConfigCard.vue";
-import type { ViewType } from "@/types";
+import type { ViewConfig, ViewType } from "@/types";
 
 Object.assign(globalThis, {
   computed,
@@ -12,25 +12,31 @@ Object.assign(globalThis, {
   watch,
 });
 
-const mountConfigCard = (viewType: ViewType) =>
+const mountConfigCard = (
+  viewType: ViewType,
+  viewConfig: ViewConfig = {
+    MAPBOX_ACCESS_TOKEN: "pk.ey.test-token",
+    ROUTE_LEVEL_PERMISSION: "member",
+  },
+) =>
   mount(ConfigCard, {
     props: {
       tableName: "primary_dataset",
       viewType,
-      viewConfig: {
-        MAPBOX_ACCESS_TOKEN: "pk.ey.test-token",
-        ROUTE_LEVEL_PERMISSION: "member",
-      },
+      viewConfig,
       secondaryDataset: "old_secondary",
       secondaryEditable: true,
     },
     global: {
       stubs: {
-        ConfigAlerts: true,
         ConfigCollapsibleSection: {
           template: "<div><slot /></div>",
         },
-        ConfigFilters: true,
+        ConfigFilters: {
+          name: "ConfigFilters",
+          props: ["config", "keys"],
+          template: "<div />",
+        },
         ConfigMap: true,
         ConfigMedia: true,
         ConfigPermissions: {
@@ -69,3 +75,25 @@ describe.each<ViewType>(["alerts", "map"])(
     });
   },
 );
+
+describe("ConfigCard alerts filter config", () => {
+  it("passes the generic filter fields to ConfigFilters", () => {
+    const wrapper = mountConfigCard("alerts", {
+      MAPBOX_ACCESS_TOKEN: "pk.ey.test-token",
+      FRONT_END_FILTER_COLUMN: "status",
+      SECONDARY_FILTER_VALUES: "active",
+    });
+
+    expect(
+      wrapper.getComponent({ name: "ConfigFilters" }).props("config"),
+    ).toEqual(
+      expect.objectContaining({
+        FRONT_END_FILTER_COLUMN: "status",
+        SECONDARY_FILTER_VALUES: "active",
+      }),
+    );
+    expect(
+      wrapper.getComponent({ name: "ConfigFilters" }).props("keys"),
+    ).toEqual(["FRONT_END_FILTER_COLUMN", "SECONDARY_FILTER_VALUES"]);
+  });
+});

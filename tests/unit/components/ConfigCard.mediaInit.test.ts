@@ -67,7 +67,6 @@ const mountConfigCard = () =>
       stubs: {
         ConfigViews: true,
         ConfigMap: true,
-        ConfigAlerts: true,
         ConfigFilters: true,
         ConfigViewInfo: true,
         ConfigPermissions: {
