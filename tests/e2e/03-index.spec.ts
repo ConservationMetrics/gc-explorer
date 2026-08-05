@@ -162,6 +162,40 @@ test("index page - add new dataset view link navigates to create flow", async ({
   await page.waitForURL("**/config/new", { timeout: 10000 });
 });
 
+test("index page - add new dataset view button shown in empty state", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.route("**/api/config", async (route) => {
+    if (route.request().method() !== "GET") {
+      await route.continue();
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        views: [],
+        availableTables: [],
+        availableGeospatialTables: [],
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.waitForSelector("main", { timeout: 15000 });
+
+  await expect(
+    page.getByText(/no views have been configured yet/i),
+  ).toBeVisible({ timeout: 10000 });
+
+  const addButton = page.locator(
+    "main a[data-testid='add-new-dataset-view-button']",
+  );
+  await expect(addButton).toBeVisible({ timeout: 10000 });
+  await expect(addButton).toHaveAttribute("href", "/config/new");
+});
+
 test("index page - view type filter buttons are visible and functional", async ({
   authenticatedPageAsAdmin: page,
 }) => {
