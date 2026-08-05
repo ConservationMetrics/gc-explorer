@@ -24,6 +24,8 @@ const mapboxAccessToken = ref<string | undefined>();
 const mapboxStyle = ref<string | undefined>();
 const primaryDataset = ref(table);
 const timestampColumn = ref<string | undefined>();
+const viewName = ref<string | undefined>();
+const viewDescription = ref<string | undefined>();
 
 const { data, error, refresh } = await useFetch(`/api/${table}/gallery`, {
   params: { limit: rowLimit },
@@ -42,6 +44,8 @@ if (data.value && !error.value) {
   mediaColumn.value = data.value.mediaColumn;
   primaryDataset.value = data.value.primary_dataset;
   timestampColumn.value = data.value.timestampColumn;
+  viewName.value = data.value.viewName;
+  viewDescription.value = data.value.viewDescription;
 } else {
   console.error("Error fetching data:", error.value);
 }
@@ -85,6 +89,8 @@ definePageMeta({ layout: "explorer" });
         :media-column="mediaColumn"
         :table="primaryDataset"
         :timestamp-column="timestampColumn"
+        :view-name="viewName"
+        :view-description="viewDescription"
       />
       <div
         v-if="!mediaBasePath && dataFetched"
