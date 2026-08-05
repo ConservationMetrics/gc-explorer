@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { filterByMediaTypes, getFilePathsWithExtension } from "@/utils";
+import {
+  filterByMediaTypes,
+  getFilePathsWithExtension,
+  getMediaTypeFilterOptions,
+} from "@/utils";
 import {
   calculateCentroidFromParsedCoords,
   tryParseDataEntryGeoCoordinates,
@@ -14,6 +18,7 @@ import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
+import MediaTypeFilter from "@/components/shared/MediaTypeFilter.vue";
 import TimestampFilter from "@/components/shared/TimestampFilter.vue";
 import GalleryDetailPanel from "@/components/gallery/GalleryDetailPanel.vue";
 import GalleryGrid from "@/components/gallery/GalleryGrid.vue";
@@ -27,7 +32,7 @@ import type {
   DataEntry,
   FilterValues,
 } from "@/types";
-import type { GalleryMediaType } from "@/utils";
+import type { MediaTypeFilterValue } from "@/utils";
 
 const { t } = useI18n();
 
@@ -55,7 +60,7 @@ const { fetchRecords, getCachedRecord, cacheSize } = useRecordCache();
 const { dateMin, dateMax, setDateRange } = useTimestampFilter();
 
 const selectedFilterValues = ref<FilterValues>([]);
-const selectedMediaTypes = ref<GalleryMediaType[]>([]);
+const selectedMediaTypes = ref<MediaTypeFilterValue[]>([]);
 const filteredData = ref(props.galleryData);
 const loading = ref(false);
 const selectedEntry = ref<DataEntry | null>(null);
@@ -64,26 +69,20 @@ const selectedCentroid = ref<string | undefined>();
 const showFilters = ref(false);
 const filterResetKey = ref(0);
 
-const availableMediaTypes = computed(() => {
-  const types: GalleryMediaType[] = [];
-  if (props.allowedFileExtensions.image?.length) types.push("image");
-  if (props.allowedFileExtensions.audio?.length) types.push("audio");
-  if (props.allowedFileExtensions.video?.length) types.push("video");
-  return types;
-});
+const mediaTypeFilterOptions = computed(() =>
+  getMediaTypeFilterOptions(
+    props.galleryData,
+    props.allowedFileExtensions,
+    props.mediaColumn,
+  ),
+);
 
 const hasFilters = computed(
   () =>
     Boolean(props.filterColumn) ||
     Boolean(props.timestampColumn) ||
-    availableMediaTypes.value.length > 0,
+    mediaTypeFilterOptions.value.length > 0,
 );
-
-const mediaTypeLabelKey = (type: GalleryMediaType) => {
-  if (type === "image") return "mediaTypeImage";
-  if (type === "audio") return "mediaTypeAudio";
-  return "mediaTypeVideo";
-};
 
 /** Apply date range then category then media type filters (AND across axes). */
 const applyAllFilters = () => {
@@ -176,14 +175,8 @@ const onTimestampFilter = (payload: {
   applyAllFilters();
 };
 
-const toggleMediaType = (type: GalleryMediaType) => {
-  if (selectedMediaTypes.value.includes(type)) {
-    selectedMediaTypes.value = selectedMediaTypes.value.filter(
-      (t) => t !== type,
-    );
-  } else {
-    selectedMediaTypes.value = [...selectedMediaTypes.value, type];
-  }
+const onMediaTypeFilter = (types: MediaTypeFilterValue[]) => {
+  selectedMediaTypes.value = types;
   applyAllFilters();
 };
 
@@ -344,36 +337,14 @@ const closeDetail = () => {
               :timestamp-column="timestampColumn"
               @filter="onTimestampFilter"
             />
-            <div
-              v-if="availableMediaTypes.length"
-              class="rounded-xl border border-violet-200 bg-white p-2.5"
-              data-testid="media-type-filter"
-            >
-              <h4
-                class="m-0 mb-2 text-lg text-gray-800"
-                data-testid="media-type-filter-heading"
-              >
-                {{ $t("filterByMediaType") }}
-              </h4>
-              <div class="flex flex-wrap gap-2">
-                <label
-                  v-for="type in availableMediaTypes"
-                  :key="type"
-                  class="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border border-violet-200 px-3 py-2 text-sm text-violet-900 transition-colors hover:bg-violet-50 has-[:checked]:border-violet-500 has-[:checked]:bg-violet-100"
-                  :data-testid="`media-type-option-${type}`"
-                >
-                  <input
-                    type="checkbox"
-                    class="h-4 w-4 accent-violet-600"
-                    :value="type"
-                    :checked="selectedMediaTypes.includes(type)"
-                    :data-testid="`media-type-checkbox-${type}`"
-                    @change="toggleMediaType(type)"
-                  />
-                  {{ $t(mediaTypeLabelKey(type)) }}
-                </label>
-              </div>
-            </div>
+            <MediaTypeFilter
+              v-if="mediaTypeFilterOptions.length"
+              :key="`media-${filterResetKey}`"
+              :allowed-file-extensions="allowedFileExtensions"
+              :data="galleryData"
+              :media-column="mediaColumn"
+              @filter="onMediaTypeFilter"
+            />
           </div>
         </div>
       </div>

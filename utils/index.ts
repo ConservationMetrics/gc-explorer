@@ -49,16 +49,22 @@ export const getFilePathsWithExtension = (
   return filePaths;
 };
 
+/** Media kinds that map to allowed file extensions (not filter-only options). */
 export type GalleryMediaType = "audio" | "image" | "video";
 
-/** Media types present on a gallery entry, based on allowed extensions. */
+/** Media type filter selections; `"none"` = entry has no classified media files. */
+export type MediaTypeFilterValue = GalleryMediaType | "none";
+
+type MediaExtensionConfig = {
+  audio: string[];
+  image: string[];
+  video: string[];
+};
+
+/** Media types present on an entry, based on allowed extensions. */
 export const getMediaTypesForEntry = (
   feature: { [key: string]: unknown },
-  allExtensions: {
-    audio: string[];
-    image: string[];
-    video: string[];
-  },
+  allExtensions: MediaExtensionConfig,
   mediaColumn?: string,
 ): GalleryMediaType[] => {
   const paths = getFilePathsWithExtension(feature, allExtensions, mediaColumn);
@@ -75,21 +81,46 @@ export const getMediaTypesForEntry = (
   return Array.from(types);
 };
 
-/** Keep entries that include at least one of the selected media types (OR among types). */
+/**
+ * Checkbox options for MediaTypeFilter: configured media kinds, plus `"none"`
+ * only when some row has no classifiable media.
+ */
+export const getMediaTypeFilterOptions = <T extends { [key: string]: unknown }>(
+  items: T[],
+  allExtensions: MediaExtensionConfig,
+  mediaColumn?: string,
+): MediaTypeFilterValue[] => {
+  const options: MediaTypeFilterValue[] = [];
+  if (allExtensions.image?.length) options.push("image");
+  if (allExtensions.audio?.length) options.push("audio");
+  if (allExtensions.video?.length) options.push("video");
+
+  const hasNone = items.some(
+    (item) =>
+      getMediaTypesForEntry(item, allExtensions, mediaColumn).length === 0,
+  );
+  if (hasNone) options.push("none");
+
+  return options;
+};
+
+/**
+ * Keep entries that match any selected option (OR among selections).
+ * `"none"` matches entries with no classified media files.
+ */
 export const filterByMediaTypes = <T extends { [key: string]: unknown }>(
   items: T[],
-  selectedTypes: GalleryMediaType[],
-  allExtensions: {
-    audio: string[];
-    image: string[];
-    video: string[];
-  },
+  selectedTypes: MediaTypeFilterValue[],
+  allExtensions: MediaExtensionConfig,
   mediaColumn?: string,
 ): T[] => {
   if (!selectedTypes.length) return items;
   return items.filter((item) => {
     const present = getMediaTypesForEntry(item, allExtensions, mediaColumn);
-    return present.some((type) => selectedTypes.includes(type));
+    return selectedTypes.some((type) => {
+      if (type === "none") return present.length === 0;
+      return present.includes(type);
+    });
   });
 };
 

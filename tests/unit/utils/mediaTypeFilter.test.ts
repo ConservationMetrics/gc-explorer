@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { filterByMediaTypes, getMediaTypesForEntry } from "@/utils";
+import {
+  filterByMediaTypes,
+  getMediaTypeFilterOptions,
+  getMediaTypesForEntry,
+} from "@/utils";
 
 const extensions = {
   audio: ["mp3", "m4a"],
@@ -45,11 +49,34 @@ describe("getMediaTypesForEntry", () => {
   });
 });
 
+describe("getMediaTypeFilterOptions", () => {
+  it("includes configured media kinds and none when some rows lack media", () => {
+    expect(
+      getMediaTypeFilterOptions(
+        [{ photo: "a.jpg" }, { photo: "notes.txt" }, { photo: "b.mp3" }],
+        extensions,
+        "photo",
+      ),
+    ).toEqual(["image", "audio", "video", "none"]);
+  });
+
+  it("omits none when every row has classifiable media", () => {
+    expect(
+      getMediaTypeFilterOptions(
+        [{ photo: "a.jpg" }, { photo: "b.mp3" }],
+        extensions,
+        "photo",
+      ),
+    ).toEqual(["image", "audio", "video"]);
+  });
+});
+
 describe("filterByMediaTypes", () => {
   const items = [
     { _id: "1", photo: "a.jpg" },
     { _id: "2", photo: "b.mp3" },
     { _id: "3", photo: "c.jpg, d.mp3" },
+    { _id: "4", photo: "notes.txt" },
   ];
 
   it("returns all items when no media types are selected", () => {
@@ -67,6 +94,19 @@ describe("filterByMediaTypes", () => {
         (i) => i._id,
       ),
     ).toEqual(["1", "3"]);
+  });
+
+  it("keeps entries without media when none is selected", () => {
+    expect(
+      filterByMediaTypes(items, ["none"], extensions, "photo").map(
+        (i) => i._id,
+      ),
+    ).toEqual(["4"]);
+    expect(
+      filterByMediaTypes(items, ["none", "image"], extensions, "photo").map(
+        (i) => i._id,
+      ),
+    ).toEqual(["1", "3", "4"]);
   });
 
   it("filters multi-column entries without a configured media column", () => {

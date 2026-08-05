@@ -272,6 +272,9 @@ describe("GalleryView filters", () => {
       true,
     );
     expect(
+      wrapper.find('[data-testid="media-type-checkbox-none"]').exists(),
+    ).toBe(false);
+    expect(
       wrapper
         .get('[data-testid="pagination-info"]')
         .attributes("data-total-items"),

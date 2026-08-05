@@ -93,6 +93,7 @@
   "filterByMediaType": "Filtrar por tipo de media",
   "mediaTypeAudio": "Audio",
   "mediaTypeImage": "Foto",
+  "mediaTypeNone": "Ninguno",
   "mediaTypeVideo": "Vídeo",
   "filters": "Filtros",
   "gallery": "Galería",

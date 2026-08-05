@@ -96,6 +96,7 @@
   "filterByMediaType": "Chuja kwa aina ya midia",
   "mediaTypeAudio": "Sauti",
   "mediaTypeImage": "Picha",
+  "mediaTypeNone": "Hakuna",
   "mediaTypeVideo": "Video",
   "filters": "Vichujio",
   "gallery": "Matunzio",

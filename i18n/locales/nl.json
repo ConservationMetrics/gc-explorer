@@ -94,6 +94,7 @@
   "filterByMediaType": "Filteren op mediatype",
   "mediaTypeAudio": "Audio",
   "mediaTypeImage": "Foto",
+  "mediaTypeNone": "Geen",
   "mediaTypeVideo": "Video",
   "filters": "Filters",
   "gallery": "Galerij",
