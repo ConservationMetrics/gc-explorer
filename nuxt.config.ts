@@ -6,9 +6,6 @@ export default defineNuxtConfig({
     head: {
       charset: "utf-8",
       viewport: "width=device-width, initial-scale=1",
-      script: [
-        { src: "/vendor/lightbox/lightbox-plus-jquery.js", defer: true },
-      ],
       meta: [
         { charset: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
@@ -90,7 +87,7 @@ export default defineNuxtConfig({
     quality: 80,
   },
 
-  css: ["public/vendor/lightbox/lightbox.min.css", "@/assets/overlay.css"],
+  css: ["@/assets/overlay.css"],
 
   i18n: {
     locales: [

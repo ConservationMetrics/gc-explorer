@@ -27,8 +27,12 @@ const filterColumn = ref();
 const galleryData = ref();
 const mediaBasePath = ref();
 const mediaColumn = ref();
+const mapboxAccessToken = ref<string | undefined>();
+const mapboxStyle = ref<string | undefined>();
 const primaryDataset = ref(table);
 const timestampColumn = ref<string | undefined>();
+const viewName = ref<string | undefined>();
+const viewDescription = ref<string | undefined>();
 
 const { data, error, refresh } = await useFetch(`/api/${tablePath}/gallery`, {
   params: { limit: rowLimit },
@@ -41,10 +45,14 @@ if (data.value && !error.value) {
   dataFetched.value = true;
   filterColumn.value = data.value.filterColumn;
   galleryData.value = data.value.data;
+  mapboxAccessToken.value = data.value.mapboxAccessToken;
+  mapboxStyle.value = data.value.mapboxStyle;
   mediaBasePath.value = data.value.mediaBasePath;
   mediaColumn.value = data.value.mediaColumn;
   primaryDataset.value = data.value.primary_dataset;
   timestampColumn.value = data.value.timestampColumn;
+  viewName.value = data.value.viewName;
+  viewDescription.value = data.value.viewDescription;
 } else {
   console.error("Error fetching data:", error.value);
 }
@@ -64,10 +72,12 @@ useHead({
       : []),
   ],
 });
+
+definePageMeta({ layout: "explorer" });
 </script>
 
 <template>
-  <div>
+  <main class="mx-auto w-full max-w-7xl p-3 sm:p-6">
     <DataLoadError
       v-if="error"
       :title="$t('dataLoadErrorTitle')"
@@ -80,21 +90,25 @@ useHead({
         :allowed-file-extensions="allowedFileExtensions"
         :gallery-data="galleryData"
         :filter-column="filterColumn"
+        :mapbox-access-token="mapboxAccessToken"
+        :mapbox-style="mapboxStyle"
         :media-base-path="mediaBasePath"
         :media-column="mediaColumn"
         :table="primaryDataset"
         :timestamp-column="timestampColumn"
+        :view-name="viewName"
+        :view-description="viewDescription"
       />
       <div
         v-if="!mediaBasePath && dataFetched"
-        class="text-center py-12"
+        class="py-12 text-center"
         data-testid="gallery-error-message"
       >
         <EmptyStateIllustration variant="notConfigured" />
-        <p class="text-gray-500 text-sm sm:text-base">
+        <p class="text-sm text-gray-500 sm:text-base">
           {{ $t("galleryNotAvailable") }}.
         </p>
       </div>
     </ClientOnly>
-  </div>
+  </main>
 </template>

@@ -13,8 +13,6 @@ Object.assign(globalThis, {
   onBeforeUnmount,
 });
 
-// TODO: Add more unit tests for GalleryView behavior beyond empty states.
-
 const mockT = (key: string) => key;
 vi.mock("vue-i18n", () => ({
   useI18n: () => ({ t: mockT }),
@@ -28,7 +26,8 @@ vi.mock("@/composables/useRecordCache", () => ({
   }),
 }));
 
-const filterByDateAndCategoryMock = vi.fn();
+const filterByDateAndCategoryMock = vi.fn((data: Dataset) => data);
+const setDateRangeMock = vi.fn();
 vi.mock("@/composables/useDateAndCategoryFilter", () => ({
   filterByDateAndCategory: (...args: unknown[]) =>
     filterByDateAndCategoryMock(...args),
@@ -36,12 +35,20 @@ vi.mock("@/composables/useDateAndCategoryFilter", () => ({
   useTimestampFilter: () => ({
     dateMin: ref<Date | null>(null),
     dateMax: ref<Date | null>(null),
-    setDateRange: vi.fn(),
+    setDateRange: setDateRangeMock,
   }),
 }));
 
-vi.mock("@/utils", () => ({
-  getFilePathsWithExtension: () => [],
+vi.mock("@/utils", async (importOriginal) => {
+  return await importOriginal<typeof import("@/utils")>();
+});
+
+vi.mock("@/utils/dataTransformers", () => ({
+  transformSurveyEntry: (entry: unknown) => entry,
+}));
+
+vi.mock("@/utils/mapGLHelpers", () => ({
+  prepareCoordinatesForSelectedFeature: (value: unknown) => value,
 }));
 
 const globalConfig = {
@@ -51,8 +58,20 @@ const globalConfig = {
       props: ["data", "filterColumn"],
       template: `<button data-testid="stub-data-filter" @click="$emit('filter', ['x'])">filter</button>`,
     },
-    TimestampFilter: true,
-    DataFeature: true,
+    TimestampFilter: {
+      props: ["data", "timestampColumn"],
+      template: `<button data-testid="stub-timestamp-filter" @click="$emit('filter', { start: new Date('2024-01-01'), end: new Date('2024-01-31') })">date</button>`,
+    },
+    GalleryGrid: {
+      template: "<div data-testid='stub-gallery-grid'><slot /></div>",
+    },
+    GalleryTile: {
+      props: ["testId", "suppressOverlay"],
+      template: `<button type="button" :data-testid="testId" @click="$emit('open', $event)">tile</button>`,
+    },
+    GalleryDetailPanel: {
+      template: '<div data-testid="gallery-detail-panel"></div>',
+    },
     EmptyStateIllustration: {
       props: ["variant"],
       template:
@@ -63,7 +82,7 @@ const globalConfig = {
 
 const baseProps = {
   allowedFileExtensions: {
-    audio: [],
+    audio: ["mp3"],
     image: ["jpg"],
     video: [],
   } satisfies AllowedFileExtensions,
@@ -78,6 +97,45 @@ describe("GalleryView empty states", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     filterByDateAndCategoryMock.mockReset();
+    filterByDateAndCategoryMock.mockImplementation((data: Dataset) => data);
+  });
+
+  it("shows view title and description above the grid", () => {
+    const wrapper = mount(GalleryView, {
+      props: {
+        ...baseProps,
+        galleryData: [{ _id: "1" }] as unknown as Dataset,
+        viewName: " Community gallery ",
+        viewDescription: "Photos and audio from the field.",
+        table: "bcmform_responses",
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.get('[data-testid="gallery-view-title"]').text()).toBe(
+      "Community gallery",
+    );
+    expect(wrapper.get('[data-testid="gallery-view-description"]').text()).toBe(
+      "Photos and audio from the field.",
+    );
+  });
+
+  it("falls back to the table name when view title is missing", () => {
+    const wrapper = mount(GalleryView, {
+      props: {
+        ...baseProps,
+        galleryData: [{ _id: "1" }] as unknown as Dataset,
+        table: "bcmform_responses",
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.get('[data-testid="gallery-view-title"]').text()).toBe(
+      "bcmform_responses",
+    );
+    expect(
+      wrapper.find('[data-testid="gallery-view-description"]').exists(),
+    ).toBe(false);
   });
 
   it("shows galleryEmpty when gallery has no items", () => {
@@ -117,5 +175,168 @@ describe("GalleryView empty states", () => {
     expect(wrapper.get('[data-testid="stub-empty-illustration"]').text()).toBe(
       "noFilterResults",
     );
+  });
+});
+
+describe("GalleryView filters", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    filterByDateAndCategoryMock.mockReset();
+    filterByDateAndCategoryMock.mockImplementation((data: Dataset) => data);
+  });
+
+  const mountWithFilters = () =>
+    mount(GalleryView, {
+      props: {
+        ...baseProps,
+        filterColumn: "category",
+        timestampColumn: "created_at",
+        galleryData: [
+          { _id: "1", category: "a", created_at: "2024-01-01" },
+        ] as unknown as Dataset,
+      },
+      global: globalConfig,
+    });
+
+  it("renders an accessible filter panel toggle that is closed by default", async () => {
+    const wrapper = mountWithFilters();
+    const toggle = wrapper.get('[data-testid="filter-toggle"]');
+    const panel = wrapper.get('[data-testid="filter-container"]');
+
+    expect(toggle.attributes("aria-controls")).toBe("gallery-filter-panel");
+    expect(toggle.attributes("aria-expanded")).toBe("false");
+    expect(panel.attributes("style")).toContain("display: none");
+
+    await toggle.trigger("click");
+
+    expect(toggle.attributes("aria-expanded")).toBe("true");
+    expect(panel.attributes("style")).not.toContain("display: none");
+  });
+
+  it("retains active filters when the panel is collapsed", async () => {
+    const wrapper = mountWithFilters();
+    const toggle = wrapper.get('[data-testid="filter-toggle"]');
+
+    await toggle.trigger("click");
+    await wrapper.get('[data-testid="stub-data-filter"]').trigger("click");
+    await toggle.trigger("click");
+    await toggle.trigger("click");
+
+    expect(wrapper.get('[data-testid="stub-data-filter"]').exists()).toBe(true);
+    expect(filterByDateAndCategoryMock).toHaveBeenLastCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ selectedValues: ["x"] }),
+    );
+  });
+
+  it("clears category and date filters and remounts both controls", async () => {
+    const wrapper = mountWithFilters();
+
+    await wrapper.get('[data-testid="filter-toggle"]').trigger("click");
+    const dataFilter = wrapper.get('[data-testid="stub-data-filter"]').element;
+    const timestampFilter = wrapper.get(
+      '[data-testid="stub-timestamp-filter"]',
+    ).element;
+    await wrapper.get('[data-testid="stub-data-filter"]').trigger("click");
+    await wrapper.get('[data-testid="clear-all-filters"]').trigger("click");
+
+    expect(setDateRangeMock).toHaveBeenCalledWith({ start: null, end: null });
+    expect(filterByDateAndCategoryMock).toHaveBeenLastCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ selectedValues: [] }),
+    );
+    expect(wrapper.get('[data-testid="stub-data-filter"]').element).not.toBe(
+      dataFilter,
+    );
+    expect(
+      wrapper.get('[data-testid="stub-timestamp-filter"]').element,
+    ).not.toBe(timestampFilter);
+  });
+
+  it("filters by media type and clears media selection with Clear all", async () => {
+    filterByDateAndCategoryMock.mockImplementation((data: Dataset) => data);
+
+    const wrapper = mount(GalleryView, {
+      props: {
+        ...baseProps,
+        galleryData: [
+          { _id: "1", photo: "a.jpg" },
+          { _id: "2", photo: "b.mp3" },
+        ] as unknown as Dataset,
+      },
+      global: globalConfig,
+    });
+
+    await wrapper.get('[data-testid="filter-toggle"]').trigger("click");
+    expect(wrapper.find('[data-testid="media-type-filter"]').exists()).toBe(
+      true,
+    );
+    expect(
+      wrapper.find('[data-testid="media-type-checkbox-none"]').exists(),
+    ).toBe(false);
+    expect(
+      wrapper
+        .get('[data-testid="pagination-info"]')
+        .attributes("data-total-items"),
+    ).toBe("2");
+
+    await wrapper
+      .get('[data-testid="media-type-checkbox-audio"]')
+      .setValue(true);
+    await wrapper.vm.$nextTick();
+
+    expect(
+      wrapper
+        .get('[data-testid="pagination-info"]')
+        .attributes("data-total-items"),
+    ).toBe("1");
+
+    await wrapper.get('[data-testid="clear-all-filters"]').trigger("click");
+    expect(
+      wrapper
+        .get('[data-testid="pagination-info"]')
+        .attributes("data-total-items"),
+    ).toBe("2");
+  });
+});
+
+describe("GalleryView grid rendering", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    filterByDateAndCategoryMock.mockReset();
+    filterByDateAndCategoryMock.mockImplementation((data: Dataset) => data);
+  });
+
+  it("renders gallery tiles when filtered data is present", () => {
+    const wrapper = mount(GalleryView, {
+      props: {
+        ...baseProps,
+        galleryData: [{ _id: "1" }, { _id: "2" }] as unknown as Dataset,
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.find('[data-testid="stub-gallery-grid"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.find('[data-testid="gallery-item-0"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="gallery-item-1"]').exists()).toBe(true);
+  });
+
+  it("opens detail panel when a tile emits open", async () => {
+    const wrapper = mount(GalleryView, {
+      props: {
+        ...baseProps,
+        galleryData: [{ _id: "1" }] as unknown as Dataset,
+      },
+      global: globalConfig,
+    });
+
+    await wrapper.get('[data-testid="gallery-item-0"]').trigger("click");
+
+    expect(wrapper.find('[data-testid="gallery-detail-panel"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.find('[data-testid="gallery-item-0"]').exists()).toBe(false);
   });
 });

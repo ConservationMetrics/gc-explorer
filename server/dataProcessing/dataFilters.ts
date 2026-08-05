@@ -196,6 +196,22 @@ export const filterGeoData = (
   return geoData;
 };
 
+/** True if a string value mentions any configured audio/image/video extension. */
+export const valueHasAllowedFileExtension = (
+  value: string,
+  extensions: AllowedFileExtensions,
+): boolean => {
+  const lower = value.toLowerCase();
+  const hasExt = (list: string[] = []) =>
+    list.some((ext) => lower.includes(ext.toLowerCase().replace(/^\./, "")));
+
+  return (
+    hasExt(extensions.audio) ||
+    hasExt(extensions.image) ||
+    hasExt(extensions.video)
+  );
+};
+
 /** Filters out data without any columns storing file extensions. */
 export const filterDataByExtension = (
   data: DataEntry[],
@@ -207,13 +223,10 @@ export const filterDataByExtension = (
       ? [entry[mediaColumn]]
       : Object.values(entry);
 
-    return valuesToCheck.some((value) => {
-      return (
+    return valuesToCheck.some(
+      (value) =>
         typeof value === "string" &&
-        (extensions.audio.some((ext) => value.toLowerCase().includes(ext)) ||
-          extensions.image.some((ext) => value.toLowerCase().includes(ext)) ||
-          extensions.video.some((ext) => value.toLowerCase().includes(ext)))
-      );
-    });
+        valueHasAllowedFileExtension(value, extensions),
+    );
   });
 };

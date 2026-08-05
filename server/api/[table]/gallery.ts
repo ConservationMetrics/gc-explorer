@@ -8,7 +8,9 @@ import {
   filterDataByExtension,
   filterUnwantedKeys,
   filterOutUnwantedValues,
+  valueHasAllowedFileExtension,
 } from "@/server/dataProcessing/dataFilters";
+import { parseBasemaps } from "@/server/utils";
 import { parseAndValidateLimit, getTableParam } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 
@@ -80,7 +82,29 @@ export default defineEventHandler(async (event: H3Event) => {
       tableConfig.MEDIA_COLUMN,
     );
 
-    // Return minimal records: ID + columns needed for filtering and media display
+    let mapboxAccessToken = tableConfig.MAPBOX_ACCESS_TOKEN;
+    let mapboxStyle =
+      parseBasemaps(tableConfig).defaultMapboxStyle ?? tableConfig.MAPBOX_STYLE;
+
+    try {
+      if (!mapboxAccessToken || !mapboxStyle) {
+        const mapConfig = await fetchTableConfig(table, "map");
+        mapboxAccessToken = mapboxAccessToken ?? mapConfig.MAPBOX_ACCESS_TOKEN;
+        if (!mapboxStyle) {
+          mapboxStyle =
+            parseBasemaps(mapConfig).defaultMapboxStyle ??
+            mapConfig.MAPBOX_STYLE;
+        }
+      }
+    } catch {
+      mapboxAccessToken = undefined;
+      mapboxStyle = undefined;
+    }
+
+    // Return minimal records: ID + columns needed for filtering and media display.
+    // When MEDIA_COLUMN is unset, keep every string field that carries allowed
+    // media extensions (e.g. separate photo + audio columns). Otherwise the
+    // client media-type filter has nothing to classify and appears broken.
     const minimalData = dataWithFilesOnly.map((entry) => {
       const minimal: Record<string, unknown> = {};
       if (entry._id != null) minimal._id = entry._id;
@@ -90,8 +114,19 @@ export default defineEventHandler(async (event: H3Event) => {
       if (timestampColumn && entry[timestampColumn] != null) {
         minimal[timestampColumn] = entry[timestampColumn];
       }
-      if (mediaColumn && entry[mediaColumn] != null) {
-        minimal[mediaColumn] = entry[mediaColumn];
+      if (mediaColumn) {
+        if (entry[mediaColumn] != null) {
+          minimal[mediaColumn] = entry[mediaColumn];
+        }
+      } else {
+        for (const [key, value] of Object.entries(entry)) {
+          if (
+            typeof value === "string" &&
+            valueHasAllowedFileExtension(value, allowedFileExtensions)
+          ) {
+            minimal[key] = value;
+          }
+        }
       }
       return minimal;
     });
@@ -100,11 +135,15 @@ export default defineEventHandler(async (event: H3Event) => {
       allowedFileExtensions,
       data: minimalData,
       filterColumn,
+      mapboxAccessToken,
+      mapboxStyle,
       mediaBasePath: tableConfig.MEDIA_BASE_PATH,
       mediaColumn,
       primary_dataset: primaryTable,
       table: primaryTable,
       timestampColumn: timestampColumn ?? undefined,
+      viewDescription: tableConfig.VIEW_DESCRIPTION || undefined,
+      viewName: tableConfig.DATASET_TABLE?.trim() || undefined,
       rowLimitReached: mainData.length >= limit,
       routeLevelPermission: tableConfig.ROUTE_LEVEL_PERMISSION,
     };

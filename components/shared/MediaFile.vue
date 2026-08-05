@@ -1,14 +1,32 @@
 <script setup lang="ts">
-import { XCircle } from "lucide-vue-next";
+import { computed, ref, watchEffect } from "vue";
+import { Music, XCircle } from "lucide-vue-next";
 import type { AllowedFileExtensions } from "@/types";
 import { useIntersectionObserver } from "@/composables/useIntersectionObserver";
 import { useOptimizedImages } from "@/composables/useOptimizedImages";
+import MediaImageModal from "@/components/shared/MediaImageModal.vue";
 
-const props = defineProps<{
-  allowedFileExtensions: AllowedFileExtensions;
-  filePath: string;
-  mediaBasePath: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    allowedFileExtensions: AllowedFileExtensions;
+    filePath: string;
+    mediaBasePath: string;
+    variant?: "default" | "gallery";
+    /** When true, image click opens MediaImageModal. Defaults off for gallery tiles. */
+    enableImageModal?: boolean;
+  }>(),
+  {
+    variant: "default",
+    enableImageModal: undefined,
+  },
+);
+
+const isGalleryVariant = computed(() => props.variant === "gallery");
+
+const canOpenImageModal = computed(() => {
+  if (props.enableImageModal !== undefined) return props.enableImageModal;
+  return !isGalleryVariant.value;
+});
 
 /** Conditional rendering based on file extension */
 const isAudio = computed(() =>
@@ -19,6 +37,9 @@ const isImage = computed(() =>
 );
 const isVideo = computed(() =>
   checkExtensions(props.allowedFileExtensions.video),
+);
+const fileName = computed(
+  () => props.filePath.split("/").pop() || props.filePath,
 );
 
 const getExtension = (filePath: string) => {
@@ -47,6 +68,18 @@ const imageContainer = ref<HTMLElement | null>(null);
 const shouldLoadImage = ref(false);
 const imageError = ref(false);
 const imageLoaded = ref(false);
+const imageModalOpen = ref(false);
+
+const openImageModal = () => {
+  if (!canOpenImageModal.value || !imageLoaded.value || imageError.value) {
+    return;
+  }
+  imageModalOpen.value = true;
+};
+
+const closeImageModal = () => {
+  imageModalOpen.value = false;
+};
 
 // Use Intersection Observer for true lazy loading
 const { target } = useIntersectionObserver(
@@ -81,15 +114,39 @@ const handleImageLoad = () => {
   imageError.value = false;
   imageLoaded.value = true;
 };
+
+const imageContainerClass = computed(() => {
+  if (isGalleryVariant.value) {
+    return "w-full h-full overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800";
+  }
+  return "w-full aspect-video rounded-lg bg-gray-100 dark:bg-gray-800";
+});
+
+const imageClass = computed(() => {
+  if (isGalleryVariant.value) {
+    return "w-full h-full object-cover";
+  }
+  return "w-full h-auto rounded-lg";
+});
 </script>
 
 <template>
-  <div>
-    <div v-if="isImage" ref="imageContainer" class="mb-4">
+  <div :class="{ 'h-full w-full': isGalleryVariant }">
+    <div
+      v-if="isImage"
+      ref="imageContainer"
+      :class="[
+        isGalleryVariant ? 'h-full w-full' : '',
+        isGalleryVariant ? '' : 'mb-4',
+      ]"
+    >
       <!-- Error state: Show red X icon when image fails to load (404) -->
       <div
         v-if="shouldLoadImage && imageError"
-        class="w-full aspect-video rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center border-2 border-red-500"
+        :class="[
+          imageContainerClass,
+          'flex items-center justify-center border-2 border-red-500',
+        ]"
       >
         <div
           class="flex flex-col items-center justify-center gap-2 text-red-500"
@@ -106,34 +163,52 @@ const handleImageLoad = () => {
         v-else-if="
           !shouldLoadImage || (shouldLoadImage && !imageLoaded && !imageError)
         "
-        class="w-full aspect-video rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center"
+        :class="[imageContainerClass, 'flex items-center justify-center']"
       >
         <div class="text-gray-400 text-sm">
           {{ $t("loading") || "Loading..." }}
         </div>
       </div>
 
-      <!-- Image container: Load and show image when in viewport -->
-      <a
-        v-if="shouldLoadImage && !imageError"
-        :href="rawImageUrl"
-        target="_blank"
-        :data-lightbox="filePath"
-        :data-title="filePath"
-        class="block"
-        :class="{ hidden: !imageLoaded }"
+      <!-- Thumbnail: modal only when enabled (e.g. map sidebar / gallery detail). -->
+      <button
+        v-if="shouldLoadImage && !imageError && canOpenImageModal"
+        type="button"
+        data-testid="media-image-open"
+        class="block w-full cursor-zoom-in border-0 bg-transparent p-0 text-left"
+        :class="[
+          isGalleryVariant ? imageContainerClass : '',
+          { hidden: !imageLoaded },
+        ]"
+        :aria-label="$t('mediaImageOpenModal')"
+        @click.stop="openImageModal"
       >
         <img
           :src="optimizedImageUrl"
-          alt="Image"
-          class="w-full h-auto rounded-lg"
+          alt=""
+          :class="imageClass"
           @load="handleImageLoad"
           @error="handleImageError"
         />
-      </a>
+      </button>
+      <div
+        v-else-if="shouldLoadImage && !imageError"
+        :class="[
+          isGalleryVariant ? imageContainerClass : '',
+          { hidden: !imageLoaded },
+        ]"
+      >
+        <img
+          :src="optimizedImageUrl"
+          alt=""
+          :class="imageClass"
+          @load="handleImageLoad"
+          @error="handleImageError"
+        />
+      </div>
 
       <div
-        v-if="filePath"
+        v-if="filePath && !isGalleryVariant"
         class="text-center flex items-center justify-center mt-2"
       >
         <span v-if="filePath.includes('t0.jpg')" class="italic">{{
@@ -144,8 +219,35 @@ const handleImageLoad = () => {
         }}</span>
       </div>
     </div>
-    <div v-if="isAudio" class="mb-4">
-      <audio controls class="w-full" preload="none">
+    <div
+      v-if="isAudio"
+      :class="
+        isGalleryVariant
+          ? 'flex h-full min-h-48 w-full flex-col items-center justify-center gap-4 overflow-hidden rounded-2xl border border-violet-200 bg-violet-50 p-6 text-violet-950'
+          : 'mb-4'
+      "
+      :data-testid="isGalleryVariant ? 'gallery-audio-card' : undefined"
+    >
+      <template v-if="isGalleryVariant">
+        <Music
+          class="h-10 w-10 shrink-0 text-violet-600"
+          aria-hidden="true"
+          data-testid="gallery-audio-icon"
+        />
+        <p
+          class="max-w-full break-words text-center text-sm font-medium"
+          data-testid="gallery-audio-filename"
+        >
+          {{ fileName }}
+        </p>
+      </template>
+      <!-- Gallery slides inset the player so it never sits under the carousel arrows. -->
+      <audio
+        controls
+        :class="isGalleryVariant ? 'w-[calc(100%_-_4rem)]' : 'w-full'"
+        preload="none"
+        @click.stop
+      >
         <source
           :src="mediaBasePath + '/' + filePath"
           :type="
@@ -157,8 +259,24 @@ const handleImageLoad = () => {
         {{ $t("browserDoesntSupportAudio") }}.
       </audio>
     </div>
-    <div v-if="isVideo" class="mb-4">
-      <video controls class="w-full h-auto rounded-lg" preload="none">
+    <div
+      v-if="isVideo"
+      :class="
+        isGalleryVariant
+          ? 'h-full w-full overflow-hidden rounded-2xl bg-gray-100'
+          : 'mb-4'
+      "
+    >
+      <video
+        controls
+        :class="
+          isGalleryVariant
+            ? 'w-full h-full object-cover'
+            : 'w-full h-auto rounded-lg'
+        "
+        preload="none"
+        @click.stop
+      >
         <source
           :src="mediaBasePath + '/' + filePath"
           :type="'video/' + getExtension(filePath)"
@@ -166,5 +284,13 @@ const handleImageLoad = () => {
         {{ $t("browserDoesntSupportVideo") }}.
       </video>
     </div>
+
+    <MediaImageModal
+      v-if="canOpenImageModal"
+      :open="imageModalOpen"
+      :image-url="rawImageUrl"
+      :file-name="fileName"
+      @close="closeImageModal"
+    />
   </div>
 </template>
