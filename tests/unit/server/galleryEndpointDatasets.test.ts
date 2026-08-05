@@ -108,4 +108,21 @@ describe("gallery endpoint datasets", () => {
     expect(response.table).toBe("gallery_dataset");
     expect(response.data).toEqual([{ _id: "record-1", photo: "one.jpg" }]);
   });
+
+  it("returns view title and description from the view config", async () => {
+    hoisted.fetchTableConfig.mockResolvedValue({
+      MEDIA_BASE_PATH: "/media",
+      MEDIA_COLUMN: "photo",
+      ROUTE_LEVEL_PERMISSION: "anyone",
+      DATASET_TABLE: " Community photos ",
+      VIEW_DESCRIPTION: "Field media from the survey.",
+    });
+
+    const response = await handleGalleryRequest({
+      context: { params: { table: "route_gallery" } },
+    });
+
+    expect(response.viewName).toBe("Community photos");
+    expect(response.viewDescription).toBe("Field media from the survey.");
+  });
 });
