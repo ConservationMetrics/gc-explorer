@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { computed, ref, watchEffect } from "vue";
 import { Music, XCircle } from "lucide-vue-next";
 import type { AllowedFileExtensions } from "@/types";
 import { useIntersectionObserver } from "@/composables/useIntersectionObserver";
 import { useOptimizedImages } from "@/composables/useOptimizedImages";
+import MediaImageModal from "@/components/shared/MediaImageModal.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -58,6 +60,16 @@ const imageContainer = ref<HTMLElement | null>(null);
 const shouldLoadImage = ref(false);
 const imageError = ref(false);
 const imageLoaded = ref(false);
+const imageModalOpen = ref(false);
+
+const openImageModal = () => {
+  if (!imageLoaded.value || imageError.value) return;
+  imageModalOpen.value = true;
+};
+
+const closeImageModal = () => {
+  imageModalOpen.value = false;
+};
 
 // Use Intersection Observer for true lazy loading
 const { target } = useIntersectionObserver(
@@ -148,36 +160,27 @@ const imageClass = computed(() => {
         </div>
       </div>
 
-      <!-- Image container: Load and show image when in viewport -->
-      <a
-        v-if="shouldLoadImage && !imageError && !isGalleryVariant"
-        :href="rawImageUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="block"
-        :class="{ hidden: !imageLoaded }"
+      <!-- Thumbnail: open in-app modal (replaces vendor lightbox) -->
+      <button
+        v-if="shouldLoadImage && !imageError"
+        type="button"
+        data-testid="media-image-open"
+        class="block w-full cursor-zoom-in border-0 bg-transparent p-0 text-left"
+        :class="[
+          isGalleryVariant ? imageContainerClass : '',
+          { hidden: !imageLoaded },
+        ]"
+        :aria-label="$t('mediaImageOpenModal')"
+        @click.stop="openImageModal"
       >
         <img
           :src="optimizedImageUrl"
-          alt="Image"
+          alt=""
           :class="imageClass"
           @load="handleImageLoad"
           @error="handleImageError"
         />
-      </a>
-
-      <div
-        v-if="shouldLoadImage && !imageError && isGalleryVariant"
-        :class="[imageContainerClass, { hidden: !imageLoaded }]"
-      >
-        <img
-          :src="optimizedImageUrl"
-          alt="Image"
-          :class="imageClass"
-          @load="handleImageLoad"
-          @error="handleImageError"
-        />
-      </div>
+      </button>
 
       <div
         v-if="filePath && !isGalleryVariant"
@@ -256,5 +259,12 @@ const imageClass = computed(() => {
         {{ $t("browserDoesntSupportVideo") }}.
       </video>
     </div>
+
+    <MediaImageModal
+      :open="imageModalOpen"
+      :image-url="rawImageUrl"
+      :file-name="fileName"
+      @close="closeImageModal"
+    />
   </div>
 </template>

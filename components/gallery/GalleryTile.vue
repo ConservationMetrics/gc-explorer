@@ -53,7 +53,7 @@ const handleTileClick = (event: MouseEvent) => {
   const target = event.target as HTMLElement;
   if (
     target.closest(
-      "audio, video, a, [data-testid='gallery-carousel-prev'], [data-testid='gallery-carousel-next'], [data-testid^='gallery-carousel-dot-']",
+      "audio, video, a, button, [data-testid='gallery-carousel-prev'], [data-testid='gallery-carousel-next'], [data-testid^='gallery-carousel-dot-']",
     )
   ) {
     return;
