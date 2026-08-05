@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getFilePathsWithExtension } from "@/utils";
+import { filterByMediaTypes, getFilePathsWithExtension } from "@/utils";
 import {
   calculateCentroidFromParsedCoords,
   tryParseDataEntryGeoCoordinates,
@@ -27,6 +27,7 @@ import type {
   DataEntry,
   FilterValues,
 } from "@/types";
+import type { GalleryMediaType } from "@/utils";
 
 const { t } = useI18n();
 
@@ -46,10 +47,41 @@ const { fetchRecords, getCachedRecord, cacheSize } = useRecordCache();
 
 const { dateMin, dateMax, setDateRange } = useTimestampFilter();
 
-/** Apply date range then category filter (AND). */
+const selectedFilterValues = ref<FilterValues>([]);
+const selectedMediaTypes = ref<GalleryMediaType[]>([]);
+const filteredData = ref(props.galleryData);
+const loading = ref(false);
+const selectedEntry = ref<DataEntry | null>(null);
+const selectedFilePaths = ref<string[]>([]);
+const selectedCentroid = ref<string | undefined>();
+const showFilters = ref(false);
+const filterResetKey = ref(0);
+
+const availableMediaTypes = computed(() => {
+  const types: GalleryMediaType[] = [];
+  if (props.allowedFileExtensions.image?.length) types.push("image");
+  if (props.allowedFileExtensions.audio?.length) types.push("audio");
+  if (props.allowedFileExtensions.video?.length) types.push("video");
+  return types;
+});
+
+const hasFilters = computed(
+  () =>
+    Boolean(props.filterColumn) ||
+    Boolean(props.timestampColumn) ||
+    availableMediaTypes.value.length > 0,
+);
+
+const mediaTypeLabelKey = (type: GalleryMediaType) => {
+  if (type === "image") return "mediaTypeImage";
+  if (type === "audio") return "mediaTypeAudio";
+  return "mediaTypeVideo";
+};
+
+/** Apply date range then category then media type filters (AND across axes). */
 const applyAllFilters = () => {
   const col = props.timestampColumn;
-  filteredData.value = filterByDateAndCategory(props.galleryData, {
+  let result = filterByDateAndCategory(props.galleryData, {
     timestampColumn: col,
     dateMin: dateMin.value,
     dateMax: dateMax.value,
@@ -59,16 +91,15 @@ const applyAllFilters = () => {
     getCategory: (item) =>
       props.filterColumn != null ? item[props.filterColumn] : undefined,
   });
+  result = filterByMediaTypes(
+    result,
+    selectedMediaTypes.value,
+    props.allowedFileExtensions,
+    props.mediaColumn,
+  );
+  filteredData.value = result;
 };
 
-const selectedFilterValues = ref<FilterValues>([]);
-const filteredData = ref(props.galleryData);
-const loading = ref(false);
-const selectedEntry = ref<DataEntry | null>(null);
-const selectedFilePaths = ref<string[]>([]);
-const selectedCentroid = ref<string | undefined>();
-const showFilters = ref(false);
-const filterResetKey = ref(0);
 const isFilteredToEmpty = computed(
   () => props.galleryData.length > 0 && filteredData.value.length === 0,
 );
@@ -138,8 +169,20 @@ const onTimestampFilter = (payload: {
   applyAllFilters();
 };
 
+const toggleMediaType = (type: GalleryMediaType) => {
+  if (selectedMediaTypes.value.includes(type)) {
+    selectedMediaTypes.value = selectedMediaTypes.value.filter(
+      (t) => t !== type,
+    );
+  } else {
+    selectedMediaTypes.value = [...selectedMediaTypes.value, type];
+  }
+  applyAllFilters();
+};
+
 const clearAllFilters = () => {
   selectedFilterValues.value = [];
+  selectedMediaTypes.value = [];
   setDateRange({ start: null, end: null });
   filterResetKey.value++;
   applyAllFilters();
@@ -229,11 +272,7 @@ const closeDetail = () => {
       @close="closeDetail"
     />
     <template v-else>
-      <div
-        v-if="filterColumn || timestampColumn"
-        class="mb-4"
-        data-testid="filter-toolbar"
-      >
+      <div v-if="hasFilters" class="mb-4" data-testid="filter-toolbar">
         <div class="flex justify-end">
           <button
             type="button"
@@ -277,6 +316,36 @@ const closeDetail = () => {
               :timestamp-column="timestampColumn"
               @filter="onTimestampFilter"
             />
+            <div
+              v-if="availableMediaTypes.length"
+              class="rounded-xl border border-violet-200 bg-white p-2.5"
+              data-testid="media-type-filter"
+            >
+              <h4
+                class="m-0 mb-2 text-lg text-gray-800"
+                data-testid="media-type-filter-heading"
+              >
+                {{ $t("filterByMediaType") }}
+              </h4>
+              <div class="flex flex-wrap gap-2">
+                <label
+                  v-for="type in availableMediaTypes"
+                  :key="type"
+                  class="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border border-violet-200 px-3 py-2 text-sm text-violet-900 transition-colors hover:bg-violet-50 has-[:checked]:border-violet-500 has-[:checked]:bg-violet-100"
+                  :data-testid="`media-type-option-${type}`"
+                >
+                  <input
+                    type="checkbox"
+                    class="h-4 w-4 accent-violet-600"
+                    :value="type"
+                    :checked="selectedMediaTypes.includes(type)"
+                    :data-testid="`media-type-checkbox-${type}`"
+                    @change="toggleMediaType(type)"
+                  />
+                  {{ $t(mediaTypeLabelKey(type)) }}
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -342,7 +411,8 @@ const closeDetail = () => {
 
 @media (min-width: 1024px) {
   .gallery-filter-panel :deep(.filter-modal),
-  .gallery-filter-panel :deep([data-testid="timestamp-filter"]) {
+  .gallery-filter-panel :deep([data-testid="timestamp-filter"]),
+  .gallery-filter-panel :deep([data-testid="media-type-filter"]) {
     flex: 1 1 0;
   }
 }

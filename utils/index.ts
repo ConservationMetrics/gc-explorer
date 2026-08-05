@@ -36,6 +36,50 @@ export const getFilePathsWithExtension = (
   return filePaths;
 };
 
+export type GalleryMediaType = "audio" | "image" | "video";
+
+/** Media types present on a gallery entry, based on allowed extensions. */
+export const getMediaTypesForEntry = (
+  feature: { [key: string]: unknown },
+  allExtensions: {
+    audio: string[];
+    image: string[];
+    video: string[];
+  },
+  mediaColumn?: string,
+): GalleryMediaType[] => {
+  const paths = getFilePathsWithExtension(feature, allExtensions, mediaColumn);
+  const types = new Set<GalleryMediaType>();
+
+  for (const path of paths) {
+    const ext = path.split(".").pop()?.toLowerCase() ?? "";
+    if (!ext) continue;
+    if (allExtensions.audio.includes(ext)) types.add("audio");
+    if (allExtensions.image.includes(ext)) types.add("image");
+    if (allExtensions.video.includes(ext)) types.add("video");
+  }
+
+  return Array.from(types);
+};
+
+/** Keep entries that include at least one of the selected media types (OR among types). */
+export const filterByMediaTypes = <T extends { [key: string]: unknown }>(
+  items: T[],
+  selectedTypes: GalleryMediaType[],
+  allExtensions: {
+    audio: string[];
+    image: string[];
+    video: string[];
+  },
+  mediaColumn?: string,
+): T[] => {
+  if (!selectedTypes.length) return items;
+  return items.filter((item) => {
+    const present = getMediaTypesForEntry(item, allExtensions, mediaColumn);
+    return present.some((type) => selectedTypes.includes(type));
+  });
+};
+
 const CLEAN_PHOTO_TOKEN_EDGES = /^[\s"'\\[]+|[\s"'\\[\]]+$/g;
 
 /**
