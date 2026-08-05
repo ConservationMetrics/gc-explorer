@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import {
   computed,
@@ -94,6 +94,8 @@ const mountIndex = async () => {
 describe("index page empty state", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Page always shows the config link when CI is set; clear it so role checks apply.
+    vi.stubEnv("CI", "");
 
     useRuntimeConfigMock.mockReturnValue({
       public: { authStrategy: "none" },
@@ -116,6 +118,10 @@ describe("index page empty state", () => {
     useRouterMock.mockReturnValue({
       replace: vi.fn(),
     });
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("shows add new dataset view button when there are no views", async () => {
