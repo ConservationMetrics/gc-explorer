@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { getFilePathsWithExtension } from "@/utils";
+import {
+  filterByMediaTypes,
+  getFilePathsWithExtension,
+  getMediaTypeFilterOptions,
+} from "@/utils/mediaHelpers";
 import {
   calculateCentroidFromParsedCoords,
   tryParseDataEntryGeoCoordinates,
@@ -14,6 +18,7 @@ import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
 
 import DataFilter from "@/components/shared/DataFilter.vue";
+import MediaTypeFilter from "@/components/shared/MediaTypeFilter.vue";
 import TimestampFilter from "@/components/shared/TimestampFilter.vue";
 import GalleryDetailPanel from "@/components/gallery/GalleryDetailPanel.vue";
 import GalleryGrid from "@/components/gallery/GalleryGrid.vue";
@@ -26,6 +31,7 @@ import type {
   Dataset,
   DataEntry,
   FilterValues,
+  MediaTypeFilterValue,
 } from "@/types";
 
 const { t } = useI18n();
@@ -53,10 +59,35 @@ const { fetchRecords, getCachedRecord, cacheSize } = useRecordCache();
 
 const { dateMin, dateMax, setDateRange } = useTimestampFilter();
 
-/** Apply date range then category filter (AND). */
+const selectedFilterValues = ref<FilterValues>([]);
+const selectedMediaTypes = ref<MediaTypeFilterValue[]>([]);
+const filteredData = ref(props.galleryData);
+const loading = ref(false);
+const selectedEntry = ref<DataEntry | null>(null);
+const selectedFilePaths = ref<string[]>([]);
+const selectedCentroid = ref<string | undefined>();
+const showFilters = ref(false);
+const filterResetKey = ref(0);
+
+const mediaTypeFilterOptions = computed(() =>
+  getMediaTypeFilterOptions(
+    props.galleryData,
+    props.allowedFileExtensions,
+    props.mediaColumn,
+  ),
+);
+
+const hasFilters = computed(
+  () =>
+    Boolean(props.filterColumn) ||
+    Boolean(props.timestampColumn) ||
+    mediaTypeFilterOptions.value.length > 0,
+);
+
+/** Apply date range then category then media type filters (AND across axes). */
 const applyAllFilters = () => {
   const col = props.timestampColumn;
-  filteredData.value = filterByDateAndCategory(props.galleryData, {
+  let result = filterByDateAndCategory(props.galleryData, {
     timestampColumn: col,
     dateMin: dateMin.value,
     dateMax: dateMax.value,
@@ -66,16 +97,15 @@ const applyAllFilters = () => {
     getCategory: (item) =>
       props.filterColumn != null ? item[props.filterColumn] : undefined,
   });
+  result = filterByMediaTypes(
+    result,
+    selectedMediaTypes.value,
+    props.allowedFileExtensions,
+    props.mediaColumn,
+  );
+  filteredData.value = result;
 };
 
-const selectedFilterValues = ref<FilterValues>([]);
-const filteredData = ref(props.galleryData);
-const loading = ref(false);
-const selectedEntry = ref<DataEntry | null>(null);
-const selectedFilePaths = ref<string[]>([]);
-const selectedCentroid = ref<string | undefined>();
-const showFilters = ref(false);
-const filterResetKey = ref(0);
 const isFilteredToEmpty = computed(
   () => props.galleryData.length > 0 && filteredData.value.length === 0,
 );
@@ -145,8 +175,14 @@ const onTimestampFilter = (payload: {
   applyAllFilters();
 };
 
+const onMediaTypeFilter = (types: MediaTypeFilterValue[]) => {
+  selectedMediaTypes.value = types;
+  applyAllFilters();
+};
+
 const clearAllFilters = () => {
   selectedFilterValues.value = [];
+  selectedMediaTypes.value = [];
   setDateRange({ start: null, end: null });
   filterResetKey.value++;
   applyAllFilters();
@@ -257,11 +293,7 @@ const closeDetail = () => {
           {{ fullDescription }}
         </p>
       </header>
-      <div
-        v-if="filterColumn || timestampColumn"
-        class="mb-4"
-        data-testid="filter-toolbar"
-      >
+      <div v-if="hasFilters" class="mb-4" data-testid="filter-toolbar">
         <div class="flex justify-end">
           <button
             type="button"
@@ -304,6 +336,14 @@ const closeDetail = () => {
               :data="galleryData"
               :timestamp-column="timestampColumn"
               @filter="onTimestampFilter"
+            />
+            <MediaTypeFilter
+              v-if="mediaTypeFilterOptions.length"
+              :key="`media-${filterResetKey}`"
+              :allowed-file-extensions="allowedFileExtensions"
+              :data="galleryData"
+              :media-column="mediaColumn"
+              @filter="onMediaTypeFilter"
             />
           </div>
         </div>
@@ -370,7 +410,8 @@ const closeDetail = () => {
 
 @media (min-width: 1024px) {
   .gallery-filter-panel :deep(.filter-modal),
-  .gallery-filter-panel :deep([data-testid="timestamp-filter"]) {
+  .gallery-filter-panel :deep([data-testid="timestamp-filter"]),
+  .gallery-filter-panel :deep([data-testid="media-type-filter"]) {
     flex: 1 1 0;
   }
 }

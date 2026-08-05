@@ -1,41 +1,3 @@
-/** Extracts file paths with valid extensions from a feature object. */
-export const getFilePathsWithExtension = (
-  feature: { [key: string]: unknown },
-  allExtensions: { [category: string]: string[] },
-  mediaColumn?: string,
-): string[] => {
-  if (!feature) return [];
-
-  const filePaths: string[] = [];
-  const keysToProcess = mediaColumn ? [mediaColumn] : Object.keys(feature);
-
-  keysToProcess.forEach((key) => {
-    if (typeof feature[key] !== "string") return;
-    if (feature[key].includes("attachment")) return;
-
-    const files = feature[key].split(",");
-    // handle ["\"5bf52de27e1a7b36f2d2cec254b766c8.jpg\""]
-
-    files.forEach((file: string) => {
-      const cleanedFile = file
-        .trim()
-        .replace(/^[\s"'\\[]+|[\s"'\\[\]]+$/g, "") // Remove brackets, quotes, backslashes, and whitespace from edges
-        .replace(/ /g, "_");
-
-      const hasValidExtension = Object.values(allExtensions).some(
-        (extensions) =>
-          extensions.some((ext: string) => cleanedFile.endsWith(ext)),
-      );
-
-      if (hasValidExtension) {
-        filePaths.push(cleanedFile);
-      }
-    });
-  });
-
-  return filePaths;
-};
-
 const CLEAN_PHOTO_TOKEN_EDGES = /^[\s"'\\[]+|[\s"'\\[\]]+$/g;
 
 /**
@@ -101,3 +63,12 @@ export const CONFIG_LIMITS = {
   /** @type {number} Maximum length for view description */
   VIEW_DESCRIPTION: 500,
 } as const;
+
+export {
+  filterByMediaTypes,
+  getFilePathsWithExtension,
+  getMediaTypeFilterOptions,
+  getMediaTypesForEntry,
+} from "./mediaHelpers";
+
+export type { GalleryMediaType, MediaTypeFilterValue } from "@/types";

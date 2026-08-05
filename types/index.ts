@@ -149,6 +149,10 @@ export type AllowedFileExtensions = {
   video: string[];
 };
 
+export type GalleryMediaType = "audio" | "image" | "video";
+
+export type MediaTypeFilterValue = GalleryMediaType | "none";
+
 export type ConfigRow = {
   view_id?: number;
   view_name?: string | null;

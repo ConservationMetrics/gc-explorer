@@ -39,9 +39,9 @@ vi.mock("@/composables/useDateAndCategoryFilter", () => ({
   }),
 }));
 
-vi.mock("@/utils", () => ({
-  getFilePathsWithExtension: () => ["photo.jpg"],
-}));
+vi.mock("@/utils", async (importOriginal) => {
+  return await importOriginal<typeof import("@/utils")>();
+});
 
 vi.mock("@/utils/dataTransformers", () => ({
   transformSurveyEntry: (entry: unknown) => entry,
@@ -82,7 +82,7 @@ const globalConfig = {
 
 const baseProps = {
   allowedFileExtensions: {
-    audio: [],
+    audio: ["mp3"],
     image: ["jpg"],
     video: [],
   } satisfies AllowedFileExtensions,
@@ -251,6 +251,52 @@ describe("GalleryView filters", () => {
     expect(
       wrapper.get('[data-testid="stub-timestamp-filter"]').element,
     ).not.toBe(timestampFilter);
+  });
+
+  it("filters by media type and clears media selection with Clear all", async () => {
+    filterByDateAndCategoryMock.mockImplementation((data: Dataset) => data);
+
+    const wrapper = mount(GalleryView, {
+      props: {
+        ...baseProps,
+        galleryData: [
+          { _id: "1", photo: "a.jpg" },
+          { _id: "2", photo: "b.mp3" },
+        ] as unknown as Dataset,
+      },
+      global: globalConfig,
+    });
+
+    await wrapper.get('[data-testid="filter-toggle"]').trigger("click");
+    expect(wrapper.find('[data-testid="media-type-filter"]').exists()).toBe(
+      true,
+    );
+    expect(
+      wrapper.find('[data-testid="media-type-checkbox-none"]').exists(),
+    ).toBe(false);
+    expect(
+      wrapper
+        .get('[data-testid="pagination-info"]')
+        .attributes("data-total-items"),
+    ).toBe("2");
+
+    await wrapper
+      .get('[data-testid="media-type-checkbox-audio"]')
+      .setValue(true);
+    await wrapper.vm.$nextTick();
+
+    expect(
+      wrapper
+        .get('[data-testid="pagination-info"]')
+        .attributes("data-total-items"),
+    ).toBe("1");
+
+    await wrapper.get('[data-testid="clear-all-filters"]').trigger("click");
+    expect(
+      wrapper
+        .get('[data-testid="pagination-info"]')
+        .attributes("data-total-items"),
+    ).toBe("2");
   });
 });
 
