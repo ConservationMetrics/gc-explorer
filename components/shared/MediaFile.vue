@@ -153,8 +153,7 @@ const imageClass = computed(() => {
         v-if="shouldLoadImage && !imageError && !isGalleryVariant"
         :href="rawImageUrl"
         target="_blank"
-        :data-lightbox="filePath"
-        :data-title="filePath"
+        rel="noopener noreferrer"
         class="block"
         :class="{ hidden: !imageLoaded }"
       >

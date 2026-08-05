@@ -41,7 +41,14 @@ const props = defineProps<{
   mediaColumn?: string;
   table: string;
   timestampColumn?: string;
+  viewName?: string;
+  viewDescription?: string;
 }>();
+
+const displayName = computed(
+  () => props.viewName?.trim() || props.table?.trim() || "",
+);
+const fullDescription = computed(() => props.viewDescription?.trim() || "");
 
 const { fetchRecords, getCachedRecord, cacheSize } = useRecordCache();
 
@@ -272,6 +279,27 @@ const closeDetail = () => {
       @close="closeDetail"
     />
     <template v-else>
+      <header
+        v-if="displayName || fullDescription"
+        class="mb-4 space-y-1"
+        data-testid="gallery-view-header"
+      >
+        <h1
+          v-if="displayName"
+          class="text-2xl font-semibold tracking-tight text-gray-900 break-words"
+          style="overflow-wrap: anywhere; word-break: break-word"
+          data-testid="gallery-view-title"
+        >
+          {{ displayName }}
+        </h1>
+        <p
+          v-if="fullDescription"
+          class="text-sm text-gray-600"
+          data-testid="gallery-view-description"
+        >
+          {{ fullDescription }}
+        </p>
+      </header>
       <div v-if="hasFilters" class="mb-4" data-testid="filter-toolbar">
         <div class="flex justify-end">
           <button

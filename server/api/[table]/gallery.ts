@@ -142,6 +142,8 @@ export default defineEventHandler(async (event: H3Event) => {
       primary_dataset: primaryTable,
       table: primaryTable,
       timestampColumn: timestampColumn ?? undefined,
+      viewDescription: tableConfig.VIEW_DESCRIPTION || undefined,
+      viewName: tableConfig.DATASET_TABLE?.trim() || undefined,
       rowLimitReached: mainData.length >= limit,
       routeLevelPermission: tableConfig.ROUTE_LEVEL_PERMISSION,
     };

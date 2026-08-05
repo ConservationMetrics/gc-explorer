@@ -59,7 +59,7 @@ onBeforeUnmount(() => {
           id="gallery-detail-title"
           class="text-lg font-semibold text-gray-900 sm:text-xl"
         >
-          {{ $t("galleryImageDetails") }}
+          {{ $t("galleryMediaDetails") }}
         </h2>
         <button
           type="button"

@@ -100,6 +100,44 @@ describe("GalleryView empty states", () => {
     filterByDateAndCategoryMock.mockImplementation((data: Dataset) => data);
   });
 
+  it("shows view title and description above the grid", () => {
+    const wrapper = mount(GalleryView, {
+      props: {
+        ...baseProps,
+        galleryData: [{ _id: "1" }] as unknown as Dataset,
+        viewName: " Community gallery ",
+        viewDescription: "Photos and audio from the field.",
+        table: "bcmform_responses",
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.get('[data-testid="gallery-view-title"]').text()).toBe(
+      "Community gallery",
+    );
+    expect(wrapper.get('[data-testid="gallery-view-description"]').text()).toBe(
+      "Photos and audio from the field.",
+    );
+  });
+
+  it("falls back to the table name when view title is missing", () => {
+    const wrapper = mount(GalleryView, {
+      props: {
+        ...baseProps,
+        galleryData: [{ _id: "1" }] as unknown as Dataset,
+        table: "bcmform_responses",
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.get('[data-testid="gallery-view-title"]').text()).toBe(
+      "bcmform_responses",
+    );
+    expect(
+      wrapper.find('[data-testid="gallery-view-description"]').exists(),
+    ).toBe(false);
+  });
+
   it("shows galleryEmpty when gallery has no items", () => {
     const wrapper = mount(GalleryView, {
       props: {

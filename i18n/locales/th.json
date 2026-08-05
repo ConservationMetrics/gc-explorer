@@ -103,7 +103,7 @@
   "galleryEmpty": "ยังไม่มีรายการให้แสดงในแกลเลอรีนี้",
   "galleryFiles": "ไฟล์",
   "galleryGoToSlide": "ไปที่สไลด์ {number} จาก {total}",
-  "galleryImageDetails": "รายละเอียดรูปภาพ",
+  "galleryMediaDetails": "รายละเอียดสื่อ",
   "galleryLocation": "ตำแหน่ง",
   "galleryNextMedia": "สื่อถัดไป",
   "galleryPreviousMedia": "สื่อก่อนหน้า",
