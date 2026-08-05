@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { computed, ref, watchEffect } from "vue";
 import { Music, XCircle } from "lucide-vue-next";
 import type { AllowedFileExtensions } from "@/types";
 import { useIntersectionObserver } from "@/composables/useIntersectionObserver";
 import { useOptimizedImages } from "@/composables/useOptimizedImages";
+import MediaImageModal from "@/components/shared/MediaImageModal.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -10,13 +12,21 @@ const props = withDefaults(
     filePath: string;
     mediaBasePath: string;
     variant?: "default" | "gallery";
+    /** When true, image click opens MediaImageModal. Defaults off for gallery tiles. */
+    enableImageModal?: boolean;
   }>(),
   {
     variant: "default",
+    enableImageModal: undefined,
   },
 );
 
 const isGalleryVariant = computed(() => props.variant === "gallery");
+
+const canOpenImageModal = computed(() => {
+  if (props.enableImageModal !== undefined) return props.enableImageModal;
+  return !isGalleryVariant.value;
+});
 
 /** Conditional rendering based on file extension */
 const isAudio = computed(() =>
@@ -58,6 +68,18 @@ const imageContainer = ref<HTMLElement | null>(null);
 const shouldLoadImage = ref(false);
 const imageError = ref(false);
 const imageLoaded = ref(false);
+const imageModalOpen = ref(false);
+
+const openImageModal = () => {
+  if (!canOpenImageModal.value || !imageLoaded.value || imageError.value) {
+    return;
+  }
+  imageModalOpen.value = true;
+};
+
+const closeImageModal = () => {
+  imageModalOpen.value = false;
+};
 
 // Use Intersection Observer for true lazy loading
 const { target } = useIntersectionObserver(
@@ -148,31 +170,37 @@ const imageClass = computed(() => {
         </div>
       </div>
 
-      <!-- Image container: Load and show image when in viewport -->
-      <a
-        v-if="shouldLoadImage && !imageError && !isGalleryVariant"
-        :href="rawImageUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="block"
-        :class="{ hidden: !imageLoaded }"
+      <!-- Thumbnail: modal only when enabled (e.g. map sidebar / gallery detail). -->
+      <button
+        v-if="shouldLoadImage && !imageError && canOpenImageModal"
+        type="button"
+        data-testid="media-image-open"
+        class="block w-full cursor-zoom-in border-0 bg-transparent p-0 text-left"
+        :class="[
+          isGalleryVariant ? imageContainerClass : '',
+          { hidden: !imageLoaded },
+        ]"
+        :aria-label="$t('mediaImageOpenModal')"
+        @click.stop="openImageModal"
       >
         <img
           :src="optimizedImageUrl"
-          alt="Image"
+          alt=""
           :class="imageClass"
           @load="handleImageLoad"
           @error="handleImageError"
         />
-      </a>
-
+      </button>
       <div
-        v-if="shouldLoadImage && !imageError && isGalleryVariant"
-        :class="[imageContainerClass, { hidden: !imageLoaded }]"
+        v-else-if="shouldLoadImage && !imageError"
+        :class="[
+          isGalleryVariant ? imageContainerClass : '',
+          { hidden: !imageLoaded },
+        ]"
       >
         <img
           :src="optimizedImageUrl"
-          alt="Image"
+          alt=""
           :class="imageClass"
           @load="handleImageLoad"
           @error="handleImageError"
@@ -256,5 +284,13 @@ const imageClass = computed(() => {
         {{ $t("browserDoesntSupportVideo") }}.
       </video>
     </div>
+
+    <MediaImageModal
+      v-if="canOpenImageModal"
+      :open="imageModalOpen"
+      :image-url="rawImageUrl"
+      :file-name="fileName"
+      @close="closeImageModal"
+    />
   </div>
 </template>

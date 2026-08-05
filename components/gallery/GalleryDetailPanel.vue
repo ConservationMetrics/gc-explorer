@@ -86,6 +86,7 @@ onBeforeUnmount(() => {
             :file-paths="filePaths"
             :media-base-path="mediaBasePath"
             variant="gallery"
+            :enable-image-modal="true"
           />
           <div
             v-else
