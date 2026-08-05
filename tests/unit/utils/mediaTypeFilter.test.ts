@@ -4,13 +4,8 @@ import {
   filterByMediaTypes,
   getMediaTypeFilterOptions,
   getMediaTypesForEntry,
-} from "@/utils";
-
-const extensions = {
-  audio: ["mp3", "m4a"],
-  image: ["jpg", "png", "webp"],
-  video: ["mp4", "mov"],
-};
+} from "@/utils/mediaHelpers";
+import { allowedFileExtensionsFixture as extensions } from "@/tests/unit/fixtures/allowedFileExtensions";
 
 describe("getMediaTypesForEntry", () => {
   it("detects image, audio, and video from a media column", () => {

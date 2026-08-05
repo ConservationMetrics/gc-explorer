@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
-import { getMediaTypeFilterOptions, type MediaTypeFilterValue } from "@/utils";
+import { getMediaTypeFilterOptions } from "@/utils/mediaHelpers";
 
-import type { AllowedFileExtensions } from "@/types";
+import type { AllowedFileExtensions, MediaTypeFilterValue } from "@/types";
 
 const props = defineProps<{
   allowedFileExtensions: AllowedFileExtensions;
@@ -41,7 +41,6 @@ const toggleType = (type: MediaTypeFilterValue) => {
   emit("filter", [...selectedTypes.value]);
 };
 
-/** Drop selections that are no longer offered (e.g. "none" after data change). */
 watch(availableOptions, (options) => {
   const next = selectedTypes.value.filter((t) => options.includes(t));
   if (next.length !== selectedTypes.value.length) {

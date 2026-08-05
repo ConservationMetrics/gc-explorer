@@ -3,7 +3,7 @@ import {
   filterByMediaTypes,
   getFilePathsWithExtension,
   getMediaTypeFilterOptions,
-} from "@/utils";
+} from "@/utils/mediaHelpers";
 import {
   calculateCentroidFromParsedCoords,
   tryParseDataEntryGeoCoordinates,
@@ -31,8 +31,8 @@ import type {
   Dataset,
   DataEntry,
   FilterValues,
+  MediaTypeFilterValue,
 } from "@/types";
-import type { MediaTypeFilterValue } from "@/utils";
 
 const { t } = useI18n();
 

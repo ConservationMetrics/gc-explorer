@@ -3,14 +3,9 @@ import { computed, ref, watch } from "vue";
 import { describe, expect, it } from "vitest";
 
 import MediaTypeFilter from "@/components/shared/MediaTypeFilter.vue";
+import { allowedFileExtensionsFixture as extensions } from "@/tests/unit/fixtures/allowedFileExtensions";
 
 Object.assign(globalThis, { ref, computed, watch });
-
-const extensions = {
-  audio: ["mp3"],
-  image: ["jpg"],
-  video: ["mp4"],
-};
 
 const globalConfig = {
   mocks: {
