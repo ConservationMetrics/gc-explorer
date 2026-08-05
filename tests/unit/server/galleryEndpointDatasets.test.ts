@@ -37,6 +37,7 @@ const hoisted = vi.hoisted(() => {
     filterOutUnwantedValues: vi.fn(),
     filterUnwantedKeys: vi.fn(),
     parseAndValidateLimit: vi.fn(),
+    parseBasemaps: vi.fn(),
     validatePermissions: vi.fn(),
   };
 });
@@ -61,6 +62,12 @@ vi.mock("@/server/dataProcessing/dataFilters", async (importOriginal) => {
   };
 });
 
+// Mock the barrel so Vitest never loads `@/server/utils` → `dbConnection`
+// (parseBasemaps lives next to warehouse queries that need NUXT_DB_* at import time).
+vi.mock("@/server/utils", () => ({
+  parseBasemaps: hoisted.parseBasemaps,
+}));
+
 vi.mock("@/server/utils/dbHelpers", () => ({
   parseAndValidateLimit: hoisted.parseAndValidateLimit,
   getTableParam: (event: GalleryRouteEvent) => {
@@ -82,6 +89,7 @@ describe("gallery endpoint datasets", () => {
     vi.clearAllMocks();
 
     hoisted.parseAndValidateLimit.mockReturnValue(25);
+    hoisted.parseBasemaps.mockReturnValue({ basemaps: [] });
     hoisted.fetchTableConfig.mockResolvedValue({
       MEDIA_BASE_PATH: "/media",
       MEDIA_COLUMN: "photo",
