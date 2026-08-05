@@ -226,10 +226,12 @@ definePageMeta({ layout: "explorer" });
 
       <!-- View Type Filter & Add new dataset view -->
       <div
-        v-if="accessibleViews.length"
-        class="flex flex-wrap items-center justify-between gap-3 mb-4"
+        v-if="accessibleViews.length || shouldShowConfigLink"
+        class="flex flex-wrap items-center gap-3 mb-4"
+        :class="accessibleViews.length ? 'justify-between' : 'justify-end'"
       >
         <ViewTypeFilter
+          v-if="accessibleViews.length"
           v-model="activeViewFilter"
           :view-types="availableViewTypes"
         />
