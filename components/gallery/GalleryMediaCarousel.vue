@@ -9,6 +9,7 @@ const props = defineProps<{
   filePaths: string[];
   mediaBasePath: string;
   variant?: "gallery" | "default";
+  enableImageModal?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -71,6 +72,7 @@ const blurCarouselControl = (event: Event) => {
       :file-path="currentFilePath"
       :media-base-path="mediaBasePath"
       :variant="variant ?? 'gallery'"
+      :enable-image-modal="enableImageModal"
     />
 
     <template v-if="hasMultiple">

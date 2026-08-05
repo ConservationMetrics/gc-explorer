@@ -12,13 +12,21 @@ const props = withDefaults(
     filePath: string;
     mediaBasePath: string;
     variant?: "default" | "gallery";
+    /** When true, image click opens MediaImageModal. Defaults off for gallery tiles. */
+    enableImageModal?: boolean;
   }>(),
   {
     variant: "default",
+    enableImageModal: undefined,
   },
 );
 
 const isGalleryVariant = computed(() => props.variant === "gallery");
+
+const canOpenImageModal = computed(() => {
+  if (props.enableImageModal !== undefined) return props.enableImageModal;
+  return !isGalleryVariant.value;
+});
 
 /** Conditional rendering based on file extension */
 const isAudio = computed(() =>
@@ -63,7 +71,9 @@ const imageLoaded = ref(false);
 const imageModalOpen = ref(false);
 
 const openImageModal = () => {
-  if (!imageLoaded.value || imageError.value) return;
+  if (!canOpenImageModal.value || !imageLoaded.value || imageError.value) {
+    return;
+  }
   imageModalOpen.value = true;
 };
 
@@ -160,9 +170,9 @@ const imageClass = computed(() => {
         </div>
       </div>
 
-      <!-- Thumbnail: open in-app modal (replaces vendor lightbox) -->
+      <!-- Thumbnail: modal only when enabled (e.g. map sidebar / gallery detail). -->
       <button
-        v-if="shouldLoadImage && !imageError"
+        v-if="shouldLoadImage && !imageError && canOpenImageModal"
         type="button"
         data-testid="media-image-open"
         class="block w-full cursor-zoom-in border-0 bg-transparent p-0 text-left"
@@ -181,6 +191,21 @@ const imageClass = computed(() => {
           @error="handleImageError"
         />
       </button>
+      <div
+        v-else-if="shouldLoadImage && !imageError"
+        :class="[
+          isGalleryVariant ? imageContainerClass : '',
+          { hidden: !imageLoaded },
+        ]"
+      >
+        <img
+          :src="optimizedImageUrl"
+          alt=""
+          :class="imageClass"
+          @load="handleImageLoad"
+          @error="handleImageError"
+        />
+      </div>
 
       <div
         v-if="filePath && !isGalleryVariant"
@@ -261,6 +286,7 @@ const imageClass = computed(() => {
     </div>
 
     <MediaImageModal
+      v-if="canOpenImageModal"
       :open="imageModalOpen"
       :image-url="rawImageUrl"
       :file-name="fileName"

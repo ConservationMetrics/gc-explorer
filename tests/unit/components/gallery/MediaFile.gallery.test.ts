@@ -120,6 +120,65 @@ describe("MediaFile gallery variant", () => {
     wrapper.unmount();
   });
 
+  it("does not open a modal on gallery tile images so tile click can open details", async () => {
+    const wrapper = mount(MediaFile, {
+      props: {
+        allowedFileExtensions,
+        filePath: "field/photo.jpg",
+        mediaBasePath: "/media",
+        variant: "gallery",
+      },
+      global: globalConfig,
+      attachTo: document.body,
+    });
+
+    await nextTick();
+    expect(wrapper.find('[data-testid="media-image-open"]').exists()).toBe(
+      false,
+    );
+
+    const img = wrapper.find("img");
+    if (img.exists()) {
+      img.element.dispatchEvent(new Event("load"));
+      await nextTick();
+      await img.trigger("click");
+      await nextTick();
+    }
+
+    expect(
+      document.querySelector('[data-testid="media-image-modal"]'),
+    ).toBeFalsy();
+
+    wrapper.unmount();
+  });
+
+  it("opens modal for gallery images when enableImageModal is set", async () => {
+    const wrapper = mount(MediaFile, {
+      props: {
+        allowedFileExtensions,
+        filePath: "field/photo.jpg",
+        mediaBasePath: "/media",
+        variant: "gallery",
+        enableImageModal: true,
+      },
+      global: globalConfig,
+      attachTo: document.body,
+    });
+
+    await nextTick();
+    const openButton = wrapper.get('[data-testid="media-image-open"]');
+    openButton.find("img").element.dispatchEvent(new Event("load"));
+    await nextTick();
+    await openButton.trigger("click");
+    await nextTick();
+
+    expect(
+      document.querySelector('[data-testid="media-image-modal"]'),
+    ).toBeTruthy();
+
+    wrapper.unmount();
+  });
+
   it("renders gallery audio as a violet card with icon and filename", () => {
     const wrapper = mount(MediaFile, {
       props: {
