@@ -46,7 +46,7 @@ const globalConfig = {
 };
 
 describe("MediaFile gallery variant", () => {
-  it("renders gallery images without a lightbox link", async () => {
+  it("renders gallery images without a new-tab image link", async () => {
     const wrapper = mount(MediaFile, {
       props: {
         allowedFileExtensions,
@@ -59,7 +59,7 @@ describe("MediaFile gallery variant", () => {
 
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.find("a[data-lightbox]").exists()).toBe(false);
+    expect(wrapper.find("a[href]").exists()).toBe(false);
     expect(wrapper.find(".h-full").exists()).toBe(true);
     expect(wrapper.text()).toContain("loading");
   });

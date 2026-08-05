@@ -170,10 +170,7 @@ describe("compression plugin", () => {
     const jsBytes = new Uint8Array(Buffer.from("console.log('hello');"));
     const response = { body: jsBytes } as { body: unknown };
 
-    await hookCallback(
-      { path: "/vendor/lightbox/lightbox-plus-jquery.js" },
-      response,
-    );
+    await hookCallback({ path: "/static/example.js" }, response);
 
     expect(responseHeaders["content-encoding"]).toBeUndefined();
     expect(response.body).toBe(jsBytes);
