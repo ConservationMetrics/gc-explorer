@@ -1,3 +1,14 @@
+const normalizeExtension = (ext: string): string =>
+  ext.toLowerCase().replace(/^\./, "");
+
+const fileNameHasExtension = (fileName: string, ext: string): boolean => {
+  const suffix = normalizeExtension(ext);
+  return fileName.toLowerCase().endsWith(`.${suffix}`);
+};
+
+const extensionListIncludes = (list: string[] = [], ext: string): boolean =>
+  list.some((candidate) => normalizeExtension(candidate) === ext);
+
 /** Extracts file paths with valid extensions from a feature object. */
 export const getFilePathsWithExtension = (
   feature: { [key: string]: unknown },
@@ -24,7 +35,9 @@ export const getFilePathsWithExtension = (
 
       const hasValidExtension = Object.values(allExtensions).some(
         (extensions) =>
-          extensions.some((ext: string) => cleanedFile.endsWith(ext)),
+          extensions.some((ext: string) =>
+            fileNameHasExtension(cleanedFile, ext),
+          ),
       );
 
       if (hasValidExtension) {
@@ -54,9 +67,9 @@ export const getMediaTypesForEntry = (
   for (const path of paths) {
     const ext = path.split(".").pop()?.toLowerCase() ?? "";
     if (!ext) continue;
-    if (allExtensions.audio.includes(ext)) types.add("audio");
-    if (allExtensions.image.includes(ext)) types.add("image");
-    if (allExtensions.video.includes(ext)) types.add("video");
+    if (extensionListIncludes(allExtensions.audio, ext)) types.add("audio");
+    if (extensionListIncludes(allExtensions.image, ext)) types.add("image");
+    if (extensionListIncludes(allExtensions.video, ext)) types.add("video");
   }
 
   return Array.from(types);

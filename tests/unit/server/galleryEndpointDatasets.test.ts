@@ -20,9 +20,9 @@ const hoisted = vi.hoisted(() => {
     useRuntimeConfig: () => ({
       public: {
         allowedFileExtensions: {
-          audio: [],
-          image: ["jpg"],
-          video: [],
+          audio: ["mp3", "m4a"],
+          image: ["jpg", "webp"],
+          video: ["mp4"],
         },
       },
     }),
@@ -48,11 +48,18 @@ vi.mock("@/server/database/dbOperations", () => ({
   fetchViewTables: hoisted.fetchViewTables,
 }));
 
-vi.mock("@/server/dataProcessing/dataFilters", () => ({
-  filterDataByExtension: hoisted.filterDataByExtension,
-  filterOutUnwantedValues: hoisted.filterOutUnwantedValues,
-  filterUnwantedKeys: hoisted.filterUnwantedKeys,
-}));
+vi.mock("@/server/dataProcessing/dataFilters", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("@/server/dataProcessing/dataFilters")
+    >();
+  return {
+    ...actual,
+    filterDataByExtension: hoisted.filterDataByExtension,
+    filterOutUnwantedValues: hoisted.filterOutUnwantedValues,
+    filterUnwantedKeys: hoisted.filterUnwantedKeys,
+  };
+});
 
 vi.mock("@/server/utils/dbHelpers", () => ({
   parseAndValidateLimit: hoisted.parseAndValidateLimit,
@@ -107,5 +114,46 @@ describe("gallery endpoint datasets", () => {
     expect(response.primary_dataset).toBe("gallery_dataset");
     expect(response.table).toBe("gallery_dataset");
     expect(response.data).toEqual([{ _id: "record-1", photo: "one.jpg" }]);
+  });
+
+  it("includes multi-column media fields on list items when MEDIA_COLUMN is unset", async () => {
+    hoisted.fetchTableConfig.mockResolvedValue({
+      MEDIA_BASE_PATH: "/media",
+      ROUTE_LEVEL_PERMISSION: "anyone",
+      FRONT_END_FILTER_COLUMN: "community",
+    });
+    hoisted.fetchTableSqlColumns.mockResolvedValue([
+      "_id",
+      "community",
+      "photo",
+      "audio",
+      "notes",
+    ]);
+    hoisted.fetchData.mockResolvedValue({
+      mainData: [
+        {
+          _id: "record-1",
+          community: "matses",
+          photo: "scene.webp",
+          audio: "clip.m4a",
+          notes: "no media here",
+        },
+      ],
+      columnsData: [],
+      metadata: null,
+    });
+
+    const response = await handleGalleryRequest({
+      context: { params: { table: "route_gallery" } },
+    });
+
+    expect(response.data).toEqual([
+      {
+        _id: "record-1",
+        community: "matses",
+        photo: "scene.webp",
+        audio: "clip.m4a",
+      },
+    ]);
   });
 });

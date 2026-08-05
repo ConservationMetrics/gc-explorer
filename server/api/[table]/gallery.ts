@@ -8,6 +8,7 @@ import {
   filterDataByExtension,
   filterUnwantedKeys,
   filterOutUnwantedValues,
+  valueHasAllowedFileExtension,
 } from "@/server/dataProcessing/dataFilters";
 import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
 import { parseBasemaps } from "@/server/utils";
@@ -100,7 +101,10 @@ export default defineEventHandler(async (event: H3Event) => {
       mapboxStyle = undefined;
     }
 
-    // Return minimal records: ID + columns needed for filtering and media display
+    // Return minimal records: ID + columns needed for filtering and media display.
+    // When MEDIA_COLUMN is unset, keep every string field that carries allowed
+    // media extensions (e.g. separate photo + audio columns). Otherwise the
+    // client media-type filter has nothing to classify and appears broken.
     const minimalData = dataWithFilesOnly.map((entry) => {
       const minimal: Record<string, unknown> = {};
       if (entry._id != null) minimal._id = entry._id;
@@ -110,8 +114,19 @@ export default defineEventHandler(async (event: H3Event) => {
       if (timestampColumn && entry[timestampColumn] != null) {
         minimal[timestampColumn] = entry[timestampColumn];
       }
-      if (mediaColumn && entry[mediaColumn] != null) {
-        minimal[mediaColumn] = entry[mediaColumn];
+      if (mediaColumn) {
+        if (entry[mediaColumn] != null) {
+          minimal[mediaColumn] = entry[mediaColumn];
+        }
+      } else {
+        for (const [key, value] of Object.entries(entry)) {
+          if (
+            typeof value === "string" &&
+            valueHasAllowedFileExtension(value, allowedFileExtensions)
+          ) {
+            minimal[key] = value;
+          }
+        }
       }
       return minimal;
     });
