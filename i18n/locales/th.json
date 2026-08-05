@@ -53,7 +53,6 @@
   "copyConfigDescription": "เลือกมุมมองเพื่อคัดลอกค่าการกำหนดค่าไปยังฟอร์มปัจจุบัน คุณแก้ไขค่าก่อนบันทึกได้",
   "copyConfigFromDatasetView": "คัดลอกการกำหนดค่าจากมุมมองอื่น",
   "copyLink": "คัดลอกลิงก์ไปยังการแจ้งเตือน",
-  "copyMapeoLink": "คัดลอกลิงก์ไปยังการสังเกตการณ์ Mapeo",
   "created": "สร้างเมื่อ",
   "createViewTypeDescription": "เลือกประเภทมุมมองเพื่อดำเนินการต่อ คุณสามารถเลือกชุดข้อมูลหลักได้ตอนนี้ หรือในหน้าถัดไป",
   "data": "ข้อมูล",
@@ -177,7 +176,6 @@
   "incidents.responsibleParty": "ฝ่ายที่รับผิดชอบ",
   "incidents.savedIncidents": "เหตุการณ์ที่บันทึกไว้",
   "incidents.selectedAlertsCount": "เลือกการแจ้งเตือน: {count}",
-  "incidents.selectedMapeoCount": "เลือกรายการ Mapeo: {count}",
   "incidents.selectedSources": "แหล่งที่เลือก",
   "incidents.selectFeaturesFirst": "เลือกฟีเจอร์ก่อนเพื่อสร้างเหตุการณ์",
   "incidents.selectType": "เลือกประเภท",
@@ -205,8 +203,6 @@
   "mapboxStreets": "Mapbox Streets",
   "mapboxStyle": "Mapbox Style",
   "mapboxZoom": "ระดับการซูม (0 ถึง 22)",
-  "mapeoCategoryIds": "Mapeo Category IDs ที่จะแสดงบนแผนที่แจ้งเตือน",
-  "mapeoData": "ข้อมูล Mapeo",
   "mapLegend": "คำอธิบายสัญลักษณ์แผนที่",
   "mapLegendLayerIds": "รหัสชั้นข้อมูลที่แสดงในคำอธิบายสัญลักษณ์",
   "media": "สื่อ",
@@ -320,5 +316,9 @@
   "visibilityPublicDescription": "ทุกคนที่มีลิงก์ดูได้",
   "visibilityRequired": "โปรดเลือกระดับการมองเห็นสำหรับชุดข้อมูลนี้",
   "yourAccessIsPending": "การเข้าถึงของคุณอยู่ระหว่างรออนุมัติ โปรดติดต่อผู้ดูแลระบบ Guardian Connector เพื่อขออนุมัติบัญชี",
-  "yourMapboxStyleDefault": "Mapbox — สไตล์ของคุณ (ค่าเริ่มต้น)"
+  "yourMapboxStyleDefault": "Mapbox — สไตล์ของคุณ (ค่าเริ่มต้น)",
+  "copySecondaryLink": "คัดลอกลิงก์ไปยังฟีเจอร์นี้",
+  "secondaryFilterValues": "ค่าจากชุดข้อมูลรองที่จะรวมลงในแผนที่แจ้งเตือน",
+  "secondaryData": "ข้อมูลรอง",
+  "incidents.selectedSecondaryCount": "เลือกรายการรอง: {count}"
 }

@@ -71,6 +71,14 @@ vi.mock("@/server/utils", () => ({
 
 vi.mock("@/server/utils/dbHelpers", () => ({
   parseAndValidateLimit: hoisted.parseAndValidateLimit,
+  getTableParam: (event: MapRouteEvent) => {
+    const table = event.context.params.table;
+    try {
+      return decodeURIComponent(table.replace(/"/g, ""));
+    } catch {
+      return table.replace(/"/g, "");
+    }
+  },
 }));
 
 describe("map endpoint datasets", () => {
@@ -82,6 +90,9 @@ describe("map endpoint datasets", () => {
       COLOR_COLUMN: "status",
       FRONT_END_FILTER_COLUMN: "category",
       ROUTE_LEVEL_PERMISSION: "anyone",
+      DATASET_TABLE: "Friendly Map Name",
+      VIEW_DESCRIPTION: "A map of interesting places.",
+      LOGO_URL: "https://example.com/logo.png",
     });
     hoisted.fetchViewTables.mockResolvedValue({
       primaryTable: "map_dataset",
@@ -143,6 +154,31 @@ describe("map endpoint datasets", () => {
     });
     expect(response.primary_dataset).toBe("map_dataset");
     expect(response.table).toBe("map_dataset");
+    expect(response.viewName).toBe("Friendly Map Name");
+    expect(response.viewDescription).toBe("A map of interesting places.");
+    expect(response.logoUrl).toBe("https://example.com/logo.png");
     expect(response.data).toEqual({ type: "FeatureCollection", features: [] });
+  });
+
+  it("decodes percent-encoded Thai table names before config/warehouse lookups", async () => {
+    const thaiTable = "แม่ยางมิ้น_observations";
+    const encodedTable = encodeURIComponent(thaiTable);
+
+    hoisted.fetchViewTables.mockResolvedValue({
+      primaryTable: thaiTable,
+      secondaryTable: null,
+    });
+
+    await handleMapRequest({
+      context: { params: { table: encodedTable } },
+    });
+
+    expect(hoisted.fetchTableConfig).toHaveBeenCalledWith(thaiTable, "map");
+    expect(hoisted.fetchViewTables).toHaveBeenCalledWith(thaiTable, "map");
+    expect(hoisted.fetchTableSqlColumns).toHaveBeenCalledWith(thaiTable);
+    expect(hoisted.fetchData).toHaveBeenCalledWith(
+      thaiTable,
+      expect.objectContaining({ limit: 25 }),
+    );
   });
 });

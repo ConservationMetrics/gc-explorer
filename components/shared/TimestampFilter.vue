@@ -133,6 +133,7 @@ const resetDateRange = () => {
 
 <template>
   <div
+    v-if="dateInfo.options.length > 1"
     class="mb-2 min-w-[325px] max-w-[500px] rounded-xl bg-gray-100 p-2.5 shadow-md"
     data-testid="timestamp-filter"
   >
@@ -153,7 +154,7 @@ const resetDateRange = () => {
         {{ $t("reset") }}
       </button>
     </div>
-    <div v-if="dateInfo.options.length > 0" class="px-2.5 py-2.5 pb-8">
+    <div class="px-2.5 py-2.5 pb-8">
       <VueSlider
         v-model="selectedRange"
         class="mt-2.5 date-slider"
@@ -169,13 +170,6 @@ const resetDateRange = () => {
         data-testid="date-slider"
         @drag-start="userInteracted = true"
       />
-    </div>
-    <div
-      v-else
-      class="py-2.5 italic text-gray-400"
-      data-testid="no-data-message"
-    >
-      {{ $t("noColumnEntry") }}
     </div>
   </div>
 </template>

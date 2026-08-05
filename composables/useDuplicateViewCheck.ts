@@ -1,4 +1,5 @@
 import type { ViewConfigRow, ViewType } from "@/types";
+import { encodeDatasetNameForUrl } from "@/utils/identifierUtils";
 
 /**
  * Checks whether a (viewType, primaryDataset) pair already exists.
@@ -38,7 +39,9 @@ export const useDuplicateViewCheck = (
     isChecking.value = true;
     try {
       // Returns every view row already configured for this primary dataset.
-      const rows = await $fetch<ViewConfigRow[]>(`/api/config/${primary}`);
+      const rows = await $fetch<ViewConfigRow[]>(
+        `/api/config/${encodeDatasetNameForUrl(primary)}`,
+      );
       const match = findDuplicateView(rows, viewType.value);
       existingView.value = match ?? null;
       isDuplicate.value = match != null;

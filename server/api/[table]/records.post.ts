@@ -1,4 +1,8 @@
-import { fetchRecords, fetchTableConfig } from "@/server/database/dbOperations";
+import {
+  fetchRecords,
+  fetchViewConfigForDatasetRead,
+} from "@/server/database/dbOperations";
+import { getTableParam } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
@@ -7,8 +11,13 @@ import type { ViewType } from "@/types";
 const MAX_IDS = 500;
 /** NOTE: The endpoint does not guarantee that records are returned in the same order as requested IDs. Consumers must not rely on response ordering. */
 export default defineEventHandler(async (event: H3Event) => {
-  const { table } = event.context.params as { table: string };
-  const viewType = getQuery(event).view_type as ViewType | undefined;
+  const table = getTableParam(event);
+  const query = getQuery(event);
+  const viewType = query.view_type as ViewType | undefined;
+  const primaryDataset =
+    typeof query.primary_dataset === "string"
+      ? query.primary_dataset
+      : undefined;
 
   const body = await readBody(event);
 
@@ -36,7 +45,10 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-    const tableConfig = await fetchTableConfig(table, viewType);
+    const tableConfig = await fetchViewConfigForDatasetRead(table, {
+      viewType,
+      primaryDataset,
+    });
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
 

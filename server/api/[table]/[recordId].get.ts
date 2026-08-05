@@ -1,22 +1,28 @@
-import { fetchRecord, fetchTableConfig } from "@/server/database/dbOperations";
+import {
+  fetchRecord,
+  fetchViewConfigForDatasetRead,
+} from "@/server/database/dbOperations";
+import { getRecordIdParam, getTableParam } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
 import type { ViewType } from "@/types";
 
 export default defineEventHandler(async (event: H3Event) => {
-  const { table, recordId } = event.context.params as {
-    table: string;
-    recordId: string;
-  };
-  const viewType = getQuery(event).view_type as ViewType | undefined;
-
-  if (!recordId || typeof recordId !== "string" || recordId.trim() === "") {
-    throw createError({ statusCode: 400, statusMessage: "Invalid record ID" });
-  }
+  const table = getTableParam(event);
+  const recordId = getRecordIdParam(event);
+  const query = getQuery(event);
+  const viewType = query.view_type as ViewType | undefined;
+  const primaryDataset =
+    typeof query.primary_dataset === "string"
+      ? query.primary_dataset
+      : undefined;
 
   try {
-    const tableConfig = await fetchTableConfig(table, viewType);
+    const tableConfig = await fetchViewConfigForDatasetRead(table, {
+      viewType,
+      primaryDataset,
+    });
 
     // Check visibility permissions
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";

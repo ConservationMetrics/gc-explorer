@@ -1,5 +1,42 @@
 import { useRuntimeConfig } from "#imports";
 import type { H3Event } from "h3";
+import {
+  decodeDatasetNameFromUrl,
+  normalizeTableName,
+} from "@/utils/identifierUtils";
+
+/**
+ * Reads and normalizes the `[table]` path param (percent-decode + strip quotes).
+ */
+export const getTableParam = (event: H3Event): string => {
+  const table = event.context.params?.table as string | undefined;
+  if (!table) {
+    throw Object.assign(new Error("Missing table path parameter"), {
+      statusCode: 400,
+    });
+  }
+  return normalizeTableName(table);
+};
+
+/**
+ * Reads and percent-decodes the `[recordId]` path param.
+ * Matches client `encodeURIComponent(recordId)` on `/api/:table/:recordId`.
+ */
+export const getRecordIdParam = (event: H3Event): string => {
+  const raw = event.context.params?.recordId;
+  if (typeof raw !== "string" || !raw.trim()) {
+    throw Object.assign(new Error("Invalid record ID"), {
+      statusCode: 400,
+    });
+  }
+  const recordId = decodeDatasetNameFromUrl(raw).trim();
+  if (!recordId) {
+    throw Object.assign(new Error("Invalid record ID"), {
+      statusCode: 400,
+    });
+  }
+  return recordId;
+};
 
 /**
  * Validates a raw `limit` query value against `maxLimit`.

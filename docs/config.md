@@ -83,7 +83,7 @@ A comma-separated list of values, which if found in the value for `FILTER_BY_COL
 
 #### `FRONT_END_FILTER_COLUMN` (optional)
 
-Depending on your data, you will want to use a meaningful column for filtering (for example, `Category` for Mapeo data). This variable defines the column used for front-end dropdown filtering.
+Depending on your data, you will want to use a meaningful column for filtering. This variable defines the column used for front-end dropdown filtering and, for Alerts views, the secondary dataset column matched against `SECONDARY_FILTER_VALUES`.
 
 #### `UNWANTED_COLUMNS` (optional) and `UNWANTED_SUBSTRINGS` (optional)
 
@@ -96,13 +96,15 @@ List the exact column names (`UNWANTED_COLUMNS`) and/or columns containing speci
 
 ## Alerts configuration
 
-#### `MAPEO_CATEGORY_IDS` (optional, for Alerts view)
+#### Secondary dataset (optional, for Alerts / Map views)
 
-For showing Mapeo data on the Alerts Dashboard, provide a comma-separated list of `categoryId` values that you want to show.
+Choose any geospatial companion table (columns `g__type` and `g__coordinates`) as the view's secondary dataset. The config UI only lists geospatial tables. Existing views that used a Mapeo table as the companion continue to work.
 
-#### `MAPEO_TABLE` (optional, for Alerts view)
+#### `FRONT_END_FILTER_COLUMN` and `SECONDARY_FILTER_VALUES` (optional, for Alerts view)
 
-For showing Mapeo data on the Alerts Dashboard, provide the name of the Mapeo database table.
+Set `FRONT_END_FILTER_COLUMN` to a column in the secondary dataset and `SECONDARY_FILTER_VALUES` to a comma-separated list of values to show on the Alerts map. If either value is omitted, all geospatial rows from the secondary dataset are shown.
+
+> Legacy configs may still store `MAPEO_CATEGORY_IDS` or `SECONDARY_CATEGORY_IDS`; migration `0011_rename_secondary_filter_values` maps those values to `SECONDARY_FILTER_VALUES` and preserves Mapeo's `p__categoryid` filter column.
 
 ## Other configuration
 

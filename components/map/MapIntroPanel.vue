@@ -16,25 +16,20 @@ const props = defineProps<{
   showIcons?: boolean;
   canToggleIcons?: boolean;
   loadingIcons?: boolean;
+  tableName?: string;
+  viewName?: string;
+  viewDescription?: string;
 }>();
 
 const emit = defineEmits<{
   (e: "toggleIcons"): void;
 }>();
-/** Get data source from first item if available */
-const dataSource = computed(() => {
-  if (props.mapFeatureCollection.features.length === 0) return null;
 
-  const firstProps = props.mapFeatureCollection.features[0].properties;
-  if (!firstProps) return null;
+const displayName = computed(
+  () => props.viewName?.trim() || props.tableName?.trim() || "",
+);
 
-  // Look for a column that contains "data source" (case insensitive)
-  const dataSourceKey = Object.keys(firstProps).find((key) =>
-    key.toLowerCase().includes("data source"),
-  );
-
-  return dataSourceKey ? firstProps[dataSourceKey] : null;
-});
+const fullDescription = computed(() => props.viewDescription?.trim() || "");
 </script>
 
 <template>
@@ -48,9 +43,21 @@ const dataSource = computed(() => {
           alt="Logo"
           loading="eager"
         />
-        <h2 v-if="dataSource" class="text-2xl font-semibold tracking-tight">
-          {{ dataSource }} {{ $t("data") }}
+        <h2
+          v-if="displayName"
+          class="pr-10 text-2xl font-semibold tracking-tight break-words"
+          style="overflow-wrap: anywhere; word-break: break-word"
+          data-testid="map-intro-title"
+        >
+          {{ displayName }}
         </h2>
+        <p
+          v-if="fullDescription"
+          class="text-sm text-muted-foreground"
+          data-testid="map-intro-description"
+        >
+          {{ fullDescription }}
+        </p>
         <div class="space-y-2 text-sm text-muted-foreground">
           <p class="italic">🗺️ {{ $t("clickOnFeaturesForMoreInfo") }}.</p>
         </div>

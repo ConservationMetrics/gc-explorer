@@ -13,6 +13,7 @@ import {
   type ViewType,
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
+import { normalizeTableName } from "@/utils/identifierUtils";
 
 import { viewConfig, publicViews } from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
@@ -83,9 +84,11 @@ const checkTableExists = async (
   if (!table) return false;
 
   try {
-    const cleanTableName = table.replace(/"/g, "");
+    const cleanTableName = normalizeTableName(table);
+    // to_regclass expects an identifier string; quote so Unicode / special names resolve.
+    const quotedForRegclass = `"${cleanTableName.replace(/"/g, '""')}"`;
     const result = await warehouseDb.execute(sql`
-      SELECT to_regclass(${cleanTableName})
+      SELECT to_regclass(${quotedForRegclass})
     `);
     return (result[0] as { to_regclass: string | null })?.to_regclass !== null;
   } catch (error) {
@@ -126,7 +129,8 @@ export const buildViewConfigColumns = (
   };
 };
 
-const VALID_COLUMN_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+// Unicode letters/digits/marks. sql.identifier quotes these.
+const VALID_COLUMN_NAME = /^[\p{L}_][\p{L}\p{N}\p{M}_]*$/u;
 
 /**
  * Normalizes and validates a projection list before a SQL read is built.
@@ -176,7 +180,7 @@ const fetchDataFromTable = async (
   if (!table) return [];
 
   try {
-    const cleanTableName = table.replace(/"/g, "");
+    const cleanTableName = normalizeTableName(table);
     const normalizedProjection = normalizeProjectionColumns(
       projectionColumns,
       cleanTableName,
@@ -223,7 +227,7 @@ export const ALERTS_METADATA_PROJECTION = [
 export const fetchTableSqlColumns = async (
   table: string,
 ): Promise<string[]> => {
-  const cleanTableName = table.replace(/"/g, "");
+  const cleanTableName = normalizeTableName(table);
   const columnsTable = `"${cleanTableName}__columns"`;
 
   if (await checkTableExists(columnsTable)) {
@@ -276,20 +280,21 @@ export const fetchData = async (
   columnsData: ColumnEntry[] | null;
   metadata: unknown[] | null;
 }> => {
+  const normalizedTable = table ? normalizeTableName(table) : undefined;
   // Performance rule: projection must be pushed down to DB (never SELECT *).
   const mainProjection = normalizeProjectionColumns(
     options.mainColumns,
-    `${table ?? "unknown table"} main table`,
+    `${normalizedTable ?? "unknown table"} main table`,
   );
   const resolvedLimit =
     options.limit ?? Number(useRuntimeConfig().public.rowLimit as number);
 
-  console.log("Fetching data from", table, "...");
-  const mainDataExists = await checkTableExists(table);
+  console.log("Fetching data from", normalizedTable, "...");
+  const mainDataExists = await checkTableExists(normalizedTable);
   let mainData: DataEntry[] = [];
   if (mainDataExists) {
     mainData = (await fetchDataFromTable(
-      table,
+      normalizedTable,
       mainProjection,
       resolvedLimit,
     )) as DataEntry[];
@@ -301,9 +306,9 @@ export const fetchData = async (
   if (options.includeColumnsData) {
     const columnsProjection = normalizeProjectionColumns(
       options.columnsTableColumns ?? [...DEFAULT_COLUMNS_TABLE_PROJECTION],
-      `${table ?? "unknown table"}__columns table`,
+      `${normalizedTable ?? "unknown table"}__columns table`,
     );
-    const columnsTable = `"${table}__columns"`;
+    const columnsTable = `"${normalizedTable}__columns"`;
     const columnsTableExists = await checkTableExists(columnsTable);
     if (columnsTableExists) {
       columnsData = (await fetchDataFromTable(
@@ -317,16 +322,16 @@ export const fetchData = async (
   if (options.includeMetadata) {
     const metadataProjection = normalizeProjectionColumns(
       options.metadataColumns ?? [],
-      `${table ?? "unknown table"}__metadata table`,
+      `${normalizedTable ?? "unknown table"}__metadata table`,
     );
-    const metadataTable = `"${table}__metadata"`;
+    const metadataTable = `"${normalizedTable}__metadata"`;
     const metadataTableExists = await checkTableExists(metadataTable);
     if (metadataTableExists) {
       metadata = await fetchDataFromTable(metadataTable, metadataProjection);
     }
   }
 
-  console.log("Successfully fetched data from", table, "!");
+  console.log("Successfully fetched data from", normalizedTable, "!");
 
   return { mainData, columnsData, metadata };
 };
@@ -345,6 +350,7 @@ export const fetchViewTables = async (
   table: string,
   viewType: ViewType,
 ): Promise<ViewTables> => {
+  const normalizedTable = normalizeTableName(table);
   const result = await configDb
     .select({
       primaryTable: viewConfig.primaryDataset,
@@ -354,18 +360,20 @@ export const fetchViewTables = async (
     .where(
       and(
         eq(viewConfig.viewType, viewType),
-        eq(viewConfig.primaryDataset, table),
+        eq(viewConfig.primaryDataset, normalizedTable),
       ),
     )
     .limit(1);
 
   if (result.length === 0) {
-    throw createMissingViewConfigError(table);
+    throw createMissingViewConfigError(normalizedTable);
   }
 
   return {
-    primaryTable: result[0].primaryTable,
-    secondaryTable: result[0].secondaryTable ?? null,
+    primaryTable: normalizeTableName(result[0].primaryTable),
+    secondaryTable: result[0].secondaryTable
+      ? normalizeTableName(result[0].secondaryTable)
+      : null,
   };
 };
 
@@ -413,7 +421,7 @@ export const fetchRecord = async (
   table: string,
   recordId: string,
 ): Promise<DataEntry | null> => {
-  const cleanTableName = table.replace(/"/g, "");
+  const cleanTableName = normalizeTableName(table);
   const tableExists = await checkTableExists(cleanTableName);
   if (!tableExists) {
     throw new Error("Table does not exist");
@@ -442,7 +450,8 @@ export const fetchRecords = async (
   table: string,
   ids: string[],
 ): Promise<DataEntry[]> => {
-  const tableExists = await checkTableExists(table);
+  const cleanTableName = normalizeTableName(table);
+  const tableExists = await checkTableExists(cleanTableName);
   if (!tableExists) {
     throw new Error("Table does not exist");
   }
@@ -452,7 +461,7 @@ export const fetchRecords = async (
     sql`, `,
   );
   const result = await warehouseDb.execute(sql`
-    SELECT * FROM ${sql.identifier(table)}
+    SELECT * FROM ${sql.identifier(cleanTableName)}
     WHERE _id IN (${idPlaceholders})
   `);
 
@@ -498,8 +507,10 @@ export const fetchViewConfigRows = async (): Promise<ViewConfigRow[]> => {
     const result = await configDb.select().from(viewConfig);
 
     return result.map((row) => ({
-      primaryDataset: row.primaryDataset,
-      secondaryDataset: row.secondaryDataset,
+      primaryDataset: normalizeTableName(row.primaryDataset),
+      secondaryDataset: row.secondaryDataset
+        ? normalizeTableName(row.secondaryDataset)
+        : row.secondaryDataset,
       viewConfig: JSON.parse(row.viewConfig) as ViewConfig,
       viewId: row.viewId,
       viewName: row.viewName,
@@ -520,15 +531,18 @@ export const fetchViewConfigRows = async (): Promise<ViewConfigRow[]> => {
 export const fetchViewConfigRowsForTable = async (
   primaryDataset: string,
 ): Promise<ViewConfigRow[]> => {
+  const normalizedDataset = normalizeTableName(primaryDataset);
   try {
     const result = await configDb
       .select()
       .from(viewConfig)
-      .where(eq(viewConfig.primaryDataset, primaryDataset));
+      .where(eq(viewConfig.primaryDataset, normalizedDataset));
 
     return result.map((row) => ({
-      primaryDataset: row.primaryDataset,
-      secondaryDataset: row.secondaryDataset,
+      primaryDataset: normalizeTableName(row.primaryDataset),
+      secondaryDataset: row.secondaryDataset
+        ? normalizeTableName(row.secondaryDataset)
+        : row.secondaryDataset,
       viewConfig: JSON.parse(row.viewConfig) as ViewConfig,
       viewId: row.viewId,
       viewName: row.viewName,
@@ -536,7 +550,7 @@ export const fetchViewConfigRowsForTable = async (
     }));
   } catch (error) {
     console.error(
-      `Error fetching view config rows for table "${primaryDataset}":`,
+      `Error fetching view config rows for table "${normalizedDataset}":`,
       error,
     );
     return [];
@@ -555,6 +569,7 @@ export const fetchTableConfig = async (
   table: string,
   viewType?: ViewType,
 ): Promise<ViewConfig> => {
+  const normalizedTable = normalizeTableName(table);
   try {
     const result = await configDb
       .select({
@@ -564,10 +579,10 @@ export const fetchTableConfig = async (
       .where(
         viewType
           ? and(
-              eq(viewConfig.primaryDataset, table),
+              eq(viewConfig.primaryDataset, normalizedTable),
               eq(viewConfig.viewType, viewType),
             )
-          : eq(viewConfig.primaryDataset, table),
+          : eq(viewConfig.primaryDataset, normalizedTable),
       )
       // Deterministic pick when a dataset has multiple views and no view type is
       // given: always the oldest view. See follow-up issue on permission semantics.
@@ -575,12 +590,12 @@ export const fetchTableConfig = async (
       .limit(1);
 
     if (result.length === 0) {
-      throw createMissingViewConfigError(table);
+      throw createMissingViewConfigError(normalizedTable);
     }
 
     const parsedConfig = JSON.parse(result[0].viewConfig) as ViewConfig;
     if (!parsedConfig || Object.keys(parsedConfig).length === 0) {
-      throw createMissingViewConfigError(table);
+      throw createMissingViewConfigError(normalizedTable);
     }
 
     return parsedConfig;
@@ -588,9 +603,69 @@ export const fetchTableConfig = async (
     if (error instanceof Error && "statusCode" in error) {
       throw error;
     }
-    console.error(`Error fetching config for table "${table}":`, error);
+    console.error(
+      `Error fetching config for table "${normalizedTable}":`,
+      error,
+    );
     throw error;
   }
+};
+
+/**
+ * Returns the view config for a dataset read.
+ *
+ * View configs are keyed by primary dataset and view type. A secondary dataset
+ * request therefore includes both, and must match the configured secondary
+ * dataset before using that config.
+ *
+ * @param {string} requestedDataset - Warehouse dataset being read.
+ * @param {{ viewType?: ViewType; primaryDataset?: string | null }} [options] - View identity.
+ * @returns {Promise<ViewConfig>} Config for the requested dataset's view.
+ */
+export const fetchViewConfigForDatasetRead = async (
+  requestedDataset: string,
+  options: {
+    viewType?: ViewType;
+    primaryDataset?: string | null;
+  } = {},
+): Promise<ViewConfig> => {
+  const normalizedRequestedDataset = normalizeTableName(requestedDataset);
+  const primaryDataset = options.primaryDataset?.trim()
+    ? normalizeTableName(options.primaryDataset)
+    : null;
+
+  if (!primaryDataset) {
+    return fetchTableConfig(normalizedRequestedDataset, options.viewType);
+  }
+
+  if (!options.viewType) {
+    throw Object.assign(
+      new Error("view_type is required when primary_dataset is set"),
+      {
+        statusCode: 400,
+        statusMessage: "view_type is required when primary_dataset is set",
+      },
+    );
+  }
+
+  const { secondaryTable: secondaryDataset } = await fetchViewTables(
+    primaryDataset,
+    options.viewType,
+  );
+
+  if (secondaryDataset !== normalizedRequestedDataset) {
+    throw Object.assign(
+      new Error(
+        `Dataset "${normalizedRequestedDataset}" is not the secondary dataset for view (${primaryDataset}, ${options.viewType})`,
+      ),
+      {
+        statusCode: 403,
+        statusMessage: `Dataset "${normalizedRequestedDataset}" is not the configured secondary dataset`,
+      },
+    );
+  }
+
+  return fetchTableConfig(primaryDataset, options.viewType);
 };
 
 /**
@@ -602,17 +677,18 @@ export const syncPublicViews = async (
   tableName: string,
   permission: RouteLevelPermission | undefined,
 ): Promise<void> => {
+  const normalizedTable = normalizeTableName(tableName);
   if (permission === "anyone") {
     await configDb
       .insert(publicViews)
-      .values({ tableName })
+      .values({ tableName: normalizedTable })
       .onConflictDoNothing();
   } else {
     // Ensure table is not in public_views. If it was never there or already removed,
     // delete affects 0 rows and does not throw; save flow continues normally.
     await configDb
       .delete(publicViews)
-      .where(eq(publicViews.tableName, tableName));
+      .where(eq(publicViews.tableName, normalizedTable));
   }
 };
 
@@ -624,7 +700,7 @@ export const fetchPublicViewTableNames = async (): Promise<string[]> => {
   const rows = await configDb
     .select({ tableName: publicViews.tableName })
     .from(publicViews);
-  return rows.map((row) => row.tableName);
+  return rows.map((row) => normalizeTableName(row.tableName));
 };
 
 export const updateConfig = async (
@@ -634,6 +710,11 @@ export const updateConfig = async (
   secondaryDataset?: string | null,
 ): Promise<void> => {
   try {
+    const normalizedTable = normalizeTableName(tableName);
+    const normalizedSecondary =
+      secondaryDataset != null && secondaryDataset !== ""
+        ? normalizeTableName(secondaryDataset)
+        : secondaryDataset;
     const typedConfig = config as ViewConfig;
 
     // Validate character limits - check even if field exists as empty string
@@ -660,14 +741,14 @@ export const updateConfig = async (
     // Without it we would update every view of the dataset and null their type.
     if (!viewType) {
       throw new Error(
-        `updateConfig requires a view type for "${tableName}"; refusing to update without identifying a single view.`,
+        `updateConfig requires a view type for "${normalizedTable}"; refusing to update without identifying a single view.`,
       );
     }
     const viewColumns = buildViewConfigColumns(
-      tableName,
+      normalizedTable,
       typedConfig,
       viewType,
-      secondaryDataset,
+      normalizedSecondary,
     );
 
     await configDb
@@ -675,12 +756,12 @@ export const updateConfig = async (
       .set(viewColumns)
       .where(
         and(
-          eq(viewConfig.primaryDataset, tableName),
+          eq(viewConfig.primaryDataset, normalizedTable),
           eq(viewConfig.viewType, viewType),
         ),
       );
 
-    await syncPublicViews(tableName, typedConfig.ROUTE_LEVEL_PERMISSION);
+    await syncPublicViews(normalizedTable, typedConfig.ROUTE_LEVEL_PERMISSION);
   } catch (error) {
     console.error("Error updating config:", error);
     throw error;
@@ -702,13 +783,18 @@ export const addNewTableToConfig = async (
   config?: ViewConfig,
   secondaryDataset?: string | null,
 ): Promise<void> => {
+  const normalizedTable = normalizeTableName(tableName);
+  const normalizedSecondary =
+    secondaryDataset != null && secondaryDataset !== ""
+      ? normalizeTableName(secondaryDataset)
+      : secondaryDataset;
   try {
     await configDb.insert(viewConfig).values({
       ...buildViewConfigColumns(
-        tableName,
+        normalizedTable,
         config ?? {},
         viewType,
-        secondaryDataset,
+        normalizedSecondary,
       ),
     });
   } catch (error) {
@@ -716,7 +802,7 @@ export const addNewTableToConfig = async (
     // already has trips a 23505. Translate it into a clear 409 instead of leaking a
     // raw constraint error as a 500.
     if (isUniqueViolation(error)) {
-      throw createDuplicateViewError(tableName, viewType);
+      throw createDuplicateViewError(normalizedTable, viewType);
     }
     console.error("Error adding new table to config:", error);
     throw error;
@@ -727,6 +813,7 @@ export const removeTableFromConfig = async (
   tableName: string,
   viewType?: ViewType,
 ): Promise<void> => {
+  const normalizedTable = normalizeTableName(tableName);
   try {
     // Delete just the targeted view; without a view type fall back to removing
     // every view of the dataset.
@@ -735,21 +822,21 @@ export const removeTableFromConfig = async (
       .where(
         viewType
           ? and(
-              eq(viewConfig.primaryDataset, tableName),
+              eq(viewConfig.primaryDataset, normalizedTable),
               eq(viewConfig.viewType, viewType),
             )
-          : eq(viewConfig.primaryDataset, tableName),
+          : eq(viewConfig.primaryDataset, normalizedTable),
       );
 
     // Only drop the dataset's public_views entry once no views remain for it.
     const remainingViews = await configDb
       .select({ viewId: viewConfig.viewId })
       .from(viewConfig)
-      .where(eq(viewConfig.primaryDataset, tableName));
+      .where(eq(viewConfig.primaryDataset, normalizedTable));
     if (remainingViews.length === 0) {
       await configDb
         .delete(publicViews)
-        .where(eq(publicViews.tableName, tableName));
+        .where(eq(publicViews.tableName, normalizedTable));
     }
   } catch (error) {
     console.error("Error removing table from config:", error);

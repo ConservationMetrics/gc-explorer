@@ -57,14 +57,17 @@ const mediaKeys = computed(() => [
   "MEDIA_BASE_PATH_ICONS",
   "MEDIA_COLUMN",
 ]);
-const alertKeys = computed(() => ["MAPEO_CATEGORY_IDS"]);
-const filterKeys = computed(() => [
-  "FILTER_OUT_VALUES_FROM_COLUMN",
-  "FRONT_END_FILTER_COLUMN",
-  "TIMESTAMP_COLUMN",
-  "UNWANTED_COLUMNS",
-  "UNWANTED_SUBSTRINGS",
-]);
+const filterKeys = computed(() =>
+  props.viewType === "alerts"
+    ? ["FRONT_END_FILTER_COLUMN", "SECONDARY_FILTER_VALUES"]
+    : [
+        "FILTER_OUT_VALUES_FROM_COLUMN",
+        "FRONT_END_FILTER_COLUMN",
+        "TIMESTAMP_COLUMN",
+        "UNWANTED_COLUMNS",
+        "UNWANTED_SUBSTRINGS",
+      ],
+);
 const viewInfoKeys = computed(() => [
   "LOGO_URL",
   "DATASET_TABLE",
@@ -143,9 +146,8 @@ const shouldShowConfigMap = computed(
 const shouldShowConfigMedia = computed(() =>
   ["map", "gallery", "alerts"].includes(props.viewType),
 );
-const shouldShowConfigAlerts = computed(() => props.viewType === "alerts");
-const shouldShowConfigFilters = computed(
-  () => props.viewType === "map" || props.viewType === "gallery",
+const shouldShowConfigFilters = computed(() =>
+  ["map", "gallery", "alerts"].includes(props.viewType),
 );
 const shouldUseSecondaryDataset = computed(() =>
   supportsSecondaryDataset(props.viewType),
@@ -268,20 +270,6 @@ const handleSubmit = () => {
             :views="viewTypeList"
             :config="localConfig"
             :keys="mediaKeys"
-            @update-config="handleConfigUpdate"
-          />
-        </ConfigCollapsibleSection>
-
-        <ConfigCollapsibleSection
-          v-if="shouldShowConfigAlerts"
-          :title="$t('alerts')"
-          :default-open="false"
-        >
-          <ConfigAlerts
-            :table-name="tableName"
-            :views="viewTypeList"
-            :config="localConfig"
-            :keys="alertKeys"
             @update-config="handleConfigUpdate"
           />
         </ConfigCollapsibleSection>

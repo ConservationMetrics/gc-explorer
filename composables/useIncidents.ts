@@ -2,6 +2,7 @@ import { computed, onBeforeUnmount, ref } from "vue";
 import type { RouteLocationNormalizedLoaded, Router } from "vue-router";
 import mapboxgl from "mapbox-gl";
 import type { Feature, Geometry } from "geojson";
+import { isSecondaryFeatureType } from "@/types";
 import type {
   AnnotatedCollection,
   CollectionEntry,
@@ -34,7 +35,7 @@ type IncidentDetailsResponse = {
  * @param router - Vue Router instance for programmatic navigation and query param management
  * @param mapLegendLayerIds - Optional comma-separated layer ids selectable for incidents.
  * @param primaryDatasetRef - Alerts dataset table returned by the view API.
- * @param secondaryDatasetRef - Optional Mapeo dataset table returned by the view API.
+ * @param secondaryDatasetRef - Optional secondary dataset table returned by the view API.
  * @returns Object containing all incidents state and functions
  */
 export const useIncidents = (
@@ -121,14 +122,15 @@ export const useIncidents = (
   };
 
   /**
-   * True when a persisted incident entry refers to mapeo rows. {@link CollectionEntry.source_table}
+   * True when a persisted incident entry refers to secondary rows. {@link CollectionEntry.source_table}
    * is the warehouse table name (often the view's secondary dataset, or `mapeo_data`)
    */
-  const savedEntryIsMapeo = (entry: CollectionEntry): boolean => {
-    const configuredMapeoTable = secondaryDatasetRef?.value;
+  const savedEntryIsSecondary = (entry: CollectionEntry): boolean => {
+    const configuredSecondaryTable = secondaryDatasetRef?.value;
     return (
       entry.source_table === "mapeo_data" ||
-      (!!configuredMapeoTable && entry.source_table === configuredMapeoTable)
+      (!!configuredSecondaryTable &&
+        entry.source_table === configuredSecondaryTable)
     );
   };
 
@@ -429,10 +431,11 @@ export const useIncidents = (
       clearSourceHighlighting();
       highlightIncidentEntries(response.entries || []);
 
-      // Add incidentId to URL; remove alert/mapeo params so address bar matches "copy link to incident"
+      // Add incidentId to URL; remove alert/secondary params so address bar matches "copy link to incident"
       const query = { ...route.query };
       delete query.alertId;
       delete query.mapeoDocId;
+      delete query.secondaryDocId;
       query.incidentId = incidentId;
       router.replace({ query });
     } catch (error) {
@@ -663,7 +666,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
       "previous-alerts-point",
       "previous-alerts-symbol",
       "previous-alerts-centroids",
-      "mapeo-data",
+      "secondary-data",
       ...getAdditionalSelectableLayerIds(),
     ].filter((layerId) => map.value!.getLayer(layerId));
 
@@ -690,11 +693,12 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
         const sourceId = extractFeatureSourceId(feature);
         if (!sourceId) return;
 
-        const isMapeoLayer = layerId.startsWith("mapeo-data");
+        const isSecondaryLayer = layerId.startsWith("secondary-data");
         const shouldHighlight = selectedSources.value.some((source) => {
           if (source.source_id !== sourceId) return false;
-          if (source.feature_type === "mapeo") return isMapeoLayer;
-          return !isMapeoLayer;
+          if (isSecondaryFeatureType(source.feature_type))
+            return isSecondaryLayer;
+          return !isSecondaryLayer;
         });
         if (!shouldHighlight) return;
 
@@ -913,7 +917,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
       "previous-alerts-centroids",
     ];
 
-    const mapeoLayers = ["mapeo-data"];
+    const secondaryLayers = ["secondary-data"];
 
     const additionalLayers = getAdditionalSelectableLayerIds();
 
@@ -934,30 +938,32 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
     }> = [];
 
     // First, get individual (non-clustered) features
-    [...alertLayers, ...mapeoLayers, ...additionalLayers].forEach((layerId) => {
-      try {
-        if (map.value!.getLayer(layerId)) {
-          const features = map.value!.queryRenderedFeatures(bbox, {
-            layers: [layerId],
-          });
-          const validFeatures = features.filter(
-            (f) =>
-              !(f.properties as { cluster?: boolean; cluster_id?: number })
-                ?.cluster &&
-              (f.properties as { cluster_id?: number })?.cluster_id ===
-                undefined &&
-              !f.layer?.id?.includes("clusters") &&
-              !f.layer?.id?.includes("cluster-count"),
-          );
-          allFeatures.push(...(validFeatures as typeof allFeatures));
-          console.debug(
-            `Layer ${layerId}: found ${validFeatures.length} individual features`,
-          );
+    [...alertLayers, ...secondaryLayers, ...additionalLayers].forEach(
+      (layerId) => {
+        try {
+          if (map.value!.getLayer(layerId)) {
+            const features = map.value!.queryRenderedFeatures(bbox, {
+              layers: [layerId],
+            });
+            const validFeatures = features.filter(
+              (f) =>
+                !(f.properties as { cluster?: boolean; cluster_id?: number })
+                  ?.cluster &&
+                (f.properties as { cluster_id?: number })?.cluster_id ===
+                  undefined &&
+                !f.layer?.id?.includes("clusters") &&
+                !f.layer?.id?.includes("cluster-count"),
+            );
+            allFeatures.push(...(validFeatures as typeof allFeatures));
+            console.debug(
+              `Layer ${layerId}: found ${validFeatures.length} individual features`,
+            );
+          }
+        } catch (error) {
+          console.warn(`Error querying layer ${layerId}:`, error);
         }
-      } catch (error) {
-        console.warn(`Error querying layer ${layerId}:`, error);
-      }
-    });
+      },
+    );
 
     console.debug(
       "Total individual features found in bounding box:",
@@ -985,7 +991,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
         if (featureObject?.alertID) {
           sourceId = featureObject.alertID;
         } else if (featureObject?._id) {
-          // Mapeo features use _id (migrated from id)
+          // Secondary features use _id (migrated from id)
           sourceId = featureObject._id;
         } else if (featureObject?.id) {
           // Fallback for backward compatibility
@@ -1016,7 +1022,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
    * Adds a source to the selected sources list for incident creation
    * @param sourceTable - Warehouse table (alerts route table or secondary dataset)
    * @param sourceId - The unique identifier from the source table
-   * @param featureType - "alert" or "mapeo" so the server uses alert_id or _id when fetching the row
+   * @param featureType - "alert" or "secondary" so the server uses alert_id or _id when fetching the row
    * @param notes - Optional notes about the source
    */
   const addSourceToSelection = (
@@ -1070,14 +1076,14 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
    *
    * Source table determination logic:
    * - For alert layers (containing "most-recent-alerts" or "previous-alerts"): Uses the primary dataset; feature_type "alert".
-   * - For Mapeo layers (layerId.startsWith("mapeo-data")): Uses the secondary dataset; feature_type "mapeo".
+   * - For secondary layers (layerId.startsWith("secondary-data")): Uses the secondary dataset; feature_type "secondary".
    *
    * Source ID extraction:
    * - For alerts: Uses feature.properties.alertID
-   * - For Mapeo: Uses feature.properties._id (with fallback to feature.properties.id for backward compatibility)
+   * - For secondary: Uses feature.properties._id (with fallback to feature.properties.id for backward compatibility)
    *
    * @param feature - The map feature to select/deselect
-   * @param layerId - The layer ID the feature belongs to (e.g., "most-recent-alerts-polygon", "mapeo-data")
+   * @param layerId - The layer ID the feature belongs to (e.g., "most-recent-alerts-polygon", "secondary-data")
    */
   const handleMultiSelectFeature = (feature: Feature, layerId: string) => {
     if (!feature.properties) return;
@@ -1094,9 +1100,9 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
     ) {
       sourceTable = tableName || "";
       featureType = "alert";
-    } else if (layerId.startsWith("mapeo-data")) {
+    } else if (layerId.startsWith("secondary-data")) {
       sourceTable = secondaryDatasetRef?.value ?? "";
-      featureType = "mapeo";
+      featureType = "secondary";
     } else if (isAdditionalSelectableLayer(layerId)) {
       sourceTable = tableName || "";
       featureType = "alert";
@@ -1105,7 +1111,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
     if (feature.properties.alertID) {
       sourceId = feature.properties.alertID;
     } else if (feature.properties._id) {
-      // Mapeo features use _id as primary key (migrated from id)
+      // Secondary features use _id as primary key (migrated from id)
       // After migration 0002_standardize_mapeo_data_primary_key.sql, the mapeo_data table
       // uses _id as its primary key instead of id. However, we maintain backward compatibility
       // by checking for id as a fallback because migrations have not yet been run on all partner
@@ -1581,7 +1587,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
       // If the entry refers to a different alerts table than the current route,
       // the map won't have that data loaded; still try best-effort highlighting.
       if (
-        !savedEntryIsMapeo(entry) &&
+        !savedEntryIsSecondary(entry) &&
         currentAlertsTable &&
         entry.source_table !== currentAlertsTable
       ) {
@@ -1592,11 +1598,13 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
         );
       }
 
-      const candidateSources = savedEntryIsMapeo(entry)
-        ? ["mapeo-data"]
+      const candidateSources = savedEntryIsSecondary(entry)
+        ? ["secondary-data"]
         : alertLayers;
 
-      const filter: mapboxgl.ExpressionSpecification = savedEntryIsMapeo(entry)
+      const filter: mapboxgl.ExpressionSpecification = savedEntryIsSecondary(
+        entry,
+      )
         ? [
             "any",
             ["==", ["get", "_id"], entry.source_id],
@@ -1625,7 +1633,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
             if (isCluster) {
               // If it's a cluster, highlight the cluster
               // For alert entries, we need to find which cluster contains this alertID
-              if (!savedEntryIsMapeo(entry) && entry.source_id) {
+              if (!savedEntryIsSecondary(entry) && entry.source_id) {
                 // Determine the centroids source for cluster checking
                 const centroidsSource = sourceId.includes("most-recent")
                   ? "most-recent-alerts-centroids"
@@ -1648,7 +1656,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
 
               // Also check if this feature is part of a cluster at current zoom
               // (it might be de-clustered when zoomed in, but we still want to highlight the cluster if zoomed out)
-              if (!savedEntryIsMapeo(entry) && entry.source_id) {
+              if (!savedEntryIsSecondary(entry) && entry.source_id) {
                 const centroidsSource = sourceId.includes("most-recent")
                   ? "most-recent-alerts-centroids"
                   : sourceId.includes("previous")
@@ -1678,7 +1686,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
 
       // If we didn't find the feature in any source, it might be clustered
       // Try checking clusters directly
-      if (!found && !savedEntryIsMapeo(entry) && entry.source_id) {
+      if (!found && !savedEntryIsSecondary(entry) && entry.source_id) {
         const centroidsSources = [
           "most-recent-alerts-centroids",
           "previous-alerts-centroids",

@@ -6,12 +6,14 @@ import {
 } from "@/server/database/dbOperations";
 import { prepareAlertsStatistics } from "@/server/dataProcessing/dataTransformers";
 import { buildRequiredAlertsProjection } from "@/server/utils/alertsProjection";
+import { getTableParam } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 import {
   buildStatisticsMonthlyRows,
   filterAlertsStatisticsByDateRange,
   statisticsRowsToCsv,
 } from "@/utils/alertsStatistics";
+import { buildAttachmentContentDisposition } from "@/utils/identifierUtils";
 
 import type { H3Event } from "h3";
 import type { AlertsMetadata, DataEntry, ViewType } from "@/types";
@@ -40,7 +42,7 @@ const REQUIRED_ALERTS_STATISTICS_COLUMNS = [
 ];
 
 export default defineEventHandler(async (event: H3Event) => {
-  const { table } = event.context.params as { table: string };
+  const table = getTableParam(event);
   const query = getQuery(event);
   const format = (query.format as string)?.toLowerCase();
 
@@ -102,7 +104,7 @@ export default defineEventHandler(async (event: H3Event) => {
     setResponseHeader(
       event,
       "Content-Disposition",
-      `attachment; filename="${table}-statistics.csv"`,
+      buildAttachmentContentDisposition(`${table}-statistics.csv`),
     );
     return csv;
   } catch (error) {

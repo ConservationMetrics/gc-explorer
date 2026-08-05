@@ -15,6 +15,7 @@ import {
   type ViewType,
 } from "@/types";
 import { ChevronLeft } from "lucide-vue-next";
+import { encodeDatasetNameForUrl } from "@/utils/identifierUtils";
 
 const route = useRoute();
 const { t } = useI18n();
@@ -41,9 +42,13 @@ const primaryDataset = ref(
 const { data, error, refresh } = await useFetch<{
   views: ViewConfigRow[];
   availableTables: string[];
+  availableGeospatialTables?: string[];
 }>("/api/config");
 
 const availableTables = computed(() => data.value?.availableTables ?? []);
+const availableGeospatialTables = computed(
+  () => data.value?.availableGeospatialTables ?? availableTables.value,
+);
 const viewRows = computed(() => data.value?.views ?? []);
 
 const viewConfig = ref<ViewConfig>({});
@@ -115,19 +120,22 @@ const submitConfig = async ({
   errorMessage.value = null;
   isSaving.value = true;
   try {
-    await $fetch(`/api/config/new_table/${tableName}`, {
-      method: "POST",
-      query: { view_type: viewType.value },
-      body: JSON.stringify({
-        config,
-        secondaryDataset: submittedSecondaryDataset,
-      }),
-    });
+    await $fetch(
+      `/api/config/new_table/${encodeDatasetNameForUrl(tableName)}`,
+      {
+        method: "POST",
+        query: { view_type: viewType.value },
+        body: JSON.stringify({
+          config,
+          secondaryDataset: submittedSecondaryDataset,
+        }),
+      },
+    );
     showSavedModal.value = true;
     setTimeout(async () => {
       showSavedModal.value = false;
       await navigateTo({
-        path: `/config/${tableName}`,
+        path: `/config/${encodeDatasetNameForUrl(tableName)}`,
         query: { view_type: viewType.value },
       });
     }, 2000);
@@ -200,7 +208,7 @@ definePageMeta({ layout: "explorer" });
             id="create-view-secondaryDataset-select"
             :model-value="secondaryDataset"
             :label="$t('secondaryDatasetOptional')"
-            :options="availableTables"
+            :options="availableGeospatialTables"
             :placeholder="$t('selectSecondaryDataset')"
             test-id="secondary-dataset-select"
             :exclude-value="primaryDataset"
@@ -228,7 +236,7 @@ definePageMeta({ layout: "explorer" });
         <p class="mb-2">{{ $t("duplicateViewWarning") }}</p>
         <NuxtLink
           :to="{
-            path: `/config/${existingView.primaryDataset}`,
+            path: `/config/${encodeDatasetNameForUrl(existingView.primaryDataset)}`,
             query: { view_type: existingView.viewType },
           }"
           data-testid="create-duplicate-edit-link"

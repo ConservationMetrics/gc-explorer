@@ -38,6 +38,25 @@ describe("prepareMapStatistics", () => {
 
     expect(result.dateRange).toBeUndefined();
   });
+
+  it("formats ISO timestamps in date range as yyyy-MM-dd", () => {
+    const result = prepareMapStatistics([
+      {
+        ID: "1",
+        geocoordinates: "[-1.0, 1.0]",
+        geotype: "Point",
+        created_at: "2026-07-23T07:42:48.795Z",
+      },
+      {
+        ID: "2",
+        geocoordinates: "[-1.0, 1.0]",
+        geotype: "Point",
+        created_at: "2026-07-29T03:45:32.260Z",
+      },
+    ]);
+
+    expect(result.dateRange).toBe("2026-07-23 to 2026-07-29");
+  });
 });
 
 describe("prepareAlertsStatistics", () => {

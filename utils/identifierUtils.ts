@@ -13,6 +13,35 @@ const stripCombiningMarks = (value: string): string => {
 };
 
 /**
+ * Percent-encodes a dataset/table name for use as a single URL path segment.
+ * Encoding belongs on the wire only — never store the result as a DB identifier.
+ */
+export const encodeDatasetNameForUrl = (name: string): string => {
+  return encodeURIComponent(name);
+};
+
+/**
+ * Restores a dataset/table name from a URL path segment.
+ * Safe if already decoded; returns the input unchanged when decoding fails
+ * (e.g. a literal `%` that is not a valid escape).
+ */
+export const decodeDatasetNameFromUrl = (name: string): string => {
+  try {
+    return decodeURIComponent(name);
+  } catch {
+    return name;
+  }
+};
+
+/**
+ * Strips quote wrapping and percent-decodes a table/dataset name so warehouse
+ * and config lookups use the real Unicode identifier (never a URL-encoded literal).
+ */
+export const normalizeTableName = (table: string): string => {
+  return decodeDatasetNameFromUrl(table.replace(/"/g, ""));
+};
+
+/**
  * Produces a short filesystem-safe segment from a user-facing label (e.g. incident name in download filenames).
  * Strips combining marks, keeps alphanumerics plus hyphen and underscore, replaces other characters with underscores, then truncates.
  *
@@ -29,6 +58,22 @@ export const sanitizeFilenameSegment = (
   const asciiish = stripCombiningMarks(value);
   const cleaned = asciiish.replace(/[^a-z0-9-_]+/gi, "_").slice(0, maxLength);
   return cleaned || fallback;
+};
+
+/**
+ * Builds a Content-Disposition attachment header safe for Unicode filenames.
+ * Node rejects non-Latin-1 header values; RFC 8187 `filename*` carries the real name
+ * while `filename` stays ASCII for legacy clients.
+ *
+ * @param filename - Download filename including extension (may contain Unicode).
+ * @returns Header value for Content-Disposition.
+ */
+export const buildAttachmentContentDisposition = (filename: string): string => {
+  const lastDot = filename.lastIndexOf(".");
+  const base = lastDot > 0 ? filename.slice(0, lastDot) : filename;
+  const ext = lastDot > 0 ? filename.slice(lastDot) : "";
+  const asciiName = `${sanitizeFilenameSegment(base, 120, "download")}${ext}`;
+  return `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
 };
 
 /**

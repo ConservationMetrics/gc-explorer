@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildAttachmentContentDisposition,
   camelToSnake,
+  decodeDatasetNameFromUrl,
+  encodeDatasetNameForUrl,
+  normalizeTableName,
   replaceUnderscoreWithSpace,
   sanitizeFilenameSegment,
   snakeToTitleCase,
@@ -10,6 +14,39 @@ import {
   toCamelCase,
   warehouseRecordIdForExport,
 } from "@/utils/identifierUtils";
+
+describe("encodeDatasetNameForUrl / decodeDatasetNameFromUrl", () => {
+  const thaiTable = "แม่ยางมิ้น_observations";
+
+  it("round-trips Thai dataset names", () => {
+    const encoded = encodeDatasetNameForUrl(thaiTable);
+    expect(encoded).toContain("%");
+    expect(encoded).not.toContain("แ");
+    expect(decodeDatasetNameFromUrl(encoded)).toBe(thaiTable);
+  });
+
+  it("leaves already-decoded Unicode unchanged", () => {
+    expect(decodeDatasetNameFromUrl(thaiTable)).toBe(thaiTable);
+  });
+
+  it("leaves plain ASCII unchanged", () => {
+    expect(encodeDatasetNameForUrl("my_table")).toBe("my_table");
+    expect(decodeDatasetNameFromUrl("my_table")).toBe("my_table");
+  });
+
+  it("returns input unchanged when percent-decoding fails", () => {
+    expect(decodeDatasetNameFromUrl("100%")).toBe("100%");
+  });
+});
+
+describe("normalizeTableName", () => {
+  it("decodes percent-encoded names and strips quotes", () => {
+    const thaiTable = "แม่ยางมิ้น_observations";
+    expect(normalizeTableName(`"${encodeURIComponent(thaiTable)}"`)).toBe(
+      thaiTable,
+    );
+  });
+});
 
 describe("sanitizeFilenameSegment", () => {
   it("replaces runs of unsafe characters with a single underscore", () => {
@@ -30,6 +67,24 @@ describe("sanitizeFilenameSegment", () => {
 
   it("uses fallback when the label is empty", () => {
     expect(sanitizeFilenameSegment("")).toBe("incident");
+  });
+});
+
+describe("buildAttachmentContentDisposition", () => {
+  it("keeps ASCII filenames in the legacy filename parameter", () => {
+    expect(buildAttachmentContentDisposition("my_table.csv")).toBe(
+      "attachment; filename=\"my_table.csv\"; filename*=UTF-8''my_table.csv",
+    );
+  });
+
+  it("uses ASCII fallback plus RFC 8187 filename* for Thai table names", () => {
+    const filename = "comapeo_แม่ยางมิ้น_สำรวจใหม่.csv";
+    const header = buildAttachmentContentDisposition(filename);
+    expect(header).toMatch(
+      /^attachment; filename="[^"]+\.csv"; filename\*=UTF-8''/,
+    );
+    expect(header).toContain(encodeURIComponent(filename));
+    expect(header).not.toMatch(/filename="[^"]*[\u0E00-\u0E7F]/);
   });
 });
 

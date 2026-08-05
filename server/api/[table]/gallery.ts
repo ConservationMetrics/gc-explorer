@@ -10,15 +10,15 @@ import {
   filterOutUnwantedValues,
   valueHasAllowedFileExtension,
 } from "@/server/dataProcessing/dataFilters";
-import { parseAndValidateLimit } from "@/server/utils/dbHelpers";
 import { parseBasemaps } from "@/server/utils";
+import { parseAndValidateLimit, getTableParam } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
 import type { AllowedFileExtensions, ColumnEntry } from "@/types";
 
 export default defineEventHandler(async (event: H3Event) => {
-  const { table } = event.context.params as { table: string };
+  const table = getTableParam(event);
   const limit = parseAndValidateLimit(event);
 
   const {

@@ -11,7 +11,7 @@ import {
   calculateCentroidFromParsedCoords,
   tryParseDataEntryGeoCoordinates,
 } from "@/utils/geoUtils";
-import { formatLocaleDate } from "@/utils/dateUtils";
+import { formatDateOnly, formatLocaleDate } from "@/utils/dateUtils";
 import type {
   AlertsMetadata,
   AlertsPerMonth,
@@ -526,7 +526,9 @@ const prepareMapStatistics = (data: DataEntry[]): MapStatistics => {
       .sort();
 
     if (dates.length > 0) {
-      dateRange = `${dates[0]} to ${dates[dates.length - 1]}`;
+      const start = String(dates[0]);
+      const end = String(dates[dates.length - 1]);
+      dateRange = `${formatDateOnly(start)} to ${formatDateOnly(end)}`;
     }
   }
 

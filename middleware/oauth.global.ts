@@ -1,6 +1,7 @@
 import { defineNuxtRouteMiddleware, useRuntimeConfig } from "#imports";
 import type { User, RouteLevelPermission } from "@/types";
 import { Role } from "@/types";
+import { decodeDatasetNameFromUrl } from "@/utils/identifierUtils";
 
 // Following example: https://github.com/atinux/atidone/blob/main/app/middleware/auth.ts
 export default defineNuxtRouteMiddleware(async (to) => {
@@ -10,6 +11,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
     public: { authStrategy },
   } = useRuntimeConfig();
   const router = useRouter();
+
+  // Local/dev bypass when authStrategy is set to "none"
+  if (authStrategy === "none") {
+    if (to.path === "/login") return router.push("/");
+    return;
+  }
 
   // In order to redirect the user back to the page they were on when unauthenticated, we need to store the redirect url in session storage
   // We use the window object to get where the user was before they were redirected to the login page
@@ -33,8 +40,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (isDatasetRoute) {
     try {
-      // Extract the table name from the last part of the path
-      const tableName = to.path.split("/").pop()!;
+      const rawTableName =
+        typeof to.params.tablename === "string"
+          ? to.params.tablename
+          : to.path.split("/").pop()!;
+      const tableName = decodeDatasetNameFromUrl(rawTableName);
       const publicTableNames = await $fetch<string[]>(
         "/api/config/public_views",
       );
