@@ -1,13 +1,12 @@
 import { removeTableFromConfig } from "@/server/database/dbOperations";
-import { getTableParam } from "@/server/utils/dbHelpers";
+import { getTableParam, parseRequiredViewType } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
-import type { ViewType } from "@/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const table = getTableParam(event);
-  const viewType = getQuery(event).view_type as ViewType | undefined;
+  const viewType = parseRequiredViewType(getQuery(event).view_type);
 
   try {
     await validatePermissions(event, "admin");
@@ -20,7 +19,13 @@ export default defineEventHandler(async (event: H3Event) => {
         "Error removing table from config on API side:",
         error.message,
       );
-      return sendError(event, new Error(error.message));
+      // Preserve any HTTP metadata set upstream instead of flattening every
+      // failure to a generic 500.
+      const statusCode = (error as { statusCode?: number }).statusCode ?? 500;
+      return sendError(
+        event,
+        createError({ statusCode, statusMessage: error.message }),
+      );
     } else {
       console.error(
         "Unknown error removing table from config on API side:",
