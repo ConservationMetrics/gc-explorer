@@ -147,9 +147,7 @@ const handleConfirmRemove = async () => {
         `/api/config/delete_table/${encodeDatasetNameForUrl(tableNameToRemove.value)}`,
         {
           method: "POST",
-          query: resolvedViewType.value
-            ? { view_type: resolvedViewType.value }
-            : undefined,
+          query: { view_type: resolvedViewType.value },
         },
       );
       // Hide buttons and update message to show success

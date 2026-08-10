@@ -809,23 +809,27 @@ export const addNewTableToConfig = async (
   }
 };
 
+/**
+ * Deletes the view config row for the given primary dataset and view type.
+ * If that was the dataset's last remaining view, also removes it from public_views.
+ *
+ * @param {string} tableName - Primary dataset / table name.
+ * @param {ViewType} viewType - View type whose config row to delete.
+ * @returns {Promise<void>}
+ */
 export const removeTableFromConfig = async (
   tableName: string,
-  viewType?: ViewType,
+  viewType: ViewType,
 ): Promise<void> => {
   const normalizedTable = normalizeTableName(tableName);
   try {
-    // Delete just the targeted view; without a view type fall back to removing
-    // every view of the dataset.
     await configDb
       .delete(viewConfig)
       .where(
-        viewType
-          ? and(
-              eq(viewConfig.primaryDataset, normalizedTable),
-              eq(viewConfig.viewType, viewType),
-            )
-          : eq(viewConfig.primaryDataset, normalizedTable),
+        and(
+          eq(viewConfig.primaryDataset, normalizedTable),
+          eq(viewConfig.viewType, viewType),
+        ),
       );
 
     // Only drop the dataset's public_views entry once no views remain for it.

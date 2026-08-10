@@ -1,9 +1,37 @@
 import { useRuntimeConfig } from "#imports";
 import type { H3Event } from "h3";
+import { VIEW_TYPES, type ViewType } from "@/types";
 import {
   decodeDatasetNameFromUrl,
   normalizeTableName,
 } from "@/utils/identifierUtils";
+
+/**
+ * Validates a raw `view_type` query value as exactly one of alerts, map, or gallery.
+ * Repeated query keys arrive as arrays and are rejected.
+ *
+ * @param {unknown} raw - Raw `view_type` from `getQuery`.
+ * @returns {ViewType} The validated view type.
+ */
+export const parseRequiredViewType = (raw: unknown): ViewType => {
+  if (Array.isArray(raw) || typeof raw !== "string" || raw === "") {
+    throw Object.assign(
+      new Error(
+        "view_type is required and must be a single value: alerts, map, or gallery",
+      ),
+      { statusCode: 400 },
+    );
+  }
+
+  if (!(VIEW_TYPES as readonly string[]).includes(raw)) {
+    throw Object.assign(
+      new Error("view_type must be one of: alerts, map, or gallery"),
+      { statusCode: 400 },
+    );
+  }
+
+  return raw as ViewType;
+};
 
 /**
  * Reads and normalizes the `[table]` path param (percent-decode + strip quotes).
