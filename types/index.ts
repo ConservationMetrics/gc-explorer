@@ -10,6 +10,10 @@ import type {
   Position,
 } from "geojson";
 import type { StyleSpecification } from "mapbox-gl";
+import type { viewTypes } from "../nuxt.config";
+
+export type ViewType = (typeof viewTypes)[number];
+// Reused for props/signatures; runtime list lives in nuxt.config appConfig.viewTypes.
 
 /**
  * Geometry type names allowed on warehouse rows (`g__type`) for this app’s map
@@ -123,18 +127,10 @@ export interface Views {
   [key: string]: ViewConfig;
 }
 
-export type ViewType = "alerts" | "map" | "gallery";
-
 export type RecordFetchQuery = {
   view_type?: ViewType;
   primary_dataset?: string;
 };
-
-export const VIEW_TYPES = [
-  "alerts",
-  "map",
-  "gallery",
-] as const satisfies readonly ViewType[];
 
 export const SECONDARY_DATASET_VIEW_TYPES = [
   "alerts",

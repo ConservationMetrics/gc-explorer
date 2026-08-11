@@ -1,7 +1,12 @@
 import { defineNuxtConfig } from "nuxt/config";
 
+export const viewTypes = ["alerts", "map", "gallery"] as const;
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-05-15",
+  appConfig: {
+    viewTypes: [...viewTypes],
+  },
   app: {
     head: {
       charset: "utf-8",

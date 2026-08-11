@@ -1,29 +1,33 @@
 <script setup lang="ts">
+import { useAppConfig } from "#imports";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import type { ViewType } from "@/types";
 import { ChevronLeft, Images, Map, TriangleAlert } from "lucide-vue-next";
 
-const VIEW_TYPE_OPTIONS: {
-  type: ViewType;
-  icon: typeof Map;
-  descriptionKey: string;
-}[] = [
-  {
-    type: "map",
+const { viewTypes } = useAppConfig();
+
+const VIEW_TYPE_OPTION_META: Record<
+  ViewType,
+  { icon: typeof Map; descriptionKey: string }
+> = {
+  map: {
     icon: Map,
     descriptionKey: "viewDescriptionMap",
   },
-  {
-    type: "gallery",
+  gallery: {
     icon: Images,
     descriptionKey: "viewDescriptionGallery",
   },
-  {
-    type: "alerts",
+  alerts: {
     icon: TriangleAlert,
     descriptionKey: "viewDescriptionAlerts",
   },
-];
+};
+
+const VIEW_TYPE_OPTIONS = viewTypes.map((type) => ({
+  type,
+  ...VIEW_TYPE_OPTION_META[type],
+}));
 
 const { t } = useI18n();
 const selectedViewType = ref<ViewType | null>(null);

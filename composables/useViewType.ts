@@ -1,3 +1,4 @@
+import { useAppConfig } from "#imports";
 import type { RecordFetchQuery, ViewType } from "@/types";
 import { decodeDatasetNameFromUrl } from "@/utils/identifierUtils";
 
@@ -18,10 +19,22 @@ import { decodeDatasetNameFromUrl } from "@/utils/identifierUtils";
  * `view_id`). Cross-table reads (e.g. alerts page fetching its Mapeo table) omit
  * `view_type` — see guard #1 below.
  */
-const VIEW_TYPE_BY_SEGMENT: Record<string, ViewType> = {
-  map: "map",
-  gallery: "gallery",
-  alerts: "alerts",
+
+/**
+ * Resolves a route path segment to a configured view type, if it matches one.
+ *
+ * @param {string | undefined} segment - First path segment (e.g. "map").
+ * @returns {ViewType | undefined} Matching view type, or undefined if unknown.
+ */
+const viewTypeFromSegment = (
+  segment: string | undefined,
+): ViewType | undefined => {
+  if (!segment) {
+    return undefined;
+  }
+  return (useAppConfig().viewTypes as readonly string[]).includes(segment)
+    ? (segment as ViewType)
+    : undefined;
 };
 
 /**
@@ -47,7 +60,7 @@ export function resolveViewTypeForTable(
   }
   // Guard #2: only known view route prefixes; e.g. /dataset/:tablename → undefined.
   const firstSegment = route.path.split("/").filter(Boolean)[0];
-  return firstSegment ? VIEW_TYPE_BY_SEGMENT[firstSegment] : undefined;
+  return viewTypeFromSegment(firstSegment);
 }
 
 /**
@@ -70,9 +83,7 @@ export const resolveRecordFetchQuery = (
       ? decodeDatasetNameFromUrl(route.params.tablename)
       : undefined;
   const firstSegment = route.path.split("/").filter(Boolean)[0];
-  const routeViewType = firstSegment
-    ? VIEW_TYPE_BY_SEGMENT[firstSegment]
-    : undefined;
+  const routeViewType = viewTypeFromSegment(firstSegment);
 
   if (!primaryDataset || !routeViewType) {
     return {};

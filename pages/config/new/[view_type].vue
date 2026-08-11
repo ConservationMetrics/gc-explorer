@@ -7,9 +7,9 @@ import DataLoadError from "@/components/shared/DataLoadError.vue";
 import ViewTypePill from "@/components/shared/ViewTypePill.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import { useDuplicateViewCheck } from "@/composables/useDuplicateViewCheck";
+import { useAppConfig } from "#imports";
 import {
   supportsSecondaryDataset,
-  VIEW_TYPES,
   type ViewConfig,
   type ViewConfigRow,
   type ViewType,
@@ -20,6 +20,7 @@ import { encodeDatasetNameForUrl } from "@/utils/identifierUtils";
 const route = useRoute();
 const { t } = useI18n();
 const { error: showErrorToast } = useToast();
+const { viewTypes } = useAppConfig();
 
 const viewTypeParam = computed(() => {
   const raw = route.params.view_type;
@@ -28,7 +29,7 @@ const viewTypeParam = computed(() => {
 
 const viewType = computed(() => viewTypeParam.value as ViewType);
 const isValidViewType = computed(() =>
-  VIEW_TYPES.some((type) => type === viewType.value),
+  viewTypes.some((type) => type === viewType.value),
 );
 
 if (!isValidViewType.value) {
