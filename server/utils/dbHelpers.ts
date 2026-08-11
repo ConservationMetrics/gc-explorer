@@ -1,31 +1,43 @@
-import { useRuntimeConfig } from "#imports";
+import { useAppConfig, useRuntimeConfig } from "#imports";
 import type { H3Event } from "h3";
-import { VIEW_TYPES, type ViewType } from "@/types";
+import type { ViewType } from "@/types";
 import {
   decodeDatasetNameFromUrl,
   normalizeTableName,
 } from "@/utils/identifierUtils";
 
 /**
- * Validates a raw `view_type` query value as exactly one of alerts, map, or gallery.
+ * Joins configured view types for validation error messages.
+ *
+ * @param {readonly string[]} viewTypes - Configured view type values.
+ * @returns {string} Human-readable list (e.g. "alerts, map, or gallery").
+ */
+const formatViewTypeOptionsText = (viewTypes: readonly string[]): string =>
+  `${viewTypes.slice(0, -1).join(", ")}, or ${viewTypes[viewTypes.length - 1]}`;
+
+/**
+ * Validates a raw `view_type` query value as exactly one of the configured view types.
  * Repeated query keys arrive as arrays and are rejected.
  *
  * @param {unknown} raw - Raw `view_type` from `getQuery`.
  * @returns {ViewType} The validated view type.
  */
 export const parseRequiredViewType = (raw: unknown): ViewType => {
+  const viewTypes = useAppConfig().viewTypes;
+  const viewTypeOptionsText = formatViewTypeOptionsText(viewTypes);
+
   if (Array.isArray(raw) || typeof raw !== "string" || raw === "") {
     throw Object.assign(
       new Error(
-        "view_type is required and must be a single value: alerts, map, or gallery",
+        `view_type is required and must be a single value: ${viewTypeOptionsText}`,
       ),
       { statusCode: 400 },
     );
   }
 
-  if (!(VIEW_TYPES as readonly string[]).includes(raw)) {
+  if (!(viewTypes as readonly string[]).includes(raw)) {
     throw Object.assign(
-      new Error("view_type must be one of: alerts, map, or gallery"),
+      new Error(`view_type must be one of: ${viewTypeOptionsText}`),
       { statusCode: 400 },
     );
   }

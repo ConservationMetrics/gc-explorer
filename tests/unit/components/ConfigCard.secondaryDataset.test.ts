@@ -3,7 +3,11 @@ import { mount } from "@vue/test-utils";
 import { computed, nextTick, ref, watch } from "vue";
 
 import ConfigCard from "@/components/config/ConfigCard.vue";
-import type { ViewConfig, ViewType } from "@/types";
+import {
+  SECONDARY_DATASET_VIEW_TYPES,
+  type ViewConfig,
+  type ViewType,
+} from "@/types";
 
 Object.assign(globalThis, {
   computed,
@@ -51,7 +55,7 @@ const mountConfigCard = (
     },
   });
 
-describe.each<ViewType>(["alerts", "map"])(
+describe.each<ViewType>([...SECONDARY_DATASET_VIEW_TYPES])(
   "ConfigCard %s secondary dataset",
   (viewType) => {
     it("submits when only the secondary dataset changes", async () => {

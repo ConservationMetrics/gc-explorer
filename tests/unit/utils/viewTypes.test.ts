@@ -1,14 +1,16 @@
 import { describe, expect, it } from "vitest";
 
+import { useAppConfig } from "#imports";
 import {
   SECONDARY_DATASET_VIEW_TYPES,
   supportsSecondaryDataset,
-  VIEW_TYPES,
 } from "@/types";
+import { viewTypes } from "../../../nuxt.config";
 
 describe("view type capabilities", () => {
-  it("declares every supported view type", () => {
-    expect(VIEW_TYPES).toEqual(["alerts", "map", "gallery"]);
+  it("exposes the nuxt.config viewTypes list via useAppConfig", () => {
+    expect(viewTypes).toEqual(["alerts", "map", "gallery"]);
+    expect(useAppConfig().viewTypes).toEqual(viewTypes);
   });
 
   it("allows secondary datasets for alerts and map only", () => {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAppConfig } from "#imports";
 import {
   supportsSecondaryDataset,
   type ViewConfig,
@@ -8,6 +9,8 @@ import { CONFIG_LIMITS } from "@/utils";
 import ConfigPermissions from "./ConfigPermissions.vue";
 import ConfigCollapsibleSection from "./ConfigCollapsibleSection.vue";
 import { Check, Trash2 } from "lucide-vue-next";
+
+const { viewTypes } = useAppConfig();
 
 const props = withDefaults(
   defineProps<{
@@ -144,10 +147,10 @@ const shouldShowConfigMap = computed(
   () => props.viewType === "alerts" || props.viewType === "map",
 );
 const shouldShowConfigMedia = computed(() =>
-  ["map", "gallery", "alerts"].includes(props.viewType),
+  (viewTypes as readonly ViewType[]).includes(props.viewType),
 );
 const shouldShowConfigFilters = computed(() =>
-  ["map", "gallery", "alerts"].includes(props.viewType),
+  (viewTypes as readonly ViewType[]).includes(props.viewType),
 );
 const shouldUseSecondaryDataset = computed(() =>
   supportsSecondaryDataset(props.viewType),
