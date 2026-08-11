@@ -5,7 +5,7 @@ import {
   SECONDARY_DATASET_VIEW_TYPES,
   supportsSecondaryDataset,
 } from "@/types";
-import { viewTypes } from "../../../nuxt.config";
+import { viewTypes } from "@/nuxt.config";
 
 describe("view type capabilities", () => {
   it("exposes the nuxt.config viewTypes list via useAppConfig", () => {

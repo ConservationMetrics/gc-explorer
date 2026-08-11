@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import { viewTypes } from "../../../nuxt.config";
+import { viewTypes } from "@/nuxt.config";
 
 // Mock the composables used in LoginScreen component
 export const useUserSession = vi.fn(() => ({
