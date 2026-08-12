@@ -136,12 +136,11 @@ export default defineEventHandler(async (event: H3Event) => {
     let secondaryGeojson: FeatureCollection | null = null;
 
     if (secondaryData) {
-      // Filter data to remove unwanted columns and substrings
+      // Filter data to remove unwanted columns
       let filteredSecondaryData = filterUnwantedKeys(
         secondaryData.mainData,
         secondaryData.columnsData,
         tableConfig.UNWANTED_COLUMNS,
-        tableConfig.UNWANTED_SUBSTRINGS,
       );
 
       filteredSecondaryData = filterToSelectedValues(

@@ -85,9 +85,9 @@ A comma-separated list of values, which if found in the value for `FILTER_BY_COL
 
 Depending on your data, you will want to use a meaningful column for filtering. This variable defines the column used for front-end dropdown filtering and, for Alerts views, the secondary dataset column matched against `SECONDARY_FILTER_VALUES`.
 
-#### `UNWANTED_COLUMNS` (optional) and `UNWANTED_SUBSTRINGS` (optional)
+#### `UNWANTED_COLUMNS` (optional)
 
-List the exact column names (`UNWANTED_COLUMNS`) and/or columns containing specific substrings (`UNWANTED_SUBSTRINGS`) to be filtered out from data collection APIs. Useful for removing unnecessary metadata columns.
+List the exact column names to be filtered out from data collection APIs. Useful for removing unnecessary metadata columns.
 
 > [!NOTE]
 > 

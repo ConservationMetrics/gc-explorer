@@ -234,7 +234,7 @@ Currently, GuardianConnector expects these column headers, which follow the stru
 
 If found, GuardianConnector Explorer will use a column mapping SQL table (with "\_\_column" suffix), like the one created by connector scripts of [GuardianConnector Script Hub](https://github.com/ConservationMetrics/gc-scripts-hub), to handle filtering and key/value rewrites.
 
-Any columns specified in the `.env` file will be filtered out (_see "Unwanted columns and substrings" above_).
+Any columns specified by `UNWANTED_COLUMNS` in the view configuration will be filtered out.
 
 At this time, media attachments in the popups are handled in a somewhat brittle way by embedding any strings that end in the expected photo, audio, or video file ending (such as `.jpg`, `.mp3`, or `.mp4`). We can improve on this later when we know more about how media attachments will be stored in the SQL database, and what kind of metadata we have access to.
 
