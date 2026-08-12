@@ -34,7 +34,6 @@ const hoisted = vi.hoisted(() => {
     fetchTableSqlColumns: vi.fn(),
     fetchViewTables: vi.fn(),
     filterDataByExtension: vi.fn(),
-    filterOutUnwantedValues: vi.fn(),
     filterUnwantedKeys: vi.fn(),
     parseAndValidateLimit: vi.fn(),
     parseBasemaps: vi.fn(),
@@ -57,7 +56,6 @@ vi.mock("@/server/dataProcessing/dataFilters", async (importOriginal) => {
   return {
     ...actual,
     filterDataByExtension: hoisted.filterDataByExtension,
-    filterOutUnwantedValues: hoisted.filterOutUnwantedValues,
     filterUnwantedKeys: hoisted.filterUnwantedKeys,
   };
 });
@@ -105,7 +103,6 @@ describe("gallery endpoint datasets", () => {
       metadata: null,
     });
     hoisted.filterUnwantedKeys.mockImplementation((data) => data);
-    hoisted.filterOutUnwantedValues.mockImplementation((data) => data);
     hoisted.filterDataByExtension.mockImplementation((data) => data);
   });
 

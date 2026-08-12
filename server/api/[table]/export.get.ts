@@ -169,7 +169,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
     const singleRecordExport = Boolean(recordIdParam);
 
-    // Users expect all of their data when they download; therefore, we do not apply config-based filter-out (FILTER_BY_COLUMN / FILTER_OUT_VALUES). Bulk export keeps only rows with valid geo. Single-record export keeps the full warehouse row so CSV / GeoJSON / KML all carry the same raw attributes (GeoJSON may use null geometry; see KML branch).
+    // Bulk export keeps only rows with valid geo. Single-record export keeps the full warehouse row so CSV / GeoJSON / KML all carry the same raw attributes (GeoJSON may use null geometry; see KML branch).
     let dataToExport = singleRecordExport
       ? scopedData
       : filterGeoData(scopedData);

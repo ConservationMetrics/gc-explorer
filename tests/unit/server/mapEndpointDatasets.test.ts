@@ -33,7 +33,6 @@ const hoisted = vi.hoisted(() => {
     fetchTableSqlColumns: vi.fn(),
     fetchViewTables: vi.fn(),
     filterGeoData: vi.fn(),
-    filterOutUnwantedValues: vi.fn(),
     parseAndValidateLimit: vi.fn(),
     parseBasemaps: vi.fn(),
     prepareMapStatistics: vi.fn(),
@@ -50,7 +49,6 @@ vi.mock("@/server/database/dbOperations", () => ({
 
 vi.mock("@/server/dataProcessing/dataFilters", () => ({
   filterGeoData: hoisted.filterGeoData,
-  filterOutUnwantedValues: hoisted.filterOutUnwantedValues,
 }));
 
 vi.mock("@/server/dataProcessing/dataTransformers", () => ({
@@ -120,7 +118,6 @@ describe("map endpoint datasets", () => {
       columnsData: null,
       metadata: null,
     });
-    hoisted.filterOutUnwantedValues.mockImplementation((data) => data);
     hoisted.filterGeoData.mockImplementation((data) => data);
     hoisted.buildMinimalFeatureCollection.mockReturnValue({
       type: "FeatureCollection",

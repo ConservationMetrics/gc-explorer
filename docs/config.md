@@ -73,14 +73,6 @@ For alerts, you need to provide a separate base path for alerts. Append your `ME
 
 ## Filtering configuration
 
-#### `FILTER_BY_COLUMN` (optional)
-
-Provides a column by which to filter out unwanted values.
-
-#### `FILTER_OUT_VALUES_FROM_COLUMN` (optional)
-
-A comma-separated list of values, which if found in the value for `FILTER_BY_COLUMN`, will filter out the row from the API response.
-
 #### `FRONT_END_FILTER_COLUMN` (optional)
 
 Depending on your data, you will want to use a meaningful column for filtering. This variable defines the column used for front-end dropdown filtering and, for Alerts views, the secondary dataset column matched against `SECONDARY_FILTER_VALUES`.

@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 
 import {
   filterUnwantedKeys,
-  filterOutUnwantedValues,
   filterToSelectedValues,
   filterByDateRange,
   filterGeoData,
@@ -23,25 +22,6 @@ describe("filterUnwantedKeys", () => {
     );
 
     expect(containsUnwantedColumns).toBe(false);
-  });
-});
-
-describe("filterUnwantedValues", () => {
-  it("should filter out unwanted values", () => {
-    const unwantedValues = "building,house";
-    const columnToFilterBy = "p__categoryid";
-    const result = filterOutUnwantedValues(
-      mapeoData,
-      columnToFilterBy,
-      unwantedValues,
-    );
-
-    const containsUnwantedValues = result.some((entry) =>
-      Object.values(entry).some(
-        (value) => value === "building" || value === "house",
-      ),
-    );
-    expect(containsUnwantedValues).toBe(false);
   });
 });
 

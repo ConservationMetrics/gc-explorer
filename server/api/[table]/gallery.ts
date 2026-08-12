@@ -7,7 +7,6 @@ import {
 import {
   filterDataByExtension,
   filterUnwantedKeys,
-  filterOutUnwantedValues,
   valueHasAllowedFileExtension,
 } from "@/server/dataProcessing/dataFilters";
 import { parseBasemaps } from "@/server/utils";
@@ -40,18 +39,13 @@ export default defineEventHandler(async (event: H3Event) => {
     const filterColumn = tableConfig.FRONT_END_FILTER_COLUMN;
     const mediaColumn = tableConfig.MEDIA_COLUMN;
     const timestampColumn = tableConfig.TIMESTAMP_COLUMN;
-    const filterByColumn = tableConfig.FILTER_BY_COLUMN;
 
     const projectedColumns = mediaColumn
       ? Array.from(
           new Set(
-            [
-              "_id",
-              filterColumn,
-              timestampColumn,
-              mediaColumn,
-              filterByColumn,
-            ].filter((column): column is string => Boolean(column)),
+            ["_id", filterColumn, timestampColumn, mediaColumn].filter(
+              (column): column is string => Boolean(column),
+            ),
           ),
         )
       : await fetchTableSqlColumns(primaryTable);
@@ -68,15 +62,9 @@ export default defineEventHandler(async (event: H3Event) => {
       columnsData as ColumnEntry[],
       tableConfig.UNWANTED_COLUMNS,
     );
-    // Filter data to remove unwanted values per chosen column
-    const dataFilteredByValues = filterOutUnwantedValues(
-      filteredData,
-      tableConfig.FILTER_BY_COLUMN,
-      tableConfig.FILTER_OUT_VALUES_FROM_COLUMN,
-    );
     // Filter only data with media attachments
     const dataWithFilesOnly = filterDataByExtension(
-      dataFilteredByValues,
+      filteredData,
       allowedFileExtensions,
       tableConfig.MEDIA_COLUMN,
     );

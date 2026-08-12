@@ -94,7 +94,6 @@
   "filterByMediaType": "กรองตามประเภทสื่อ",
   "filterDataByColumn": "กรองข้อมูลตามคอลัมน์",
   "filtering": "การกรอง",
-  "filterOutValuesFromColumn": "ค่าที่ต้องการกรองออกจากคอลัมน์",
   "filters": "ตัวกรอง",
   "gallery": "แกลเลอรี",
   "galleryClickToViewDetails": "คลิกเพื่อดูรายละเอียด",
