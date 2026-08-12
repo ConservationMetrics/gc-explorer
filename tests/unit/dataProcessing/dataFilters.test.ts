@@ -10,27 +10,18 @@ import {
 import { mapeoData } from "@/tests/unit/fixtures/mapeoData";
 
 describe("filterUnwantedKeys", () => {
-  it("should filter out unwanted columns and substrings", () => {
+  it("should filter out unwanted columns", () => {
     const unwantedColumns = "p__activity,p__aeroway";
-    const unwantedSubstrings = "p__";
 
-    const result = filterUnwantedKeys(
-      mapeoData,
-      null,
-      unwantedColumns,
-      unwantedSubstrings,
-    );
+    const result = filterUnwantedKeys(mapeoData, null, unwantedColumns);
 
-    const containsUnwantedColumnsAndSubstrings = result.some((entry) =>
+    const containsUnwantedColumns = result.some((entry) =>
       Object.keys(entry).some(
-        (key) =>
-          key.includes("p__activity") ||
-          key.includes("p__aeroway") ||
-          key.includes("p__"),
+        (key) => key === "p__activity" || key === "p__aeroway",
       ),
     );
 
-    expect(containsUnwantedColumnsAndSubstrings).toBe(false);
+    expect(containsUnwantedColumns).toBe(false);
   });
 });
 

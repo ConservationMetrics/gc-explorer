@@ -30,9 +30,6 @@ const initialTags: Record<string, Tag[]> = {
   UNWANTED_COLUMNS: props.config.UNWANTED_COLUMNS
     ? props.config.UNWANTED_COLUMNS.split(",").map((tag) => ({ text: tag }))
     : [],
-  UNWANTED_SUBSTRINGS: props.config.UNWANTED_SUBSTRINGS
-    ? props.config.UNWANTED_SUBSTRINGS.split(",").map((tag) => ({ text: tag }))
-    : [],
 };
 
 const { tags, handleTagsChanged: rawHandleTagsChanged } = updateTags(
@@ -87,9 +84,7 @@ const handleInput = (key: string, value: string): void => {
       </template>
       <template
         v-else-if="
-          key === 'SECONDARY_FILTER_VALUES' ||
-          key === 'UNWANTED_COLUMNS' ||
-          key === 'UNWANTED_SUBSTRINGS'
+          key === 'SECONDARY_FILTER_VALUES' || key === 'UNWANTED_COLUMNS'
         "
       >
         <label
