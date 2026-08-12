@@ -62,12 +62,11 @@ export default defineEventHandler(async (event: H3Event) => {
       includeColumnsData: true,
     });
 
-    // Filter data to remove unwanted columns and substrings
+    // Filter data to remove unwanted columns
     const filteredData = filterUnwantedKeys(
       mainData,
       columnsData as ColumnEntry[],
       tableConfig.UNWANTED_COLUMNS,
-      tableConfig.UNWANTED_SUBSTRINGS,
     );
     // Filter data to remove unwanted values per chosen column
     const dataFilteredByValues = filterOutUnwantedValues(

@@ -4,11 +4,11 @@ import { parseDateMs } from "@/utils/dateUtils";
 import type { ColumnEntry, DataEntry, AllowedFileExtensions } from "@/types";
 
 /**
- * Filters out unwanted columns and substrings from the provided data entries.
+ * Filters out unwanted columns from the provided data entries.
  *
  * This function utilizes SQL column mapping if available to determine which columns
- * should be excluded from the dataset. It processes the data based on a list of unwanted
- * column names and substrings, which can be specified as comma-separated strings.
+ * should be excluded from the dataset. Column names can be specified as a
+ * comma-separated string.
  *
  * @param {DataEntry[]} data - The dataset to be filtered, represented as an array of data entries.
  * @param {ColumnEntry[] | null} columns - An optional array of column entries that provide
@@ -17,38 +17,24 @@ import type { ColumnEntry, DataEntry, AllowedFileExtensions } from "@/types";
  *                                         is based on the keys of the data entries.
  * @param {string | undefined} unwantedColumnsList - A comma-separated string of column names
  *                                                   that should be removed from the dataset.
- * @param {string | undefined} unwantedSubstringsList - A comma-separated string of substrings.
- *                                                      Any column name containing one of these
- *                                                      substrings will be removed from the dataset.
- *
- * @returns {DataEntry[]} - A new array of data entries with the unwanted columns and substrings
- *                          filtered out.
+ * @returns {DataEntry[]} - A new array of data entries with the unwanted columns filtered out.
  */
 export const filterUnwantedKeys = (
   data: DataEntry[],
   columns: ColumnEntry[] | null,
   unwantedColumnsList: string | undefined,
-  unwantedSubstringsList: string | undefined,
 ): DataEntry[] => {
   const filterColumns = (
     originalColumns: Set<string>,
     unwantedColumns: string[],
-    unwantedSubstrings: string[],
   ): Set<string> => {
     return new Set(
-      [...originalColumns].filter((column) => {
-        if (unwantedColumns.includes(column)) return true;
-        if (unwantedSubstrings.some((sub) => column.includes(sub))) return true;
-        return false;
-      }),
+      [...originalColumns].filter((column) => unwantedColumns.includes(column)),
     );
   };
 
   const unwantedColumns = unwantedColumnsList
     ? unwantedColumnsList.split(",")
-    : [];
-  const unwantedSubstrings = unwantedSubstringsList
-    ? unwantedSubstringsList.split(",")
     : [];
 
   let filteredSqlColumns: Set<string>;
@@ -65,7 +51,6 @@ export const filterUnwantedKeys = (
     const unwantedColumnsSet = filterColumns(
       originalColumnsSet,
       unwantedColumns,
-      unwantedSubstrings,
     );
 
     const unwantedSqlColumns = new Set(
@@ -79,11 +64,7 @@ export const filterUnwantedKeys = (
     );
   } else {
     filteredSqlColumns = new Set(
-      Object.keys(data[0]).filter(
-        (key) =>
-          !unwantedColumns.includes(key) &&
-          !unwantedSubstrings.some((sub) => key.includes(sub)),
-      ),
+      Object.keys(data[0]).filter((key) => !unwantedColumns.includes(key)),
     );
   }
 

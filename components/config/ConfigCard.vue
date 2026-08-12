@@ -68,7 +68,6 @@ const filterKeys = computed(() =>
         "FRONT_END_FILTER_COLUMN",
         "TIMESTAMP_COLUMN",
         "UNWANTED_COLUMNS",
-        "UNWANTED_SUBSTRINGS",
       ],
 );
 const viewInfoKeys = computed(() => [
