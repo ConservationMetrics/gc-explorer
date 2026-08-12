@@ -4,10 +4,7 @@ import {
   fetchTableSqlColumns,
   fetchViewTables,
 } from "@/server/database/dbOperations";
-import {
-  filterOutUnwantedValues,
-  filterGeoData,
-} from "@/server/dataProcessing/dataFilters";
+import { filterGeoData } from "@/server/dataProcessing/dataFilters";
 import { prepareMapStatistics } from "@/server/dataProcessing/dataTransformers";
 import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
@@ -41,7 +38,6 @@ export default defineEventHandler(async (event: H3Event) => {
     const iconColumn = tableConfig.ICON_COLUMN;
     const filterColumn = tableConfig.FRONT_END_FILTER_COLUMN;
     const timestampColumn = tableConfig.TIMESTAMP_COLUMN;
-    const filterByColumn = tableConfig.FILTER_BY_COLUMN;
 
     const tableSqlColumns = await fetchTableSqlColumns(primaryTable);
     const dateLikeColumns = tableSqlColumns.filter((column) =>
@@ -57,7 +53,6 @@ export default defineEventHandler(async (event: H3Event) => {
           iconColumn,
           filterColumn,
           timestampColumn,
-          filterByColumn,
           ...dateLikeColumns,
         ].filter((column): column is string => Boolean(column)),
       ),
@@ -67,15 +62,8 @@ export default defineEventHandler(async (event: H3Event) => {
       mainColumns,
     });
 
-    // Filter data to remove unwanted values per chosen column
-    const dataFilteredByValues = filterOutUnwantedValues(
-      mainData,
-      filterByColumn,
-      tableConfig.FILTER_OUT_VALUES_FROM_COLUMN,
-    );
-
     // Filter only data with valid geofields
-    const filteredGeoData = filterGeoData(dataFilteredByValues);
+    const filteredGeoData = filterGeoData(mainData);
 
     // Process geodata
     const includeProperties = [colorColumn, iconColumn, timestampColumn].filter(

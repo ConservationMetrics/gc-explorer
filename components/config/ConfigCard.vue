@@ -64,7 +64,6 @@ const filterKeys = computed(() =>
   props.viewType === "alerts"
     ? ["FRONT_END_FILTER_COLUMN", "SECONDARY_FILTER_VALUES"]
     : [
-        "FILTER_OUT_VALUES_FROM_COLUMN",
         "FRONT_END_FILTER_COLUMN",
         "TIMESTAMP_COLUMN",
         "UNWANTED_COLUMNS",

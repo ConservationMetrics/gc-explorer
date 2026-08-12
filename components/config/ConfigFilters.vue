@@ -22,11 +22,6 @@ const emit = defineEmits<{
 type Tag = { text: string };
 
 const initialTags: Record<string, Tag[]> = {
-  FILTER_OUT_VALUES_FROM_COLUMN: props.config.FILTER_OUT_VALUES_FROM_COLUMN
-    ? props.config.FILTER_OUT_VALUES_FROM_COLUMN.split(",").map((tag) => ({
-        text: tag,
-      }))
-    : [],
   SECONDARY_FILTER_VALUES: props.config.SECONDARY_FILTER_VALUES
     ? props.config.SECONDARY_FILTER_VALUES.split(",").map((tag) => ({
         text: tag,
@@ -92,7 +87,6 @@ const handleInput = (key: string, value: string): void => {
       </template>
       <template
         v-else-if="
-          key === 'FILTER_OUT_VALUES_FROM_COLUMN' ||
           key === 'SECONDARY_FILTER_VALUES' ||
           key === 'UNWANTED_COLUMNS' ||
           key === 'UNWANTED_SUBSTRINGS'

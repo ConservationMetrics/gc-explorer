@@ -99,25 +99,6 @@ export const filterUnwantedKeys = (
   return filteredData;
 };
 
-/** Filters out data that matches a comma-separated list of values for a given column. */
-export const filterOutUnwantedValues = (
-  data: DataEntry[],
-  filterByColumn: string | undefined,
-  filterOutValues: string | undefined,
-): DataEntry[] => {
-  if (!filterByColumn || !filterOutValues) {
-    return data;
-  }
-
-  const valuesToFilterOut = new Set(filterOutValues.split(","));
-
-  const filteredData = data.filter((item) => {
-    return !valuesToFilterOut.has(item[filterByColumn]);
-  });
-
-  return filteredData;
-};
-
 /**
  * Keeps only rows where the given column value is in the allowed set.
  * The string "null" in allowedValues is treated as matching null/undefined/empty.
