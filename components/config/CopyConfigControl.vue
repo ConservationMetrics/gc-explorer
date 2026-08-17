@@ -49,10 +49,17 @@ const emit = defineEmits<{
         <p class="text-sm text-gray-600 mb-4">
           {{ $t("copyConfigDescription") }}
         </p>
+        <label
+          for="copy-config-select"
+          class="block text-sm font-medium text-gray-700 mb-2"
+        >
+          {{ $t("view") }}
+        </label>
         <select
+          id="copy-config-select"
           :value="selectedSource"
           data-testid="copy-config-select"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors mb-4"
+          class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors mb-4"
           @change="
             emit(
               'update:selectedSource',

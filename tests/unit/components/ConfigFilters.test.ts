@@ -71,4 +71,15 @@ describe("ConfigFilters", () => {
       wrapper.get(".tag-field").element.parentElement?.className,
     ).toContain("md:col-span-2");
   });
+
+  it("associates tag field labels with the tag input", () => {
+    const wrapper = mountConfigFilters();
+
+    expect(
+      wrapper.get('label[for="alerts_table-SECONDARY_FILTER_VALUES"]').text(),
+    ).toBe("secondaryFilterValues");
+    expect(
+      wrapper.get("#alerts_table-SECONDARY_FILTER_VALUES").attributes("id"),
+    ).toBe("alerts_table-SECONDARY_FILTER_VALUES");
+  });
 });

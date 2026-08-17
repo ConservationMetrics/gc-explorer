@@ -807,6 +807,31 @@ describe("ConfigMap component", () => {
     expect(iconColumnInput.attributes("placeholder")).toBe("icon");
   });
 
+  it("labels basemap fields and uses purple field chrome", () => {
+    const wrapper = mount(ConfigMap, {
+      props: baseProps,
+      global: globalConfig,
+    });
+
+    const nameInput = wrapper.get("#test_table-basemap-name-0");
+    const styleInput = wrapper.get("#test_table-basemap-style-0");
+    const zoomInput = wrapper.get("#test_table-MAPBOX_ZOOM");
+
+    expect(wrapper.get('label[for="test_table-basemap-name-0"]').text()).toBe(
+      "basemapName",
+    );
+    expect(wrapper.get('label[for="test_table-basemap-style-0"]').text()).toBe(
+      "mapboxStyle",
+    );
+    expect(nameInput.classes()).toContain("bg-violet-100");
+    expect(styleInput.classes()).toEqual(
+      expect.arrayContaining(["bg-violet-100", "border-violet-200"]),
+    );
+    expect(zoomInput.classes()).toEqual(
+      expect.arrayContaining(["bg-violet-100", "border-violet-200"]),
+    );
+  });
+
   it("uses a two-column grid and keeps the token field full width", () => {
     const wrapper = mount(ConfigMap, {
       props: baseProps,

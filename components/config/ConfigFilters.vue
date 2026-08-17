@@ -72,7 +72,7 @@ const handleInput = (key: string, value: string): void => {
         <input
           :id="`${tableName}-${key}`"
           :value="config[key]"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+          class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
           type="text"
           @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
         />
@@ -87,7 +87,7 @@ const handleInput = (key: string, value: string): void => {
         <input
           :id="`${tableName}-${key}`"
           :value="config[key]"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+          class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
           type="text"
           placeholder="e.g. End or created_at"
           @input="(e) => handleInput(key, (e.target as HTMLInputElement).value)"
@@ -105,6 +105,7 @@ const handleInput = (key: string, value: string): void => {
           {{ $t(toCamelCase(key)) }}
         </label>
         <VueTagsInput
+          :id="`${tableName}-${key}`"
           class="tag-field w-full"
           :tags="tags[key]"
           @tags-changed="(newTags: Tag[]) => handleTagsChanged(key, newTags)"

@@ -751,4 +751,21 @@ describe("ConfigMedia component", () => {
     );
     expect(input.element.value).toBe("keep-me");
   });
+
+  it("associates the media column label with its input", () => {
+    const wrapper = mount(ConfigMedia, {
+      props: {
+        ...baseProps,
+        keys: ["MEDIA_COLUMN"],
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.get('label[for="test_table-media-column"]').text()).toBe(
+      "mediaColumn",
+    );
+    expect(wrapper.get("#test_table-media-column").classes()).toEqual(
+      expect.arrayContaining(["bg-violet-100", "border-violet-200"]),
+    );
+  });
 });
