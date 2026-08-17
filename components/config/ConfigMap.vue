@@ -354,7 +354,7 @@ const fullWidthKeys = [
             <button
               type="button"
               data-testid="basemap-add-button"
-              class="w-full px-4 py-2 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full px-4 py-2 text-sm font-medium text-violet-700 bg-white border border-violet-200 rounded-lg hover:bg-violet-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               :disabled="!canAddBasemap"
               @click="addBasemap"
             >

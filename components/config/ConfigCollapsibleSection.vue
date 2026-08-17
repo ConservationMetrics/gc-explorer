@@ -20,12 +20,12 @@ const toggle = () => {
 <template>
   <div
     data-testid="config-section-collapsible"
-    class="bg-violet-50 rounded-lg border border-violet-200 mb-4 overflow-hidden"
+    class="bg-gray-50 rounded-lg border border-gray-200 mb-4 overflow-hidden"
   >
     <button
       type="button"
       :data-testid="`config-section-${title.toLowerCase()}-toggle`"
-      class="w-full flex items-center justify-between p-4 bg-violet-100 hover:bg-violet-200 transition-colors text-left"
+      class="w-full flex items-center justify-between p-4 bg-gray-100 hover:bg-gray-200 transition-colors text-left border-b border-gray-200"
       @click="toggle"
     >
       <h3 class="text-lg font-semibold text-gray-800">{{ title }}</h3>

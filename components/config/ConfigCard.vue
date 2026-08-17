@@ -235,7 +235,7 @@ const handleSubmit = () => {
     class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
   >
     <div
-      class="bg-gradient-to-r from-violet-100 to-violet-50 border-b border-violet-200 px-6 py-4"
+      class="bg-gray-50 border-b border-gray-200 px-6 py-4"
     >
       <h2 class="text-xl font-bold text-gray-800">
         {{ $t("configurationOptions") }}
