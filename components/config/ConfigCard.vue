@@ -234,10 +234,8 @@ const handleSubmit = () => {
   <div
     class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
   >
-    <div
-      class="bg-gray-50 border-b border-gray-200 px-6 py-4"
-    >
-      <h2 class="text-xl font-bold text-gray-800">
+    <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
+      <h2 class="text-balance text-xl font-bold text-slate-800">
         {{ $t("configurationOptions") }}
       </h2>
     </div>

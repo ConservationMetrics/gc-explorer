@@ -82,7 +82,7 @@ watch(
 
     <div class="flex flex-col gap-3">
       <label
-        class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 bg-violet-100 transition-all duration-200"
+        class="flex items-start gap-3 cursor-pointer p-3 rounded-xl border-2 bg-violet-100 transition-[border-color,background-color] duration-150 ease-out"
         :class="
           routeLevelPermission === 'anyone'
             ? 'border-violet-500'
@@ -99,14 +99,14 @@ watch(
           <span class="font-semibold text-gray-700">{{
             $t("visibilityPublic")
           }}</span>
-          <span class="text-sm text-gray-500 leading-relaxed">{{
+          <span class="text-pretty text-sm text-gray-500 leading-relaxed">{{
             $t("visibilityPublicDescription")
           }}</span>
         </div>
       </label>
 
       <label
-        class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 bg-violet-100 transition-all duration-200"
+        class="flex items-start gap-3 cursor-pointer p-3 rounded-xl border-2 bg-violet-100 transition-[border-color,background-color] duration-150 ease-out"
         :class="
           routeLevelPermission === 'guest'
             ? 'border-violet-500'
@@ -123,14 +123,14 @@ watch(
           <span class="font-semibold text-gray-700">{{
             $t("visibilityGuest")
           }}</span>
-          <span class="text-sm text-gray-500 leading-relaxed">{{
+          <span class="text-pretty text-sm text-gray-500 leading-relaxed">{{
             $t("visibilityGuestDescription")
           }}</span>
         </div>
       </label>
 
       <label
-        class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 bg-violet-100 transition-all duration-200"
+        class="flex items-start gap-3 cursor-pointer p-3 rounded-xl border-2 bg-violet-100 transition-[border-color,background-color] duration-150 ease-out"
         :class="
           routeLevelPermission === 'member'
             ? 'border-violet-500'
@@ -147,14 +147,14 @@ watch(
           <span class="font-semibold text-gray-700">{{
             $t("visibilityMembers")
           }}</span>
-          <span class="text-sm text-gray-500 leading-relaxed">{{
+          <span class="text-pretty text-sm text-gray-500 leading-relaxed">{{
             $t("visibilityMembersDescription")
           }}</span>
         </div>
       </label>
 
       <label
-        class="flex items-start gap-3 cursor-pointer p-3 rounded-lg border-2 bg-violet-100 transition-all duration-200"
+        class="flex items-start gap-3 cursor-pointer p-3 rounded-xl border-2 bg-violet-100 transition-[border-color,background-color] duration-150 ease-out"
         :class="
           routeLevelPermission === 'admin'
             ? 'border-violet-500'
@@ -171,7 +171,7 @@ watch(
           <span class="font-semibold text-gray-700">{{
             $t("visibilityAdmins")
           }}</span>
-          <span class="text-sm text-gray-500 leading-relaxed">{{
+          <span class="text-pretty text-sm text-gray-500 leading-relaxed">{{
             $t("visibilityAdminsDescription")
           }}</span>
         </div>

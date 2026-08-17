@@ -354,7 +354,7 @@ const fullWidthKeys = [
             <button
               type="button"
               data-testid="basemap-add-button"
-              class="w-full px-4 py-2 text-sm font-medium text-violet-700 bg-white border border-violet-200 rounded-lg hover:bg-violet-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full px-4 py-2 text-sm font-medium text-violet-700 bg-white border border-violet-200 rounded-lg hover:bg-violet-50 active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-150 ease-out disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
               :disabled="!canAddBasemap"
               @click="addBasemap"
             >
@@ -404,7 +404,7 @@ const fullWidthKeys = [
           </label>
           <input
             :id="`${tableName}-${key}`"
-            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors tabular-nums"
             type="number"
             step="any"
             :min="
