@@ -1,5 +1,6 @@
-/* Styles for VueTagsInput internals that Tailwind cannot target. */
-.tag-field.vue-tags-input {
+/* VueTagsInput ships scoped CSS (.ti-tag[data-v-…] is 0,2,0 and loads after
+   this file). Selectors here stay at 0,3,0 so the mockup chrome wins. */
+.tag-field.vue-tags-input.vue-tags-input {
   width: 100%;
   max-width: none;
   position: relative;
@@ -8,12 +9,12 @@
   border-radius: 0.5rem;
 }
 
-.tag-field.vue-tags-input:focus-within {
+.tag-field.vue-tags-input.vue-tags-input:focus-within {
   border-color: #8b5cf6;
   box-shadow: 0 0 0 2px #8b5cf6;
 }
 
-.tag-field .ti-input {
+.tag-field.vue-tags-input .ti-input {
   display: flex;
   padding: 0.5rem 1rem;
   flex-wrap: wrap;
@@ -21,14 +22,14 @@
   background-color: transparent;
 }
 
-.tag-field .ti-tags {
+.tag-field.vue-tags-input .ti-tags {
   display: flex;
   flex-wrap: wrap;
   width: 100%;
   line-height: 1em;
 }
 
-.tag-field .ti-tag {
+.tag-field.vue-tags-input .ti-tag {
   display: flex;
   align-items: center;
   margin: 0.125rem;
@@ -39,36 +40,36 @@
   font-size: 0.85em;
 }
 
-.tag-field .ti-tag .ti-content {
+.tag-field.vue-tags-input .ti-tag .ti-content {
   display: flex;
   align-items: center;
 }
 
-.tag-field .ti-tag .ti-actions {
+.tag-field.vue-tags-input .ti-tag .ti-actions {
   display: flex;
   align-items: center;
   margin-left: 0.25rem;
 }
 
-.tag-field .ti-tag .ti-actions i {
+.tag-field.vue-tags-input .ti-tag .ti-actions i {
   cursor: pointer;
 }
 
-.tag-field .ti-icon-close:before {
+.tag-field.vue-tags-input .ti-icon-close:before {
   content: "\00d7";
   font-family: inherit;
   font-style: normal;
 }
 
-.tag-field .ti-new-tag-input-wrapper {
+.tag-field.vue-tags-input .ti-new-tag-input-wrapper {
   display: flex;
   flex: 1 0 auto;
   padding: 0.25rem 0.5rem;
   margin: 0.125rem;
 }
 
-.tag-field .ti-new-tag-input-wrapper input,
-.tag-field .ti-new-tag-input {
+.tag-field.vue-tags-input .ti-new-tag-input-wrapper input,
+.tag-field.vue-tags-input .ti-new-tag-input {
   flex: 1 0 auto;
   min-width: 100px;
   border: none;
@@ -77,6 +78,6 @@
   margin: 0;
 }
 
-.tag-field .ti-new-tag-input:focus {
+.tag-field.vue-tags-input .ti-new-tag-input:focus {
   outline: none;
 }
