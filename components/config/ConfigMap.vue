@@ -228,11 +228,27 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
   ensureDefault();
   saveBasemaps();
 };
+
+const fullWidthKeys = [
+  "MAPBOX_STYLE",
+  "MAPBOX_ACCESS_TOKEN",
+  "MAPBOX_3D",
+  "MAP_LEGEND_LAYER_IDS",
+  "PLANET_API_KEY",
+];
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div v-for="key in keys" :key="key" class="space-y-2">
+  <div
+    class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6"
+    data-testid="config-field-grid"
+  >
+    <div
+      v-for="key in keys"
+      :key="key"
+      class="space-y-2"
+      :class="{ 'md:col-span-2': fullWidthKeys.includes(key) }"
+    >
       <!-- Mapbox Basemaps -->
       <template v-if="key === 'MAPBOX_STYLE'">
         <label class="block text-sm font-medium text-gray-700 mb-2">

@@ -806,4 +806,22 @@ describe("ConfigMap component", () => {
     const iconColumnInput = wrapper.find('input[id="test_table-ICON_COLUMN"]');
     expect(iconColumnInput.attributes("placeholder")).toBe("icon");
   });
+
+  it("uses a two-column grid and keeps the token field full width", () => {
+    const wrapper = mount(ConfigMap, {
+      props: baseProps,
+      global: globalConfig,
+    });
+
+    expect(wrapper.get("[data-testid='config-field-grid']").classes()).toEqual(
+      expect.arrayContaining(["grid", "grid-cols-1", "md:grid-cols-2"]),
+    );
+    expect(
+      wrapper.get("#test_table-MAPBOX_ACCESS_TOKEN").element.parentElement
+        ?.className,
+    ).toContain("md:col-span-2");
+    expect(
+      wrapper.get("#test_table-MAPBOX_ZOOM").element.parentElement?.className,
+    ).not.toContain("md:col-span-2");
+  });
 });
