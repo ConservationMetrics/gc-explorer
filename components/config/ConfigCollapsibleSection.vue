@@ -36,15 +36,8 @@ const toggle = () => {
         :class="{ 'rotate-180': isOpen }"
       />
     </button>
-    <div
-      class="grid transition-[grid-template-rows] duration-200 ease-out"
-      :class="isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
-    >
-      <div class="min-h-0 overflow-hidden">
-        <div class="p-4">
-          <slot></slot>
-        </div>
-      </div>
+    <div v-show="isOpen" class="p-4">
+      <slot></slot>
     </div>
   </div>
 </template>
