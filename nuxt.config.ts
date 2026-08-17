@@ -92,7 +92,7 @@ export default defineNuxtConfig({
     quality: 80,
   },
 
-  css: ["@/assets/overlay.css"],
+  css: ["@/assets/overlay.css", "@/assets/config-tags.css"],
 
   i18n: {
     locales: [

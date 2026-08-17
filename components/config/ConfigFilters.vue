@@ -56,7 +56,7 @@ const handleInput = (key: string, value: string): void => {
     <div
       v-for="key in keys"
       :key="key"
-      class="space-y-2"
+      class="space-y-2 min-w-0"
       :class="{
         'md:col-span-2':
           key === 'SECONDARY_FILTER_VALUES' || key === 'UNWANTED_COLUMNS',
@@ -105,7 +105,7 @@ const handleInput = (key: string, value: string): void => {
           {{ $t(toCamelCase(key)) }}
         </label>
         <VueTagsInput
-          class="tag-field"
+          class="tag-field w-full"
           :tags="tags[key]"
           @tags-changed="(newTags: Tag[]) => handleTagsChanged(key, newTags)"
         />

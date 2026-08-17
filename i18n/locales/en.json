@@ -210,7 +210,7 @@
   "mediaBaseUrl": "Base URL",
   "mediaColumn": "Column to use for media files",
   "mediaColumnDescription": "Specify the column name containing media file references (e.g., photo, audio). Only values from this column will be rendered as media files. Leave empty to render media from all columns.",
-  "mediaFilebrowserDefault": "Filebrowser (Guardian Connector default)",
+  "mediaFilebrowserDefault": "Filebrowser (default)",
   "mediaGenericHttpBaseUrl": "Generic HTTP base URL",
   "mediaImageOpenModal": "View larger image",
   "mediaInvalidFormat": "Invalid format. Please use a Filebrowser share URL or hash.",

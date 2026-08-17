@@ -89,7 +89,7 @@ const globalConfig = {
       const translations: Record<string, string> = {
         mediaAccepts: "Accepts:",
         mediaBaseUrl: "Base URL",
-        mediaFilebrowserDefault: "Filebrowser (Guardian Connector default)",
+        mediaFilebrowserDefault: "Filebrowser (default)",
         mediaGenericHttpBaseUrl: "Generic HTTP base URL",
         mediaInvalidFormat:
           "Invalid format. Please use a Filebrowser share URL or hash.",

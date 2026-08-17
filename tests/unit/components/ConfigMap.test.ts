@@ -824,4 +824,46 @@ describe("ConfigMap component", () => {
       wrapper.get("#test_table-MAPBOX_ZOOM").element.parentElement?.className,
     ).not.toContain("md:col-span-2");
   });
+
+  it("places the 3D checkbox and slider side by side when 3D is on", async () => {
+    const wrapper = mount(ConfigMap, {
+      props: {
+        ...baseProps,
+        config: { ...baseProps.config, MAPBOX_3D: true },
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.get("[data-testid='config-3d-grid']").classes()).toEqual(
+      expect.arrayContaining(["grid", "grid-cols-1", "md:grid-cols-2"]),
+    );
+    expect(wrapper.get("#test_table-MAPBOX_3D").exists()).toBe(true);
+    expect(wrapper.findComponent({ name: "VueSlider" }).exists()).toBe(true);
+  });
+
+  it("hides the terrain slider until 3D is enabled", () => {
+    const wrapper = mount(ConfigMap, {
+      props: baseProps,
+      global: globalConfig,
+    });
+
+    expect(wrapper.get("#test_table-MAPBOX_3D").exists()).toBe(true);
+    expect(wrapper.findComponent({ name: "VueSlider" }).exists()).toBe(false);
+  });
+
+  it("keeps the legend tag field full width of the grid", () => {
+    const wrapper = mount(ConfigMap, {
+      props: {
+        ...baseProps,
+        keys: [...baseProps.keys, "MAP_LEGEND_LAYER_IDS"],
+      },
+      global: globalConfig,
+    });
+
+    const tagField = wrapper.get(".tag-field");
+    expect(tagField.classes()).toContain("w-full");
+    expect(tagField.element.parentElement?.className).toContain(
+      "md:col-span-2",
+    );
+  });
 });
