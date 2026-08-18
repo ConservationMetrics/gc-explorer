@@ -347,6 +347,37 @@ test("config page - view metadata displays current view type outside ConfigCard"
   await expect(viewsSection).toHaveCount(0);
 });
 
+test("config page - map number fields sit in two columns on desktop", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await openMapConfigEditPage(page);
+
+  const zoom = page.locator('input[id$="-MAPBOX_ZOOM"]');
+  const latitude = page.locator('input[id$="-MAPBOX_CENTER_LATITUDE"]');
+  await expect(zoom).toBeVisible({ timeout: 10000 });
+  await expect(latitude).toBeVisible();
+
+  const [zoomBox, latitudeBox] = await Promise.all([
+    zoom.boundingBox(),
+    latitude.boundingBox(),
+  ]);
+  expect(zoomBox).not.toBeNull();
+  expect(latitudeBox).not.toBeNull();
+  expect(latitudeBox!.x).toBeGreaterThan(zoomBox!.x + zoomBox!.width / 2);
+  expect(Math.abs(latitudeBox!.y - zoomBox!.y)).toBeLessThan(24);
+
+  await page.setViewportSize({ width: 375, height: 800 });
+  const [stackedZoomBox, stackedLatitudeBox] = await Promise.all([
+    zoom.boundingBox(),
+    latitude.boundingBox(),
+  ]);
+  expect(stackedZoomBox).not.toBeNull();
+  expect(stackedLatitudeBox).not.toBeNull();
+  expect(stackedLatitudeBox!.y).toBeGreaterThan(
+    stackedZoomBox!.y + stackedZoomBox!.height / 2,
+  );
+});
+
 test("config page - edit secondary dataset for Alert and Map views", async ({
   authenticatedPageAsAdmin: page,
 }) => {

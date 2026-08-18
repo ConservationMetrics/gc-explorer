@@ -49,8 +49,19 @@ const handleInput = (key: string, value: string): void => {
 </script>
 
 <template>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div v-for="key in keys" :key="key" class="space-y-2">
+  <div
+    class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6"
+    data-testid="config-field-grid"
+  >
+    <div
+      v-for="key in keys"
+      :key="key"
+      class="space-y-2 min-w-0"
+      :class="{
+        'md:col-span-2':
+          key === 'SECONDARY_FILTER_VALUES' || key === 'UNWANTED_COLUMNS',
+      }"
+    >
       <template v-if="key === 'FRONT_END_FILTER_COLUMN'">
         <label
           :for="`${tableName}-${key}`"
@@ -94,7 +105,7 @@ const handleInput = (key: string, value: string): void => {
           {{ $t(toCamelCase(key)) }}
         </label>
         <VueTagsInput
-          class="tag-field"
+          class="tag-field w-full"
           :tags="tags[key]"
           @tags-changed="(newTags: Tag[]) => handleTagsChanged(key, newTags)"
         />

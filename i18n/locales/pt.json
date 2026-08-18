@@ -206,7 +206,7 @@
   "mediaBaseUrl": "URL base",
   "mediaColumn": "Coluna a usar para arquivos de mídia",
   "mediaColumnDescription": "Especifique o nome da coluna que contém referências de arquivos de mídia (por exemplo, foto, áudio). Apenas valores desta coluna serão renderizados como arquivos de mídia. Deixe vazio para renderizar mídia de todas as colunas.",
-  "mediaFilebrowserDefault": "Filebrowser (padrão do Guardian Connector)",
+  "mediaFilebrowserDefault": "Filebrowser (padrão)",
   "mediaGenericHttpBaseUrl": "URL base HTTP genérica",
   "mediaImageOpenModal": "Ver imagem ampliada",
   "mediaInvalidFormat": "Formato inválido. Por favor, use uma URL de compartilhamento do Filebrowser ou hash.",

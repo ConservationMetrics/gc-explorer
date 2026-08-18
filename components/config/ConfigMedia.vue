@@ -223,302 +223,320 @@ watch(
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div
+    class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6"
+    data-testid="config-field-grid"
+  >
     <!-- MEDIA_BASE_PATH -->
-    <div v-if="keys.includes('MEDIA_BASE_PATH')" class="space-y-4">
+    <div
+      v-if="keys.includes('MEDIA_BASE_PATH')"
+      class="space-y-4 md:col-span-2"
+    >
       <label class="block text-sm font-medium text-gray-700">
         {{ $t(toCamelCase("MEDIA_BASE_PATH")) }}
       </label>
 
-      <div class="space-y-2">
-        <label
-          :for="`${tableName}-provider-basePath`"
-          class="block text-sm font-medium text-gray-700"
-        >
-          {{ $t("mediaProvider") }}
-        </label>
-        <select
-          :id="`${tableName}-provider-basePath`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
-          :value="providerBasePath"
-          @change="
-            handleProviderChange(
-              'basePath',
-              ($event.target as HTMLSelectElement).value as MediaProvider,
-            )
-          "
-        >
-          <option value="filebrowser">
-            {{ $t("mediaFilebrowserDefault") }}
-          </option>
-          <option value="generic">{{ $t("mediaGenericHttpBaseUrl") }}</option>
-        </select>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <div class="space-y-2">
+          <label
+            :for="`${tableName}-provider-basePath`"
+            class="block text-sm font-medium text-gray-700"
+          >
+            {{ $t("mediaProvider") }}
+          </label>
+          <select
+            :id="`${tableName}-provider-basePath`"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
+            :value="providerBasePath"
+            @change="
+              handleProviderChange(
+                'basePath',
+                ($event.target as HTMLSelectElement).value as MediaProvider,
+              )
+            "
+          >
+            <option value="filebrowser">
+              {{ $t("mediaFilebrowserDefault") }}
+            </option>
+            <option value="generic">{{ $t("mediaGenericHttpBaseUrl") }}</option>
+          </select>
+        </div>
+
+        <template v-if="providerBasePath === 'filebrowser'">
+          <div class="space-y-2">
+            <label
+              :for="`${tableName}-share-basePath`"
+              class="block text-sm font-medium text-gray-700"
+            >
+              {{ $t("mediaPasteFilebrowserShareUrlOrHash") }}
+            </label>
+            <input
+              :id="`${tableName}-share-basePath`"
+              class="w-full px-4 py-2 border rounded-lg transition-colors"
+              :class="{
+                'border-red-300 focus:ring-red-500 focus:border-red-500':
+                  !isBasePathValid && shareInputBasePath,
+                'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
+                  isBasePathValid || !shareInputBasePath,
+              }"
+              type="text"
+              :value="shareInputBasePath"
+              placeholder="https://files.example.com/share/abc123 or abc123"
+              @input="
+                handleInput(
+                  'basePath',
+                  ($event.target as HTMLInputElement).value,
+                )
+              "
+            />
+            <p
+              v-if="!isBasePathValid && shareInputBasePath"
+              class="text-sm text-red-600"
+            >
+              {{ $t("mediaInvalidFormat") }}
+            </p>
+            <p class="text-xs text-gray-500">
+              <strong>{{ $t("mediaAccepts") }}</strong>
+              <code class="px-1 py-0.5 bg-gray-100 rounded"
+                >https://files.example.com/share/abc123</code
+              >,
+              <code class="px-1 py-0.5 bg-gray-100 rounded"
+                >https://files.example.com/api/public/dl/abc123</code
+              >,
+              {{ $t("or") }}
+              <code class="px-1 py-0.5 bg-gray-100 rounded">abc123</code>
+            </p>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="space-y-2">
+            <label
+              :for="`${tableName}-baseUrl-generic-basePath`"
+              class="block text-sm font-medium text-gray-700"
+            >
+              {{ $t("mediaBaseUrl") }}
+            </label>
+            <input
+              :id="`${tableName}-baseUrl-generic-basePath`"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+              type="url"
+              :value="shareInputBasePath"
+              placeholder="https://your-files-host.example/api/public/dl/"
+              @input="
+                handleInput(
+                  'basePath',
+                  ($event.target as HTMLInputElement).value,
+                )
+              "
+            />
+          </div>
+        </template>
       </div>
-
-      <template v-if="providerBasePath === 'filebrowser'">
-        <div class="space-y-2">
-          <label
-            :for="`${tableName}-share-basePath`"
-            class="block text-sm font-medium text-gray-700"
-          >
-            {{ $t("mediaPasteFilebrowserShareUrlOrHash") }}
-          </label>
-          <input
-            :id="`${tableName}-share-basePath`"
-            class="w-full px-4 py-2 border rounded-lg transition-colors"
-            :class="{
-              'border-red-300 focus:ring-red-500 focus:border-red-500':
-                !isBasePathValid && shareInputBasePath,
-              'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
-                isBasePathValid || !shareInputBasePath,
-            }"
-            type="text"
-            :value="shareInputBasePath"
-            placeholder="https://files.example.com/share/abc123 or abc123"
-            @input="
-              handleInput('basePath', ($event.target as HTMLInputElement).value)
-            "
-          />
-          <p
-            v-if="!isBasePathValid && shareInputBasePath"
-            class="text-sm text-red-600"
-          >
-            {{ $t("mediaInvalidFormat") }}
-          </p>
-          <p class="text-xs text-gray-500">
-            <strong>{{ $t("mediaAccepts") }}</strong>
-            <code class="px-1 py-0.5 bg-gray-100 rounded"
-              >https://files.example.com/share/abc123</code
-            >,
-            <code class="px-1 py-0.5 bg-gray-100 rounded"
-              >https://files.example.com/api/public/dl/abc123</code
-            >,
-            {{ $t("or") }}
-            <code class="px-1 py-0.5 bg-gray-100 rounded">abc123</code>
-          </p>
-        </div>
-      </template>
-
-      <template v-else>
-        <div class="space-y-2">
-          <label
-            :for="`${tableName}-baseUrl-generic-basePath`"
-            class="block text-sm font-medium text-gray-700"
-          >
-            {{ $t("mediaBaseUrl") }}
-          </label>
-          <input
-            :id="`${tableName}-baseUrl-generic-basePath`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-            type="url"
-            :value="shareInputBasePath"
-            placeholder="https://your-files-host.example/api/public/dl/"
-            @input="
-              handleInput('basePath', ($event.target as HTMLInputElement).value)
-            "
-          />
-        </div>
-      </template>
     </div>
 
     <!-- MEDIA_BASE_PATH_ALERTS -->
     <div
       v-if="keys.includes('MEDIA_BASE_PATH_ALERTS') && views.includes('alerts')"
-      class="space-y-4"
+      class="space-y-4 md:col-span-2"
     >
       <label class="block text-sm font-medium text-gray-700">
         {{ $t(toCamelCase("MEDIA_BASE_PATH_ALERTS")) }}
       </label>
 
-      <div class="space-y-2">
-        <label
-          :for="`${tableName}-provider-alerts`"
-          class="block text-sm font-medium text-gray-700"
-        >
-          {{ $t("mediaProvider") }}
-        </label>
-        <select
-          :id="`${tableName}-provider-alerts`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
-          :value="providerAlerts"
-          @change="
-            handleProviderChange(
-              'alerts',
-              ($event.target as HTMLSelectElement).value as MediaProvider,
-            )
-          "
-        >
-          <option value="filebrowser">
-            {{ $t("mediaFilebrowserDefault") }}
-          </option>
-          <option value="generic">{{ $t("mediaGenericHttpBaseUrl") }}</option>
-        </select>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <div class="space-y-2">
+          <label
+            :for="`${tableName}-provider-alerts`"
+            class="block text-sm font-medium text-gray-700"
+          >
+            {{ $t("mediaProvider") }}
+          </label>
+          <select
+            :id="`${tableName}-provider-alerts`"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
+            :value="providerAlerts"
+            @change="
+              handleProviderChange(
+                'alerts',
+                ($event.target as HTMLSelectElement).value as MediaProvider,
+              )
+            "
+          >
+            <option value="filebrowser">
+              {{ $t("mediaFilebrowserDefault") }}
+            </option>
+            <option value="generic">{{ $t("mediaGenericHttpBaseUrl") }}</option>
+          </select>
+        </div>
+
+        <template v-if="providerAlerts === 'filebrowser'">
+          <div class="space-y-2">
+            <label
+              :for="`${tableName}-share-alerts`"
+              class="block text-sm font-medium text-gray-700"
+            >
+              {{ $t("mediaPasteFilebrowserShareUrlOrHash") }}
+            </label>
+            <input
+              :id="`${tableName}-share-alerts`"
+              class="w-full px-4 py-2 border rounded-lg transition-colors"
+              :class="{
+                'border-red-300 focus:ring-red-500 focus:border-red-500':
+                  !isAlertsValid && shareInputAlerts,
+                'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
+                  isAlertsValid || !shareInputAlerts,
+              }"
+              type="text"
+              :value="shareInputAlerts"
+              placeholder="https://files.example.com/share/abc123 or abc123"
+              @input="
+                handleInput('alerts', ($event.target as HTMLInputElement).value)
+              "
+            />
+            <p
+              v-if="!isAlertsValid && shareInputAlerts"
+              class="text-sm text-red-600"
+            >
+              {{ $t("mediaInvalidFormat") }}
+            </p>
+            <p class="text-xs text-gray-500">
+              <strong>{{ $t("mediaAccepts") }}</strong>
+              <code class="px-1 py-0.5 bg-gray-100 rounded"
+                >https://files.example.com/share/abc123</code
+              >,
+              <code class="px-1 py-0.5 bg-gray-100 rounded"
+                >https://files.example.com/api/public/dl/abc123</code
+              >,
+              {{ $t("or") }}
+              <code class="px-1 py-0.5 bg-gray-100 rounded">abc123</code>
+            </p>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="space-y-2">
+            <label
+              :for="`${tableName}-baseUrl-generic-alerts`"
+              class="block text-sm font-medium text-gray-700"
+            >
+              {{ $t("mediaBaseUrl") }}
+            </label>
+            <input
+              :id="`${tableName}-baseUrl-generic-alerts`"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+              type="url"
+              :value="shareInputAlerts"
+              placeholder="https://your-files-host.example/api/public/dl/"
+              @input="
+                handleInput('alerts', ($event.target as HTMLInputElement).value)
+              "
+            />
+          </div>
+        </template>
       </div>
-
-      <template v-if="providerAlerts === 'filebrowser'">
-        <div class="space-y-2">
-          <label
-            :for="`${tableName}-share-alerts`"
-            class="block text-sm font-medium text-gray-700"
-          >
-            {{ $t("mediaPasteFilebrowserShareUrlOrHash") }}
-          </label>
-          <input
-            :id="`${tableName}-share-alerts`"
-            class="w-full px-4 py-2 border rounded-lg transition-colors"
-            :class="{
-              'border-red-300 focus:ring-red-500 focus:border-red-500':
-                !isAlertsValid && shareInputAlerts,
-              'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
-                isAlertsValid || !shareInputAlerts,
-            }"
-            type="text"
-            :value="shareInputAlerts"
-            placeholder="https://files.example.com/share/abc123 or abc123"
-            @input="
-              handleInput('alerts', ($event.target as HTMLInputElement).value)
-            "
-          />
-          <p
-            v-if="!isAlertsValid && shareInputAlerts"
-            class="text-sm text-red-600"
-          >
-            {{ $t("mediaInvalidFormat") }}
-          </p>
-          <p class="text-xs text-gray-500">
-            <strong>{{ $t("mediaAccepts") }}</strong>
-            <code class="px-1 py-0.5 bg-gray-100 rounded"
-              >https://files.example.com/share/abc123</code
-            >,
-            <code class="px-1 py-0.5 bg-gray-100 rounded"
-              >https://files.example.com/api/public/dl/abc123</code
-            >,
-            {{ $t("or") }}
-            <code class="px-1 py-0.5 bg-gray-100 rounded">abc123</code>
-          </p>
-        </div>
-      </template>
-
-      <template v-else>
-        <div class="space-y-2">
-          <label
-            :for="`${tableName}-baseUrl-generic-alerts`"
-            class="block text-sm font-medium text-gray-700"
-          >
-            {{ $t("mediaBaseUrl") }}
-          </label>
-          <input
-            :id="`${tableName}-baseUrl-generic-alerts`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-            type="url"
-            :value="shareInputAlerts"
-            placeholder="https://your-files-host.example/api/public/dl/"
-            @input="
-              handleInput('alerts', ($event.target as HTMLInputElement).value)
-            "
-          />
-        </div>
-      </template>
     </div>
 
     <!-- MEDIA_BASE_PATH_ICONS -->
     <div
       v-if="keys.includes('MEDIA_BASE_PATH_ICONS') && views.includes('map')"
-      class="space-y-4"
+      class="space-y-4 md:col-span-2"
     >
       <label class="block text-sm font-medium text-gray-700">
         {{ $t(toCamelCase("MEDIA_BASE_PATH_ICONS")) }}
       </label>
 
-      <div class="space-y-2">
-        <label
-          :for="`${tableName}-provider-icons`"
-          class="block text-sm font-medium text-gray-700"
-        >
-          {{ $t("mediaProvider") }}
-        </label>
-        <select
-          :id="`${tableName}-provider-icons`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
-          :value="providerIcons"
-          @change="
-            handleProviderChange(
-              'icons',
-              ($event.target as HTMLSelectElement).value as MediaProvider,
-            )
-          "
-        >
-          <option value="filebrowser">
-            {{ $t("mediaFilebrowserDefault") }}
-          </option>
-          <option value="generic">{{ $t("mediaGenericHttpBaseUrl") }}</option>
-        </select>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <div class="space-y-2">
+          <label
+            :for="`${tableName}-provider-icons`"
+            class="block text-sm font-medium text-gray-700"
+          >
+            {{ $t("mediaProvider") }}
+          </label>
+          <select
+            :id="`${tableName}-provider-icons`"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
+            :value="providerIcons"
+            @change="
+              handleProviderChange(
+                'icons',
+                ($event.target as HTMLSelectElement).value as MediaProvider,
+              )
+            "
+          >
+            <option value="filebrowser">
+              {{ $t("mediaFilebrowserDefault") }}
+            </option>
+            <option value="generic">{{ $t("mediaGenericHttpBaseUrl") }}</option>
+          </select>
+        </div>
+
+        <template v-if="providerIcons === 'filebrowser'">
+          <div class="space-y-2">
+            <label
+              :for="`${tableName}-share-icons`"
+              class="block text-sm font-medium text-gray-700"
+            >
+              {{ $t("mediaPasteFilebrowserShareUrlOrHash") }}
+            </label>
+            <input
+              :id="`${tableName}-share-icons`"
+              class="w-full px-4 py-2 border rounded-lg transition-colors"
+              :class="{
+                'border-red-300 focus:ring-red-500 focus:border-red-500':
+                  !isIconsValid && shareInputIcons,
+                'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
+                  isIconsValid || !shareInputIcons,
+              }"
+              type="text"
+              :value="shareInputIcons"
+              placeholder="https://files.example.com/share/abc123 or abc123"
+              @input="
+                handleInput('icons', ($event.target as HTMLInputElement).value)
+              "
+            />
+            <p
+              v-if="!isIconsValid && shareInputIcons"
+              class="text-sm text-red-600"
+            >
+              {{ $t("mediaInvalidFormat") }}
+            </p>
+            <p class="text-xs text-gray-500">
+              <strong>{{ $t("mediaAccepts") }}</strong>
+              <code class="px-1 py-0.5 bg-gray-100 rounded"
+                >https://files.example.com/share/abc123</code
+              >,
+              <code class="px-1 py-0.5 bg-gray-100 rounded"
+                >https://files.example.com/api/public/dl/abc123</code
+              >,
+              {{ $t("or") }}
+              <code class="px-1 py-0.5 bg-gray-100 rounded">abc123</code>
+            </p>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="space-y-2">
+            <label
+              :for="`${tableName}-baseUrl-generic-icons`"
+              class="block text-sm font-medium text-gray-700"
+            >
+              {{ $t("mediaBaseUrl") }}
+            </label>
+            <input
+              :id="`${tableName}-baseUrl-generic-icons`"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+              type="url"
+              :value="shareInputIcons"
+              placeholder="https://your-files-host.example/api/public/dl/"
+              @input="
+                handleInput('icons', ($event.target as HTMLInputElement).value)
+              "
+            />
+          </div>
+        </template>
       </div>
-
-      <template v-if="providerIcons === 'filebrowser'">
-        <div class="space-y-2">
-          <label
-            :for="`${tableName}-share-icons`"
-            class="block text-sm font-medium text-gray-700"
-          >
-            {{ $t("mediaPasteFilebrowserShareUrlOrHash") }}
-          </label>
-          <input
-            :id="`${tableName}-share-icons`"
-            class="w-full px-4 py-2 border rounded-lg transition-colors"
-            :class="{
-              'border-red-300 focus:ring-red-500 focus:border-red-500':
-                !isIconsValid && shareInputIcons,
-              'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
-                isIconsValid || !shareInputIcons,
-            }"
-            type="text"
-            :value="shareInputIcons"
-            placeholder="https://files.example.com/share/abc123 or abc123"
-            @input="
-              handleInput('icons', ($event.target as HTMLInputElement).value)
-            "
-          />
-          <p
-            v-if="!isIconsValid && shareInputIcons"
-            class="text-sm text-red-600"
-          >
-            {{ $t("mediaInvalidFormat") }}
-          </p>
-          <p class="text-xs text-gray-500">
-            <strong>{{ $t("mediaAccepts") }}</strong>
-            <code class="px-1 py-0.5 bg-gray-100 rounded"
-              >https://files.example.com/share/abc123</code
-            >,
-            <code class="px-1 py-0.5 bg-gray-100 rounded"
-              >https://files.example.com/api/public/dl/abc123</code
-            >,
-            {{ $t("or") }}
-            <code class="px-1 py-0.5 bg-gray-100 rounded">abc123</code>
-          </p>
-        </div>
-      </template>
-
-      <template v-else>
-        <div class="space-y-2">
-          <label
-            :for="`${tableName}-baseUrl-generic-icons`"
-            class="block text-sm font-medium text-gray-700"
-          >
-            {{ $t("mediaBaseUrl") }}
-          </label>
-          <input
-            :id="`${tableName}-baseUrl-generic-icons`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-            type="url"
-            :value="shareInputIcons"
-            placeholder="https://your-files-host.example/api/public/dl/"
-            @input="
-              handleInput('icons', ($event.target as HTMLInputElement).value)
-            "
-          />
-        </div>
-      </template>
     </div>
 
     <!-- MEDIA_COLUMN -->

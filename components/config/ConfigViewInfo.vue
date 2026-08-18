@@ -14,8 +14,16 @@ const emit = defineEmits(["updateConfig"]);
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div v-for="key in keys" :key="key" class="space-y-2">
+  <div
+    class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6"
+    data-testid="config-field-grid"
+  >
+    <div
+      v-for="key in keys"
+      :key="key"
+      class="space-y-2"
+      :class="{ 'md:col-span-2': key === 'VIEW_DESCRIPTION' }"
+    >
       <template v-if="key === 'LOGO_URL'">
         <label
           :for="`${tableName}-${key}`"

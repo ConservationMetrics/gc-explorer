@@ -1,0 +1,6 @@
+/* VueTagsInput scoped CSS caps the control at 450px. These selectors
+   stay at 0,3,0 so the field can fill its grid cell. */
+.tag-field.vue-tags-input.vue-tags-input {
+  width: 100%;
+  max-width: none;
+}

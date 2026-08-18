@@ -193,7 +193,7 @@ definePageMeta({ layout: "explorer" });
       <div
         class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6"
       >
-        <div class="min-w-0 flex-1 space-y-6">
+        <div class="min-w-0 flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
           <SelectDatasetField
             id="create-form-primary"
             v-model="primaryDataset"

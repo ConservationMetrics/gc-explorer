@@ -210,7 +210,7 @@
   "mediaBaseUrl": "URL ya msingi",
   "mediaColumn": "Safu ya kutumia kwa faili za midia",
   "mediaColumnDescription": "Eleza jina la safu linalo marejeleo ya faili za midia (k.m., picha, sauti). Thamani kutoka safu hii pekee zitaonyeshwa kama faili za midia. Acha tupu ili kuonyesha midia kutoka safu zote.",
-  "mediaFilebrowserDefault": "Filebrowser (chaguo-msingi la Guardian Connector)",
+  "mediaFilebrowserDefault": "Filebrowser (chaguo-msingi)",
   "mediaGenericHttpBaseUrl": "URL ya msingi ya HTTP ya jumla",
   "mediaImageOpenModal": "Angalia picha kubwa",
   "mediaInvalidFormat": "Muundo si sahihi. Tafadhali tumia URL ya kushiriki ya Filebrowser au hash.",

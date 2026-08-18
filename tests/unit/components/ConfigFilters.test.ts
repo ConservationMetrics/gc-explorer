@@ -62,4 +62,13 @@ describe("ConfigFilters", () => {
       SECONDARY_FILTER_VALUES: "active",
     });
   });
+
+  it("keeps tag fields full width of the grid", () => {
+    const wrapper = mountConfigFilters();
+
+    expect(wrapper.get(".tag-field").classes()).toContain("w-full");
+    expect(
+      wrapper.get(".tag-field").element.parentElement?.className,
+    ).toContain("md:col-span-2");
+  });
 });
