@@ -208,6 +208,115 @@ test("config page - edit dataset view form structure", async ({
   }
 });
 
+test("config page - View is first with prioritized responsive fields", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await openMapConfigEditPage(page);
+
+  const sections = page.locator(
+    "form [data-testid='config-section-collapsible']",
+  );
+  await expect(sections.first().locator("button").first()).toHaveAttribute(
+    "data-testid",
+    "config-section-view-toggle",
+  );
+
+  const viewSection = page
+    .locator("[data-testid='config-section-view-toggle']")
+    .locator("..");
+  const fieldIds = await viewSection
+    .locator("input, textarea")
+    .evaluateAll((fields) =>
+      fields.map((field) => field.id.replace(/^.*?-/, "")),
+    );
+  expect(fieldIds).toEqual([
+    "DATASET_TABLE",
+    "VIEW_DESCRIPTION",
+    "VIEW_HEADER_IMAGE",
+    "LOGO_URL",
+  ]);
+
+  const displayName = viewSection.locator('input[id$="-DATASET_TABLE"]');
+  const description = viewSection.locator('textarea[id$="-VIEW_DESCRIPTION"]');
+  const headerImage = viewSection.locator('input[id$="-VIEW_HEADER_IMAGE"]');
+  const logo = viewSection.locator('input[id$="-LOGO_URL"]');
+  const [displayBox, descriptionBox, headerBox, logoBox] = await Promise.all([
+    displayName.boundingBox(),
+    description.boundingBox(),
+    headerImage.boundingBox(),
+    logo.boundingBox(),
+  ]);
+
+  expect(displayBox).not.toBeNull();
+  expect(descriptionBox).not.toBeNull();
+  expect(headerBox).not.toBeNull();
+  expect(logoBox).not.toBeNull();
+  expect(displayBox!.width).toBeCloseTo(descriptionBox!.width, 0);
+  expect(logoBox!.x).toBeGreaterThan(headerBox!.x + headerBox!.width / 2);
+  expect(Math.abs(logoBox!.y - headerBox!.y)).toBeLessThan(24);
+
+  await page.setViewportSize({ width: 375, height: 800 });
+  const [stackedHeaderBox, stackedLogoBox] = await Promise.all([
+    headerImage.boundingBox(),
+    logo.boundingBox(),
+  ]);
+  expect(stackedHeaderBox).not.toBeNull();
+  expect(stackedLogoBox).not.toBeNull();
+  expect(stackedLogoBox!.y).toBeGreaterThan(
+    stackedHeaderBox!.y + stackedHeaderBox!.height / 2,
+  );
+});
+
+test("config page - image URL fields render previews and load errors", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  const imageBody = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+    "base64",
+  );
+  await page.route("**/__config-preview/**", async (route) => {
+    if (route.request().url().endsWith("missing.png")) {
+      await route.abort();
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "image/png",
+      body: imageBody,
+    });
+  });
+  await openMapConfigEditPage(page);
+  const previewBase = `${new URL(page.url()).origin}/__config-preview`;
+
+  const viewSection = page
+    .locator("[data-testid='config-section-view-toggle']")
+    .locator("..");
+  const headerImage = viewSection.locator('input[id$="-VIEW_HEADER_IMAGE"]');
+  const logo = viewSection.locator('input[id$="-LOGO_URL"]');
+
+  await headerImage.fill(`${previewBase}/header.png`);
+  await logo.fill(`${previewBase}/logo.png`);
+
+  await expect(
+    viewSection.locator("[data-testid='config-image-preview']"),
+  ).toHaveCount(2);
+  await expect(
+    viewSection.locator(
+      `[data-testid='config-image-preview'] img[src='${previewBase}/header.png']`,
+    ),
+  ).toBeVisible();
+  await expect(
+    viewSection.locator(
+      `[data-testid='config-image-preview'] img[src='${previewBase}/logo.png']`,
+    ),
+  ).toBeVisible();
+
+  await logo.fill(`${previewBase}/missing.png`);
+  await expect(
+    viewSection.locator("[data-testid='config-image-preview-error']"),
+  ).toHaveText("The image preview could not be loaded.");
+});
+
 test("config page - cancel create leaves database unchanged", async ({
   authenticatedPageAsAdmin: page,
 }) => {

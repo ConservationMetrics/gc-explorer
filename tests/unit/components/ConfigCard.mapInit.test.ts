@@ -57,7 +57,11 @@ const mountConfigCard = () =>
       },
       stubs: {
         BasemapSelector: true,
-        ConfigViewInfo: true,
+        ConfigViewInfo: {
+          props: ["keys"],
+          template:
+            '<div data-testid="config-view-info" :data-keys="keys.join(\',\')" />',
+        },
         ConfigFilters: true,
         ConfigMedia: true,
         ConfigPermissions: {
@@ -66,7 +70,9 @@ const mountConfigCard = () =>
         },
         ConfigViews: true,
         ConfigCollapsibleSection: {
-          template: "<div><slot /></div>",
+          props: ["title"],
+          template:
+            '<section data-testid="config-section" :data-title="title"><slot /></section>',
         },
       },
       mocks: {
@@ -76,6 +82,24 @@ const mountConfigCard = () =>
   });
 
 describe("ConfigCard map initialization", () => {
+  it("puts View before the other configuration sections", () => {
+    const wrapper = mountConfigCard();
+
+    expect(
+      wrapper
+        .findAll("[data-testid='config-section']")
+        .map((section) => section.attributes("data-title")),
+    ).toEqual(["view", "map", "media", "filtering", "visibility"]);
+  });
+
+  it("orders View fields by display name, description, header, and logo", () => {
+    const wrapper = mountConfigCard();
+
+    expect(
+      wrapper.get("[data-testid='config-view-info']").attributes("data-keys"),
+    ).toBe("DATASET_TABLE,VIEW_DESCRIPTION,VIEW_HEADER_IMAGE,LOGO_URL");
+  });
+
   it("keeps saved numeric fields visible after changing projection", async () => {
     const wrapper = mountConfigCard();
 

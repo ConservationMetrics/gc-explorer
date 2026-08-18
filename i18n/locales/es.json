@@ -116,6 +116,8 @@
   "iconColumnDescription": "Opcional: Especifique un nombre de columna (por ejemplo, 'icon') que contenga nombres de archivos de iconos (por ejemplo, 'camp.png'). Cuando se establece y la ruta base de iconos está configurada, las características de puntos se pueden mostrar como iconos en lugar de círculos.",
   "ifYouAreZoomedOutAlertsWillBeShownAsA": "Si está alejado, las alertas se mostrarán como un",
   "imageNotFound": "Imagen no encontrada",
+  "imagePreview": "Vista previa de la imagen",
+  "imagePreviewLoadError": "No se pudo cargar la vista previa de la imagen.",
   "incidents": "Incidentes",
   "incidents.backToIncidents": "Volver a incidentes guardados",
   "incidents.by": "Por",

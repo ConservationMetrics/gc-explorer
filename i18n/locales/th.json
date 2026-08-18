@@ -119,6 +119,8 @@
   "iconColumnDescription": "ไม่บังคับ: ระบุชื่อคอลัมน์ (เช่น 'icon') ที่มีชื่อไฟล์ไอคอน (เช่น 'camp.png') เมื่อตั้งค่าและมี base path สำหรับไอคอน ฟีเจอร์จุดสามารถแสดงเป็นไอคอนแทนวงกลม",
   "ifYouAreZoomedOutAlertsWillBeShownAsA": "หากซูมออก การแจ้งเตือนจะแสดงเป็น",
   "imageNotFound": "ไม่พบรูปภาพ",
+  "imagePreview": "ตัวอย่างรูปภาพ",
+  "imagePreviewLoadError": "ไม่สามารถโหลดตัวอย่างรูปภาพได้",
   "incidents": "เหตุการณ์",
   "incidents.backToIncidents": "กลับไปเหตุการณ์ที่บันทึกไว้",
   "incidents.by": "โดย",

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ConfigImagePreview from "@/components/config/ConfigImagePreview.vue";
 import { CONFIG_LIMITS } from "@/utils";
 import { toCamelCase } from "@/utils/identifierUtils";
 import type { ViewConfig } from "@/types";
@@ -22,7 +23,9 @@ const emit = defineEmits(["updateConfig"]);
       v-for="key in keys"
       :key="key"
       class="space-y-2"
-      :class="{ 'md:col-span-2': key === 'VIEW_DESCRIPTION' }"
+      :class="{
+        'md:col-span-2': key === 'DATASET_TABLE' || key === 'VIEW_DESCRIPTION',
+      }"
     >
       <template v-if="key === 'LOGO_URL'">
         <label
@@ -43,6 +46,11 @@ const emit = defineEmits(["updateConfig"]);
                 [key]: (e.target as HTMLInputElement).value,
               })
           "
+        />
+        <ConfigImagePreview
+          :src="config.LOGO_URL ?? ''"
+          :alt="$t(toCamelCase(key))"
+          fit="contain"
         />
       </template>
       <template v-else-if="key === 'DATASET_TABLE'">
@@ -120,6 +128,11 @@ const emit = defineEmits(["updateConfig"]);
             "Optional: URL for the header background image"
           }}
         </p>
+        <ConfigImagePreview
+          :src="config.VIEW_HEADER_IMAGE ?? ''"
+          :alt="$t('viewHeaderImage')"
+          fit="cover"
+        />
       </template>
       <template v-else-if="key === 'VIEW_DESCRIPTION'">
         <label

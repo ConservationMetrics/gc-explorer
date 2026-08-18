@@ -66,10 +66,10 @@ const filterKeys = computed(() =>
     : ["FRONT_END_FILTER_COLUMN", "TIMESTAMP_COLUMN", "UNWANTED_COLUMNS"],
 );
 const viewInfoKeys = computed(() => [
-  "LOGO_URL",
   "DATASET_TABLE",
-  "VIEW_HEADER_IMAGE",
   "VIEW_DESCRIPTION",
+  "VIEW_HEADER_IMAGE",
+  "LOGO_URL",
 ]);
 
 // The child config components expect a `views` array; wrap the single view type
@@ -241,6 +241,16 @@ const handleSubmit = () => {
     </div>
     <div class="p-6">
       <form @submit.prevent="handleSubmit">
+        <ConfigCollapsibleSection :title="$t('view')" :default-open="true">
+          <ConfigViewInfo
+            :table-name="tableName"
+            :views="viewTypeList"
+            :config="localConfig"
+            :keys="viewInfoKeys"
+            @update-config="handleConfigUpdate"
+          />
+        </ConfigCollapsibleSection>
+
         <ConfigCollapsibleSection
           v-if="shouldShowConfigMap"
           :title="$t('map')"
@@ -279,16 +289,6 @@ const handleSubmit = () => {
             :views="viewTypeList"
             :config="localConfig"
             :keys="filterKeys"
-            @update-config="handleConfigUpdate"
-          />
-        </ConfigCollapsibleSection>
-
-        <ConfigCollapsibleSection :title="$t('view')" :default-open="true">
-          <ConfigViewInfo
-            :table-name="tableName"
-            :views="viewTypeList"
-            :config="localConfig"
-            :keys="viewInfoKeys"
             @update-config="handleConfigUpdate"
           />
         </ConfigCollapsibleSection>
