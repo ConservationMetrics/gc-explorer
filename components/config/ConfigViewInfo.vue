@@ -33,7 +33,7 @@ const emit = defineEmits(["updateConfig"]);
         </label>
         <input
           :id="`${tableName}-${key}`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+          class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
           placeholder="https://…"
           type="url"
           :value="config[key]"
@@ -54,7 +54,7 @@ const emit = defineEmits(["updateConfig"]);
         </label>
         <input
           :id="`${tableName}-${key}`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+          class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
           :placeholder="$t('viewDisplayNamePlaceholder')"
           type="text"
           :maxlength="CONFIG_LIMITS.DATASET_TABLE"
@@ -103,7 +103,7 @@ const emit = defineEmits(["updateConfig"]);
         </label>
         <input
           :id="`${tableName}-${key}`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+          class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
           placeholder="https://…"
           type="url"
           :value="config[key]"
@@ -130,7 +130,7 @@ const emit = defineEmits(["updateConfig"]);
         </label>
         <textarea
           :id="`${tableName}-${key}`"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors resize-y"
+          class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors resize-y"
           rows="3"
           :maxlength="CONFIG_LIMITS.VIEW_DESCRIPTION"
           :placeholder="$t('viewDescriptionPlaceholder')"

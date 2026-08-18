@@ -124,7 +124,7 @@ definePageMeta({ layout: "explorer" });
           id="create-primary-dataset"
           v-model="selectedPrimary"
           data-testid="create-primary-select"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+          class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
         >
           <option value="">{{ $t("selectPrimaryDatasetOptional") }}</option>
           <option v-for="table in availableTables" :key="table" :value="table">

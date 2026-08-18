@@ -689,6 +689,9 @@ test("config page - basemap configuration - update name and style", async ({
   const hasBasemapConfig = (await basemapLabel.count()) > 0;
 
   if (hasBasemapConfig) {
+    await expect(page.getByLabel("Basemap name").first()).toBeVisible();
+    await expect(page.getByLabel("Mapbox Style").first()).toBeVisible();
+
     const nameInput = page.locator('input[id*="basemap-name-0"]').first();
     const styleInput = page.locator('input[id*="basemap-style-0"]').first();
 

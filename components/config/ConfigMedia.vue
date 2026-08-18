@@ -246,7 +246,7 @@ watch(
           </label>
           <select
             :id="`${tableName}-provider-basePath`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
+            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             :value="providerBasePath"
             @change="
               handleProviderChange(
@@ -272,11 +272,11 @@ watch(
             </label>
             <input
               :id="`${tableName}-share-basePath`"
-              class="w-full px-4 py-2 border rounded-lg transition-colors"
+              class="w-full px-4 py-2 bg-violet-100 border rounded-lg transition-colors"
               :class="{
                 'border-red-300 focus:ring-red-500 focus:border-red-500':
                   !isBasePathValid && shareInputBasePath,
-                'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
+                'bg-violet-100 border-violet-200 focus:ring-violet-500 focus:border-violet-500':
                   isBasePathValid || !shareInputBasePath,
               }"
               type="text"
@@ -319,7 +319,7 @@ watch(
             </label>
             <input
               :id="`${tableName}-baseUrl-generic-basePath`"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+              class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
               type="url"
               :value="shareInputBasePath"
               placeholder="https://your-files-host.example/api/public/dl/"
@@ -354,7 +354,7 @@ watch(
           </label>
           <select
             :id="`${tableName}-provider-alerts`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
+            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             :value="providerAlerts"
             @change="
               handleProviderChange(
@@ -380,11 +380,11 @@ watch(
             </label>
             <input
               :id="`${tableName}-share-alerts`"
-              class="w-full px-4 py-2 border rounded-lg transition-colors"
+              class="w-full px-4 py-2 bg-violet-100 border rounded-lg transition-colors"
               :class="{
                 'border-red-300 focus:ring-red-500 focus:border-red-500':
                   !isAlertsValid && shareInputAlerts,
-                'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
+                'bg-violet-100 border-violet-200 focus:ring-violet-500 focus:border-violet-500':
                   isAlertsValid || !shareInputAlerts,
               }"
               type="text"
@@ -424,7 +424,7 @@ watch(
             </label>
             <input
               :id="`${tableName}-baseUrl-generic-alerts`"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+              class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
               type="url"
               :value="shareInputAlerts"
               placeholder="https://your-files-host.example/api/public/dl/"
@@ -456,7 +456,7 @@ watch(
           </label>
           <select
             :id="`${tableName}-provider-icons`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
+            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             :value="providerIcons"
             @change="
               handleProviderChange(
@@ -482,11 +482,11 @@ watch(
             </label>
             <input
               :id="`${tableName}-share-icons`"
-              class="w-full px-4 py-2 border rounded-lg transition-colors"
+              class="w-full px-4 py-2 bg-violet-100 border rounded-lg transition-colors"
               :class="{
                 'border-red-300 focus:ring-red-500 focus:border-red-500':
                   !isIconsValid && shareInputIcons,
-                'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
+                'bg-violet-100 border-violet-200 focus:ring-violet-500 focus:border-violet-500':
                   isIconsValid || !shareInputIcons,
               }"
               type="text"
@@ -526,7 +526,7 @@ watch(
             </label>
             <input
               :id="`${tableName}-baseUrl-generic-icons`"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+              class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
               type="url"
               :value="shareInputIcons"
               placeholder="https://your-files-host.example/api/public/dl/"
@@ -541,7 +541,10 @@ watch(
 
     <!-- MEDIA_COLUMN -->
     <div v-if="keys.includes('MEDIA_COLUMN')" class="space-y-2">
-      <label class="block text-sm font-medium text-gray-700">
+      <label
+        :for="`${tableName}-media-column`"
+        class="block text-sm font-medium text-gray-700"
+      >
         {{ $t(toCamelCase("MEDIA_COLUMN")) }}
       </label>
       <p class="text-xs text-gray-500 mb-2">
@@ -549,7 +552,7 @@ watch(
       </p>
       <input
         :id="`${tableName}-media-column`"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+        class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
         type="text"
         :value="mediaColumn"
         placeholder="photo"

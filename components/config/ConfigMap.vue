@@ -279,13 +279,19 @@ const fullWidthKeys = [
                 </div>
                 <div class="flex-1 space-y-3">
                   <div>
+                    <label
+                      :for="`${tableName}-basemap-name-${index}`"
+                      class="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      {{ $t("basemapName") }}
+                    </label>
                     <input
                       :id="`${tableName}-basemap-name-${index}`"
-                      class="w-full px-4 py-2 border rounded-lg transition-colors"
+                      class="w-full px-4 py-2 bg-violet-100 border rounded-lg transition-colors"
                       :class="{
                         'border-red-300 focus:ring-red-500 focus:border-red-500':
                           !isNameValid(index, basemap.name),
-                        'border-gray-300 focus:ring-violet-500 focus:border-violet-500':
+                        'border-violet-200 focus:ring-violet-500 focus:border-violet-500':
                           isNameValid(index, basemap.name) || !basemap.name,
                       }"
                       :placeholder="$t('basemapName')"
@@ -306,25 +312,33 @@ const fullWidthKeys = [
                       {{ getValidationError(index, basemap.name) }}
                     </span>
                   </div>
-                  <input
-                    :id="`${tableName}-basemap-style-${index}`"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-                    pattern="^mapbox:\/\/styles\/[^\/]+\/[^\/]+$"
-                    placeholder="mapbox://styles/user/styleId"
-                    :title="
-                      $t('pleaseMatchFormat') +
-                      ': mapbox://styles/username/styleid'
-                    "
-                    :value="basemap.style"
-                    required
-                    @input="
-                      updateBasemap(
-                        index,
-                        'style',
-                        ($event.target as HTMLInputElement).value,
-                      )
-                    "
-                  />
+                  <div>
+                    <label
+                      :for="`${tableName}-basemap-style-${index}`"
+                      class="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      {{ $t("mapboxStyle") }}
+                    </label>
+                    <input
+                      :id="`${tableName}-basemap-style-${index}`"
+                      class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+                      pattern="^mapbox:\/\/styles\/[^\/]+\/[^\/]+$"
+                      placeholder="mapbox://styles/user/styleId"
+                      :title="
+                        $t('pleaseMatchFormat') +
+                        ': mapbox://styles/username/styleid'
+                      "
+                      :value="basemap.style"
+                      required
+                      @input="
+                        updateBasemap(
+                          index,
+                          'style',
+                          ($event.target as HTMLInputElement).value,
+                        )
+                      "
+                    />
+                  </div>
                 </div>
                 <button
                   v-if="index !== 0"
@@ -340,7 +354,7 @@ const fullWidthKeys = [
             <button
               type="button"
               data-testid="basemap-add-button"
-              class="w-full px-4 py-2 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full px-4 py-2 text-sm font-medium text-violet-700 bg-white border border-violet-200 rounded-lg hover:bg-violet-50 active:scale-[0.96] transition-[transform,background-color,border-color,color] duration-150 ease-out disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
               :disabled="!canAddBasemap"
               @click="addBasemap"
             >
@@ -359,7 +373,7 @@ const fullWidthKeys = [
           </label>
           <input
             :id="`${tableName}-${key}`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             pattern="^pk\.ey.*"
             placeholder="pk.ey…"
             :title="$t('pleaseMatchFormat') + ': pk.ey… '"
@@ -390,7 +404,7 @@ const fullWidthKeys = [
           </label>
           <input
             :id="`${tableName}-${key}`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors tabular-nums"
             type="number"
             step="any"
             :min="
@@ -438,7 +452,7 @@ const fullWidthKeys = [
           </label>
           <select
             :id="`${tableName}-${key}`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors bg-white"
+            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             :value="config[key]"
             @change="
               (e) => handleInput(key, (e.target as HTMLSelectElement).value)
@@ -476,7 +490,7 @@ const fullWidthKeys = [
                 <input
                   :id="`${tableName}-${key}`"
                   type="checkbox"
-                  class="w-5 h-5 text-violet-600 border-gray-300 rounded focus:ring-violet-500 focus:ring-2"
+                  class="w-5 h-5 text-violet-600 accent-violet-600 bg-violet-100 border-violet-200 rounded focus:ring-violet-500 focus:ring-2"
                   :checked="Boolean(config[key])"
                   @change="
                     (e) =>
@@ -523,6 +537,7 @@ const fullWidthKeys = [
             {{ $t(toCamelCase(key)) }}
           </label>
           <VueTagsInput
+            :id="`${tableName}-${key}`"
             class="tag-field w-full"
             :tags="tags[key]"
             @tags-changed="(newTags: Tag[]) => handleTagsChanged(key, newTags)"
@@ -539,7 +554,7 @@ const fullWidthKeys = [
           </label>
           <input
             :id="`${tableName}-${key}`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             type="text"
             :value="config[key]"
             @input="
@@ -558,7 +573,7 @@ const fullWidthKeys = [
           </label>
           <input
             :id="`${tableName}-${key}`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             type="text"
             placeholder="color"
             :value="config[key]"
@@ -579,7 +594,7 @@ const fullWidthKeys = [
           </label>
           <input
             :id="`${tableName}-${key}`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             type="text"
             placeholder="icon"
             :value="config[key]"
