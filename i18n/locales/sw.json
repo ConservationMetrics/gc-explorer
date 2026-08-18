@@ -119,6 +119,8 @@
   "iconColumnDescription": "Hiari: Eleza jina la safu (k.m., 'icon') linalo majina ya faili za ikoni (k.m., 'camp.png'). Inapowekwa na njia ya msingi ya ikoni imesanidiwa, vipengele vya nukta vinaweza kuonyeshwa kama ikoni badala ya duara.",
   "ifYouAreZoomedOutAlertsWillBeShownAsA": "Ukiwa umevuta nje, tahadhari zitaonyeshwa kama",
   "imageNotFound": "Picha haipatikani",
+  "imagePreview": "Hakiki ya picha",
+  "imagePreviewLoadError": "Hakiki ya picha haikuweza kupakiwa.",
   "incidents": "Matukio",
   "incidents.backToIncidents": "Rudi kwenye matukio yaliyohifadhiwa",
   "incidents.by": "Na",
