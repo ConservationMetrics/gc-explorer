@@ -503,7 +503,6 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
 
   for (const view of views) {
     await page.goto(view.path);
-    await page.waitForLoadState("networkidle");
     await page.waitForSelector("form", { timeout: 15000 });
 
     const selector = page.locator(
@@ -511,6 +510,15 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
     );
     const submitButton = page.locator("[data-testid='config-submit-button']");
     const originalValue = await selector.inputValue();
+    let originalFilterValue: string | null = null;
+    if (view.primaryDataset === "fake_alerts") {
+      await page
+        .locator('[data-testid="config-section-filtering-toggle"]')
+        .click();
+      originalFilterValue = await page
+        .locator('select[id*="FRONT_END_FILTER_COLUMN"]')
+        .inputValue();
+    }
     const optionValues = await selector
       .locator("option")
       .evaluateAll((options) =>
@@ -525,6 +533,18 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
 
     expect(replacement).toBeTruthy();
     await selector.selectOption(replacement!);
+    if (view.primaryDataset === "fake_alerts") {
+      const filterColumn = page.locator(
+        'select[id*="FRONT_END_FILTER_COLUMN"]',
+      );
+      await expect(filterColumn).toBeEnabled();
+      const replacementFilter = await filterColumn
+        .locator('option:not([value=""]):not([disabled])')
+        .first()
+        .getAttribute("value");
+      expect(replacementFilter).toBeTruthy();
+      await filterColumn.selectOption(replacementFilter!);
+    }
     await expect(submitButton).toBeEnabled();
     await submitButton.evaluate((button) => {
       (button as HTMLButtonElement).formNoValidate = true;
@@ -538,6 +558,16 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
     await expect(selector).toHaveValue(replacement!);
 
     await selector.selectOption(originalValue);
+    if (view.primaryDataset === "fake_alerts") {
+      await page
+        .locator('[data-testid="config-section-filtering-toggle"]')
+        .click();
+      const filterColumn = page.locator(
+        'select[id*="FRONT_END_FILTER_COLUMN"]',
+      );
+      await expect(filterColumn).toBeEnabled();
+      await filterColumn.selectOption(originalFilterValue!);
+    }
     await expect(submitButton).toBeEnabled();
     await submitButton.evaluate((button) => {
       (button as HTMLButtonElement).formNoValidate = true;
@@ -653,7 +683,6 @@ test("config page - visibility permissions configuration", async ({
   // Use a seeded view that already has ROUTE_LEVEL_PERMISSION set. Newly added
   // views start with an empty config and intentionally have no radio selected.
   await page.goto("/config/fake_alerts?view_type=alerts");
-  await page.waitForLoadState("networkidle");
   await page.waitForSelector("form", { timeout: 15000 });
 
   const visibilitySection = page.locator(
@@ -830,21 +859,65 @@ test("config page - color column configuration", async ({
 }) => {
   await openMapConfigEditPage(page);
 
-  const colorColumnInput = page.locator('input[id*="COLOR_COLUMN"]');
-  const hasColorColumn = (await colorColumnInput.count()) > 0;
+  const colorColumnSelect = page.locator('select[id*="COLOR_COLUMN"]');
+  const hasColorColumn = (await colorColumnSelect.count()) > 0;
 
   if (hasColorColumn) {
-    await expect(colorColumnInput.first()).toBeVisible();
+    await expect(colorColumnSelect.first()).toBeVisible();
 
-    await colorColumnInput.first().clear();
-    await colorColumnInput.first().fill("color");
+    await colorColumnSelect.first().selectOption("community");
     await page.waitForTimeout(300);
 
-    await expect(colorColumnInput.first()).toHaveValue("color");
+    await expect(colorColumnSelect.first()).toHaveValue("community");
 
     const submitButton = page.locator("[data-testid='config-submit-button']");
     await expect(submitButton).toBeEnabled();
   }
+});
+
+test("config page - column controls use dataset metadata and reject conflicts", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await openMapConfigEditPage(page);
+
+  const response = await page.request.get(
+    "/api/config/columns/bcmform_responses",
+  );
+  expect(response.ok()).toBe(true);
+  const body = (await response.json()) as {
+    columns: Array<{ original_column: string; sql_column: string }>;
+  };
+  expect(body.columns).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        original_column: "community",
+        sql_column: "community",
+      }),
+    ]),
+  );
+
+  const colorColumnSelect = page.locator('select[id*="COLOR_COLUMN"]');
+  const iconColumnSelect = page.locator('select[id*="ICON_COLUMN"]');
+  await expect(
+    colorColumnSelect.locator('option[value="community"]'),
+  ).toHaveText("community");
+  await expect(iconColumnSelect.locator('option[value="photo"]')).toHaveText(
+    "photo",
+  );
+
+  const invalidSave = await page.request.post(
+    "/api/config/update_config/bcmform_responses?view_type=map",
+    {
+      data: {
+        config: {
+          COLOR_COLUMN: "community",
+          UNWANTED_COLUMNS: "community",
+        },
+        secondaryDataset: null,
+      },
+    },
+  );
+  expect(invalidSave.status()).toBe(400);
 });
 
 test("config page - copy config from another same-type view", async ({
