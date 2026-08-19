@@ -264,6 +264,46 @@ export const fetchTableSqlColumns = async (
 };
 
 /**
+ * Resolves original and SQL column names for a warehouse table.
+ *
+ * @param {string} table - Base table name.
+ * @returns {Promise<ColumnEntry[]>} Ordered column names for Config controls.
+ */
+export const fetchTableColumnEntries = async (
+  table: string,
+): Promise<ColumnEntry[]> => {
+  const cleanTableName = normalizeTableName(table);
+  const columnsTable = `"${cleanTableName}__columns"`;
+
+  if (await checkTableExists(columnsTable)) {
+    const columns = (await fetchDataFromTable(
+      columnsTable,
+      DEFAULT_COLUMNS_TABLE_PROJECTION,
+    )) as Array<Partial<ColumnEntry>>;
+    const entries = columns.filter(
+      (column): column is ColumnEntry =>
+        typeof column.original_column === "string" &&
+        typeof column.sql_column === "string",
+    );
+
+    if (entries.length > 0) {
+      return entries.filter(
+        (column, index) =>
+          entries.findIndex(
+            (candidate) => candidate.sql_column === column.sql_column,
+          ) === index,
+      );
+    }
+  }
+
+  const sqlColumns = await fetchTableSqlColumns(cleanTableName);
+  return sqlColumns.map((column) => ({
+    original_column: column,
+    sql_column: column,
+  }));
+};
+
+/**
  * Fetches projected dataset rows and optional side tables for API routes.
  * Main-table projection is mandatory, while `__columns` and `__metadata`
  * reads are opt-in and require explicit projections.
