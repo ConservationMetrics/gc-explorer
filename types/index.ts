@@ -120,6 +120,21 @@ export interface ViewConfig {
   VIEW_DESCRIPTION?: string; // Description of the dataset/table
 }
 
+export type FunctionalColumnKey =
+  | "COLOR_COLUMN"
+  | "FRONT_END_FILTER_COLUMN"
+  | "TIMESTAMP_COLUMN"
+  | "MEDIA_COLUMN"
+  | "ICON_COLUMN";
+
+export type ViewConfigColumnValidation = {
+  conflictingUnwantedColumns: string[];
+  invalidSelections: Partial<Record<FunctionalColumnKey, string>>;
+  invalidUnwantedColumns: string[];
+  isValid: boolean;
+  protectedUnwantedColumns: string[];
+};
+
 export interface Views {
   [key: string]: ViewConfig;
 }
