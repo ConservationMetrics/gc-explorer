@@ -2,10 +2,12 @@
 import { useAppConfig } from "#imports";
 import {
   supportsSecondaryDataset,
+  type ColumnEntry,
   type ViewConfig,
   type ViewType,
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
+import { validateViewConfigColumns } from "@/utils/viewConfigColumns";
 import ConfigPermissions from "./ConfigPermissions.vue";
 import ConfigCollapsibleSection from "./ConfigCollapsibleSection.vue";
 import { Check, Trash2 } from "lucide-vue-next";
@@ -25,6 +27,10 @@ const props = withDefaults(
     /** False when the parent blocks Save (e.g. missing primary or duplicate view). */
     saveEnabled?: boolean;
     secondaryEditable?: boolean;
+    primaryColumns?: ColumnEntry[];
+    secondaryColumns?: ColumnEntry[];
+    primaryColumnsLoading?: boolean;
+    secondaryColumnsLoading?: boolean;
   }>(),
   {
     configToCopy: null,
@@ -32,6 +38,10 @@ const props = withDefaults(
     showRemove: true,
     saveEnabled: true,
     secondaryEditable: false,
+    primaryColumns: () => [],
+    secondaryColumns: () => [],
+    primaryColumnsLoading: false,
+    secondaryColumnsLoading: false,
   },
 );
 
@@ -173,13 +183,42 @@ const isChanged = computed(() => {
 // Track permission validation state
 const isPermissionValid = ref(true);
 
+const hasSecondaryDataset = computed(
+  () =>
+    shouldUseSecondaryDataset.value &&
+    localSecondaryDataset.value.trim() !== "",
+);
+
+const columnValidation = computed(() =>
+  validateViewConfigColumns(
+    localConfig.value,
+    props.primaryColumns,
+    props.secondaryColumns,
+    props.viewType,
+    hasSecondaryDataset.value,
+  ),
+);
+
+const areColumnsLoading = computed(
+  () =>
+    props.primaryColumnsLoading ||
+    (props.viewType === "alerts" &&
+      hasSecondaryDataset.value &&
+      props.secondaryColumnsLoading),
+);
+
 const isFormValid = computed(() => {
   const isMapConfigValid = shouldShowConfigMap.value
     ? localConfig.value.MAPBOX_ACCESS_TOKEN?.trim() !== "" &&
       localConfig.value.MAPBOX_ACCESS_TOKEN != null
     : true;
 
-  return isMapConfigValid && isPermissionValid.value;
+  return (
+    isMapConfigValid &&
+    isPermissionValid.value &&
+    columnValidation.value.isValid &&
+    !areColumnsLoading.value
+  );
 });
 
 const canSubmit = computed(
@@ -261,6 +300,8 @@ const handleSubmit = () => {
             :views="viewTypeList"
             :config="localConfig"
             :keys="mapConfigKeys"
+            :columns="primaryColumns"
+            :columns-loading="primaryColumnsLoading"
             @update-config="handleConfigUpdate"
           />
         </ConfigCollapsibleSection>
@@ -275,6 +316,8 @@ const handleSubmit = () => {
             :views="viewTypeList"
             :config="localConfig"
             :keys="mediaKeys"
+            :columns="primaryColumns"
+            :columns-loading="primaryColumnsLoading"
             @update-config="handleConfigUpdate"
           />
         </ConfigCollapsibleSection>
@@ -289,6 +332,12 @@ const handleSubmit = () => {
             :views="viewTypeList"
             :config="localConfig"
             :keys="filterKeys"
+            :view-type="viewType"
+            :has-secondary-dataset="hasSecondaryDataset"
+            :primary-columns="primaryColumns"
+            :secondary-columns="secondaryColumns"
+            :primary-columns-loading="primaryColumnsLoading"
+            :secondary-columns-loading="secondaryColumnsLoading"
             @update-config="handleConfigUpdate"
           />
         </ConfigCollapsibleSection>

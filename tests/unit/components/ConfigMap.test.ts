@@ -714,16 +714,17 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const colorColumnInput = wrapper.find(
-      'input[id="test_table-COLOR_COLUMN"]',
+    const colorColumnSelect = wrapper.find(
+      'select[id="test_table-COLOR_COLUMN"]',
     );
-    expect(colorColumnInput.exists()).toBe(true);
+    expect(colorColumnSelect.exists()).toBe(true);
   });
 
   it("updates COLOR_COLUMN value when input changes", async () => {
     const propsWithColorColumn = {
       ...baseProps,
       keys: [...baseProps.keys, "COLOR_COLUMN"],
+      columns: [{ original_column: "color", sql_column: "color" }],
     };
 
     const wrapper = mount(ConfigMap, {
@@ -731,17 +732,17 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const colorColumnInput = wrapper.find(
-      'input[id="test_table-COLOR_COLUMN"]',
+    const colorColumnSelect = wrapper.find(
+      'select[id="test_table-COLOR_COLUMN"]',
     );
-    await colorColumnInput.setValue("color");
+    await colorColumnSelect.setValue("color");
 
     expect(wrapper.emitted("updateConfig")).toBeTruthy();
     const emitted = wrapper.emitted("updateConfig");
     expect(emitted?.[0]?.[0]).toEqual({ COLOR_COLUMN: "color" });
   });
 
-  it("displays placeholder for COLOR_COLUMN field", () => {
+  it("displays an empty option for COLOR_COLUMN", () => {
     const propsWithColorColumn = {
       ...baseProps,
       keys: [...baseProps.keys, "COLOR_COLUMN"],
@@ -752,10 +753,10 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const colorColumnInput = wrapper.find(
-      'input[id="test_table-COLOR_COLUMN"]',
+    const colorColumnSelect = wrapper.find(
+      'select[id="test_table-COLOR_COLUMN"]',
     );
-    expect(colorColumnInput.attributes("placeholder")).toBe("color");
+    expect(colorColumnSelect.find('option[value=""]').exists()).toBe(true);
   });
 
   it("renders ICON_COLUMN field when included in keys", () => {
@@ -769,14 +770,17 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const iconColumnInput = wrapper.find('input[id="test_table-ICON_COLUMN"]');
-    expect(iconColumnInput.exists()).toBe(true);
+    const iconColumnSelect = wrapper.find(
+      'select[id="test_table-ICON_COLUMN"]',
+    );
+    expect(iconColumnSelect.exists()).toBe(true);
   });
 
   it("updates ICON_COLUMN value when input changes", async () => {
     const propsWithIconColumn = {
       ...baseProps,
       keys: [...baseProps.keys, "ICON_COLUMN"],
+      columns: [{ original_column: "icon", sql_column: "icon" }],
     };
 
     const wrapper = mount(ConfigMap, {
@@ -784,15 +788,17 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const iconColumnInput = wrapper.find('input[id="test_table-ICON_COLUMN"]');
-    await iconColumnInput.setValue("icon");
+    const iconColumnSelect = wrapper.find(
+      'select[id="test_table-ICON_COLUMN"]',
+    );
+    await iconColumnSelect.setValue("icon");
 
     expect(wrapper.emitted("updateConfig")).toBeTruthy();
     const emitted = wrapper.emitted("updateConfig");
     expect(emitted?.[0]?.[0]).toEqual({ ICON_COLUMN: "icon" });
   });
 
-  it("displays placeholder for ICON_COLUMN field", () => {
+  it("displays an empty option for ICON_COLUMN", () => {
     const propsWithIconColumn = {
       ...baseProps,
       keys: [...baseProps.keys, "ICON_COLUMN"],
@@ -803,8 +809,10 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const iconColumnInput = wrapper.find('input[id="test_table-ICON_COLUMN"]');
-    expect(iconColumnInput.attributes("placeholder")).toBe("icon");
+    const iconColumnSelect = wrapper.find(
+      'select[id="test_table-ICON_COLUMN"]',
+    );
+    expect(iconColumnSelect.find('option[value=""]').exists()).toBe(true);
   });
 
   it("labels basemap fields and uses purple field chrome", () => {
