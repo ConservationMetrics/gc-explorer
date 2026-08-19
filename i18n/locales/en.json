@@ -34,6 +34,7 @@
   "close": "Close",
   "colorColumn": "Color Column",
   "colorColumnDescription": "Optional: Specify a column name (e.g., 'color') that contains color values (e.g., hex codes like #FF0000). When set, map features and filter dots will use these colors instead of the randomly generated colors.",
+  "columnNotAvailable": "This column is not available in the selected dataset.",
   "community": {
     "community": "community"
   },
@@ -274,6 +275,7 @@
   "secondaryFilterValues": "Values to include from the secondary dataset on the alerts map",
   "selectAlertDateRange": "Select an alert date range",
   "selectBasemap": "Select basemap",
+  "selectColumn": "Select a column…",
   "selectMoreOptions": "Select more options",
   "selectPrimaryDataset": "Select a primary dataset…",
   "selectPrimaryDatasetOptional": "Select later…",
@@ -293,6 +295,7 @@
   "type": "Type",
   "typeOfAlerts": "Type of alerts",
   "unwantedColumns": "Unwanted columns",
+  "unwantedColumnsInvalid": "Remove protected, unavailable, or active columns before saving.",
   "version": "Version",
   "view": "View",
   "viewDescription": "View Description",
