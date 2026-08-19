@@ -6,6 +6,7 @@ import SelectDatasetField from "@/components/config/SelectDatasetField.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import ViewTypePill from "@/components/shared/ViewTypePill.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
+import { useDatasetColumns } from "@/composables/useDatasetColumns";
 import {
   supportsSecondaryDataset,
   type ViewConfig,
@@ -32,6 +33,12 @@ const datasetConfig = ref<ViewConfig | null>(null);
 const secondaryDataset = ref<string | null>(null);
 const viewName = ref("");
 const errorMessage = ref<string | null>(null);
+const primaryDatasetForColumns = computed(() => dataset);
+const secondaryDatasetForColumns = computed(() => secondaryDataset.value);
+const { columns: primaryColumns, isLoading: primaryColumnsLoading } =
+  useDatasetColumns(primaryDatasetForColumns);
+const { columns: secondaryColumns, isLoading: secondaryColumnsLoading } =
+  useDatasetColumns(secondaryDatasetForColumns);
 
 const editedViewType = ref<ViewType | undefined>(undefined);
 
@@ -309,6 +316,10 @@ definePageMeta({ layout: "explorer" });
           :secondary-dataset="secondaryDataset"
           :config-to-copy="configToCopy"
           :secondary-editable="true"
+          :primary-columns="primaryColumns"
+          :secondary-columns="secondaryColumns"
+          :primary-columns-loading="primaryColumnsLoading"
+          :secondary-columns-loading="secondaryColumnsLoading"
           @submit-config="submitConfig"
           @remove-table-from-config="handleRemoveTableFromConfig"
         />
