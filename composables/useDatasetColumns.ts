@@ -1,12 +1,7 @@
 import { encodeDatasetNameForUrl } from "@/utils/identifierUtils";
 
-import type { ColumnEntry } from "@/types";
+import type { ColumnEntry, DatasetColumnsResponse } from "@/types";
 import type { Ref } from "vue";
-
-type DatasetColumnsResponse = {
-  columns: ColumnEntry[];
-  table: string;
-};
 
 /**
  * Loads column metadata when the selected dataset changes.

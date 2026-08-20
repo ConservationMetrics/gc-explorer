@@ -194,6 +194,11 @@ export type ColumnEntry = {
   sql_column: string;
 };
 
+export type DatasetColumnsResponse = {
+  columns: ColumnEntry[];
+  table: string;
+};
+
 export type DataEntry = Record<string, string> & {
   normalizedId?: number;
 };
