@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ConfigColumnSelect from "@/components/config/ConfigColumnSelect.vue";
 import { toCamelCase } from "@/utils/identifierUtils";
 import {
   extractShareId,
@@ -7,13 +8,15 @@ import {
   getBaseUrlFromInput,
   isValidFilebrowserInput,
 } from "@/utils/mediaHelpers";
-import type { ViewConfig } from "@/types";
+import type { ColumnEntry, ViewConfig } from "@/types";
 
 const props = defineProps<{
   tableName: string;
   config: ViewConfig;
   views: string[];
   keys: string[];
+  columns?: ColumnEntry[];
+  columnsLoading?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -29,7 +32,6 @@ const providerAlerts = ref<MediaProvider>("filebrowser");
 const shareInputAlerts = ref("");
 const providerIcons = ref<MediaProvider>("filebrowser");
 const shareInputIcons = ref("");
-const mediaColumn = ref("");
 const isInitializing = ref(true);
 
 /**
@@ -143,12 +145,6 @@ watch(resolvedIconsPath, (newValue) => {
   }
 });
 
-watch(mediaColumn, (newValue) => {
-  if (!isInitializing.value) {
-    emit("updateConfig", { MEDIA_COLUMN: newValue });
-  }
-});
-
 // Keep local media fields in sync with the config prop (including the initial value).
 watch(
   () => props.config,
@@ -211,8 +207,6 @@ watch(
     } else {
       shareInputIcons.value = "";
     }
-
-    mediaColumn.value = config.MEDIA_COLUMN || "";
 
     nextTick(() => {
       isInitializing.value = false;
@@ -541,22 +535,19 @@ watch(
 
     <!-- MEDIA_COLUMN -->
     <div v-if="keys.includes('MEDIA_COLUMN')" class="space-y-2">
-      <label
-        :for="`${tableName}-media-column`"
-        class="block text-sm font-medium text-gray-700"
-      >
-        {{ $t(toCamelCase("MEDIA_COLUMN")) }}
-      </label>
       <p class="text-xs text-gray-500 mb-2">
         {{ $t("mediaColumnDescription") }}
       </p>
-      <input
+      <ConfigColumnSelect
         :id="`${tableName}-media-column`"
-        class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-        type="text"
-        :value="mediaColumn"
-        placeholder="photo"
-        @input="mediaColumn = ($event.target as HTMLInputElement).value"
+        :model-value="config.MEDIA_COLUMN"
+        :label="$t(toCamelCase('MEDIA_COLUMN'))"
+        :placeholder="$t('selectColumn')"
+        :columns="columns ?? []"
+        :loading="columnsLoading"
+        @update:model-value="
+          (value) => emit('updateConfig', { MEDIA_COLUMN: value })
+        "
       />
     </div>
   </div>

@@ -34,6 +34,7 @@
   "close": "ปิด",
   "colorColumn": "คอลัมน์สี",
   "colorColumnDescription": "ไม่บังคับ: ระบุชื่อคอลัมน์ (เช่น 'color') ที่มีค่าสี (เช่น รหัสสีแบบ #FF0000) เมื่อตั้งค่าแล้ว ฟีเจอร์บนแผนที่และจุดตัวกรองจะใช้สีเหล่านี้แทนสีที่สุ่ม",
+  "columnNotAvailable": "คอลัมน์นี้ไม่มีอยู่ในชุดข้อมูลที่เลือก",
   "community": {
     "community": "ชุมชน"
   },
@@ -274,6 +275,7 @@
   "secondaryFilterValues": "ค่าจากชุดข้อมูลรองที่จะรวมลงในแผนที่แจ้งเตือน",
   "selectAlertDateRange": "เลือกช่วงวันที่การแจ้งเตือน",
   "selectBasemap": "เลือกแผนที่ฐาน",
+  "selectColumn": "เลือกคอลัมน์…",
   "selectMoreOptions": "เลือกตัวเลือกเพิ่มเติม",
   "selectPrimaryDataset": "เลือกชุดข้อมูลหลัก…",
   "selectPrimaryDatasetOptional": "เลือกภายหลัง…",
@@ -293,6 +295,7 @@
   "type": "ประเภท",
   "typeOfAlerts": "ประเภทของการแจ้งเตือน",
   "unwantedColumns": "คอลัมน์ที่ไม่ต้องการ",
+  "unwantedColumnsInvalid": "นำคอลัมน์ที่ได้รับการป้องกัน ไม่มีอยู่ หรือกำลังใช้งานออกก่อนบันทึก",
   "version": "เวอร์ชัน",
   "view": "มุมมอง",
   "viewDescription": "คำอธิบายมุมมอง",

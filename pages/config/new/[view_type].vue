@@ -6,6 +6,7 @@ import SelectDatasetField from "@/components/config/SelectDatasetField.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import ViewTypePill from "@/components/shared/ViewTypePill.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
+import { useDatasetColumns } from "@/composables/useDatasetColumns";
 import { useDuplicateViewCheck } from "@/composables/useDuplicateViewCheck";
 import { useAppConfig } from "#imports";
 import {
@@ -57,6 +58,12 @@ const secondaryDataset = ref<string | null>(null);
 const errorMessage = ref<string | null>(null);
 const isSaving = ref(false);
 const showSavedModal = ref(false);
+const primaryDatasetForColumns = computed(() => primaryDataset.value);
+const secondaryDatasetForColumns = computed(() => secondaryDataset.value);
+const { columns: primaryColumns, isLoading: primaryColumnsLoading } =
+  useDatasetColumns(primaryDatasetForColumns);
+const { columns: secondaryColumns, isLoading: secondaryColumnsLoading } =
+  useDatasetColumns(secondaryDatasetForColumns);
 
 const { isDuplicate, existingView, isChecking, checkDuplicate } =
   useDuplicateViewCheck(viewType, primaryDataset);
@@ -264,6 +271,10 @@ definePageMeta({ layout: "explorer" });
         :show-remove="false"
         :save-enabled="saveEnabled"
         :secondary-editable="true"
+        :primary-columns="primaryColumns"
+        :secondary-columns="secondaryColumns"
+        :primary-columns-loading="primaryColumnsLoading"
+        :secondary-columns-loading="secondaryColumnsLoading"
         @submit-config="submitConfig"
       />
     </template>

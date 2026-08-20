@@ -34,6 +34,7 @@
   "close": "Fechar",
   "colorColumn": "Coluna de Cor",
   "colorColumnDescription": "Opcional: Especifique um nome de coluna (por exemplo, 'color') que contenha valores de cor (por exemplo, códigos hexadecimais como #FF0000). Quando definido, os recursos do mapa e os pontos do filtro usarão essas cores em vez das cores geradas aleatoriamente.",
+  "columnNotAvailable": "Esta coluna não está disponível no conjunto de dados selecionado.",
   "community": {
     "community": "comunidade"
   },
@@ -270,6 +271,7 @@
   "secondaryFilterValues": "Valores do conjunto de dados secundário para incluir no mapa de alertas",
   "selectAlertDateRange": "Selecione um intervalo de datas de alerta",
   "selectBasemap": "Selecione o mapa base",
+  "selectColumn": "Selecione uma coluna…",
   "selectMoreOptions": "Selecionar mais opções",
   "selectPrimaryDataset": "Selecione um conjunto de dados principal…",
   "selectPrimaryDatasetOptional": "Selecionar depois…",
@@ -289,6 +291,7 @@
   "type": "Tipo",
   "typeOfAlerts": "Tipo de alertas",
   "unwantedColumns": "Colunas indesejadas",
+  "unwantedColumnsInvalid": "Remova as colunas protegidas, indisponíveis ou ativas antes de salvar.",
   "version": "Versão",
   "view": "Visualização",
   "viewDescription": "Descrição da visualização",

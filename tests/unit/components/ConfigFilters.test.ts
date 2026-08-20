@@ -22,13 +22,20 @@ const mountConfigFilters = () =>
         SECONDARY_FILTER_VALUES: "active,pending",
       },
       views: ["alerts"],
+      viewType: "alerts",
+      hasSecondaryDataset: true,
+      primaryColumns: [{ original_column: "_id", sql_column: "_id" }],
+      secondaryColumns: [
+        { original_column: "status", sql_column: "status" },
+        { original_column: "status_type", sql_column: "status_type" },
+      ],
       keys: ["FRONT_END_FILTER_COLUMN", "SECONDARY_FILTER_VALUES"],
     },
     global: {
       stubs: {
         VueTagsInput: {
           name: "VueTagsInput",
-          props: ["tags"],
+          props: ["tags", "autocompleteItems"],
           emits: ["tags-changed"],
           template:
             "<button data-testid=\"filter-values\" @click=\"$emit('tags-changed', [{ text: 'active' }])\" />",
@@ -45,7 +52,7 @@ describe("ConfigFilters", () => {
     const wrapper = mountConfigFilters();
 
     await wrapper
-      .get<HTMLInputElement>("#alerts_table-FRONT_END_FILTER_COLUMN")
+      .get<HTMLSelectElement>("#alerts_table-FRONT_END_FILTER_COLUMN")
       .setValue("status_type");
 
     expect(wrapper.emitted("updateConfig")?.[0]?.[0]).toEqual({
@@ -81,5 +88,76 @@ describe("ConfigFilters", () => {
     expect(
       wrapper.get("#alerts_table-SECONDARY_FILTER_VALUES").attributes("id"),
     ).toBe("alerts_table-SECONDARY_FILTER_VALUES");
+  });
+
+  it("excludes protected and active columns from unwanted suggestions", () => {
+    const wrapper = mount(ConfigFilters, {
+      props: {
+        tableName: "survey_table",
+        config: {
+          COLOR_COLUMN: "status",
+        },
+        views: ["map"],
+        viewType: "map",
+        primaryColumns: [
+          { original_column: "_id", sql_column: "_id" },
+          { original_column: "Geometry", sql_column: "g__coordinates" },
+          { original_column: "Status", sql_column: "status" },
+          { original_column: "Photo", sql_column: "photo" },
+        ],
+        keys: ["UNWANTED_COLUMNS"],
+      },
+      global: {
+        stubs: {
+          VueTagsInput: {
+            name: "VueTagsInput",
+            props: ["tags", "autocompleteItems"],
+            template: "<div />",
+          },
+        },
+        mocks: {
+          $t: (key: string) => key,
+        },
+      },
+    });
+
+    expect(
+      wrapper.getComponent({ name: "VueTagsInput" }).props(),
+    ).toMatchObject({
+      autocompleteItems: [{ text: "Photo" }],
+    });
+  });
+
+  it("shows an error when unwanted columns conflict with active fields", () => {
+    const wrapper = mount(ConfigFilters, {
+      props: {
+        tableName: "survey_table",
+        config: {
+          COLOR_COLUMN: "status",
+          UNWANTED_COLUMNS: "Status",
+        },
+        views: ["map"],
+        viewType: "map",
+        primaryColumns: [
+          { original_column: "_id", sql_column: "_id" },
+          { original_column: "Status", sql_column: "status" },
+        ],
+        keys: ["UNWANTED_COLUMNS"],
+      },
+      global: {
+        stubs: {
+          VueTagsInput: {
+            name: "VueTagsInput",
+            props: ["tags", "autocompleteItems"],
+            template: "<div />",
+          },
+        },
+        mocks: {
+          $t: (key: string) => key,
+        },
+      },
+    });
+
+    expect(wrapper.get('[role="alert"]').text()).toBe("unwantedColumnsInvalid");
   });
 });

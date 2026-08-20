@@ -3,16 +3,19 @@
 import { VueTagsInput } from "@vojtechlanka/vue-tags-input";
 import VueSlider from "vue-3-slider-component";
 
+import ConfigColumnSelect from "@/components/config/ConfigColumnSelect.vue";
 import { toCamelCase } from "@/utils/identifierUtils";
 import { updateTags } from "@/composables/useTags";
 
-import type { ViewConfig, BasemapConfig } from "@/types";
+import type { ViewConfig, BasemapConfig, ColumnEntry } from "@/types";
 
 const props = defineProps<{
   tableName: string;
   config: ViewConfig;
   views: string[];
   keys: string[];
+  columns?: ColumnEntry[];
+  columnsLoading?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -49,6 +52,11 @@ const handleTagsChanged = (key: string, newTags: Tag[]): void => {
 const handleInput = (key: string, value: string | number | boolean): void => {
   if (typeof value === "number" && isNaN(value)) return;
   emit("updateConfig", { [key]: value });
+};
+
+const getStringConfigValue = (key: string): string => {
+  const value = props.config[key];
+  return typeof value === "string" ? value : "";
 };
 
 const terrainExaggeration = ref<number>(
@@ -565,42 +573,28 @@ const fullWidthKeys = [
 
         <!-- Color Column -->
         <template v-else-if="key === 'COLOR_COLUMN'">
-          <label
-            :for="`${tableName}-${key}`"
-            class="block text-sm font-medium text-gray-700"
-          >
-            {{ $t(toCamelCase(key)) }}
-          </label>
-          <input
+          <ConfigColumnSelect
             :id="`${tableName}-${key}`"
-            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-            type="text"
-            placeholder="color"
-            :value="config[key]"
-            @input="
-              (e) => handleInput(key, (e.target as HTMLInputElement).value)
-            "
+            :model-value="getStringConfigValue(key)"
+            :label="$t(toCamelCase(key))"
+            :placeholder="$t('selectColumn')"
+            :columns="columns ?? []"
+            :loading="columnsLoading"
+            @update:model-value="(value) => handleInput(key, value)"
           />
           <p class="field-description">{{ $t("colorColumnDescription") }}</p>
         </template>
 
         <!-- Icon Column -->
         <template v-else-if="key === 'ICON_COLUMN'">
-          <label
-            :for="`${tableName}-${key}`"
-            class="block text-sm font-medium text-gray-700"
-          >
-            {{ $t(toCamelCase(key)) }}
-          </label>
-          <input
+          <ConfigColumnSelect
             :id="`${tableName}-${key}`"
-            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-            type="text"
-            placeholder="icon"
-            :value="config[key]"
-            @input="
-              (e) => handleInput(key, (e.target as HTMLInputElement).value)
-            "
+            :model-value="getStringConfigValue(key)"
+            :label="$t(toCamelCase(key))"
+            :placeholder="$t('selectColumn')"
+            :columns="columns ?? []"
+            :loading="columnsLoading"
+            @update:model-value="(value) => handleInput(key, value)"
           />
           <p class="text-xs text-gray-500 mt-1">
             {{ $t("iconColumnDescription") }}

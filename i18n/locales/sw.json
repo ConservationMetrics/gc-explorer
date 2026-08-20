@@ -34,6 +34,7 @@
   "close": "Funga",
   "colorColumn": "Safu ya Rangi",
   "colorColumnDescription": "Hiari: Eleza jina la safu (k.m., 'color') linalo na thamani za rangi (k.m., misimbo ya hex kama #FF0000). Inapowekwa, vipengele vya ramani na nukta za kichujio zitatumia rangi hizi badala ya zile zilizotengenezwa kwa nasibu.",
+  "columnNotAvailable": "Safu hii haipatikani katika seti ya data iliyochaguliwa.",
   "community": {
     "community": "jamii"
   },
@@ -274,6 +275,7 @@
   "secondaryFilterValues": "Thamani za kujumuisha kutoka kwa seti ya data ya pili kwenye ramani ya arifa",
   "selectAlertDateRange": "Chagua masafa ya tarehe ya tahadhari",
   "selectBasemap": "Chagua ramani ya msingi",
+  "selectColumn": "Chagua safu…",
   "selectMoreOptions": "Chagua chaguo zaidi",
   "selectPrimaryDataset": "Chagua seti kuu ya data…",
   "selectPrimaryDatasetOptional": "Chagua baadaye…",
@@ -293,6 +295,7 @@
   "type": "Aina",
   "typeOfAlerts": "Aina ya tahadhari",
   "unwantedColumns": "Safu zisizotakiwa",
+  "unwantedColumnsInvalid": "Ondoa safu zilizolindwa, zisizopatikana au zinazotumika kabla ya kuhifadhi.",
   "version": "Toleo",
   "view": "Mtazamo",
   "viewDescription": "Maelezo ya Mtazamo",
