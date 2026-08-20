@@ -23,7 +23,11 @@ export default defineEventHandler(async (event: H3Event) => {
   } catch (error) {
     if (error instanceof Error) {
       console.error("Error updating config on API side:", error.message);
-      return sendError(event, new Error(error.message));
+      const statusCode = (error as { statusCode?: number }).statusCode ?? 500;
+      return sendError(
+        event,
+        createError({ statusCode, statusMessage: error.message }),
+      );
     } else {
       console.error("Unknown error updating config on API side:", error);
       return sendError(event, new Error("An unknown error occurred"));

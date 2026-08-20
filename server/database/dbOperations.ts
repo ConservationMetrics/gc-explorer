@@ -14,6 +14,7 @@ import {
 } from "@/types";
 import { CONFIG_LIMITS } from "@/utils";
 import { normalizeTableName } from "@/utils/identifierUtils";
+import { validateViewConfigColumns } from "@/utils/viewConfigColumns";
 
 import { viewConfig, publicViews } from "./schema";
 import { configDb, warehouseDb } from "./dbConnection";
@@ -32,6 +33,16 @@ const createMissingViewConfigError = (table: string) => {
   };
   error.statusCode = 404;
   error.statusMessage = statusMessage;
+  return error;
+};
+
+const createInvalidConfigColumnsError = (message: string) => {
+  const error = new Error(message) as Error & {
+    statusCode: number;
+    statusMessage: string;
+  };
+  error.statusCode = 400;
+  error.statusMessage = message;
   return error;
 };
 
@@ -745,6 +756,57 @@ export const fetchPublicViewTableNames = async (): Promise<string[]> => {
   return rows.map((row) => normalizeTableName(row.tableName));
 };
 
+/**
+ * Rejects missing, protected, or conflicting column references in a view config.
+ *
+ * @param {string} primaryDataset - Primary warehouse table.
+ * @param {ViewConfig} config - View configuration to validate.
+ * @param {ViewType} viewType - View type being saved.
+ * @param {string | null | undefined} secondaryDataset - Optional secondary table.
+ * @returns {Promise<void>}
+ */
+const assertValidViewConfigColumns = async (
+  primaryDataset: string,
+  config: ViewConfig,
+  viewType: ViewType,
+  secondaryDataset?: string | null,
+): Promise<void> => {
+  const hasSecondaryDataset = Boolean(secondaryDataset);
+  const [primaryColumns, secondaryColumns] = await Promise.all([
+    fetchTableColumnEntries(primaryDataset),
+    viewType === "alerts" && secondaryDataset
+      ? fetchTableColumnEntries(secondaryDataset)
+      : Promise.resolve([]),
+  ]);
+  const validation = validateViewConfigColumns(
+    config,
+    primaryColumns,
+    secondaryColumns,
+    viewType,
+    hasSecondaryDataset,
+  );
+
+  if (validation.isValid) return;
+
+  const details = [
+    ...Object.entries(validation.invalidSelections).map(
+      ([key, column]) => `${key} references unavailable column "${column}"`,
+    ),
+    ...validation.invalidUnwantedColumns.map(
+      (column) => `UNWANTED_COLUMNS references unavailable column "${column}"`,
+    ),
+    ...validation.protectedUnwantedColumns.map(
+      (column) =>
+        `UNWANTED_COLUMNS cannot include protected column "${column}"`,
+    ),
+    ...validation.conflictingUnwantedColumns.map(
+      (column) => `UNWANTED_COLUMNS conflicts with active column "${column}"`,
+    ),
+  ];
+
+  throw createInvalidConfigColumnsError(details.join("; "));
+};
+
 export const updateConfig = async (
   tableName: string,
   config: unknown,
@@ -786,6 +848,12 @@ export const updateConfig = async (
         `updateConfig requires a view type for "${normalizedTable}"; refusing to update without identifying a single view.`,
       );
     }
+    await assertValidViewConfigColumns(
+      normalizedTable,
+      typedConfig,
+      viewType,
+      normalizedSecondary,
+    );
     const viewColumns = buildViewConfigColumns(
       normalizedTable,
       typedConfig,
@@ -831,6 +899,12 @@ export const addNewTableToConfig = async (
       ? normalizeTableName(secondaryDataset)
       : secondaryDataset;
   try {
+    await assertValidViewConfigColumns(
+      normalizedTable,
+      config ?? {},
+      viewType,
+      normalizedSecondary,
+    );
     await configDb.insert(viewConfig).values({
       ...buildViewConfigColumns(
         normalizedTable,
