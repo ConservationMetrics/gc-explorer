@@ -1,10 +1,12 @@
 <script setup lang="ts">
 // @ts-expect-error - vue-tags-input does not have types
 import { VueTagsInput } from "@vojtechlanka/vue-tags-input";
+import { ExternalLink } from "lucide-vue-next";
 import VueSlider from "vue-3-slider-component";
 
 import ConfigColumnSelect from "@/components/config/ConfigColumnSelect.vue";
 import { toCamelCase } from "@/utils/identifierUtils";
+import { mapboxStyleToStudioUrl } from "@/utils/mapGLHelpers";
 import { updateTags } from "@/composables/useTags";
 
 import type { ViewConfig, BasemapConfig, ColumnEntry } from "@/types";
@@ -327,25 +329,51 @@ const fullWidthKeys = [
                     >
                       {{ $t("mapboxStyle") }}
                     </label>
-                    <input
-                      :id="`${tableName}-basemap-style-${index}`"
-                      class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-                      pattern="^mapbox:\/\/styles\/[^\/]+\/[^\/]+$"
-                      placeholder="mapbox://styles/user/styleId"
-                      :title="
-                        $t('pleaseMatchFormat') +
-                        ': mapbox://styles/username/styleid'
-                      "
-                      :value="basemap.style"
-                      required
-                      @input="
-                        updateBasemap(
-                          index,
-                          'style',
-                          ($event.target as HTMLInputElement).value,
-                        )
-                      "
-                    />
+                    <div class="flex items-center gap-2">
+                      <input
+                        :id="`${tableName}-basemap-style-${index}`"
+                        class="w-full min-w-0 px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+                        pattern="^mapbox:\/\/styles\/[^\/]+\/[^\/]+$"
+                        placeholder="mapbox://styles/user/styleId"
+                        :title="
+                          $t('pleaseMatchFormat') +
+                          ': mapbox://styles/username/styleid'
+                        "
+                        :value="basemap.style"
+                        required
+                        @input="
+                          updateBasemap(
+                            index,
+                            'style',
+                            ($event.target as HTMLInputElement).value,
+                          )
+                        "
+                      />
+                      <div
+                        v-if="mapboxStyleToStudioUrl(basemap.style)"
+                        class="relative group flex-shrink-0"
+                      >
+                        <a
+                          :href="
+                            mapboxStyleToStudioUrl(basemap.style) ?? undefined
+                          "
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          :data-testid="`basemap-studio-link-${index}`"
+                          :aria-label="$t('openMapboxStudio')"
+                          class="block p-2 text-violet-700 hover:text-violet-900 hover:bg-violet-50 rounded-lg transition-colors"
+                        >
+                          <ExternalLink class="w-4 h-4" aria-hidden="true" />
+                        </a>
+                        <div
+                          role="tooltip"
+                          :data-testid="`basemap-studio-link-tooltip-${index}`"
+                          class="absolute right-0 bottom-full mb-1 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap"
+                        >
+                          {{ $t("openMapboxStudio") }}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <button

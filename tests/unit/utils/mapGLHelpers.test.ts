@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-import { loadMapIcon } from "@/utils/mapGLHelpers";
+import { loadMapIcon, mapboxStyleToStudioUrl } from "@/utils/mapGLHelpers";
 
 /** Mutated by tests to drive the global `Image` stub for the next `new Image()`. */
 let nextImageState = {
@@ -90,5 +90,36 @@ describe("loadMapIcon", () => {
     await expect(
       loadMapIcon("/api/proxy-icon?url=foo.svg", true),
     ).rejects.toThrow("Failed to get 2D canvas context");
+  });
+});
+
+describe("mapboxStyleToStudioUrl", () => {
+  it("returns a Studio URL for mapbox://styles/ values", () => {
+    expect(
+      mapboxStyleToStudioUrl("mapbox://styles/mapbox/satellite-streets-v12"),
+    ).toBe(
+      "https://console.mapbox.com/studio/styles/mapbox/satellite-streets-v12",
+    );
+    expect(mapboxStyleToStudioUrl("mapbox://styles/myuser/mystyle")).toBe(
+      "https://console.mapbox.com/studio/styles/myuser/mystyle",
+    );
+  });
+
+  it("returns null for empty or non-mapbox style values", () => {
+    expect(mapboxStyleToStudioUrl("")).toBeNull();
+    expect(mapboxStyleToStudioUrl("https://example.com/style.json")).toBeNull();
+    expect(
+      mapboxStyleToStudioUrl("mapbox://tilesets/mapbox/streets"),
+    ).toBeNull();
+  });
+
+  it("returns null for inline style objects used by E2E seeds", () => {
+    expect(
+      mapboxStyleToStudioUrl({
+        version: 8,
+        sources: {},
+        layers: [],
+      }),
+    ).toBeNull();
   });
 });

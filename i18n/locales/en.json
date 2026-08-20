@@ -232,6 +232,7 @@
   "noResultsFound": "No dataset views match your search.",
   "notes": "Notes",
   "numberOfAlerts": "Number of alerts",
+  "openMapboxStudio": "Open in Mapbox Studio",
   "openView": "Open {view}",
   "or": "or",
   "orange": "orange",
