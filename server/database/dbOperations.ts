@@ -296,6 +296,8 @@ export const fetchTableColumnEntries = async (
     }
   }
 
+  // This helper derives names from information_schema.columns when no usable
+  // `<table>__columns` metadata is available.
   const sqlColumns = await fetchTableSqlColumns(cleanTableName);
   return sqlColumns.map((column) => ({
     original_column: column,
