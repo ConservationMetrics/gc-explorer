@@ -943,6 +943,34 @@ describe("ConfigMap component", () => {
     );
   });
 
+  it("renders with inline MAPBOX_STYLE objects without crashing", () => {
+    const wrapper = mount(ConfigMap, {
+      props: {
+        ...baseProps,
+        config: {
+          ...baseProps.config,
+          MAPBOX_STYLE: {
+            version: 8,
+            sources: {},
+            layers: [
+              {
+                id: "background",
+                type: "background",
+                paint: { "background-color": "#f8fafc" },
+              },
+            ],
+          },
+        } as ViewConfig,
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.get("#test_table-basemap-style-0").exists()).toBe(true);
+    expect(wrapper.find("[data-testid='basemap-studio-link-0']").exists()).toBe(
+      false,
+    );
+  });
+
   it("shows a Studio link per basemap when multiple styles are configured", () => {
     const wrapper = mount(ConfigMap, {
       props: {

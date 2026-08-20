@@ -21,4 +21,14 @@ describe("mapboxStyleToStudioUrl", () => {
       mapboxStyleToStudioUrl("mapbox://tilesets/mapbox/streets"),
     ).toBeNull();
   });
+
+  it("returns null for inline style objects used by E2E seeds", () => {
+    expect(
+      mapboxStyleToStudioUrl({
+        version: 8,
+        sources: {},
+        layers: [],
+      }),
+    ).toBeNull();
+  });
 });
