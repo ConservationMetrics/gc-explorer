@@ -884,6 +884,104 @@ describe("ConfigMap component", () => {
     expect(wrapper.findComponent({ name: "VueSlider" }).exists()).toBe(false);
   });
 
+  it("shows a Mapbox Studio link for mapbox://styles/ values", () => {
+    const wrapper = mount(ConfigMap, {
+      props: {
+        ...baseProps,
+        config: {
+          ...baseProps.config,
+          MAPBOX_BASEMAPS: JSON.stringify([
+            {
+              name: "Satellite",
+              style: "mapbox://styles/mapbox/satellite-v9",
+              isDefault: true,
+            },
+          ]),
+        },
+      },
+      global: globalConfig,
+    });
+
+    const link = wrapper.get("[data-testid='basemap-studio-link-0']");
+    expect(link.attributes("href")).toBe(
+      "https://console.mapbox.com/studio/styles/mapbox/satellite-v9",
+    );
+    expect(link.attributes("target")).toBe("_blank");
+    expect(link.attributes("rel")).toBe("noopener noreferrer");
+    expect(link.attributes("aria-label")).toBe("openMapboxStudio");
+    expect(
+      wrapper.get("[data-testid='basemap-studio-link-tooltip-0']").text(),
+    ).toBe("openMapboxStudio");
+  });
+
+  it("hides the Mapbox Studio link for empty or non-mapbox styles", async () => {
+    const wrapper = mount(ConfigMap, {
+      props: {
+        ...baseProps,
+        config: {
+          ...baseProps.config,
+          MAPBOX_BASEMAPS: JSON.stringify([
+            {
+              name: "Custom",
+              style: "https://example.com/style.json",
+              isDefault: true,
+            },
+          ]),
+        },
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.find("[data-testid='basemap-studio-link-0']").exists()).toBe(
+      false,
+    );
+
+    const styleInput = wrapper.get("#test_table-basemap-style-0");
+    await styleInput.setValue("");
+    expect(wrapper.find("[data-testid='basemap-studio-link-0']").exists()).toBe(
+      false,
+    );
+  });
+
+  it("shows a Studio link per basemap when multiple styles are configured", () => {
+    const wrapper = mount(ConfigMap, {
+      props: {
+        ...baseProps,
+        config: {
+          ...baseProps.config,
+          MAPBOX_BASEMAPS: JSON.stringify([
+            {
+              name: "Satellite",
+              style: "mapbox://styles/mapbox/satellite-v9",
+              isDefault: true,
+            },
+            {
+              name: "Streets",
+              style: "mapbox://styles/mapbox/streets-v12",
+              isDefault: false,
+            },
+            {
+              name: "External",
+              style: "https://example.com/style.json",
+              isDefault: false,
+            },
+          ]),
+        },
+      },
+      global: globalConfig,
+    });
+
+    expect(
+      wrapper.get("[data-testid='basemap-studio-link-0']").attributes("href"),
+    ).toBe("https://console.mapbox.com/studio/styles/mapbox/satellite-v9");
+    expect(
+      wrapper.get("[data-testid='basemap-studio-link-1']").attributes("href"),
+    ).toBe("https://console.mapbox.com/studio/styles/mapbox/streets-v12");
+    expect(wrapper.find("[data-testid='basemap-studio-link-2']").exists()).toBe(
+      false,
+    );
+  });
+
   it("keeps the legend tag field full width of the grid", () => {
     const wrapper = mount(ConfigMap, {
       props: {
