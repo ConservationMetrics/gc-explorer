@@ -6,7 +6,7 @@ import VueSlider from "vue-3-slider-component";
 
 import ConfigColumnSelect from "@/components/config/ConfigColumnSelect.vue";
 import { toCamelCase } from "@/utils/identifierUtils";
-import { mapboxStyleToStudioUrl } from "@/utils/mapboxStyle";
+import { mapboxStyleToStudioUrl } from "@/utils/mapGLHelpers";
 import { updateTags } from "@/composables/useTags";
 
 import type { ViewConfig, BasemapConfig, ColumnEntry } from "@/types";
