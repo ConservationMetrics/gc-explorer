@@ -34,6 +34,7 @@
   "close": "Sluiten",
   "colorColumn": "Kleurkolom",
   "colorColumnDescription": "Optioneel: Specificeer een kolomnaam (bijv. 'color') die kleurwaarden bevat (bijv. hex-codes zoals #FF0000). Indien ingesteld, zullen kaartkenmerken en filterpunten deze kleuren gebruiken in plaats van willekeurig gegenereerde kleuren.",
+  "columnNotAvailable": "Deze kolom is niet beschikbaar in de geselecteerde dataset.",
   "community": {
     "community": "gemeenschap"
   },
@@ -271,6 +272,7 @@
   "secondaryFilterValues": "Waarden uit de secundaire dataset om op de alertkaart te laten zien",
   "selectAlertDateRange": "Selecteer een alert datum periode",
   "selectBasemap": "Selecteer basiskaart",
+  "selectColumn": "Selecteer een kolom…",
   "selectMoreOptions": "Meer opties selecteren",
   "selectPrimaryDataset": "Selecteer een primaire dataset…",
   "selectPrimaryDatasetOptional": "Later selecteren…",
@@ -290,6 +292,7 @@
   "type": "Type",
   "typeOfAlerts": "Type alerts",
   "unwantedColumns": "Ongewenste kolommen",
+  "unwantedColumnsInvalid": "Verwijder beschermde, niet-beschikbare of actieve kolommen voordat u opslaat.",
   "version": "Versie",
   "view": "Weergave",
   "viewDescription": "Weergavebeschrijving",
