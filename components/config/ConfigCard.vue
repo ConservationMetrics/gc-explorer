@@ -52,9 +52,9 @@ const mapConfigKeys = computed(() => {
   const keys = [
     "MAPBOX_STYLE",
     "MAPBOX_ACCESS_TOKEN",
-    "MAPBOX_ZOOM",
     "MAPBOX_CENTER_LATITUDE",
     "MAPBOX_CENTER_LONGITUDE",
+    "MAPBOX_ZOOM",
     "MAPBOX_PROJECTION",
     "MAPBOX_BEARING",
     "MAPBOX_PITCH",
