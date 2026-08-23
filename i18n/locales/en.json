@@ -295,8 +295,6 @@
   "totalFeatures": "Total features",
   "type": "Type",
   "typeOfAlerts": "Type of alerts",
-  "unwantedColumns": "Unwanted columns",
-  "unwantedColumnsInvalid": "Remove protected, unavailable, or active columns before saving.",
   "version": "Version",
   "view": "View",
   "viewDescription": "View Description",

@@ -73,7 +73,7 @@ const mediaKeys = computed(() => [
 const filterKeys = computed(() =>
   props.viewType === "alerts"
     ? ["FRONT_END_FILTER_COLUMN", "SECONDARY_FILTER_VALUES"]
-    : ["FRONT_END_FILTER_COLUMN", "TIMESTAMP_COLUMN", "UNWANTED_COLUMNS"],
+    : ["FRONT_END_FILTER_COLUMN", "TIMESTAMP_COLUMN"],
 );
 const viewInfoKeys = computed(() => [
   "DATASET_TABLE",

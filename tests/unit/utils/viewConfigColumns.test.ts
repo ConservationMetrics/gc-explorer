@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   getSelectableColumnOptions,
-  getUnwantedColumnOptions,
   validateViewConfigColumns,
 } from "@/utils/viewConfigColumns";
 
@@ -31,41 +30,11 @@ describe("viewConfigColumns", () => {
     ).toEqual(["g__type", "g__coordinates", "status", "photo", "recorded_at"]);
   });
 
-  it("removes protected and active columns from unwanted choices", () => {
-    const config: ViewConfig = {
-      COLOR_COLUMN: "status",
-      MEDIA_COLUMN: "photo",
-    };
-
-    expect(
-      getUnwantedColumnOptions(primaryColumns, config, "gallery", false).map(
-        (column) => column.sql_column,
-      ),
-    ).toEqual(["recorded_at"]);
-  });
-
-  it("matches unwanted original names to active SQL column names", () => {
-    const validation = validateViewConfigColumns(
-      {
-        COLOR_COLUMN: "status",
-        UNWANTED_COLUMNS: "Status",
-      },
-      primaryColumns,
-      [],
-      "map",
-      false,
-    );
-
-    expect(validation.conflictingUnwantedColumns).toEqual(["Status"]);
-    expect(validation.isValid).toBe(false);
-  });
-
   it("rejects protected, missing, and unavailable columns", () => {
     const validation = validateViewConfigColumns(
       {
         COLOR_COLUMN: "not_a_column",
         ICON_COLUMN: "_id",
-        UNWANTED_COLUMNS: "_id,Unknown",
       },
       primaryColumns,
       [],
@@ -77,8 +46,6 @@ describe("viewConfigColumns", () => {
       COLOR_COLUMN: "not_a_column",
       ICON_COLUMN: "_id",
     });
-    expect(validation.protectedUnwantedColumns).toEqual(["_id"]);
-    expect(validation.invalidUnwantedColumns).toEqual(["Unknown"]);
     expect(validation.isValid).toBe(false);
   });
 

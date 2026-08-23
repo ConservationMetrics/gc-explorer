@@ -8,10 +8,6 @@ import { toCamelCase } from "@/utils/identifierUtils";
 import { VueTagsInput } from "@vojtechlanka/vue-tags-input";
 
 import { updateTags } from "@/composables/useTags";
-import {
-  getUnwantedColumnOptions,
-  validateViewConfigColumns,
-} from "@/utils/viewConfigColumns";
 
 import type { ColumnEntry, ViewConfig, ViewType } from "@/types";
 
@@ -40,9 +36,6 @@ const initialTags: Record<string, Tag[]> = {
         text: tag,
       }))
     : [],
-  UNWANTED_COLUMNS: props.config.UNWANTED_COLUMNS
-    ? props.config.UNWANTED_COLUMNS.split(",").map((tag) => ({ text: tag }))
-    : [],
 };
 
 const { tags, handleTagsChanged: rawHandleTagsChanged } = updateTags(
@@ -51,20 +44,8 @@ const { tags, handleTagsChanged: rawHandleTagsChanged } = updateTags(
 );
 
 const handleTagsChanged = (key: string, newTags: Tag[]): void => {
-  const existingTags = new Set((tags.value[key] ?? []).map((tag) => tag.text));
-  const acceptedTags =
-    key === "UNWANTED_COLUMNS"
-      ? newTags.filter((tag) =>
-          [
-            ...unwantedColumnOptions.value.map(
-              (column) => column.original_column,
-            ),
-            ...existingTags,
-          ].includes(tag.text),
-        )
-      : newTags;
-  rawHandleTagsChanged(key, acceptedTags);
-  const values = acceptedTags.map((tag) => tag.text).join(",");
+  rawHandleTagsChanged(key, newTags);
+  const values = newTags.map((tag) => tag.text).join(",");
   emit("updateConfig", { [key]: values });
 };
 
@@ -88,38 +69,6 @@ const filterColumnsLoading = computed(() =>
     ? props.secondaryColumnsLoading
     : props.primaryColumnsLoading,
 );
-
-const unwantedColumnOptions = computed(() =>
-  getUnwantedColumnOptions(
-    props.primaryColumns ?? [],
-    props.config,
-    props.viewType,
-    Boolean(props.hasSecondaryDataset),
-  ),
-);
-
-const unwantedAutocompleteItems = computed(() =>
-  unwantedColumnOptions.value.map((column) => ({
-    text: column.original_column,
-  })),
-);
-
-const columnValidation = computed(() =>
-  validateViewConfigColumns(
-    props.config,
-    props.primaryColumns ?? [],
-    props.secondaryColumns ?? [],
-    props.viewType,
-    Boolean(props.hasSecondaryDataset),
-  ),
-);
-
-const hasUnwantedColumnError = computed(
-  () =>
-    columnValidation.value.invalidUnwantedColumns.length > 0 ||
-    columnValidation.value.protectedUnwantedColumns.length > 0 ||
-    columnValidation.value.conflictingUnwantedColumns.length > 0,
-);
 </script>
 
 <template>
@@ -132,8 +81,7 @@ const hasUnwantedColumnError = computed(
       :key="key"
       class="space-y-2 min-w-0"
       :class="{
-        'md:col-span-2':
-          key === 'SECONDARY_FILTER_VALUES' || key === 'UNWANTED_COLUMNS',
+        'md:col-span-2': key === 'SECONDARY_FILTER_VALUES',
       }"
     >
       <template v-if="key === 'FRONT_END_FILTER_COLUMN'">
@@ -158,11 +106,7 @@ const hasUnwantedColumnError = computed(
           @update:model-value="(value) => handleInput(key, value)"
         />
       </template>
-      <template
-        v-else-if="
-          key === 'SECONDARY_FILTER_VALUES' || key === 'UNWANTED_COLUMNS'
-        "
-      >
+      <template v-else-if="key === 'SECONDARY_FILTER_VALUES'">
         <label
           :for="`${tableName}-${key}`"
           class="block text-sm font-medium text-gray-700"
@@ -173,20 +117,11 @@ const hasUnwantedColumnError = computed(
           :id="`${tableName}-${key}`"
           class="tag-field w-full"
           :tags="tags[key]"
-          :autocomplete-items="
-            key === 'UNWANTED_COLUMNS' ? unwantedAutocompleteItems : []
-          "
+          :autocomplete-items="[]"
           :autocomplete-min-length="0"
           :autocomplete-filter-duplicates="true"
           @tags-changed="(newTags: Tag[]) => handleTagsChanged(key, newTags)"
         />
-        <p
-          v-if="key === 'UNWANTED_COLUMNS' && hasUnwantedColumnError"
-          class="text-sm text-red-600"
-          role="alert"
-        >
-          {{ $t("unwantedColumnsInvalid") }}
-        </p>
       </template>
     </div>
   </div>

@@ -912,8 +912,7 @@ test("config page - column controls use dataset metadata and reject conflicts", 
     {
       data: {
         config: {
-          COLOR_COLUMN: "community",
-          UNWANTED_COLUMNS: "community",
+          COLOR_COLUMN: "_id",
         },
         secondaryDataset: null,
       },
