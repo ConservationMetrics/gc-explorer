@@ -134,7 +134,7 @@ export default defineEventHandler(async (event: H3Event) => {
     let secondaryGeojson: FeatureCollection | null = null;
 
     if (secondaryData) {
-      let filteredSecondaryData = filterToSelectedValues(
+      const filteredSecondaryData = filterToSelectedValues(
         secondaryData.mainData,
         secondaryFilterColumn,
         secondaryFilterValues,

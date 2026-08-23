@@ -5,7 +5,7 @@ import {
   validateViewConfigColumns,
 } from "@/utils/viewConfigColumns";
 
-import type { ColumnEntry, ViewConfig } from "@/types";
+import type { ColumnEntry } from "@/types";
 
 const primaryColumns: ColumnEntry[] = [
   { original_column: "_id", sql_column: "_id" },
