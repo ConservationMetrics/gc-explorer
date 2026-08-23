@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
+import { compareLabels } from "@/utils/identifierUtils";
 
 const props = withDefaults(
   defineProps<{
@@ -30,10 +31,10 @@ const selectOptions = computed(() => {
   const current = props.modelValue?.trim() ?? "";
 
   if (current && current !== excluded && !options.includes(current)) {
-    return [current, ...options];
+    return [current, ...options].sort(compareLabels);
   }
 
-  return options;
+  return [...options].sort(compareLabels);
 });
 </script>
 

@@ -28,7 +28,7 @@ describe("viewConfigColumns", () => {
       getSelectableColumnOptions(primaryColumns).map(
         (column) => column.sql_column,
       ),
-    ).toEqual(["g__type", "g__coordinates", "status", "photo", "recorded_at"]);
+    ).toEqual(["g__coordinates", "g__type", "photo", "recorded_at", "status"]);
   });
 
   it("removes protected and active columns from unwanted choices", () => {

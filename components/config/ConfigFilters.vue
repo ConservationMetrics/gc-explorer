@@ -3,7 +3,7 @@ import { computed } from "vue";
 
 import ConfigColumnSelect from "@/components/config/ConfigColumnSelect.vue";
 import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
-import { toCamelCase } from "@/utils/identifierUtils";
+import { compareLabels, toCamelCase } from "@/utils/identifierUtils";
 
 // @ts-expect-error - vue-tags-input does not have types
 import { VueTagsInput } from "@vojtechlanka/vue-tags-input";
@@ -100,9 +100,11 @@ const unwantedColumnOptions = computed(() =>
 );
 
 const unwantedAutocompleteItems = computed(() =>
-  unwantedColumnOptions.value.map((column) => ({
-    text: column.original_column,
-  })),
+  [...unwantedColumnOptions.value]
+    .map((column) => ({
+      text: column.original_column,
+    }))
+    .sort((a, b) => compareLabels(a.text, b.text)),
 );
 
 const columnValidation = computed(() =>

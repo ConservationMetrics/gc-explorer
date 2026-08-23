@@ -162,3 +162,13 @@ export const warehouseRecordIdForExport = (
   ).trim();
   return displayRecordId || undefined;
 };
+
+/**
+ * Case-insensitive, numeric-aware comparison for dropdown and typeahead labels.
+ *
+ * @param {string} a - First label.
+ * @param {string} b - Second label.
+ * @returns {number} Negative if `a` comes first, positive if `b` comes first, else 0.
+ */
+export const compareLabels = (a: string, b: string): number =>
+  a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import type { CopyConfigSource } from "@/composables/useCopyConfig";
+import { compareLabels } from "@/utils/identifierUtils";
 import { Copy } from "lucide-vue-next";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     sources: CopyConfigSource[];
     showModal: boolean;
@@ -13,6 +14,10 @@ withDefaults(
   {
     buttonContainerClass: "",
   },
+);
+
+const sortedSources = computed(() =>
+  [...props.sources].sort((a, b) => compareLabels(a.label, b.label)),
 );
 
 const emit = defineEmits<{
@@ -69,7 +74,7 @@ const emit = defineEmits<{
             {{ $t("selectView") }}
           </option>
           <option
-            v-for="source in sources"
+            v-for="source in sortedSources"
             :key="source.key"
             :value="source.key"
           >

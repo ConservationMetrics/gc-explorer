@@ -539,16 +539,16 @@ const fullWidthKeys = [
               (e) => handleInput(key, (e.target as HTMLSelectElement).value)
             "
           >
-            <option value="mercator">Mercator</option>
             <option value="albers">Albers</option>
             <option value="equalEarth">Equal Earth</option>
             <option value="equirectangular">Equirectangular</option>
+            <option value="globe">Globe</option>
             <option value="lambertConformalConic">
               Lambert Conformal Conic
             </option>
+            <option value="mercator">Mercator</option>
             <option value="naturalEarth">Natural Earth</option>
             <option value="winkelTripel">Winkel Tripel</option>
-            <option value="globe">Globe</option>
           </select>
         </template>
 

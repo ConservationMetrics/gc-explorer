@@ -3,6 +3,7 @@ import { useAppConfig } from "#imports";
 import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import type { ViewType } from "@/types";
+import { compareLabels } from "@/utils/identifierUtils";
 import { ChevronLeft, Images, Map, TriangleAlert } from "lucide-vue-next";
 
 const { viewTypes } = useAppConfig();
@@ -38,7 +39,9 @@ const { data, error, refresh } = await useFetch<{
   availableTables: string[];
 }>("/api/config");
 
-const availableTables = computed(() => data.value?.availableTables ?? []);
+const availableTables = computed(() =>
+  [...(data.value?.availableTables ?? [])].sort(compareLabels),
+);
 
 /**
  * Continues to the create form for the chosen view type.
