@@ -461,6 +461,12 @@ const fullWidthKeys = [
                 </template>
               </i18n-t>
             </Tooltip>
+            <Tooltip v-else-if="key === 'MAPBOX_BEARING'">
+              {{ $t("mapboxBearingDescription") }}
+            </Tooltip>
+            <Tooltip v-else-if="key === 'MAPBOX_PITCH'">
+              {{ $t("mapboxPitchDescription") }}
+            </Tooltip>
           </div>
           <input
             :id="`${tableName}-${key}`"
