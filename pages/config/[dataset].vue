@@ -275,13 +275,15 @@ definePageMeta({ layout: "explorer" });
           >
             <dl class="contents">
               <div>
-                <dt class="text-gray-500">{{ $t("view") }}</dt>
+                <dt class="text-sm font-bold text-gray-700">{{ $t("view") }}</dt>
                 <dd class="mt-1">
                   <ViewTypePill :view-type="resolvedViewType" />
                 </dd>
               </div>
               <div class="min-w-0">
-                <dt class="text-gray-500">{{ $t("primaryDatasetLabel") }}</dt>
+                <dt class="text-sm font-bold text-gray-700">
+                  {{ $t("primaryDatasetLabel") }}
+                </dt>
                 <dd
                   data-testid="view-metadata-primary"
                   class="mt-1 font-medium text-gray-900 break-words"
