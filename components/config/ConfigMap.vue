@@ -600,7 +600,7 @@ const fullWidthKeys = [
         </template>
 
         <!-- Color Column -->
-        <template v-else-if="key === 'COLOR_COLUMN'">
+        <template v-else-if="key === 'COLOR_COLUMN' && views.includes('map')">
           <ConfigColumnSelect
             :id="`${tableName}-${key}`"
             :model-value="getStringConfigValue(key)"
@@ -614,7 +614,7 @@ const fullWidthKeys = [
         </template>
 
         <!-- Icon Column -->
-        <template v-else-if="key === 'ICON_COLUMN'">
+        <template v-else-if="key === 'ICON_COLUMN' && views.includes('map')">
           <ConfigColumnSelect
             :id="`${tableName}-${key}`"
             :model-value="getStringConfigValue(key)"

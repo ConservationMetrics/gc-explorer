@@ -534,7 +534,13 @@ watch(
     </div>
 
     <!-- MEDIA_COLUMN -->
-    <div v-if="keys.includes('MEDIA_COLUMN')" class="space-y-2">
+    <div
+      v-if="
+        keys.includes('MEDIA_COLUMN') &&
+        (views.includes('map') || views.includes('gallery'))
+      "
+      class="space-y-2"
+    >
       <p class="text-xs text-gray-500 mb-2">
         {{ $t("mediaColumnDescription") }}
       </p>

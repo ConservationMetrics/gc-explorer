@@ -11,7 +11,7 @@ const viewKeys = [
   "LOGO_URL",
 ];
 
-const mountViewInfo = () =>
+const mountViewInfo = (views: string[] = ["alerts"]) =>
   mount(ConfigViewInfo, {
     props: {
       tableName: "test_table",
@@ -21,7 +21,7 @@ const mountViewInfo = () =>
         VIEW_HEADER_IMAGE: "https://example.test/header.jpg",
         LOGO_URL: "https://example.test/logo.png",
       } as ViewConfig,
-      views: ["map"],
+      views,
       keys: viewKeys,
     },
     global: {
@@ -94,5 +94,24 @@ describe("ConfigViewInfo", () => {
     expect(wrapper.emitted("updateConfig")?.[0]?.[0]).toEqual({
       DATASET_TABLE: "Updated View",
     });
+  });
+
+  it.each(["alerts", "map"])("renders LOGO_URL when the view is %s", (view) => {
+    const wrapper = mountViewInfo([view]);
+
+    expect(wrapper.find("#test_table-LOGO_URL").exists()).toBe(true);
+  });
+
+  it("does not render LOGO_URL when the view is gallery", () => {
+    const wrapper = mountViewInfo(["gallery"]);
+
+    expect(wrapper.find("#test_table-LOGO_URL").exists()).toBe(false);
+    expect(
+      wrapper.findAll("input, textarea").map((field) => field.attributes("id")),
+    ).toEqual([
+      "test_table-DATASET_TABLE",
+      "test_table-VIEW_DESCRIPTION",
+      "test_table-VIEW_HEADER_IMAGE",
+    ]);
   });
 });
