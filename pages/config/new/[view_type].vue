@@ -4,6 +4,7 @@ import CopyConfigControl from "@/components/config/CopyConfigControl.vue";
 import SavedModal from "@/components/config/SavedModal.vue";
 import SelectDatasetField from "@/components/config/SelectDatasetField.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
+import Tooltip from "@/components/shared/Tooltip.vue";
 import ViewTypePill from "@/components/shared/ViewTypePill.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import { useDatasetColumns } from "@/composables/useDatasetColumns";
@@ -221,7 +222,11 @@ definePageMeta({ layout: "explorer" });
             test-id="secondary-dataset-select"
             :exclude-value="primaryDataset"
             @update:model-value="handleSecondaryDatasetUpdate"
-          />
+          >
+            <template #label-suffix>
+              <Tooltip :content="$t('secondaryDatasetDescription')" />
+            </template>
+          </SelectDatasetField>
         </div>
 
         <CopyConfigControl
