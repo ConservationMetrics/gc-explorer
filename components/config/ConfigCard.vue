@@ -6,6 +6,7 @@ import {
   type ViewConfig,
   type ViewType,
 } from "@/types";
+import { VIEW_INFO_CONFIG_KEYS } from "@/composables/useCopyConfig";
 import { CONFIG_LIMITS } from "@/utils";
 import { validateViewConfigColumns } from "@/utils/viewConfigColumns";
 import ConfigPermissions from "./ConfigPermissions.vue";
@@ -75,12 +76,7 @@ const filterKeys = computed(() =>
     ? ["FRONT_END_FILTER_COLUMN", "SECONDARY_FILTER_VALUES"]
     : ["FRONT_END_FILTER_COLUMN", "TIMESTAMP_COLUMN", "UNWANTED_COLUMNS"],
 );
-const viewInfoKeys = computed(() => [
-  "DATASET_TABLE",
-  "VIEW_DESCRIPTION",
-  "VIEW_HEADER_IMAGE",
-  "LOGO_URL",
-]);
+const viewInfoKeys: string[] = [...VIEW_INFO_CONFIG_KEYS];
 
 // The child config components expect a `views` array; wrap the single view type
 const viewTypeList = computed(() => [props.viewType]);
@@ -137,12 +133,19 @@ watch(
   { deep: true },
 );
 
-// Apply copied config from another dataset without resetting the saved baseline
+// Apply copied config from another dataset without resetting the saved baseline.
+// View identity fields are omitted from the copy; keep this view's values.
 watch(
   () => props.configToCopy,
   (copiedConfig) => {
     if (copiedConfig) {
-      replaceConfig(localConfig.value, copiedConfig);
+      const preserved = Object.fromEntries(
+        VIEW_INFO_CONFIG_KEYS.flatMap((key) => {
+          const value = localConfig.value[key];
+          return value === undefined ? [] : [[key, value]];
+        }),
+      );
+      replaceConfig(localConfig.value, { ...copiedConfig, ...preserved });
     }
   },
 );

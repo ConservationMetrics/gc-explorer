@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { ref, computed } from "vue";
 import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
-import { copySourceKey, useCopyConfig } from "@/composables/useCopyConfig";
+import {
+  copySourceKey,
+  useCopyConfig,
+  VIEW_INFO_CONFIG_KEYS,
+} from "@/composables/useCopyConfig";
 
 Object.assign(globalThis, { ref, computed });
 
@@ -100,11 +104,12 @@ describe("useCopyConfig", () => {
     selectedCopySource.value = otherCopySources.value[0].key;
     handleConfirmCopy();
 
-    expect(configToCopy.value).toEqual(galleryConfigB);
+    expect(configToCopy.value).toEqual({ EMBED_MEDIA: "NO" });
+    expect(configToCopy.value).not.toHaveProperty("DATASET_TABLE");
     expect(configToCopy.value).not.toEqual(mapConfigB);
   });
 
-  it("excludes the current view and empty configs", () => {
+  it("excludes the current view, empty configs, and view-info-only configs", () => {
     viewRows.value.push(
       makeRow({
         viewId: 5,
@@ -112,6 +117,18 @@ describe("useCopyConfig", () => {
         viewType: "map",
         viewName: "Empty",
         viewConfig: {},
+      }),
+      makeRow({
+        viewId: 6,
+        primaryDataset: "identity_only",
+        viewType: "map",
+        viewName: "Identity Only",
+        viewConfig: {
+          DATASET_TABLE: "Named",
+          VIEW_DESCRIPTION: "Desc",
+          VIEW_HEADER_IMAGE: "https://example.test/header.jpg",
+          LOGO_URL: "https://example.test/logo.png",
+        },
       }),
     );
 
@@ -122,12 +139,28 @@ describe("useCopyConfig", () => {
       currentViewType,
     );
 
-    expect(otherCopySources.value.map((source) => source.key)).not.toContain(
-      copySourceKey("dataset_a", "map"),
-    );
-    expect(otherCopySources.value.map((source) => source.key)).not.toContain(
-      copySourceKey("empty_map", "map"),
-    );
+    const sourceKeys = otherCopySources.value.map((source) => source.key);
+    expect(sourceKeys).not.toContain(copySourceKey("dataset_a", "map"));
+    expect(sourceKeys).not.toContain(copySourceKey("empty_map", "map"));
+    expect(sourceKeys).not.toContain(copySourceKey("identity_only", "map"));
+  });
+
+  it("omits all ConfigViewInfo fields from the copied config", () => {
+    const currentViewType = ref<ViewType | undefined>("map");
+    const {
+      otherCopySources,
+      selectedCopySource,
+      handleConfirmCopy,
+      configToCopy,
+    } = useCopyConfig(viewRows, "dataset_a", currentViewType);
+
+    selectedCopySource.value = otherCopySources.value[0].key;
+    handleConfirmCopy();
+
+    expect(configToCopy.value).toEqual({ MAPBOX_ZOOM: 5 });
+    for (const key of VIEW_INFO_CONFIG_KEYS) {
+      expect(configToCopy.value).not.toHaveProperty(key);
+    }
   });
 
   it("returns no sources when the current view type is unset", () => {
