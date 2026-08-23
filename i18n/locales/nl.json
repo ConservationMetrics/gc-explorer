@@ -269,6 +269,7 @@
   "save": "Opslaan",
   "searchDatasetViews": "Dataset weergaven zoeken...",
   "secondaryData": "Secundaire data",
+  "secondaryDatasetDescription": "Laad een tweede dataset naast de primaire dataset om deze weergave meer context te geven. Op dit moment verschijnt deze op de kaart van het Alertdashboard.",
   "secondaryDatasetOptional": "Secundaire dataset (optioneel)",
   "secondaryFilterValues": "Waarden uit de secundaire dataset om op de alertkaart te laten zien",
   "selectAlertDateRange": "Selecteer een alert datum periode",

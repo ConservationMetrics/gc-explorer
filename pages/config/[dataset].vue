@@ -302,7 +302,7 @@ definePageMeta({ layout: "explorer" });
               @update:model-value="handleSecondaryDatasetUpdate"
             >
               <template #label-suffix>
-                <Tooltip content="Lorem ipsum" />
+                <Tooltip :content="$t('secondaryDatasetDescription')" />
               </template>
             </SelectDatasetField>
           </div>

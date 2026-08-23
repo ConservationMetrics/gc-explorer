@@ -272,6 +272,7 @@
   "save": "Save",
   "searchDatasetViews": "Search dataset views...",
   "secondaryData": "Secondary data",
+  "secondaryDatasetDescription": "Load a second dataset alongside the primary dataset to give this view more context. Right now it appears on the Alerts Dashboard map.",
   "secondaryDatasetOptional": "Secondary dataset (optional)",
   "secondaryFilterValues": "Values to include from the secondary dataset on the alerts map",
   "selectAlertDateRange": "Select an alert date range",

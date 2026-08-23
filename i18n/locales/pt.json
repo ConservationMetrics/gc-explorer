@@ -268,6 +268,7 @@
   "save": "Salvar",
   "searchDatasetViews": "Pesquisar visualizações de conjuntos de dados...",
   "secondaryData": "Dados secundários",
+  "secondaryDatasetDescription": "Carregue um segundo conjunto de dados junto ao conjunto de dados principal para dar mais contexto a esta visualização. No momento, ele aparece no mapa do Painel de alertas.",
   "secondaryDatasetOptional": "Conjunto de dados secundário (opcional)",
   "secondaryFilterValues": "Valores do conjunto de dados secundário para incluir no mapa de alertas",
   "selectAlertDateRange": "Selecione um intervalo de datas de alerta",
