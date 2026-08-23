@@ -667,7 +667,14 @@ const fullWidthKeys = [
             @update:model-value="(value) => handleInput(key, value)"
           />
           <p class="text-gray-500 text-sm">
-            {{ $t("colorColumnDescription") }}
+            <i18n-t keypath="colorColumnDescription" tag="span">
+              <template #color>
+                <code
+                  class="rounded bg-gray-100 px-1 py-0.5 font-mono text-[0.85em]"
+                  >color</code
+                >
+              </template>
+            </i18n-t>
           </p>
         </template>
 
@@ -683,7 +690,20 @@ const fullWidthKeys = [
             @update:model-value="(value) => handleInput(key, value)"
           />
           <p class="text-gray-500 text-sm">
-            {{ $t("iconColumnDescription") }}
+            <i18n-t keypath="iconColumnDescription" tag="span">
+              <template #icon>
+                <code
+                  class="rounded bg-gray-100 px-1 py-0.5 font-mono text-[0.85em]"
+                  >icon</code
+                >
+              </template>
+              <template #filename>
+                <code
+                  class="rounded bg-gray-100 px-1 py-0.5 font-mono text-[0.85em]"
+                  >camp.png</code
+                >
+              </template>
+            </i18n-t>
           </p>
         </template>
       </div>

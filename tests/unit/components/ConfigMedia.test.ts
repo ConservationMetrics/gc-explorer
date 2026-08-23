@@ -84,6 +84,12 @@ const baseProps = {
 };
 
 const globalConfig = {
+  stubs: {
+    "i18n-t": {
+      template:
+        "<span><slot></slot><slot name='link'></slot><slot name='example'></slot><slot name='photo'></slot><slot name='audio'></slot><slot name='all'></slot></span>",
+    },
+  },
   mocks: {
     $t: (key: string) => {
       const translations: Record<string, string> = {
@@ -93,8 +99,12 @@ const globalConfig = {
         mediaGenericHttpBaseUrl: "Generic HTTP base URL",
         mediaInvalidFormat:
           "Invalid format. Please use a Filebrowser share URL or hash.",
+        mediaBasePath: "mediaBasePath",
+        mediaBasePathIcons: "mediaBasePathIcons",
+        mediaBasePathTooltip: "mediaBasePathTooltip",
+        mediaBasePathIconsTooltip: "mediaBasePathIconsTooltip",
         mediaPasteFilebrowserShareUrlOrHash:
-          "Paste Filebrowser share URL or hash",
+          "Filebrowser share URL or hash",
         mediaProvider: "Media Provider",
         or: "or",
       };

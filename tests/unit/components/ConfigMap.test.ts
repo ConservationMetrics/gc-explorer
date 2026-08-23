@@ -69,7 +69,8 @@ const globalConfig = {
   },
   stubs: {
     "i18n-t": {
-      template: "<span><slot></slot><slot name='link'></slot></span>",
+      template:
+        "<span><slot></slot><slot name='link'></slot><slot name='color'></slot><slot name='icon'></slot><slot name='filename'></slot></span>",
     },
   },
 };
