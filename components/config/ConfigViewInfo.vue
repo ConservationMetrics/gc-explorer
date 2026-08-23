@@ -47,6 +47,9 @@ const emit = defineEmits(["updateConfig"]);
               })
           "
         />
+        <p class="text-gray-500 text-sm">
+          {{ $t("logoUrlDescription") }}
+        </p>
         <ConfigImagePreview
           :src="config.LOGO_URL ?? ''"
           :alt="$t(toCamelCase(key))"
