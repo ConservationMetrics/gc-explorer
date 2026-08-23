@@ -53,9 +53,9 @@ const baseProps = {
     "MAPBOX_STYLE",
     "MAPBOX_ACCESS_TOKEN",
     "MAPBOX_ZOOM",
+    "MAPBOX_PROJECTION",
     "MAPBOX_CENTER_LATITUDE",
     "MAPBOX_CENTER_LONGITUDE",
-    "MAPBOX_PROJECTION",
     "MAPBOX_BEARING",
     "MAPBOX_PITCH",
     "MAPBOX_3D",
@@ -66,6 +66,11 @@ const baseProps = {
 const globalConfig = {
   mocks: {
     $t: (key: string) => key,
+  },
+  stubs: {
+    "i18n-t": {
+      template: "<span><slot></slot><slot name='link'></slot></span>",
+    },
   },
 };
 

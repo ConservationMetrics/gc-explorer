@@ -5,6 +5,7 @@ import { ExternalLink } from "lucide-vue-next";
 import VueSlider from "vue-3-slider-component";
 
 import ConfigColumnSelect from "@/components/config/ConfigColumnSelect.vue";
+import Tooltip from "@/components/shared/Tooltip.vue";
 import { toCamelCase } from "@/utils/identifierUtils";
 import { mapboxStyleToStudioUrl } from "@/utils/mapGLHelpers";
 import { updateTags } from "@/composables/useTags";
@@ -432,12 +433,28 @@ const fullWidthKeys = [
             ].includes(key)
           "
         >
-          <label
-            :for="`${tableName}-${key}`"
-            class="block text-sm font-medium text-gray-700"
-          >
-            {{ $t(toCamelCase(key)) }}
-          </label>
+          <div class="flex items-center gap-1.5">
+            <label
+              :for="`${tableName}-${key}`"
+              class="text-sm font-medium text-gray-700"
+            >
+              {{ $t(toCamelCase(key)) }}
+            </label>
+            <Tooltip v-if="key === 'MAPBOX_ZOOM'">
+              <i18n-t keypath="mapboxZoomDescription" tag="span">
+                <template #link>
+                  <a
+                    href="https://wiki.openstreetmap.org/wiki/Zoom_levels"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-violet-600 underline underline-offset-2 hover:text-violet-800"
+                  >
+                    {{ $t("mapboxZoomDescriptionLink") }}
+                  </a>
+                </template>
+              </i18n-t>
+            </Tooltip>
+          </div>
           <input
             :id="`${tableName}-${key}`"
             class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors tabular-nums"
@@ -480,12 +497,28 @@ const fullWidthKeys = [
 
         <!-- Projection -->
         <template v-else-if="key === 'MAPBOX_PROJECTION'">
-          <label
-            :for="`${tableName}-${key}`"
-            class="block text-sm font-medium text-gray-700"
-          >
-            {{ $t(toCamelCase(key)) }}
-          </label>
+          <div class="flex items-center gap-1.5">
+            <label
+              :for="`${tableName}-${key}`"
+              class="text-sm font-medium text-gray-700"
+            >
+              {{ $t(toCamelCase(key)) }}
+            </label>
+            <Tooltip>
+              <i18n-t keypath="mapboxProjectionDescription" tag="span">
+                <template #link>
+                  <a
+                    href="https://docs.mapbox.com/mapbox-gl-js/guides/projections/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-violet-600 underline underline-offset-2 hover:text-violet-800"
+                  >
+                    {{ $t("mapboxProjectionDescriptionLink") }}
+                  </a>
+                </template>
+              </i18n-t>
+            </Tooltip>
+          </div>
           <select
             :id="`${tableName}-${key}`"
             class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
@@ -578,6 +611,13 @@ const fullWidthKeys = [
             :tags="tags[key]"
             @tags-changed="(newTags: Tag[]) => handleTagsChanged(key, newTags)"
           />
+          <p class="text-gray-500 text-sm">
+            <i18n-t keypath="mapLegendLayerIdsDescription" tag="span">
+              <template #exact>
+                <strong>{{ $t("mapLegendLayerIdsExact") }}</strong>
+              </template>
+            </i18n-t>
+          </p>
         </template>
 
         <!-- Planet API Key -->
@@ -597,6 +637,20 @@ const fullWidthKeys = [
               (e) => handleInput(key, (e.target as HTMLInputElement).value)
             "
           />
+          <p class="text-gray-500 text-sm">
+            <i18n-t keypath="planetApiKeyDescription" tag="span">
+              <template #planet>
+                <a
+                  href="https://www.planet.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-violet-600 underline underline-offset-2 hover:text-violet-800"
+                >
+                  {{ $t("planetApiKeyDescriptionPlanet") }}
+                </a>
+              </template>
+            </i18n-t>
+          </p>
         </template>
 
         <!-- Color Column -->
@@ -610,7 +664,9 @@ const fullWidthKeys = [
             :loading="columnsLoading"
             @update:model-value="(value) => handleInput(key, value)"
           />
-          <p class="field-description">{{ $t("colorColumnDescription") }}</p>
+          <p class="text-gray-500 text-sm">
+            {{ $t("colorColumnDescription") }}
+          </p>
         </template>
 
         <!-- Icon Column -->
@@ -624,7 +680,7 @@ const fullWidthKeys = [
             :loading="columnsLoading"
             @update:model-value="(value) => handleInput(key, value)"
           />
-          <p class="text-xs text-gray-500 mt-1">
+          <p class="text-gray-500 text-sm">
             {{ $t("iconColumnDescription") }}
           </p>
         </template>
@@ -634,22 +690,6 @@ const fullWidthKeys = [
 </template>
 
 <style scoped>
-.field-description {
-  font-style: italic;
-  color: #666;
-  font-size: 0.9em;
-  margin-top: 4px;
-  margin-bottom: 10px;
-}
-
-.basemaps-description {
-  font-style: italic;
-  color: #666;
-  font-size: 0.9em;
-  margin-top: 4px;
-  margin-bottom: 10px;
-}
-
 .basemaps-container {
   margin-top: 10px;
 }

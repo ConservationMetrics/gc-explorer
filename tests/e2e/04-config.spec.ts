@@ -461,29 +461,31 @@ test("config page - map number fields sit in two columns on desktop", async ({
 }) => {
   await openMapConfigEditPage(page);
 
-  const zoom = page.locator('input[id$="-MAPBOX_ZOOM"]');
   const latitude = page.locator('input[id$="-MAPBOX_CENTER_LATITUDE"]');
-  await expect(zoom).toBeVisible({ timeout: 10000 });
-  await expect(latitude).toBeVisible();
+  const longitude = page.locator('input[id$="-MAPBOX_CENTER_LONGITUDE"]');
+  await expect(latitude).toBeVisible({ timeout: 10000 });
+  await expect(longitude).toBeVisible();
 
-  const [zoomBox, latitudeBox] = await Promise.all([
-    zoom.boundingBox(),
+  const [latitudeBox, longitudeBox] = await Promise.all([
     latitude.boundingBox(),
+    longitude.boundingBox(),
   ]);
-  expect(zoomBox).not.toBeNull();
   expect(latitudeBox).not.toBeNull();
-  expect(latitudeBox!.x).toBeGreaterThan(zoomBox!.x + zoomBox!.width / 2);
-  expect(Math.abs(latitudeBox!.y - zoomBox!.y)).toBeLessThan(24);
+  expect(longitudeBox).not.toBeNull();
+  expect(longitudeBox!.x).toBeGreaterThan(
+    latitudeBox!.x + latitudeBox!.width / 2,
+  );
+  expect(Math.abs(longitudeBox!.y - latitudeBox!.y)).toBeLessThan(24);
 
   await page.setViewportSize({ width: 375, height: 800 });
-  const [stackedZoomBox, stackedLatitudeBox] = await Promise.all([
-    zoom.boundingBox(),
+  const [stackedLatitudeBox, stackedLongitudeBox] = await Promise.all([
     latitude.boundingBox(),
+    longitude.boundingBox(),
   ]);
-  expect(stackedZoomBox).not.toBeNull();
   expect(stackedLatitudeBox).not.toBeNull();
-  expect(stackedLatitudeBox!.y).toBeGreaterThan(
-    stackedZoomBox!.y + stackedZoomBox!.height / 2,
+  expect(stackedLongitudeBox).not.toBeNull();
+  expect(stackedLongitudeBox!.y).toBeGreaterThan(
+    stackedLatitudeBox!.y + stackedLatitudeBox!.height / 2,
   );
 });
 
