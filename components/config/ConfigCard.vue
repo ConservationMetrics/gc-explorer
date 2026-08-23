@@ -270,10 +270,8 @@ const handleSubmit = () => {
 </script>
 
 <template>
-  <div
-    class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
-  >
-    <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="rounded-t-lg border-b border-slate-200 bg-slate-50 px-6 py-4">
       <h2 class="text-balance text-xl font-bold text-slate-800">
         {{ $t("configurationOptions") }}
       </h2>

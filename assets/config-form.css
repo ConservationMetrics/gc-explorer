@@ -4,6 +4,7 @@
   width: 100%;
   max-width: none;
   position: relative;
+  overflow: visible;
   background-color: #ede9fe;
   border: 1px solid #ddd6fe;
   border-radius: 0.5rem;
@@ -80,4 +81,8 @@
 
 .tag-field.vue-tags-input .ti-new-tag-input:focus {
   outline: none;
+}
+
+.tag-field.vue-tags-input .ti-autocomplete {
+  z-index: 30;
 }
