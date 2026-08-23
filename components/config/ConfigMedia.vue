@@ -459,10 +459,7 @@ watch(
     </div>
 
     <!-- MEDIA_BASE_PATH_ICONS -->
-    <div
-      v-if="showIconsBasePath"
-      class="space-y-4 md:col-span-2"
-    >
+    <div v-if="showIconsBasePath" class="space-y-4 md:col-span-2">
       <ConfigSubsectionHeader :tooltip="$t('mediaBasePathIconsTooltip')">
         {{ $t("mediaBasePathIcons") }}
       </ConfigSubsectionHeader>
@@ -552,7 +549,16 @@ watch(
     </div>
 
     <!-- MEDIA_COLUMN -->
-    <div v-if="keys.includes('MEDIA_COLUMN')" class="space-y-2">
+    <div
+      v-if="
+        keys.includes('MEDIA_COLUMN') &&
+        (views.includes('map') || views.includes('gallery'))
+      "
+      class="space-y-2"
+    >
+      <p class="text-xs text-gray-500 mb-2">
+        {{ $t("mediaColumnDescription") }}
+      </p>
       <ConfigColumnSelect
         :id="`${tableName}-media-column`"
         :model-value="config.MEDIA_COLUMN"
@@ -567,12 +573,14 @@ watch(
       <p class="text-gray-500 text-sm">
         <i18n-t keypath="mediaColumnDescription" tag="span">
           <template #photo>
-            <code class="rounded bg-gray-100 px-1 py-0.5 font-mono text-[0.85em]"
+            <code
+              class="rounded bg-gray-100 px-1 py-0.5 font-mono text-[0.85em]"
               >photo</code
             >
           </template>
           <template #audio>
-            <code class="rounded bg-gray-100 px-1 py-0.5 font-mono text-[0.85em]"
+            <code
+              class="rounded bg-gray-100 px-1 py-0.5 font-mono text-[0.85em]"
               >audio</code
             >
           </template>
