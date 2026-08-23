@@ -43,10 +43,8 @@ test("config page - create new view via type-first flow and edit it", async ({
   await expect(
     page.locator("[data-testid='create-form-primary-select']"),
   ).toHaveValue(selectedTableName);
-  await expect(page.getByLabel("Primary dataset (required)")).toBeVisible();
-  const secondaryDatasetSelect = page.getByLabel(
-    "Secondary dataset (optional)",
-  );
+  await expect(page.getByLabel("Primary dataset")).toBeVisible();
+  const secondaryDatasetSelect = page.getByLabel("Secondary dataset");
   await expect(secondaryDatasetSelect).toBeVisible();
   await expect(secondaryDatasetSelect.locator("option:checked")).toHaveText(
     "Select a secondary dataset…",
@@ -436,7 +434,7 @@ test("config page - view metadata displays current view type outside ConfigCard"
   await expect(
     page.locator("[data-testid='view-metadata-secondary']"),
   ).toHaveCount(0);
-  await expect(page.getByLabel("Secondary dataset (optional)")).toBeVisible();
+  await expect(page.getByLabel("Secondary dataset")).toBeVisible();
 
   const secondarySelector = page.locator(
     "[data-testid='edit-secondary-dataset-select']",

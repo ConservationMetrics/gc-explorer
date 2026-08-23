@@ -204,7 +204,7 @@ definePageMeta({ layout: "explorer" });
           <SelectDatasetField
             id="create-form-primary"
             v-model="primaryDataset"
-            :label="$t('primaryDatasetRequired')"
+            :label="$t('primaryDatasetLabel')"
             :options="availableTables"
             :placeholder="$t('selectPrimaryDataset')"
             test-id="create-form-primary-select"
@@ -215,7 +215,7 @@ definePageMeta({ layout: "explorer" });
             v-if="showsSecondaryDataset"
             id="create-view-secondaryDataset-select"
             :model-value="secondaryDataset"
-            :label="$t('secondaryDatasetOptional')"
+            :label="$t('secondaryDatasetLabel')"
             :options="availableGeospatialTables"
             :placeholder="$t('selectSecondaryDataset')"
             test-id="secondary-dataset-select"

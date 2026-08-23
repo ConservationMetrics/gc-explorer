@@ -5,6 +5,7 @@ import { ExternalLink } from "lucide-vue-next";
 import VueSlider from "vue-3-slider-component";
 
 import ConfigColumnSelect from "@/components/config/ConfigColumnSelect.vue";
+import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import Tooltip from "@/components/shared/Tooltip.vue";
 import { toCamelCase } from "@/utils/identifierUtils";
 import { mapboxStyleToStudioUrl } from "@/utils/mapGLHelpers";
@@ -262,9 +263,9 @@ const fullWidthKeys = [
       >
         <!-- Mapbox Basemaps -->
         <template v-if="key === 'MAPBOX_STYLE'">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <ConfigFieldLabel class="mb-2">
             {{ $t("mapboxBackgroundMaps") }}
-          </label>
+          </ConfigFieldLabel>
           <p class="text-sm text-gray-500 mb-4">
             {{ $t("basemapsDescription") }}
           </p>
@@ -290,12 +291,13 @@ const fullWidthKeys = [
                 </div>
                 <div class="flex-1 space-y-3">
                   <div>
-                    <label
-                      :for="`${tableName}-basemap-name-${index}`"
-                      class="block text-sm font-medium text-gray-700 mb-1"
+                    <ConfigFieldLabel
+                      :for-id="`${tableName}-basemap-name-${index}`"
+                      required
+                      class="mb-1"
                     >
                       {{ $t("basemapName") }}
-                    </label>
+                    </ConfigFieldLabel>
                     <input
                       :id="`${tableName}-basemap-name-${index}`"
                       class="w-full px-4 py-2 bg-violet-100 border rounded-lg transition-colors"
@@ -324,12 +326,13 @@ const fullWidthKeys = [
                     </span>
                   </div>
                   <div>
-                    <label
-                      :for="`${tableName}-basemap-style-${index}`"
-                      class="block text-sm font-medium text-gray-700 mb-1"
+                    <ConfigFieldLabel
+                      :for-id="`${tableName}-basemap-style-${index}`"
+                      required
+                      class="mb-1"
                     >
                       {{ $t("mapboxStyle") }}
-                    </label>
+                    </ConfigFieldLabel>
                     <div class="flex items-center gap-2">
                       <input
                         :id="`${tableName}-basemap-style-${index}`"
@@ -402,17 +405,15 @@ const fullWidthKeys = [
 
         <!-- Access Token -->
         <template v-else-if="key === 'MAPBOX_ACCESS_TOKEN'">
-          <label
-            :for="`${tableName}-${key}`"
-            class="block text-sm font-medium text-gray-700"
-          >
-            {{ $t(toCamelCase(key)) }} <span class="text-red-500">*</span>
-          </label>
+          <ConfigFieldLabel :for-id="`${tableName}-${key}`" required>
+            {{ $t(toCamelCase(key)) }}
+          </ConfigFieldLabel>
           <input
             :id="`${tableName}-${key}`"
             class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
             pattern="^pk\.ey.*"
             placeholder="pk.ey…"
+            required
             :title="$t('pleaseMatchFormat') + ': pk.ey… '"
             :value="config[key]"
             @input="
@@ -434,12 +435,18 @@ const fullWidthKeys = [
           "
         >
           <div class="flex items-center gap-1.5">
-            <label
-              :for="`${tableName}-${key}`"
-              class="text-sm font-medium text-gray-700"
+            <ConfigFieldLabel
+              :for-id="`${tableName}-${key}`"
+              :required="
+                [
+                  'MAPBOX_CENTER_LATITUDE',
+                  'MAPBOX_CENTER_LONGITUDE',
+                  'MAPBOX_ZOOM',
+                ].includes(key)
+              "
             >
               {{ $t(toCamelCase(key)) }}
-            </label>
+            </ConfigFieldLabel>
             <Tooltip v-if="key === 'MAPBOX_ZOOM'">
               <i18n-t keypath="mapboxZoomDescription" tag="span">
                 <template #link>
@@ -482,6 +489,13 @@ const fullWidthKeys = [
                         ? 22
                         : 0
             "
+            :required="
+              [
+                'MAPBOX_CENTER_LATITUDE',
+                'MAPBOX_CENTER_LONGITUDE',
+                'MAPBOX_ZOOM',
+              ].includes(key)
+            "
             :value="config[key]"
             @input="
               (e) => {
@@ -498,12 +512,9 @@ const fullWidthKeys = [
         <!-- Projection -->
         <template v-else-if="key === 'MAPBOX_PROJECTION'">
           <div class="flex items-center gap-1.5">
-            <label
-              :for="`${tableName}-${key}`"
-              class="text-sm font-medium text-gray-700"
-            >
+            <ConfigFieldLabel :for-id="`${tableName}-${key}`" required>
               {{ $t(toCamelCase(key)) }}
-            </label>
+            </ConfigFieldLabel>
             <Tooltip>
               <i18n-t keypath="mapboxProjectionDescription" tag="span">
                 <template #link>
@@ -522,6 +533,7 @@ const fullWidthKeys = [
           <select
             :id="`${tableName}-${key}`"
             class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+            required
             :value="config[key]"
             @change="
               (e) => handleInput(key, (e.target as HTMLSelectElement).value)
@@ -547,12 +559,9 @@ const fullWidthKeys = [
             data-testid="config-3d-grid"
           >
             <div class="space-y-2">
-              <label
-                :for="`${tableName}-${key}`"
-                class="block text-sm font-medium text-gray-700"
-              >
+              <ConfigFieldLabel :for-id="`${tableName}-${key}`">
                 {{ $t(toCamelCase(key)) }}
-              </label>
+              </ConfigFieldLabel>
               <label
                 class="flex min-h-10 items-center gap-2 cursor-pointer group"
               >
@@ -575,12 +584,11 @@ const fullWidthKeys = [
             </div>
 
             <div v-if="Boolean(config['MAPBOX_3D'])" class="space-y-2 min-w-0">
-              <label
-                :for="`${tableName}-MAPBOX_3D_TERRAIN_EXAGGERATION`"
-                class="block text-sm font-medium text-gray-700"
+              <ConfigFieldLabel
+                :for-id="`${tableName}-MAPBOX_3D_TERRAIN_EXAGGERATION`"
               >
                 3D {{ $t("terrainExaggeration") }}
-              </label>
+              </ConfigFieldLabel>
               <div class="pt-2 pb-8">
                 <VueSlider
                   :id="`${tableName}-MAPBOX_3D_TERRAIN_EXAGGERATION`"
@@ -599,12 +607,9 @@ const fullWidthKeys = [
 
         <!-- Legend Layers -->
         <template v-else-if="key === 'MAP_LEGEND_LAYER_IDS'">
-          <label
-            :for="`${tableName}-${key}`"
-            class="block text-sm font-medium text-gray-700"
-          >
+          <ConfigFieldLabel :for-id="`${tableName}-${key}`">
             {{ $t(toCamelCase(key)) }}
-          </label>
+          </ConfigFieldLabel>
           <VueTagsInput
             :id="`${tableName}-${key}`"
             class="tag-field w-full"
@@ -622,12 +627,9 @@ const fullWidthKeys = [
 
         <!-- Planet API Key -->
         <template v-else-if="key === 'PLANET_API_KEY'">
-          <label
-            :for="`${tableName}-${key}`"
-            class="block text-sm font-medium text-gray-700"
-          >
+          <ConfigFieldLabel :for-id="`${tableName}-${key}`">
             {{ $t(toCamelCase(key)) }}
-          </label>
+          </ConfigFieldLabel>
           <input
             :id="`${tableName}-${key}`"
             class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"

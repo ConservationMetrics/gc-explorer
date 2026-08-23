@@ -20,6 +20,10 @@ const mountConfigCard = (
   viewType: ViewType,
   viewConfig: ViewConfig = {
     MAPBOX_ACCESS_TOKEN: "pk.ey.test-token",
+    MAPBOX_ZOOM: 10,
+    MAPBOX_PROJECTION: "mercator",
+    MAPBOX_CENTER_LATITUDE: "0",
+    MAPBOX_CENTER_LONGITUDE: "0",
     ROUTE_LEVEL_PERMISSION: "member",
   },
 ) =>

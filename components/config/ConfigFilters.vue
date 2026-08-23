@@ -2,6 +2,7 @@
 import { computed } from "vue";
 
 import ConfigColumnSelect from "@/components/config/ConfigColumnSelect.vue";
+import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import { toCamelCase } from "@/utils/identifierUtils";
 
 // @ts-expect-error - vue-tags-input does not have types
@@ -163,12 +164,9 @@ const hasUnwantedColumnError = computed(
           key === 'SECONDARY_FILTER_VALUES' || key === 'UNWANTED_COLUMNS'
         "
       >
-        <label
-          :for="`${tableName}-${key}`"
-          class="block text-sm font-medium text-gray-700"
-        >
+        <ConfigFieldLabel :for-id="`${tableName}-${key}`">
           {{ $t(toCamelCase(key)) }}
-        </label>
+        </ConfigFieldLabel>
         <VueTagsInput
           :id="`${tableName}-${key}`"
           class="tag-field w-full"

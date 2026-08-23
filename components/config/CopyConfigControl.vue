@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import type { CopyConfigSource } from "@/composables/useCopyConfig";
 import { Copy } from "lucide-vue-next";
 
@@ -49,12 +50,9 @@ const emit = defineEmits<{
         <p class="text-sm text-gray-600 mb-4">
           {{ $t("copyConfigDescription") }}
         </p>
-        <label
-          for="copy-config-select"
-          class="block text-sm font-medium text-gray-700 mb-2"
-        >
+        <ConfigFieldLabel for-id="copy-config-select" class="mb-2">
           {{ $t("view") }}
-        </label>
+        </ConfigFieldLabel>
         <select
           id="copy-config-select"
           :value="selectedSource"

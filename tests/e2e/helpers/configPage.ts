@@ -62,7 +62,7 @@ export async function openGalleryConfigEditPage(page: Page): Promise<string> {
 }
 
 /**
- * Ensures a map config form can be saved: Mapbox token present and a
+ * Ensures a map config form can be saved: required map fields present and a
  * visibility level selected. Newly added views start with empty config.
  *
  * @param {Page} page - Playwright page on a config edit form.
@@ -71,11 +71,28 @@ export async function openGalleryConfigEditPage(page: Page): Promise<string> {
 export async function ensureMapFormCanSubmit(page: Page): Promise<void> {
   await expandMapSection(page);
 
-  const tokenInput = page.locator('input[id*="MAPBOX_ACCESS_TOKEN"]');
-  if ((await tokenInput.count()) > 0) {
-    const tokenValue = await tokenInput.inputValue();
-    if (!tokenValue?.trim()) {
-      await tokenInput.fill("pk.ey_e2e_mapbox_access_token_value");
+  const fillIfEmpty = async (locator: ReturnType<Page["locator"]>, value: string) => {
+    if ((await locator.count()) === 0) return;
+    const current = await locator.inputValue();
+    if (!current?.trim()) {
+      await locator.fill(value);
+      await page.waitForTimeout(200);
+    }
+  };
+
+  await fillIfEmpty(
+    page.locator('input[id*="MAPBOX_ACCESS_TOKEN"]'),
+    "pk.ey_e2e_mapbox_access_token_value",
+  );
+  await fillIfEmpty(page.locator('input[id*="MAPBOX_ZOOM"]'), "10");
+  await fillIfEmpty(page.locator('input[id*="MAPBOX_CENTER_LATITUDE"]'), "0");
+  await fillIfEmpty(page.locator('input[id*="MAPBOX_CENTER_LONGITUDE"]'), "0");
+
+  const projectionSelect = page.locator('select[id*="MAPBOX_PROJECTION"]');
+  if ((await projectionSelect.count()) > 0) {
+    const projectionValue = await projectionSelect.inputValue();
+    if (!projectionValue?.trim()) {
+      await projectionSelect.selectOption("mercator");
       await page.waitForTimeout(200);
     }
   }

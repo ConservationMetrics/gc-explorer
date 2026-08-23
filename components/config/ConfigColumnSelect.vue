@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import { getSelectableColumnOptions } from "@/utils/viewConfigColumns";
 
 import type { ColumnEntry } from "@/types";
@@ -13,10 +14,12 @@ const props = withDefaults(
     loading?: boolean;
     modelValue?: string;
     placeholder: string;
+    required?: boolean;
   }>(),
   {
     loading: false,
     modelValue: "",
+    required: false,
   },
 );
 
@@ -46,9 +49,9 @@ const optionLabel = (column: ColumnEntry): string => {
 
 <template>
   <div class="space-y-2 min-w-0">
-    <label :for="id" class="block text-sm font-medium text-gray-700">
+    <ConfigFieldLabel :for-id="id" :required="required">
       {{ label }}
-    </label>
+    </ConfigFieldLabel>
     <select
       :id="id"
       :value="modelValue"

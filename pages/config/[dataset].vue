@@ -293,7 +293,7 @@ definePageMeta({ layout: "explorer" });
               v-if="showsSecondaryDataset"
               id="edit-view-secondaryDataset-select"
               :model-value="secondaryDataset"
-              :label="$t('secondaryDatasetOptional')"
+              :label="$t('secondaryDatasetLabel')"
               :options="availableGeospatialTables"
               :placeholder="$t('selectSecondaryDataset')"
               test-id="edit-secondary-dataset-select"

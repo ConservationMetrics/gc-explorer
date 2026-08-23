@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ConfigColumnSelect from "@/components/config/ConfigColumnSelect.vue";
+import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import { toCamelCase } from "@/utils/identifierUtils";
 import {
   extractShareId,
@@ -226,18 +227,15 @@ watch(
       v-if="keys.includes('MEDIA_BASE_PATH')"
       class="space-y-4 md:col-span-2"
     >
-      <label class="block text-sm font-medium text-gray-700">
+      <ConfigFieldLabel>
         {{ $t(toCamelCase("MEDIA_BASE_PATH")) }}
-      </label>
+      </ConfigFieldLabel>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
         <div class="space-y-2">
-          <label
-            :for="`${tableName}-provider-basePath`"
-            class="block text-sm font-medium text-gray-700"
-          >
+          <ConfigFieldLabel :for-id="`${tableName}-provider-basePath`">
             {{ $t("mediaProvider") }}
-          </label>
+          </ConfigFieldLabel>
           <select
             :id="`${tableName}-provider-basePath`"
             class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
@@ -258,12 +256,9 @@ watch(
 
         <template v-if="providerBasePath === 'filebrowser'">
           <div class="space-y-2">
-            <label
-              :for="`${tableName}-share-basePath`"
-              class="block text-sm font-medium text-gray-700"
-            >
+            <ConfigFieldLabel :for-id="`${tableName}-share-basePath`">
               {{ $t("mediaPasteFilebrowserShareUrlOrHash") }}
-            </label>
+            </ConfigFieldLabel>
             <input
               :id="`${tableName}-share-basePath`"
               class="w-full px-4 py-2 bg-violet-100 border rounded-lg transition-colors"
@@ -305,12 +300,9 @@ watch(
 
         <template v-else>
           <div class="space-y-2">
-            <label
-              :for="`${tableName}-baseUrl-generic-basePath`"
-              class="block text-sm font-medium text-gray-700"
-            >
+            <ConfigFieldLabel :for-id="`${tableName}-baseUrl-generic-basePath`">
               {{ $t("mediaBaseUrl") }}
-            </label>
+            </ConfigFieldLabel>
             <input
               :id="`${tableName}-baseUrl-generic-basePath`"
               class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
@@ -334,18 +326,15 @@ watch(
       v-if="keys.includes('MEDIA_BASE_PATH_ALERTS') && views.includes('alerts')"
       class="space-y-4 md:col-span-2"
     >
-      <label class="block text-sm font-medium text-gray-700">
+      <ConfigFieldLabel>
         {{ $t(toCamelCase("MEDIA_BASE_PATH_ALERTS")) }}
-      </label>
+      </ConfigFieldLabel>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
         <div class="space-y-2">
-          <label
-            :for="`${tableName}-provider-alerts`"
-            class="block text-sm font-medium text-gray-700"
-          >
+          <ConfigFieldLabel :for-id="`${tableName}-provider-alerts`">
             {{ $t("mediaProvider") }}
-          </label>
+          </ConfigFieldLabel>
           <select
             :id="`${tableName}-provider-alerts`"
             class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
@@ -366,12 +355,9 @@ watch(
 
         <template v-if="providerAlerts === 'filebrowser'">
           <div class="space-y-2">
-            <label
-              :for="`${tableName}-share-alerts`"
-              class="block text-sm font-medium text-gray-700"
-            >
+            <ConfigFieldLabel :for-id="`${tableName}-share-alerts`">
               {{ $t("mediaPasteFilebrowserShareUrlOrHash") }}
-            </label>
+            </ConfigFieldLabel>
             <input
               :id="`${tableName}-share-alerts`"
               class="w-full px-4 py-2 bg-violet-100 border rounded-lg transition-colors"
@@ -410,12 +396,9 @@ watch(
 
         <template v-else>
           <div class="space-y-2">
-            <label
-              :for="`${tableName}-baseUrl-generic-alerts`"
-              class="block text-sm font-medium text-gray-700"
-            >
+            <ConfigFieldLabel :for-id="`${tableName}-baseUrl-generic-alerts`">
               {{ $t("mediaBaseUrl") }}
-            </label>
+            </ConfigFieldLabel>
             <input
               :id="`${tableName}-baseUrl-generic-alerts`"
               class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
@@ -436,18 +419,15 @@ watch(
       v-if="keys.includes('MEDIA_BASE_PATH_ICONS') && views.includes('map')"
       class="space-y-4 md:col-span-2"
     >
-      <label class="block text-sm font-medium text-gray-700">
+      <ConfigFieldLabel>
         {{ $t(toCamelCase("MEDIA_BASE_PATH_ICONS")) }}
-      </label>
+      </ConfigFieldLabel>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
         <div class="space-y-2">
-          <label
-            :for="`${tableName}-provider-icons`"
-            class="block text-sm font-medium text-gray-700"
-          >
+          <ConfigFieldLabel :for-id="`${tableName}-provider-icons`">
             {{ $t("mediaProvider") }}
-          </label>
+          </ConfigFieldLabel>
           <select
             :id="`${tableName}-provider-icons`"
             class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
@@ -468,12 +448,9 @@ watch(
 
         <template v-if="providerIcons === 'filebrowser'">
           <div class="space-y-2">
-            <label
-              :for="`${tableName}-share-icons`"
-              class="block text-sm font-medium text-gray-700"
-            >
+            <ConfigFieldLabel :for-id="`${tableName}-share-icons`">
               {{ $t("mediaPasteFilebrowserShareUrlOrHash") }}
-            </label>
+            </ConfigFieldLabel>
             <input
               :id="`${tableName}-share-icons`"
               class="w-full px-4 py-2 bg-violet-100 border rounded-lg transition-colors"
@@ -512,12 +489,9 @@ watch(
 
         <template v-else>
           <div class="space-y-2">
-            <label
-              :for="`${tableName}-baseUrl-generic-icons`"
-              class="block text-sm font-medium text-gray-700"
-            >
+            <ConfigFieldLabel :for-id="`${tableName}-baseUrl-generic-icons`">
               {{ $t("mediaBaseUrl") }}
-            </label>
+            </ConfigFieldLabel>
             <input
               :id="`${tableName}-baseUrl-generic-icons`"
               class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"

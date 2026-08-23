@@ -207,10 +207,16 @@ const areColumnsLoading = computed(
       props.secondaryColumnsLoading),
 );
 
+const hasConfigValue = (value: unknown) =>
+  value !== null && value !== undefined && String(value).trim() !== "";
+
 const isFormValid = computed(() => {
   const isMapConfigValid = shouldShowConfigMap.value
-    ? localConfig.value.MAPBOX_ACCESS_TOKEN?.trim() !== "" &&
-      localConfig.value.MAPBOX_ACCESS_TOKEN != null
+    ? hasConfigValue(localConfig.value.MAPBOX_ACCESS_TOKEN) &&
+      hasConfigValue(localConfig.value.MAPBOX_ZOOM) &&
+      hasConfigValue(localConfig.value.MAPBOX_PROJECTION) &&
+      hasConfigValue(localConfig.value.MAPBOX_CENTER_LATITUDE) &&
+      hasConfigValue(localConfig.value.MAPBOX_CENTER_LONGITUDE)
     : true;
 
   return (

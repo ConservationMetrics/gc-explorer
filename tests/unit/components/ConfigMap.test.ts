@@ -830,10 +830,10 @@ describe("ConfigMap component", () => {
     const styleInput = wrapper.get("#test_table-basemap-style-0");
     const zoomInput = wrapper.get("#test_table-MAPBOX_ZOOM");
 
-    expect(wrapper.get('label[for="test_table-basemap-name-0"]').text()).toBe(
+    expect(wrapper.get('label[for="test_table-basemap-name-0"]').text()).toContain(
       "basemapName",
     );
-    expect(wrapper.get('label[for="test_table-basemap-style-0"]').text()).toBe(
+    expect(wrapper.get('label[for="test_table-basemap-style-0"]').text()).toContain(
       "mapboxStyle",
     );
     expect(nameInput.classes()).toContain("bg-violet-100");

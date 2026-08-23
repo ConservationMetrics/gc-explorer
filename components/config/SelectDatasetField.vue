@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
+
 const props = withDefaults(
   defineProps<{
     id: string;
@@ -38,9 +40,9 @@ const selectOptions = computed(() => {
 <template>
   <div class="space-y-2">
     <div class="flex items-center gap-1.5">
-      <label :for="id" class="text-sm font-medium text-gray-700">
+      <ConfigFieldLabel :for-id="id" :required="required">
         {{ label }}
-      </label>
+      </ConfigFieldLabel>
       <slot name="label-suffix"></slot>
     </div>
     <select

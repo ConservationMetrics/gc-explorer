@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import ConfigImagePreview from "@/components/config/ConfigImagePreview.vue";
 import { CONFIG_LIMITS } from "@/utils";
 import { toCamelCase } from "@/utils/identifierUtils";
@@ -28,12 +29,9 @@ const emit = defineEmits(["updateConfig"]);
       }"
     >
       <template v-if="key === 'LOGO_URL'">
-        <label
-          :for="`${tableName}-${key}`"
-          class="block text-sm font-medium text-gray-700"
-        >
+        <ConfigFieldLabel :for-id="`${tableName}-${key}`">
           {{ $t(toCamelCase(key)) }}
-        </label>
+        </ConfigFieldLabel>
         <input
           :id="`${tableName}-${key}`"
           class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
@@ -57,12 +55,9 @@ const emit = defineEmits(["updateConfig"]);
         />
       </template>
       <template v-else-if="key === 'DATASET_TABLE'">
-        <label
-          :for="`${tableName}-${key}`"
-          class="block text-sm font-medium text-gray-700"
-        >
+        <ConfigFieldLabel :for-id="`${tableName}-${key}`">
           {{ $t("viewDisplayName") }}
-        </label>
+        </ConfigFieldLabel>
         <input
           :id="`${tableName}-${key}`"
           class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
@@ -106,12 +101,9 @@ const emit = defineEmits(["updateConfig"]);
         </p>
       </template>
       <template v-else-if="key === 'VIEW_HEADER_IMAGE'">
-        <label
-          :for="`${tableName}-${key}`"
-          class="block text-sm font-medium text-gray-700"
-        >
+        <ConfigFieldLabel :for-id="`${tableName}-${key}`">
           {{ $t("viewHeaderImage") }}
-        </label>
+        </ConfigFieldLabel>
         <input
           :id="`${tableName}-${key}`"
           class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
@@ -127,8 +119,7 @@ const emit = defineEmits(["updateConfig"]);
         />
         <p class="text-gray-500 text-sm">
           {{
-            $t("viewHeaderImageDescription") ||
-            "Optional: URL for the header background image"
+            $t("viewHeaderImageDescription")
           }}
         </p>
         <ConfigImagePreview
@@ -138,12 +129,9 @@ const emit = defineEmits(["updateConfig"]);
         />
       </template>
       <template v-else-if="key === 'VIEW_DESCRIPTION'">
-        <label
-          :for="`${tableName}-${key}`"
-          class="block text-sm font-medium text-gray-700"
-        >
+        <ConfigFieldLabel :for-id="`${tableName}-${key}`">
           {{ $t("viewDescription") }}
-        </label>
+        </ConfigFieldLabel>
         <textarea
           :id="`${tableName}-${key}`"
           class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors resize-y"
