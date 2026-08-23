@@ -20,12 +20,13 @@ const toggle = () => {
 <template>
   <div
     data-testid="config-section-collapsible"
-    class="mb-4 last:mb-0 overflow-hidden rounded-3xl bg-slate-50 shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_2px_-1px_rgba(0,0,0,0.06),0px_2px_4px_0px_rgba(0,0,0,0.04)]"
+    class="relative mb-4 last:mb-0 rounded-3xl bg-slate-50 shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_2px_-1px_rgba(0,0,0,0.06),0px_2px_4px_0px_rgba(0,0,0,0.04)] focus-within:z-20"
   >
     <button
       type="button"
       :data-testid="`config-section-${title.toLowerCase()}-toggle`"
       class="flex min-h-10 w-full items-center justify-between bg-slate-100 py-4 pl-4 pr-3.5 text-left transition-[background-color] duration-150 ease-out hover:bg-slate-200/80"
+      :class="isOpen ? 'rounded-t-3xl' : 'rounded-3xl'"
       @click="toggle"
     >
       <h3 class="text-balance text-lg font-semibold text-slate-800">
