@@ -1,5 +1,6 @@
 import {
   fetchData,
+  fetchInformationSchemaColumns,
   fetchTableConfig,
   fetchTableSqlColumns,
   fetchViewTables,
@@ -9,6 +10,10 @@ import { prepareMapStatistics } from "@/server/dataProcessing/dataTransformers";
 import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
 import { parseBasemaps } from "@/server/utils";
+import {
+  assertConfiguredColumnsExist,
+  getConfiguredColumns,
+} from "@/server/utils/assertConfiguredColumns";
 import { parseAndValidateLimit, getTableParam } from "@/server/utils/dbHelpers";
 
 import type { H3Event } from "h3";
@@ -38,6 +43,21 @@ export default defineEventHandler(async (event: H3Event) => {
     const iconColumn = tableConfig.ICON_COLUMN;
     const filterColumn = tableConfig.FRONT_END_FILTER_COLUMN;
     const timestampColumn = tableConfig.TIMESTAMP_COLUMN;
+
+    const configuredColumns = getConfiguredColumns([
+      { field: "COLOR_COLUMN", column: colorColumn },
+      { field: "ICON_COLUMN", column: iconColumn },
+      { field: "FRONT_END_FILTER_COLUMN", column: filterColumn },
+      { field: "TIMESTAMP_COLUMN", column: timestampColumn },
+    ]);
+    if (configuredColumns.length > 0) {
+      const schemaColumns = await fetchInformationSchemaColumns(primaryTable);
+      assertConfiguredColumnsExist(
+        primaryTable,
+        schemaColumns,
+        configuredColumns,
+      );
+    }
 
     const tableSqlColumns = await fetchTableSqlColumns(primaryTable);
     const dateLikeColumns = tableSqlColumns.filter((column) =>
