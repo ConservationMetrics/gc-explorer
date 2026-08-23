@@ -71,7 +71,10 @@ export async function openGalleryConfigEditPage(page: Page): Promise<string> {
 export async function ensureMapFormCanSubmit(page: Page): Promise<void> {
   await expandMapSection(page);
 
-  const fillIfEmpty = async (locator: ReturnType<Page["locator"]>, value: string) => {
+  const fillIfEmpty = async (
+    locator: ReturnType<Page["locator"]>,
+    value: string,
+  ) => {
     if ((await locator.count()) === 0) return;
     const current = await locator.inputValue();
     if (!current?.trim()) {

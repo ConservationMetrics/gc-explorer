@@ -110,8 +110,7 @@ const globalConfig = {
         mediaBasePathIcons: "mediaBasePathIcons",
         mediaBasePathTooltip: "mediaBasePathTooltip",
         mediaBasePathIconsTooltip: "mediaBasePathIconsTooltip",
-        mediaPasteFilebrowserShareUrlOrHash:
-          "Filebrowser share URL or hash",
+        mediaPasteFilebrowserShareUrlOrHash: "Filebrowser share URL or hash",
         mediaProvider: "Media Provider",
         or: "or",
       };

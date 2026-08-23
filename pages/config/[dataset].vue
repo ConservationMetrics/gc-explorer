@@ -275,7 +275,9 @@ definePageMeta({ layout: "explorer" });
           >
             <dl class="contents">
               <div>
-                <dt class="text-sm font-bold text-gray-700">{{ $t("view") }}</dt>
+                <dt class="text-sm font-bold text-gray-700">
+                  {{ $t("view") }}
+                </dt>
                 <dd class="mt-1">
                   <ViewTypePill :view-type="resolvedViewType" />
                 </dd>
