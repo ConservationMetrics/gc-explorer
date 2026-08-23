@@ -37,9 +37,12 @@ const selectOptions = computed(() => {
 
 <template>
   <div class="space-y-2">
-    <label :for="id" class="block text-sm font-medium text-gray-700">
-      {{ label }}
-    </label>
+    <div class="flex items-center gap-1.5">
+      <label :for="id" class="text-sm font-medium text-gray-700">
+        {{ label }}
+      </label>
+      <slot name="label-suffix"></slot>
+    </div>
     <select
       :id="id"
       :value="modelValue ?? ''"

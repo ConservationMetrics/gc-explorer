@@ -4,6 +4,7 @@ import CopyConfigControl from "@/components/config/CopyConfigControl.vue";
 import SavedModal from "@/components/config/SavedModal.vue";
 import SelectDatasetField from "@/components/config/SelectDatasetField.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
+import Tooltip from "@/components/shared/Tooltip.vue";
 import ViewTypePill from "@/components/shared/ViewTypePill.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import { useDatasetColumns } from "@/composables/useDatasetColumns";
@@ -299,7 +300,11 @@ definePageMeta({ layout: "explorer" });
               :exclude-value="dataset"
               class="sm:col-start-1"
               @update:model-value="handleSecondaryDatasetUpdate"
-            />
+            >
+              <template #label-suffix>
+                <Tooltip content="Lorem ipsum" />
+              </template>
+            </SelectDatasetField>
           </div>
         </div>
         <div
