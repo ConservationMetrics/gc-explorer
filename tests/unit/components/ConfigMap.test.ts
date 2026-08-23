@@ -703,6 +703,24 @@ describe("ConfigMap component", () => {
     expect(vm.basemaps[1].isDefault).toBe(false);
   });
 
+  it("does not render COLOR_COLUMN or ICON_COLUMN for alerts even when keys include them", () => {
+    const wrapper = mount(ConfigMap, {
+      props: {
+        ...baseProps,
+        views: ["alerts"],
+        keys: [...baseProps.keys, "COLOR_COLUMN", "ICON_COLUMN"],
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.find('select[id="test_table-COLOR_COLUMN"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.find('select[id="test_table-ICON_COLUMN"]').exists()).toBe(
+      false,
+    );
+  });
+
   it("renders COLOR_COLUMN field when included in keys", () => {
     const propsWithColorColumn = {
       ...baseProps,

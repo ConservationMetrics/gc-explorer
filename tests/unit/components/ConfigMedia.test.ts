@@ -752,6 +752,19 @@ describe("ConfigMedia component", () => {
     expect(input.element.value).toBe("keep-me");
   });
 
+  it("does not render MEDIA_COLUMN when the view is alerts", () => {
+    const wrapper = mount(ConfigMedia, {
+      props: {
+        ...baseProps,
+        views: ["alerts"],
+        keys: ["MEDIA_COLUMN"],
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.find("#test_table-media-column").exists()).toBe(false);
+  });
+
   it("associates the media column label with its input", () => {
     const wrapper = mount(ConfigMedia, {
       props: {
