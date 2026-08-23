@@ -83,6 +83,13 @@ const baseProps = {
   keys: ["MEDIA_BASE_PATH"],
 };
 
+const iconsSectionProps = {
+  ...baseProps,
+  views: ["map"],
+  keys: ["MEDIA_BASE_PATH_ICONS"],
+  config: { ICON_COLUMN: "icon" } as ViewConfig,
+};
+
 const globalConfig = {
   stubs: {
     "i18n-t": {
@@ -527,13 +534,9 @@ describe("ConfigMedia component", () => {
     }
   });
 
-  it("renders with MEDIA_BASE_PATH_ICONS when map view is enabled", () => {
+  it("renders with MEDIA_BASE_PATH_ICONS when map view is enabled and icon column is set", () => {
     const wrapper = mount(ConfigMedia, {
-      props: {
-        ...baseProps,
-        views: ["map"],
-        keys: ["MEDIA_BASE_PATH_ICONS"],
-      },
+      props: iconsSectionProps,
       global: globalConfig,
     });
 
@@ -558,8 +561,24 @@ describe("ConfigMedia component", () => {
     ).toBe(false);
   });
 
+  it("does not render MEDIA_BASE_PATH_ICONS when icon column is not set", () => {
+    const wrapper = mount(ConfigMedia, {
+      props: {
+        ...baseProps,
+        views: ["map"],
+        keys: ["MEDIA_BASE_PATH_ICONS"],
+      },
+      global: globalConfig,
+    });
+
+    expect(
+      wrapper.find('label[for="test_table-provider-icons"]').exists(),
+    ).toBe(false);
+  });
+
   it("parses existing Filebrowser URL for icons from config on mount", async () => {
     const configWithFilebrowser = {
+      ICON_COLUMN: "icon",
       MEDIA_BASE_PATH_ICONS: "https://files.test.invalid/api/public/dl/icon123",
     } as ViewConfig;
 
@@ -584,11 +603,7 @@ describe("ConfigMedia component", () => {
 
   it("emits updateConfig when icons share input changes", async () => {
     const wrapper = mount(ConfigMedia, {
-      props: {
-        ...baseProps,
-        views: ["map"],
-        keys: ["MEDIA_BASE_PATH_ICONS"],
-      },
+      props: iconsSectionProps,
       global: globalConfig,
     });
 
@@ -613,11 +628,7 @@ describe("ConfigMedia component", () => {
 
   it("constructs correct Filebrowser URL from icons hash", async () => {
     const wrapper = mount(ConfigMedia, {
-      props: {
-        ...baseProps,
-        views: ["map"],
-        keys: ["MEDIA_BASE_PATH_ICONS"],
-      },
+      props: iconsSectionProps,
       global: globalConfig,
     });
 
@@ -642,11 +653,7 @@ describe("ConfigMedia component", () => {
 
   it("switches to generic provider for icons and uses input as-is", async () => {
     const wrapper = mount(ConfigMedia, {
-      props: {
-        ...baseProps,
-        views: ["map"],
-        keys: ["MEDIA_BASE_PATH_ICONS"],
-      },
+      props: iconsSectionProps,
       global: globalConfig,
     });
 
@@ -679,11 +686,7 @@ describe("ConfigMedia component", () => {
 
   it("shows validation error for invalid Filebrowser icons input", async () => {
     const wrapper = mount(ConfigMedia, {
-      props: {
-        ...baseProps,
-        views: ["map"],
-        keys: ["MEDIA_BASE_PATH_ICONS"],
-      },
+      props: iconsSectionProps,
       global: globalConfig,
     });
 

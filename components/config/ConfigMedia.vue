@@ -105,6 +105,13 @@ const isIconsValid = computed(() => {
   return true;
 });
 
+const showIconsBasePath = computed(
+  () =>
+    props.keys.includes("MEDIA_BASE_PATH_ICONS") &&
+    props.views.includes("map") &&
+    Boolean(props.config.ICON_COLUMN?.trim()),
+);
+
 // Handlers
 const handleInput = (key: "basePath" | "alerts" | "icons", value: string) => {
   if (key === "basePath") {
@@ -453,7 +460,7 @@ watch(
 
     <!-- MEDIA_BASE_PATH_ICONS -->
     <div
-      v-if="keys.includes('MEDIA_BASE_PATH_ICONS') && views.includes('map')"
+      v-if="showIconsBasePath"
       class="space-y-4 md:col-span-2"
     >
       <ConfigSubsectionHeader :tooltip="$t('mediaBasePathIconsTooltip')">
