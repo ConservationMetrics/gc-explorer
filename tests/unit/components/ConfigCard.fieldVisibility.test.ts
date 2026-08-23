@@ -48,8 +48,10 @@ const mountConfigCard = (viewType: ViewType) =>
   });
 
 const keysFrom = (wrapper: ReturnType<typeof mount>, testId: string) =>
-  wrapper.get(`[data-testid='${testId}']`).attributes("data-keys")?.split(",") ??
-  [];
+  wrapper
+    .get(`[data-testid='${testId}']`)
+    .attributes("data-keys")
+    ?.split(",") ?? [];
 
 describe("ConfigCard field visibility by view type", () => {
   it("shows logo, map color/icon, icon media path, and unwanted columns for map", () => {
