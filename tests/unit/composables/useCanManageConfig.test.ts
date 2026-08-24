@@ -65,4 +65,3 @@ describe("useCanManageConfig", () => {
     expect(useCanManageConfig().value).toBe(false);
   });
 });
-
