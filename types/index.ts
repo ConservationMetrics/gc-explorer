@@ -112,7 +112,6 @@ export interface ViewConfig {
   MEDIA_BASE_PATH_ICONS?: string;
   MEDIA_COLUMN?: string;
   PLANET_API_KEY?: string;
-  UNWANTED_COLUMNS?: string;
   ROUTE_LEVEL_PERMISSION?: RouteLevelPermission; // Who can access this view: anyone, signed-in, member, or admin
   TIMESTAMP_COLUMN?: string; // Column used for date-range filtering (min/max) on map and gallery
   DATASET_TABLE?: string; // Display name for the dataset/table (e.g., "Fake Alerts" instead of "fake_alerts")
@@ -128,11 +127,8 @@ export type FunctionalColumnKey =
   | "ICON_COLUMN";
 
 export type ViewConfigColumnValidation = {
-  conflictingUnwantedColumns: string[];
   invalidSelections: Partial<Record<FunctionalColumnKey, string>>;
-  invalidUnwantedColumns: string[];
   isValid: boolean;
-  protectedUnwantedColumns: string[];
 };
 
 export const VIEW_CONFIG_MISSING_COLUMNS_ERROR =

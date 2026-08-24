@@ -318,8 +318,6 @@
   "totalFeatures": "Totaal aantal kenmerken",
   "type": "Type",
   "typeOfAlerts": "Type alerts",
-  "unwantedColumns": "Ongewenste kolommen",
-  "unwantedColumnsInvalid": "Verwijder beschermde, niet-beschikbare of actieve kolommen voordat u opslaat.",
   "version": "Versie",
   "view": "Weergave",
   "viewDescription": "Weergavebeschrijving",

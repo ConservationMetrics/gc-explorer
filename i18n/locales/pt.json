@@ -317,8 +317,6 @@
   "totalFeatures": "Recursos totais",
   "type": "Tipo",
   "typeOfAlerts": "Tipo de alertas",
-  "unwantedColumns": "Colunas indesejadas",
-  "unwantedColumnsInvalid": "Remova as colunas protegidas, indisponíveis ou ativas antes de salvar.",
   "version": "Versão",
   "view": "Visualização",
   "viewDescription": "Descrição da visualização",

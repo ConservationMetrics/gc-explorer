@@ -35,7 +35,6 @@ const hoisted = vi.hoisted(() => {
     fetchViewTables: vi.fn(),
     filterGeoData: vi.fn(),
     filterToSelectedValues: vi.fn(),
-    filterUnwantedKeys: vi.fn(),
     parseAndValidateLimit: vi.fn(),
     parseBasemaps: vi.fn(),
     prepareAlertsStatistics: vi.fn(),
@@ -60,7 +59,6 @@ vi.mock("@/server/dataProcessing/dataTransformers", () => ({
 vi.mock("@/server/dataProcessing/dataFilters", () => ({
   filterGeoData: hoisted.filterGeoData,
   filterToSelectedValues: hoisted.filterToSelectedValues,
-  filterUnwantedKeys: hoisted.filterUnwantedKeys,
 }));
 
 vi.mock("@/utils/geoUtils", () => ({
@@ -129,7 +127,6 @@ describe("alerts endpoint secondary filtering", () => {
       previousAlerts: [],
     });
     hoisted.prepareAlertsStatistics.mockReturnValue({});
-    hoisted.filterUnwantedKeys.mockImplementation((data) => data);
     hoisted.filterToSelectedValues.mockImplementation(
       (data: Array<Record<string, unknown>>, column: string, values: string) =>
         data.filter((row) => values.split(",").includes(String(row[column]))),

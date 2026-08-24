@@ -1,29 +1,12 @@
 import { describe, it, expect } from "vitest";
 
 import {
-  filterUnwantedKeys,
   filterToSelectedValues,
   filterByDateRange,
   filterGeoData,
   filterDataByExtension,
 } from "@/server/dataProcessing/dataFilters";
 import { mapeoData } from "@/tests/unit/fixtures/mapeoData";
-
-describe("filterUnwantedKeys", () => {
-  it("should filter out unwanted columns", () => {
-    const unwantedColumns = "p__activity,p__aeroway";
-
-    const result = filterUnwantedKeys(mapeoData, null, unwantedColumns);
-
-    const containsUnwantedColumns = result.some((entry) =>
-      Object.keys(entry).some(
-        (key) => key === "p__activity" || key === "p__aeroway",
-      ),
-    );
-
-    expect(containsUnwantedColumns).toBe(false);
-  });
-});
 
 describe("filterToSelectedValues", () => {
   it("returns all data when column or values not provided", () => {

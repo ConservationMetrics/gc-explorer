@@ -823,16 +823,6 @@ const assertValidViewConfigColumns = async (
     ...Object.entries(validation.invalidSelections).map(
       ([key, column]) => `${key} references unavailable column "${column}"`,
     ),
-    ...validation.invalidUnwantedColumns.map(
-      (column) => `UNWANTED_COLUMNS references unavailable column "${column}"`,
-    ),
-    ...validation.protectedUnwantedColumns.map(
-      (column) =>
-        `UNWANTED_COLUMNS cannot include protected column "${column}"`,
-    ),
-    ...validation.conflictingUnwantedColumns.map(
-      (column) => `UNWANTED_COLUMNS conflicts with active column "${column}"`,
-    ),
   ];
 
   throw createInvalidConfigColumnsError(details.join("; "));

@@ -77,15 +77,6 @@ For alerts, you need to provide a separate base path for alerts. Append your `ME
 
 Depending on your data, you will want to use a meaningful column for filtering. This variable defines the column used for front-end dropdown filtering and, for Alerts views, the secondary dataset column matched against `SECONDARY_FILTER_VALUES`.
 
-#### `UNWANTED_COLUMNS` (optional)
-
-List the exact column names to be filtered out from data collection APIs. Useful for removing unnecessary metadata columns.
-
-> [!NOTE]
-> 
-> Many outputs from data collection APIs have a lot of extraneous metadata columns that are not useful to the end user. See [schema.md](schema.md) for a list of these columns that are output by popular data collection APIs.
-
-
 ## Alerts configuration
 
 #### Secondary dataset (optional, for Alerts / Map views)
