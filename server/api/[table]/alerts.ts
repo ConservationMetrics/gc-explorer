@@ -11,7 +11,6 @@ import {
   prepareMinimalAlertEntries,
 } from "@/server/dataProcessing/dataTransformers";
 import {
-  filterUnwantedKeys,
   filterGeoData,
   filterToSelectedValues,
 } from "@/server/dataProcessing/dataFilters";
@@ -105,7 +104,6 @@ export default defineEventHandler(async (event: H3Event) => {
       secondaryOptions: {
         limit,
         mainColumns: secondaryMainColumns,
-        includeColumnsData: true,
       },
     });
 
@@ -136,15 +134,8 @@ export default defineEventHandler(async (event: H3Event) => {
     let secondaryGeojson: FeatureCollection | null = null;
 
     if (secondaryData) {
-      // Filter data to remove unwanted columns
-      let filteredSecondaryData = filterUnwantedKeys(
+      const filteredSecondaryData = filterToSelectedValues(
         secondaryData.mainData,
-        secondaryData.columnsData,
-        tableConfig.UNWANTED_COLUMNS,
-      );
-
-      filteredSecondaryData = filterToSelectedValues(
-        filteredSecondaryData,
         secondaryFilterColumn,
         secondaryFilterValues,
       );

@@ -7,7 +7,6 @@ import {
 } from "@/server/database/dbOperations";
 import {
   filterDataByExtension,
-  filterUnwantedKeys,
   valueHasAllowedFileExtension,
 } from "@/server/dataProcessing/dataFilters";
 import { parseBasemaps } from "@/server/utils";
@@ -19,7 +18,7 @@ import { parseAndValidateLimit, getTableParam } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
-import type { AllowedFileExtensions, ColumnEntry } from "@/types";
+import type { AllowedFileExtensions } from "@/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   const table = getTableParam(event);
@@ -71,21 +70,14 @@ export default defineEventHandler(async (event: H3Event) => {
         )
       : await fetchTableSqlColumns(primaryTable);
 
-    const { mainData, columnsData } = await fetchData(primaryTable, {
+    const { mainData } = await fetchData(primaryTable, {
       limit,
       mainColumns: projectedColumns,
-      includeColumnsData: true,
     });
 
-    // Filter data to remove unwanted columns
-    const filteredData = filterUnwantedKeys(
-      mainData,
-      columnsData as ColumnEntry[],
-      tableConfig.UNWANTED_COLUMNS,
-    );
     // Filter only data with media attachments
     const dataWithFilesOnly = filterDataByExtension(
-      filteredData,
+      mainData,
       allowedFileExtensions,
       tableConfig.MEDIA_COLUMN,
     );

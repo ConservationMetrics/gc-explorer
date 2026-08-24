@@ -37,7 +37,6 @@ const hoisted = vi.hoisted(() => {
     fetchTableSqlColumns: vi.fn(),
     fetchViewTables: vi.fn(),
     filterDataByExtension: vi.fn(),
-    filterUnwantedKeys: vi.fn(),
     parseAndValidateLimit: vi.fn(),
     parseBasemaps: vi.fn(),
     validatePermissions: vi.fn(),
@@ -60,7 +59,6 @@ vi.mock("@/server/dataProcessing/dataFilters", async (importOriginal) => {
   return {
     ...actual,
     filterDataByExtension: hoisted.filterDataByExtension,
-    filterUnwantedKeys: hoisted.filterUnwantedKeys,
   };
 });
 
@@ -107,7 +105,6 @@ describe("gallery endpoint datasets", () => {
       columnsData: [{ original_column: "Photo", sql_column: "photo" }],
       metadata: null,
     });
-    hoisted.filterUnwantedKeys.mockImplementation((data) => data);
     hoisted.filterDataByExtension.mockImplementation((data) => data);
   });
 
@@ -130,7 +127,6 @@ describe("gallery endpoint datasets", () => {
     expect(hoisted.fetchData).toHaveBeenCalledWith("gallery_dataset", {
       limit: 25,
       mainColumns: ["_id", "photo"],
-      includeColumnsData: true,
     });
     expect(response.primary_dataset).toBe("gallery_dataset");
     expect(response.table).toBe("gallery_dataset");

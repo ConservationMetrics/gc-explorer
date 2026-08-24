@@ -315,8 +315,6 @@
   "totalFeatures": "Características totales",
   "type": "Tipo",
   "typeOfAlerts": "Tipo de alertas",
-  "unwantedColumns": "Columnas no deseadas",
-  "unwantedColumnsInvalid": "Elimine las columnas protegidas, no disponibles o activas antes de guardar.",
   "version": "Versión",
   "view": "Vista",
   "viewDescription": "Descripción de la vista",

@@ -74,7 +74,6 @@ describe("ConfigCard field visibility by view type", () => {
     expect(keysFrom(wrapper, "config-filters")).toEqual([
       "FRONT_END_FILTER_COLUMN",
       "TIMESTAMP_COLUMN",
-      "UNWANTED_COLUMNS",
     ]);
   });
 
@@ -110,7 +109,6 @@ describe("ConfigCard field visibility by view type", () => {
     expect(keysFrom(wrapper, "config-filters")).toEqual([
       "FRONT_END_FILTER_COLUMN",
       "TIMESTAMP_COLUMN",
-      "UNWANTED_COLUMNS",
     ]);
   });
 });
