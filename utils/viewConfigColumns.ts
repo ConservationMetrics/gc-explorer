@@ -5,6 +5,7 @@ import type {
   ViewConfigColumnValidation,
   ViewType,
 } from "@/types";
+import { compareLabels } from "@/utils/identifierUtils";
 
 export const PROTECTED_COLUMN_NAMES = [
   "_id",
@@ -31,9 +32,16 @@ const NON_SELECTABLE_FUNCTIONAL_COLUMN_NAMES = new Set(["_id"]);
 export const getSelectableColumnOptions = (
   columns: ColumnEntry[],
 ): ColumnEntry[] => {
-  return columns.filter(
-    (column) => !NON_SELECTABLE_FUNCTIONAL_COLUMN_NAMES.has(column.sql_column),
-  );
+  return columns
+    .filter(
+      (column) =>
+        !NON_SELECTABLE_FUNCTIONAL_COLUMN_NAMES.has(column.sql_column),
+    )
+    .sort(
+      (a, b) =>
+        compareLabels(a.original_column, b.original_column) ||
+        compareLabels(a.sql_column, b.sql_column),
+    );
 };
 
 const getColumnEntry = (
@@ -101,11 +109,17 @@ export const getUnwantedColumnOptions = (
   );
   const protectedColumns = new Set<string>(PROTECTED_COLUMN_NAMES);
 
-  return columns.filter(
-    (column) =>
-      !protectedColumns.has(column.sql_column) &&
-      !selectedColumns.has(column.sql_column),
-  );
+  return columns
+    .filter(
+      (column) =>
+        !protectedColumns.has(column.sql_column) &&
+        !selectedColumns.has(column.sql_column),
+    )
+    .sort(
+      (a, b) =>
+        compareLabels(a.original_column, b.original_column) ||
+        compareLabels(a.sql_column, b.sql_column),
+    );
 };
 
 /**

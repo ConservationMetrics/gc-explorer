@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
+import { compareLabels } from "@/utils/identifierUtils";
+
 const props = withDefaults(
   defineProps<{
     id: string;
@@ -28,18 +31,21 @@ const selectOptions = computed(() => {
   const current = props.modelValue?.trim() ?? "";
 
   if (current && current !== excluded && !options.includes(current)) {
-    return [current, ...options];
+    return [current, ...options].sort(compareLabels);
   }
 
-  return options;
+  return [...options].sort(compareLabels);
 });
 </script>
 
 <template>
   <div class="space-y-2">
-    <label :for="id" class="block text-sm font-medium text-gray-700">
-      {{ label }}
-    </label>
+    <div class="flex items-center gap-1.5">
+      <ConfigFieldLabel :for-id="id" :required="required">
+        {{ label }}
+      </ConfigFieldLabel>
+      <slot name="label-suffix"></slot>
+    </div>
     <select
       :id="id"
       :value="modelValue ?? ''"

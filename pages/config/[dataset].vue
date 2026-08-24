@@ -4,6 +4,7 @@ import CopyConfigControl from "@/components/config/CopyConfigControl.vue";
 import SavedModal from "@/components/config/SavedModal.vue";
 import SelectDatasetField from "@/components/config/SelectDatasetField.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
+import Tooltip from "@/components/shared/Tooltip.vue";
 import ViewTypePill from "@/components/shared/ViewTypePill.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import { useDatasetColumns } from "@/composables/useDatasetColumns";
@@ -237,6 +238,8 @@ definePageMeta({ layout: "explorer" });
             <NuxtLink
               v-if="resolvedViewType"
               :to="`/${resolvedViewType}/${encodeDatasetNameForUrl(dataset)}`"
+              target="_blank"
+              rel="noopener noreferrer"
               class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors"
             >
               <Eye class="w-4 h-4" />
@@ -272,13 +275,17 @@ definePageMeta({ layout: "explorer" });
           >
             <dl class="contents">
               <div>
-                <dt class="text-gray-500">{{ $t("view") }}</dt>
+                <dt class="text-sm font-bold text-gray-700">
+                  {{ $t("view") }}
+                </dt>
                 <dd class="mt-1">
                   <ViewTypePill :view-type="resolvedViewType" />
                 </dd>
               </div>
               <div class="min-w-0">
-                <dt class="text-gray-500">{{ $t("primaryDatasetLabel") }}</dt>
+                <dt class="text-sm font-bold text-gray-700">
+                  {{ $t("primaryDatasetLabel") }}
+                </dt>
                 <dd
                   data-testid="view-metadata-primary"
                   class="mt-1 font-medium text-gray-900 break-words"
@@ -292,14 +299,18 @@ definePageMeta({ layout: "explorer" });
               v-if="showsSecondaryDataset"
               id="edit-view-secondaryDataset-select"
               :model-value="secondaryDataset"
-              :label="$t('secondaryDatasetOptional')"
+              :label="$t('secondaryDatasetLabel')"
               :options="availableGeospatialTables"
               :placeholder="$t('selectSecondaryDataset')"
               test-id="edit-secondary-dataset-select"
               :exclude-value="dataset"
               class="sm:col-start-1"
               @update:model-value="handleSecondaryDatasetUpdate"
-            />
+            >
+              <template #label-suffix>
+                <Tooltip :content="$t('secondaryDatasetDescription')" />
+              </template>
+            </SelectDatasetField>
           </div>
         </div>
         <div

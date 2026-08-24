@@ -53,9 +53,9 @@ const baseProps = {
     "MAPBOX_STYLE",
     "MAPBOX_ACCESS_TOKEN",
     "MAPBOX_ZOOM",
+    "MAPBOX_PROJECTION",
     "MAPBOX_CENTER_LATITUDE",
     "MAPBOX_CENTER_LONGITUDE",
-    "MAPBOX_PROJECTION",
     "MAPBOX_BEARING",
     "MAPBOX_PITCH",
     "MAPBOX_3D",
@@ -66,6 +66,12 @@ const baseProps = {
 const globalConfig = {
   mocks: {
     $t: (key: string) => key,
+  },
+  stubs: {
+    "i18n-t": {
+      template:
+        "<span><slot></slot><slot name='link'></slot><slot name='color'></slot><slot name='icon'></slot><slot name='filename'></slot></span>",
+    },
   },
 };
 
@@ -843,12 +849,12 @@ describe("ConfigMap component", () => {
     const styleInput = wrapper.get("#test_table-basemap-style-0");
     const zoomInput = wrapper.get("#test_table-MAPBOX_ZOOM");
 
-    expect(wrapper.get('label[for="test_table-basemap-name-0"]').text()).toBe(
-      "basemapName",
-    );
-    expect(wrapper.get('label[for="test_table-basemap-style-0"]').text()).toBe(
-      "mapboxStyle",
-    );
+    expect(
+      wrapper.get('label[for="test_table-basemap-name-0"]').text(),
+    ).toContain("basemapName");
+    expect(
+      wrapper.get('label[for="test_table-basemap-style-0"]').text(),
+    ).toContain("mapboxStyle");
     expect(nameInput.classes()).toContain("bg-violet-100");
     expect(styleInput.classes()).toEqual(
       expect.arrayContaining(["bg-violet-100", "border-violet-200"]),

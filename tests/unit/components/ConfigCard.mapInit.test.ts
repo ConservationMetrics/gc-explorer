@@ -56,6 +56,9 @@ const mountConfigCard = () =>
         ConfigMap,
       },
       stubs: {
+        "i18n-t": {
+          template: "<span><slot></slot><slot name='link'></slot></span>",
+        },
         BasemapSelector: true,
         ConfigViewInfo: {
           props: ["keys"],

@@ -4,6 +4,7 @@ import CopyConfigControl from "@/components/config/CopyConfigControl.vue";
 import SavedModal from "@/components/config/SavedModal.vue";
 import SelectDatasetField from "@/components/config/SelectDatasetField.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
+import Tooltip from "@/components/shared/Tooltip.vue";
 import ViewTypePill from "@/components/shared/ViewTypePill.vue";
 import { useCopyConfig } from "@/composables/useCopyConfig";
 import { useDatasetColumns } from "@/composables/useDatasetColumns";
@@ -204,7 +205,7 @@ definePageMeta({ layout: "explorer" });
           <SelectDatasetField
             id="create-form-primary"
             v-model="primaryDataset"
-            :label="$t('primaryDatasetRequired')"
+            :label="$t('primaryDatasetLabel')"
             :options="availableTables"
             :placeholder="$t('selectPrimaryDataset')"
             test-id="create-form-primary-select"
@@ -215,13 +216,17 @@ definePageMeta({ layout: "explorer" });
             v-if="showsSecondaryDataset"
             id="create-view-secondaryDataset-select"
             :model-value="secondaryDataset"
-            :label="$t('secondaryDatasetOptional')"
+            :label="$t('secondaryDatasetLabel')"
             :options="availableGeospatialTables"
             :placeholder="$t('selectSecondaryDataset')"
             test-id="secondary-dataset-select"
             :exclude-value="primaryDataset"
             @update:model-value="handleSecondaryDatasetUpdate"
-          />
+          >
+            <template #label-suffix>
+              <Tooltip :content="$t('secondaryDatasetDescription')" />
+            </template>
+          </SelectDatasetField>
         </div>
 
         <CopyConfigControl
