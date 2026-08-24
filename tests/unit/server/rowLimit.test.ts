@@ -1,23 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { validateRowLimit } from "@/server/utils/dbHelpers";
 
 /** Matches `runtimeConfig.public.rowLimit` default in `nuxt.config.ts`. */
 const DEFAULT_ROW_LIMIT = 10_000;
-
-const mockFetchConfig = vi.fn();
-const mockFetchData = vi.fn();
-
-vi.mock("@/server/database/dbOperations", () => ({
-  fetchConfig: () => mockFetchConfig(),
-  fetchData: (
-    table: string,
-    options: { limit?: number; mainColumns: string[] },
-  ) => mockFetchData(table, options),
-}));
-
-vi.mock("@/utils/accessControls", () => ({
-  validatePermissions: vi.fn(),
-}));
 
 describe("validateRowLimit", () => {
   it("defaults to maxLimit when input is null", () => {
@@ -94,58 +79,5 @@ describe("validateRowLimit", () => {
       const err = error as Error & { statusCode: number };
       expect(err.statusCode).toBe(422);
     }
-  });
-});
-
-describe("dataset endpoints pass limit to fetchData", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    mockFetchConfig.mockResolvedValue({
-      test_table: {
-        ROUTE_LEVEL_PERMISSION: "anyone",
-        FRONT_END_FILTER_COLUMN: "community",
-      },
-    });
-  });
-
-  it("rowLimitReached is true when data length equals limit", async () => {
-    const limit = 5;
-    const rows = Array.from({ length: limit }, (_, i) => ({
-      _id: `rec${i}`,
-      name: `Record ${i}`,
-    }));
-
-    mockFetchData.mockResolvedValue({
-      mainData: rows,
-      columnsData: null,
-      metadata: null,
-    });
-
-    const options = { limit, mainColumns: ["_id", "name"] };
-    const { mainData } = await mockFetchData("test_table", options);
-
-    expect(mockFetchData).toHaveBeenCalledWith("test_table", options);
-    expect(mainData.length >= limit).toBe(true);
-  });
-
-  it("rowLimitReached is false when data length is below limit", async () => {
-    const limit = 100;
-    const rows = [
-      { _id: "rec1", name: "Record 1" },
-      { _id: "rec2", name: "Record 2" },
-    ];
-
-    mockFetchData.mockResolvedValue({
-      mainData: rows,
-      columnsData: null,
-      metadata: null,
-    });
-
-    const options = { limit, mainColumns: ["_id", "name"] };
-    const { mainData } = await mockFetchData("test_table", options);
-
-    expect(mockFetchData).toHaveBeenCalledWith("test_table", options);
-    expect(mainData.length >= limit).toBe(false);
   });
 });
