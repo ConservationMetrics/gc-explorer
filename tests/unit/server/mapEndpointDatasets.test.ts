@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import mapHandler from "@/server/api/[table]/map";
+import { VIEW_CONFIG_MISSING_COLUMNS_ERROR } from "@/types";
 
 type MapRouteEvent = {
   context: { params: { table: string } };
@@ -15,6 +16,7 @@ const handleMapRequest = mapHandler as unknown as MapRouteHandler;
 const hoisted = vi.hoisted(() => {
   Object.assign(globalThis, {
     defineEventHandler: (handler: unknown) => handler,
+    sendError: (_event: unknown, error: unknown) => error,
     useRuntimeConfig: () => ({
       public: {
         allowedFileExtensions: {
@@ -29,6 +31,7 @@ const hoisted = vi.hoisted(() => {
   return {
     buildMinimalFeatureCollection: vi.fn(),
     fetchData: vi.fn(),
+    fetchInformationSchemaColumns: vi.fn(),
     fetchTableConfig: vi.fn(),
     fetchTableSqlColumns: vi.fn(),
     fetchViewTables: vi.fn(),
@@ -42,6 +45,7 @@ const hoisted = vi.hoisted(() => {
 
 vi.mock("@/server/database/dbOperations", () => ({
   fetchData: hoisted.fetchData,
+  fetchInformationSchemaColumns: hoisted.fetchInformationSchemaColumns,
   fetchTableConfig: hoisted.fetchTableConfig,
   fetchTableSqlColumns: hoisted.fetchTableSqlColumns,
   fetchViewTables: hoisted.fetchViewTables,
@@ -96,6 +100,14 @@ describe("map endpoint datasets", () => {
       primaryTable: "map_dataset",
       secondaryTable: null,
     });
+    hoisted.fetchInformationSchemaColumns.mockResolvedValue([
+      "_id",
+      "g__type",
+      "g__coordinates",
+      "status",
+      "category",
+      "created_at",
+    ]);
     hoisted.fetchTableSqlColumns.mockResolvedValue([
       "_id",
       "g__type",
@@ -137,6 +149,9 @@ describe("map endpoint datasets", () => {
 
     expect(hoisted.fetchTableConfig).toHaveBeenCalledWith("route_map", "map");
     expect(hoisted.fetchViewTables).toHaveBeenCalledWith("route_map", "map");
+    expect(hoisted.fetchInformationSchemaColumns).toHaveBeenCalledWith(
+      "map_dataset",
+    );
     expect(hoisted.fetchTableSqlColumns).toHaveBeenCalledWith("map_dataset");
     expect(hoisted.fetchData).toHaveBeenCalledWith("map_dataset", {
       limit: 25,
@@ -177,5 +192,79 @@ describe("map endpoint datasets", () => {
       thaiTable,
       expect.objectContaining({ limit: 25 }),
     );
+  });
+
+  it("returns 422 when a configured column is missing", async () => {
+    hoisted.fetchTableConfig.mockResolvedValue({
+      COLOR_COLUMN: "missing_color",
+      FRONT_END_FILTER_COLUMN: "category",
+      ROUTE_LEVEL_PERMISSION: "anyone",
+    });
+    hoisted.fetchInformationSchemaColumns.mockResolvedValue([
+      "_id",
+      "g__type",
+      "g__coordinates",
+      "category",
+    ]);
+
+    const response = await handleMapRequest({
+      context: { params: { table: "route_map" } },
+    });
+
+    expect(response).toMatchObject({
+      statusCode: 422,
+      data: {
+        errorCode: VIEW_CONFIG_MISSING_COLUMNS_ERROR,
+        table: "map_dataset",
+        missing: [{ field: "COLOR_COLUMN", column: "missing_color" }],
+      },
+    });
+    expect(hoisted.fetchData).not.toHaveBeenCalled();
+  });
+
+  it("reports every missing configured column in one 422", async () => {
+    hoisted.fetchTableConfig.mockResolvedValue({
+      COLOR_COLUMN: "missing_color",
+      ICON_COLUMN: "missing_icon",
+      FRONT_END_FILTER_COLUMN: "category",
+      ROUTE_LEVEL_PERMISSION: "anyone",
+    });
+    hoisted.fetchInformationSchemaColumns.mockResolvedValue([
+      "_id",
+      "g__type",
+      "g__coordinates",
+      "category",
+    ]);
+
+    const response = await handleMapRequest({
+      context: { params: { table: "route_map" } },
+    });
+
+    expect(response).toMatchObject({
+      statusCode: 422,
+      data: {
+        errorCode: VIEW_CONFIG_MISSING_COLUMNS_ERROR,
+        table: "map_dataset",
+        missing: [
+          { field: "COLOR_COLUMN", column: "missing_color" },
+          { field: "ICON_COLUMN", column: "missing_icon" },
+        ],
+      },
+    });
+    expect(hoisted.fetchData).not.toHaveBeenCalled();
+  });
+
+  it("loads the map when optional configured columns are unset", async () => {
+    hoisted.fetchTableConfig.mockResolvedValue({
+      ROUTE_LEVEL_PERMISSION: "anyone",
+    });
+
+    const response = await handleMapRequest({
+      context: { params: { table: "route_map" } },
+    });
+
+    expect(hoisted.fetchInformationSchemaColumns).not.toHaveBeenCalled();
+    expect(hoisted.fetchData).toHaveBeenCalled();
+    expect(response.data).toEqual({ type: "FeatureCollection", features: [] });
   });
 });

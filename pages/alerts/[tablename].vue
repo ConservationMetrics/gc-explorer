@@ -2,6 +2,7 @@
 import { useI18n } from "vue-i18n";
 
 import DataLoadError from "@/components/shared/DataLoadError.vue";
+import { getDataLoadErrorMessage } from "@/utils/errorMessages";
 import {
   decodeDatasetNameFromUrl,
   encodeDatasetNameForUrl,
@@ -80,6 +81,8 @@ if (data.value && !error.value) {
   console.error("Error fetching data:", error.value);
 }
 
+const errorMessage = computed(() => getDataLoadErrorMessage(error.value, t));
+
 // Check if this view is publicly accessible
 const isPublic = useIsPublic(data);
 
@@ -102,7 +105,7 @@ useHead({
     <DataLoadError
       v-if="error"
       :title="$t('dataLoadErrorTitle')"
-      :message="$t('dataLoadErrorMessage')"
+      :message="errorMessage"
       :retry="() => refresh()"
     />
     <ClientOnly v-else>
