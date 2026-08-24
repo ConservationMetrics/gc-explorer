@@ -22,6 +22,20 @@ test("map page - filter container and optional timestamp filter", async ({
   }
 });
 
+test("map page - admin gear opens config in a new tab", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/map/bcmform_responses");
+  await page.waitForLoadState("networkidle");
+  await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
+
+  const gear = page.getByTestId("admin-config-gear");
+  await expect(gear).toBeVisible({ timeout: 15000 });
+  await expect(gear).toHaveAttribute("target", "_blank");
+  const href = await gear.getAttribute("href");
+  expect(href).toMatch(/\/config\/bcmform_responses\?view_type=map/);
+});
+
 test("gallery page - filter container and optional timestamp filter", async ({
   authenticatedPageAsAdmin: page,
 }) => {

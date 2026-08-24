@@ -144,6 +144,7 @@ onBeforeUnmount(() => {
           :stats-export-min-date="statsExportMinDate"
           :stats-export-max-date="statsExportMaxDate"
           :alerts-statistics="alertsStatistics"
+          :table-name="tableName"
           @date-range-changed="emit('date-range-changed', $event)"
         />
         <MapIntroPanel

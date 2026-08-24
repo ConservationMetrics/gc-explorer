@@ -1762,6 +1762,7 @@ onBeforeUnmount(() => {
       :show-slider="showSlider"
       :stats-export-min-date="resolvedDateRange?.[0]"
       :stats-export-max-date="resolvedDateRange?.[1]"
+      :table-name="primaryDataset"
       @close="handleSidebarClose"
       @date-range-changed="handleDateRangeChanged"
     />

@@ -1,4 +1,5 @@
 {
+  "accessConfig": "Access Config",
   "accessDenied": "Access Denied",
   "accessDeniedMessage": "You are not authorized to view the page you were trying to access. Please contact a Guardian Connector administrator to change your role in order to view this page.",
   "accessPermissions": "Access Permissions",
@@ -80,7 +81,6 @@
   "downloadStatistics": "Download statistics",
   "duplicateViewWarning": "A view of this type already exists for the selected primary dataset. Save is disabled until you choose a different dataset.",
   "earlier": "Earlier",
-  "editConfiguration": "Edit Config",
   "editExistingView": "Open the existing view",
   "enable": "Enable",
   "errorCouldNotAddDatasetView": "Could not add dataset view",

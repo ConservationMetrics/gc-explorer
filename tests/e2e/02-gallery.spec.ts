@@ -633,3 +633,19 @@ test("gallery page - error handling for unavailable gallery", async ({
     await expect(errorMessage).toContainText(/gallery is not available/i);
   }
 });
+
+test("gallery page - admin gear opens config in a new tab", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/gallery/bcmform_responses");
+  await page.waitForLoadState("networkidle");
+  await page
+    .getByTestId("gallery-container")
+    .waitFor({ state: "attached", timeout: 15000 });
+
+  const gear = page.getByTestId("admin-config-gear");
+  await expect(gear).toBeVisible({ timeout: 15000 });
+  await expect(gear).toHaveAttribute("target", "_blank");
+  const href = await gear.getAttribute("href");
+  expect(href).toMatch(/\/config\/bcmform_responses\?view_type=gallery/);
+});

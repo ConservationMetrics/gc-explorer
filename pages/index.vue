@@ -7,16 +7,14 @@ import SearchBar from "@/components/shared/SearchBar.vue";
 import ViewTypeFilter from "@/components/shared/ViewTypeFilter.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
 import { matchesSearchQuery, matchesViewTypeFilter } from "@/utils/viewFilters";
+import { useCanManageConfig } from "@/composables/useCanManageConfig";
 import { Plus } from "lucide-vue-next";
 
 const viewRows = ref<ViewConfigRow[]>([]);
 const availableTables = ref<string[]>([]);
 
-const {
-  public: { authStrategy },
-} = useRuntimeConfig();
-
-const { loggedIn, user } = useUserSession();
+const { user } = useUserSession();
+const shouldShowConfigLink = useCanManageConfig();
 const { error: showErrorToast, info: showInfoToast } = useToast();
 const { t } = useI18n();
 const route = useRoute();
@@ -140,26 +138,6 @@ const searchedViews = computed<ViewConfigRow[]>(() => {
       row.viewConfig.VIEW_DESCRIPTION,
     ),
   );
-});
-
-// Check if user should see config link
-const shouldShowConfigLink = computed(() => {
-  // Show config link in CI environment
-  if (process.env.CI) {
-    return true;
-  }
-
-  if (authStrategy === "none") {
-    return true;
-  }
-
-  if (authStrategy === "auth0" && loggedIn.value && user.value) {
-    const typedUser = user.value as User | null;
-    const userRole = typedUser?.userRole ?? Role.SignedIn;
-    return userRole >= Role.Admin;
-  }
-
-  return false;
 });
 
 // Handle unauthorized access toast
