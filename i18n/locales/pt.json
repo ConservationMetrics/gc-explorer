@@ -1,4 +1,5 @@
 {
+  "accessConfig": "Acessar Config",
   "accessDenied": "Acesso Negado",
   "accessDeniedMessage": "Você não está autorizado a visualizar a página que estava tentando acessar. Entre em contato com um administrador do Guardian Connector para alterar sua função para visualizar esta página.",
   "accessPermissions": "Permissões de Acesso",
@@ -77,7 +78,6 @@
   "downloadStatistics": "Baixar estatisticas",
   "duplicateViewWarning": "Já existe uma visualização deste tipo para o conjunto de dados principal selecionado. Salvar fica desabilitado até você escolher outro conjunto de dados.",
   "earlier": "Anterior",
-  "editConfiguration": "Editar Configuração",
   "editExistingView": "Abrir a visualização existente",
   "enable": "Ativar",
   "errorCouldNotAddDatasetView": "Não foi possível adicionar a visualização de conjunto de dados",

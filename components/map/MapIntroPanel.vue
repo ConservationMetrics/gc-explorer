@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
+import AdminConfigGear from "@/components/shared/AdminConfigGear.vue";
 
 import type { MapStatistics } from "@/types";
 import type { FeatureCollection } from "geojson";
@@ -43,14 +44,20 @@ const fullDescription = computed(() => props.viewDescription?.trim() || "");
           alt="Logo"
           loading="eager"
         />
-        <h2
-          v-if="displayName"
-          class="pr-10 text-2xl font-semibold tracking-tight break-words"
-          style="overflow-wrap: anywhere; word-break: break-word"
-          data-testid="map-intro-title"
-        >
-          {{ displayName }}
-        </h2>
+        <div v-if="displayName" class="flex items-center gap-2 pr-10">
+          <h2
+            class="text-2xl font-semibold tracking-tight break-words min-w-0"
+            style="overflow-wrap: anywhere; word-break: break-word"
+            data-testid="map-intro-title"
+          >
+            {{ displayName }}
+          </h2>
+          <AdminConfigGear
+            v-if="tableName"
+            :table-name="tableName"
+            view-type="map"
+          />
+        </div>
         <p
           v-if="fullDescription"
           class="text-sm text-muted-foreground"

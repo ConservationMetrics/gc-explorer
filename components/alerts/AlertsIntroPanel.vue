@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import DownloadStatistics from "@/components/shared/DownloadStatistics.vue";
+import AdminConfigGear from "@/components/shared/AdminConfigGear.vue";
 
 import type { AlertsData, AlertsStatistics } from "@/types";
 
@@ -13,6 +14,7 @@ const props = defineProps<{
   showSlider?: boolean;
   statsExportMinDate?: string;
   statsExportMaxDate?: string;
+  tableName?: string;
 }>();
 
 const emit = defineEmits(["dateRangeChanged"]);
@@ -29,14 +31,21 @@ const emit = defineEmits(["dateRangeChanged"]);
           alt="Logo"
           loading="eager"
         />
-        <h2 class="text-2xl font-semibold tracking-tight">
-          {{ $t("changeDetectionAlerts")
-          }}<span
-            v-if="props.alertsStatistics.territory"
-            class="text-muted-foreground"
-            >: {{ props.alertsStatistics.territory }}</span
-          >
-        </h2>
+        <div class="flex items-center gap-2 pr-10">
+          <h2 class="text-2xl font-semibold tracking-tight min-w-0">
+            {{ $t("changeDetectionAlerts")
+            }}<span
+              v-if="props.alertsStatistics.territory"
+              class="text-muted-foreground"
+              >: {{ props.alertsStatistics.territory }}</span
+            >
+          </h2>
+          <AdminConfigGear
+            v-if="tableName"
+            :table-name="tableName"
+            view-type="alerts"
+          />
+        </div>
         <div
           v-if="props.alertsStatistics.alertsTotal > 0"
           class="space-y-2 text-sm text-muted-foreground"

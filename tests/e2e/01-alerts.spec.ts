@@ -890,3 +890,15 @@ test("alerts dashboard - restores alerts intro after exiting incident multiselec
   await expect(multiSelectButton).not.toHaveClass(/active/);
   await expect(intro).toBeVisible({ timeout: 20000 });
 });
+
+test("alerts dashboard - admin gear opens config in a new tab", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await navigateToAlertsDashboard(page);
+
+  const gear = page.getByTestId("admin-config-gear");
+  await expect(gear).toBeVisible({ timeout: 20000 });
+  await expect(gear).toHaveAttribute("target", "_blank");
+  const href = await gear.getAttribute("href");
+  expect(href).toMatch(/\/config\/\w+\?view_type=alerts/);
+});

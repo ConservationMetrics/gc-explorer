@@ -1,4 +1,5 @@
 {
+  "accessConfig": "Fikia usanidi",
   "accessDenied": "Ufikiaji Umekataliwa",
   "accessDeniedMessage": "Huna ruhusa ya kuona ukurasa uliokuwa unajaribu kufikia. Tafadhali wasiliana na msimamizi wa Guardian Connector ili kubadilisha jukumu lako ili uweze kuona ukurasa huu.",
   "accessPermissions": "Ruhusa za Ufikiaji",
@@ -80,7 +81,6 @@
   "downloadStatistics": "Pakua takwimu",
   "duplicateViewWarning": "Mwonekano wa aina hii tayari upo kwa seti kuu ya data uliyochagua. Hifadhi imezimwa hadi uchague seti nyingine ya data.",
   "earlier": "Mapema",
-  "editConfiguration": "Hariri usanidi",
   "editExistingView": "Fungua mwonekano uliopo",
   "enable": "Washa",
   "errorCouldNotAddDatasetView": "Haikuweza kuongeza mtazamo wa seti ya data",

@@ -51,6 +51,11 @@ vi.mock("@/utils/mapGLHelpers", () => ({
   prepareCoordinatesForSelectedFeature: (value: unknown) => value,
 }));
 
+const canManageConfig = ref(true);
+vi.mock("@/composables/useCanManageConfig", () => ({
+  useCanManageConfig: () => canManageConfig,
+}));
+
 const globalConfig = {
   mocks: { $t: mockT },
   stubs: {
@@ -77,6 +82,11 @@ const globalConfig = {
       template:
         '<div data-testid="stub-empty-illustration">{{ variant }}</div>',
     },
+    AdminConfigGear: {
+      props: ["tableName", "viewType"],
+      template:
+        '<a data-testid="admin-config-gear" :data-table-name="tableName" :data-view-type="viewType" />',
+    },
   },
 };
 
@@ -96,6 +106,7 @@ const baseProps = {
 describe("GalleryView empty states", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    canManageConfig.value = true;
     filterByDateAndCategoryMock.mockReset();
     filterByDateAndCategoryMock.mockImplementation((data: Dataset) => data);
   });
@@ -117,6 +128,33 @@ describe("GalleryView empty states", () => {
     );
     expect(wrapper.get('[data-testid="gallery-view-description"]').text()).toBe(
       "Photos and audio from the field.",
+    );
+    const gear = wrapper.get('[data-testid="admin-config-gear"]');
+    expect(gear.attributes("data-table-name")).toBe("bcmform_responses");
+    expect(gear.attributes("data-view-type")).toBe("gallery");
+  });
+
+  it("does not show the config gear when the user is not an admin", () => {
+    canManageConfig.value = false;
+    const wrapper = mount(GalleryView, {
+      props: {
+        ...baseProps,
+        galleryData: [{ _id: "1" }] as unknown as Dataset,
+        viewName: "Community gallery",
+        table: "bcmform_responses",
+      },
+      global: {
+        ...globalConfig,
+        stubs: {
+          ...globalConfig.stubs,
+          AdminConfigGear: false,
+          NuxtLink: { template: "<a><slot /></a>" },
+        },
+      },
+    });
+
+    expect(wrapper.find('[data-testid="admin-config-gear"]').exists()).toBe(
+      false,
     );
   });
 

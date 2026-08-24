@@ -1,4 +1,5 @@
 {
+  "accessConfig": "Configuratie openen",
   "accessDenied": "Toegang Geweigerd",
   "accessDeniedMessage": "U bent niet gemachtigd om de pagina te bekijken waartoe u probeerde toegang te krijgen. Neem contact op met een Guardian Connector-beheerder om uw rol te wijzigen om deze pagina te kunnen bekijken.",
   "accessPermissions": "Toegangsrechten",
@@ -78,7 +79,6 @@
   "downloadStatistics": "Statistieken downloaden",
   "duplicateViewWarning": "Er bestaat al een weergave van dit type voor de geselecteerde primaire dataset. Opslaan is uitgeschakeld totdat u een andere dataset kiest.",
   "earlier": "Eerder",
-  "editConfiguration": "Configuratie Bewerken",
   "editExistingView": "Bestaande weergave openen",
   "enable": "Inschakelen",
   "errorCouldNotAddDatasetView": "Dataset weergave kon niet worden toegevoegd",

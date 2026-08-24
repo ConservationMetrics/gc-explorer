@@ -24,6 +24,7 @@ import GalleryDetailPanel from "@/components/gallery/GalleryDetailPanel.vue";
 import GalleryGrid from "@/components/gallery/GalleryGrid.vue";
 import GalleryTile from "@/components/gallery/GalleryTile.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
+import AdminConfigGear from "@/components/shared/AdminConfigGear.vue";
 import { useI18n } from "vue-i18n";
 
 import type {
@@ -277,14 +278,16 @@ const closeDetail = () => {
         class="mb-4 space-y-1"
         data-testid="gallery-view-header"
       >
-        <h1
-          v-if="displayName"
-          class="text-2xl font-semibold tracking-tight text-gray-900 break-words"
-          style="overflow-wrap: anywhere; word-break: break-word"
-          data-testid="gallery-view-title"
-        >
-          {{ displayName }}
-        </h1>
+        <div v-if="displayName" class="flex items-center gap-2">
+          <h1
+            class="text-2xl font-semibold tracking-tight text-gray-900 break-words min-w-0"
+            style="overflow-wrap: anywhere; word-break: break-word"
+            data-testid="gallery-view-title"
+          >
+            {{ displayName }}
+          </h1>
+          <AdminConfigGear :table-name="table" view-type="gallery" />
+        </div>
         <p
           v-if="fullDescription"
           class="text-sm text-gray-600"

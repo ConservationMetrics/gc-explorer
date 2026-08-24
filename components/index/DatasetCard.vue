@@ -126,7 +126,8 @@ const configEditPath = computed(() => ({
               :to="configEditPath"
               data-testid="dataset-card-config-gear"
               class="flex-shrink-0 p-1.5 text-gray-500 hover:text-violet-700 hover:bg-violet-100 rounded-lg transition-colors"
-              :aria-label="$t('editConfiguration')"
+              :aria-label="$t('accessConfig')"
+              :title="$t('accessConfig')"
               @click.stop
             >
               <Settings class="w-4 h-4" />
