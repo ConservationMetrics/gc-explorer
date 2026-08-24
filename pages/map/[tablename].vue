@@ -2,7 +2,7 @@
 import { useI18n } from "vue-i18n";
 
 import DataLoadError from "@/components/shared/DataLoadError.vue";
-import { getDataLoadErrorMessage } from "@/utils/dataLoadError";
+import { getDataLoadErrorMessage } from "@/utils/errorMessages";
 import {
   decodeDatasetNameFromUrl,
   encodeDatasetNameForUrl,

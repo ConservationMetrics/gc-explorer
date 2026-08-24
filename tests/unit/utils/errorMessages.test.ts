@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { VIEW_CONFIG_MISSING_COLUMNS_ERROR } from "@/types";
-import { getDataLoadErrorMessage } from "@/utils/dataLoadError";
+import { getDataLoadErrorMessage } from "@/utils/errorMessages";
 
 const messages: Record<string, string> = {
   missingConfiguredColumn:
