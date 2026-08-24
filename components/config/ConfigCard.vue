@@ -6,6 +6,7 @@ import {
   type ViewConfig,
   type ViewType,
 } from "@/types";
+import { VIEW_INFO_CONFIG_KEYS } from "@/composables/useCopyConfig";
 import { CONFIG_LIMITS } from "@/utils";
 import { validateViewConfigColumns } from "@/utils/viewConfigColumns";
 import ConfigPermissions from "./ConfigPermissions.vue";
@@ -149,12 +150,19 @@ watch(
   { deep: true },
 );
 
-// Apply copied config from another dataset without resetting the saved baseline
+// Apply copied config from another dataset without resetting the saved baseline.
+// View identity fields are omitted from the copy; keep this view's values.
 watch(
   () => props.configToCopy,
   (copiedConfig) => {
     if (copiedConfig) {
-      replaceConfig(localConfig.value, copiedConfig);
+      const preserved = Object.fromEntries(
+        VIEW_INFO_CONFIG_KEYS.flatMap((key) => {
+          const value = localConfig.value[key];
+          return value === undefined ? [] : [[key, value]];
+        }),
+      );
+      replaceConfig(localConfig.value, { ...copiedConfig, ...preserved });
     }
   },
 );

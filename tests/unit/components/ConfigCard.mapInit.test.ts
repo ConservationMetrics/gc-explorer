@@ -130,4 +130,28 @@ describe("ConfigCard map initialization", () => {
     expect(latitudeInput.element.value).toBe("-9.24");
     expect(longitudeInput.element.value).toBe("160.98377");
   });
+
+  it("preserves view identity fields when applying a copied config", async () => {
+    const wrapper = mountConfigCard();
+    const cardVm = wrapper.vm as unknown as { localConfig: ViewConfig };
+    cardVm.localConfig.DATASET_TABLE = "My Map";
+    cardVm.localConfig.VIEW_DESCRIPTION = "Mine";
+    cardVm.localConfig.VIEW_HEADER_IMAGE = "https://example.test/header.jpg";
+    cardVm.localConfig.LOGO_URL = "https://example.test/logo.png";
+    await nextTick();
+
+    await wrapper.setProps({
+      configToCopy: { MAPBOX_ZOOM: 3, MAPBOX_PROJECTION: "globe" },
+    });
+    await nextTick();
+
+    expect(cardVm.localConfig.DATASET_TABLE).toBe("My Map");
+    expect(cardVm.localConfig.VIEW_DESCRIPTION).toBe("Mine");
+    expect(cardVm.localConfig.VIEW_HEADER_IMAGE).toBe(
+      "https://example.test/header.jpg",
+    );
+    expect(cardVm.localConfig.LOGO_URL).toBe("https://example.test/logo.png");
+    expect(cardVm.localConfig.MAPBOX_ZOOM).toBe(3);
+    expect(cardVm.localConfig.MAPBOX_PROJECTION).toBe("globe");
+  });
 });

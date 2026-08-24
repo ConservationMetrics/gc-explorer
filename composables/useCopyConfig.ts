@@ -2,11 +2,34 @@ import type { ViewConfig, ViewConfigRow, ViewType } from "@/types";
 import type { MaybeRefOrGetter } from "vue";
 import { toValue } from "vue";
 
+/** Identity fields from ConfigViewInfo; never copied between views. */
+export const VIEW_INFO_CONFIG_KEYS = [
+  "DATASET_TABLE",
+  "VIEW_DESCRIPTION",
+  "VIEW_HEADER_IMAGE",
+  "LOGO_URL",
+] as const satisfies ReadonlyArray<keyof ViewConfig>;
+
 export type CopyConfigSource = {
   key: string;
   label: string;
   viewConfig: ViewConfig;
   secondaryDataset?: string | null;
+};
+
+/**
+ * Deep-clones a view config without ConfigViewInfo identity fields.
+ *
+ * @param {ViewConfig} config - Source view configuration.
+ * @returns {ViewConfig} Cloned config with view identity keys removed.
+ */
+export const omitViewInfoFields = (config: ViewConfig): ViewConfig => {
+  const cloned: ViewConfig = JSON.parse(JSON.stringify(config));
+  return Object.fromEntries(
+    Object.entries(cloned).filter(
+      ([key]) => !(VIEW_INFO_CONFIG_KEYS as readonly string[]).includes(key),
+    ),
+  ) as ViewConfig;
 };
 
 /**
@@ -51,18 +74,14 @@ export const useCopyConfig = (
     const primary = toValue(currentDataset);
 
     return viewRows.value
-      .filter(
-        (row) =>
-          row.viewType === type &&
-          row.primaryDataset !== primary &&
-          Object.keys(row.viewConfig).length > 0,
-      )
+      .filter((row) => row.viewType === type && row.primaryDataset !== primary)
       .map((row) => ({
         key: copySourceKey(row.primaryDataset, row.viewType),
         label: row.viewName || row.primaryDataset,
-        viewConfig: row.viewConfig,
+        viewConfig: omitViewInfoFields(row.viewConfig),
         secondaryDataset: row.secondaryDataset ?? null,
       }))
+      .filter((source) => Object.keys(source.viewConfig).length > 0)
       .sort((first, second) => first.label.localeCompare(second.label));
   });
 
@@ -77,7 +96,7 @@ export const useCopyConfig = (
       (candidate) => candidate.key === selectedCopySource.value,
     );
     if (source) {
-      configToCopy.value = JSON.parse(JSON.stringify(source.viewConfig));
+      configToCopy.value = omitViewInfoFields(source.viewConfig);
       secondaryDatasetToCopy.value = source.secondaryDataset ?? null;
     }
     showCopyModal.value = false;
