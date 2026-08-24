@@ -110,6 +110,8 @@ const globalConfig = {
         mediaBasePathIcons: "mediaBasePathIcons",
         mediaBasePathTooltip: "mediaBasePathTooltip",
         mediaBasePathIconsTooltip: "mediaBasePathIconsTooltip",
+        mediaIntroFilebrowserAccess: "Access Filebrowser",
+        mediaIntroFilebrowserLink: "Filebrowser page",
         mediaPasteFilebrowserShareUrlOrHash: "Filebrowser share URL or hash",
         mediaProvider: "Media Provider",
         or: "or",
@@ -166,6 +168,19 @@ describe("ConfigMedia component", () => {
     expect(
       wrapper.find('label[for="test_table-provider-alerts"]').exists(),
     ).toBe(false);
+  });
+
+  it("links to Filebrowser using the files origin derived from the hostname", () => {
+    const wrapper = mount(ConfigMedia, {
+      props: baseProps,
+      global: globalConfig,
+    });
+
+    const link = wrapper.find('[data-testid="filebrowser-access-link"]');
+    expect(link.exists()).toBe(true);
+    expect(link.attributes("href")).toBe("https://files.test.invalid");
+    expect(link.attributes("target")).toBe("_blank");
+    expect(link.text()).toContain("Access Filebrowser");
   });
 
   it("initializes with Filebrowser provider by default", () => {
