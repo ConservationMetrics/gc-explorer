@@ -1,16 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ref } from "vue";
 import { Role } from "@/types";
+import { useCanManageConfig } from "@/composables/useCanManageConfig";
 
-const useRuntimeConfigMock = vi.fn();
-const useUserSessionMock = vi.fn();
+const { useRuntimeConfigMock, useUserSessionMock } = vi.hoisted(() => ({
+  useRuntimeConfigMock: vi.fn(),
+  useUserSessionMock: vi.fn(),
+}));
 
 vi.mock("#imports", () => ({
   useRuntimeConfig: () => useRuntimeConfigMock(),
   useUserSession: () => useUserSessionMock(),
 }));
-
-import { useCanManageConfig } from "@/composables/useCanManageConfig";
 
 describe("useCanManageConfig", () => {
   beforeEach(() => {

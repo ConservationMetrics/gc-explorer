@@ -2,16 +2,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { computed, ref } from "vue";
 import { Role } from "@/types";
+import AdminConfigGear from "@/components/shared/AdminConfigGear.vue";
 
-const useRuntimeConfigMock = vi.fn();
-const useUserSessionMock = vi.fn();
+const { useRuntimeConfigMock, useUserSessionMock } = vi.hoisted(() => ({
+  useRuntimeConfigMock: vi.fn(),
+  useUserSessionMock: vi.fn(),
+}));
 
 vi.mock("#imports", () => ({
   useRuntimeConfig: () => useRuntimeConfigMock(),
   useUserSession: () => useUserSessionMock(),
 }));
-
-import AdminConfigGear from "@/components/shared/AdminConfigGear.vue";
 
 Object.assign(globalThis, { computed, ref });
 

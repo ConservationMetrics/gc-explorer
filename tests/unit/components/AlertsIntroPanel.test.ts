@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { computed, ref } from "vue";
 import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
+import type { AlertsStatistics } from "@/types";
 
 Object.assign(globalThis, { computed, ref });
-import type { AlertsStatistics } from "@/types";
 
 const canManageConfig = ref(true);
 vi.mock("@/composables/useCanManageConfig", () => ({
