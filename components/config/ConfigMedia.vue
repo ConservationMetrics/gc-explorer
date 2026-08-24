@@ -2,7 +2,7 @@
 import ConfigColumnSelect from "@/components/config/ConfigColumnSelect.vue";
 import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import ConfigSubsectionHeader from "@/components/config/ConfigSubsectionHeader.vue";
-import { Info } from "lucide-vue-next";
+import { FolderOpen, Info } from "lucide-vue-next";
 import { toCamelCase } from "@/utils/identifierUtils";
 import {
   extractShareId,
@@ -38,17 +38,20 @@ const shareInputIcons = ref("");
 const isInitializing = ref(true);
 
 /**
- * Gets the default Filebrowser base URL from the current hostname.
+ * Gets the Filebrowser origin and public-download base URL from the hostname.
  * @example
  * // If hostname is "explorer.demo.guardianconnector.net"
- * // Returns: "https://files.demo.guardianconnector.net/api/public/dl/"
+ * // origin: "https://files.demo.guardianconnector.net"
+ * // baseUrl: "https://files.demo.guardianconnector.net/api/public/dl/"
  */
-const getDefaultBaseUrl = () => {
-  if (typeof window === "undefined") return "";
-  return buildFilebrowserBase(deriveFilesOrigin(window.location.hostname));
+const getDefaultFilesUrls = () => {
+  if (typeof window === "undefined") return { origin: "", baseUrl: "" };
+  const origin = deriveFilesOrigin(window.location.hostname);
+  return { origin, baseUrl: buildFilebrowserBase(origin) };
 };
 
-const defaultBaseUrl = getDefaultBaseUrl();
+const { origin: defaultFilesOrigin, baseUrl: defaultBaseUrl } =
+  getDefaultFilesUrls();
 
 // Computed
 const resolvedBasePath = computed(() => {
@@ -251,6 +254,23 @@ watch(
         </p>
         <p>
           <i18n-t keypath="mediaIntroFilebrowser" tag="span">
+            <template #link>
+              <a
+                v-if="defaultFilesOrigin"
+                :href="defaultFilesOrigin"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="filebrowser-access-link"
+                class="inline-flex items-center gap-1 font-medium text-violet-700 underline underline-offset-2 hover:text-violet-900"
+              >
+                <FolderOpen class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                {{ $t("mediaIntroFilebrowserAccess") }}
+              </a>
+            </template>
+          </i18n-t>
+        </p>
+        <p>
+          <i18n-t keypath="mediaIntroFilebrowserDocs" tag="span">
             <template #link>
               <a
                 href="https://docs.guardianconnector.net/reference/gc-toolkit/filebrowser/"
@@ -556,9 +576,6 @@ watch(
       "
       class="space-y-2"
     >
-      <p class="text-xs text-gray-500 mb-2">
-        {{ $t("mediaColumnDescription") }}
-      </p>
       <ConfigColumnSelect
         :id="`${tableName}-media-column`"
         :model-value="config.MEDIA_COLUMN"
