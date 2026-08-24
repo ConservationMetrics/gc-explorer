@@ -275,6 +275,37 @@ export const fetchTableSqlColumns = async (
 };
 
 /**
+ * Reads column names for a warehouse table from information_schema.columns.
+ *
+ * @param {string} table - Warehouse table name.
+ * @returns {Promise<string[]>} SQL column names in ordinal order, without duplicates.
+ */
+export const fetchInformationSchemaColumns = async (
+  table: string,
+): Promise<string[]> => {
+  const cleanTableName = normalizeTableName(table);
+
+  const schemaColumns = await warehouseDb.execute(sql`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = ${cleanTableName}
+    ORDER BY ordinal_position
+  `);
+
+  return Array.from(
+    new Set(
+      schemaColumns
+        .map(
+          (row: unknown) =>
+            (row as Record<string, unknown>).column_name as string | undefined,
+        )
+        .filter((column): column is string => Boolean(column)),
+    ),
+  );
+};
+
+/**
  * Resolves original and SQL column names for a warehouse table.
  *
  * @param {string} table - Base table name.

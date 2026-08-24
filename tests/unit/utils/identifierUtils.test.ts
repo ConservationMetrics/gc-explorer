@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildAttachmentContentDisposition,
   camelToSnake,
+  compareLabels,
   decodeDatasetNameFromUrl,
   encodeDatasetNameForUrl,
   normalizeTableName,
@@ -175,5 +176,15 @@ describe("warehouseRecordIdForExport", () => {
     expect(warehouseRecordIdForExport(undefined, { _id: "raw-2" })).toBe(
       "raw-2",
     );
+  });
+});
+
+describe("compareLabels", () => {
+  it("sorts labels alphabetically, ignoring case", () => {
+    expect(["Status", "photo", "Recorded at"].sort(compareLabels)).toEqual([
+      "photo",
+      "Recorded at",
+      "Status",
+    ]);
   });
 });

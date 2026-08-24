@@ -33,6 +33,10 @@ const mountConfigFilters = () =>
     },
     global: {
       stubs: {
+        "i18n-t": {
+          template:
+            "<span><slot></slot><slot name='column'></slot><slot name='values'></slot></span>",
+        },
         VueTagsInput: {
           name: "VueTagsInput",
           props: ["tags", "autocompleteItems"],

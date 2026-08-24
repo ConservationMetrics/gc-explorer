@@ -1,5 +1,6 @@
 import {
   fetchData,
+  fetchInformationSchemaColumns,
   fetchTableConfig,
   fetchTableSqlColumns,
   fetchViewTables,
@@ -9,6 +10,10 @@ import {
   valueHasAllowedFileExtension,
 } from "@/server/dataProcessing/dataFilters";
 import { parseBasemaps } from "@/server/utils";
+import {
+  assertConfiguredColumnsExist,
+  getConfiguredColumns,
+} from "@/server/utils/assertConfiguredColumns";
 import { parseAndValidateLimit, getTableParam } from "@/server/utils/dbHelpers";
 import { validatePermissions } from "@/utils/accessControls";
 
@@ -38,6 +43,22 @@ export default defineEventHandler(async (event: H3Event) => {
     const filterColumn = tableConfig.FRONT_END_FILTER_COLUMN;
     const mediaColumn = tableConfig.MEDIA_COLUMN;
     const timestampColumn = tableConfig.TIMESTAMP_COLUMN;
+
+    if (mediaColumn) {
+      const configuredColumns = getConfiguredColumns([
+        { field: "FRONT_END_FILTER_COLUMN", column: filterColumn },
+        { field: "TIMESTAMP_COLUMN", column: timestampColumn },
+        { field: "MEDIA_COLUMN", column: mediaColumn },
+      ]);
+      if (configuredColumns.length > 0) {
+        const schemaColumns = await fetchInformationSchemaColumns(primaryTable);
+        assertConfiguredColumnsExist(
+          primaryTable,
+          schemaColumns,
+          configuredColumns,
+        );
+      }
+    }
 
     const projectedColumns = mediaColumn
       ? Array.from(

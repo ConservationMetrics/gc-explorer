@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import type { ViewConfig, User, RouteLevelPermission } from "@/types";
 import { Role } from "@/types";
 
@@ -63,9 +64,9 @@ watch(
 
 <template>
   <div v-if="shouldShowPermissions" class="space-y-4">
-    <p class="text-gray-600 text-sm leading-relaxed">
+    <ConfigFieldLabel required>
       {{ $t("visibilityHelpText") }}
-    </p>
+    </ConfigFieldLabel>
 
     <div
       v-if="!isPermissionSelected"

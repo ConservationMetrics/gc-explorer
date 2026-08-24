@@ -5,6 +5,7 @@ import type {
   ViewConfigColumnValidation,
   ViewType,
 } from "@/types";
+import { compareLabels } from "@/utils/identifierUtils";
 
 export const FUNCTIONAL_COLUMN_KEYS: readonly FunctionalColumnKey[] = [
   "COLOR_COLUMN",
@@ -25,9 +26,16 @@ const NON_SELECTABLE_FUNCTIONAL_COLUMN_NAMES = new Set(["_id"]);
 export const getSelectableColumnOptions = (
   columns: ColumnEntry[],
 ): ColumnEntry[] => {
-  return columns.filter(
-    (column) => !NON_SELECTABLE_FUNCTIONAL_COLUMN_NAMES.has(column.sql_column),
-  );
+  return columns
+    .filter(
+      (column) =>
+        !NON_SELECTABLE_FUNCTIONAL_COLUMN_NAMES.has(column.sql_column),
+    )
+    .sort(
+      (a, b) =>
+        compareLabels(a.original_column, b.original_column) ||
+        compareLabels(a.sql_column, b.sql_column),
+    );
 };
 
 const getColumnSource = (

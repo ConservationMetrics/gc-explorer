@@ -131,6 +131,20 @@ export type ViewConfigColumnValidation = {
   isValid: boolean;
 };
 
+export const VIEW_CONFIG_MISSING_COLUMNS_ERROR =
+  "VIEW_CONFIG_MISSING_COLUMNS" as const;
+
+export type ConfiguredColumn = {
+  field: FunctionalColumnKey;
+  column: string;
+};
+
+export type ViewConfigMissingColumnsErrorData = {
+  errorCode: typeof VIEW_CONFIG_MISSING_COLUMNS_ERROR;
+  missing: ConfiguredColumn[];
+  table: string;
+};
+
 export interface Views {
   [key: string]: ViewConfig;
 }

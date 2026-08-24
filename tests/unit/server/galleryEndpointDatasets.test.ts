@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import galleryHandler from "@/server/api/[table]/gallery";
+import { VIEW_CONFIG_MISSING_COLUMNS_ERROR } from "@/types";
 
 type GalleryRouteEvent = {
   context: { params: { table: string } };
@@ -17,6 +18,7 @@ const handleGalleryRequest = galleryHandler as unknown as GalleryRouteHandler;
 const hoisted = vi.hoisted(() => {
   Object.assign(globalThis, {
     defineEventHandler: (handler: unknown) => handler,
+    sendError: (_event: unknown, error: unknown) => error,
     useRuntimeConfig: () => ({
       public: {
         allowedFileExtensions: {
@@ -30,6 +32,7 @@ const hoisted = vi.hoisted(() => {
 
   return {
     fetchData: vi.fn(),
+    fetchInformationSchemaColumns: vi.fn(),
     fetchTableConfig: vi.fn(),
     fetchTableSqlColumns: vi.fn(),
     fetchViewTables: vi.fn(),
@@ -42,6 +45,7 @@ const hoisted = vi.hoisted(() => {
 
 vi.mock("@/server/database/dbOperations", () => ({
   fetchData: hoisted.fetchData,
+  fetchInformationSchemaColumns: hoisted.fetchInformationSchemaColumns,
   fetchTableConfig: hoisted.fetchTableConfig,
   fetchTableSqlColumns: hoisted.fetchTableSqlColumns,
   fetchViewTables: hoisted.fetchViewTables,
@@ -95,6 +99,7 @@ describe("gallery endpoint datasets", () => {
       primaryTable: "gallery_dataset",
       secondaryTable: null,
     });
+    hoisted.fetchInformationSchemaColumns.mockResolvedValue(["_id", "photo"]);
     hoisted.fetchData.mockResolvedValue({
       mainData: [{ _id: "record-1", photo: "one.jpg" }],
       columnsData: [{ original_column: "Photo", sql_column: "photo" }],
@@ -115,6 +120,9 @@ describe("gallery endpoint datasets", () => {
     expect(hoisted.fetchViewTables).toHaveBeenCalledWith(
       "route_gallery",
       "gallery",
+    );
+    expect(hoisted.fetchInformationSchemaColumns).toHaveBeenCalledWith(
+      "gallery_dataset",
     );
     expect(hoisted.fetchData).toHaveBeenCalledWith("gallery_dataset", {
       limit: 25,
@@ -156,6 +164,7 @@ describe("gallery endpoint datasets", () => {
       context: { params: { table: "route_gallery" } },
     });
 
+    expect(hoisted.fetchInformationSchemaColumns).not.toHaveBeenCalled();
     expect(response.data).toEqual([
       {
         _id: "record-1",
@@ -181,5 +190,31 @@ describe("gallery endpoint datasets", () => {
 
     expect(response.viewName).toBe("Community photos");
     expect(response.viewDescription).toBe("Field media from the survey.");
+  });
+
+  it("returns 422 when a configured column is missing", async () => {
+    hoisted.fetchTableConfig.mockResolvedValue({
+      MEDIA_BASE_PATH: "/media",
+      MEDIA_COLUMN: "photo",
+      FRONT_END_FILTER_COLUMN: "missing_filter",
+      ROUTE_LEVEL_PERMISSION: "anyone",
+    });
+    hoisted.fetchInformationSchemaColumns.mockResolvedValue(["_id", "photo"]);
+
+    const response = await handleGalleryRequest({
+      context: { params: { table: "route_gallery" } },
+    });
+
+    expect(response).toMatchObject({
+      statusCode: 422,
+      data: {
+        errorCode: VIEW_CONFIG_MISSING_COLUMNS_ERROR,
+        table: "gallery_dataset",
+        missing: [
+          { field: "FRONT_END_FILTER_COLUMN", column: "missing_filter" },
+        ],
+      },
+    });
+    expect(hoisted.fetchData).not.toHaveBeenCalled();
   });
 });

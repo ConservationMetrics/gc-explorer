@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useAppConfig } from "#imports";
+import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import type { ViewType } from "@/types";
+import { compareLabels } from "@/utils/identifierUtils";
 import { ChevronLeft, Images, Map, TriangleAlert } from "lucide-vue-next";
 
 const { viewTypes } = useAppConfig();
@@ -37,7 +39,9 @@ const { data, error, refresh } = await useFetch<{
   availableTables: string[];
 }>("/api/config");
 
-const availableTables = computed(() => data.value?.availableTables ?? []);
+const availableTables = computed(() =>
+  [...(data.value?.availableTables ?? [])].sort(compareLabels),
+);
 
 /**
  * Continues to the create form for the chosen view type.
@@ -114,12 +118,9 @@ definePageMeta({ layout: "explorer" });
       </fieldset>
 
       <div class="mb-8">
-        <label
-          for="create-primary-dataset"
-          class="block text-sm font-medium text-gray-700 mb-2"
-        >
-          {{ $t("primaryDatasetOptional") }}
-        </label>
+        <ConfigFieldLabel for-id="create-primary-dataset" class="mb-2">
+          {{ $t("primaryDatasetLabel") }}
+        </ConfigFieldLabel>
         <select
           id="create-primary-dataset"
           v-model="selectedPrimary"

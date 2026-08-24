@@ -16,7 +16,7 @@ const icon = computed(() => {
 <template>
   <div
     data-testid="config-view-type-display"
-    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 font-medium"
+    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 font-bold"
   >
     <component :is="icon" class="w-4 h-4" />
     <span>{{ $t(viewType) }}</span>

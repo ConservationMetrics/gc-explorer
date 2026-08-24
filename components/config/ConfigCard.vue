@@ -6,6 +6,7 @@ import {
   type ViewConfig,
   type ViewType,
 } from "@/types";
+import { VIEW_INFO_CONFIG_KEYS } from "@/composables/useCopyConfig";
 import { CONFIG_LIMITS } from "@/utils";
 import { validateViewConfigColumns } from "@/utils/viewConfigColumns";
 import ConfigPermissions from "./ConfigPermissions.vue";
@@ -48,39 +49,51 @@ const props = withDefaults(
 const emit = defineEmits(["submitConfig", "removeTableFromConfig"]);
 
 // Set keys for the different sections of the config
-const mapConfigKeys = computed(() => [
-  "MAPBOX_STYLE",
-  "MAPBOX_ACCESS_TOKEN",
-  "MAPBOX_ZOOM",
-  "MAPBOX_CENTER_LATITUDE",
-  "MAPBOX_CENTER_LONGITUDE",
-  "MAPBOX_PROJECTION",
-  "MAPBOX_BEARING",
-  "MAPBOX_PITCH",
-  "MAPBOX_3D",
-  "MAPBOX_3D_TERRAIN_EXAGGERATION",
-  "MAP_LEGEND_LAYER_IDS",
-  "PLANET_API_KEY",
-  "COLOR_COLUMN",
-  "ICON_COLUMN",
-]);
-const mediaKeys = computed(() => [
-  "MEDIA_BASE_PATH",
-  "MEDIA_BASE_PATH_ALERTS",
-  "MEDIA_BASE_PATH_ICONS",
-  "MEDIA_COLUMN",
-]);
+const mapConfigKeys = computed(() => {
+  const keys = [
+    "MAPBOX_STYLE",
+    "MAPBOX_ACCESS_TOKEN",
+    "MAPBOX_CENTER_LATITUDE",
+    "MAPBOX_CENTER_LONGITUDE",
+    "MAPBOX_ZOOM",
+    "MAPBOX_PROJECTION",
+    "MAPBOX_BEARING",
+    "MAPBOX_PITCH",
+    "MAPBOX_3D",
+    "MAPBOX_3D_TERRAIN_EXAGGERATION",
+    "MAP_LEGEND_LAYER_IDS",
+    "PLANET_API_KEY",
+  ];
+  if (props.viewType === "map") {
+    keys.push("COLOR_COLUMN", "ICON_COLUMN");
+  }
+  return keys;
+});
+const mediaKeys = computed(() => {
+  const keys = ["MEDIA_BASE_PATH"];
+  if (props.viewType === "alerts") {
+    keys.push("MEDIA_BASE_PATH_ALERTS");
+  }
+  if (props.viewType === "map") {
+    keys.push("MEDIA_BASE_PATH_ICONS");
+  }
+  if (props.viewType === "map" || props.viewType === "gallery") {
+    keys.push("MEDIA_COLUMN");
+  }
+  return keys;
+});
 const filterKeys = computed(() =>
   props.viewType === "alerts"
     ? ["FRONT_END_FILTER_COLUMN", "SECONDARY_FILTER_VALUES"]
     : ["FRONT_END_FILTER_COLUMN", "TIMESTAMP_COLUMN"],
 );
-const viewInfoKeys = computed(() => [
-  "DATASET_TABLE",
-  "VIEW_DESCRIPTION",
-  "VIEW_HEADER_IMAGE",
-  "LOGO_URL",
-]);
+const viewInfoKeys = computed(() => {
+  const keys = ["DATASET_TABLE", "VIEW_DESCRIPTION", "VIEW_HEADER_IMAGE"];
+  if (props.viewType !== "gallery") {
+    keys.push("LOGO_URL");
+  }
+  return keys;
+});
 
 // The child config components expect a `views` array; wrap the single view type
 const viewTypeList = computed(() => [props.viewType]);
@@ -137,12 +150,19 @@ watch(
   { deep: true },
 );
 
-// Apply copied config from another dataset without resetting the saved baseline
+// Apply copied config from another dataset without resetting the saved baseline.
+// View identity fields are omitted from the copy; keep this view's values.
 watch(
   () => props.configToCopy,
   (copiedConfig) => {
     if (copiedConfig) {
-      replaceConfig(localConfig.value, copiedConfig);
+      const preserved = Object.fromEntries(
+        VIEW_INFO_CONFIG_KEYS.flatMap((key) => {
+          const value = localConfig.value[key];
+          return value === undefined ? [] : [[key, value]];
+        }),
+      );
+      replaceConfig(localConfig.value, { ...copiedConfig, ...preserved });
     }
   },
 );
@@ -207,10 +227,16 @@ const areColumnsLoading = computed(
       props.secondaryColumnsLoading),
 );
 
+const hasConfigValue = (value: unknown) =>
+  value !== null && value !== undefined && String(value).trim() !== "";
+
 const isFormValid = computed(() => {
   const isMapConfigValid = shouldShowConfigMap.value
-    ? localConfig.value.MAPBOX_ACCESS_TOKEN?.trim() !== "" &&
-      localConfig.value.MAPBOX_ACCESS_TOKEN != null
+    ? hasConfigValue(localConfig.value.MAPBOX_ACCESS_TOKEN) &&
+      hasConfigValue(localConfig.value.MAPBOX_ZOOM) &&
+      hasConfigValue(localConfig.value.MAPBOX_PROJECTION) &&
+      hasConfigValue(localConfig.value.MAPBOX_CENTER_LATITUDE) &&
+      hasConfigValue(localConfig.value.MAPBOX_CENTER_LONGITUDE)
     : true;
 
   return (
@@ -270,10 +296,8 @@ const handleSubmit = () => {
 </script>
 
 <template>
-  <div
-    class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
-  >
-    <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="rounded-t-lg border-b border-slate-200 bg-slate-50 px-6 py-4">
       <h2 class="text-balance text-xl font-bold text-slate-800">
         {{ $t("configurationOptions") }}
       </h2>
