@@ -16,7 +16,7 @@ const logoSrc = withBase("/gcexplorer.png", useRuntimeConfig().app.baseURL);
     />
     <div class="min-w-0 rounded-lg py-2 pl-0 pr-1 min-[1001px]:pr-2">
       <h1 class="m-0 text-lg font-bold leading-tight whitespace-nowrap">
-        Guardian Connector
+        Guardian Connector Explorer
       </h1>
     </div>
   </NuxtLink>

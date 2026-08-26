@@ -21,54 +21,54 @@ const toggleMobileMenu = () => {
     class="bg-gradient-to-r mb-2 from-violet-100 to-violet-50 w-5/6 place-self-center mt-2 rounded-xl p-3"
   >
     <!-- Desktop Layout - show above 1000px -->
-    <div
-      class="flex max-[1000px]:hidden relative items-end justify-between gap-4"
-    >
-      <HeaderBrand />
+    <div class="flex max-[1000px]:hidden items-end justify-between gap-4">
+      <div class="relative">
+        <HeaderBrand />
 
-      <!-- Tab with Community Name -->
-      <div
-        class="tab-container flex absolute left-[34%] min-[1109px]:left-[32%] min-[1230px]:left-[28%] -bottom-3 z-10 flex-col items-center"
-      >
-        <NuxtLink to="/" class="tab-trigger active">
-          <svg
-            class="left-curve"
-            xmlns="http://www.w3.org/2000/svg"
-            xml:space="preserve"
-            style="
-              fill-rule: evenodd;
-              clip-rule: evenodd;
-              stroke-linejoin: round;
-              stroke-miterlimit: 2;
-            "
-            viewBox="0 0 608 647"
-          >
-            <path
-              d="M1347.436 2760H740v-646.902s200.986 16.142 313.006 311.678c104.814 276.525 231.346 327.558 294.43 335.224Z"
-              style="fill: currentColor"
-              transform="translate(-740 -2113.0982)"
-            />
-          </svg>
-          <span class="text-lg font-bold">{{ communityName }}</span>
-          <svg
-            class="right-curve"
-            xmlns="http://www.w3.org/2000/svg"
-            xml:space="preserve"
-            style="
-              fill-rule: evenodd;
-              clip-rule: evenodd;
-              stroke-linejoin: round;
-              stroke-miterlimit: 2;
-            "
-            viewBox="0 0 608 647"
-          >
-            <path
-              d="M1347.436 2760H740v-646.902s200.986 16.142 313.006 311.678c104.814 276.525 231.346 327.558 294.43 335.224Z"
-              style="fill: currentColor"
-              transform="translate(-740 -2113.0982)"
-            />
-          </svg>
-        </NuxtLink>
+        <!-- Tab with Community Name -->
+        <div
+          class="tab-container flex absolute left-full -bottom-3 z-10 flex-col items-center"
+        >
+          <NuxtLink to="/" class="tab-trigger active">
+            <svg
+              class="left-curve"
+              xmlns="http://www.w3.org/2000/svg"
+              xml:space="preserve"
+              style="
+                fill-rule: evenodd;
+                clip-rule: evenodd;
+                stroke-linejoin: round;
+                stroke-miterlimit: 2;
+              "
+              viewBox="0 0 608 647"
+            >
+              <path
+                d="M1347.436 2760H740v-646.902s200.986 16.142 313.006 311.678c104.814 276.525 231.346 327.558 294.43 335.224Z"
+                style="fill: currentColor"
+                transform="translate(-740 -2113.0982)"
+              />
+            </svg>
+            <span class="text-lg font-bold">{{ communityName }}</span>
+            <svg
+              class="right-curve"
+              xmlns="http://www.w3.org/2000/svg"
+              xml:space="preserve"
+              style="
+                fill-rule: evenodd;
+                clip-rule: evenodd;
+                stroke-linejoin: round;
+                stroke-miterlimit: 2;
+              "
+              viewBox="0 0 608 647"
+            >
+              <path
+                d="M1347.436 2760H740v-646.902s200.986 16.142 313.006 311.678c104.814 276.525 231.346 327.558 294.43 335.224Z"
+                style="fill: currentColor"
+                transform="translate(-740 -2113.0982)"
+              />
+            </svg>
+          </NuxtLink>
+        </div>
       </div>
 
       <!-- Right: Action buttons -->
