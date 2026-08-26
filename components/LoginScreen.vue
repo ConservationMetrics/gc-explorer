@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import { computed } from "vue";
-import { onMounted, useI18n, useRuntimeConfig, useUserSession } from "#imports";
+import { onMounted, useI18n, useUserSession } from "#imports";
 import GlassCard from "@/components/shared/GlassCard.vue";
 import GlobeLanguagePicker from "./shared/GlobeLanguagePicker.vue";
 
@@ -10,11 +9,7 @@ interface Props {
 const props = defineProps<Props>();
 const { loggedIn } = useUserSession();
 const { t } = useI18n();
-const runtimeConfig = useRuntimeConfig();
-const loginBackgroundSrc = computed(() => {
-  const url = String(runtimeConfig.public.backgroundImage ?? "").trim();
-  return url || "/background.jpg";
-});
+const loginBackgroundSrc = "/background.jpg";
 const loginWithAuth0 = () => {
   window.location.href = "/api/auth/auth0";
 };

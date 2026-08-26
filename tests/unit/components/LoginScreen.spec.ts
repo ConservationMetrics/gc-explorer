@@ -30,9 +30,6 @@ vi.mock("#imports", () => ({
       return messages[key] ?? key;
     },
   }),
-  useRuntimeConfig: () => ({
-    public: { backgroundImage: "" },
-  }),
   navigateTo: vi.fn(),
   onMounted: vi.fn((callback) => {
     // Execute the callback immediately for testing
