@@ -1,9 +1,17 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createI18n } from "vue-i18n";
+import { ref } from "vue";
 import LoginScreen from "@/components/LoginScreen.vue";
 
-// Mock the composables at the top level
+const { useLoginBackgroundMock } = vi.hoisted(() => ({
+  useLoginBackgroundMock: vi.fn(),
+}));
+
+vi.mock("@/composables/useLoginBackground", () => ({
+  useLoginBackground: () => useLoginBackgroundMock(),
+}));
+
 vi.mock("#imports", () => ({
   useUserSession: () => ({
     loggedIn: { value: false },
@@ -32,7 +40,6 @@ vi.mock("#imports", () => ({
   }),
   navigateTo: vi.fn(),
   onMounted: vi.fn((callback) => {
-    // Execute the callback immediately for testing
     callback();
   }),
 }));
@@ -103,10 +110,34 @@ const mountLoginScreen = (
   });
 };
 
+const backgroundImg = (wrapper: ReturnType<typeof mountLoginScreen>) =>
+  wrapper.find("img.object-cover");
+
 describe("LoginScreen", () => {
+  beforeEach(() => {
+    useLoginBackgroundMock.mockReturnValue({
+      backgroundImage: ref("/background.jpg"),
+    });
+  });
+
   it("renders login button", () => {
     const wrapper = mountLoginScreen();
     expect(wrapper.find("[data-testid='login-button']").exists()).toBe(true);
+  });
+
+  it("uses /background.jpg when gc_settings.background_image is unset", () => {
+    const wrapper = mountLoginScreen();
+    expect(backgroundImg(wrapper).attributes("src")).toBe("/background.jpg");
+  });
+
+  it("uses gc_settings.background_image when set", () => {
+    useLoginBackgroundMock.mockReturnValue({
+      backgroundImage: ref("https://cdn.example/bg.jpg"),
+    });
+    const wrapper = mountLoginScreen();
+    expect(backgroundImg(wrapper).attributes("src")).toBe(
+      "https://cdn.example/bg.jpg",
+    );
   });
 
   it("displays error message when provided", () => {

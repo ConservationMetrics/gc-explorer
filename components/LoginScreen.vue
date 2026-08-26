@@ -2,6 +2,7 @@
 import { onMounted, useI18n, useUserSession } from "#imports";
 import GlassCard from "@/components/shared/GlassCard.vue";
 import GlobeLanguagePicker from "./shared/GlobeLanguagePicker.vue";
+import { useLoginBackground } from "@/composables/useLoginBackground";
 
 interface Props {
   errorMessage: string;
@@ -9,7 +10,7 @@ interface Props {
 const props = defineProps<Props>();
 const { loggedIn } = useUserSession();
 const { t } = useI18n();
-const loginBackgroundSrc = "/background.jpg";
+const { backgroundImage: loginBackgroundSrc } = useLoginBackground();
 const loginWithAuth0 = () => {
   window.location.href = "/api/auth/auth0";
 };
