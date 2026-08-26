@@ -87,6 +87,7 @@ describe("GalleryMediaCarousel", () => {
         allowedFileExtensions,
         filePaths: ["a.jpg", "recording.mp3"],
         mediaBasePath: "/media",
+        pinNavButtons: true,
       },
     });
 
@@ -101,7 +102,17 @@ describe("GalleryMediaCarousel", () => {
     expect(controlClasses()).toEqual(imageSlideClasses);
     for (const testId of ["gallery-carousel-prev", "gallery-carousel-next"]) {
       expect(wrapper.get(`[data-testid="${testId}"]`).classes()).toEqual(
-        expect.arrayContaining(["top-1/2", "-translate-y-1/2", "h-10", "w-10"]),
+        expect.arrayContaining([
+          "top-[7.5rem]",
+          "sm:top-40",
+          "lg:top-[min(35vh,20rem)]",
+          "-translate-y-1/2",
+          "h-10",
+          "w-10",
+        ]),
+      );
+      expect(wrapper.get(`[data-testid="${testId}"]`).classes()).not.toContain(
+        "top-1/2",
       );
     }
   });

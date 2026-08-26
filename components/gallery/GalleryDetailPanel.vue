@@ -87,6 +87,7 @@ onBeforeUnmount(() => {
             :media-base-path="mediaBasePath"
             variant="gallery"
             :enable-image-modal="true"
+            pin-nav-buttons
           />
           <div
             v-else
