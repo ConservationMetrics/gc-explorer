@@ -23,7 +23,7 @@ jobs:
           node-version: "20"
       - name: Install dependencies
         run: |
-          npm install -g pnpm
+          npm install -g pnpm@10.34.5
           pnpm install
       - name: Run linting and formatting
         run: |
@@ -52,7 +52,7 @@ jobs:
           node-version: "20"
       - name: Install dependencies and run unit tests
         run: |
-          npm install -g pnpm
+          npm install -g pnpm@10.34.5
           pnpm install
           pnpm run test:unit
 
@@ -71,7 +71,7 @@ jobs:
           node-version: "20"
       - name: Install dependencies
         run: |
-          npm install -g pnpm
+          npm install -g pnpm@10.34.5
           pnpm install
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps
