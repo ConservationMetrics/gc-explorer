@@ -10,7 +10,15 @@ const props = defineProps<{
   mediaBasePath: string;
   variant?: "gallery" | "default";
   enableImageModal?: boolean;
+  /** Pin prev/next to the media min-height center instead of 50% of each slide. */
+  pinNavButtons?: boolean;
 }>();
+
+const navButtonPositionClass = computed(() =>
+  props.pinNavButtons
+    ? "top-[7.5rem] sm:top-40 lg:top-[min(35vh,20rem)]"
+    : "top-1/2",
+);
 
 const { t } = useI18n();
 
@@ -78,7 +86,8 @@ const blurCarouselControl = (event: Event) => {
     <template v-if="hasMultiple">
       <button
         type="button"
-        class="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition-[background-color,transform] duration-150 ease-out hover:bg-black/70 active:scale-[0.96] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        class="absolute left-2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition-[background-color,transform] duration-150 ease-out hover:bg-black/70 active:scale-[0.96] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        :class="navButtonPositionClass"
         data-testid="gallery-carousel-prev"
         :aria-label="t('galleryPreviousMedia')"
         @click.stop="
@@ -90,7 +99,8 @@ const blurCarouselControl = (event: Event) => {
       </button>
       <button
         type="button"
-        class="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition-[background-color,transform] duration-150 ease-out hover:bg-black/70 active:scale-[0.96] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        class="absolute right-2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white transition-[background-color,transform] duration-150 ease-out hover:bg-black/70 active:scale-[0.96] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        :class="navButtonPositionClass"
         data-testid="gallery-carousel-next"
         :aria-label="t('galleryNextMedia')"
         @click.stop="

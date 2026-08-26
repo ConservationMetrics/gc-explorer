@@ -76,6 +76,22 @@ describe("GalleryDetailPanel", () => {
     expect(metadata.props("filePaths")).toEqual(["photo.jpg", "audio.mp3"]);
   });
 
+  it("stretches metadata to the media column instead of capping its height", () => {
+    const wrapper = mount(GalleryDetailPanel, {
+      props: {
+        allowedFileExtensions,
+        feature,
+        filePaths: ["photo.jpg"],
+        mediaBasePath: "/media",
+      },
+      global: globalConfig,
+    });
+
+    const metadata = wrapper.get('[data-testid="gallery-detail-metadata"]');
+    expect(metadata.classes().some((cls) => cls.includes("max-h"))).toBe(false);
+    expect(metadata.classes()).toContain("lg:min-h-[min(70vh,640px)]");
+  });
+
   it("emits close when the back-to-gallery control is clicked", async () => {
     const wrapper = mount(GalleryDetailPanel, {
       props: {
