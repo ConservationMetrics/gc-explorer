@@ -21,9 +21,7 @@ const toggleMobileMenu = () => {
     class="bg-gradient-to-r mb-2 from-violet-100 to-violet-50 w-5/6 place-self-center mt-2 rounded-xl p-3"
   >
     <!-- Desktop Layout - show above 1000px -->
-    <div
-      class="flex max-[1000px]:hidden items-end justify-between gap-4"
-    >
+    <div class="flex max-[1000px]:hidden items-end justify-between gap-4">
       <div class="relative">
         <HeaderBrand />
 
