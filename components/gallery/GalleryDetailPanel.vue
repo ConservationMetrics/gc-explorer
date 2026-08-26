@@ -73,10 +73,10 @@ onBeforeUnmount(() => {
       </header>
 
       <div
-        class="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:flex-row lg:items-stretch"
+        class="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-stretch"
       >
         <div
-          class="min-h-[240px] flex-1 min-w-0 overflow-hidden rounded-2xl bg-gray-50 sm:min-h-[320px] lg:min-h-[min(70vh,640px)]"
+          class="min-h-[240px] min-w-0 overflow-hidden rounded-2xl bg-gray-50 sm:min-h-[320px] lg:min-h-[min(70vh,640px)]"
           data-testid="gallery-detail-media"
         >
           <GalleryMediaCarousel
@@ -99,18 +99,20 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          class="w-full min-h-0 overflow-y-auto rounded-2xl bg-violet-50 p-4 sm:p-6 lg:w-[380px] lg:flex-shrink-0 lg:max-h-[min(70vh,640px)]"
+          class="w-full overflow-hidden rounded-2xl bg-violet-50 lg:relative lg:min-h-[min(70vh,640px)]"
           data-testid="gallery-detail-metadata"
         >
-          <GalleryDetailMetadata
-            :allowed-file-extensions="allowedFileExtensions"
-            :centroid="centroid"
-            :feature="feature"
-            :file-paths="filePaths"
-            :mapbox-access-token="mapboxAccessToken"
-            :mapbox-style="mapboxStyle"
-            :media-base-path="mediaBasePath"
-          />
+          <div class="p-4 sm:p-6 lg:absolute lg:inset-0 lg:overflow-y-auto">
+            <GalleryDetailMetadata
+              :allowed-file-extensions="allowedFileExtensions"
+              :centroid="centroid"
+              :feature="feature"
+              :file-paths="filePaths"
+              :mapbox-access-token="mapboxAccessToken"
+              :mapbox-style="mapboxStyle"
+              :media-base-path="mediaBasePath"
+            />
+          </div>
         </div>
       </div>
     </section>
