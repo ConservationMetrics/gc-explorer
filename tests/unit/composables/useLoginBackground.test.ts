@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+import { useLoginBackground } from "@/composables/useLoginBackground";
+
 const { useFetchMock } = vi.hoisted(() => ({
   useFetchMock: vi.fn(),
 }));
@@ -7,8 +9,6 @@ const { useFetchMock } = vi.hoisted(() => ({
 vi.mock("#imports", () => ({
   useFetch: (...args: unknown[]) => useFetchMock(...args),
 }));
-
-import { useLoginBackground } from "@/composables/useLoginBackground";
 
 describe("useLoginBackground", () => {
   beforeEach(() => {

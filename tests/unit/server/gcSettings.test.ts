@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { getBackgroundImage } from "@/server/utils/gcSettings";
+
 const { mockLimit } = vi.hoisted(() => ({
   mockLimit: vi.fn(),
 }));
@@ -27,8 +29,6 @@ vi.mock("/server/database/dbConnection", () => ({
     }),
   },
 }));
-
-import { getBackgroundImage } from "@/server/utils/gcSettings";
 
 describe("getBackgroundImage", () => {
   beforeEach(() => {
