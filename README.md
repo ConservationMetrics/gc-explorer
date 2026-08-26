@@ -81,7 +81,11 @@ docker run --env-file=.env -it -p 8080:8080 guardianconnector-explorer:latest
 
 ## Testing
 
-GuardianConnector Explorer uses two testing frameworks:
+GuardianConnector Explorer has three classes of tests:
+
+1. **Unit and component tests (Vitest).** Isolated logic with mocked dependencies. No Nuxt server and no database. `pnpm test:unit`.
+2. **Backend API tests (Playwright `request`).** HTTP calls against the running app and seeded databases. Auth0 setup still uses a browser once (`auth.setup.ts`); the tests themselves reuse `admin.json` on the browserless `request` fixture and do not open a page. Same Docker stack as E2E (`NUXT_TEST=true`). Example: `tests/e2e/12-view-dataset-api.spec.ts`.
+3. **End-to-end tests (Playwright browser).** Full UI through backend and database.
 
 ### 1. Unit and Component Tests (Vitest)
 
@@ -94,7 +98,17 @@ $ pnpm test:unit
 
 These tests use mocked dependencies and verify component logic in isolation.
 
-### 2. End-to-End Tests (Playwright)
+### 2. Backend API Tests (Playwright `request`)
+
+These tests send HTTP to `/api/...` with Playwright's `request` fixture and the
+admin storage state from `auth.setup.ts`. They do not call `browser.newContext()`
+or `newPage()`. Run them with the same Docker command as E2E:
+
+```bash
+$ NUXT_TEST=true pnpm test:e2e tests/e2e/12-view-dataset-api.spec.ts
+```
+
+### 3. End-to-End Tests (Playwright)
 
 Run E2E tests that verify the full application, from a real browser down to the
 backend API and database, and back up.
