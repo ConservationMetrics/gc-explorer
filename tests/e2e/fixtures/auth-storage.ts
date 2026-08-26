@@ -1,4 +1,8 @@
-import { test as baseTest, type Page } from "@playwright/test";
+import {
+  test as baseTest,
+  type APIRequestContext,
+  type Page,
+} from "@playwright/test";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
@@ -88,6 +92,7 @@ export const test = baseTest.extend<{
   authenticatedPageAsGuest: Page;
   authenticatedPageAsMember: Page;
   authenticatedPageAsAdmin: Page;
+  authenticatedRequestAsAdmin: APIRequestContext;
 }>({
   /**
    * Fixture that provides a page authenticated as SignedIn user.
@@ -172,6 +177,25 @@ export const test = baseTest.extend<{
     const page = await context.newPage();
     await use(page);
     await context.close();
+  },
+
+  /**
+   * Browserless APIRequestContext authenticated as Admin.
+   *
+   * Loads cookies from `playwright/.auth/admin.json` (written by `auth.setup.ts`)
+   * without calling `browser.newContext()` or `context.newPage()`.
+   *
+   * @see https://playwright.dev/docs/api-testing#reusing-authentication-state
+   * @see https://playwright.dev/docs/api/class-fixtures#fixtures-request
+   */
+  authenticatedRequestAsAdmin: async ({ playwright, baseURL }, use) => {
+    const authFile = getAuthFile("admin");
+    const requestContext = await playwright.request.newContext({
+      storageState: authFile,
+      baseURL,
+    });
+    await use(requestContext);
+    await requestContext.dispose();
   },
 });
 

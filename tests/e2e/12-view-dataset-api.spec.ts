@@ -1,9 +1,9 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 
 test("GET /api/seed_survey_data/gallery returns the seeded gallery dataset contract", async ({
-  authenticatedPageAsAdmin: page,
+  authenticatedRequestAsAdmin: request,
 }) => {
-  const response = await page.request.get("/api/seed_survey_data/gallery");
+  const response = await request.get("/api/seed_survey_data/gallery");
   expect(response.status()).toBe(200);
 
   const body = await response.json();
@@ -38,9 +38,9 @@ test("GET /api/seed_survey_data/gallery returns the seeded gallery dataset contr
 });
 
 test("GET /api/bcmform_responses/map returns the seeded map dataset contract", async ({
-  authenticatedPageAsAdmin: page,
+  authenticatedRequestAsAdmin: request,
 }) => {
-  const response = await page.request.get("/api/bcmform_responses/map");
+  const response = await request.get("/api/bcmform_responses/map");
   expect(response.status()).toBe(200);
 
   const body = await response.json();
