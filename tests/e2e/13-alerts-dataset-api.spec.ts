@@ -1,9 +1,9 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 
 test("GET /api/fake_alerts/alerts returns the seeded alerts dataset contract", async ({
-  authenticatedPageAsAdmin: page,
+  authenticatedRequestAsAdmin: request,
 }) => {
-  const response = await page.request.get("/api/fake_alerts/alerts");
+  const response = await request.get("/api/fake_alerts/alerts");
   expect(response.status()).toBe(200);
 
   const body = await response.json();
@@ -43,9 +43,9 @@ test("GET /api/fake_alerts/alerts returns the seeded alerts dataset contract", a
 });
 
 test("GET /api/seed_survey_data/:recordId returns the seeded warehouse row", async ({
-  authenticatedPageAsAdmin: page,
+  authenticatedRequestAsAdmin: request,
 }) => {
-  const response = await page.request.get(
+  const response = await request.get(
     "/api/seed_survey_data/254137498?view_type=gallery",
   );
   expect(response.status()).toBe(200);
@@ -57,9 +57,9 @@ test("GET /api/seed_survey_data/:recordId returns the seeded warehouse row", asy
 });
 
 test("POST /api/seed_survey_data/records returns matching seeded rows", async ({
-  authenticatedPageAsAdmin: page,
+  authenticatedRequestAsAdmin: request,
 }) => {
-  const response = await page.request.post(
+  const response = await request.post(
     "/api/seed_survey_data/records?view_type=gallery",
     {
       data: { ids: ["254137498", "missing-id"] },
