@@ -9,7 +9,11 @@ import type {
   Polygon,
   Position,
 } from "geojson";
-import type { StyleSpecification } from "mapbox-gl";
+import type {
+  ExpressionSpecification,
+  Map as MapboxMap,
+  StyleSpecification,
+} from "mapbox-gl";
 import type { viewTypes } from "../nuxt.config";
 
 export type ViewType = (typeof viewTypes)[number];
@@ -278,6 +282,17 @@ export type AlertsMetadata = {
 export type AlertsData = {
   mostRecentAlerts: FeatureCollection;
   previousAlerts: FeatureCollection;
+};
+
+export type HaloEntry = {
+  map: MapboxMap;
+  id: string;
+};
+
+export type PulsingHaloLayerOptions = {
+  unclusteredRadius: number;
+  clusterRadius: ExpressionSpecification;
+  maxzoom?: number;
 };
 
 export type AlertsPerMonth = Record<string, number>;

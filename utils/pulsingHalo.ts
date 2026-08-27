@@ -1,4 +1,5 @@
 import type { ExpressionSpecification, Map as MapboxMap } from "mapbox-gl";
+import type { HaloEntry, PulsingHaloLayerOptions } from "@/types";
 
 const PULSE_DURATION_MS = 2000;
 const HALO_COLOR = "#FF0000";
@@ -32,11 +33,6 @@ export const CENTROID_CLUSTER_HALO_RADIUS: ExpressionSpecification = [
   50,
   35,
 ];
-
-type HaloEntry = {
-  map: MapboxMap;
-  id: string;
-};
 
 const haloEntries: HaloEntry[] = [];
 let animationFrame = 0;
@@ -130,11 +126,7 @@ const addHaloCircleLayer = (
 export const addPulsingHaloLayers = (
   map: MapboxMap,
   sourceId: string,
-  options: {
-    unclusteredRadius: number;
-    clusterRadius: ExpressionSpecification;
-    maxzoom?: number;
-  },
+  options: PulsingHaloLayerOptions,
 ) => {
   addHaloCircleLayer(
     map,
