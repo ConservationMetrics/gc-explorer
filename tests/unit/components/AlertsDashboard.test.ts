@@ -118,10 +118,16 @@ vi.mock("#imports", async () => {
   };
 });
 
+const canAccessIncidents = ref(true);
+vi.mock("@/composables/useCanAccessIncidents", () => ({
+  useCanAccessIncidents: () => canAccessIncidents,
+}));
+
 describe("AlertsDashboard component", () => {
   beforeEach(() => {
     mapboxMock.reset();
     document.body.innerHTML = '<div id="map"></div>';
+    canAccessIncidents.value = true;
     // Mock $fetch to return empty incidents by default
     hoisted.mockFetch.mockResolvedValue({
       incidents: [],
@@ -310,6 +316,31 @@ describe("AlertsDashboard component", () => {
 
       const incidentsControls = wrapper.find(".incidents-controls");
       expect(incidentsControls.exists()).toBe(true);
+    });
+
+    it("hides incidents controls when the user cannot access incidents", async () => {
+      canAccessIncidents.value = false;
+
+      const wrapper = mount(AlertsDashboard, {
+        props: baseProps,
+        global: {
+          plugins: [i18n],
+          stubs: {
+            ViewSidebar: true,
+            MapLegend: true,
+            BasemapSelector: true,
+            IncidentsSidebar: true,
+          },
+        },
+      });
+
+      mapboxMock.fireLoad();
+      await flushPromises();
+
+      expect(wrapper.find(".incidents-controls").exists()).toBe(false);
+      expect(
+        wrapper.find('[data-testid="incidents-view-button"]').exists(),
+      ).toBe(false);
     });
 
     it("toggles incidents sidebar when view incidents button is clicked", async () => {

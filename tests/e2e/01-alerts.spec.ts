@@ -891,6 +891,32 @@ test("alerts dashboard - restores alerts intro after exiting incident multiselec
   await expect(intro).toBeVisible({ timeout: 20000 });
 });
 
+test("alerts dashboard - hides incidents controls for signed-in users", async ({
+  authenticatedPageAsSignedIn: page,
+}) => {
+  await page.goto("/alerts/fake_alerts");
+  await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
+  await expect(page.getByTestId("incidents-view-button")).toHaveCount(0);
+});
+
+test("alerts dashboard - hides incidents controls for guest users", async ({
+  authenticatedPageAsGuest: page,
+}) => {
+  await page.goto("/alerts/fake_alerts");
+  await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
+  await expect(page.getByTestId("incidents-view-button")).toHaveCount(0);
+});
+
+test("alerts dashboard - shows incidents controls for member users", async ({
+  authenticatedPageAsMember: page,
+}) => {
+  await page.goto("/alerts/fake_alerts");
+  await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
+  await expect(page.getByTestId("incidents-view-button")).toBeVisible({
+    timeout: 20000,
+  });
+});
+
 test("alerts dashboard - admin gear opens config in a new tab", async ({
   authenticatedPageAsAdmin: page,
 }) => {
