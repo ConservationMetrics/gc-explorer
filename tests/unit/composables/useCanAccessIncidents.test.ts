@@ -63,6 +63,22 @@ describe("useCanAccessIncidents", () => {
     expect(useCanAccessIncidents().value).toBe(false);
   });
 
+  it("returns false when the user is logged in without a user record", () => {
+    useUserSessionMock.mockReturnValue({
+      loggedIn: ref(true),
+      user: ref(null),
+    });
+    expect(useCanAccessIncidents().value).toBe(false);
+  });
+
+  it("returns false when an authenticated user has no role", () => {
+    useUserSessionMock.mockReturnValue({
+      loggedIn: ref(true),
+      user: ref({}),
+    });
+    expect(useCanAccessIncidents().value).toBe(false);
+  });
+
   it("returns false in CI when the user is logged out", () => {
     vi.stubEnv("CI", "true");
     expect(useCanAccessIncidents().value).toBe(false);
