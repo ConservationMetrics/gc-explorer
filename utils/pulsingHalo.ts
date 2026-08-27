@@ -1,7 +1,4 @@
-import type {
-  ExpressionSpecification,
-  Map as MapboxMap,
-} from "mapbox-gl";
+import type { ExpressionSpecification, Map as MapboxMap } from "mapbox-gl";
 
 const PULSE_DURATION_MS = 2000;
 const HALO_COLOR = "#FF0000";
@@ -62,7 +59,11 @@ const tick = () => {
       continue;
     }
     entry.map.setPaintProperty(entry.id, "circle-stroke-width", strokeWidth);
-    entry.map.setPaintProperty(entry.id, "circle-stroke-opacity", strokeOpacity);
+    entry.map.setPaintProperty(
+      entry.id,
+      "circle-stroke-opacity",
+      strokeOpacity,
+    );
   }
 
   animationFrame = haloEntries.length ? requestAnimationFrame(tick) : 0;
@@ -116,11 +117,7 @@ const addHaloCircleLayer = (
     });
     map.setPaintProperty(id, "circle-radius-transition", NO_TRANSITION);
     map.setPaintProperty(id, "circle-stroke-width-transition", NO_TRANSITION);
-    map.setPaintProperty(
-      id,
-      "circle-stroke-opacity-transition",
-      NO_TRANSITION,
-    );
+    map.setPaintProperty(id, "circle-stroke-opacity-transition", NO_TRANSITION);
   }
   registerHalo(map, id);
 };

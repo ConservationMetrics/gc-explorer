@@ -1715,7 +1715,11 @@ const resetToInitialState = () => {
             const haloLayerId = `${layerId}-halo`;
             const clusterHaloLayerId = `${layerId}-clusters-halo`;
             if (map.value.getLayer(haloLayerId)) {
-              map.value.setLayoutProperty(haloLayerId, "visibility", visibility);
+              map.value.setLayoutProperty(
+                haloLayerId,
+                "visibility",
+                visibility,
+              );
             }
             if (map.value.getLayer(clusterHaloLayerId)) {
               map.value.setLayoutProperty(

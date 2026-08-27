@@ -26,10 +26,14 @@ describe("addPulsingHaloLayers", () => {
       setPaintProperty: vi.fn(),
     };
 
-    addPulsingHaloLayers(map as unknown as MapboxMap, "most-recent-alerts-point", {
-      unclusteredRadius: POINT_HALO_RADIUS,
-      clusterRadius: POINT_CLUSTER_HALO_RADIUS,
-    });
+    addPulsingHaloLayers(
+      map as unknown as MapboxMap,
+      "most-recent-alerts-point",
+      {
+        unclusteredRadius: POINT_HALO_RADIUS,
+        clusterRadius: POINT_CLUSTER_HALO_RADIUS,
+      },
+    );
 
     expect(map.addLayer).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -61,10 +65,14 @@ describe("addPulsingHaloLayers", () => {
       id.includes("halo") ? { id } : undefined,
     );
 
-    addPulsingHaloLayers(map as unknown as MapboxMap, "most-recent-alerts-point", {
-      unclusteredRadius: POINT_HALO_RADIUS,
-      clusterRadius: POINT_CLUSTER_HALO_RADIUS,
-    });
+    addPulsingHaloLayers(
+      map as unknown as MapboxMap,
+      "most-recent-alerts-point",
+      {
+        unclusteredRadius: POINT_HALO_RADIUS,
+        clusterRadius: POINT_CLUSTER_HALO_RADIUS,
+      },
+    );
 
     expect(map.addLayer).toHaveBeenCalledTimes(2);
   });
