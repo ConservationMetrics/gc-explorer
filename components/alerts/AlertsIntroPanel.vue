@@ -18,11 +18,18 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(["dateRangeChanged"]);
+
+const showDownloads = computed(
+  () => Boolean(props.showSlider) && Boolean(props.dataForAlertsIntroPanel),
+);
 </script>
 
 <template>
   <div class="space-y-4" data-testid="alerts-intro-panel">
-    <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+    <div
+      class="rounded-lg border bg-card text-card-foreground shadow-sm"
+      data-testid="alerts-intro-header"
+    >
       <div class="p-6 space-y-4">
         <img
           v-if="props.logoUrl"
@@ -60,7 +67,27 @@ const emit = defineEmits(["dateRangeChanged"]);
           </p>
           <p class="italic">{{ $t("clickOnAlertsForMoreInfo") }}.</p>
         </div>
+        <div
+          v-if="props.showSlider"
+          data-testid="alerts-date-range"
+          class="pt-2"
+        >
+          <AlertsSlider
+            :date-options="props.dateOptions"
+            @date-range-changed="emit('dateRangeChanged', $event)"
+          />
+        </div>
+      </div>
+    </div>
 
+    <div
+      class="rounded-lg border bg-card text-card-foreground shadow-sm"
+      data-testid="alerts-statistics"
+    >
+      <div class="p-6 space-y-4">
+        <h3 class="text-2xl font-semibold tracking-tight">
+          {{ $t("statistics") }}
+        </h3>
         <div class="space-y-2 text-sm">
           <p v-if="props.alertsStatistics.typeOfAlerts?.length">
             <span class="font-bold">{{ $t("typeOfAlerts") }}:&nbsp;</span>
@@ -97,44 +124,62 @@ const emit = defineEmits(["dateRangeChanged"]);
             {{ $n(Number(props.alertsStatistics.hectaresTotal)) }}
           </p>
         </div>
-
-        <div
-          v-if="props.showSlider && props.dataForAlertsIntroPanel"
-          class="mt-4 flex justify-center [&>div]:!mt-0"
-        >
-          <DownloadStatistics
-            :min-date="props.statsExportMinDate"
-            :max-date="props.statsExportMaxDate"
-            filename-prefix="statistics"
-          />
-        </div>
-      </div>
-    </div>
-
-    <div
-      v-if="props.showSlider"
-      class="rounded-lg border bg-card text-card-foreground shadow-sm"
-    >
-      <div class="p-6">
-        <AlertsSlider
-          :date-options="props.dateOptions"
-          @date-range-changed="emit('dateRangeChanged', $event)"
-        />
-        <div v-if="props.dataForAlertsIntroPanel" class="mt-4">
-          <DownloadMapData :data-for-download="props.dataForAlertsIntroPanel" />
-        </div>
       </div>
     </div>
 
     <div
       v-if="props.alertsStatistics && props.alertsStatistics.alertsTotal > 0"
       class="rounded-lg border bg-card text-card-foreground shadow-sm"
+      data-testid="alerts-chart"
     >
       <div class="p-6">
         <AlertsChart
           :alerts-statistics="props.alertsStatistics"
           :calculate-hectares="props.calculateHectares"
         />
+      </div>
+    </div>
+
+    <div
+      v-if="showDownloads"
+      class="rounded-lg border bg-card text-card-foreground shadow-sm"
+      data-testid="alerts-download-data"
+    >
+      <div class="p-6 space-y-5">
+        <h3 class="text-2xl font-semibold tracking-tight">
+          {{ $t("downloadData") }}
+        </h3>
+
+        <div class="space-y-2">
+          <h4 class="text-sm font-semibold">
+            {{ $t("downloadAlertLocations") }}
+          </h4>
+          <p class="text-sm text-muted-foreground">
+            {{ $t("downloadAlertLocationsDescription") }}
+          </p>
+          <div class="flex justify-center [&>div]:!mt-0">
+            <DownloadMapData
+              :data-for-download="props.dataForAlertsIntroPanel"
+              variant="outline"
+            />
+          </div>
+        </div>
+
+        <div class="border-t pt-5 space-y-2">
+          <h4 class="text-sm font-semibold">
+            {{ $t("downloadMonthlySummary") }}
+          </h4>
+          <p class="text-sm text-muted-foreground">
+            {{ $t("downloadMonthlySummaryDescription") }}
+          </p>
+          <div class="flex justify-center [&>div]:!mt-0">
+            <DownloadStatistics
+              :min-date="props.statsExportMinDate"
+              :max-date="props.statsExportMaxDate"
+              filename-prefix="statistics"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </div>

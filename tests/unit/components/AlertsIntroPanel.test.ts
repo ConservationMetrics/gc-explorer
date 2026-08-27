@@ -92,4 +92,80 @@ describe("AlertsIntroPanel", () => {
       false,
     );
   });
+
+  it("places the date slider in the intro card, then statistics, chart, and download", () => {
+    const wrapper = mount(AlertsIntroPanel, {
+      props: {
+        alertsStatistics: { ...alertsStatistics, alertsTotal: 1 },
+        tableName: "malaita_alerts",
+        showSlider: true,
+        dateOptions: ["2024-01", "2024-02"],
+        dataForAlertsIntroPanel: {
+          mostRecentAlerts: { type: "FeatureCollection", features: [] },
+          previousAlerts: { type: "FeatureCollection", features: [] },
+        },
+      },
+      global: {
+        mocks: {
+          $t: (key: string) => key,
+          $n: (n: number) => String(n),
+        },
+        stubs: {
+          AdminConfigGear: true,
+          AlertsSlider: true,
+          AlertsChart: true,
+        },
+      },
+    });
+
+    const header = wrapper.get('[data-testid="alerts-intro-header"]');
+    expect(header.find('[data-testid="alerts-date-range"]').exists()).toBe(
+      true,
+    );
+
+    const source = wrapper.get('[data-testid="alerts-intro-panel"]').element;
+    const testIds = [...source.querySelectorAll("[data-testid]")]
+      .map((el) => el.getAttribute("data-testid"))
+      .filter((id) =>
+        [
+          "alerts-intro-header",
+          "alerts-statistics",
+          "alerts-chart",
+          "alerts-download-data",
+        ].includes(id ?? ""),
+      );
+    expect(testIds).toEqual([
+      "alerts-intro-header",
+      "alerts-statistics",
+      "alerts-chart",
+      "alerts-download-data",
+    ]);
+  });
+
+  it("hides download data until a date range slider is available", () => {
+    const wrapper = mount(AlertsIntroPanel, {
+      props: {
+        alertsStatistics,
+        tableName: "malaita_alerts",
+      },
+      global: {
+        mocks: {
+          $t: (key: string) => key,
+          $n: (n: number) => String(n),
+        },
+        stubs: {
+          AdminConfigGear: true,
+          AlertsSlider: true,
+          AlertsChart: true,
+        },
+      },
+    });
+
+    expect(wrapper.find('[data-testid="alerts-download-data"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.find('[data-testid="alerts-statistics"]').exists()).toBe(
+      true,
+    );
+  });
 });
