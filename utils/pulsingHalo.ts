@@ -54,12 +54,16 @@ const tick = () => {
       haloEntries.splice(i, 1);
       continue;
     }
-    entry.map.setPaintProperty(entry.id, "circle-stroke-width", strokeWidth);
-    entry.map.setPaintProperty(
-      entry.id,
-      "circle-stroke-opacity",
-      strokeOpacity,
-    );
+    try {
+      entry.map.setPaintProperty(entry.id, "circle-stroke-width", strokeWidth);
+      entry.map.setPaintProperty(
+        entry.id,
+        "circle-stroke-opacity",
+        strokeOpacity,
+      );
+    } catch {
+      haloEntries.splice(i, 1);
+    }
   }
 
   animationFrame = haloEntries.length ? requestAnimationFrame(tick) : 0;
@@ -75,12 +79,21 @@ const registerHalo = (map: MapboxMap, id: string) => {
   if (!haloEntries.some((entry) => entry.map === map && entry.id === id)) {
     haloEntries.push({ map, id });
   }
+};
+
+/** Starts the pulse after the map can go idle (legend / e2e map-ready). */
+export const startPulsingHalo = () => {
   ensureAnimation();
 };
 
-export const stopPulsingHalo = () => {
+/** Stops paint updates so Mapbox can fire `idle`, without dropping layer ids. */
+export const pausePulsingHalo = () => {
   if (animationFrame) cancelAnimationFrame(animationFrame);
   animationFrame = 0;
+};
+
+export const stopPulsingHalo = () => {
+  pausePulsingHalo();
   haloEntries.length = 0;
 };
 

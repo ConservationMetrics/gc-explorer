@@ -5,6 +5,7 @@ import {
   POINT_HALO_RADIUS,
   POINT_CLUSTER_HALO_RADIUS,
   addPulsingHaloLayers,
+  startPulsingHalo,
   stopPulsingHalo,
 } from "@/utils/pulsingHalo";
 
@@ -75,6 +76,28 @@ describe("addPulsingHaloLayers", () => {
     );
 
     expect(map.addLayer).toHaveBeenCalledTimes(2);
+    expect(requestAnimationFrame).not.toHaveBeenCalled();
+  });
+
+  it("does not start the pulse until startPulsingHalo is called", () => {
+    const map = {
+      getLayer: vi.fn(() => ({})),
+      addLayer: vi.fn(),
+      setPaintProperty: vi.fn(),
+    };
+
+    addPulsingHaloLayers(
+      map as unknown as MapboxMap,
+      "most-recent-alerts-point",
+      {
+        unclusteredRadius: POINT_HALO_RADIUS,
+        clusterRadius: POINT_CLUSTER_HALO_RADIUS,
+      },
+    );
+    expect(requestAnimationFrame).not.toHaveBeenCalled();
+
+    startPulsingHalo();
+    expect(requestAnimationFrame).toHaveBeenCalledTimes(1);
   });
 
   it("forwards maxzoom onto halo layers", () => {

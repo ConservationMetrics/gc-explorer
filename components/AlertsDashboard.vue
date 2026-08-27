@@ -22,8 +22,10 @@ import {
   addPulsingHaloLayers,
   CENTROID_CLUSTER_HALO_RADIUS,
   CENTROID_HALO_RADIUS,
+  pausePulsingHalo,
   POINT_CLUSTER_HALO_RADIUS,
   POINT_HALO_RADIUS,
+  startPulsingHalo,
   stopPulsingHalo,
 } from "@/utils/pulsingHalo";
 
@@ -1388,6 +1390,7 @@ const handleBufferMouseEvent = (e: MapMouseEvent) => {
 /** Handles the change of the basemap style */
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
 const handleBasemapChange = (newBasemap: Basemap) => {
+  pausePulsingHalo();
   changeMapStyle(map.value, newBasemap, props.planetApiKey);
 
   currentBasemap.value = newBasemap;
@@ -1457,6 +1460,7 @@ const prepareMapLegendContent = () => {
     mapLegendContent.value = legendItems;
     // E2E tests wait for this after the idle-gated legend content is ready.
     mapReady.value = true;
+    startPulsingHalo();
   });
 };
 
@@ -1549,6 +1553,7 @@ const handleSidebarClose = () => {
  * Repositions the map to its initial view
  */
 const resetToInitialState = () => {
+  pausePulsingHalo();
   resetSelectedFeature();
   localAlertsData.value = props.alertsData;
   showSidebar.value = true;
@@ -1771,6 +1776,7 @@ const resetToInitialState = () => {
     });
 
     emit("reset-legend-visibility");
+    startPulsingHalo();
   });
 };
 
