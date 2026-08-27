@@ -198,6 +198,19 @@ export type ViewConfigRow = {
   viewConfig: ViewConfig;
 };
 
+export type ApiTestViewInput = {
+  secondaryDataset?: string | null;
+  sourceTable: string;
+  viewConfig: ViewConfig;
+  viewType: ViewType;
+};
+
+export type ApiTestView = {
+  primaryDataset: string;
+  secondaryDataset: string | null;
+  viewType: ViewType;
+};
+
 export type ViewTables = {
   primaryTable: string;
   secondaryTable: string | null;
