@@ -11,7 +11,6 @@ import { useCanManageConfig } from "@/composables/useCanManageConfig";
 import { Plus } from "lucide-vue-next";
 
 const viewRows = ref<ViewConfigRow[]>([]);
-const availableTables = ref<string[]>([]);
 
 const { user } = useUserSession();
 const shouldShowConfigLink = useCanManageConfig();
@@ -20,11 +19,10 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
-const { data, error, refresh } = await useFetch("/api/config");
+const { data, error, refresh } = await useFetch<ViewConfigRow[]>("/api/views");
 
 if (data.value && !error.value) {
-  viewRows.value = data.value.views ?? [];
-  availableTables.value = data.value.availableTables ?? [];
+  viewRows.value = data.value;
 } else {
   console.error("Error fetching data:", error.value);
 }
