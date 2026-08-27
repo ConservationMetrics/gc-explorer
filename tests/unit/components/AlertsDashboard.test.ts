@@ -207,6 +207,37 @@ describe("AlertsDashboard component", () => {
     );
   });
 
+  it("adds a pulsing halo on most recent alert points and clusters", async () => {
+    const props = JSON.parse(JSON.stringify(baseProps));
+    props.alertsData.mostRecentAlerts.features.push({
+      id: "alert1",
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [0, 0] },
+      properties: { alertID: "alert1", YYYYMM: "202401" },
+    });
+
+    mountComponent(props);
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const layerIds = mapboxMock.layers.map((layer) => layer.id);
+    expect(layerIds).toContain("most-recent-alerts-point-halo");
+    expect(layerIds).toContain("most-recent-alerts-point-clusters-halo");
+    const clusterHalo = mapboxMock.layers.find(
+      (layer) => layer.id === "most-recent-alerts-point-clusters-halo",
+    );
+    expect(clusterHalo?.type).toBe("circle");
+    expect(clusterHalo?.filter).toEqual(["has", "point_count"]);
+
+    const callsBefore = mapboxMock.setFeatureState.mock.calls.length;
+    mapboxMock.fireClick("most-recent-alerts-point-halo", {
+      features: props.alertsData.mostRecentAlerts.features,
+      point: { x: 10, y: 10 },
+    });
+    await flushPromises();
+    expect(mapboxMock.setFeatureState.mock.calls.length).toBe(callsBefore);
+  });
+
   it("adds 3D terrain when mapbox3d is true", async () => {
     const propsWithTerrain = { ...baseProps, mapbox3d: true };
 
