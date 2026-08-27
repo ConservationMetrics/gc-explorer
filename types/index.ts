@@ -203,6 +203,23 @@ export type PublicViewRow = Pick<
   "primaryDataset" | "viewId" | "viewType"
 >;
 
+export type CreateViewBody = {
+  primaryDataset: string;
+  secondaryDataset?: string | null;
+  viewConfig?: ViewConfig;
+  viewType: ViewType;
+};
+
+export type UpdateViewBody = {
+  secondaryDataset?: string | null;
+  viewConfig: ViewConfig;
+};
+
+export type WarehouseTablesResponse = {
+  geospatialTables: string[];
+  tables: string[];
+};
+
 export type ApiTestViewInput = {
   secondaryDataset?: string | null;
   sourceTable: string;
