@@ -198,6 +198,11 @@ export type ViewConfigRow = {
   viewConfig: ViewConfig;
 };
 
+export type PublicViewRow = Pick<
+  ViewConfigRow,
+  "primaryDataset" | "viewId" | "viewType"
+>;
+
 export type ApiTestViewInput = {
   secondaryDataset?: string | null;
   sourceTable: string;

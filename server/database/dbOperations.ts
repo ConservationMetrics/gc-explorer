@@ -5,6 +5,7 @@ import {
   type ColumnEntry,
   type DataEntry,
   type FetchDataOptions,
+  type PublicViewRow,
   type RouteLevelPermission,
   type Views,
   type ViewConfig,
@@ -753,38 +754,43 @@ export const fetchViewConfigForDatasetRead = async (
 };
 
 /**
- * Keeps public_views in sync with view config: add table if permission is anyone, remove otherwise.
- * @param tableName - The table name to sync.
- * @param permission - The ROUTE_LEVEL_PERMISSION for that table.
+ * Keeps public_views in sync with one view's permission.
+ *
+ * @param viewId - View row to synchronize.
+ * @param permission - Current route-level permission.
+ * @returns {Promise<void>}
  */
 export const syncPublicViews = async (
-  tableName: string,
+  viewId: number,
   permission: RouteLevelPermission | undefined,
 ): Promise<void> => {
-  const normalizedTable = normalizeTableName(tableName);
   if (permission === "anyone") {
-    await configDb
-      .insert(publicViews)
-      .values({ tableName: normalizedTable })
-      .onConflictDoNothing();
+    await configDb.insert(publicViews).values({ viewId }).onConflictDoNothing();
   } else {
-    // Ensure table is not in public_views. If it was never there or already removed,
-    // delete affects 0 rows and does not throw; save flow continues normally.
-    await configDb
-      .delete(publicViews)
-      .where(eq(publicViews.tableName, normalizedTable));
+    await configDb.delete(publicViews).where(eq(publicViews.viewId, viewId));
   }
 };
 
 /**
- * Returns the list of table names that are public (ROUTE_LEVEL_PERMISSION = anyone).
- * Used by the open public_views API for middleware auth bypass.
+ * Returns stable identities for views that allow public access.
+ *
+ * @returns {Promise<PublicViewRow[]>} Public view descriptors.
  */
-export const fetchPublicViewTableNames = async (): Promise<string[]> => {
+export const fetchPublicViews = async (): Promise<PublicViewRow[]> => {
   const rows = await configDb
-    .select({ tableName: publicViews.tableName })
-    .from(publicViews);
-  return rows.map((row) => normalizeTableName(row.tableName));
+    .select({
+      primaryDataset: viewConfig.primaryDataset,
+      viewId: viewConfig.viewId,
+      viewType: viewConfig.viewType,
+    })
+    .from(publicViews)
+    .innerJoin(viewConfig, eq(publicViews.viewId, viewConfig.viewId));
+
+  return rows.map((row) => ({
+    primaryDataset: normalizeTableName(row.primaryDataset),
+    viewId: row.viewId,
+    viewType: row.viewType as ViewType,
+  }));
 };
 
 /**
@@ -882,7 +888,7 @@ export const updateConfig = async (
       normalizedSecondary,
     );
 
-    await configDb
+    const updatedRows = await configDb
       .update(viewConfig)
       .set(viewColumns)
       .where(
@@ -890,9 +896,16 @@ export const updateConfig = async (
           eq(viewConfig.primaryDataset, normalizedTable),
           eq(viewConfig.viewType, viewType),
         ),
-      );
+      )
+      .returning({ viewId: viewConfig.viewId });
 
-    await syncPublicViews(normalizedTable, typedConfig.ROUTE_LEVEL_PERMISSION);
+    if (updatedRows.length === 0) {
+      throw createMissingViewConfigError(normalizedTable);
+    }
+    await syncPublicViews(
+      updatedRows[0].viewId,
+      typedConfig.ROUTE_LEVEL_PERMISSION,
+    );
   } catch (error) {
     console.error("Error updating config:", error);
     throw error;
@@ -926,14 +939,21 @@ export const addNewTableToConfig = async (
       viewType,
       normalizedSecondary,
     );
-    await configDb.insert(viewConfig).values({
-      ...buildViewConfigColumns(
-        normalizedTable,
-        config ?? {},
-        viewType,
-        normalizedSecondary,
-      ),
-    });
+    const insertedRows = await configDb
+      .insert(viewConfig)
+      .values({
+        ...buildViewConfigColumns(
+          normalizedTable,
+          config ?? {},
+          viewType,
+          normalizedSecondary,
+        ),
+      })
+      .returning({ viewId: viewConfig.viewId });
+    await syncPublicViews(
+      insertedRows[0].viewId,
+      config?.ROUTE_LEVEL_PERMISSION,
+    );
   } catch (error) {
     // (view_type, primary_dataset) is unique, so re-adding a view type the dataset
     // already has trips a 23505. Translate it into a clear 409 instead of leaking a
@@ -948,7 +968,6 @@ export const addNewTableToConfig = async (
 
 /**
  * Deletes the view config row for the given primary dataset and view type.
- * If that was the dataset's last remaining view, also removes it from public_views.
  *
  * @param {string} tableName - Primary dataset / table name.
  * @param {ViewType} viewType - View type whose config row to delete.
@@ -968,17 +987,6 @@ export const removeTableFromConfig = async (
           eq(viewConfig.viewType, viewType),
         ),
       );
-
-    // Only drop the dataset's public_views entry once no views remain for it.
-    const remainingViews = await configDb
-      .select({ viewId: viewConfig.viewId })
-      .from(viewConfig)
-      .where(eq(viewConfig.primaryDataset, normalizedTable));
-    if (remainingViews.length === 0) {
-      await configDb
-        .delete(publicViews)
-        .where(eq(publicViews.tableName, normalizedTable));
-    }
   } catch (error) {
     console.error("Error removing table from config:", error);
     throw error;
