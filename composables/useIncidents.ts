@@ -9,6 +9,10 @@ import type {
   CollectionEntryInput,
   Incident,
 } from "@/types";
+import {
+  getIncidentEntriesBbox,
+  INCIDENT_FIT_BOUNDS_OPTIONS,
+} from "@/utils/incidentHelpers";
 /**
  * Small in-memory cache to avoid refetching incident details repeatedly.
  * (Also used for hover-prefetch.)
@@ -408,6 +412,16 @@ export const useIncidents = (
   };
 
   /**
+   * Fits the map to the combined extent of incident entry geometries, with padding.
+   */
+  const fitMapToIncidentEntries = (entries: CollectionEntry[]) => {
+    if (!map.value) return;
+    const bounds = getIncidentEntriesBbox(entries);
+    if (!bounds) return;
+    map.value.fitBounds(bounds, { ...INCIDENT_FIT_BOUNDS_OPTIONS });
+  };
+
+  /**
    * Opens a saved incident in the sidebar and highlights its entries on the map
    */
   const openIncidentDetails = async (incidentId: string) => {
@@ -430,6 +444,7 @@ export const useIncidents = (
 
       clearSourceHighlighting();
       highlightIncidentEntries(response.entries || []);
+      fitMapToIncidentEntries(response.entries || []);
 
       // Add incidentId to URL; remove alert/secondary params so address bar matches "copy link to incident"
       const query = { ...route.query };

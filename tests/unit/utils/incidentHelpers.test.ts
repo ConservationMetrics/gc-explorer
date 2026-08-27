@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildIncidentMetadataCsv,
   buildIncidentEntriesFeatureCollection,
+  getIncidentEntriesBbox,
 } from "@/utils/incidentHelpers";
 import type { AnnotatedCollection, CollectionEntry, Incident } from "@/types";
 
@@ -85,5 +86,58 @@ describe("buildIncidentEntriesFeatureCollection", () => {
     expect(fc.features).toHaveLength(1);
     expect(fc.features[0].geometry.type).toBe("Point");
     expect(fc.features[0].properties?.source_table).toBe("fake_alerts");
+  });
+});
+
+describe("getIncidentEntriesBbox", () => {
+  const pointEntry = (
+    id: string,
+    coordinates: [number, number],
+  ): CollectionEntry => ({
+    id,
+    collection_id: "c1",
+    source_table: "fake_alerts",
+    source_id: id,
+    source_data: {
+      g__type: "Point",
+      g__coordinates: JSON.stringify(coordinates),
+    },
+    added_by: "u",
+    added_at: "2024-01-01T00:00:00.000Z",
+  });
+
+  it("returns null when no entries have valid geometry", () => {
+    expect(
+      getIncidentEntriesBbox([
+        {
+          id: "e1",
+          collection_id: "c1",
+          source_table: "t",
+          source_id: "1",
+          source_data: { foo: 1 },
+          added_by: "u",
+          added_at: "2024-01-01T00:00:00.000Z",
+        },
+      ]),
+    ).toBeNull();
+    expect(getIncidentEntriesBbox([])).toBeNull();
+  });
+
+  it("returns the combined extent of entry geometries", () => {
+    expect(
+      getIncidentEntriesBbox([
+        pointEntry("e1", [-59.81, 2.49]),
+        pointEntry("e2", [-59.79, 2.51]),
+        {
+          id: "e3",
+          collection_id: "c1",
+          source_table: "t",
+          source_id: "skip",
+          source_data: {},
+          added_by: "u",
+          added_at: "2024-01-01T00:00:00.000Z",
+        },
+      ]),
+    ).toEqual([-59.81, 2.49, -59.79, 2.51]);
   });
 });

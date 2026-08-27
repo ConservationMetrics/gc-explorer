@@ -1,3 +1,4 @@
+import { bbox } from "@turf/turf";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type {
   AnnotatedCollection,
@@ -7,6 +8,12 @@ import type {
 } from "@/types";
 import { escapeCSVValue, buildCsvFromObjects } from "@/utils/csvUtils";
 import { isValidGeolocation } from "@/utils/geoUtils";
+
+/** Match `?alertId=` polygon fit: 50px padding, cap zoom like point flyTo (15). */
+export const INCIDENT_FIT_BOUNDS_OPTIONS = {
+  padding: 50,
+  maxZoom: 15,
+} as const;
 
 const ENTRY_CSV_FIXED_HEADERS = [
   "collection_entry_id",
@@ -147,6 +154,26 @@ export const buildIncidentEntriesFeatureCollection = (
     type: "FeatureCollection",
     features,
   };
+};
+
+/**
+ * Bounding box of incident entry geometries: `[west, south, east, north]`.
+ * Entries without valid `g__` geometry are omitted. Returns null when none remain.
+ */
+export const getIncidentEntriesBbox = (
+  entries: CollectionEntry[],
+): [number, number, number, number] | null => {
+  const featureCollection = buildIncidentEntriesFeatureCollection(entries);
+  const featuresWithGeometry = featureCollection.features.filter(
+    (feature): feature is Feature<Geometry> => feature.geometry != null,
+  );
+  if (featuresWithGeometry.length === 0) {
+    return null;
+  }
+  return bbox({
+    type: "FeatureCollection",
+    features: featuresWithGeometry,
+  }) as [number, number, number, number];
 };
 
 /**
