@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
 
+import { and, eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+
+import { viewConfig as viewsTable } from "@/server/database/schemas/viewConfig";
 import type { ApiTestView, ApiTestViewInput } from "@/types";
 import {
   createTestDatabaseClient,
@@ -21,28 +25,20 @@ export const createApiTestView = async (
 ): Promise<ApiTestView> => {
   const primaryDataset = `api_test_${randomUUID().replaceAll("-", "").slice(0, 12)}`;
   const configSql = createTestDatabaseClient(TEST_CONFIG_DATABASE);
+  const configDb = drizzle(configSql);
   const warehouseSql = createTestDatabaseClient(TEST_WAREHOUSE_DATABASE);
 
   try {
     await warehouseSql.unsafe(
       `CREATE TABLE ${quoteIdentifier(primaryDataset)} AS TABLE ${quoteIdentifier(input.sourceTable)}`,
     );
-    await configSql`
-      INSERT INTO views (
-        view_name,
-        view_type,
-        primary_dataset,
-        secondary_dataset,
-        view_config
-      )
-      VALUES (
-        ${primaryDataset},
-        ${input.viewType},
-        ${primaryDataset},
-        ${input.secondaryDataset ?? null},
-        ${JSON.stringify(input.viewConfig)}
-      )
-    `;
+    await configDb.insert(viewsTable).values({
+      primaryDataset,
+      secondaryDataset: input.secondaryDataset ?? null,
+      viewConfig: JSON.stringify(input.viewConfig),
+      viewName: primaryDataset,
+      viewType: input.viewType,
+    });
 
     return {
       primaryDataset,
@@ -50,10 +46,9 @@ export const createApiTestView = async (
       viewType: input.viewType,
     };
   } catch (error) {
-    await configSql`
-      DELETE FROM views
-      WHERE primary_dataset = ${primaryDataset}
-    `;
+    await configDb
+      .delete(viewsTable)
+      .where(eq(viewsTable.primaryDataset, primaryDataset));
     await warehouseSql.unsafe(
       `DROP TABLE IF EXISTS ${quoteIdentifier(primaryDataset)}`,
     );
@@ -74,14 +69,18 @@ export const createApiTestView = async (
  */
 export const deleteApiTestView = async (view: ApiTestView): Promise<void> => {
   const configSql = createTestDatabaseClient(TEST_CONFIG_DATABASE);
+  const configDb = drizzle(configSql);
   const warehouseSql = createTestDatabaseClient(TEST_WAREHOUSE_DATABASE);
 
   try {
-    await configSql`
-      DELETE FROM views
-      WHERE primary_dataset = ${view.primaryDataset}
-        AND view_type = ${view.viewType}
-    `;
+    await configDb
+      .delete(viewsTable)
+      .where(
+        and(
+          eq(viewsTable.primaryDataset, view.primaryDataset),
+          eq(viewsTable.viewType, view.viewType),
+        ),
+      );
     await warehouseSql.unsafe(
       `DROP TABLE IF EXISTS ${quoteIdentifier(view.primaryDataset)}`,
     );
