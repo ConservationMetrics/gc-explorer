@@ -28,11 +28,11 @@ watch(selectedRange, (newRange) => {
 </script>
 
 <template>
-  <div class="mt-4 mb-10">
-    <h3 class="text-2xl font-semibold mb-2">
+  <div>
+    <h3 class="text-2xl font-semibold tracking-tight mb-3">
       {{ $t("selectAlertDateRange") }}
     </h3>
-    <div class="mb-6">
+    <div class="mb-8">
       <VueSlider
         v-model="selectedRange"
         class="date-slider"
