@@ -52,6 +52,22 @@ async function getSelectableFeatureLngLat(page: Page): Promise<LngLat | null> {
   });
 }
 
+async function getMapZoom(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    return window._testMap.getZoom();
+  });
+}
+
+async function waitForMapIdle(page: Page): Promise<void> {
+  await page.locator("#map[data-map-ready='true']").waitFor();
+  await page.waitForFunction(() => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    return !!map && !map.isMoving();
+  });
+}
+
 async function projectLngLatToPagePoint(
   page: Page,
   lngLat: LngLat,
@@ -219,6 +235,8 @@ test("annotated collections - shareable incident link URL parameter", async ({
   authenticatedPageAsAdmin: page,
 }) => {
   await navigateToAlertsDashboard(page);
+  await waitForMapIdle(page);
+  const defaultZoom = await getMapZoom(page);
 
   await page.getByTestId("incidents-multiselect-button").click();
 
@@ -249,6 +267,20 @@ test("annotated collections - shareable incident link URL parameter", async ({
 
   await page.goto(url);
   await expect(page.getByText("Shareable Link Test Incident")).toBeVisible();
+  await waitForMapIdle(page);
+
+  const afterLoad = await page.evaluate((featureLngLat) => {
+    // @ts-expect-error _testMap is exposed for E2E testing only
+    const map = window._testMap;
+    const bounds = map.getBounds();
+    return {
+      zoom: map.getZoom(),
+      containsFeature: bounds.contains(featureLngLat),
+    };
+  }, lngLat);
+
+  expect(afterLoad.containsFeature).toBe(true);
+  expect(afterLoad.zoom).toBeGreaterThan(defaultZoom);
 });
 
 test("annotated collections - incident detail shows CSV and GeoJSON download buttons", async ({

@@ -15,6 +15,7 @@ import { createI18n } from "vue-i18n";
 import * as mapboxMock from "@/tests/unit/helpers/mapboxMock";
 
 import AlertsDashboard from "@/components/AlertsDashboard.vue";
+import { INCIDENT_FIT_BOUNDS_OPTIONS } from "@/utils/incidentHelpers";
 
 // Create i18n instance for template $t support (locales mirror app i18n config)
 const i18n = createI18n({
@@ -121,7 +122,9 @@ vi.mock("#imports", async () => {
 describe("AlertsDashboard component", () => {
   beforeEach(() => {
     mapboxMock.reset();
+    mockRoute.value = { params: {}, query: {} };
     document.body.innerHTML = '<div id="map"></div>';
+    hoisted.mockFetch.mockReset();
     // Mock $fetch to return empty incidents by default
     hoisted.mockFetch.mockResolvedValue({
       incidents: [],
@@ -644,6 +647,145 @@ describe("AlertsDashboard component", () => {
 
       expect(vm.showSidebar).toBe(false);
       expect(mapboxMock.setFeatureState.mock.calls.length).toBe(callsBefore);
+    });
+
+    it("fits the map to incident entry extent when incidentId is in the URL", async () => {
+      mockRoute.value = {
+        params: {},
+        query: { incidentId: "inc-1" },
+      };
+
+      const entries = [
+        {
+          id: "e1",
+          collection_id: "inc-1",
+          source_table: "test_alerts",
+          source_id: "a1",
+          source_data: {
+            g__type: "Point",
+            g__coordinates: "[-59.81, 2.49]",
+          },
+          added_by: "u",
+          added_at: "2024-01-01T00:00:00.000Z",
+        },
+        {
+          id: "e2",
+          collection_id: "inc-1",
+          source_table: "test_alerts",
+          source_id: "a2",
+          source_data: {
+            g__type: "Point",
+            g__coordinates: "[-59.79, 2.51]",
+          },
+          added_by: "u",
+          added_at: "2024-01-01T00:00:00.000Z",
+        },
+      ];
+
+      hoisted.mockFetch.mockImplementation((url: string) => {
+        if (url === "/api/incidents/inc-1") {
+          return Promise.resolve({
+            incident: {
+              id: "inc-1",
+              name: "Illegal Mining Co.",
+              collection_type: "incident",
+              created_at: "2026-08-15T00:00:00.000Z",
+              updated_at: "2026-08-15T00:00:00.000Z",
+              metadata: {},
+            },
+            incidentData: {
+              collection_id: "inc-1",
+              status: "suspected",
+              is_active: true,
+            },
+            entries,
+          });
+        }
+        return Promise.resolve({
+          incidents: [],
+          total: 0,
+          limit: 10,
+          offset: 0,
+        });
+      });
+
+      mount(AlertsDashboard, {
+        props: baseProps,
+        global: {
+          plugins: [i18n],
+          stubs: {
+            ViewSidebar: true,
+            MapLegend: true,
+            BasemapSelector: true,
+            IncidentsSidebar: true,
+          },
+        },
+      });
+
+      mapboxMock.fireLoad();
+      await flushPromises();
+
+      expect(mapboxMock.mockMap.fitBounds).toHaveBeenCalledWith(
+        [-59.81, 2.49, -59.79, 2.51],
+        { ...INCIDENT_FIT_BOUNDS_OPTIONS },
+      );
+    });
+
+    it("does not fit bounds for an incident URL when entries have no geometry", async () => {
+      mockRoute.value = {
+        params: {},
+        query: { incidentId: "inc-empty" },
+      };
+
+      hoisted.mockFetch.mockImplementation((url: string) => {
+        if (url === "/api/incidents/inc-empty") {
+          return Promise.resolve({
+            incident: {
+              id: "inc-empty",
+              name: "Empty",
+              collection_type: "incident",
+              created_at: "2026-08-15T00:00:00.000Z",
+              updated_at: "2026-08-15T00:00:00.000Z",
+              metadata: {},
+            },
+            entries: [
+              {
+                id: "e1",
+                collection_id: "inc-empty",
+                source_table: "test_alerts",
+                source_id: "a1",
+                source_data: {},
+                added_by: "u",
+                added_at: "2024-01-01T00:00:00.000Z",
+              },
+            ],
+          });
+        }
+        return Promise.resolve({
+          incidents: [],
+          total: 0,
+          limit: 10,
+          offset: 0,
+        });
+      });
+
+      mount(AlertsDashboard, {
+        props: baseProps,
+        global: {
+          plugins: [i18n],
+          stubs: {
+            ViewSidebar: true,
+            MapLegend: true,
+            BasemapSelector: true,
+            IncidentsSidebar: true,
+          },
+        },
+      });
+
+      mapboxMock.fireLoad();
+      await flushPromises();
+
+      expect(mapboxMock.mockMap.fitBounds).not.toHaveBeenCalled();
     });
   });
 });
