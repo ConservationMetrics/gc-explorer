@@ -41,24 +41,30 @@ describe("useHasRole", () => {
   it.each([
     ["member", Role.Member],
     ["admin", Role.Admin],
-  ] as const)("defaults to Member and returns true for a %s user", (_label, userRole) => {
-    useUserSessionMock.mockReturnValue({
-      loggedIn: ref(true),
-      user: ref({ userRole }),
-    });
-    expect(useHasRole().value).toBe(true);
-  });
+  ] as const)(
+    "defaults to Member and returns true for a %s user",
+    (_label, userRole) => {
+      useUserSessionMock.mockReturnValue({
+        loggedIn: ref(true),
+        user: ref({ userRole }),
+      });
+      expect(useHasRole().value).toBe(true);
+    },
+  );
 
   it.each([
     ["signed-in", Role.SignedIn],
     ["guest", Role.Guest],
-  ] as const)("defaults to Member and returns false for a %s user", (_label, userRole) => {
-    useUserSessionMock.mockReturnValue({
-      loggedIn: ref(true),
-      user: ref({ userRole }),
-    });
-    expect(useHasRole().value).toBe(false);
-  });
+  ] as const)(
+    "defaults to Member and returns false for a %s user",
+    (_label, userRole) => {
+      useUserSessionMock.mockReturnValue({
+        loggedIn: ref(true),
+        user: ref({ userRole }),
+      });
+      expect(useHasRole().value).toBe(false);
+    },
+  );
 
   it("checks custom minRole correctly", () => {
     useUserSessionMock.mockReturnValue({
