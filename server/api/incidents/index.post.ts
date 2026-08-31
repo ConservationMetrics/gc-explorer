@@ -1,9 +1,9 @@
 import { handleCreateCollection } from "@/server/annotatedCollections/handlers";
-import { validateUserSession } from "@/utils/accessControls";
+import { validatePermissions } from "@/utils/accessControls";
 
 export default defineEventHandler(async (event) => {
-  // Get user session for authentication (validates authStrategy)
-  const session = await validateUserSession(event);
+  await validatePermissions(event, "member");
+  const session = await getUserSession(event);
 
   // Add user info to the request body only if auth0 is available
   const body = await readBody(event);

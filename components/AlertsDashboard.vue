@@ -35,6 +35,7 @@ import MapLegend from "@/components/shared/MapLegend.vue";
 import IncidentsSidebar from "@/components/alerts/IncidentsSidebar.vue";
 import IncidentsControls from "@/components/alerts/IncidentsControls.vue";
 import { useIncidents } from "@/composables/useIncidents";
+import { useHasRole } from "@/composables/useHasRole";
 import { useFeatureSelection } from "@/composables/useFeatureSelection";
 import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
 import { useRecordCache } from "@/composables/useRecordCache";
@@ -143,6 +144,8 @@ const isSecondary = ref(false);
 const selectedFeatureLoading = ref(false);
 
 const { fetchRecord } = useRecordCache();
+
+const canAccessIncidents = useHasRole();
 
 // Use incidents composable
 const {
@@ -460,13 +463,13 @@ onMounted(() => {
         selectInitialSecondaryFeature(secondaryDocId);
       }
 
-      // Load incidents on dashboard initialization
-      await fetchIncidents();
+      if (canAccessIncidents.value) {
+        await fetchIncidents();
 
-      // Check for incidentId in URL and open that incident if it exists
-      const incidentId = route.query.incidentId as string;
-      if (incidentId) {
-        openIncidentDetails(incidentId);
+        const incidentId = route.query.incidentId as string;
+        if (incidentId) {
+          openIncidentDetails(incidentId);
+        }
       }
 
       map.value.on("click", handleAdditionalLayerMultiSelect);
@@ -1854,8 +1857,8 @@ onBeforeUnmount(() => {
       :planet-api-key="planetApiKey"
       @basemap-selected="handleBasemapChange"
     />
-    <!-- Incidents UI is hidden on mobile — too clunky for small screens -->
-    <div class="hidden md:block">
+    <!-- Incidents UI is hidden on mobile and for users below Member -->
+    <div v-if="canAccessIncidents" class="hidden md:block">
       <IncidentsSidebar
         :incidents="incidents"
         :incidents-total="incidentsTotal"
@@ -1905,7 +1908,7 @@ onBeforeUnmount(() => {
 
     <!-- Remove incident confirmation modal -->
     <div
-      v-if="showRemoveIncidentModal"
+      v-if="canAccessIncidents && showRemoveIncidentModal"
       data-testid="remove-incident-modal"
       class="fixed inset-0 bg-black/50 z-[1100] flex items-center justify-center p-4"
     >

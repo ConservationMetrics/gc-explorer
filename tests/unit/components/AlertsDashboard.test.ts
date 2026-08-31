@@ -119,11 +119,18 @@ vi.mock("#imports", async () => {
   };
 });
 
+const canAccessIncidents = ref(true);
+vi.mock("@/composables/useHasRole", () => ({
+  useHasRole: () => canAccessIncidents,
+}));
+
 describe("AlertsDashboard component", () => {
   beforeEach(() => {
     mapboxMock.reset();
     mockRoute.value = { params: {}, query: {} };
     document.body.innerHTML = '<div id="map"></div>';
+    canAccessIncidents.value = true;
+    mockRoute.value = { params: {}, query: {} };
     hoisted.mockFetch.mockReset();
     // Mock $fetch to return empty incidents by default
     hoisted.mockFetch.mockResolvedValue({
@@ -344,6 +351,153 @@ describe("AlertsDashboard component", () => {
 
       const incidentsControls = wrapper.find(".incidents-controls");
       expect(incidentsControls.exists()).toBe(true);
+    });
+
+    it("hides incidents controls when the user cannot access incidents", async () => {
+      canAccessIncidents.value = false;
+
+      const wrapper = mount(AlertsDashboard, {
+        props: baseProps,
+        global: {
+          plugins: [i18n],
+          stubs: {
+            ViewSidebar: true,
+            MapLegend: true,
+            BasemapSelector: true,
+            IncidentsSidebar: true,
+          },
+        },
+      });
+
+      mapboxMock.fireLoad();
+      await flushPromises();
+
+      expect(wrapper.find(".incidents-controls").exists()).toBe(false);
+      expect(
+        wrapper.find('[data-testid="incidents-view-button"]').exists(),
+      ).toBe(false);
+      expect(
+        wrapper.find('[data-testid="incidents-bbox-button"]').exists(),
+      ).toBe(false);
+      expect(
+        wrapper.find('[data-testid="incidents-multiselect-button"]').exists(),
+      ).toBe(false);
+      expect(
+        wrapper.find('[data-testid="incidents-deselect-button"]').exists(),
+      ).toBe(false);
+      expect(
+        wrapper.find('[data-testid="incidents-create-button"]').exists(),
+      ).toBe(false);
+    });
+
+    it("does not fetch incidents when the user cannot access incidents", async () => {
+      canAccessIncidents.value = false;
+
+      mount(AlertsDashboard, {
+        props: baseProps,
+        global: {
+          plugins: [i18n],
+          stubs: {
+            ViewSidebar: true,
+            MapLegend: true,
+            BasemapSelector: true,
+            IncidentsSidebar: true,
+          },
+        },
+      });
+
+      mapboxMock.fireLoad();
+      await flushPromises();
+
+      const incidentRequests = hoisted.mockFetch.mock.calls.filter(
+        ([url]) =>
+          typeof url === "string" && String(url).includes("/api/incidents"),
+      );
+      expect(incidentRequests).toHaveLength(0);
+    });
+
+    it("does not open an incident from the URL when the user cannot access incidents", async () => {
+      canAccessIncidents.value = false;
+      mockRoute.value = { params: {}, query: { incidentId: "inc-123" } };
+
+      mount(AlertsDashboard, {
+        props: baseProps,
+        global: {
+          plugins: [i18n],
+          stubs: {
+            ViewSidebar: true,
+            MapLegend: true,
+            BasemapSelector: true,
+            IncidentsSidebar: true,
+          },
+        },
+      });
+
+      mapboxMock.fireLoad();
+      await flushPromises();
+
+      expect(hoisted.mockFetch).not.toHaveBeenCalledWith(
+        "/api/incidents/inc-123",
+      );
+      expect(hoisted.mockFetch).not.toHaveBeenCalledWith(
+        "/api/incidents/inc-123",
+        expect.anything(),
+      );
+    });
+
+    it("does not show the remove incident modal when the user cannot access incidents", async () => {
+      canAccessIncidents.value = false;
+
+      const wrapper = mount(AlertsDashboard, {
+        props: baseProps,
+        global: {
+          plugins: [i18n],
+          stubs: {
+            ViewSidebar: true,
+            MapLegend: true,
+            BasemapSelector: true,
+            IncidentsSidebar: true,
+          },
+        },
+      });
+
+      mapboxMock.fireLoad();
+      await flushPromises();
+
+      const vm = wrapper.vm as unknown as { showRemoveIncidentModal: boolean };
+      vm.showRemoveIncidentModal = true;
+      await flushPromises();
+
+      expect(
+        wrapper.find('[data-testid="remove-incident-modal"]').exists(),
+      ).toBe(false);
+    });
+
+    it("fetches incidents on load when the user can access incidents", async () => {
+      mount(AlertsDashboard, {
+        props: baseProps,
+        global: {
+          plugins: [i18n],
+          stubs: {
+            ViewSidebar: true,
+            MapLegend: true,
+            BasemapSelector: true,
+            IncidentsSidebar: true,
+          },
+        },
+      });
+
+      mapboxMock.fireLoad();
+      await flushPromises();
+
+      expect(hoisted.mockFetch).toHaveBeenCalledWith(
+        "/api/incidents",
+        expect.objectContaining({
+          query: expect.objectContaining({
+            parent_alerts_table: "test_alerts",
+          }),
+        }),
+      );
     });
 
     it("toggles incidents sidebar when view incidents button is clicked", async () => {

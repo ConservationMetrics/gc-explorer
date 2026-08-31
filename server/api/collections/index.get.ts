@@ -1,7 +1,7 @@
 import { handleListCollections } from "@/server/annotatedCollections/handlers";
-import { validateUserSession } from "@/utils/accessControls";
+import { validatePermissions } from "@/utils/accessControls";
 
 export default defineEventHandler(async (event) => {
-  await validateUserSession(event);
+  await validatePermissions(event, "member");
   return await handleListCollections(event);
 });
