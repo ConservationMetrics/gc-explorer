@@ -1180,36 +1180,47 @@ const addSecondaryData = () => {
     });
   }
 
-  // Add a layer for Point features
+  // Add a layer for Point features, below primary alerts when those exist
   if (!map.value.getLayer("secondary-data")) {
-    map.value.addLayer({
-      id: "secondary-data",
-      type: "circle",
-      source: "secondary-data",
-      filter: ["==", "$type", "Point"],
-      paint: {
-        "circle-radius": 6,
-        "circle-color": [
-          // Use filter-color for fallback if selected is false
-          "case",
-          ["boolean", ["feature-state", "incidentSelected"], false],
-          "#FFFF00",
-          ["get", "filter-color"],
-        ],
-        "circle-stroke-width": [
-          "case",
-          ["boolean", ["feature-state", "selected"], false],
-          3,
-          2,
-        ],
-        "circle-stroke-color": [
-          "case",
-          ["boolean", ["feature-state", "selected"], false],
-          "#00E5FF",
-          "#fff",
-        ],
+    const beforeId = map.value
+      .getStyle()
+      ?.layers?.find(
+        (layer: Layer) =>
+          layer.id.startsWith("most-recent-alerts") ||
+          layer.id.startsWith("previous-alerts"),
+      )?.id;
+
+    map.value.addLayer(
+      {
+        id: "secondary-data",
+        type: "circle",
+        source: "secondary-data",
+        filter: ["==", "$type", "Point"],
+        paint: {
+          "circle-radius": 6,
+          "circle-color": [
+            // Use filter-color for fallback if selected is false
+            "case",
+            ["boolean", ["feature-state", "incidentSelected"], false],
+            "#FFFF00",
+            ["get", "filter-color"],
+          ],
+          "circle-stroke-width": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            3,
+            2,
+          ],
+          "circle-stroke-color": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            "#00E5FF",
+            "#fff",
+          ],
+        },
       },
-    });
+      beforeId,
+    );
   }
 
   // Add event listeners
@@ -1264,14 +1275,13 @@ const addSecondaryData = () => {
  * and the map legend.
  */
 const prepareMapCanvasContent = async () => {
-  const promises = [];
-  if (props.alertsData) {
-    promises.push(addAlertsData());
-  }
+  // Add secondary first so primary alerts render on top of it
   if (props.secondaryData) {
-    promises.push(addSecondaryData());
+    addSecondaryData();
   }
-  await Promise.all(promises);
+  if (props.alertsData) {
+    await addAlertsData();
+  }
   prepareMapLegendContent();
 };
 
