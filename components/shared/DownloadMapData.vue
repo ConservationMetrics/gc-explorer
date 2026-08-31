@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // @ts-expect-error - tokml does not have types
 import tokml from "tokml";
+import { FileSpreadsheet, Globe, Map } from "lucide-vue-next";
 
 import type { Feature, FeatureCollection } from "geojson";
 import type { AlertsData } from "@/types";
@@ -19,7 +20,23 @@ const props = defineProps<{
   exportMaxDate?: string;
   exportTimestampColumn?: string;
   filenamePrefix?: string;
+  variant?: "primary" | "outline";
 }>();
+
+const spatialFormats = [
+  { format: "csv" as const, labelKey: "downloadCSV", icon: FileSpreadsheet },
+  { format: "geojson" as const, labelKey: "downloadGeoJSON", icon: Map },
+  { format: "kml" as const, labelKey: "downloadKML", icon: Globe },
+];
+
+const buttonClass = computed(() => {
+  const base =
+    "inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]";
+  if (props.variant === "outline") {
+    return `${base} border border-blue-500 bg-white text-blue-600 hover:bg-blue-50`;
+  }
+  return `${base} bg-blue-500 text-white hover:bg-blue-600`;
+});
 
 const exportingFormat = ref<string | null>(null);
 
@@ -245,45 +262,44 @@ const downloadAlertKML = () => {
   });
   triggerBrowserDownload(blob, filename);
 };
+
+const downloadSpatialFormat = (format: "csv" | "geojson" | "kml") => {
+  if (useServerExport.value) {
+    downloadFromExportEndpoint(format);
+    return;
+  }
+  if (format === "csv") {
+    downloadAlertCSV();
+    return;
+  }
+  if (format === "geojson") {
+    downloadAlertGeoJSON();
+    return;
+  }
+  downloadAlertKML();
+};
 </script>
 
 <template>
   <div class="flex flex-wrap gap-2 justify-center mt-6">
     <button
-      class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
+      v-for="spatialFormat in spatialFormats"
+      :key="spatialFormat.format"
+      :class="buttonClass"
       :disabled="!!exportingFormat"
       type="button"
-      @click="
-        useServerExport ? downloadFromExportEndpoint('csv') : downloadAlertCSV()
-      "
+      @click="downloadSpatialFormat(spatialFormat.format)"
     >
-      {{ exportingFormat === "csv" ? $t("downloading") : $t("downloadCSV") }}
-    </button>
-    <button
-      class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
-      :disabled="!!exportingFormat"
-      type="button"
-      @click="
-        useServerExport
-          ? downloadFromExportEndpoint('geojson')
-          : downloadAlertGeoJSON()
-      "
-    >
+      <component
+        :is="spatialFormat.icon"
+        class="h-4 w-4 shrink-0"
+        aria-hidden="true"
+      />
       {{
-        exportingFormat === "geojson"
+        exportingFormat === spatialFormat.format
           ? $t("downloading")
-          : $t("downloadGeoJSON")
+          : $t(spatialFormat.labelKey)
       }}
-    </button>
-    <button
-      class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
-      :disabled="!!exportingFormat"
-      type="button"
-      @click="
-        useServerExport ? downloadFromExportEndpoint('kml') : downloadAlertKML()
-      "
-    >
-      {{ exportingFormat === "kml" ? $t("downloading") : $t("downloadKML") }}
     </button>
   </div>
 </template>

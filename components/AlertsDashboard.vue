@@ -18,6 +18,16 @@ import {
   toggleLayerVisibility as utilsToggleLayerVisibility,
   resolveTerrainExaggeration,
 } from "@/utils/mapGLHelpers";
+import {
+  addPulsingHaloLayers,
+  CENTROID_CLUSTER_HALO_RADIUS,
+  CENTROID_HALO_RADIUS,
+  pausePulsingHalo,
+  POINT_CLUSTER_HALO_RADIUS,
+  POINT_HALO_RADIUS,
+  startPulsingHalo,
+  stopPulsingHalo,
+} from "@/utils/pulsingHalo";
 
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
@@ -751,6 +761,13 @@ const addAlertsData = async () => {
       }
 
       if (type === "Point") {
+        if (layerId.startsWith("most-recent-alerts")) {
+          addPulsingHaloLayers(map.value, layerId, {
+            unclusteredRadius: POINT_HALO_RADIUS,
+            clusterRadius: POINT_CLUSTER_HALO_RADIUS,
+          });
+        }
+
         // Add cluster circle layer
         if (!map.value.getLayer(`${layerId}-clusters`)) {
           map.value.addLayer({
@@ -901,6 +918,14 @@ const addAlertsData = async () => {
     // At zoom 12+, actual polygon/linestring geometries show instead
     const CENTROID_MAX_ZOOM = 11;
 
+    if (layerId.startsWith("most-recent-alerts")) {
+      addPulsingHaloLayers(map.value, layerId, {
+        unclusteredRadius: CENTROID_HALO_RADIUS,
+        clusterRadius: CENTROID_CLUSTER_HALO_RADIUS,
+        maxzoom: CENTROID_MAX_ZOOM + 1,
+      });
+    }
+
     // Add cluster circle layer
     if (!map.value.getLayer(`${layerId}-clusters`)) {
       map.value.addLayer({
@@ -1044,7 +1069,8 @@ const addAlertsData = async () => {
   map.value.getStyle().layers.forEach((layer: Layer) => {
     if (
       (layer.id.startsWith("most-recent-alerts") &&
-        !layer.id.includes("stroke")) ||
+        !layer.id.includes("stroke") &&
+        !layer.id.includes("halo")) ||
       (layer.id.startsWith("previous-alerts") && !layer.id.includes("stroke"))
     ) {
       map.value.on(
@@ -1183,36 +1209,47 @@ const addSecondaryData = () => {
     });
   }
 
-  // Add a layer for Point features
+  // Add a layer for Point features, below primary alerts when those exist
   if (!map.value.getLayer("secondary-data")) {
-    map.value.addLayer({
-      id: "secondary-data",
-      type: "circle",
-      source: "secondary-data",
-      filter: ["==", "$type", "Point"],
-      paint: {
-        "circle-radius": 6,
-        "circle-color": [
-          // Use filter-color for fallback if selected is false
-          "case",
-          ["boolean", ["feature-state", "incidentSelected"], false],
-          "#FFFF00",
-          ["get", "filter-color"],
-        ],
-        "circle-stroke-width": [
-          "case",
-          ["boolean", ["feature-state", "selected"], false],
-          3,
-          2,
-        ],
-        "circle-stroke-color": [
-          "case",
-          ["boolean", ["feature-state", "selected"], false],
-          "#00E5FF",
-          "#fff",
-        ],
+    const beforeId = map.value
+      .getStyle()
+      ?.layers?.find(
+        (layer: Layer) =>
+          layer.id.startsWith("most-recent-alerts") ||
+          layer.id.startsWith("previous-alerts"),
+      )?.id;
+
+    map.value.addLayer(
+      {
+        id: "secondary-data",
+        type: "circle",
+        source: "secondary-data",
+        filter: ["==", "$type", "Point"],
+        paint: {
+          "circle-radius": 6,
+          "circle-color": [
+            // Use filter-color for fallback if selected is false
+            "case",
+            ["boolean", ["feature-state", "incidentSelected"], false],
+            "#FFFF00",
+            ["get", "filter-color"],
+          ],
+          "circle-stroke-width": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            3,
+            2,
+          ],
+          "circle-stroke-color": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            "#00E5FF",
+            "#fff",
+          ],
+        },
       },
-    });
+      beforeId,
+    );
   }
 
   // Add event listeners
@@ -1267,14 +1304,13 @@ const addSecondaryData = () => {
  * and the map legend.
  */
 const prepareMapCanvasContent = async () => {
-  const promises = [];
-  if (props.alertsData) {
-    promises.push(addAlertsData());
-  }
+  // Add secondary first so primary alerts render on top of it
   if (props.secondaryData) {
-    promises.push(addSecondaryData());
+    addSecondaryData();
   }
-  await Promise.all(promises);
+  if (props.alertsData) {
+    await addAlertsData();
+  }
   prepareMapLegendContent();
 };
 
@@ -1367,6 +1403,7 @@ const handleBufferMouseEvent = (e: MapMouseEvent) => {
 /** Handles the change of the basemap style */
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
 const handleBasemapChange = (newBasemap: Basemap) => {
+  pausePulsingHalo();
   changeMapStyle(map.value, newBasemap, props.planetApiKey);
 
   currentBasemap.value = newBasemap;
@@ -1436,6 +1473,7 @@ const prepareMapLegendContent = () => {
     mapLegendContent.value = legendItems;
     // E2E tests wait for this after the idle-gated legend content is ready.
     mapReady.value = true;
+    startPulsingHalo();
   });
 };
 
@@ -1479,6 +1517,18 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
             visibility,
           );
         }
+        const haloLayerId = `${layerId}-halo`;
+        const clusterHaloLayerId = `${layerId}-clusters-halo`;
+        if (map.value.getLayer(haloLayerId)) {
+          map.value.setLayoutProperty(haloLayerId, "visibility", visibility);
+        }
+        if (map.value.getLayer(clusterHaloLayerId)) {
+          map.value.setLayoutProperty(
+            clusterHaloLayerId,
+            "visibility",
+            visibility,
+          );
+        }
       }
     });
   } else if (item.id === "secondary-data") {
@@ -1516,6 +1566,7 @@ const handleSidebarClose = () => {
  * Repositions the map to its initial view
  */
 const resetToInitialState = () => {
+  pausePulsingHalo();
   resetSelectedFeature();
   localAlertsData.value = props.alertsData;
   showSidebar.value = true;
@@ -1678,6 +1729,25 @@ const resetToInitialState = () => {
             }
           }
 
+          if (type === "point" || type === "centroids") {
+            const haloLayerId = `${layerId}-halo`;
+            const clusterHaloLayerId = `${layerId}-clusters-halo`;
+            if (map.value.getLayer(haloLayerId)) {
+              map.value.setLayoutProperty(
+                haloLayerId,
+                "visibility",
+                visibility,
+              );
+            }
+            if (map.value.getLayer(clusterHaloLayerId)) {
+              map.value.setLayoutProperty(
+                clusterHaloLayerId,
+                "visibility",
+                visibility,
+              );
+            }
+          }
+
           // Handle cluster layers for symbols
           if (type === "symbol") {
             const clusterLayerId = `${layerId}-clusters`;
@@ -1719,10 +1789,12 @@ const resetToInitialState = () => {
     });
 
     emit("reset-legend-visibility");
+    startPulsingHalo();
   });
 };
 
 onBeforeUnmount(() => {
+  stopPulsingHalo();
   if (map.value) {
     removeBoundingBoxHandlers();
     map.value.remove();

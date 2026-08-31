@@ -165,6 +165,23 @@ describe("DownloadMapData component", () => {
         expect(button.classes()).toContain("hover:bg-blue-600");
       });
     });
+
+    it("should render outline buttons when variant is outline", () => {
+      const wrapper = mount(DownloadMapData, {
+        props: {
+          dataForDownload: simpleFeatureCollection,
+          variant: "outline",
+        },
+        global: globalConfig,
+      });
+
+      const buttons = wrapper.findAll("button");
+      buttons.forEach((button) => {
+        expect(button.classes()).toContain("border-blue-500");
+        expect(button.classes()).toContain("bg-white");
+        expect(button.classes()).not.toContain("bg-blue-500");
+      });
+    });
   });
 
   describe("Bulk export with filter params", () => {

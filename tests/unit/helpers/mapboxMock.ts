@@ -39,11 +39,14 @@ export const mockMap = {
   ),
   hasImage: vi.fn(() => false),
   addImage: vi.fn(),
+  triggerRepaint: vi.fn(),
   setFeatureState,
   setTerrain: vi.fn(),
   queryRenderedFeatures: vi.fn(() => []),
+  querySourceFeatures: vi.fn(() => []),
   setFilter: vi.fn(),
   setLayoutProperty: vi.fn(),
+  setPaintProperty: vi.fn(),
   once: vi.fn(),
   flyTo: vi.fn(),
   fitBounds: vi.fn(),
@@ -84,8 +87,10 @@ export function reset(): void {
   setFeatureState.mockClear();
   mockMap.addSource.mockClear();
   mockMap.addLayer.mockClear();
+  mockMap.addImage.mockClear();
   mockMap.setTerrain.mockClear();
   mockMap.flyTo.mockClear();
+  mockMap.fitBounds.mockClear();
   mockMap.remove.mockClear();
   layers.length = 0;
   loadCallback = undefined;
