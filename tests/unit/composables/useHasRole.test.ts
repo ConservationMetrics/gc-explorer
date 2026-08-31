@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ref } from "vue";
 import { Role } from "@/types";
-import { useCanAccessIncidents } from "@/composables/useCanAccessIncidents";
+import { useHasRole } from "@/composables/useHasRole";
 
 const { useRuntimeConfigMock, useUserSessionMock } = vi.hoisted(() => ({
   useRuntimeConfigMock: vi.fn(),
@@ -13,7 +13,7 @@ vi.mock("#imports", () => ({
   useUserSession: () => useUserSessionMock(),
 }));
 
-describe("useCanAccessIncidents", () => {
+describe("useHasRole", () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
     vi.stubEnv("CI", "");
@@ -34,33 +34,44 @@ describe("useCanAccessIncidents", () => {
     useRuntimeConfigMock.mockReturnValue({
       public: { authStrategy: "none" },
     });
-    expect(useCanAccessIncidents().value).toBe(true);
+    expect(useHasRole().value).toBe(true);
+    expect(useHasRole(Role.Admin).value).toBe(true);
   });
 
   it.each([
     ["member", Role.Member],
     ["admin", Role.Admin],
-  ] as const)("returns true for a %s user", (_label, userRole) => {
+  ] as const)("defaults to Member and returns true for a %s user", (_label, userRole) => {
     useUserSessionMock.mockReturnValue({
       loggedIn: ref(true),
       user: ref({ userRole }),
     });
-    expect(useCanAccessIncidents().value).toBe(true);
+    expect(useHasRole().value).toBe(true);
   });
 
   it.each([
     ["signed-in", Role.SignedIn],
     ["guest", Role.Guest],
-  ] as const)("returns false for a %s user", (_label, userRole) => {
+  ] as const)("defaults to Member and returns false for a %s user", (_label, userRole) => {
     useUserSessionMock.mockReturnValue({
       loggedIn: ref(true),
       user: ref({ userRole }),
     });
-    expect(useCanAccessIncidents().value).toBe(false);
+    expect(useHasRole().value).toBe(false);
+  });
+
+  it("checks custom minRole correctly", () => {
+    useUserSessionMock.mockReturnValue({
+      loggedIn: ref(true),
+      user: ref({ userRole: Role.Guest }),
+    });
+    expect(useHasRole(Role.Guest).value).toBe(true);
+    expect(useHasRole(Role.Member).value).toBe(false);
+    expect(useHasRole(Role.Admin).value).toBe(false);
   });
 
   it("returns false when the user is logged out", () => {
-    expect(useCanAccessIncidents().value).toBe(false);
+    expect(useHasRole().value).toBe(false);
   });
 
   it("returns false when the user is logged in without a user record", () => {
@@ -68,7 +79,7 @@ describe("useCanAccessIncidents", () => {
       loggedIn: ref(true),
       user: ref(null),
     });
-    expect(useCanAccessIncidents().value).toBe(false);
+    expect(useHasRole().value).toBe(false);
   });
 
   it("returns false when an authenticated user has no role", () => {
@@ -76,11 +87,11 @@ describe("useCanAccessIncidents", () => {
       loggedIn: ref(true),
       user: ref({}),
     });
-    expect(useCanAccessIncidents().value).toBe(false);
+    expect(useHasRole().value).toBe(false);
   });
 
   it("returns false in CI when the user is logged out", () => {
     vi.stubEnv("CI", "true");
-    expect(useCanAccessIncidents().value).toBe(false);
+    expect(useHasRole().value).toBe(false);
   });
 });

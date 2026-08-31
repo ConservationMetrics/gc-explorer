@@ -120,8 +120,8 @@ vi.mock("#imports", async () => {
 });
 
 const canAccessIncidents = ref(true);
-vi.mock("@/composables/useCanAccessIncidents", () => ({
-  useCanAccessIncidents: () => canAccessIncidents,
+vi.mock("@/composables/useHasRole", () => ({
+  useHasRole: () => canAccessIncidents,
 }));
 
 describe("AlertsDashboard component", () => {

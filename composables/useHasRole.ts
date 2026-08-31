@@ -1,15 +1,18 @@
 import { computed } from "vue";
+import type { ComputedRef } from "vue";
 import { useRuntimeConfig, useUserSession } from "#imports";
 import type { User } from "@/types";
 import { Role } from "@/types";
 
 /**
- * Whether the current user may use incidents (members and admins, or
- * authStrategy none).
+ * Whether the current user has at least the specified role level (or authStrategy is "none").
  *
- * @returns {ComputedRef<boolean>} True when incidents UI and API should be available.
+ * @param {Role} [minRole=Role.Member] - Minimum role required (defaults to Role.Member).
+ * @returns {ComputedRef<boolean>} True when the user has sufficient permissions.
  */
-export const useCanAccessIncidents = () => {
+export const useHasRole = (
+  minRole: Role = Role.Member,
+): ComputedRef<boolean> => {
   const {
     public: { authStrategy },
   } = useRuntimeConfig();
@@ -23,7 +26,7 @@ export const useCanAccessIncidents = () => {
     if (authStrategy === "auth0" && loggedIn.value && user.value) {
       const typedUser = user.value as User | null;
       const userRole = typedUser?.userRole ?? Role.SignedIn;
-      return userRole >= Role.Member;
+      return userRole >= minRole;
     }
 
     return false;

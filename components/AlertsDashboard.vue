@@ -35,7 +35,7 @@ import MapLegend from "@/components/shared/MapLegend.vue";
 import IncidentsSidebar from "@/components/alerts/IncidentsSidebar.vue";
 import IncidentsControls from "@/components/alerts/IncidentsControls.vue";
 import { useIncidents } from "@/composables/useIncidents";
-import { useCanAccessIncidents } from "@/composables/useCanAccessIncidents";
+import { useHasRole } from "@/composables/useHasRole";
 import { useFeatureSelection } from "@/composables/useFeatureSelection";
 import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
 import { useRecordCache } from "@/composables/useRecordCache";
@@ -145,7 +145,7 @@ const selectedFeatureLoading = ref(false);
 
 const { fetchRecord } = useRecordCache();
 
-const canAccessIncidents = useCanAccessIncidents();
+const canAccessIncidents = useHasRole();
 
 // Use incidents composable
 const {
