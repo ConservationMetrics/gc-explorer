@@ -1,4 +1,11 @@
 packages:
   - .
 
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
+  vue-demi: false
+
 minimumReleaseAge: 10080 # minutes == 7 days
