@@ -78,8 +78,9 @@
     "vue-eslint-parser": "^10.1.4",
     "vue-tsc": "^2.2.2"
   },
+  "packageManager": "pnpm@11.25.0",
   "engines": {
-    "node": "20.15.0"
+    "node": ">=22"
   },
   "author": "Conservation Metrics",
   "license": "MIT"

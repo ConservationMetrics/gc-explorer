@@ -1,11 +1,11 @@
 # Build stage
-FROM node:20.15.0-slim AS builder
+FROM node:22-slim AS builder
 
 # Set the working directory
 WORKDIR /app
 
 # Install pnpm
-RUN npm install -g pnpm@10
+RUN npm install -g pnpm@11.25.0
 
 # Copy package files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -27,13 +27,13 @@ RUN chmod +x /app/migrate-and-start.sh
 RUN pnpm run build
 
 # Production stage
-FROM node:20.15.0-slim AS production
+FROM node:22-slim AS production
 
 # Set the working directory
 WORKDIR /app
 
 # Install pnpm
-RUN npm install -g pnpm@10
+RUN npm install -g pnpm@11.25.0
 
 # Copy package files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
