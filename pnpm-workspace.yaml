@@ -4,8 +4,8 @@ packages:
 allowBuilds:
   "@parcel/watcher": true
   esbuild: true
-  sharp: true
-  unrs-resolver: true
-  vue-demi: false
+  sharp: true # transitive dependency of turf
+  unrs-resolver: true # transitive dependency of @nuxt/eslint
+  vue-demi: false # transitive dependency of reka-ui
 
 minimumReleaseAge: 10080 # minutes == 7 days
