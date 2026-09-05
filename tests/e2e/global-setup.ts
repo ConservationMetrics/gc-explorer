@@ -2,7 +2,10 @@ import { config } from "dotenv";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import postgres from "postgres";
+import {
+  createTestDatabaseClient,
+  TEST_CONFIG_DATABASE,
+} from "./helpers/testDatabase";
 import { isNuxtTestEnv } from "../../utils/nuxtTestEnv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,14 +15,6 @@ config({ path: resolve(projectRoot, ".env.test.playwright") });
 
 // Must match docker-compose.tests.yml (database service + guardianconnector DB).
 const TEST_BACKEND_URL = "http://localhost:8080";
-const TEST_DB = {
-  host: "127.0.0.1",
-  port: 5433,
-  user: "testuser",
-  password: "testpassword",
-  database: "guardianconnector",
-} as const;
-
 async function waitForBackend(timeoutMs = 120_000) {
   const deadline = Date.now() + timeoutMs;
 
@@ -49,15 +44,7 @@ export default async function globalSetup() {
 
   await waitForBackend();
 
-  const sql = postgres({
-    host: TEST_DB.host,
-    port: TEST_DB.port,
-    database: TEST_DB.database,
-    username: TEST_DB.user,
-    password: TEST_DB.password,
-    ssl: false,
-    max: 1,
-  });
+  const sql = createTestDatabaseClient(TEST_CONFIG_DATABASE);
 
   try {
     await sql.unsafe(readFileSync(seedPath, "utf-8"));
