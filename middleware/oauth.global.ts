@@ -1,5 +1,10 @@
 import { defineNuxtRouteMiddleware, useRuntimeConfig } from "#imports";
-import type { User, RouteLevelPermission } from "@/types";
+import type {
+  PublicViewRow,
+  RouteLevelPermission,
+  User,
+  ViewType,
+} from "@/types";
 import { Role } from "@/types";
 import { decodeDatasetNameFromUrl } from "@/utils/identifierUtils";
 
@@ -45,11 +50,19 @@ export default defineNuxtRouteMiddleware(async (to) => {
           ? to.params.tablename
           : to.path.split("/").pop()!;
       const tableName = decodeDatasetNameFromUrl(rawTableName);
-      const publicTableNames = await $fetch<string[]>(
+      const viewType = to.path.split("/")[1] as ViewType;
+      const publicViews = await $fetch<PublicViewRow[]>(
         "/api/config/public_views",
       );
       // Public access: no login needed
-      if (publicTableNames.includes(tableName)) return;
+      if (
+        publicViews.some(
+          (view) =>
+            view.primaryDataset === tableName && view.viewType === viewType,
+        )
+      ) {
+        return;
+      }
 
       // Require authentication
       if (!loggedIn.value) {
@@ -62,10 +75,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
         views: Array<{
           primaryDataset: string;
           viewConfig: { ROUTE_LEVEL_PERMISSION?: RouteLevelPermission };
+          viewType: ViewType;
         }>;
       }>("/api/config");
       const viewEntry = response.views?.find(
-        (view) => view.primaryDataset === tableName,
+        (view) =>
+          view.primaryDataset === tableName && view.viewType === viewType,
       );
       const permission: RouteLevelPermission =
         viewEntry?.viewConfig?.ROUTE_LEVEL_PERMISSION ?? "member";
