@@ -6,6 +6,7 @@ import {
   parseUpdateViewBody,
   parseViewId,
 } from "@/server/utils/viewApi";
+import type { CreateViewBody, UpdateViewBody } from "@/types";
 
 describe("view API input parsing", () => {
   it("parses a valid view ID", () => {
@@ -45,7 +46,6 @@ describe("view API input parsing", () => {
 
   it("rejects invalid create bodies", () => {
     for (const body of [
-      null,
       {},
       { primaryDataset: "", viewType: "gallery" },
       { primaryDataset: "test_dataset", viewType: "dashboard" },
@@ -54,23 +54,20 @@ describe("view API input parsing", () => {
         secondaryDataset: 2,
         viewType: "gallery",
       },
-      {
-        primaryDataset: "test_dataset",
-        viewConfig: [],
-        viewType: "gallery",
-      },
     ]) {
-      expect(() => parseCreateViewBody(body)).toThrow(
+      expect(() => parseCreateViewBody(body as CreateViewBody)).toThrow(
         expect.objectContaining({ statusCode: 400 }),
       );
     }
   });
 
-  it("requires an object viewConfig for updates", () => {
-    expect(() => parseUpdateViewBody({})).toThrow(
-      expect.objectContaining({ statusCode: 400 }),
-    );
-    expect(() => parseUpdateViewBody({ viewConfig: [] })).toThrow(
+  it("rejects an invalid secondary dataset in an update body", () => {
+    const body = {
+      secondaryDataset: 2,
+      viewConfig: {},
+    } as unknown as UpdateViewBody;
+
+    expect(() => parseUpdateViewBody(body)).toThrow(
       expect.objectContaining({ statusCode: 400 }),
     );
   });

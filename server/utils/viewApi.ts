@@ -1,15 +1,7 @@
 import { useAppConfig } from "#imports";
 import type { H3Event } from "h3";
 
-import type {
-  CreateViewBody,
-  UpdateViewBody,
-  ViewConfig,
-  ViewType,
-} from "@/types";
-
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
+import type { CreateViewBody, UpdateViewBody } from "@/types";
 
 /**
  * Parses a positive integer view ID from the route.
@@ -39,18 +31,12 @@ export const parseViewId = (event: H3Event): number => {
  * @param value - Parsed request body.
  * @returns {CreateViewBody} Valid creation fields.
  */
-export const parseCreateViewBody = (value: unknown): CreateViewBody => {
-  if (!isObject(value)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "Request body must be an object",
-    });
-  }
-
-  const primaryDataset = value.primaryDataset;
-  const viewType = value.viewType;
-  const secondaryDataset = value.secondaryDataset;
-  const viewConfig = value.viewConfig;
+export const parseCreateViewBody = ({
+  primaryDataset,
+  secondaryDataset,
+  viewConfig,
+  viewType,
+}: CreateViewBody): CreateViewBody => {
   const viewTypes = useAppConfig().viewTypes as readonly string[];
 
   if (typeof primaryDataset !== "string" || primaryDataset.trim() === "") {
@@ -75,18 +61,12 @@ export const parseCreateViewBody = (value: unknown): CreateViewBody => {
       statusMessage: "secondaryDataset must be a string or null",
     });
   }
-  if (viewConfig !== undefined && !isObject(viewConfig)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "viewConfig must be an object",
-    });
-  }
 
   return {
     primaryDataset,
     secondaryDataset,
-    viewConfig: viewConfig as ViewConfig | undefined,
-    viewType: viewType as ViewType,
+    viewConfig,
+    viewType,
   };
 };
 
@@ -96,15 +76,10 @@ export const parseCreateViewBody = (value: unknown): CreateViewBody => {
  * @param value - Parsed request body.
  * @returns {UpdateViewBody} Valid update fields.
  */
-export const parseUpdateViewBody = (value: unknown): UpdateViewBody => {
-  if (!isObject(value) || !isObject(value.viewConfig)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "viewConfig is required and must be an object",
-    });
-  }
-
-  const secondaryDataset = value.secondaryDataset;
+export const parseUpdateViewBody = ({
+  secondaryDataset,
+  viewConfig,
+}: UpdateViewBody): UpdateViewBody => {
   if (
     secondaryDataset !== undefined &&
     secondaryDataset !== null &&
@@ -118,6 +93,6 @@ export const parseUpdateViewBody = (value: unknown): UpdateViewBody => {
 
   return {
     secondaryDataset,
-    viewConfig: value.viewConfig as ViewConfig,
+    viewConfig,
   };
 };

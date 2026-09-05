@@ -3,10 +3,11 @@ import { parseCreateViewBody } from "@/server/utils/viewApi";
 import { validatePermissions } from "@/utils/accessControls";
 
 import type { H3Event } from "h3";
+import type { CreateViewBody } from "@/types";
 
 export default defineEventHandler(async (event: H3Event) => {
   await validatePermissions(event, "admin");
-  const body = parseCreateViewBody(await readBody(event));
+  const body = parseCreateViewBody(await readBody<CreateViewBody>(event));
   const view = await createView(body);
   setResponseStatus(event, 201);
   return view;
