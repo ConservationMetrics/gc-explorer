@@ -13,6 +13,7 @@ import {
   type ViewConfig,
   type ViewConfigRow,
   type ViewType,
+  type WarehouseTablesResponse,
 } from "@/types";
 import { ChevronLeft, Eye } from "lucide-vue-next";
 import {
@@ -33,6 +34,7 @@ const dataFetched = ref(false);
 const datasetConfig = ref<ViewConfig | null>(null);
 const secondaryDataset = ref<string | null>(null);
 const viewName = ref("");
+const viewId = ref<number | null>(null);
 const errorMessage = ref<string | null>(null);
 const primaryDatasetForColumns = computed(() => dataset);
 const secondaryDatasetForColumns = computed(() => secondaryDataset.value);
@@ -43,14 +45,23 @@ const { columns: secondaryColumns, isLoading: secondaryColumnsLoading } =
 
 const editedViewType = ref<ViewType | undefined>(undefined);
 
-const { data, error, refresh } = await useFetch<{
-  views: ViewConfigRow[];
-  availableTables: string[];
-  availableGeospatialTables?: string[];
-}>("/api/config");
+const {
+  data: viewsData,
+  error: viewsError,
+  refresh: refreshViews,
+} = await useFetch<ViewConfigRow[]>("/api/views");
+const {
+  data: warehouseData,
+  error: warehouseError,
+  refresh: refreshWarehouse,
+} = await useFetch<WarehouseTablesResponse>("/api/warehouse/tables");
+const error = computed(() => viewsError.value ?? warehouseError.value);
+const refresh = async () => {
+  await Promise.all([refreshViews(), refreshWarehouse()]);
+};
 
-if (data.value && !error.value) {
-  const allViewRows = data.value.views;
+if (viewsData.value && !error.value) {
+  const allViewRows = viewsData.value;
   viewRows.value = allViewRows;
 
   const editedViewRow = allViewRows.find(
@@ -63,6 +74,7 @@ if (data.value && !error.value) {
     datasetConfig.value = editedViewRow.viewConfig;
     secondaryDataset.value = editedViewRow.secondaryDataset ?? null;
     viewName.value = editedViewRow.viewName;
+    viewId.value = editedViewRow.viewId;
     editedViewType.value = editedViewRow.viewType;
     dataFetched.value = true;
   } else {
@@ -74,9 +86,9 @@ if (data.value && !error.value) {
 }
 
 const resolvedViewType = computed(() => viewType.value ?? editedViewType.value);
-const availableTables = computed(() => data.value?.availableTables ?? []);
+const availableTables = computed(() => warehouseData.value?.tables ?? []);
 const availableGeospatialTables = computed(
-  () => data.value?.availableGeospatialTables ?? availableTables.value,
+  () => warehouseData.value?.geospatialTables ?? availableTables.value,
 );
 const showsSecondaryDataset = computed(() =>
   supportsSecondaryDataset(resolvedViewType.value),
@@ -87,7 +99,6 @@ const showSavedModal = ref(false);
 const submitConfig = async ({
   config,
   secondaryDataset: submittedSecondaryDataset,
-  tableName,
 }: {
   config: ViewConfig;
   secondaryDataset?: string | null;
@@ -95,25 +106,24 @@ const submitConfig = async ({
 }) => {
   errorMessage.value = null;
 
+  if (viewId.value === null) return;
+
   try {
-    await $fetch(
-      `/api/config/update_config/${encodeDatasetNameForUrl(tableName)}`,
+    const updatedView = await $fetch<ViewConfigRow>(
+      `/api/views/${viewId.value}`,
       {
-        method: "POST",
-        query: resolvedViewType.value
-          ? { view_type: resolvedViewType.value }
-          : undefined,
-        body: JSON.stringify({
-          config,
+        method: "PATCH",
+        body: {
+          viewConfig: config,
           secondaryDataset: submittedSecondaryDataset,
-        }),
+        },
       },
     );
     // Update the local datasetConfig to reflect the saved state
     // This will trigger the watch in ConfigCard to update originalConfig baseline thus clearing the button and applying edit
     datasetConfig.value = JSON.parse(JSON.stringify(config));
     secondaryDataset.value = submittedSecondaryDataset ?? null;
-    viewName.value = config.DATASET_TABLE?.trim() || tableName;
+    viewName.value = updatedView.viewName;
     showSavedModal.value = true;
     setTimeout(() => {
       showSavedModal.value = false;
@@ -149,15 +159,9 @@ const handleRemoveTableFromConfig = (tableName: string) => {
 };
 
 const handleConfirmRemove = async () => {
-  if (tableNameToRemove.value) {
+  if (tableNameToRemove.value && viewId.value !== null) {
     try {
-      await $fetch(
-        `/api/config/delete_table/${encodeDatasetNameForUrl(tableNameToRemove.value)}`,
-        {
-          method: "POST",
-          query: { view_type: resolvedViewType.value },
-        },
-      );
+      await $fetch<unknown>(`/api/views/${viewId.value}`, { method: "DELETE" });
       // Hide buttons and update message to show success
       showModalButtons.value = false;
       modalMessage.value = t("datasetViewRemovedFromViews") + "!";

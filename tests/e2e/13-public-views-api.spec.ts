@@ -5,7 +5,7 @@ import {
   createApiTestView,
   deleteApiTestView,
 } from "@/tests/e2e/helpers/apiTestData";
-import type { ApiTestView, PublicViewRow } from "@/types";
+import type { ApiTestView, PublicViewRow, ViewConfigRow } from "@/types";
 
 /**
  * Returns the public view list for the current admin session.
@@ -16,7 +16,7 @@ import type { ApiTestView, PublicViewRow } from "@/types";
 const listPublicViews = async (
   request: APIRequestContext,
 ): Promise<PublicViewRow[]> => {
-  const response = await request.get("/api/config/public_views");
+  const response = await request.get("/api/views/public");
   expect(response.status()).toBe(200);
   return (await response.json()) as PublicViewRow[];
 };
@@ -25,87 +25,104 @@ const listPublicViews = async (
  * Creates a member gallery and an anyone map on the same dataset.
  *
  * @param {APIRequestContext} request - Authenticated Playwright request.
- * @returns {Promise<ApiTestView>} Gallery fixture to tear down after the map is deleted.
+ * @returns {Promise<{ fixture: ApiTestView; galleryViewId: number; mapViewId: number }>}
+ *   Fixture and view ids for teardown.
  */
 const createMemberGalleryWithAnyoneMap = async (
   request: APIRequestContext,
-): Promise<ApiTestView> => {
-  const galleryView = await createApiTestView({
+): Promise<{
+  fixture: ApiTestView;
+  galleryViewId: number;
+  mapViewId: number;
+}> => {
+  const fixture = await createApiTestView({
     sourceTable: "seed_survey_data",
     viewConfig: { ROUTE_LEVEL_PERMISSION: "member" },
     viewType: "gallery",
   });
-  const createMapResponse = await request.post(
-    `/api/config/new_table/${galleryView.primaryDataset}?view_type=map`,
-    {
-      data: {
-        config: { ROUTE_LEVEL_PERMISSION: "anyone" },
-      },
-    },
+  const galleryRowsResponse = await request.get(
+    `/api/views?primary_dataset=${encodeURIComponent(fixture.primaryDataset)}`,
   );
-  expect(createMapResponse.status()).toBe(200);
-  return galleryView;
+  const galleryRows = (await galleryRowsResponse.json()) as ViewConfigRow[];
+  const galleryViewId = galleryRows.find(
+    (view) => view.viewType === "gallery",
+  )?.viewId;
+  expect(galleryViewId).toEqual(expect.any(Number));
+
+  const createMapResponse = await request.post("/api/views", {
+    data: {
+      primaryDataset: fixture.primaryDataset,
+      viewConfig: { ROUTE_LEVEL_PERMISSION: "anyone" },
+      viewType: "map",
+    },
+  });
+  expect(createMapResponse.status()).toBe(201);
+  const mapViewId = ((await createMapResponse.json()) as ViewConfigRow).viewId;
+
+  return {
+    fixture,
+    galleryViewId: galleryViewId as number,
+    mapViewId,
+  };
 };
 
 /**
  * Deletes the map sibling, then the gallery warehouse fixture.
  *
  * @param {APIRequestContext} request - Authenticated Playwright request.
- * @param {ApiTestView} galleryView - Gallery fixture created for the test.
+ * @param {{ fixture: ApiTestView; mapViewId: number }} views - Views to remove.
  * @returns {Promise<void>}
  */
 const deleteGalleryAndMap = async (
   request: APIRequestContext,
-  galleryView: ApiTestView,
+  views: { fixture: ApiTestView; mapViewId: number },
 ): Promise<void> => {
-  await request.post(
-    `/api/config/delete_table/${galleryView.primaryDataset}?view_type=map`,
-  );
-  await deleteApiTestView(galleryView);
+  await request.delete(`/api/views/${views.mapViewId}`);
+  await deleteApiTestView(views.fixture);
 };
 
 test("anyone map is public when sibling gallery is member", async ({
   authenticatedRequestAsAdmin: request,
 }) => {
-  const galleryView = await createMemberGalleryWithAnyoneMap(request);
+  const views = await createMemberGalleryWithAnyoneMap(request);
 
   try {
     const publicViews = await listPublicViews(request);
     expect(publicViews).toContainEqual(
       expect.objectContaining({
-        primaryDataset: galleryView.primaryDataset,
+        primaryDataset: views.fixture.primaryDataset,
         viewType: "map",
       }),
     );
     expect(publicViews).not.toContainEqual(
       expect.objectContaining({
-        primaryDataset: galleryView.primaryDataset,
+        primaryDataset: views.fixture.primaryDataset,
         viewType: "gallery",
       }),
     );
   } finally {
-    await deleteGalleryAndMap(request, galleryView);
+    await deleteGalleryAndMap(request, views);
   }
 });
 
 test("anyone gallery is public without hiding sibling anyone map", async ({
   authenticatedRequestAsAdmin: request,
 }) => {
-  const galleryView = await createMemberGalleryWithAnyoneMap(request);
+  const views = await createMemberGalleryWithAnyoneMap(request);
 
   try {
-    const updateGalleryResponse = await request.post(
-      `/api/config/update_config/${galleryView.primaryDataset}?view_type=gallery`,
+    const updateGalleryResponse = await request.patch(
+      `/api/views/${views.galleryViewId}`,
       {
         data: {
-          config: { ROUTE_LEVEL_PERMISSION: "anyone" },
+          viewConfig: { ROUTE_LEVEL_PERMISSION: "anyone" },
         },
       },
     );
     expect(updateGalleryResponse.status()).toBe(200);
 
     const publicViews = (await listPublicViews(request)).filter(
-      (view) => view.primaryDataset === galleryView.primaryDataset,
+      (view) => view.primaryDataset === views.fixture.primaryDataset,
     );
     expect(publicViews).toEqual(
       expect.arrayContaining([
@@ -114,31 +131,31 @@ test("anyone gallery is public without hiding sibling anyone map", async ({
       ]),
     );
   } finally {
-    await deleteGalleryAndMap(request, galleryView);
+    await deleteGalleryAndMap(request, views);
   }
 });
 
 test("member map is not public when sibling gallery stays anyone", async ({
   authenticatedRequestAsAdmin: request,
 }) => {
-  const galleryView = await createMemberGalleryWithAnyoneMap(request);
+  const views = await createMemberGalleryWithAnyoneMap(request);
 
   try {
-    const updateGalleryResponse = await request.post(
-      `/api/config/update_config/${galleryView.primaryDataset}?view_type=gallery`,
+    const updateGalleryResponse = await request.patch(
+      `/api/views/${views.galleryViewId}`,
       {
         data: {
-          config: { ROUTE_LEVEL_PERMISSION: "anyone" },
+          viewConfig: { ROUTE_LEVEL_PERMISSION: "anyone" },
         },
       },
     );
     expect(updateGalleryResponse.status()).toBe(200);
 
-    const updateMapResponse = await request.post(
-      `/api/config/update_config/${galleryView.primaryDataset}?view_type=map`,
+    const updateMapResponse = await request.patch(
+      `/api/views/${views.mapViewId}`,
       {
         data: {
-          config: { ROUTE_LEVEL_PERMISSION: "member" },
+          viewConfig: { ROUTE_LEVEL_PERMISSION: "member" },
         },
       },
     );
@@ -147,17 +164,17 @@ test("member map is not public when sibling gallery stays anyone", async ({
     const publicViews = await listPublicViews(request);
     expect(publicViews).toContainEqual(
       expect.objectContaining({
-        primaryDataset: galleryView.primaryDataset,
+        primaryDataset: views.fixture.primaryDataset,
         viewType: "gallery",
       }),
     );
     expect(publicViews).not.toContainEqual(
       expect.objectContaining({
-        primaryDataset: galleryView.primaryDataset,
+        primaryDataset: views.fixture.primaryDataset,
         viewType: "map",
       }),
     );
   } finally {
-    await deleteGalleryAndMap(request, galleryView);
+    await deleteGalleryAndMap(request, views);
   }
 });
