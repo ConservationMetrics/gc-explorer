@@ -3,9 +3,12 @@ import { and, eq, sql } from "drizzle-orm";
 import {
   supportsSecondaryDataset,
   type ColumnEntry,
+  type CreateViewBody,
   type DataEntry,
   type FetchDataOptions,
+  type PublicViewRow,
   type RouteLevelPermission,
+  type UpdateViewBody,
   type Views,
   type ViewConfig,
   type ViewConfigRow,
@@ -36,7 +39,7 @@ const createMissingViewConfigError = (table: string) => {
   return error;
 };
 
-const createInvalidConfigColumnsError = (message: string) => {
+const createBadRequestError = (message: string) => {
   const error = new Error(message) as Error & {
     statusCode: number;
     statusMessage: string;
@@ -56,14 +59,17 @@ const PG_UNIQUE_VIOLATION = "23505";
  * @returns {boolean} Whether the error is a unique violation.
  */
 const isUniqueViolation = (error: unknown): boolean =>
-  // `error` is `unknown` (catch clauses always are), so we cannot just read
-  // `error.code`. Each clause narrows the type step by step before that access is
-  // legal: it must be an object, not null (`typeof null === "object"`), and actually
-  // have a `code` property. Only then is reading `code` type-safe.
+  // Postgres errors expose SQLSTATE directly, while DrizzleQueryError wraps
+  // the underlying Postgres error in `cause`.
   typeof error === "object" &&
   error !== null &&
-  "code" in error &&
-  (error as { code?: unknown }).code === PG_UNIQUE_VIOLATION;
+  (("code" in error &&
+    (error as { code?: unknown }).code === PG_UNIQUE_VIOLATION) ||
+    ("cause" in error &&
+      typeof error.cause === "object" &&
+      error.cause !== null &&
+      "code" in error.cause &&
+      (error.cause as { code?: unknown }).code === PG_UNIQUE_VIOLATION));
 
 /**
  * Builds a 409-style error for adding a view type a dataset already exposes.
@@ -582,27 +588,46 @@ export const viewRowsToConfig = (rows: ViewConfigRow[]): Views => {
 };
 
 /**
+ * Maps one database view row to the public API shape.
+ *
+ * @param row - Raw row selected from the views table.
+ * @returns Parsed view configuration row.
+ */
+const mapViewConfigRow = (
+  row: typeof viewConfig.$inferSelect,
+): ViewConfigRow => ({
+  primaryDataset: normalizeTableName(row.primaryDataset),
+  secondaryDataset: row.secondaryDataset
+    ? normalizeTableName(row.secondaryDataset)
+    : row.secondaryDataset,
+  viewConfig: JSON.parse(row.viewConfig) as ViewConfig,
+  viewId: row.viewId,
+  viewName: row.viewName,
+  viewType: row.viewType as ViewType,
+});
+
+/**
  * Fetches each configured view as its own row with parsed JSON config.
  *
+ * @param {string} [primaryDataset] - Optional primary dataset filter.
  * @returns {Promise<ViewConfigRow[]>} View rows used by config management pages.
  */
-export const fetchViewConfigRows = async (): Promise<ViewConfigRow[]> => {
+export const fetchViewConfigRows = async (
+  primaryDataset?: string,
+): Promise<ViewConfigRow[]> => {
   try {
-    const result = await configDb.select().from(viewConfig);
+    const normalizedDataset = primaryDataset
+      ? normalizeTableName(primaryDataset)
+      : undefined;
+    const query = configDb.select().from(viewConfig).$dynamic();
+    const result = normalizedDataset
+      ? await query.where(eq(viewConfig.primaryDataset, normalizedDataset))
+      : await query;
 
-    return result.map((row) => ({
-      primaryDataset: normalizeTableName(row.primaryDataset),
-      secondaryDataset: row.secondaryDataset
-        ? normalizeTableName(row.secondaryDataset)
-        : row.secondaryDataset,
-      viewConfig: JSON.parse(row.viewConfig) as ViewConfig,
-      viewId: row.viewId,
-      viewName: row.viewName,
-      viewType: row.viewType as ViewType,
-    }));
+    return result.map(mapViewConfigRow);
   } catch (error) {
     console.error("Error fetching view config rows:", error);
-    return [];
+    throw error;
   }
 };
 
@@ -614,31 +639,32 @@ export const fetchViewConfigRows = async (): Promise<ViewConfigRow[]> => {
  */
 export const fetchViewConfigRowsForTable = async (
   primaryDataset: string,
-): Promise<ViewConfigRow[]> => {
-  const normalizedDataset = normalizeTableName(primaryDataset);
-  try {
-    const result = await configDb
-      .select()
-      .from(viewConfig)
-      .where(eq(viewConfig.primaryDataset, normalizedDataset));
+): Promise<ViewConfigRow[]> => fetchViewConfigRows(primaryDataset);
 
-    return result.map((row) => ({
-      primaryDataset: normalizeTableName(row.primaryDataset),
-      secondaryDataset: row.secondaryDataset
-        ? normalizeTableName(row.secondaryDataset)
-        : row.secondaryDataset,
-      viewConfig: JSON.parse(row.viewConfig) as ViewConfig,
-      viewId: row.viewId,
-      viewName: row.viewName,
-      viewType: row.viewType as ViewType,
-    }));
-  } catch (error) {
-    console.error(
-      `Error fetching view config rows for table "${normalizedDataset}":`,
-      error,
-    );
-    return [];
+/**
+ * Fetches one configured view by its stable ID.
+ *
+ * @param {number} viewId - Stable view row ID.
+ * @returns {Promise<ViewConfigRow>} Matching view row.
+ */
+export const fetchViewConfigRow = async (
+  viewId: number,
+): Promise<ViewConfigRow> => {
+  const result = await configDb
+    .select()
+    .from(viewConfig)
+    .where(eq(viewConfig.viewId, viewId))
+    .limit(1);
+
+  if (result.length === 0) {
+    const statusMessage = `View ${viewId} was not found`;
+    throw Object.assign(new Error(statusMessage), {
+      statusCode: 404,
+      statusMessage,
+    });
   }
+
+  return mapViewConfigRow(result[0]);
 };
 
 /**
@@ -753,38 +779,43 @@ export const fetchViewConfigForDatasetRead = async (
 };
 
 /**
- * Keeps public_views in sync with view config: add table if permission is anyone, remove otherwise.
- * @param tableName - The table name to sync.
- * @param permission - The ROUTE_LEVEL_PERMISSION for that table.
+ * Keeps public_views in sync with one view's permission.
+ *
+ * @param viewId - View row to synchronize.
+ * @param permission - Current route-level permission.
+ * @returns {Promise<void>}
  */
 export const syncPublicViews = async (
-  tableName: string,
+  viewId: number,
   permission: RouteLevelPermission | undefined,
 ): Promise<void> => {
-  const normalizedTable = normalizeTableName(tableName);
   if (permission === "anyone") {
-    await configDb
-      .insert(publicViews)
-      .values({ tableName: normalizedTable })
-      .onConflictDoNothing();
+    await configDb.insert(publicViews).values({ viewId }).onConflictDoNothing();
   } else {
-    // Ensure table is not in public_views. If it was never there or already removed,
-    // delete affects 0 rows and does not throw; save flow continues normally.
-    await configDb
-      .delete(publicViews)
-      .where(eq(publicViews.tableName, normalizedTable));
+    await configDb.delete(publicViews).where(eq(publicViews.viewId, viewId));
   }
 };
 
 /**
- * Returns the list of table names that are public (ROUTE_LEVEL_PERMISSION = anyone).
- * Used by the open public_views API for middleware auth bypass.
+ * Returns stable identities for views that allow public access.
+ *
+ * @returns {Promise<PublicViewRow[]>} Public view descriptors.
  */
-export const fetchPublicViewTableNames = async (): Promise<string[]> => {
+export const fetchPublicViews = async (): Promise<PublicViewRow[]> => {
   const rows = await configDb
-    .select({ tableName: publicViews.tableName })
-    .from(publicViews);
-  return rows.map((row) => normalizeTableName(row.tableName));
+    .select({
+      primaryDataset: viewConfig.primaryDataset,
+      viewId: viewConfig.viewId,
+      viewType: viewConfig.viewType,
+    })
+    .from(publicViews)
+    .innerJoin(viewConfig, eq(publicViews.viewId, viewConfig.viewId));
+
+  return rows.map((row) => ({
+    primaryDataset: normalizeTableName(row.primaryDataset),
+    viewId: row.viewId,
+    viewType: row.viewType as ViewType,
+  }));
 };
 
 /**
@@ -825,7 +856,33 @@ const assertValidViewConfigColumns = async (
     ),
   ];
 
-  throw createInvalidConfigColumnsError(details.join("; "));
+  throw createBadRequestError(details.join("; "));
+};
+
+/**
+ * Validates text limits enforced by the configuration form.
+ *
+ * @param config - View configuration to validate.
+ * @returns {void}
+ */
+const assertViewConfigTextLimits = (config: ViewConfig): void => {
+  if (
+    config.DATASET_TABLE &&
+    config.DATASET_TABLE.length > CONFIG_LIMITS.DATASET_TABLE
+  ) {
+    throw createBadRequestError(
+      `DATASET_TABLE must be at most ${CONFIG_LIMITS.DATASET_TABLE} characters (received ${config.DATASET_TABLE.length})`,
+    );
+  }
+
+  if (
+    config.VIEW_DESCRIPTION &&
+    config.VIEW_DESCRIPTION.length > CONFIG_LIMITS.VIEW_DESCRIPTION
+  ) {
+    throw createBadRequestError(
+      `VIEW_DESCRIPTION must be at most ${CONFIG_LIMITS.VIEW_DESCRIPTION} characters (received ${config.VIEW_DESCRIPTION.length})`,
+    );
+  }
 };
 
 export const updateConfig = async (
@@ -842,24 +899,7 @@ export const updateConfig = async (
         : secondaryDataset;
     const typedConfig = config as ViewConfig;
 
-    // Validate character limits - check even if field exists as empty string
-    if (typedConfig.DATASET_TABLE) {
-      const datasetTableValue = String(typedConfig.DATASET_TABLE);
-      if (datasetTableValue.length > CONFIG_LIMITS.DATASET_TABLE) {
-        throw new Error(
-          `DATASET_TABLE must be at most ${CONFIG_LIMITS.DATASET_TABLE} characters (received ${datasetTableValue.length})`,
-        );
-      }
-    }
-
-    if (typedConfig.VIEW_DESCRIPTION) {
-      const viewDescriptionValue = String(typedConfig.VIEW_DESCRIPTION);
-      if (viewDescriptionValue.length > CONFIG_LIMITS.VIEW_DESCRIPTION) {
-        throw new Error(
-          `VIEW_DESCRIPTION must be at most ${CONFIG_LIMITS.VIEW_DESCRIPTION} characters (received ${viewDescriptionValue.length})`,
-        );
-      }
-    }
+    assertViewConfigTextLimits(typedConfig);
 
     // A view type is required: a dataset can have several views (e.g. map +
     // gallery), so we must identify exactly one (primary_dataset, view_type) row.
@@ -882,7 +922,7 @@ export const updateConfig = async (
       normalizedSecondary,
     );
 
-    await configDb
+    const updatedRows = await configDb
       .update(viewConfig)
       .set(viewColumns)
       .where(
@@ -890,9 +930,16 @@ export const updateConfig = async (
           eq(viewConfig.primaryDataset, normalizedTable),
           eq(viewConfig.viewType, viewType),
         ),
-      );
+      )
+      .returning({ viewId: viewConfig.viewId });
 
-    await syncPublicViews(normalizedTable, typedConfig.ROUTE_LEVEL_PERMISSION);
+    if (updatedRows.length === 0) {
+      throw createMissingViewConfigError(normalizedTable);
+    }
+    await syncPublicViews(
+      updatedRows[0].viewId,
+      typedConfig.ROUTE_LEVEL_PERMISSION,
+    );
   } catch (error) {
     console.error("Error updating config:", error);
     throw error;
@@ -926,14 +973,21 @@ export const addNewTableToConfig = async (
       viewType,
       normalizedSecondary,
     );
-    await configDb.insert(viewConfig).values({
-      ...buildViewConfigColumns(
-        normalizedTable,
-        config ?? {},
-        viewType,
-        normalizedSecondary,
-      ),
-    });
+    const insertedRows = await configDb
+      .insert(viewConfig)
+      .values({
+        ...buildViewConfigColumns(
+          normalizedTable,
+          config ?? {},
+          viewType,
+          normalizedSecondary,
+        ),
+      })
+      .returning({ viewId: viewConfig.viewId });
+    await syncPublicViews(
+      insertedRows[0].viewId,
+      config?.ROUTE_LEVEL_PERMISSION,
+    );
   } catch (error) {
     // (view_type, primary_dataset) is unique, so re-adding a view type the dataset
     // already has trips a 23505. Translate it into a clear 409 instead of leaking a
@@ -948,7 +1002,6 @@ export const addNewTableToConfig = async (
 
 /**
  * Deletes the view config row for the given primary dataset and view type.
- * If that was the dataset's last remaining view, also removes it from public_views.
  *
  * @param {string} tableName - Primary dataset / table name.
  * @param {ViewType} viewType - View type whose config row to delete.
@@ -968,19 +1021,118 @@ export const removeTableFromConfig = async (
           eq(viewConfig.viewType, viewType),
         ),
       );
-
-    // Only drop the dataset's public_views entry once no views remain for it.
-    const remainingViews = await configDb
-      .select({ viewId: viewConfig.viewId })
-      .from(viewConfig)
-      .where(eq(viewConfig.primaryDataset, normalizedTable));
-    if (remainingViews.length === 0) {
-      await configDb
-        .delete(publicViews)
-        .where(eq(publicViews.tableName, normalizedTable));
-    }
   } catch (error) {
     console.error("Error removing table from config:", error);
     throw error;
   }
+};
+
+/**
+ * Creates one view resource and returns its stable identity.
+ *
+ * @param input - New view fields.
+ * @returns {Promise<ViewConfigRow>} Created view row.
+ */
+export const createView = async (
+  input: CreateViewBody,
+): Promise<ViewConfigRow> => {
+  const normalizedTable = normalizeTableName(input.primaryDataset);
+  const normalizedSecondary =
+    input.secondaryDataset != null && input.secondaryDataset !== ""
+      ? normalizeTableName(input.secondaryDataset)
+      : input.secondaryDataset;
+  const config = input.viewConfig ?? {};
+
+  try {
+    assertViewConfigTextLimits(config);
+    await assertValidViewConfigColumns(
+      normalizedTable,
+      config,
+      input.viewType,
+      normalizedSecondary,
+    );
+    const result = await configDb
+      .insert(viewConfig)
+      .values(
+        buildViewConfigColumns(
+          normalizedTable,
+          config,
+          input.viewType,
+          normalizedSecondary,
+        ),
+      )
+      .returning();
+    const createdView = mapViewConfigRow(result[0]);
+    await syncPublicViews(
+      createdView.viewId,
+      createdView.viewConfig.ROUTE_LEVEL_PERMISSION,
+    );
+    return createdView;
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      throw createDuplicateViewError(normalizedTable, input.viewType);
+    }
+    console.error("Error creating view:", error);
+    throw error;
+  }
+};
+
+/**
+ * Updates one view resource by stable ID.
+ *
+ * @param viewId - View row to update.
+ * @param input - Mutable view fields.
+ * @returns {Promise<ViewConfigRow>} Updated view row.
+ */
+export const updateView = async (
+  viewId: number,
+  input: UpdateViewBody,
+): Promise<ViewConfigRow> => {
+  const existingView = await fetchViewConfigRow(viewId);
+  const secondaryDataset =
+    input.secondaryDataset === undefined
+      ? existingView.secondaryDataset
+      : input.secondaryDataset;
+  const normalizedSecondary =
+    secondaryDataset != null && secondaryDataset !== ""
+      ? normalizeTableName(secondaryDataset)
+      : secondaryDataset;
+
+  assertViewConfigTextLimits(input.viewConfig);
+  await assertValidViewConfigColumns(
+    existingView.primaryDataset,
+    input.viewConfig,
+    existingView.viewType,
+    normalizedSecondary,
+  );
+
+  const result = await configDb
+    .update(viewConfig)
+    .set(
+      buildViewConfigColumns(
+        existingView.primaryDataset,
+        input.viewConfig,
+        existingView.viewType,
+        normalizedSecondary,
+      ),
+    )
+    .where(eq(viewConfig.viewId, viewId))
+    .returning();
+  const updatedView = mapViewConfigRow(result[0]);
+  await syncPublicViews(
+    updatedView.viewId,
+    updatedView.viewConfig.ROUTE_LEVEL_PERMISSION,
+  );
+  return updatedView;
+};
+
+/**
+ * Deletes one view resource by stable ID.
+ *
+ * @param viewId - View row to delete.
+ * @returns {Promise<void>}
+ */
+export const deleteView = async (viewId: number): Promise<void> => {
+  await fetchViewConfigRow(viewId);
+  await configDb.delete(viewConfig).where(eq(viewConfig.viewId, viewId));
 };

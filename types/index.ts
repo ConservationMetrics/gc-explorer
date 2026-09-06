@@ -198,6 +198,41 @@ export type ViewConfigRow = {
   viewConfig: ViewConfig;
 };
 
+export type PublicViewRow = Pick<
+  ViewConfigRow,
+  "primaryDataset" | "viewId" | "viewType"
+>;
+
+export type CreateViewBody = {
+  primaryDataset: string;
+  secondaryDataset?: string | null;
+  viewConfig?: ViewConfig;
+  viewType: ViewType;
+};
+
+export type UpdateViewBody = {
+  secondaryDataset?: string | null;
+  viewConfig: ViewConfig;
+};
+
+export type WarehouseTablesResponse = {
+  geospatialTables: string[];
+  tables: string[];
+};
+
+export type ApiTestViewInput = {
+  secondaryDataset?: string | null;
+  sourceTable: string;
+  viewConfig: ViewConfig;
+  viewType: ViewType;
+};
+
+export type ApiTestView = {
+  primaryDataset: string;
+  secondaryDataset: string | null;
+  viewType: ViewType;
+};
+
 export type ViewTables = {
   primaryTable: string;
   secondaryTable: string | null;

@@ -4,6 +4,7 @@ import {
   openGalleryConfigEditPage,
   openMapConfigEditPage,
 } from "@/tests/e2e/helpers/configPage";
+import type { ViewConfigRow } from "@/types";
 
 test("config page - add new dataset view reachable from index", async ({
   authenticatedPageAsAdmin: page,
@@ -907,11 +908,18 @@ test("config page - column controls use dataset metadata and reject conflicts", 
   await expect(colorColumnSelect.locator('option[value="_id"]')).toHaveCount(0);
   await expect(iconColumnSelect.locator('option[value="_id"]')).toHaveCount(0);
 
-  const invalidSave = await page.request.post(
-    "/api/config/update_config/bcmform_responses?view_type=map",
+  const viewsResponse = await page.request.get(
+    "/api/views?primary_dataset=bcmform_responses",
+  );
+  const views = (await viewsResponse.json()) as ViewConfigRow[];
+  const mapView = views.find((view) => view.viewType === "map");
+  expect(mapView).toBeDefined();
+
+  const invalidSave = await page.request.patch(
+    `/api/views/${mapView!.viewId}`,
     {
       data: {
-        config: {
+        viewConfig: {
           COLOR_COLUMN: "_id",
         },
         secondaryDataset: null,

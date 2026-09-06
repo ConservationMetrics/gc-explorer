@@ -1,9 +1,6 @@
 -- Guardian Connector test fixtures (data only).
 -- DDL is owned by Drizzle migrations; applied after migrate in CI (see server/plugins/migrate.ts).
 
-INSERT INTO public_views (table_name) VALUES ('seed_survey_data') ON CONFLICT DO NOTHING;
-INSERT INTO public_views (table_name) VALUES ('fake_alerts') ON CONFLICT DO NOTHING;
-
 -- MAPBOX_STYLE uses a minimal local style object so E2E map load does not depend on
 -- remote Mapbox style API availability in CI.
 INSERT INTO views (view_name, view_type, primary_dataset, secondary_dataset, view_config) VALUES
@@ -43,3 +40,9 @@ INSERT INTO views (view_name, view_type, primary_dataset, secondary_dataset, vie
     '{"EMBED_MEDIA":"NO","MEDIA_BASE_PATH_ALERTS":"","MEDIA_BASE_PATH":"","MAPBOX_STYLE":{"version":8,"sources":{},"layers":[{"id":"background","type":"background","paint":{"background-color":"#f8fafc"}}]},"MAPBOX_PROJECTION":"globe","MAPBOX_CENTER_LATITUDE":"1.20","MAPBOX_CENTER_LONGITUDE":"34.60","MAPBOX_ZOOM":8,"MAPBOX_PITCH":0,"MAPBOX_BEARING":0,"MAPBOX_3D":false,"FRONT_END_FILTER_COLUMN":"p__categoryid","SECONDARY_FILTER_VALUES":"threat","MAP_LEGEND_LAYER_IDS":"road-primary,aerialway","ALERT_RESOURCES":"NO","MAPBOX_ACCESS_TOKEN":"{MAPBOX_ACCESS_TOKEN}","PLANET_API_KEY":"{PLANET_API_KEY}","ROUTE_LEVEL_PERMISSION":"anyone"}'
   )
 ON CONFLICT (view_type, primary_dataset) DO NOTHING;
+
+INSERT INTO public_views (view_id)
+SELECT view_id
+FROM views
+WHERE view_config::jsonb ->> 'ROUTE_LEVEL_PERMISSION' = 'anyone'
+ON CONFLICT DO NOTHING;

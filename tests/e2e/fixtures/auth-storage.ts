@@ -93,6 +93,7 @@ export const test = baseTest.extend<{
   authenticatedPageAsMember: Page;
   authenticatedPageAsAdmin: Page;
   authenticatedRequestAsAdmin: APIRequestContext;
+  authenticatedRequestAsMember: APIRequestContext;
 }>({
   /**
    * Fixture that provides a page authenticated as SignedIn user.
@@ -190,6 +191,16 @@ export const test = baseTest.extend<{
    */
   authenticatedRequestAsAdmin: async ({ playwright, baseURL }, use) => {
     const authFile = getAuthFile("admin");
+    const requestContext = await playwright.request.newContext({
+      storageState: authFile,
+      baseURL,
+    });
+    await use(requestContext);
+    await requestContext.dispose();
+  },
+
+  authenticatedRequestAsMember: async ({ playwright, baseURL }, use) => {
+    const authFile = getAuthFile("member");
     const requestContext = await playwright.request.newContext({
       storageState: authFile,
       baseURL,

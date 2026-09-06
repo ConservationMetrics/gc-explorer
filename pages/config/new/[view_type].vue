@@ -15,6 +15,7 @@ import {
   type ViewConfig,
   type ViewConfigRow,
   type ViewType,
+  type WarehouseTablesResponse,
 } from "@/types";
 import { ChevronLeft } from "lucide-vue-next";
 import { encodeDatasetNameForUrl } from "@/utils/identifierUtils";
@@ -42,17 +43,26 @@ const primaryDataset = ref(
   typeof route.query.primary === "string" ? route.query.primary : "",
 );
 
-const { data, error, refresh } = await useFetch<{
-  views: ViewConfigRow[];
-  availableTables: string[];
-  availableGeospatialTables?: string[];
-}>("/api/config");
+const {
+  data: viewsData,
+  error: viewsError,
+  refresh: refreshViews,
+} = await useFetch<ViewConfigRow[]>("/api/views");
+const {
+  data: warehouseData,
+  error: warehouseError,
+  refresh: refreshWarehouse,
+} = await useFetch<WarehouseTablesResponse>("/api/warehouse/tables");
 
-const availableTables = computed(() => data.value?.availableTables ?? []);
+const error = computed(() => viewsError.value ?? warehouseError.value);
+const refresh = async () => {
+  await Promise.all([refreshViews(), refreshWarehouse()]);
+};
+const availableTables = computed(() => warehouseData.value?.tables ?? []);
 const availableGeospatialTables = computed(
-  () => data.value?.availableGeospatialTables ?? availableTables.value,
+  () => warehouseData.value?.geospatialTables ?? availableTables.value,
 );
-const viewRows = computed(() => data.value?.views ?? []);
+const viewRows = computed(() => viewsData.value ?? []);
 
 const viewConfig = ref<ViewConfig>({});
 const secondaryDataset = ref<string | null>(null);
@@ -129,23 +139,21 @@ const submitConfig = async ({
   errorMessage.value = null;
   isSaving.value = true;
   try {
-    await $fetch(
-      `/api/config/new_table/${encodeDatasetNameForUrl(tableName)}`,
-      {
-        method: "POST",
-        query: { view_type: viewType.value },
-        body: JSON.stringify({
-          config,
-          secondaryDataset: submittedSecondaryDataset,
-        }),
+    const createdView = await $fetch<ViewConfigRow>("/api/views", {
+      method: "POST",
+      body: {
+        primaryDataset: tableName,
+        secondaryDataset: submittedSecondaryDataset,
+        viewConfig: config,
+        viewType: viewType.value,
       },
-    );
+    });
     showSavedModal.value = true;
     setTimeout(async () => {
       showSavedModal.value = false;
       await navigateTo({
-        path: `/config/${encodeDatasetNameForUrl(tableName)}`,
-        query: { view_type: viewType.value },
+        path: `/config/${encodeDatasetNameForUrl(createdView.primaryDataset)}`,
+        query: { view_type: createdView.viewType },
       });
     }, 2000);
   } catch (err) {

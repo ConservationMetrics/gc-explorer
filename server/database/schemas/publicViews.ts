@@ -1,5 +1,8 @@
-import { pgTable, text } from "drizzle-orm/pg-core";
+import { integer, pgTable } from "drizzle-orm/pg-core";
+import { viewConfig } from "./viewConfig";
 
 export const publicViews = pgTable("public_views", {
-  tableName: text("table_name").primaryKey(),
+  viewId: integer("view_id")
+    .primaryKey()
+    .references(() => viewConfig.viewId, { onDelete: "cascade" }),
 });

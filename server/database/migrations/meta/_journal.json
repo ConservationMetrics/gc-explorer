@@ -99,6 +99,13 @@
       "when": 1787490000000,
       "tag": "0013_strip_unwanted_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1787821200000,
+      "tag": "0014_public_views_by_view_id",
+      "breakpoints": true
     }
   ]
 }

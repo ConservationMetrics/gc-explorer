@@ -81,3 +81,24 @@ test("retired route redirect does not loop", async ({
   await page.waitForTimeout(1000);
   expect(new URL(page.url()).pathname).toBe("/");
 });
+
+test("retired config API controllers return 404", async ({
+  authenticatedRequestAsAdmin: request,
+}) => {
+  const responses = await Promise.all([
+    request.get("/api/config"),
+    request.get("/api/config/bcmform_responses"),
+    request.get("/api/config/public_views"),
+    request.post("/api/config/new_table/bcmform_responses?view_type=gallery"),
+    request.post(
+      "/api/config/update_config/bcmform_responses?view_type=gallery",
+    ),
+    request.post(
+      "/api/config/delete_table/bcmform_responses?view_type=gallery",
+    ),
+  ]);
+
+  expect(responses.map((response) => response.status())).toEqual([
+    404, 404, 404, 404, 404, 404,
+  ]);
+});

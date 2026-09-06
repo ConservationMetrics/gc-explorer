@@ -126,7 +126,7 @@ describe("index page empty state", () => {
 
   it("shows add new dataset view button when there are no views", async () => {
     useFetchMock.mockResolvedValue({
-      data: ref({ views: [], availableTables: [] }),
+      data: ref([]),
       error: ref(null),
       refresh: vi.fn(),
     });
@@ -153,7 +153,7 @@ describe("index page empty state", () => {
       user: ref({ userRole: 0 }),
     });
     useFetchMock.mockResolvedValue({
-      data: ref({ views: [], availableTables: [] }),
+      data: ref([]),
       error: ref(null),
       refresh: vi.fn(),
     });

@@ -2,7 +2,7 @@
 import { useAppConfig } from "#imports";
 import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
-import type { ViewType } from "@/types";
+import type { ViewType, WarehouseTablesResponse } from "@/types";
 import { compareLabels } from "@/utils/identifierUtils";
 import { ChevronLeft, Images, Map, TriangleAlert } from "lucide-vue-next";
 
@@ -35,12 +35,12 @@ const { t } = useI18n();
 const selectedViewType = ref<ViewType | null>(null);
 const selectedPrimary = ref("");
 
-const { data, error, refresh } = await useFetch<{
-  availableTables: string[];
-}>("/api/config");
+const { data, error, refresh } = await useFetch<WarehouseTablesResponse>(
+  "/api/warehouse/tables",
+);
 
 const availableTables = computed(() =>
-  [...(data.value?.availableTables ?? [])].sort(compareLabels),
+  [...(data.value?.tables ?? [])].sort(compareLabels),
 );
 
 /**
