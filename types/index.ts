@@ -100,13 +100,11 @@ export interface ViewConfig {
   LOGO_URL?: string;
   MAPBOX_3D?: boolean;
   MAPBOX_3D_TERRAIN_EXAGGERATION?: number;
-  MAPBOX_ACCESS_TOKEN?: string;
   MAPBOX_BEARING?: number;
   MAPBOX_CENTER_LATITUDE?: string;
   MAPBOX_CENTER_LONGITUDE?: string;
   MAPBOX_PITCH?: number;
   MAPBOX_PROJECTION?: string;
-  MAPBOX_STYLE?: MapboxStyleConfig; // Deprecated: use MAPBOX_BASEMAPS instead
   MAPBOX_BASEMAPS?: string; // JSON string of BasemapConfig[]
   MAPBOX_ZOOM?: number;
   SECONDARY_FILTER_VALUES?: string;
@@ -269,13 +267,21 @@ export interface Basemap {
   style?: MapboxStyleConfig;
   url?: string;
   monthYear?: string;
+  access_token?: string;
 }
 
 export interface BasemapConfig {
   name: string;
   style: MapboxStyleConfig;
+  access_token: string;
   isDefault?: boolean;
 }
+
+export type ParsedBasemaps = {
+  basemaps: BasemapConfig[];
+  defaultMapboxStyle?: MapboxStyleConfig;
+  defaultAccessToken?: string;
+};
 
 export interface BasemapOption {
   id: string;

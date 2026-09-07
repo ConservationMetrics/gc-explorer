@@ -479,6 +479,9 @@ const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
 
 /** Handle basemap change and update map style */
 const handleBasemapChange = (newBasemap: Basemap) => {
+  if (newBasemap.access_token) {
+    mapboxgl.accessToken = newBasemap.access_token;
+  }
   changeMapStyle(map.value, newBasemap, props.planetApiKey);
   currentBasemap.value = newBasemap;
 
@@ -653,7 +656,6 @@ onBeforeUnmount(() => {
         showBasemapSelector &&
         ((mapboxBasemaps?.length ?? 0) > 1 || !!planetApiKey)
       "
-      :mapbox-style="mapboxStyle"
       :mapbox-basemaps="mapboxBasemaps || []"
       :planet-api-key="planetApiKey"
       @basemap-selected="handleBasemapChange"

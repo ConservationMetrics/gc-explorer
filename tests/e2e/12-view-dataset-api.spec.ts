@@ -74,6 +74,20 @@ test.describe("map dataset API", () => {
       sourceTable: "bcmform_responses",
       viewConfig: {
         FRONT_END_FILTER_COLUMN: "community",
+        MAPBOX_BASEMAPS: JSON.stringify([
+          {
+            name: "Streets",
+            style: "mapbox://styles/mapbox/streets-v12",
+            access_token: "pk.default",
+            isDefault: true,
+          },
+          {
+            name: "Satellite",
+            style: "mapbox://styles/mapbox/satellite-v9",
+            access_token: "pk.other",
+            isDefault: false,
+          },
+        ]),
         MAPBOX_CENTER_LATITUDE: "3.44704",
         MAPBOX_CENTER_LONGITUDE: "-76.53995",
         MAPBOX_ZOOM: 16,
@@ -105,6 +119,21 @@ test.describe("map dataset API", () => {
     expect(body.mapboxLatitude).toEqual(expect.any(Number));
     expect(body.mapboxLongitude).toEqual(expect.any(Number));
     expect(body.mapboxZoom).toEqual(expect.any(Number));
+    expect(body.mapboxAccessToken).toBe("pk.default");
+    expect(body.mapboxBasemaps).toEqual([
+      {
+        name: "Streets",
+        style: "mapbox://styles/mapbox/streets-v12",
+        access_token: "pk.default",
+        isDefault: true,
+      },
+      {
+        name: "Satellite",
+        style: "mapbox://styles/mapbox/satellite-v9",
+        access_token: "pk.other",
+        isDefault: false,
+      },
+    ]);
     expect(body.mapStatistics).toEqual(
       expect.objectContaining({
         totalFeatures: expect.any(Number),

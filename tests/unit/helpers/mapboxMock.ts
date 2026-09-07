@@ -7,6 +7,7 @@ import { vi } from "vitest";
 // Internal state ---------------------------------------------------------
 export const layers: Array<Record<string, unknown>> = [];
 let loadCallback: (() => void) | undefined;
+let accessToken: string | null = null;
 const clickCallbacks: Record<string, Array<(evt: unknown) => void>> = {};
 
 // Spyable helpers --------------------------------------------------------
@@ -78,6 +79,10 @@ export function fireClick(layerId: string, evt: unknown): void {
   clickCallbacks[layerId]?.forEach((cb) => cb(evt));
 }
 
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
 export function reset(): void {
   Map.mockClear();
   NavigationControl.mockClear();
@@ -94,6 +99,7 @@ export function reset(): void {
   mockMap.remove.mockClear();
   layers.length = 0;
   loadCallback = undefined;
+  accessToken = null;
   Object.keys(clickCallbacks).forEach((k) => {
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete clickCallbacks[k];
@@ -103,6 +109,12 @@ export function reset(): void {
 // Register global module mock -------------------------------------------
 vi.mock("mapbox-gl", () => {
   const stub = {
+    get accessToken() {
+      return accessToken;
+    },
+    set accessToken(value: string) {
+      accessToken = value;
+    },
     Map,
     NavigationControl,
     ScaleControl,
