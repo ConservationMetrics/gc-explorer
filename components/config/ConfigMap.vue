@@ -419,7 +419,18 @@ const fullWidthKeys = [
               {{ $t("mapboxSettings") }}
             </ConfigFieldLabel>
             <p class="text-sm text-gray-500 mb-4">
-              {{ $t("mapboxSettingsDescription") }}
+              <i18n-t keypath="mapboxSettingsDescription" tag="span">
+                <template #link>
+                  <a
+                    href="https://docs.mapbox.com/android/maps/guides/camera-and-animation/camera/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="underline underline-offset-2 hover:text-gray-700"
+                  >
+                    {{ $t("mapboxSettingsDescriptionLink") }}
+                  </a>
+                </template>
+              </i18n-t>
             </p>
           </div>
           <ConfigMapPreview

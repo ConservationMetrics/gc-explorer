@@ -271,6 +271,11 @@ describe("ConfigMap preview backgrounds", () => {
       global: {
         ...globalOptions,
         mocks: { $t: (key: string) => en[key as keyof typeof en] ?? key },
+        stubs: {
+          "i18n-t": {
+            template: '<span>Set the <slot name="link" /> of the map.</span>',
+          },
+        },
       },
     });
     const heading = wrapper
@@ -278,6 +283,13 @@ describe("ConfigMap preview backgrounds", () => {
       .find((label) => label.text() === "Mapbox Settings");
     expect(heading).toBeDefined();
     expect(wrapper.text()).toContain("Set the camera position of the map.");
+    const cameraPositionLink = wrapper.get(
+      'a[href="https://docs.mapbox.com/android/maps/guides/camera-and-animation/camera/"]',
+    );
+    expect(cameraPositionLink.text()).toBe("camera position");
+    expect(cameraPositionLink.classes()).toContain("underline");
+    expect(cameraPositionLink.attributes("target")).toBe("_blank");
+    expect(cameraPositionLink.attributes("rel")).toBe("noopener noreferrer");
     const backgrounds = wrapper.get('[data-testid="basemaps-container"]');
     const preview = wrapper.get('[data-testid="config-map-preview"]');
     expect(
