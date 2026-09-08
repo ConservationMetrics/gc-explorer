@@ -209,6 +209,8 @@
   "mapboxProjectionDescription": "Een kaartprojectie is een manier om het aardoppervlak plat te maken op een pagina of scherm. Elke projectie heeft sterke en zwakke punten, dus de juiste projectie hangt af van uw use case. Zie {link} voor informatie over specifieke projectieopties.",
   "mapboxProjectionDescriptionLink": "de gids van Mapbox over projecties",
   "mapboxSatellite": "Mapbox Satellite",
+  "mapboxSettings": "Mapbox-instellingen",
+  "mapboxSettingsDescription": "Stel de camerapositie van de kaart in.",
   "mapboxStreets": "Mapbox Streets",
   "mapboxStyle": "Mapbox stijl",
   "mapboxZoom": "Zoomniveau (0 tot 22)",

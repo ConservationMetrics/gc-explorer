@@ -414,6 +414,14 @@ const fullWidthKeys = [
               + {{ $t("addBackgroundMapOption") }}
             </button>
           </div>
+          <div class="pt-4">
+            <ConfigFieldLabel class="mb-2">
+              {{ $t("mapboxSettings") }}
+            </ConfigFieldLabel>
+            <p class="text-sm text-gray-500 mb-4">
+              {{ $t("mapboxSettingsDescription") }}
+            </p>
+          </div>
           <ConfigMapPreview
             v-if="previewBasemap"
             :key="`${previewBasemap.style}:${previewBasemap.accessToken}`"

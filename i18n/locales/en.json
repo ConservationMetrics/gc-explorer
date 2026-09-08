@@ -212,6 +212,8 @@
   "mapboxProjectionDescription": "A map projection is a way to flatten the planet's surface onto a page or screen. Every projection has strengths and weaknesses, so the right projection depends on your use case. See {link} for information on specific projection options.",
   "mapboxProjectionDescriptionLink": "Mapbox's guide on projections",
   "mapboxSatellite": "Mapbox Satellite",
+  "mapboxSettings": "Mapbox Settings",
+  "mapboxSettingsDescription": "Set the camera position of the map.",
   "mapboxStreets": "Mapbox Streets",
   "mapboxStyle": "Mapbox Style",
   "mapboxZoom": "Zoom level (0 to 22)",

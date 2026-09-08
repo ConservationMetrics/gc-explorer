@@ -208,6 +208,8 @@
   "mapboxProjectionDescription": "Uma projeção de mapa é uma forma de achatar a superfície do planeta em uma página ou tela. Cada projeção tem pontos fortes e fracos, portanto a projeção adequada depende do seu caso de uso. Veja {link} para informações sobre as opções de projeção específicas.",
   "mapboxProjectionDescriptionLink": "o guia da Mapbox sobre projeções",
   "mapboxSatellite": "Mapbox Satellite",
+  "mapboxSettings": "Configurações do Mapbox",
+  "mapboxSettingsDescription": "Defina a posição da câmera do mapa.",
   "mapboxStreets": "Mapbox Streets",
   "mapboxStyle": "Estilo do Mapbox",
   "mapboxZoom": "Nível de zoom (0 a 22)",

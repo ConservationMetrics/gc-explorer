@@ -7,6 +7,7 @@ import {
   ref,
   watch,
 } from "vue";
+import { MapPin } from "lucide-vue-next";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { ViewConfig } from "@/types";
@@ -139,8 +140,14 @@ onBeforeUnmount(dispose);
 <template>
   <div
     v-show="ready"
-    ref="container"
-    class="h-80 w-full overflow-hidden rounded-xl border border-violet-100"
+    class="relative h-80 w-full overflow-hidden rounded-xl border border-violet-100"
     data-testid="config-map-preview"
-  ></div>
+  >
+    <div ref="container" class="h-full w-full"></div>
+    <MapPin
+      class="pointer-events-none absolute left-1/2 top-1/2 z-10 h-6 w-6 -translate-x-1/2 -translate-y-[22px] fill-violet-100 text-violet-700 drop-shadow"
+      aria-hidden="true"
+      data-testid="config-map-center-pin"
+    />
+  </div>
 </template>

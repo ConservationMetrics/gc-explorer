@@ -3,6 +3,7 @@ import { mount } from "@vue/test-utils";
 import { computed, onMounted, ref, watch } from "vue";
 import ConfigMap from "@/components/config/ConfigMap.vue";
 import ConfigMapPreview from "@/components/config/ConfigMapPreview.vue";
+import en from "@/i18n/locales/en.json";
 import type { ViewConfig } from "@/types";
 
 const mapbox = vi.hoisted(() => ({
@@ -142,8 +143,11 @@ describe("ConfigMapPreview", () => {
       }),
     );
     expect(wrapper.isVisible()).toBe(false);
+    const pin = wrapper.get('[data-testid="config-map-center-pin"]');
+    expect(pin.isVisible()).toBe(false);
     await mapbox.handlers.load();
     expect(wrapper.isVisible()).toBe(true);
+    expect(pin.isVisible()).toBe(true);
     expect(wrapper.emitted("updateConfig")).toBeUndefined();
     wrapper.unmount();
   });
@@ -256,6 +260,36 @@ describe("ConfigMapPreview", () => {
 });
 
 describe("ConfigMap preview backgrounds", () => {
+  it("labels the camera settings below background options and above the preview", () => {
+    const wrapper = mount(ConfigMap, {
+      props: {
+        config,
+        tableName: "test",
+        views: ["map"],
+        keys: ["MAPBOX_BASEMAPS"],
+      },
+      global: {
+        ...globalOptions,
+        mocks: { $t: (key: string) => en[key as keyof typeof en] ?? key },
+      },
+    });
+    const heading = wrapper
+      .findAll("label")
+      .find((label) => label.text() === "Mapbox Settings");
+    expect(heading).toBeDefined();
+    expect(wrapper.text()).toContain("Set the camera position of the map.");
+    const backgrounds = wrapper.get('[data-testid="basemaps-container"]');
+    const preview = wrapper.get('[data-testid="config-map-preview"]');
+    expect(
+      backgrounds.element.compareDocumentPosition(heading!.element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      heading!.element.compareDocumentPosition(preview.element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    wrapper.unmount();
+  });
   it.each([
     { style: "", access_token: "pk.eyTest" },
     { style: "invalid", access_token: "pk.eyTest" },
