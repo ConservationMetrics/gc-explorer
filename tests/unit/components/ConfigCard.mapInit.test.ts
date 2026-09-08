@@ -63,6 +63,7 @@ const mountConfigCard = () =>
         ConfigMap,
       },
       stubs: {
+        ConfigMapPreview: true,
         "i18n-t": {
           template: "<span><slot></slot><slot name='link'></slot></span>",
         },
