@@ -210,7 +210,7 @@
   "mapboxProjectionDescriptionLink": "de gids van Mapbox over projecties",
   "mapboxSatellite": "Mapbox Satellite",
   "mapboxSettings": "Mapbox-instellingen",
-  "mapboxSettingsDescription": "Stel de {link} van de kaart in.",
+  "mapboxSettingsDescription": "Stel de {link} van de kaart in. U kunt de kaart gebruiken om deze waarden in te stellen of de velden handmatig invullen.",
   "mapboxSettingsDescriptionLink": "camerapositie",
   "mapboxStreets": "Mapbox Streets",
   "mapboxStyle": "Mapbox stijl",

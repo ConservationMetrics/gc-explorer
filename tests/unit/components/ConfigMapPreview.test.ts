@@ -273,7 +273,8 @@ describe("ConfigMap preview backgrounds", () => {
         mocks: { $t: (key: string) => en[key as keyof typeof en] ?? key },
         stubs: {
           "i18n-t": {
-            template: '<span>Set the <slot name="link" /> of the map.</span>',
+            template:
+              '<span>Set the <slot name="link" /> of the map. You can either interact with the map to set these values, or fill in the fields manually.</span>',
           },
         },
       },
@@ -282,7 +283,9 @@ describe("ConfigMap preview backgrounds", () => {
       .findAll("label")
       .find((label) => label.text() === "Mapbox Settings");
     expect(heading).toBeDefined();
-    expect(wrapper.text()).toContain("Set the camera position of the map.");
+    expect(wrapper.text()).toContain(
+      "Set the camera position of the map. You can either interact with the map to set these values, or fill in the fields manually.",
+    );
     const cameraPositionLink = wrapper.get(
       'a[href="https://docs.mapbox.com/android/maps/guides/camera-and-animation/camera/"]',
     );

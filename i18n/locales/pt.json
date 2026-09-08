@@ -209,7 +209,7 @@
   "mapboxProjectionDescriptionLink": "o guia da Mapbox sobre projeções",
   "mapboxSatellite": "Mapbox Satellite",
   "mapboxSettings": "Configurações do Mapbox",
-  "mapboxSettingsDescription": "Defina a {link} do mapa.",
+  "mapboxSettingsDescription": "Defina a {link} do mapa. Você pode interagir com o mapa para definir esses valores ou preencher os campos manualmente.",
   "mapboxSettingsDescriptionLink": "posição da câmera",
   "mapboxStreets": "Mapbox Streets",
   "mapboxStyle": "Estilo do Mapbox",
