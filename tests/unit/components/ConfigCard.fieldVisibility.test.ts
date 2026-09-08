@@ -23,7 +23,14 @@ const mountConfigCard = (viewType: ViewType) =>
       tableName: "primary_dataset",
       viewType,
       viewConfig: {
-        MAPBOX_ACCESS_TOKEN: "pk.ey.test-token",
+        MAPBOX_BASEMAPS: JSON.stringify([
+          {
+            name: "Satellite Streets",
+            style: "mapbox://styles/mapbox/satellite-streets-v12",
+            access_token: "pk.ey.test-token",
+            isDefault: true,
+          },
+        ]),
         ROUTE_LEVEL_PERMISSION: "member",
       } as ViewConfig,
     },
@@ -65,6 +72,9 @@ describe("ConfigCard field visibility by view type", () => {
     ]);
     expect(keysFrom(wrapper, "config-map")).toEqual(
       expect.arrayContaining(["COLOR_COLUMN", "ICON_COLUMN", "PLANET_API_KEY"]),
+    );
+    expect(keysFrom(wrapper, "config-map")).not.toContain(
+      "MAPBOX_ACCESS_TOKEN",
     );
     expect(keysFrom(wrapper, "config-media")).toEqual([
       "MEDIA_BASE_PATH",

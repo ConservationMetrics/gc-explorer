@@ -98,7 +98,8 @@ export default defineEventHandler(async (event: H3Event) => {
     const mapStatistics = prepareMapStatistics(filteredGeoData);
 
     // Parse basemaps configuration
-    const { basemaps, defaultMapboxStyle } = parseBasemaps(tableConfig);
+    const { basemaps, defaultMapboxStyle, defaultAccessToken } =
+      parseBasemaps(tableConfig);
 
     return {
       allowedFileExtensions,
@@ -114,7 +115,7 @@ export default defineEventHandler(async (event: H3Event) => {
       mapbox3dTerrainExaggeration: Number(
         tableConfig.MAPBOX_3D_TERRAIN_EXAGGERATION,
       ),
-      mapboxAccessToken: tableConfig.MAPBOX_ACCESS_TOKEN,
+      mapboxAccessToken: defaultAccessToken,
       mapboxBearing: Number(tableConfig.MAPBOX_BEARING),
       mapboxLatitude: Number(tableConfig.MAPBOX_CENTER_LATITUDE),
       mapboxLongitude: Number(tableConfig.MAPBOX_CENTER_LONGITUDE),

@@ -1,57 +1,38 @@
-import type { BasemapConfig, MapboxStyleConfig, ViewConfig } from "@/types";
+import type { BasemapConfig, ParsedBasemaps, ViewConfig } from "@/types";
 
 import { sql } from "drizzle-orm";
 
 import { warehouseDb } from "@/server/database/dbConnection";
 import { fetchTableNames } from "@/server/database/dbOperations";
 
-export type ParsedBasemaps = {
-  basemaps: BasemapConfig[];
-  defaultMapboxStyle?: MapboxStyleConfig;
-};
-
 /**
- * Parse basemaps configuration from ViewConfig for a given table, with legacy fallback.
+ * Parse MAPBOX_BASEMAPS from a view configuration.
+ *
+ * @param {ViewConfig} tableConfig - View configuration that may include MAPBOX_BASEMAPS.
+ * @returns {ParsedBasemaps} Parsed basemaps plus the default style and access token.
  */
 export const parseBasemaps = (tableConfig: ViewConfig): ParsedBasemaps => {
   let basemaps: BasemapConfig[] = [];
-  let defaultMapboxStyle: MapboxStyleConfig | undefined;
 
   if (tableConfig.MAPBOX_BASEMAPS) {
     try {
-      basemaps = JSON.parse(tableConfig.MAPBOX_BASEMAPS as string);
-      const defaultBasemap = basemaps.find((b) => b.isDefault);
-      if (defaultBasemap) {
-        defaultMapboxStyle = defaultBasemap.style;
-      } else if (basemaps.length > 0) {
-        defaultMapboxStyle = basemaps[0].style;
+      const parsed = JSON.parse(tableConfig.MAPBOX_BASEMAPS) as BasemapConfig[];
+      if (Array.isArray(parsed)) {
+        basemaps = parsed;
       }
     } catch {
-      // If parsing fails, fall back to legacy MAPBOX_STYLE
-      defaultMapboxStyle = tableConfig.MAPBOX_STYLE;
-      if (defaultMapboxStyle) {
-        basemaps = [
-          {
-            name: "Default Style",
-            style: defaultMapboxStyle,
-            isDefault: true,
-          },
-        ];
-      }
+      basemaps = [];
     }
-  } else if (tableConfig.MAPBOX_STYLE) {
-    // Legacy fallback
-    defaultMapboxStyle = tableConfig.MAPBOX_STYLE;
-    basemaps = [
-      {
-        name: "Default Style",
-        style: defaultMapboxStyle,
-        isDefault: true,
-      },
-    ];
   }
 
-  return { basemaps, defaultMapboxStyle };
+  const defaultBasemap =
+    basemaps.find((basemap) => basemap.isDefault) ?? basemaps[0];
+
+  return {
+    basemaps,
+    defaultMapboxStyle: defaultBasemap?.style,
+    defaultAccessToken: defaultBasemap?.access_token,
+  };
 };
 
 /** Retrieves table names from the database, excluding those with metadata, columns, and PostGIS-related entries. */

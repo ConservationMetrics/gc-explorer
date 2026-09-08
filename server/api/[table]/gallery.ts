@@ -82,18 +82,18 @@ export default defineEventHandler(async (event: H3Event) => {
       tableConfig.MEDIA_COLUMN,
     );
 
-    let mapboxAccessToken = tableConfig.MAPBOX_ACCESS_TOKEN;
-    let mapboxStyle =
-      parseBasemaps(tableConfig).defaultMapboxStyle ?? tableConfig.MAPBOX_STYLE;
+    const parsedGalleryBasemaps = parseBasemaps(tableConfig);
+    let mapboxAccessToken = parsedGalleryBasemaps.defaultAccessToken;
+    let mapboxStyle = parsedGalleryBasemaps.defaultMapboxStyle;
 
     try {
       if (!mapboxAccessToken || !mapboxStyle) {
         const mapConfig = await fetchTableConfig(table, "map");
-        mapboxAccessToken = mapboxAccessToken ?? mapConfig.MAPBOX_ACCESS_TOKEN;
+        const parsedMapBasemaps = parseBasemaps(mapConfig);
+        mapboxAccessToken =
+          mapboxAccessToken ?? parsedMapBasemaps.defaultAccessToken;
         if (!mapboxStyle) {
-          mapboxStyle =
-            parseBasemaps(mapConfig).defaultMapboxStyle ??
-            mapConfig.MAPBOX_STYLE;
+          mapboxStyle = parsedMapBasemaps.defaultMapboxStyle;
         }
       }
     } catch {

@@ -180,6 +180,31 @@ describe("AlertsDashboard component", () => {
     expect(wrapper.exists()).toBe(true);
   });
 
+  it("uses the selected basemap access token", async () => {
+    const wrapper = mountComponent();
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      handleBasemapChange: (basemap: {
+        id: string;
+        style: string;
+        access_token: string;
+      }) => void;
+    };
+
+    vm.handleBasemapChange({
+      id: "satellite",
+      style: "mapbox://styles/mapbox/satellite-v9",
+      access_token: "pk.other",
+    });
+
+    expect(mapboxMock.getAccessToken()).toBe("pk.other");
+    expect(mapboxMock.mockMap.setStyle).toHaveBeenCalledWith(
+      "mapbox://styles/mapbox/satellite-v9",
+    );
+  });
+
   it("selects an alert feature and opens sidebar", async () => {
     const props = JSON.parse(JSON.stringify(baseProps));
     props.alertsData.mostRecentAlerts.features.push({

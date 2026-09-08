@@ -75,6 +75,7 @@ watch(terrainExaggeration, (value) => {
 const DEFAULT_BASEMAP: BasemapConfig = {
   name: "Satellite Streets",
   style: "mapbox://styles/mapbox/satellite-streets-v12",
+  access_token: "",
   isDefault: true,
 };
 
@@ -86,17 +87,8 @@ const getConfiguredBasemaps = (): BasemapConfig[] | null => {
       ) as BasemapConfig[];
       if (parsed.length > 0) return parsed;
     } catch {
-      // fall through to legacy/default handling
+      // fall through to default handling
     }
-  }
-  if (props.config.MAPBOX_STYLE) {
-    return [
-      {
-        name: "Default Style",
-        style: props.config.MAPBOX_STYLE,
-        isDefault: true,
-      },
-    ];
   }
   return null;
 };
@@ -124,22 +116,6 @@ watch(
   },
 );
 
-watch(
-  () => props.config.MAPBOX_STYLE,
-  () => {
-    if (!props.config.MAPBOX_BASEMAPS && props.config.MAPBOX_STYLE) {
-      basemaps.value = [
-        {
-          name: "Default Style",
-          style: props.config.MAPBOX_STYLE,
-          isDefault: true,
-        },
-      ];
-      ensureDefault();
-    }
-  },
-);
-
 // Ensure first basemap is always marked as default
 const ensureDefault = () => {
   if (basemaps.value.length > 0) {
@@ -154,9 +130,11 @@ const addBasemap = () => {
   if (basemaps.value.length >= 3) {
     return;
   }
+  const defaultToken = basemaps.value[0]?.access_token ?? "";
   basemaps.value.push({
     name: "",
     style: "",
+    access_token: defaultToken,
     isDefault: false,
   });
   ensureDefault();
@@ -242,8 +220,7 @@ const handleDrop = (e: DragEvent, dropIndex: number) => {
 };
 
 const fullWidthKeys = [
-  "MAPBOX_STYLE",
-  "MAPBOX_ACCESS_TOKEN",
+  "MAPBOX_BASEMAPS",
   "MAPBOX_3D",
   "MAP_LEGEND_LAYER_IDS",
   "PLANET_API_KEY",
@@ -262,7 +239,7 @@ const fullWidthKeys = [
         :class="{ 'md:col-span-2': fullWidthKeys.includes(key) }"
       >
         <!-- Mapbox Basemaps -->
-        <template v-if="key === 'MAPBOX_STYLE'">
+        <template v-if="key === 'MAPBOX_BASEMAPS'">
           <ConfigFieldLabel class="mb-2">
             {{ $t("mapboxBackgroundMaps") }}
           </ConfigFieldLabel>
@@ -379,6 +356,30 @@ const fullWidthKeys = [
                       </div>
                     </div>
                   </div>
+                  <div>
+                    <ConfigFieldLabel
+                      :for-id="`${tableName}-basemap-access-token-${index}`"
+                      required
+                      class="mb-1"
+                    >
+                      {{ $t("mapboxAccessToken") }}
+                    </ConfigFieldLabel>
+                    <input
+                      :id="`${tableName}-basemap-access-token-${index}`"
+                      class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+                      placeholder="pk.ey…"
+                      pattern="^pk\.ey.*"
+                      required
+                      :value="basemap.access_token"
+                      @input="
+                        updateBasemap(
+                          index,
+                          'access_token',
+                          ($event.target as HTMLInputElement).value,
+                        )
+                      "
+                    />
+                  </div>
                 </div>
                 <button
                   v-if="index !== 0"
@@ -401,25 +402,6 @@ const fullWidthKeys = [
               + {{ $t("addBackgroundMapOption") }}
             </button>
           </div>
-        </template>
-
-        <!-- Access Token -->
-        <template v-else-if="key === 'MAPBOX_ACCESS_TOKEN'">
-          <ConfigFieldLabel :for-id="`${tableName}-${key}`" required>
-            {{ $t(toCamelCase(key)) }}
-          </ConfigFieldLabel>
-          <input
-            :id="`${tableName}-${key}`"
-            class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-            pattern="^pk\.ey.*"
-            placeholder="pk.ey…"
-            required
-            :title="$t('pleaseMatchFormat') + ': pk.ey… '"
-            :value="config[key]"
-            @input="
-              (e) => handleInput(key, (e.target as HTMLInputElement).value)
-            "
-          />
         </template>
 
         <!-- Numbers -->

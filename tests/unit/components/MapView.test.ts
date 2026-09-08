@@ -493,19 +493,25 @@ describe("MapView component", () => {
     await flushPromises();
 
     const vm = wrapper.vm as unknown as {
-      currentBasemap: { id: string; style: string };
-      handleBasemapChange: (basemap: { id: string; style: string }) => void;
+      currentBasemap: { id: string; style: string; access_token?: string };
+      handleBasemapChange: (basemap: {
+        id: string;
+        style: string;
+        access_token?: string;
+      }) => void;
     };
 
-    // Call the basemap change handler directly
     vm.handleBasemapChange({
       id: "satellite",
       style: "mapbox://styles/mapbox/satellite-v9",
+      access_token: "pk.other",
     });
     await flushPromises();
 
     expect(vm.currentBasemap.id).toBe("satellite");
     expect(vm.currentBasemap.style).toBe("mapbox://styles/mapbox/satellite-v9");
+    expect(vm.currentBasemap.access_token).toBe("pk.other");
+    expect(mapboxMock.getAccessToken()).toBe("pk.other");
   });
 
   it("shows BasemapSelector when multiple basemaps or Planet is available", async () => {
@@ -513,6 +519,7 @@ describe("MapView component", () => {
       {
         name: "Streets",
         style: "mapbox://styles/mapbox/streets-v12",
+        access_token: "pk.test",
         isDefault: true,
       },
     ];
@@ -521,6 +528,7 @@ describe("MapView component", () => {
       {
         name: "Satellite",
         style: "mapbox://styles/mapbox/satellite-v9",
+        access_token: "pk.test",
         isDefault: false,
       },
     ];

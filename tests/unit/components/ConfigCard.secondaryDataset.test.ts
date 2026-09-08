@@ -19,7 +19,14 @@ Object.assign(globalThis, {
 const mountConfigCard = (
   viewType: ViewType,
   viewConfig: ViewConfig = {
-    MAPBOX_ACCESS_TOKEN: "pk.ey.test-token",
+    MAPBOX_BASEMAPS: JSON.stringify([
+      {
+        name: "Satellite Streets",
+        style: "mapbox://styles/mapbox/satellite-streets-v12",
+        access_token: "pk.ey.test-token",
+        isDefault: true,
+      },
+    ]),
     MAPBOX_ZOOM: 10,
     MAPBOX_PROJECTION: "mercator",
     MAPBOX_CENTER_LATITUDE: "0",
@@ -87,7 +94,14 @@ describe.each<ViewType>([...SECONDARY_DATASET_VIEW_TYPES])(
 describe("ConfigCard alerts filter config", () => {
   it("passes the generic filter fields to ConfigFilters", () => {
     const wrapper = mountConfigCard("alerts", {
-      MAPBOX_ACCESS_TOKEN: "pk.ey.test-token",
+      MAPBOX_BASEMAPS: JSON.stringify([
+        {
+          name: "Satellite Streets",
+          style: "mapbox://styles/mapbox/satellite-streets-v12",
+          access_token: "pk.ey.test-token",
+          isDefault: true,
+        },
+      ]),
       FRONT_END_FILTER_COLUMN: "status",
       SECONDARY_FILTER_VALUES: "active",
     });

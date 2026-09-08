@@ -1404,6 +1404,9 @@ const handleBufferMouseEvent = (e: MapMouseEvent) => {
 const currentBasemap = ref<Basemap>({ id: "custom", style: props.mapboxStyle });
 const handleBasemapChange = (newBasemap: Basemap) => {
   pausePulsingHalo();
+  if (newBasemap.access_token) {
+    mapboxgl.accessToken = newBasemap.access_token;
+  }
   changeMapStyle(map.value, newBasemap, props.planetApiKey);
 
   currentBasemap.value = newBasemap;
@@ -1852,7 +1855,6 @@ onBeforeUnmount(() => {
         ((mapboxBasemaps?.length ?? 0) > 1 || !!planetApiKey)
       "
       :has-ruler-control="hasRulerControl"
-      :mapbox-style="mapboxStyle"
       :mapbox-basemaps="mapboxBasemaps || []"
       :planet-api-key="planetApiKey"
       @basemap-selected="handleBasemapChange"
