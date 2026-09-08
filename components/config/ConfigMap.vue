@@ -5,6 +5,7 @@ import { ExternalLink } from "lucide-vue-next";
 import VueSlider from "vue-3-slider-component";
 
 import ConfigColumnSelect from "@/components/config/ConfigColumnSelect.vue";
+import ConfigMapPreview from "@/components/config/ConfigMapPreview.vue";
 import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import Tooltip from "@/components/shared/Tooltip.vue";
 import { toCamelCase } from "@/utils/identifierUtils";
@@ -98,6 +99,17 @@ const parseBasemaps = (): BasemapConfig[] => {
 };
 
 const basemaps = ref<BasemapConfig[]>(parseBasemaps());
+
+const previewBasemap = computed(() => {
+  const basemap = basemaps.value[0];
+  if (
+    typeof basemap?.style !== "string" ||
+    !/^mapbox:\/\/styles\/[^/\s]+\/[^/\s]+$/.test(basemap.style) ||
+    !/^pk\.ey\S+$/.test(basemap.access_token)
+  )
+    return null;
+  return { style: basemap.style, accessToken: basemap.access_token };
+});
 
 // Initialize basemaps on mount
 onMounted(() => {
@@ -402,6 +414,33 @@ const fullWidthKeys = [
               + {{ $t("addBackgroundMapOption") }}
             </button>
           </div>
+          <div class="pt-4">
+            <ConfigFieldLabel class="mb-2">
+              {{ $t("mapboxSettings") }}
+            </ConfigFieldLabel>
+            <p class="text-sm text-gray-500 mb-4">
+              <i18n-t keypath="mapboxSettingsDescription" tag="span">
+                <template #link>
+                  <a
+                    href="https://docs.mapbox.com/android/maps/guides/camera-and-animation/camera/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="underline underline-offset-2 hover:text-gray-700"
+                  >
+                    {{ $t("mapboxSettingsDescriptionLink") }}
+                  </a>
+                </template>
+              </i18n-t>
+            </p>
+          </div>
+          <ConfigMapPreview
+            v-if="previewBasemap"
+            :key="`${previewBasemap.style}:${previewBasemap.accessToken}`"
+            :config="config"
+            :mapbox-style="previewBasemap.style"
+            :access-token="previewBasemap.accessToken"
+            @update-config="emit('updateConfig', $event)"
+          />
         </template>
 
         <!-- Numbers -->
