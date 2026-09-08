@@ -22,13 +22,9 @@ The routes for all views are listed on the index.html route (`/`).
 
 ## Map configuration
 
-#### `MAPBOX_STYLE` (optional)
+#### `MAPBOX_BASEMAPS` (required for map and alerts views)
 
-You can provide your own style for any views that utilize a map.
-
-#### `MAPBOX_ACCESS_TOKEN` (required)
-
-You can provide your own Mapbox access token to enable the option to use Mapbox basemaps as a style option in the basemap selector menu.
+JSON string of up to three Mapbox background maps. Each object has `name`, `style`, `access_token`, and optional `isDefault`. The first or default basemap supplies the token used when the map is created. Selecting another Mapbox basemap uses that basemap's style and token.
 
 #### `MAPBOX_ZOOM` (optional)
 

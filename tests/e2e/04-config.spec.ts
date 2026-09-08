@@ -1,6 +1,7 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import {
   ensureMapFormCanSubmit,
+  expandMapSection,
   openGalleryConfigEditPage,
   openMapConfigEditPage,
 } from "@/tests/e2e/helpers/configPage";
@@ -614,9 +615,7 @@ test("config page - error handling for invalid form submission", async ({
 }) => {
   await openMapConfigEditPage(page);
 
-  const mapboxTokenInput = page.locator(
-    'input[id*="MAPBOX_ACCESS_TOKEN"], input[placeholder*="Mapbox"]',
-  );
+  const mapboxTokenInput = page.locator('input[id*="basemap-access-token"]');
 
   if ((await mapboxTokenInput.count()) > 0) {
     const submitButton = page.locator("[data-testid='config-submit-button']");
@@ -830,6 +829,7 @@ test("config page - basemap configuration - update name and style", async ({
   if (hasBasemapConfig) {
     await expect(page.getByLabel("Basemap name").first()).toBeVisible();
     await expect(page.getByLabel("Mapbox Style").first()).toBeVisible();
+    await expect(page.getByLabel("Mapbox Access Token").first()).toBeVisible();
 
     const nameInput = page.locator('input[id*="basemap-name-0"]').first();
     const styleInput = page.locator('input[id*="basemap-style-0"]').first();
@@ -1026,4 +1026,53 @@ test("config page - basemap configuration - max 3 limit", async ({
       await expect(addBasemapButton).toBeEnabled();
     }
   }
+});
+
+test("config page - two basemaps save with distinct access tokens", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await openMapConfigEditPage(page);
+
+  const addBasemapButton = page.locator("[data-testid='basemap-add-button']");
+  await expect(addBasemapButton).toBeVisible();
+  await addBasemapButton.click();
+  await page.waitForTimeout(300);
+
+  const firstToken = page
+    .locator('input[id*="basemap-access-token-0"]')
+    .first();
+  const firstStyle = page.locator('input[id*="basemap-style-0"]').first();
+  const secondName = page.locator('input[id*="basemap-name-1"]').first();
+  const secondStyle = page.locator('input[id*="basemap-style-1"]').first();
+  const secondToken = page
+    .locator('input[id*="basemap-access-token-1"]')
+    .first();
+
+  await firstToken.clear();
+  await firstToken.fill("pk.ey_e2e_first_basemap_token");
+  await firstStyle.fill("mapbox://styles/mapbox/satellite-streets-v12");
+  await secondName.fill("Streets");
+  await secondStyle.fill("mapbox://styles/mapbox/streets-v12");
+  await secondToken.clear();
+  await secondToken.fill("pk.ey_e2e_second_basemap_token");
+  await ensureMapFormCanSubmit(page);
+
+  const submitButton = page.locator("[data-testid='config-submit-button']");
+  await expect(submitButton).toBeEnabled();
+  await submitButton.evaluate((button) => {
+    (button as HTMLButtonElement).formNoValidate = true;
+  });
+  await submitButton.click();
+  await expect(page.getByTestId("saved-modal")).toBeVisible();
+
+  await page.reload();
+  await page.waitForSelector("form", { timeout: 15000 });
+  await expandMapSection(page);
+
+  await expect(
+    page.locator('input[id*="basemap-access-token-0"]').first(),
+  ).toHaveValue("pk.ey_e2e_first_basemap_token");
+  await expect(
+    page.locator('input[id*="basemap-access-token-1"]').first(),
+  ).toHaveValue("pk.ey_e2e_second_basemap_token");
 });

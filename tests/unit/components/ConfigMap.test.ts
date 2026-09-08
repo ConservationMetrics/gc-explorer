@@ -34,11 +34,31 @@ vi.mock("@/composables/useTags", () => ({
   }),
 }));
 
+const encodedBasemaps = (
+  basemaps: Array<{
+    name: string;
+    style: string;
+    isDefault: boolean;
+    access_token?: string;
+  }>,
+) =>
+  JSON.stringify(
+    basemaps.map((basemap) => ({
+      access_token: "pk.test",
+      ...basemap,
+    })),
+  );
+
 const baseProps = {
   tableName: "test_table",
   config: {
-    MAPBOX_STYLE: "mapbox://styles/mapbox/streets-v12",
-    MAPBOX_ACCESS_TOKEN: "pk.test",
+    MAPBOX_BASEMAPS: encodedBasemaps([
+      {
+        name: "Default Style",
+        style: "mapbox://styles/mapbox/streets-v12",
+        isDefault: true,
+      },
+    ]),
     MAPBOX_ZOOM: 10,
     MAPBOX_CENTER_LATITUDE: "10",
     MAPBOX_CENTER_LONGITUDE: "10",
@@ -50,8 +70,7 @@ const baseProps = {
   } as ViewConfig,
   views: ["map"],
   keys: [
-    "MAPBOX_STYLE",
-    "MAPBOX_ACCESS_TOKEN",
+    "MAPBOX_BASEMAPS",
     "MAPBOX_ZOOM",
     "MAPBOX_PROJECTION",
     "MAPBOX_CENTER_LATITUDE",
@@ -80,24 +99,29 @@ describe("ConfigMap component", () => {
     vi.clearAllMocks();
   });
 
-  it("renders with legacy MAPBOX_STYLE and converts to basemaps array", () => {
+  it("renders configured MAPBOX_BASEMAPS", () => {
     const wrapper = mount(ConfigMap, {
       props: baseProps,
       global: globalConfig,
     });
 
     const vm = wrapper.vm as unknown as {
-      basemaps: Array<{ name: string; style: string; isDefault: boolean }>;
+      basemaps: Array<{
+        name: string;
+        style: string;
+        access_token: string;
+        isDefault: boolean;
+      }>;
     };
 
     expect(vm.basemaps).toHaveLength(1);
     expect(vm.basemaps[0].style).toBe("mapbox://styles/mapbox/streets-v12");
+    expect(vm.basemaps[0].access_token).toBe("pk.test");
     expect(vm.basemaps[0].isDefault).toBe(true);
   });
 
   it("populates Satellite Streets default when no basemap config exists", async () => {
     const emptyConfig = {
-      MAPBOX_ACCESS_TOKEN: "",
       MAPBOX_ZOOM: 10,
       MAPBOX_CENTER_LATITUDE: "10",
       MAPBOX_CENTER_LONGITUDE: "10",
@@ -115,7 +139,12 @@ describe("ConfigMap component", () => {
     await wrapper.vm.$nextTick();
 
     const vm = wrapper.vm as unknown as {
-      basemaps: Array<{ name: string; style: string; isDefault: boolean }>;
+      basemaps: Array<{
+        name: string;
+        style: string;
+        access_token: string;
+        isDefault: boolean;
+      }>;
     };
 
     expect(vm.basemaps).toHaveLength(1);
@@ -123,6 +152,7 @@ describe("ConfigMap component", () => {
     expect(vm.basemaps[0].style).toBe(
       "mapbox://styles/mapbox/satellite-streets-v12",
     );
+    expect(vm.basemaps[0].access_token).toBe("");
     expect(vm.basemaps[0].isDefault).toBe(true);
 
     const emitted = wrapper.emitted("updateConfig");
@@ -135,6 +165,7 @@ describe("ConfigMap component", () => {
       {
         name: "Satellite Streets",
         style: "mapbox://styles/mapbox/satellite-streets-v12",
+        access_token: "",
         isDefault: true,
       },
     ]);
@@ -143,7 +174,7 @@ describe("ConfigMap component", () => {
   it("parses MAPBOX_BASEMAPS from config", () => {
     const configWithBasemaps = {
       ...baseProps.config,
-      MAPBOX_BASEMAPS: JSON.stringify([
+      MAPBOX_BASEMAPS: encodedBasemaps([
         {
           name: "Satellite",
           style: "mapbox://styles/mapbox/satellite-v9",
@@ -176,7 +207,7 @@ describe("ConfigMap component", () => {
   it("ensures first basemap is always default", () => {
     const configWithBasemaps = {
       ...baseProps.config,
-      MAPBOX_BASEMAPS: JSON.stringify([
+      MAPBOX_BASEMAPS: encodedBasemaps([
         {
           name: "First",
           style: "mapbox://styles/mapbox/satellite-v9",
@@ -216,18 +247,19 @@ describe("ConfigMap component", () => {
     await addButton!.trigger("click");
 
     const vm = wrapper.vm as unknown as {
-      basemaps: Array<{ name: string; style: string }>;
+      basemaps: Array<{ name: string; style: string; access_token: string }>;
     };
 
     expect(vm.basemaps).toHaveLength(2);
     expect(vm.basemaps[1].name).toBe("");
     expect(vm.basemaps[1].style).toBe("");
+    expect(vm.basemaps[1].access_token).toBe("pk.test");
   });
 
   it("limits basemaps to 3 maximum", async () => {
     const configWith3Basemaps = {
       ...baseProps.config,
-      MAPBOX_BASEMAPS: JSON.stringify([
+      MAPBOX_BASEMAPS: encodedBasemaps([
         {
           name: "First",
           style: "mapbox://styles/mapbox/satellite-v9",
@@ -270,7 +302,7 @@ describe("ConfigMap component", () => {
   it("removes a basemap when remove button is clicked", async () => {
     const configWith2Basemaps = {
       ...baseProps.config,
-      MAPBOX_BASEMAPS: JSON.stringify([
+      MAPBOX_BASEMAPS: encodedBasemaps([
         {
           name: "First",
           style: "mapbox://styles/mapbox/satellite-v9",
@@ -307,7 +339,7 @@ describe("ConfigMap component", () => {
   it("prevents removing first basemap", async () => {
     const configWith2Basemaps = {
       ...baseProps.config,
-      MAPBOX_BASEMAPS: JSON.stringify([
+      MAPBOX_BASEMAPS: encodedBasemaps([
         {
           name: "First",
           style: "mapbox://styles/mapbox/satellite-v9",
@@ -384,6 +416,25 @@ describe("ConfigMap component", () => {
     expect(vm.basemaps[0].style).toBe("mapbox://styles/myuser/mystyle");
   });
 
+  it("updates basemap access token when input changes", async () => {
+    const wrapper = mount(ConfigMap, {
+      props: baseProps,
+      global: globalConfig,
+    });
+
+    const tokenInput = wrapper.find(
+      'input[id="test_table-basemap-access-token-0"]',
+    );
+    expect(tokenInput.attributes("pattern")).toBe("^pk\\.ey.*");
+    await tokenInput.setValue("pk.ey-other-token");
+
+    const vm = wrapper.vm as unknown as {
+      basemaps: Array<{ access_token: string }>;
+    };
+
+    expect(vm.basemaps[0].access_token).toBe("pk.ey-other-token");
+  });
+
   it("validates basemap name is not blank", () => {
     const wrapper = mount(ConfigMap, {
       props: baseProps,
@@ -405,7 +456,7 @@ describe("ConfigMap component", () => {
   it("validates basemap name is unique", () => {
     const configWith2Basemaps = {
       ...baseProps.config,
-      MAPBOX_BASEMAPS: JSON.stringify([
+      MAPBOX_BASEMAPS: encodedBasemaps([
         {
           name: "First",
           style: "mapbox://styles/mapbox/satellite-v9",
@@ -445,7 +496,7 @@ describe("ConfigMap component", () => {
   it("shows validation error for duplicate names", async () => {
     const configWith2Basemaps = {
       ...baseProps.config,
-      MAPBOX_BASEMAPS: JSON.stringify([
+      MAPBOX_BASEMAPS: encodedBasemaps([
         {
           name: "First",
           style: "mapbox://styles/mapbox/satellite-v9",
@@ -502,7 +553,7 @@ describe("ConfigMap component", () => {
   it("emits updateConfig when basemap is removed", async () => {
     const configWith2Basemaps = {
       ...baseProps.config,
-      MAPBOX_BASEMAPS: JSON.stringify([
+      MAPBOX_BASEMAPS: encodedBasemaps([
         {
           name: "First",
           style: "mapbox://styles/mapbox/satellite-v9",
@@ -561,7 +612,7 @@ describe("ConfigMap component", () => {
   it("reorders basemaps on drag and drop", async () => {
     const configWith2Basemaps = {
       ...baseProps.config,
-      MAPBOX_BASEMAPS: JSON.stringify([
+      MAPBOX_BASEMAPS: encodedBasemaps([
         {
           name: "First",
           style: "mapbox://styles/mapbox/satellite-v9",
@@ -620,7 +671,7 @@ describe("ConfigMap component", () => {
   it("disables add button when 3 basemaps are present", () => {
     const configWith3Basemaps = {
       ...baseProps.config,
-      MAPBOX_BASEMAPS: JSON.stringify([
+      MAPBOX_BASEMAPS: encodedBasemaps([
         {
           name: "First",
           style: "mapbox://styles/mapbox/satellite-v9",
@@ -669,7 +720,7 @@ describe("ConfigMap component", () => {
   it("updates default basemap when first item is dragged to different position", async () => {
     const configWith2Basemaps = {
       ...baseProps.config,
-      MAPBOX_BASEMAPS: JSON.stringify([
+      MAPBOX_BASEMAPS: encodedBasemaps([
         {
           name: "First",
           style: "mapbox://styles/mapbox/satellite-v9",
@@ -855,6 +906,9 @@ describe("ConfigMap component", () => {
     expect(
       wrapper.get('label[for="test_table-basemap-style-0"]').text(),
     ).toContain("mapboxStyle");
+    expect(
+      wrapper.get('label[for="test_table-basemap-access-token-0"]').text(),
+    ).toContain("mapboxAccessToken");
     expect(nameInput.classes()).toContain("bg-violet-100");
     expect(styleInput.classes()).toEqual(
       expect.arrayContaining(["bg-violet-100", "border-violet-200"]),
@@ -864,7 +918,7 @@ describe("ConfigMap component", () => {
     );
   });
 
-  it("uses a two-column grid and keeps the token field full width", () => {
+  it("uses a two-column grid and keeps the basemaps section full width", () => {
     const wrapper = mount(ConfigMap, {
       props: baseProps,
       global: globalConfig,
@@ -874,9 +928,12 @@ describe("ConfigMap component", () => {
       expect.arrayContaining(["grid", "grid-cols-1", "md:grid-cols-2"]),
     );
     expect(
-      wrapper.get("#test_table-MAPBOX_ACCESS_TOKEN").element.parentElement
+      wrapper.get("[data-testid='basemaps-container']").element.parentElement
         ?.className,
     ).toContain("md:col-span-2");
+    expect(wrapper.get("#test_table-basemap-access-token-0").exists()).toBe(
+      true,
+    );
     expect(
       wrapper.get("#test_table-MAPBOX_ZOOM").element.parentElement?.className,
     ).not.toContain("md:col-span-2");
@@ -914,7 +971,7 @@ describe("ConfigMap component", () => {
         ...baseProps,
         config: {
           ...baseProps.config,
-          MAPBOX_BASEMAPS: JSON.stringify([
+          MAPBOX_BASEMAPS: encodedBasemaps([
             {
               name: "Satellite",
               style: "mapbox://styles/mapbox/satellite-v9",
@@ -944,7 +1001,7 @@ describe("ConfigMap component", () => {
         ...baseProps,
         config: {
           ...baseProps.config,
-          MAPBOX_BASEMAPS: JSON.stringify([
+          MAPBOX_BASEMAPS: encodedBasemaps([
             {
               name: "Custom",
               style: "https://example.com/style.json",
@@ -967,23 +1024,30 @@ describe("ConfigMap component", () => {
     );
   });
 
-  it("renders with inline MAPBOX_STYLE objects without crashing", () => {
+  it("renders with inline style objects without crashing", () => {
     const wrapper = mount(ConfigMap, {
       props: {
         ...baseProps,
         config: {
           ...baseProps.config,
-          MAPBOX_STYLE: {
-            version: 8,
-            sources: {},
-            layers: [
-              {
-                id: "background",
-                type: "background",
-                paint: { "background-color": "#f8fafc" },
+          MAPBOX_BASEMAPS: JSON.stringify([
+            {
+              name: "Default Style",
+              style: {
+                version: 8,
+                sources: {},
+                layers: [
+                  {
+                    id: "background",
+                    type: "background",
+                    paint: { "background-color": "#f8fafc" },
+                  },
+                ],
               },
-            ],
-          },
+              access_token: "pk.test",
+              isDefault: true,
+            },
+          ]),
         } as ViewConfig,
       },
       global: globalConfig,
@@ -1001,7 +1065,7 @@ describe("ConfigMap component", () => {
         ...baseProps,
         config: {
           ...baseProps.config,
-          MAPBOX_BASEMAPS: JSON.stringify([
+          MAPBOX_BASEMAPS: encodedBasemaps([
             {
               name: "Satellite",
               style: "mapbox://styles/mapbox/satellite-v9",

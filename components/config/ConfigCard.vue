@@ -2,6 +2,7 @@
 import { useAppConfig } from "#imports";
 import {
   supportsSecondaryDataset,
+  type BasemapConfig,
   type ColumnEntry,
   type ViewConfig,
   type ViewType,
@@ -51,8 +52,7 @@ const emit = defineEmits(["submitConfig", "removeTableFromConfig"]);
 // Set keys for the different sections of the config
 const mapConfigKeys = computed(() => {
   const keys = [
-    "MAPBOX_STYLE",
-    "MAPBOX_ACCESS_TOKEN",
+    "MAPBOX_BASEMAPS",
     "MAPBOX_CENTER_LATITUDE",
     "MAPBOX_CENTER_LONGITUDE",
     "MAPBOX_ZOOM",
@@ -230,9 +230,28 @@ const areColumnsLoading = computed(
 const hasConfigValue = (value: unknown) =>
   value !== null && value !== undefined && String(value).trim() !== "";
 
+/**
+ * Returns true when the basemap config has entries and every token is set.
+ *
+ * @param {string | undefined} encodedBasemaps - JSON string of BasemapConfig[].
+ * @returns {boolean} True when at least one basemap exists and every token is set.
+ */
+const hasValidBasemapConfig = (
+  encodedBasemaps: string | undefined,
+): boolean => {
+  if (!encodedBasemaps) return false;
+  try {
+    const basemaps = JSON.parse(encodedBasemaps) as BasemapConfig[];
+    if (!Array.isArray(basemaps) || basemaps.length === 0) return false;
+    return basemaps.every((basemap) => hasConfigValue(basemap.access_token));
+  } catch {
+    return false;
+  }
+};
+
 const isFormValid = computed(() => {
   const isMapConfigValid = shouldShowConfigMap.value
-    ? hasConfigValue(localConfig.value.MAPBOX_ACCESS_TOKEN) &&
+    ? hasValidBasemapConfig(localConfig.value.MAPBOX_BASEMAPS) &&
       hasConfigValue(localConfig.value.MAPBOX_ZOOM) &&
       hasConfigValue(localConfig.value.MAPBOX_PROJECTION) &&
       hasConfigValue(localConfig.value.MAPBOX_CENTER_LATITUDE) &&

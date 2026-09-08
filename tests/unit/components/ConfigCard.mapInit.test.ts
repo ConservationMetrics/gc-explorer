@@ -35,7 +35,14 @@ vi.mock("@/composables/useTags", () => ({
 }));
 
 const savedMapConfig = {
-  MAPBOX_ACCESS_TOKEN: "pk.ey.test-token",
+  MAPBOX_BASEMAPS: JSON.stringify([
+    {
+      name: "Satellite Streets",
+      style: "mapbox://styles/mapbox/satellite-streets-v12",
+      access_token: "pk.ey.test-token",
+      isDefault: true,
+    },
+  ]),
   MAPBOX_ZOOM: 11,
   MAPBOX_CENTER_LATITUDE: -9.24,
   MAPBOX_CENTER_LONGITUDE: 160.98377,
@@ -156,5 +163,22 @@ describe("ConfigCard map initialization", () => {
     expect(cardVm.localConfig.LOGO_URL).toBe("https://example.test/logo.png");
     expect(cardVm.localConfig.MAPBOX_ZOOM).toBe(3);
     expect(cardVm.localConfig.MAPBOX_PROJECTION).toBe("globe");
+  });
+
+  it("treats a blank basemap access token as invalid map config", async () => {
+    const wrapper = mountConfigCard();
+    await flushPromises();
+    await nextTick();
+
+    const cardVm = wrapper.vm as unknown as { isFormValid: boolean };
+    expect(cardVm.isFormValid).toBe(true);
+
+    const tokenInput = wrapper.find<HTMLInputElement>(
+      'input[id="test_map-basemap-access-token-0"]',
+    );
+    await tokenInput.setValue("   ");
+    await nextTick();
+
+    expect(cardVm.isFormValid).toBe(false);
   });
 });
