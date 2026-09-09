@@ -38,7 +38,16 @@ export const getSelectableColumnOptions = (
     );
 };
 
-const getColumnSource = (
+/**
+ * Returns whether a functional column key is validated against primary or
+ * secondary dataset columns.
+ *
+ * @param {FunctionalColumnKey} key - Config field that stores a column name.
+ * @param {ViewType} viewType - Current view type.
+ * @param {boolean} hasSecondaryDataset - Whether the view uses a secondary dataset.
+ * @returns {"primary" | "secondary"} Which dataset's columns to use.
+ */
+export const getFunctionalColumnSource = (
   key: FunctionalColumnKey,
   viewType: ViewType,
   hasSecondaryDataset: boolean,
@@ -77,7 +86,11 @@ export const validateViewConfigColumns = (
     const value = config[key]?.trim();
     if (!value) return;
 
-    const source = getColumnSource(key, viewType, hasSecondaryDataset);
+    const source = getFunctionalColumnSource(
+      key,
+      viewType,
+      hasSecondaryDataset,
+    );
     const columns = source === "secondary" ? secondaryColumns : primaryColumns;
     if (
       !getSelectableColumnOptions(columns).some(

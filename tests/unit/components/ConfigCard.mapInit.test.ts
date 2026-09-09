@@ -221,6 +221,26 @@ describe("ConfigCard map initialization", () => {
     expect(submission.config).not.toHaveProperty("ICON_COLUMN");
   });
 
+  it("keeps saved columns when no dataset columns are loaded", async () => {
+    const wrapper = mountConfigCard({
+      ...savedMapConfig,
+      COLOR_COLUMN: "color",
+      MEDIA_COLUMN: "photos",
+    });
+    const cardVm = wrapper.vm as unknown as { localConfig: ViewConfig };
+
+    cardVm.localConfig.MAPBOX_ZOOM = 12;
+    await nextTick();
+
+    await wrapper.get("form").trigger("submit");
+
+    const submission = wrapper.emitted("submitConfig")?.[0]?.[0] as {
+      config: ViewConfig;
+    };
+    expect(submission.config.COLOR_COLUMN).toBe("color");
+    expect(submission.config.MEDIA_COLUMN).toBe("photos");
+  });
+
   it("still blocks newly introduced unavailable columns", async () => {
     const wrapper = mountConfigCard(savedMapConfig, [
       {

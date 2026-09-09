@@ -4,6 +4,7 @@ import {
   supportsSecondaryDataset,
   type BasemapConfig,
   type ColumnEntry,
+  type FunctionalColumnKey,
   type ViewConfig,
   type ViewType,
 } from "@/types";
@@ -11,6 +12,7 @@ import { VIEW_INFO_CONFIG_KEYS } from "@/composables/useCopyConfig";
 import { CONFIG_LIMITS } from "@/utils";
 import {
   FUNCTIONAL_COLUMN_KEYS,
+  getFunctionalColumnSource,
   validateViewConfigColumns,
 } from "@/utils/viewConfigColumns";
 import ConfigPermissions from "./ConfigPermissions.vue";
@@ -222,12 +224,25 @@ const columnValidation = computed(() =>
   ),
 );
 
+/**
+ * Returns the loaded dataset columns used to validate a functional column key.
+ *
+ * @param {FunctionalColumnKey} key - Config field that stores a column name.
+ * @returns {ColumnEntry[]} Primary or secondary columns for that field.
+ */
+const availableColumnsForKey = (key: FunctionalColumnKey): ColumnEntry[] =>
+  getFunctionalColumnSource(key, props.viewType, hasSecondaryDataset.value) ===
+  "secondary"
+    ? props.secondaryColumns
+    : props.primaryColumns;
+
 const staleInvalidColumnKeys = computed(
   () =>
     new Set<string>(
       FUNCTIONAL_COLUMN_KEYS.filter((key) => {
         const invalidValue = columnValidation.value.invalidSelections[key];
         return (
+          availableColumnsForKey(key).length > 0 &&
           invalidValue !== undefined &&
           originalConfig.value[key]?.trim() === invalidValue
         );
