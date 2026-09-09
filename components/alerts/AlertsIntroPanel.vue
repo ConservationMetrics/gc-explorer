@@ -160,6 +160,8 @@ const showDownloads = computed(
           <div class="flex justify-center [&>div]:!mt-0">
             <DownloadMapData
               :data-for-download="props.dataForAlertsIntroPanel"
+              :export-min-date="props.statsExportMinDate"
+              :export-max-date="props.statsExportMaxDate"
               variant="outline"
             />
           </div>

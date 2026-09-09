@@ -47,7 +47,9 @@ export const buildTableExportQueryParams = (options: {
   }
   const isStatisticsExport = options.exportPath === "statistics-export";
   if (
-    (options.exportTimestampColumn || isStatisticsExport) &&
+    (options.exportTimestampColumn ||
+      isStatisticsExport ||
+      options.viewType === "alerts") &&
     (options.exportMinDate || options.exportMaxDate)
   ) {
     if (options.exportMinDate) params.minDate = options.exportMinDate;

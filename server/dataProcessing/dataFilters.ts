@@ -66,6 +66,31 @@ export const filterByDateRange = (
   });
 };
 
+/**
+ * Keeps alerts in the selected detection months.
+ *
+ * @param data - Warehouse rows with year_detec and month_detec text columns.
+ * @param minDate - Inclusive first month in YYYYMM format.
+ * @param maxDate - Inclusive last month in YYYYMM format.
+ * @returns Rows in the selected month range.
+ */
+export const filterAlertsByDateRange = (
+  data: DataEntry[],
+  minDate: string | undefined,
+  maxDate: string | undefined,
+): DataEntry[] => {
+  if (!minDate && !maxDate) return data;
+  return data.filter((item) => {
+    const year = item.year_detec;
+    const month = item.month_detec;
+    if (typeof year !== "string" || typeof month !== "string") return false;
+    if (!/^\d{4}$/.test(year) || !/^(0?[1-9]|1[0-2])$/.test(month))
+      return false;
+    const period = `${year}${month.padStart(2, "0")}`;
+    return (!minDate || period >= minDate) && (!maxDate || period <= maxDate);
+  });
+};
+
 /** Filters out data without columns storing valid coordinates. */
 export const filterGeoData = (
   data: DataEntry[] | null | undefined,
