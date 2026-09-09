@@ -9,7 +9,10 @@ import {
 } from "@/types";
 import { VIEW_INFO_CONFIG_KEYS } from "@/composables/useCopyConfig";
 import { CONFIG_LIMITS } from "@/utils";
-import { validateViewConfigColumns } from "@/utils/viewConfigColumns";
+import {
+  FUNCTIONAL_COLUMN_KEYS,
+  validateViewConfigColumns,
+} from "@/utils/viewConfigColumns";
 import ConfigPermissions from "./ConfigPermissions.vue";
 import ConfigCollapsibleSection from "./ConfigCollapsibleSection.vue";
 import { Check, Trash2 } from "lucide-vue-next";
@@ -219,6 +222,25 @@ const columnValidation = computed(() =>
   ),
 );
 
+const staleInvalidColumnKeys = computed(
+  () =>
+    new Set<string>(
+      FUNCTIONAL_COLUMN_KEYS.filter((key) => {
+        const invalidValue = columnValidation.value.invalidSelections[key];
+        return (
+          invalidValue !== undefined &&
+          originalConfig.value[key]?.trim() === invalidValue
+        );
+      }),
+    ),
+);
+
+const hasNewInvalidColumnSelections = computed(() =>
+  Object.keys(columnValidation.value.invalidSelections).some(
+    (key) => !staleInvalidColumnKeys.value.has(key),
+  ),
+);
+
 const areColumnsLoading = computed(
   () =>
     props.primaryColumnsLoading ||
@@ -261,7 +283,7 @@ const isFormValid = computed(() => {
   return (
     isMapConfigValid &&
     isPermissionValid.value &&
-    columnValidation.value.isValid &&
+    !hasNewInvalidColumnSelections.value &&
     !areColumnsLoading.value
   );
 });
@@ -283,9 +305,15 @@ const handlePermissionValidation = (isValid: boolean) => {
 };
 
 const handleSubmit = () => {
+  const submittedConfig = Object.fromEntries(
+    Object.entries(localConfig.value).filter(
+      ([key]) => !staleInvalidColumnKeys.value.has(key),
+    ),
+  ) as ViewConfig;
+
   // Client-side validation before submission
-  if (localConfig.value.DATASET_TABLE) {
-    const datasetTableValue = String(localConfig.value.DATASET_TABLE);
+  if (submittedConfig.DATASET_TABLE) {
+    const datasetTableValue = String(submittedConfig.DATASET_TABLE);
     if (datasetTableValue.length > CONFIG_LIMITS.DATASET_TABLE) {
       alert(
         `DATASET_TABLE must be at most ${CONFIG_LIMITS.DATASET_TABLE} characters (current: ${datasetTableValue.length})`,
@@ -294,8 +322,8 @@ const handleSubmit = () => {
     }
   }
 
-  if (localConfig.value.VIEW_DESCRIPTION) {
-    const viewDescriptionValue = String(localConfig.value.VIEW_DESCRIPTION);
+  if (submittedConfig.VIEW_DESCRIPTION) {
+    const viewDescriptionValue = String(submittedConfig.VIEW_DESCRIPTION);
     if (viewDescriptionValue.length > CONFIG_LIMITS.VIEW_DESCRIPTION) {
       alert(
         `VIEW_DESCRIPTION must be at most ${CONFIG_LIMITS.VIEW_DESCRIPTION} characters (current: ${viewDescriptionValue.length})`,
@@ -306,7 +334,7 @@ const handleSubmit = () => {
 
   emit("submitConfig", {
     tableName: props.tableName,
-    config: localConfig.value,
+    config: submittedConfig,
     secondaryDataset: shouldUseSecondaryDataset.value
       ? localSecondaryDataset.value
       : null,
