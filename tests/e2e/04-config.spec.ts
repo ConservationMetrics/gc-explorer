@@ -615,7 +615,9 @@ test("config page - error handling for invalid form submission", async ({
 }) => {
   await openMapConfigEditPage(page);
 
-  const mapboxTokenInput = page.locator('input[id*="basemap-access-token"]');
+  const mapboxTokenInput = page
+    .locator('input[id*="basemap-access-token"]')
+    .first();
 
   if ((await mapboxTokenInput.count()) > 0) {
     const submitButton = page.locator("[data-testid='config-submit-button']");
@@ -853,6 +855,94 @@ test("config page - basemap configuration - update name and style", async ({
       await expect(submitButton).toBeEnabled();
     }
   }
+});
+
+test("config page - saves Mapbox config after the preview recovers", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  const rejectedStyle = "mapbox://styles/test-user/rejected-style";
+  const rejectedToken = "pk.eyRejectedToken";
+  const correctedStyle = `mapbox://styles/test-user/test-style-${Date.now()}`;
+  const correctedToken = "pk.eyTestToken";
+  await page.route("https://api.mapbox.com/styles/v1/**", async (route) => {
+    if (route.request().url().includes("rejected-style")) {
+      await route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Not Authorized" }),
+      });
+      return;
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        version: 8,
+        sources: {},
+        layers: [
+          {
+            id: "background",
+            type: "background",
+            paint: { "background-color": "#f8fafc" },
+          },
+        ],
+      }),
+    });
+  });
+  await page.route("https://events.mapbox.com/**", async (route) => {
+    await route.fulfill({ status: 204, body: "" });
+  });
+  await openMapConfigEditPage(page);
+  await page.getByTestId("config-section-media-toggle").click();
+  await page
+    .locator('input[id*="baseUrl-generic-basePath"]')
+    .fill("{MEDIA_BASE_PATH}");
+  await page.getByTestId("config-section-media-toggle").click();
+
+  const styleInput = page.locator('input[id*="basemap-style-0"]').first();
+  const tokenInput = page
+    .locator('input[id*="basemap-access-token-0"]')
+    .first();
+  const mapPreview = page.getByTestId("config-map-preview");
+
+  const rejectedResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("rejected-style") && response.status() === 401,
+  );
+  await tokenInput.fill(rejectedToken);
+  await styleInput.fill(rejectedStyle);
+  await rejectedResponsePromise;
+  await expect(mapPreview).toBeHidden();
+
+  await tokenInput.fill(correctedToken);
+  await styleInput.fill(correctedStyle);
+  await expect(mapPreview).toBeVisible({ timeout: 10000 });
+
+  const patchRequestPromise = page.waitForRequest(
+    (request) =>
+      request.method() === "PATCH" && /\/api\/views\/\d+$/.test(request.url()),
+  );
+  const submitButton = page.getByTestId("config-submit-button");
+  await expect(submitButton).toBeEnabled();
+  await submitButton.click();
+
+  const patchRequest = await patchRequestPromise;
+  const submittedConfig = patchRequest.postDataJSON().viewConfig;
+  expect(JSON.parse(submittedConfig.MAPBOX_BASEMAPS)[0]).toMatchObject({
+    style: correctedStyle,
+    access_token: correctedToken,
+  });
+  expect(submittedConfig.MEDIA_BASE_PATH).toBe("{MEDIA_BASE_PATH}");
+  await expect(page.getByTestId("saved-modal")).toBeVisible();
+
+  await page.reload();
+  await page.waitForSelector("form", { timeout: 15000 });
+  await expandMapSection(page);
+  await expect(
+    page.locator('input[id*="basemap-style-0"]').first(),
+  ).toHaveValue(correctedStyle);
+  await expect(
+    page.locator('input[id*="basemap-access-token-0"]').first(),
+  ).toHaveValue(correctedToken);
 });
 
 test("config page - color column configuration", async ({

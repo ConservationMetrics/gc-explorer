@@ -34,15 +34,15 @@ vi.mock("@/composables/useTags", () => ({
   }),
 }));
 
+const validBasemap = {
+  name: "Satellite Streets",
+  style: "mapbox://styles/mapbox/satellite-streets-v12",
+  access_token: "pk.ey.test-token",
+  isDefault: true,
+};
+
 const savedMapConfig = {
-  MAPBOX_BASEMAPS: JSON.stringify([
-    {
-      name: "Satellite Streets",
-      style: "mapbox://styles/mapbox/satellite-streets-v12",
-      access_token: "pk.ey.test-token",
-      isDefault: true,
-    },
-  ]),
+  MAPBOX_BASEMAPS: JSON.stringify([validBasemap]),
   MAPBOX_ZOOM: 11,
   MAPBOX_CENTER_LATITUDE: -9.24,
   MAPBOX_CENTER_LONGITUDE: 160.98377,
@@ -187,6 +187,144 @@ describe("ConfigCard map initialization", () => {
     expect(cardVm.isFormValid).toBe(false);
   });
 
+  it.each([
+    ["name", { ...validBasemap, name: "" }],
+    ["style", { ...validBasemap, style: "invalid-style" }],
+    ["access token", { ...validBasemap, access_token: "invalid-token" }],
+  ])("rejects an invalid basemap %s", async (_field, basemap) => {
+    const wrapper = mountConfigCard({
+      ...savedMapConfig,
+      MAPBOX_BASEMAPS: JSON.stringify([basemap]),
+    });
+    await flushPromises();
+    await nextTick();
+
+    const cardVm = wrapper.vm as unknown as { isFormValid: boolean };
+    expect(cardVm.isFormValid).toBe(false);
+  });
+
+  it("accepts an inline Mapbox style object as valid map config", async () => {
+    const wrapper = mountConfigCard({
+      ...savedMapConfig,
+      MAPBOX_BASEMAPS: JSON.stringify([
+        {
+          ...validBasemap,
+          style: { version: 8, sources: {}, layers: [] },
+        },
+      ]),
+    });
+    await flushPromises();
+    await nextTick();
+
+    const cardVm = wrapper.vm as unknown as { isFormValid: boolean };
+    expect(cardVm.isFormValid).toBe(true);
+  });
+
+  it("enables save after a matching access token is entered", async () => {
+    const wrapper = mountConfigCard({
+      ...savedMapConfig,
+      MAPBOX_BASEMAPS: JSON.stringify([{ ...validBasemap, access_token: "" }]),
+    });
+    await flushPromises();
+    await nextTick();
+
+    const submitButton = wrapper.get<HTMLButtonElement>(
+      '[data-testid="config-submit-button"]',
+    );
+    expect(submitButton.element.disabled).toBe(true);
+
+    const tokenInput = wrapper.find<HTMLInputElement>(
+      'input[id="test_map-basemap-access-token-0"]',
+    );
+    await tokenInput.setValue("pk.eyFixedToken");
+    await nextTick();
+
+    expect(submitButton.element.disabled).toBe(false);
+  });
+
+  it("enables save after a token is entered when saved filter columns are unavailable", async () => {
+    const wrapper = mountConfigCard(
+      {
+        ...savedMapConfig,
+        MAPBOX_BASEMAPS: JSON.stringify([
+          { ...validBasemap, access_token: "" },
+        ]),
+        FRONT_END_FILTER_COLUMN: "missing_filter",
+        TIMESTAMP_COLUMN: "missing_timestamp",
+      },
+      [
+        {
+          original_column: "status",
+          sql_column: "status",
+        },
+      ],
+    );
+    await flushPromises();
+    await nextTick();
+
+    const tokenInput = wrapper.find<HTMLInputElement>(
+      'input[id="test_map-basemap-access-token-0"]',
+    );
+    await tokenInput.setValue("pk.eyFixedToken");
+    await nextTick();
+
+    expect(
+      wrapper.get<HTMLButtonElement>('[data-testid="config-submit-button"]')
+        .element.disabled,
+    ).toBe(false);
+  });
+
+  it("enables save after a token is entered when dataset columns have not loaded", async () => {
+    const wrapper = mountConfigCard({
+      ...savedMapConfig,
+      MAPBOX_BASEMAPS: JSON.stringify([{ ...validBasemap, access_token: "" }]),
+      COLOR_COLUMN: "color",
+      MEDIA_COLUMN: "photos",
+    });
+    await flushPromises();
+    await nextTick();
+
+    const tokenInput = wrapper.find<HTMLInputElement>(
+      'input[id="test_map-basemap-access-token-0"]',
+    );
+    await tokenInput.setValue("pk.eyFixedToken");
+    await nextTick();
+
+    expect(
+      wrapper.get<HTMLButtonElement>('[data-testid="config-submit-button"]')
+        .element.disabled,
+    ).toBe(false);
+  });
+
+  it("enables save after a token is entered when projection is unset", async () => {
+    const configWithoutProjection = { ...savedMapConfig };
+    delete configWithoutProjection.MAPBOX_PROJECTION;
+    const wrapper = mountConfigCard({
+      ...configWithoutProjection,
+      MAPBOX_BASEMAPS: JSON.stringify([{ ...validBasemap, access_token: "" }]),
+    });
+    await flushPromises();
+    await nextTick();
+
+    const tokenInput = wrapper.find<HTMLInputElement>(
+      'input[id="test_map-basemap-access-token-0"]',
+    );
+    await tokenInput.setValue("pk.eyFixedToken");
+    await nextTick();
+
+    expect(
+      wrapper.get<HTMLButtonElement>('[data-testid="config-submit-button"]')
+        .element.disabled,
+    ).toBe(false);
+    expect(
+      wrapper.get<HTMLSelectElement>('select[id="test_map-MAPBOX_PROJECTION"]')
+        .element.required,
+    ).toBe(false);
+    expect(wrapper.get<HTMLFormElement>("form").element.checkValidity()).toBe(
+      true,
+    );
+  });
+
   it("removes stale unavailable columns when saving another change", async () => {
     const wrapper = mountConfigCard(
       {
@@ -231,6 +369,11 @@ describe("ConfigCard map initialization", () => {
 
     cardVm.localConfig.MAPBOX_ZOOM = 12;
     await nextTick();
+
+    expect(
+      wrapper.get<HTMLButtonElement>('[data-testid="config-submit-button"]')
+        .element.disabled,
+    ).toBe(false);
 
     await wrapper.get("form").trigger("submit");
 

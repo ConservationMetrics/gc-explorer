@@ -370,6 +370,25 @@ describe("ConfigMedia component", () => {
     }
   });
 
+  it("keeps a template media path valid in the generic base URL field", async () => {
+    const wrapper = mount(ConfigMedia, {
+      props: {
+        ...baseProps,
+        config: { MEDIA_BASE_PATH: "{MEDIA_BASE_PATH}" },
+      },
+      global: globalConfig,
+    });
+
+    await nextTick();
+    await wrapper.vm.$nextTick();
+
+    const input = wrapper.get<HTMLInputElement>(
+      'input[id="test_table-baseUrl-generic-basePath"]',
+    );
+    expect(input.element.value).toBe("{MEDIA_BASE_PATH}");
+    expect(input.element.checkValidity()).toBe(true);
+  });
+
   it("shows validation error for invalid Filebrowser input", async () => {
     const wrapper = mount(ConfigMedia, {
       props: baseProps,
