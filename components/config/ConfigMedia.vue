@@ -370,7 +370,7 @@ watch(
             <input
               :id="`${tableName}-baseUrl-generic-basePath`"
               class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-              type="text"
+              type="url"
               :value="shareInputBasePath"
               placeholder="https://your-files-host.example/api/public/dl/"
               @input="
@@ -466,7 +466,7 @@ watch(
             <input
               :id="`${tableName}-baseUrl-generic-alerts`"
               class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-              type="text"
+              type="url"
               :value="shareInputAlerts"
               placeholder="https://your-files-host.example/api/public/dl/"
               @input="
@@ -556,7 +556,7 @@ watch(
             <input
               :id="`${tableName}-baseUrl-generic-icons`"
               class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
-              type="text"
+              type="url"
               :value="shareInputIcons"
               placeholder="https://your-files-host.example/api/public/dl/"
               @input="
