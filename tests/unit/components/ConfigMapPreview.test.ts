@@ -241,7 +241,6 @@ describe("ConfigMapPreview", () => {
       props: previewProps,
       attachTo: document.body,
     });
-    await mapbox.handlers.load();
     await mapbox.handlers.error();
     await wrapper.vm.$nextTick();
     expect(wrapper.isVisible()).toBe(false);
@@ -249,6 +248,19 @@ describe("ConfigMapPreview", () => {
     expect(mapbox.disconnect).toHaveBeenCalledOnce();
     wrapper.unmount();
     expect(mapbox.remove).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a loaded background when a later map error fires", async () => {
+    const wrapper = mount(ConfigMapPreview, {
+      props: previewProps,
+      attachTo: document.body,
+    });
+    await mapbox.handlers.load();
+    await mapbox.handlers.error();
+    await wrapper.vm.$nextTick();
+    expect(wrapper.isVisible()).toBe(true);
+    expect(mapbox.remove).not.toHaveBeenCalled();
+    wrapper.unmount();
   });
 
   it("releases map resources when the settings section closes", () => {
@@ -310,10 +322,6 @@ describe("ConfigMap preview backgrounds", () => {
     { style: "invalid", access_token: "pk.eyTest" },
     { style: background.style, access_token: "" },
     { style: background.style, access_token: "invalid" },
-    {
-      style: { version: 8, sources: {}, layers: [] },
-      access_token: "pk.eyTest",
-    },
   ])(
     "hides an invalid first background even when the second is valid: %j",
     (invalid) => {
@@ -337,6 +345,36 @@ describe("ConfigMap preview backgrounds", () => {
       wrapper.unmount();
     },
   );
+
+  it("shows a first background that uses an inline style object", () => {
+    const inlineStyle = { version: 8, sources: {}, layers: [] };
+    const wrapper = mount(ConfigMap, {
+      props: {
+        config: {
+          ...config,
+          MAPBOX_BASEMAPS: JSON.stringify([
+            {
+              name: "Inline",
+              style: inlineStyle,
+              access_token: "pk.eyTest",
+            },
+          ]),
+        },
+        tableName: "test",
+        views: ["map"],
+        keys: ["MAPBOX_BASEMAPS"],
+      },
+      global: globalOptions,
+    });
+    expect(wrapper.findComponent(ConfigMapPreview).exists()).toBe(true);
+    expect(mapbox.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        style: inlineStyle,
+        accessToken: "pk.eyTest",
+      }),
+    );
+    wrapper.unmount();
+  });
 
   it("recovers after fixing credentials and switches to a reordered first background", async () => {
     const wrapper = mount(ConfigMap, {

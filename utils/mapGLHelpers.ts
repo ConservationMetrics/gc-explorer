@@ -1,6 +1,6 @@
 import type mapboxgl from "mapbox-gl";
 
-import type { Basemap, MapStyle } from "@/types";
+import type { Basemap, MapboxStyleConfig, MapStyle } from "@/types";
 
 /** Map styles configuration for different basemaps */
 export const mapStyles: Record<string, MapStyle> = {
@@ -248,6 +248,32 @@ export const toggleLayerVisibility = (
 
 const MAPBOX_STYLE_PREFIX = "mapbox://styles/";
 const MAPBOX_STUDIO_BASE = "https://console.mapbox.com/studio/";
+const MAPBOX_STYLE_URI_PATTERN = /^mapbox:\/\/styles\/[^/\s]+\/[^/\s]+$/;
+const MAPBOX_PUBLIC_TOKEN_PATTERN = /^pk\.ey\S+$/;
+
+/**
+ * Returns true when a value is a Mapbox style URI or an inline style object.
+ *
+ * @param {unknown} style - Style URI or inline StyleSpecification.
+ * @returns {boolean} True when Mapbox GL can use the style.
+ */
+export const isUsableMapboxStyle = (
+  style: unknown,
+): style is MapboxStyleConfig => {
+  if (typeof style === "string") {
+    return MAPBOX_STYLE_URI_PATTERN.test(style);
+  }
+  return style !== null && typeof style === "object";
+};
+
+/**
+ * Returns true when a value is a Mapbox public access token.
+ *
+ * @param {unknown} token - Access token.
+ * @returns {boolean} True when the token matches pk.ey followed by non-space characters.
+ */
+export const isMapboxPublicToken = (token: unknown): token is string =>
+  typeof token === "string" && MAPBOX_PUBLIC_TOKEN_PATTERN.test(token);
 
 /**
  * Converts a Mapbox style URL to a Mapbox Studio editor URL.

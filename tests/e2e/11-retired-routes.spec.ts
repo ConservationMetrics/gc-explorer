@@ -1,5 +1,9 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
-import { SEEDED_MAP_CONFIG_PATH } from "@/tests/e2e/helpers/configPage";
+import {
+  SEEDED_MAP_CONFIG_PATH,
+  stubMapboxTelemetry,
+  waitForConfigForm,
+} from "@/tests/e2e/helpers/configPage";
 
 test("retired /config redirects to index with bookmark toast", async ({
   authenticatedPageAsAdmin: page,
@@ -56,16 +60,15 @@ test("active create and edit config routes remain reachable", async ({
   authenticatedPageAsAdmin: page,
 }) => {
   await page.goto("/config/new");
-  await page.waitForLoadState("networkidle");
   await expect(
     page.getByRole("heading", { name: /add new dataset view/i }),
   ).toBeVisible({ timeout: 10000 });
   expect(page.url()).toContain("/config/new");
   expect(page.url()).not.toMatch(/[?&]reason=moved/);
 
+  await stubMapboxTelemetry(page);
   await page.goto(SEEDED_MAP_CONFIG_PATH);
-  await page.waitForLoadState("networkidle");
-  await page.waitForSelector("form", { timeout: 15000 });
+  await waitForConfigForm(page);
   expect(page.url()).toContain("/config/bcmform_responses");
   expect(page.url()).toContain("view_type=map");
   expect(page.url()).not.toMatch(/[?&]reason=moved/);

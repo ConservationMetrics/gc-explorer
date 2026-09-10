@@ -9,7 +9,11 @@ import ConfigMapPreview from "@/components/config/ConfigMapPreview.vue";
 import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
 import Tooltip from "@/components/shared/Tooltip.vue";
 import { toCamelCase } from "@/utils/identifierUtils";
-import { mapboxStyleToStudioUrl } from "@/utils/mapGLHelpers";
+import {
+  isMapboxPublicToken,
+  isUsableMapboxStyle,
+  mapboxStyleToStudioUrl,
+} from "@/utils/mapGLHelpers";
 import { updateTags } from "@/composables/useTags";
 
 import type { ViewConfig, BasemapConfig, ColumnEntry } from "@/types";
@@ -103,13 +107,22 @@ const basemaps = ref<BasemapConfig[]>(parseBasemaps());
 const previewBasemap = computed(() => {
   const basemap = basemaps.value[0];
   if (
-    typeof basemap?.style !== "string" ||
-    !/^mapbox:\/\/styles\/[^/\s]+\/[^/\s]+$/.test(basemap.style) ||
-    !/^pk\.ey\S+$/.test(basemap.access_token)
+    !basemap ||
+    !isUsableMapboxStyle(basemap.style) ||
+    !isMapboxPublicToken(basemap.access_token)
   )
     return null;
   return { style: basemap.style, accessToken: basemap.access_token };
 });
+
+/**
+ * Returns the style field text. Inline style objects are not shown in the URI input.
+ *
+ * @param {BasemapConfig["style"]} style - Stored basemap style.
+ * @returns {string} Style URI, or an empty string for an inline style object.
+ */
+const styleFieldValue = (style: BasemapConfig["style"]): string =>
+  typeof style === "string" ? style : "";
 
 // Initialize basemaps on mount
 onMounted(() => {
@@ -317,7 +330,7 @@ const fullWidthKeys = [
                   <div>
                     <ConfigFieldLabel
                       :for-id="`${tableName}-basemap-style-${index}`"
-                      required
+                      :required="typeof basemap.style === 'string'"
                       class="mb-1"
                     >
                       {{ $t("mapboxStyle") }}
@@ -332,8 +345,8 @@ const fullWidthKeys = [
                           $t('pleaseMatchFormat') +
                           ': mapbox://styles/username/styleid'
                         "
-                        :value="basemap.style"
-                        required
+                        :value="styleFieldValue(basemap.style)"
+                        :required="typeof basemap.style === 'string'"
                         @input="
                           updateBasemap(
                             index,
@@ -435,7 +448,7 @@ const fullWidthKeys = [
           </div>
           <ConfigMapPreview
             v-if="previewBasemap"
-            :key="`${previewBasemap.style}:${previewBasemap.accessToken}`"
+            :key="`${typeof previewBasemap.style === 'string' ? previewBasemap.style : JSON.stringify(previewBasemap.style)}:${previewBasemap.accessToken}`"
             :config="config"
             :mapbox-style="previewBasemap.style"
             :access-token="previewBasemap.accessToken"

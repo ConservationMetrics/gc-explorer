@@ -10,9 +10,11 @@ import {
 } from "@/types";
 import { VIEW_INFO_CONFIG_KEYS } from "@/composables/useCopyConfig";
 import { CONFIG_LIMITS } from "@/utils";
+import { isMapboxPublicToken, isUsableMapboxStyle } from "@/utils/mapGLHelpers";
 import {
   FUNCTIONAL_COLUMN_KEYS,
   getFunctionalColumnSource,
+  getSelectableColumnOptions,
   validateViewConfigColumns,
 } from "@/utils/viewConfigColumns";
 import ConfigPermissions from "./ConfigPermissions.vue";
@@ -242,7 +244,7 @@ const staleInvalidColumnKeys = computed(
       FUNCTIONAL_COLUMN_KEYS.filter((key) => {
         const invalidValue = columnValidation.value.invalidSelections[key];
         return (
-          availableColumnsForKey(key).length > 0 &&
+          getSelectableColumnOptions(availableColumnsForKey(key)).length > 0 &&
           invalidValue !== undefined &&
           originalConfig.value[key]?.trim() === invalidValue
         );
@@ -251,9 +253,14 @@ const staleInvalidColumnKeys = computed(
 );
 
 const hasNewInvalidColumnSelections = computed(() =>
-  Object.keys(columnValidation.value.invalidSelections).some(
-    (key) => !staleInvalidColumnKeys.value.has(key),
-  ),
+  FUNCTIONAL_COLUMN_KEYS.some((key) => {
+    const invalidValue = columnValidation.value.invalidSelections[key];
+    return (
+      invalidValue !== undefined &&
+      getSelectableColumnOptions(availableColumnsForKey(key)).length > 0 &&
+      !staleInvalidColumnKeys.value.has(key)
+    );
+  }),
 );
 
 const areColumnsLoading = computed(
@@ -268,10 +275,10 @@ const hasConfigValue = (value: unknown) =>
   value !== null && value !== undefined && String(value).trim() !== "";
 
 /**
- * Returns true when the basemap config has entries and every token is set.
+ * Returns true when all required basemap values are valid.
  *
  * @param {string | undefined} encodedBasemaps - JSON string of BasemapConfig[].
- * @returns {boolean} True when at least one basemap exists and every token is set.
+ * @returns {boolean} True when every basemap has a name, a usable style, and a public token.
  */
 const hasValidBasemapConfig = (
   encodedBasemaps: string | undefined,
@@ -280,7 +287,12 @@ const hasValidBasemapConfig = (
   try {
     const basemaps = JSON.parse(encodedBasemaps) as BasemapConfig[];
     if (!Array.isArray(basemaps) || basemaps.length === 0) return false;
-    return basemaps.every((basemap) => hasConfigValue(basemap.access_token));
+    return basemaps.every(
+      (basemap) =>
+        hasConfigValue(basemap.name) &&
+        isUsableMapboxStyle(basemap.style) &&
+        isMapboxPublicToken(basemap.access_token),
+    );
   } catch {
     return false;
   }

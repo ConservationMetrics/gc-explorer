@@ -4,6 +4,7 @@ import {
   expandMapSection,
   openGalleryConfigEditPage,
   openMapConfigEditPage,
+  stubMapboxTelemetry,
 } from "@/tests/e2e/helpers/configPage";
 import type { ViewConfigRow } from "@/types";
 
@@ -41,6 +42,7 @@ test("config page - create new view via type-first flow and edit it", async ({
     .selectOption(selectedTableName);
   await page.locator("[data-testid='create-view-continue']").click();
   await page.waitForURL("**/config/new/map**", { timeout: 10000 });
+  await stubMapboxTelemetry(page);
 
   await expect(
     page.locator("[data-testid='create-form-primary-select']"),
@@ -52,13 +54,6 @@ test("config page - create new view via type-first flow and edit it", async ({
     "Select a secondary dataset…",
   );
 
-  const mapSectionToggle = page.locator(
-    '[data-testid="config-section-map-toggle"]',
-  );
-  if ((await mapSectionToggle.count()) > 0) {
-    await mapSectionToggle.click();
-    await page.waitForTimeout(300);
-  }
   await ensureMapFormCanSubmit(page);
   await page.locator('input[type="radio"][value="anyone"]').check();
 
@@ -69,7 +64,6 @@ test("config page - create new view via type-first flow and edit it", async ({
   await page.waitForURL(`**/config/${selectedTableName}**`, {
     timeout: 15000,
   });
-  await page.waitForLoadState("networkidle");
   await page.waitForSelector("form", { timeout: 15000 });
 
   await expect(submitButton).toBeDisabled();
@@ -97,8 +91,7 @@ test("config page - create new view via type-first flow and edit it", async ({
     await ensureMapFormCanSubmit(page);
     await expect(submitButton).toBeEnabled();
     await submitButton.click();
-    await page.waitForLoadState("networkidle", { timeout: 10000 });
-    await page.waitForTimeout(2000);
+    await expect(page.getByTestId("saved-modal")).toBeVisible();
     expect(await datasetNameInput.inputValue()).toBeTruthy();
   }
 
@@ -389,9 +382,7 @@ test("config page - submit configuration changes", async ({
     const submitButton = page.locator("[data-testid='config-submit-button']");
     await expect(submitButton).toBeEnabled();
     await submitButton.click();
-
-    await page.waitForLoadState("networkidle", { timeout: 2000 });
-    await page.waitForTimeout(2000);
+    await expect(page.getByTestId("saved-modal")).toBeVisible();
 
     const savedValue = await datasetNameInput.inputValue();
     expect(savedValue).toContain("Test Dataset");
@@ -517,9 +508,11 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
       await page
         .locator('[data-testid="config-section-filtering-toggle"]')
         .click();
-      originalFilterValue = await page
-        .locator('select[id*="FRONT_END_FILTER_COLUMN"]')
-        .inputValue();
+      const filterColumn = page.locator(
+        'select[id*="FRONT_END_FILTER_COLUMN"]',
+      );
+      await expect(filterColumn).toBeVisible();
+      originalFilterValue = await filterColumn.inputValue();
     }
     const optionValues = await selector
       .locator("option")
@@ -567,6 +560,7 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
       const filterColumn = page.locator(
         'select[id*="FRONT_END_FILTER_COLUMN"]',
       );
+      await expect(filterColumn).toBeVisible();
       await expect(filterColumn).toBeEnabled();
       await filterColumn.selectOption(originalFilterValue!);
     }
@@ -615,7 +609,9 @@ test("config page - error handling for invalid form submission", async ({
 }) => {
   await openMapConfigEditPage(page);
 
-  const mapboxTokenInput = page.locator('input[id*="basemap-access-token"]');
+  const mapboxTokenInput = page
+    .locator('input[id*="basemap-access-token"]')
+    .first();
 
   if ((await mapboxTokenInput.count()) > 0) {
     const submitButton = page.locator("[data-testid='config-submit-button']");
@@ -853,6 +849,88 @@ test("config page - basemap configuration - update name and style", async ({
       await expect(submitButton).toBeEnabled();
     }
   }
+});
+
+test("config page - saves Mapbox config after the preview recovers", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  const rejectedStyle = "mapbox://styles/test-user/rejected-style";
+  const rejectedToken = "pk.eyRejectedToken";
+  const correctedStyle = `mapbox://styles/test-user/test-style-${Date.now()}`;
+  const correctedToken = "pk.eyTestToken";
+  await page.route("https://api.mapbox.com/styles/v1/**", async (route) => {
+    if (route.request().url().includes("rejected-style")) {
+      await route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "Not Authorized" }),
+      });
+      return;
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        version: 8,
+        sources: {},
+        layers: [
+          {
+            id: "background",
+            type: "background",
+            paint: { "background-color": "#f8fafc" },
+          },
+        ],
+      }),
+    });
+  });
+  await page.route("https://events.mapbox.com/**", async (route) => {
+    await route.fulfill({ status: 204, body: "" });
+  });
+  await openMapConfigEditPage(page);
+
+  const styleInput = page.locator('input[id*="basemap-style-0"]').first();
+  const tokenInput = page
+    .locator('input[id*="basemap-access-token-0"]')
+    .first();
+  const mapPreview = page.getByTestId("config-map-preview");
+
+  const rejectedResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("rejected-style") && response.status() === 401,
+  );
+  await tokenInput.fill(rejectedToken);
+  await styleInput.fill(rejectedStyle);
+  await rejectedResponsePromise;
+  await expect(mapPreview).toBeHidden();
+
+  await tokenInput.fill(correctedToken);
+  await styleInput.fill(correctedStyle);
+  await expect(mapPreview).toBeVisible({ timeout: 10000 });
+
+  const patchRequestPromise = page.waitForRequest(
+    (request) =>
+      request.method() === "PATCH" && /\/api\/views\/\d+$/.test(request.url()),
+  );
+  const submitButton = page.getByTestId("config-submit-button");
+  await expect(submitButton).toBeEnabled();
+  await submitButton.click();
+
+  const patchRequest = await patchRequestPromise;
+  const submittedConfig = patchRequest.postDataJSON().viewConfig;
+  expect(JSON.parse(submittedConfig.MAPBOX_BASEMAPS)[0]).toMatchObject({
+    style: correctedStyle,
+    access_token: correctedToken,
+  });
+  await expect(page.getByTestId("saved-modal")).toBeVisible();
+
+  await page.reload();
+  await page.waitForSelector("form", { timeout: 15000 });
+  await expandMapSection(page);
+  await expect(
+    page.locator('input[id*="basemap-style-0"]').first(),
+  ).toHaveValue(correctedStyle);
+  await expect(
+    page.locator('input[id*="basemap-access-token-0"]').first(),
+  ).toHaveValue(correctedToken);
 });
 
 test("config page - color column configuration", async ({
