@@ -892,14 +892,6 @@ test("config page - saves Mapbox config after the preview recovers", async ({
     await route.fulfill({ status: 204, body: "" });
   });
   await openMapConfigEditPage(page);
-  const genericMediaPath = page.locator(
-    'input[id*="baseUrl-generic-basePath"]',
-  );
-  if ((await genericMediaPath.count()) > 0) {
-    await genericMediaPath.first().fill("https://example.test/media/", {
-      force: true,
-    });
-  }
 
   const styleInput = page.locator('input[id*="basemap-style-0"]').first();
   const tokenInput = page

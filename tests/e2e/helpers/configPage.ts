@@ -86,10 +86,13 @@ export async function ensureMapFormCanSubmit(page: Page): Promise<void> {
   const tokenInputs = page.locator('input[id*="basemap-access-token"]');
   const tokenCount = await tokenInputs.count();
   for (let index = 0; index < tokenCount; index += 1) {
-    await fillIfEmpty(
-      tokenInputs.nth(index),
-      "pk.ey_e2e_mapbox_access_token_value",
-    );
+    const tokenInput = tokenInputs.nth(index);
+    if ((await tokenInput.count()) === 0) continue;
+    const current = await tokenInput.inputValue();
+    if (!/^pk\.ey\S+$/.test(current.trim())) {
+      await tokenInput.fill("pk.ey_e2e_mapbox_access_token_value");
+      await page.waitForTimeout(200);
+    }
   }
   await fillIfEmpty(page.locator('input[id*="MAPBOX_ZOOM"]'), "10");
   await fillIfEmpty(page.locator('input[id*="MAPBOX_CENTER_LATITUDE"]'), "0");
