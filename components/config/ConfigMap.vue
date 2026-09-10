@@ -552,7 +552,7 @@ const fullWidthKeys = [
         <!-- Projection -->
         <template v-else-if="key === 'MAPBOX_PROJECTION'">
           <div class="flex items-center gap-1.5">
-            <ConfigFieldLabel :for-id="`${tableName}-${key}`">
+            <ConfigFieldLabel :for-id="`${tableName}-${key}`" required>
               {{ $t(toCamelCase(key)) }}
             </ConfigFieldLabel>
             <Tooltip>
@@ -573,6 +573,7 @@ const fullWidthKeys = [
           <select
             :id="`${tableName}-${key}`"
             class="w-full px-4 py-2 bg-violet-100 border border-violet-200 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-colors"
+            required
             :value="config[key]"
             @change="
               (e) => handleInput(key, (e.target as HTMLSelectElement).value)

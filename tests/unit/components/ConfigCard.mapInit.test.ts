@@ -296,7 +296,7 @@ describe("ConfigCard map initialization", () => {
     ).toBe(false);
   });
 
-  it("enables save after a token is entered when projection is unset", async () => {
+  it("keeps save disabled after a token is entered when projection is unset", async () => {
     const configWithoutProjection = { ...savedMapConfig };
     delete configWithoutProjection.MAPBOX_PROJECTION;
     const wrapper = mountConfigCard({
@@ -315,14 +315,11 @@ describe("ConfigCard map initialization", () => {
     expect(
       wrapper.get<HTMLButtonElement>('[data-testid="config-submit-button"]')
         .element.disabled,
-    ).toBe(false);
+    ).toBe(true);
     expect(
       wrapper.get<HTMLSelectElement>('select[id="test_map-MAPBOX_PROJECTION"]')
         .element.required,
-    ).toBe(false);
-    expect(wrapper.get<HTMLFormElement>("form").element.checkValidity()).toBe(
-      true,
-    );
+    ).toBe(true);
   });
 
   it("removes stale unavailable columns when saving another change", async () => {

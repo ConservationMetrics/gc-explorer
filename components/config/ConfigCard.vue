@@ -302,6 +302,7 @@ const isFormValid = computed(() => {
   const isMapConfigValid = shouldShowConfigMap.value
     ? hasValidBasemapConfig(localConfig.value.MAPBOX_BASEMAPS) &&
       hasConfigValue(localConfig.value.MAPBOX_ZOOM) &&
+      hasConfigValue(localConfig.value.MAPBOX_PROJECTION) &&
       hasConfigValue(localConfig.value.MAPBOX_CENTER_LATITUDE) &&
       hasConfigValue(localConfig.value.MAPBOX_CENTER_LONGITUDE)
     : true;
