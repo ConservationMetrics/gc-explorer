@@ -43,6 +43,13 @@ import {
   transformSurveyEntry,
   transformAlertEntry,
 } from "@/utils/dataTransformers";
+import {
+  alertMapLayers,
+  getAlertGeometryRenderKind,
+  getAlertMapLayersForPeriod,
+  getAlertSourceFeatures,
+  isPolygonal,
+} from "@/utils/alertMapLayers";
 import { parsePhotosFromRecord } from "@/utils/index";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
@@ -304,26 +311,15 @@ const selectInitialAlertFeature = (alertId: string) => {
       (f) => f.properties?.alertID === feature.properties?.alertID,
     );
 
-    // Determine the correct layer based on geometry type
-    let layerId: string;
-    const geometryType = feature.geometry.type;
+    const renderKind = getAlertGeometryRenderKind(feature);
+    const alertMapLayer = alertMapLayers.find(
+      (layer) =>
+        layer.period === (isInRecentLayer ? "mostRecent" : "previous") &&
+        layer.kind === renderKind,
+    );
+    if (!alertMapLayer) return;
 
-    if (geometryType === "Point") {
-      // Point features use the point layer
-      layerId = isInRecentLayer
-        ? "most-recent-alerts-point"
-        : "previous-alerts-point";
-    } else {
-      // Polygon/LineString features use the geometry-specific layer
-      // (not centroids, since we'll be zooming in to show the actual geometry)
-      const layerType =
-        geometryType === "MultiPolygon"
-          ? "polygon"
-          : geometryType.toLowerCase();
-      layerId = isInRecentLayer
-        ? `most-recent-alerts-${layerType}`
-        : `previous-alerts-${layerType}`;
-    }
+    const layerId = alertMapLayer.layerId;
 
     selectFeature(feature, layerId);
 
@@ -333,10 +329,7 @@ const selectInitialAlertFeature = (alertId: string) => {
     if (feature.geometry.type === "Point") {
       const [lng, lat] = feature.geometry.coordinates;
       map.value.flyTo({ center: [lng, lat], zoom: 15 });
-    } else if (
-      feature.geometry.type === "Polygon" ||
-      feature.geometry.type === "MultiPolygon"
-    ) {
+    } else if (isPolygonal(feature)) {
       const bounds = bbox(feature);
       map.value.fitBounds(bounds, { padding: 50, minZoom: 12 });
     } else if (feature.geometry.type === "LineString") {
@@ -626,29 +619,25 @@ const addAlertsData = async () => {
   const addAlertLayer = async (
     layerId: string,
     features: Feature[],
-    type: string,
+    kind: "point" | "polygon" | "linestring",
     fillColor: string | null,
     strokeColor: string | null,
   ): Promise<void> => {
-    const matchesLayerType = (feature: Feature) =>
-      feature.geometry.type === type ||
-      (type === "Polygon" && feature.geometry.type === "MultiPolygon");
-
-    if (!features.some(matchesLayerType)) return;
+    if (features.length === 0) return;
 
     if (!map.value.getSource(layerId)) {
       const baseConfig = {
         type: "geojson" as const,
         data: {
           type: "FeatureCollection" as const,
-          features: features.filter(matchesLayerType),
+          features,
         },
       };
 
       // Clustering for Point features
       // See https://docs.mapbox.com/mapbox-gl-js/example/cluster/
       const sourceConfig =
-        type === "Point"
+        kind === "point"
           ? {
               ...baseConfig,
               cluster: true,
@@ -664,7 +653,7 @@ const addAlertsData = async () => {
       // Zoom threshold: below this, show centroid circles; at/above this, show actual geometries
       const GEOMETRY_MIN_ZOOM = 12;
 
-      if (type === "Polygon" || type === "MultiPolygon") {
+      if (kind === "polygon") {
         if (!map.value.getLayer(layerId)) {
           map.value.addLayer({
             id: layerId,
@@ -723,7 +712,7 @@ const addAlertsData = async () => {
         }
       }
 
-      if (type === "LineString") {
+      if (kind === "linestring") {
         if (!map.value.getLayer(layerId)) {
           map.value.addLayer({
             id: layerId,
@@ -766,7 +755,7 @@ const addAlertsData = async () => {
         }
       }
 
-      if (type === "Point") {
+      if (kind === "point") {
         if (layerId.startsWith("most-recent-alerts")) {
           addPulsingHaloLayers(map.value, layerId, {
             unclusteredRadius: POINT_HALO_RADIUS,
@@ -879,30 +868,9 @@ const addAlertsData = async () => {
    */
   const addCentroidCircleLayer = async (
     layerId: string,
-    features: Feature[],
+    centroidFeatures: Feature[],
     color: string,
   ) => {
-    // Filter features that have centroids (Polygons and LineStrings ONLY, exclude Points!)
-    const centroidFeatures = features
-      .filter(
-        (feature) =>
-          feature.properties?.geographicCentroid &&
-          feature.geometry.type !== "Point", // Exclude Point features - they have their own layer
-      )
-      .map((feature) => ({
-        type: "Feature" as const,
-        geometry: {
-          type: "Point" as const,
-          coordinates: feature.properties?.geographicCentroid
-            .split(",")
-            .map(Number)
-            .reverse(),
-        },
-        properties: {
-          ...feature.properties,
-        },
-      }));
-
     if (centroidFeatures.length === 0) return;
 
     // Add source with clustering enabled
@@ -1011,65 +979,27 @@ const addAlertsData = async () => {
     }
   };
 
-  await Promise.all([
-    // Previous alerts - original geometry layers
-    addAlertLayer(
-      "previous-alerts-polygon",
-      geoJsonSource.previousAlerts.features,
-      "Polygon",
-      "#FD8D3C",
-      "#FD8D3C",
-    ),
-    addAlertLayer(
-      "previous-alerts-linestring",
-      geoJsonSource.previousAlerts.features,
-      "LineString",
-      null,
-      "#FD8D3C",
-    ),
-    addAlertLayer(
-      "previous-alerts-point",
-      geoJsonSource.previousAlerts.features,
-      "Point",
-      "#FD8D3C",
-      "#FD8D3C",
-    ),
-    // Previous alerts - centroid circles for Polygon/LineString
-    addCentroidCircleLayer(
-      "previous-alerts-centroids",
-      geoJsonSource.previousAlerts.features,
-      "#FD8D3C",
-    ),
+  await Promise.all(
+    alertMapLayers.map(({ alertsKey, kind, period, sourceId }) => {
+      const color = period === "mostRecent" ? "#FF0000" : "#FD8D3C";
+      const sourceFeatures = getAlertSourceFeatures(
+        geoJsonSource[alertsKey].features,
+        kind,
+      );
 
-    // Most recent alerts - original geometry layers
-    addAlertLayer(
-      "most-recent-alerts-polygon",
-      geoJsonSource.mostRecentAlerts.features,
-      "Polygon",
-      "#FF0000",
-      "#FF0000",
-    ),
-    addAlertLayer(
-      "most-recent-alerts-linestring",
-      geoJsonSource.mostRecentAlerts.features,
-      "LineString",
-      null,
-      "#FF0000",
-    ),
-    addAlertLayer(
-      "most-recent-alerts-point",
-      geoJsonSource.mostRecentAlerts.features,
-      "Point",
-      "#FF0000",
-      "#FF0000",
-    ),
-    // Most recent alerts - centroid circles for Polygon/LineString
-    addCentroidCircleLayer(
-      "most-recent-alerts-centroids",
-      geoJsonSource.mostRecentAlerts.features,
-      "#FF0000",
-    ),
-  ]);
+      if (kind === "centroids") {
+        return addCentroidCircleLayer(sourceId, sourceFeatures, color);
+      }
+
+      return addAlertLayer(
+        sourceId,
+        sourceFeatures,
+        kind,
+        kind === "linestring" ? null : color,
+        color,
+      );
+    }),
+  );
 
   // Add event listeners only after all layers have loaded
   map.value.getStyle().layers.forEach((layer: Layer) => {
@@ -1495,11 +1425,9 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
 
   // Handle alert group layers - toggle all related layers
   if (item.id === "most-recent-alerts" || item.id === "previous-alerts") {
-    const layerPrefix = item.id;
-    const layerTypes = ["polygon", "linestring", "point", "centroids"];
+    const period = item.id === "most-recent-alerts" ? "mostRecent" : "previous";
 
-    layerTypes.forEach((type) => {
-      const layerId = `${layerPrefix}-${type}`;
+    getAlertMapLayersForPeriod(period).forEach(({ kind: type, layerId }) => {
       if (map.value.getLayer(layerId)) {
         map.value.setLayoutProperty(layerId, "visibility", visibility);
       }
@@ -1584,84 +1512,25 @@ const resetToInitialState = () => {
   imageCaption.value = null;
   resetDateRange();
 
-  // Reset source data for all alert sources to original data
-  const sourceIds = [
-    "most-recent-alerts-point",
-    "most-recent-alerts-polygon",
-    "most-recent-alerts-linestring",
-    "most-recent-alerts-centroids",
-    "previous-alerts-point",
-    "previous-alerts-polygon",
-    "previous-alerts-linestring",
-    "previous-alerts-centroids",
-  ];
-
-  sourceIds.forEach((sourceId) => {
+  // Reset source data for all alert sources to original data.
+  alertMapLayers.forEach(({ alertsKey, kind, sourceId }) => {
     const source = map.value.getSource(sourceId) as mapboxgl.GeoJSONSource;
     if (!source) return;
 
-    const isMostRecent = sourceId.startsWith("most-recent-alerts");
-    const originalFeatures = isMostRecent
-      ? props.alertsData.mostRecentAlerts.features
-      : props.alertsData.previousAlerts.features;
-
-    if (sourceId.endsWith("-point")) {
-      const pointFeatures = originalFeatures.filter(
-        (f) => f.geometry.type === "Point",
-      );
-      source.setData({
-        type: "FeatureCollection",
-        features: pointFeatures,
-      });
-    } else if (sourceId.endsWith("-polygon")) {
-      const polygonFeatures = originalFeatures.filter(
-        (f) =>
-          f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon",
-      );
-      source.setData({
-        type: "FeatureCollection",
-        features: polygonFeatures,
-      });
-    } else if (sourceId.endsWith("-linestring")) {
-      const linestringFeatures = originalFeatures.filter(
-        (f) => f.geometry.type === "LineString",
-      );
-      source.setData({
-        type: "FeatureCollection",
-        features: linestringFeatures,
-      });
-    } else if (sourceId.endsWith("-centroids")) {
-      const centroidFeatures = originalFeatures
-        .filter(
-          (f) =>
-            f.properties?.geographicCentroid && f.geometry.type !== "Point",
-        )
-        .map((feature) => ({
-          type: "Feature" as const,
-          geometry: {
-            type: "Point" as const,
-            coordinates: feature.properties?.geographicCentroid
-              .split(",")
-              .map(Number)
-              .reverse(),
-          },
-          properties: {
-            ...feature.properties,
-          },
-        }));
-      source.setData({
-        type: "FeatureCollection",
-        features: centroidFeatures,
-      });
-    }
+    source.setData({
+      type: "FeatureCollection",
+      features: getAlertSourceFeatures(
+        props.alertsData[alertsKey].features,
+        kind,
+      ),
+    });
   });
 
-  // Reset the filters for layers that start with 'most-recent-alerts' and 'alerts'
+  // Reset filters for every primary alert layer in the shared matrix.
   // Skip cluster layers as they don't have filters applied
   map.value.getStyle().layers.forEach((layer: Layer) => {
     if (
-      (layer.id.startsWith("most-recent-alerts") ||
-        layer.id.startsWith("alerts")) &&
+      alertMapLayers.some(({ layerId }) => layer.id.startsWith(layerId)) &&
       !layer.id.includes("-cluster")
     ) {
       // Point and centroid layers need to restore their cluster exclusion filter
@@ -1697,86 +1566,67 @@ const resetToInitialState = () => {
 
       // Handle alert group layers
       if (item.id === "most-recent-alerts" || item.id === "previous-alerts") {
-        const layerPrefix = item.id;
-        const layerTypes = ["polygon", "linestring", "point", "centroids"];
+        const period =
+          item.id === "most-recent-alerts" ? "mostRecent" : "previous";
 
-        layerTypes.forEach((type) => {
-          const layerId = `${layerPrefix}-${type}`;
-          if (map.value.getLayer(layerId)) {
-            map.value.setLayoutProperty(layerId, "visibility", visibility);
-          }
+        getAlertMapLayersForPeriod(period).forEach(
+          ({ kind: type, layerId }) => {
+            if (map.value.getLayer(layerId)) {
+              map.value.setLayoutProperty(layerId, "visibility", visibility);
+            }
 
-          // Handle stroke layers for polygons
-          if (type === "polygon") {
-            const strokeLayerId = `${layerId}-stroke`;
-            if (map.value.getLayer(strokeLayerId)) {
-              map.value.setLayoutProperty(
-                strokeLayerId,
-                "visibility",
-                visibility,
-              );
+            // Handle stroke layers for polygons
+            if (type === "polygon") {
+              const strokeLayerId = `${layerId}-stroke`;
+              if (map.value.getLayer(strokeLayerId)) {
+                map.value.setLayoutProperty(
+                  strokeLayerId,
+                  "visibility",
+                  visibility,
+                );
+              }
             }
-          }
 
-          // Handle cluster layers for points
-          if (type === "point") {
-            const clusterLayerId = `${layerId}-clusters`;
-            const clusterCountLayerId = `${layerId}-cluster-count`;
-            if (map.value.getLayer(clusterLayerId)) {
-              map.value.setLayoutProperty(
-                clusterLayerId,
-                "visibility",
-                visibility,
-              );
+            // Handle cluster layers for points
+            if (type === "point") {
+              const clusterLayerId = `${layerId}-clusters`;
+              const clusterCountLayerId = `${layerId}-cluster-count`;
+              if (map.value.getLayer(clusterLayerId)) {
+                map.value.setLayoutProperty(
+                  clusterLayerId,
+                  "visibility",
+                  visibility,
+                );
+              }
+              if (map.value.getLayer(clusterCountLayerId)) {
+                map.value.setLayoutProperty(
+                  clusterCountLayerId,
+                  "visibility",
+                  visibility,
+                );
+              }
             }
-            if (map.value.getLayer(clusterCountLayerId)) {
-              map.value.setLayoutProperty(
-                clusterCountLayerId,
-                "visibility",
-                visibility,
-              );
-            }
-          }
 
-          if (type === "point" || type === "centroids") {
-            const haloLayerId = `${layerId}-halo`;
-            const clusterHaloLayerId = `${layerId}-clusters-halo`;
-            if (map.value.getLayer(haloLayerId)) {
-              map.value.setLayoutProperty(
-                haloLayerId,
-                "visibility",
-                visibility,
-              );
+            if (type === "point" || type === "centroids") {
+              const haloLayerId = `${layerId}-halo`;
+              const clusterHaloLayerId = `${layerId}-clusters-halo`;
+              if (map.value.getLayer(haloLayerId)) {
+                map.value.setLayoutProperty(
+                  haloLayerId,
+                  "visibility",
+                  visibility,
+                );
+              }
+              if (map.value.getLayer(clusterHaloLayerId)) {
+                map.value.setLayoutProperty(
+                  clusterHaloLayerId,
+                  "visibility",
+                  visibility,
+                );
+              }
             }
-            if (map.value.getLayer(clusterHaloLayerId)) {
-              map.value.setLayoutProperty(
-                clusterHaloLayerId,
-                "visibility",
-                visibility,
-              );
-            }
-          }
-
-          // Handle cluster layers for symbols
-          if (type === "symbol") {
-            const clusterLayerId = `${layerId}-clusters`;
-            const clusterCountLayerId = `${layerId}-cluster-count`;
-            if (map.value.getLayer(clusterLayerId)) {
-              map.value.setLayoutProperty(
-                clusterLayerId,
-                "visibility",
-                visibility,
-              );
-            }
-            if (map.value.getLayer(clusterCountLayerId)) {
-              map.value.setLayoutProperty(
-                clusterCountLayerId,
-                "visibility",
-                visibility,
-              );
-            }
-          }
-        });
+          },
+        );
       } else if (item.id === "secondary-data") {
         SECONDARY_INTERACTIVE_LAYER_IDS.forEach((layerId) => {
           if (map.value.getLayer(layerId)) {

@@ -13,6 +13,12 @@ import {
   getIncidentEntriesBbox,
   INCIDENT_FIT_BOUNDS_OPTIONS,
 } from "@/utils/incidentHelpers";
+import {
+  alertMapLayers,
+  clusteredAlertMapLayers,
+  getAlertMapLayer,
+  getAlertMapLayersForPeriod,
+} from "@/utils/alertMapLayers";
 /**
  * Small in-memory cache to avoid refetching incident details repeatedly.
  * (Also used for hover-prefetch.)
@@ -162,20 +168,33 @@ export const useIncidents = (
 
     const sourceId = mapLayer?.source || layerId;
     const sourceLayer = mapLayer?.["source-layer"];
-    const featureId = layerId.includes("-centroids")
-      ? feature.properties?.alertID
-      : (feature.id ??
-        feature.properties?.alertID ??
-        feature.properties?._id ??
-        feature.properties?.source_id ??
-        feature.properties?.sourceId ??
-        feature.properties?.id);
+    const featureId =
+      getAlertMapLayer(layerId)?.kind === "centroids"
+        ? feature.properties?.alertID
+        : (feature.id ??
+          feature.properties?.alertID ??
+          feature.properties?._id ??
+          feature.properties?.source_id ??
+          feature.properties?.sourceId ??
+          feature.properties?.id);
 
     if (featureId === undefined || featureId === null || !sourceId) {
       return null;
     }
 
     return { sourceId, sourceLayer, featureId };
+  };
+
+  const getClusterSourceForAlertLayer = (layerId: string) => {
+    const alertMapLayer = getAlertMapLayer(layerId);
+    if (!alertMapLayer) return null;
+    if (alertMapLayer.kind === "point" || alertMapLayer.kind === "centroids") {
+      return alertMapLayer.sourceId;
+    }
+
+    return getAlertMapLayersForPeriod(alertMapLayer.period).find(
+      (layer) => layer.kind === "centroids",
+    )?.sourceId;
   };
 
   const getOverlayLayerId = (layerId: string) =>
@@ -671,16 +690,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
     clearSourceHighlighting();
 
     const selectableLayers = [
-      "most-recent-alerts-polygon",
-      "most-recent-alerts-linestring",
-      "most-recent-alerts-point",
-      "most-recent-alerts-symbol",
-      "most-recent-alerts-centroids",
-      "previous-alerts-polygon",
-      "previous-alerts-linestring",
-      "previous-alerts-point",
-      "previous-alerts-symbol",
-      "previous-alerts-centroids",
+      ...alertMapLayers.map((layer) => layer.layerId),
       "secondary-data",
       ...getAdditionalSelectableLayerIds(),
     ].filter((layerId) => map.value!.getLayer(layerId));
@@ -724,12 +734,9 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
     const selectedAlertIds = selectedSources.value
       .filter((source) => source.feature_type === "alert")
       .map((source) => source.source_id);
-    const candidateClusterSources = [
-      "most-recent-alerts-centroids",
-      "most-recent-alerts-point",
-      "previous-alerts-centroids",
-      "previous-alerts-point",
-    ].filter((sourceName) => map.value!.getSource(sourceName));
+    const candidateClusterSources = clusteredAlertMapLayers
+      .map((layer) => layer.sourceId)
+      .filter((sourceName) => map.value!.getSource(sourceName));
     selectedAlertIds.forEach((alertId) => {
       candidateClusterSources.forEach((sourceName) => {
         void highlightClusterForAlertId(alertId, sourceName);
@@ -919,18 +926,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
     if (!map.value) return;
 
     // Include centroids layers as they contain the alertID property
-    const alertLayers = [
-      "most-recent-alerts-polygon",
-      "most-recent-alerts-linestring",
-      "most-recent-alerts-point",
-      "most-recent-alerts-symbol",
-      "most-recent-alerts-centroids",
-      "previous-alerts-polygon",
-      "previous-alerts-linestring",
-      "previous-alerts-point",
-      "previous-alerts-symbol",
-      "previous-alerts-centroids",
-    ];
+    const alertLayers = alertMapLayers.map((layer) => layer.layerId);
 
     const secondaryLayers = ["secondary-data"];
 
@@ -1316,28 +1312,13 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
     if (!map.value) return;
 
     // List of all cluster layer IDs that need updating
-    const clusterLayers = [
-      {
-        clustersLayer: "most-recent-alerts-centroids-clusters",
-        source: "most-recent-alerts-centroids",
-        color: "#FF0000",
-      },
-      {
-        clustersLayer: "most-recent-alerts-point-clusters",
-        source: "most-recent-alerts-point",
-        color: "#FF0000",
-      },
-      {
-        clustersLayer: "previous-alerts-centroids-clusters",
-        source: "previous-alerts-centroids",
-        color: "#FD8D3C",
-      },
-      {
-        clustersLayer: "previous-alerts-point-clusters",
-        source: "previous-alerts-point",
-        color: "#FD8D3C",
-      },
-    ];
+    const clusterLayers = clusteredAlertMapLayers.map(
+      ({ period, sourceId }) => ({
+        clustersLayer: `${sourceId}-clusters`,
+        source: sourceId,
+        color: period === "mostRecent" ? "#FF0000" : "#FD8D3C",
+      }),
+    );
 
     clusterLayers.forEach(({ clustersLayer, source, color }) => {
       if (map.value!.getLayer(clustersLayer)) {
@@ -1541,12 +1522,9 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
         )
         .map((source) => source.source_id);
 
-      const candidateClusterSources = [
-        "most-recent-alerts-centroids",
-        "most-recent-alerts-point",
-        "previous-alerts-centroids",
-        "previous-alerts-point",
-      ].filter((sourceName) => map.value!.getSource(sourceName));
+      const candidateClusterSources = clusteredAlertMapLayers
+        .map((layer) => layer.sourceId)
+        .filter((sourceName) => map.value!.getSource(sourceName));
 
       // Re-find clusters for each selected alert across cluster-capable sources.
       const rehighlightPromises: Promise<void>[] = [];
@@ -1584,16 +1562,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
 
     const currentAlertsTable = getCurrentAlertsTable();
 
-    const alertLayers = [
-      "most-recent-alerts-polygon",
-      "most-recent-alerts-linestring",
-      "most-recent-alerts-point",
-      "most-recent-alerts-centroids",
-      "previous-alerts-polygon",
-      "previous-alerts-linestring",
-      "previous-alerts-point",
-      "previous-alerts-centroids",
-    ];
+    const alertLayers = alertMapLayers.map((layer) => layer.sourceId);
 
     const foundFeatures: Feature[] = [];
 
@@ -1649,14 +1618,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
               // If it's a cluster, highlight the cluster
               // For alert entries, we need to find which cluster contains this alertID
               if (!savedEntryIsSecondary(entry) && entry.source_id) {
-                // Determine the centroids source for cluster checking
-                const centroidsSource = sourceId.includes("most-recent")
-                  ? "most-recent-alerts-centroids"
-                  : sourceId.includes("previous")
-                    ? "previous-alerts-centroids"
-                    : sourceId.includes("point")
-                      ? sourceId
-                      : null;
+                const centroidsSource = getClusterSourceForAlertLayer(sourceId);
 
                 if (centroidsSource) {
                   await highlightClusterForAlertId(
@@ -1672,13 +1634,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
               // Also check if this feature is part of a cluster at current zoom
               // (it might be de-clustered when zoomed in, but we still want to highlight the cluster if zoomed out)
               if (!savedEntryIsSecondary(entry) && entry.source_id) {
-                const centroidsSource = sourceId.includes("most-recent")
-                  ? "most-recent-alerts-centroids"
-                  : sourceId.includes("previous")
-                    ? "previous-alerts-centroids"
-                    : sourceId.includes("point")
-                      ? sourceId
-                      : null;
+                const centroidsSource = getClusterSourceForAlertLayer(sourceId);
 
                 if (centroidsSource) {
                   await highlightClusterForAlertId(
@@ -1702,10 +1658,9 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
       // If we didn't find the feature in any source, it might be clustered
       // Try checking clusters directly
       if (!found && !savedEntryIsSecondary(entry) && entry.source_id) {
-        const centroidsSources = [
-          "most-recent-alerts-centroids",
-          "previous-alerts-centroids",
-        ];
+        const centroidsSources = alertMapLayers
+          .filter((layer) => layer.kind === "centroids")
+          .map((layer) => layer.sourceId);
 
         for (const centroidsSource of centroidsSources) {
           if (map.value!.getSource(centroidsSource)) {
