@@ -7,6 +7,7 @@ import {
   filterGeoData,
   filterToSelectedValues,
   filterByDateRange,
+  filterAlertsByDateRange,
 } from "@/server/dataProcessing/dataFilters";
 import { hasValidCoordinates } from "@/utils/geoUtils";
 import { validatePermissions } from "@/utils/accessControls";
@@ -187,7 +188,13 @@ export default defineEventHandler(async (event: H3Event) => {
     const timestampColumn = tableConfig.TIMESTAMP_COLUMN;
     const minDate = (query.minDate as string)?.trim();
     const maxDate = (query.maxDate as string)?.trim();
-    if (timestampColumn && (minDate || maxDate)) {
+    if (viewType === "alerts" && (minDate || maxDate)) {
+      dataToExport = filterAlertsByDateRange(
+        dataToExport,
+        minDate || undefined,
+        maxDate || undefined,
+      );
+    } else if (timestampColumn && (minDate || maxDate)) {
       dataToExport = filterByDateRange(
         dataToExport,
         timestampColumn,

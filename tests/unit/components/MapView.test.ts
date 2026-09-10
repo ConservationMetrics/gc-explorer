@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, onTestFinished, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
+import VueSlider from "vue-3-slider-component";
 import {
   ref,
   reactive,
@@ -15,8 +16,14 @@ import {
 import * as mapboxMock from "@/tests/unit/helpers/mapboxMock";
 
 import MapView from "@/components/MapView.vue";
+import DownloadMapData from "@/components/shared/DownloadMapData.vue";
+import { useRoute, useI18n, useToast } from "#imports";
 
 import type { FeatureCollection } from "geojson";
+
+vi.mock("@/utils/browserDownload", () => ({
+  triggerBrowserDownload: vi.fn(),
+}));
 
 const makeFeatureCollection = (
   features: Array<{
@@ -353,6 +360,106 @@ describe("MapView component", () => {
     ).toBe("active");
     expect(sidebar.props("mapStatistics").totalFeatures).toBe(1);
   });
+
+  it.each(["csv", "geojson", "kml"])(
+    "exports the selected map dates as %s and restores the full range on reset (#645)",
+    async (format) => {
+      const fetchExport = vi.fn().mockResolvedValue(new Blob());
+      vi.stubGlobal("$fetch", fetchExport);
+      vi.stubGlobal("useI18n", useI18n);
+      vi.stubGlobal("useToast", useToast);
+      const originalRoute = useRoute();
+      onTestFinished(() => {
+        vi.unstubAllGlobals();
+        vi.mocked(useRoute).mockReturnValue(originalRoute);
+      });
+      vi.mocked(useRoute).mockReturnValue({
+        params: { tablename: "test_data" },
+        query: {},
+        path: "/map/test_data",
+      });
+      const wrapper = mount(MapView, {
+        props: {
+          ...baseProps,
+          table: "test_data",
+          timestampColumn: "observed_at",
+          mapData: makeFeatureCollection([
+            {
+              type: "Point",
+              coordinates: [0, 0],
+              properties: { observed_at: "2024-01-15" },
+            },
+            {
+              type: "Point",
+              coordinates: [1, 1],
+              properties: { observed_at: "2024-02-15" },
+            },
+            {
+              type: "Point",
+              coordinates: [2, 2],
+              properties: {
+                observed_at: new Date(
+                  new Date(2024, 1, 1).getTime() - 1,
+                ).toISOString(),
+              },
+            },
+          ]),
+        },
+        global: {
+          ...globalConfig,
+          stubs: {
+            ...globalConfig.stubs,
+            ViewSidebar: false,
+            TimestampFilter: false,
+            AdminConfigGear: true,
+          },
+        },
+      });
+      mapboxMock.fireLoad();
+      await flushPromises();
+
+      const slider = wrapper.findComponent(VueSlider);
+      slider.vm.$emit("drag-start");
+      slider.vm.$emit("update:modelValue", ["2024-02", "2024-02"]);
+      await flushPromises();
+
+      const download = wrapper.findComponent(DownloadMapData);
+      const exportButton =
+        download.findAll("button")[["csv", "geojson", "kml"].indexOf(format)];
+      expect(
+        (download.props("dataForDownload") as FeatureCollection).features,
+      ).toHaveLength(1);
+      await exportButton.trigger("click");
+      await flushPromises();
+      expect(fetchExport).toHaveBeenLastCalledWith("/api/test_data/export", {
+        params: {
+          format,
+          view_type: "map",
+          minDate: new Date(2024, 1, 1).toISOString(),
+          maxDate: new Date(2024, 2, 0, 23, 59, 59, 999).toISOString(),
+        },
+        responseType: "blob",
+      });
+
+      await wrapper.get('[data-testid="reset-date-button"]').trigger("click");
+      await flushPromises();
+      expect(
+        (download.props("dataForDownload") as FeatureCollection).features,
+      ).toHaveLength(3);
+      await exportButton.trigger("click");
+      await flushPromises();
+      expect(fetchExport).toHaveBeenLastCalledWith("/api/test_data/export", {
+        params: {
+          format,
+          view_type: "map",
+          minDate: new Date(2024, 0, 1).toISOString(),
+          maxDate: new Date(2024, 2, 0, 23, 59, 59, 999).toISOString(),
+        },
+        responseType: "blob",
+      });
+      wrapper.unmount();
+    },
+  );
 
   it("selects a feature and fetches full record on click", async () => {
     const wrapper = mount(MapView, {

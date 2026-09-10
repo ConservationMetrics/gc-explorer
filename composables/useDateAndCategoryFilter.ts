@@ -79,9 +79,7 @@ export const useTimestampFilter = () => {
   const dateMax = ref("");
 
   const setDateRange = (payload: { start: Date | null; end: Date | null }) => {
-    dateMin.value = payload.start
-      ? payload.start.toISOString().slice(0, 10)
-      : "";
+    dateMin.value = payload.start ? payload.start.toISOString() : "";
     dateMax.value = payload.end ? payload.end.toISOString() : "";
   };
 
