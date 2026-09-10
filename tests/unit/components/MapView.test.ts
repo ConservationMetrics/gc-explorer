@@ -281,6 +281,54 @@ describe("MapView component", () => {
         id: "data-layer-polygon",
         type: "fill",
         source: "data-source",
+        filter: [
+          "any",
+          ["==", "$type", "Polygon"],
+          ["==", "$type", "MultiPolygon"],
+        ],
+      }),
+    );
+  });
+
+  it("adds the polygon layer for MultiPolygon features", async () => {
+    const props = {
+      ...baseProps,
+      mapData: makeFeatureCollection([
+        {
+          id: 3,
+          type: "MultiPolygon",
+          coordinates: [
+            [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 0],
+              ],
+            ],
+            [
+              [
+                [2, 2],
+                [3, 2],
+                [3, 3],
+                [2, 2],
+              ],
+            ],
+          ],
+          properties: { _id: "3", "filter-color": "#00ff00" },
+        },
+      ]),
+    };
+
+    mount(MapView, { props, global: globalConfig });
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    expect(mapboxMock.mockMap.addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "data-layer-polygon",
+        type: "fill",
+        source: "data-source",
       }),
     );
   });

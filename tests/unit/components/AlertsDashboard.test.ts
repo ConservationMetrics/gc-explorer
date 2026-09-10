@@ -180,6 +180,104 @@ describe("AlertsDashboard component", () => {
     expect(wrapper.exists()).toBe(true);
   });
 
+  it("adds MultiPolygon alerts to the polygon source on initial load", async () => {
+    const props = JSON.parse(JSON.stringify(baseProps));
+    const multiPolygonAlert = {
+      id: "multipolygon-alert",
+      type: "Feature",
+      geometry: {
+        type: "MultiPolygon",
+        coordinates: [
+          [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 0],
+            ],
+          ],
+          [
+            [
+              [2, 2],
+              [3, 2],
+              [3, 3],
+              [2, 2],
+            ],
+          ],
+        ],
+      },
+      properties: {
+        _id: "multipolygon-alert",
+        alertID: "multipolygon-alert",
+        YYYYMM: "202403",
+        geographicCentroid: "1.5, 1.5",
+      },
+    };
+    props.alertsData.mostRecentAlerts.features.push(multiPolygonAlert);
+
+    mountComponent(props);
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    expect(mapboxMock.mockMap.addSource).toHaveBeenCalledWith(
+      "most-recent-alerts-polygon",
+      expect.objectContaining({
+        data: expect.objectContaining({
+          features: [multiPolygonAlert],
+        }),
+      }),
+    );
+  });
+
+  it("selects an initial MultiPolygon alert from the polygon layer", async () => {
+    mockRoute.value = {
+      path: "/alerts/test_alerts",
+      params: { tablename: "test_alerts" },
+      query: { alertId: "multipolygon-alert" },
+    };
+    const props = JSON.parse(JSON.stringify(baseProps));
+    props.alertsData.mostRecentAlerts.features.push({
+      id: "multipolygon-alert",
+      type: "Feature",
+      geometry: {
+        type: "MultiPolygon",
+        coordinates: [
+          [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 0],
+            ],
+          ],
+          [
+            [
+              [2, 2],
+              [3, 2],
+              [3, 3],
+              [2, 2],
+            ],
+          ],
+        ],
+      },
+      properties: {
+        _id: "multipolygon-alert",
+        alertID: "multipolygon-alert",
+        YYYYMM: "202403",
+        geographicCentroid: "1.5, 1.5",
+      },
+    });
+
+    mountComponent(props);
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    expect(mapboxMock.setFeatureState).toHaveBeenCalledWith(
+      { source: "most-recent-alerts-polygon", id: "multipolygon-alert" },
+      { selected: true },
+    );
+  });
+
   it("uses the selected basemap access token", async () => {
     const wrapper = mountComponent();
     mapboxMock.fireLoad();

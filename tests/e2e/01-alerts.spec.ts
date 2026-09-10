@@ -164,6 +164,36 @@ test("alerts dashboard - basemap toggle icon is visible", async ({
   await expect(basemapIcon).toBeVisible({ timeout: 10000 });
 });
 
+test("alerts dashboard - includes MultiPolygon alerts on initial load and deep links", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  const multiPolygonAlertId = "202401009999999";
+
+  for (const url of [
+    "/alerts/fake_alerts",
+    `/alerts/fake_alerts?alertId=${multiPolygonAlertId}`,
+  ]) {
+    await page.goto(url);
+    await page
+      .locator("#map[data-map-ready='true']")
+      .waitFor({ timeout: 15000 });
+
+    const polygonSourceAlertIds = await page.evaluate(() => {
+      // @ts-expect-error _testMap is exposed for E2E testing only
+      const source = window._testMap.getSource(
+        "most-recent-alerts-polygon",
+      ) as {
+        _data?: { features?: Array<{ properties?: { alertID?: string } }> };
+      };
+      return source?._data?.features?.map(
+        (feature) => feature.properties?.alertID,
+      );
+    });
+
+    expect(polygonSourceAlertIds).toContain(multiPolygonAlertId);
+  }
+});
+
 test("alerts dashboard - legend can control all alert layer types", async ({
   authenticatedPageAsAdmin: page,
 }) => {

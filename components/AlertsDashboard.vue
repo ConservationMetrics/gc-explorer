@@ -316,9 +316,13 @@ const selectInitialAlertFeature = (alertId: string) => {
     } else {
       // Polygon/LineString features use the geometry-specific layer
       // (not centroids, since we'll be zooming in to show the actual geometry)
+      const layerType =
+        geometryType === "MultiPolygon"
+          ? "polygon"
+          : geometryType.toLowerCase();
       layerId = isInRecentLayer
-        ? `most-recent-alerts-${geometryType.toLowerCase()}`
-        : `previous-alerts-${geometryType.toLowerCase()}`;
+        ? `most-recent-alerts-${layerType}`
+        : `previous-alerts-${layerType}`;
     }
 
     selectFeature(feature, layerId);
@@ -610,7 +614,7 @@ const handleAdditionalLayerMultiSelect = (e: MapMouseEvent) => {
 
 /**
  * Adds alert data to the map by creating GeoJSON sources and layers for recent and previous alerts.
- * It checks for Polygon and LineString features and adds them to the map with appropriate styles.
+ * It checks for Polygon, MultiPolygon and LineString features and adds them to the map with appropriate styles.
  * Event listeners are added for user interactions with the alert features.
  */
 const addAlertsData = async () => {
@@ -626,16 +630,18 @@ const addAlertsData = async () => {
     fillColor: string | null,
     strokeColor: string | null,
   ): Promise<void> => {
-    if (!features.some((feature) => feature.geometry.type === type)) return;
+    const matchesLayerType = (feature: Feature) =>
+      feature.geometry.type === type ||
+      (type === "Polygon" && feature.geometry.type === "MultiPolygon");
+
+    if (!features.some(matchesLayerType)) return;
 
     if (!map.value.getSource(layerId)) {
       const baseConfig = {
         type: "geojson" as const,
         data: {
           type: "FeatureCollection" as const,
-          features: features.filter(
-            (feature) => feature.geometry.type === type,
-          ),
+          features: features.filter(matchesLayerType),
         },
       };
 

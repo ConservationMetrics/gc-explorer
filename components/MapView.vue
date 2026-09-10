@@ -202,7 +202,9 @@ const addDataToMap = () => {
     (feature) => feature.geometry.type === "LineString",
   );
   const hasPolygonFeatures = features.some(
-    (feature) => feature.geometry.type === "Polygon",
+    (feature) =>
+      feature.geometry.type === "Polygon" ||
+      feature.geometry.type === "MultiPolygon",
   );
 
   // Add a layer for Point features if present
@@ -297,7 +299,11 @@ const addDataToMap = () => {
       id: "data-layer-polygon",
       type: "fill",
       source: "data-source",
-      filter: ["==", "$type", "Polygon"],
+      filter: [
+        "any",
+        ["==", "$type", "Polygon"],
+        ["==", "$type", "MultiPolygon"],
+      ],
       paint: {
         "fill-color": colorExpression,
         "fill-opacity": 0.5,
