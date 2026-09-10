@@ -4,6 +4,7 @@ import {
   expandMapSection,
   openGalleryConfigEditPage,
   openMapConfigEditPage,
+  stubMapboxTelemetry,
 } from "@/tests/e2e/helpers/configPage";
 import type { ViewConfigRow } from "@/types";
 
@@ -41,6 +42,7 @@ test("config page - create new view via type-first flow and edit it", async ({
     .selectOption(selectedTableName);
   await page.locator("[data-testid='create-view-continue']").click();
   await page.waitForURL("**/config/new/map**", { timeout: 10000 });
+  await stubMapboxTelemetry(page);
 
   await expect(
     page.locator("[data-testid='create-form-primary-select']"),
@@ -52,13 +54,6 @@ test("config page - create new view via type-first flow and edit it", async ({
     "Select a secondary dataset…",
   );
 
-  const mapSectionToggle = page.locator(
-    '[data-testid="config-section-map-toggle"]',
-  );
-  if ((await mapSectionToggle.count()) > 0) {
-    await mapSectionToggle.click();
-    await page.waitForTimeout(300);
-  }
   await ensureMapFormCanSubmit(page);
   await page.locator('input[type="radio"][value="anyone"]').check();
 
@@ -69,7 +64,6 @@ test("config page - create new view via type-first flow and edit it", async ({
   await page.waitForURL(`**/config/${selectedTableName}**`, {
     timeout: 15000,
   });
-  await page.waitForLoadState("networkidle");
   await page.waitForSelector("form", { timeout: 15000 });
 
   await expect(submitButton).toBeDisabled();
@@ -97,8 +91,7 @@ test("config page - create new view via type-first flow and edit it", async ({
     await ensureMapFormCanSubmit(page);
     await expect(submitButton).toBeEnabled();
     await submitButton.click();
-    await page.waitForLoadState("networkidle", { timeout: 10000 });
-    await page.waitForTimeout(2000);
+    await expect(page.getByTestId("saved-modal")).toBeVisible();
     expect(await datasetNameInput.inputValue()).toBeTruthy();
   }
 
@@ -389,9 +382,7 @@ test("config page - submit configuration changes", async ({
     const submitButton = page.locator("[data-testid='config-submit-button']");
     await expect(submitButton).toBeEnabled();
     await submitButton.click();
-
-    await page.waitForLoadState("networkidle", { timeout: 2000 });
-    await page.waitForTimeout(2000);
+    await expect(page.getByTestId("saved-modal")).toBeVisible();
 
     const savedValue = await datasetNameInput.inputValue();
     expect(savedValue).toContain("Test Dataset");
@@ -517,9 +508,11 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
       await page
         .locator('[data-testid="config-section-filtering-toggle"]')
         .click();
-      originalFilterValue = await page
-        .locator('select[id*="FRONT_END_FILTER_COLUMN"]')
-        .inputValue();
+      const filterColumn = page.locator(
+        'select[id*="FRONT_END_FILTER_COLUMN"]',
+      );
+      await expect(filterColumn).toBeVisible();
+      originalFilterValue = await filterColumn.inputValue();
     }
     const optionValues = await selector
       .locator("option")
@@ -567,6 +560,7 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
       const filterColumn = page.locator(
         'select[id*="FRONT_END_FILTER_COLUMN"]',
       );
+      await expect(filterColumn).toBeVisible();
       await expect(filterColumn).toBeEnabled();
       await filterColumn.selectOption(originalFilterValue!);
     }

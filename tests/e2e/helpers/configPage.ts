@@ -8,6 +8,29 @@ export const SEEDED_GALLERY_CONFIG_PATH =
   "/config/bcmform_responses?view_type=gallery";
 
 /**
+ * Waits for the config edit form instead of network idle.
+ * Mapbox telemetry from a test token never quiets the network.
+ *
+ * @param {Page} page - Playwright page.
+ * @returns {Promise<void>}
+ */
+export const waitForConfigForm = async (page: Page): Promise<void> => {
+  await page.waitForSelector("form", { timeout: 15000 });
+};
+
+/**
+ * Answers Mapbox telemetry so an expanded preview cannot stall later waits.
+ *
+ * @param {Page} page - Playwright page.
+ * @returns {Promise<void>}
+ */
+export const stubMapboxTelemetry = async (page: Page): Promise<void> => {
+  await page.route("https://events.mapbox.com/**", (route) =>
+    route.fulfill({ status: 204, body: "" }),
+  );
+};
+
+/**
  * Expands the Map collapsible section when it is present and collapsed.
  *
  * @param {Page} page - Playwright page.
@@ -28,7 +51,7 @@ export async function expandMapSection(page: Page): Promise<void> {
 
   if (!isVisible) {
     await mapSectionButton.click();
-    await page.waitForTimeout(300);
+    await mapContent.first().waitFor({ state: "visible", timeout: 5000 });
   }
 }
 
@@ -41,9 +64,9 @@ export async function expandMapSection(page: Page): Promise<void> {
  * @returns {Promise<string>} Dataset name opened for editing.
  */
 export async function openMapConfigEditPage(page: Page): Promise<string> {
+  await stubMapboxTelemetry(page);
   await page.goto(SEEDED_MAP_CONFIG_PATH);
-  await page.waitForLoadState("networkidle");
-  await page.waitForSelector("form", { timeout: 15000 });
+  await waitForConfigForm(page);
   await expandMapSection(page);
   return "bcmform_responses";
 }
@@ -56,8 +79,7 @@ export async function openMapConfigEditPage(page: Page): Promise<string> {
  */
 export async function openGalleryConfigEditPage(page: Page): Promise<string> {
   await page.goto(SEEDED_GALLERY_CONFIG_PATH);
-  await page.waitForLoadState("networkidle");
-  await page.waitForSelector("form", { timeout: 15000 });
+  await waitForConfigForm(page);
   return "bcmform_responses";
 }
 

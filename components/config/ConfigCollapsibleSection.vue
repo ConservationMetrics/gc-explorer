@@ -37,7 +37,8 @@ const toggle = () => {
         :class="{ 'rotate-180': isOpen }"
       />
     </button>
-    <div v-show="isOpen" class="p-4">
+    <!-- Collapsed sections must unmount. A hidden Mapbox preview never goes idle. -->
+    <div v-if="isOpen" class="p-4">
       <slot></slot>
     </div>
   </div>
