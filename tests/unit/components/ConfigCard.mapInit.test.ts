@@ -4,7 +4,7 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 
 import ConfigCard from "@/components/config/ConfigCard.vue";
 import ConfigMap from "@/components/config/ConfigMap.vue";
-import type { ViewConfig } from "@/types";
+import type { ColumnEntry, ViewConfig } from "@/types";
 
 Object.assign(globalThis, {
   computed,
@@ -50,13 +50,17 @@ const savedMapConfig = {
   ROUTE_LEVEL_PERMISSION: "member",
 } as ViewConfig;
 
-const mountConfigCard = () =>
+const mountConfigCard = (
+  viewConfig: ViewConfig = savedMapConfig,
+  primaryColumns: ColumnEntry[] = [],
+) =>
   mount(ConfigCard, {
     props: {
       tableName: "test_map",
       viewType: "map",
-      viewConfig: savedMapConfig,
+      viewConfig,
       configToCopy: null,
+      primaryColumns,
     },
     global: {
       components: {
@@ -181,5 +185,77 @@ describe("ConfigCard map initialization", () => {
     await nextTick();
 
     expect(cardVm.isFormValid).toBe(false);
+  });
+
+  it("removes stale unavailable columns when saving another change", async () => {
+    const wrapper = mountConfigCard(
+      {
+        ...savedMapConfig,
+        COLOR_COLUMN: "color",
+        ICON_COLUMN: "icon",
+      },
+      [
+        {
+          original_column: "_submission_time",
+          sql_column: "_submission_time",
+        },
+      ],
+    );
+    const cardVm = wrapper.vm as unknown as { localConfig: ViewConfig };
+
+    cardVm.localConfig.TIMESTAMP_COLUMN = "_submission_time";
+    await nextTick();
+
+    const submitButton = wrapper.get<HTMLButtonElement>(
+      '[data-testid="config-submit-button"]',
+    );
+    expect(submitButton.element.disabled).toBe(false);
+
+    await wrapper.get("form").trigger("submit");
+
+    const submission = wrapper.emitted("submitConfig")?.[0]?.[0] as {
+      config: ViewConfig;
+    };
+    expect(submission.config.TIMESTAMP_COLUMN).toBe("_submission_time");
+    expect(submission.config).not.toHaveProperty("COLOR_COLUMN");
+    expect(submission.config).not.toHaveProperty("ICON_COLUMN");
+  });
+
+  it("keeps saved columns when no dataset columns are loaded", async () => {
+    const wrapper = mountConfigCard({
+      ...savedMapConfig,
+      COLOR_COLUMN: "color",
+      MEDIA_COLUMN: "photos",
+    });
+    const cardVm = wrapper.vm as unknown as { localConfig: ViewConfig };
+
+    cardVm.localConfig.MAPBOX_ZOOM = 12;
+    await nextTick();
+
+    await wrapper.get("form").trigger("submit");
+
+    const submission = wrapper.emitted("submitConfig")?.[0]?.[0] as {
+      config: ViewConfig;
+    };
+    expect(submission.config.COLOR_COLUMN).toBe("color");
+    expect(submission.config.MEDIA_COLUMN).toBe("photos");
+  });
+
+  it("still blocks newly introduced unavailable columns", async () => {
+    const wrapper = mountConfigCard(savedMapConfig, [
+      {
+        original_column: "_submission_time",
+        sql_column: "_submission_time",
+      },
+    ]);
+    const cardVm = wrapper.vm as unknown as { localConfig: ViewConfig };
+
+    cardVm.localConfig.COLOR_COLUMN = "not_a_column";
+    await nextTick();
+
+    expect(
+      wrapper.get<HTMLButtonElement>('[data-testid="config-submit-button"]')
+        .element.disabled,
+    ).toBe(true);
   });
 });
