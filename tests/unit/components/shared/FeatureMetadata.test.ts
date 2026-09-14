@@ -56,7 +56,7 @@ describe("FeatureMetadata", () => {
       .map((node) => node.text());
 
     expect(labels).toContain("Abundance");
-    expect(labels).toContain("Plant species");
+    expect(labels).toContain("Plant Species");
     expect(values.some((value) => value.includes("High"))).toBe(true);
     expect(labels).not.toContain("Uuid");
     expect(labels).not.toContain("Photo");

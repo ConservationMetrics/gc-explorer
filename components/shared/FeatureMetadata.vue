@@ -2,6 +2,7 @@
 import { FileAudio, FileDown, FileImage, FileVideo } from "lucide-vue-next";
 
 import Minimap from "@/components/shared/Minimap.vue";
+import { formatDisplayName } from "@/utils";
 
 import type { AllowedFileExtensions, DataEntry } from "@/types";
 
@@ -65,22 +66,6 @@ const visibleFields = computed(() =>
 const isCoordinateField = (key: string): boolean =>
   key === "geocoordinates" || key === "geographicCentroid";
 
-/**
- * Formats field keys as readable labels for both spaced and camelCase keys.
- *
- * @param key - The source field key.
- * @returns A sentence-case field label.
- */
-const fieldLabel = (key: string): string => {
-  const spacedKey = key
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/[_-]+/g, " ")
-    .trim()
-    .toLowerCase();
-
-  return spacedKey.charAt(0).toUpperCase() + spacedKey.slice(1);
-};
-
 /** Index of the last visible coordinate field, for minimap placement. */
 const lastCoordinateFieldIndex = computed(() => {
   let lastIndex = -1;
@@ -130,7 +115,7 @@ const fileName = (filePath: string): string =>
           {{
             field.key === "dataCollectedOn"
               ? $t(field.key)
-              : fieldLabel(field.key)
+              : formatDisplayName(field.key)
           }}
         </span>
         <span
