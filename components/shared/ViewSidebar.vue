@@ -247,6 +247,7 @@ onBeforeUnmount(() => {
               :export-record-id="exportRecordId"
               :export-table-name="exportTableName"
               :filename-prefix="exportRecordId"
+              variant="violet"
             />
           </div>
         </div>
