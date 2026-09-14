@@ -30,6 +30,7 @@ describe("FeatureMetadata", () => {
     const feature: DataEntry = {
       _id: "1",
       abundance: "High",
+      plantSpecies: "Test plant",
       uuid: "hidden-uuid",
       photo: "hidden.jpg",
       audio: "hidden.mp3",
@@ -55,6 +56,7 @@ describe("FeatureMetadata", () => {
       .map((node) => node.text());
 
     expect(labels).toContain("Abundance");
+    expect(labels).toContain("Plant species");
     expect(values.some((value) => value.includes("High"))).toBe(true);
     expect(labels).not.toContain("Uuid");
     expect(labels).not.toContain("Photo");

@@ -52,7 +52,8 @@ const visibleFields = computed(() =>
       if (lowerKey === "uuid") return false;
       if (lowerKey.includes("photo")) return false;
       if (lowerKey === "audio") return false;
-      if (lowerKey.includes("data source")) return false;
+      if (lowerKey === "datasource" || lowerKey.includes("data source"))
+        return false;
       if (lowerKey.includes("attachment")) return false;
       if (isJsonBlobValue(value)) return false;
 
@@ -63,6 +64,22 @@ const visibleFields = computed(() =>
 
 const isCoordinateField = (key: string): boolean =>
   key === "geocoordinates" || key === "geographicCentroid";
+
+/**
+ * Formats field keys as readable labels for both spaced and camelCase keys.
+ *
+ * @param key - The source field key.
+ * @returns A sentence-case field label.
+ */
+const fieldLabel = (key: string): string => {
+  const spacedKey = key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .toLowerCase();
+
+  return spacedKey.charAt(0).toUpperCase() + spacedKey.slice(1);
+};
 
 /** Index of the last visible coordinate field, for minimap placement. */
 const lastCoordinateFieldIndex = computed(() => {
@@ -113,7 +130,7 @@ const fileName = (filePath: string): string =>
           {{
             field.key === "dataCollectedOn"
               ? $t(field.key)
-              : field.key.charAt(0).toUpperCase() + field.key.slice(1)
+              : fieldLabel(field.key)
           }}
         </span>
         <span
