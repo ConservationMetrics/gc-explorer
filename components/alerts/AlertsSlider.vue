@@ -41,6 +41,7 @@ watch(selectedRange, (newRange) => {
         :height="8"
         :hide-label="true"
         :marks="true"
+        :process-style="{ backgroundColor: '#7c3aed' }"
         :tooltip="'always'"
         :tooltip-placement="'bottom'"
         @drag-start="userInteracted = true"
