@@ -162,7 +162,7 @@ const showDownloads = computed(
               :data-for-download="props.dataForAlertsIntroPanel"
               :export-min-date="props.statsExportMinDate"
               :export-max-date="props.statsExportMaxDate"
-              variant="outline-violet"
+              variant="violet"
             />
           </div>
         </div>
@@ -179,6 +179,7 @@ const showDownloads = computed(
               :min-date="props.statsExportMinDate"
               :max-date="props.statsExportMaxDate"
               filename-prefix="statistics"
+              variant="outline-violet"
             />
           </div>
         </div>
