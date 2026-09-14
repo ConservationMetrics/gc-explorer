@@ -32,7 +32,6 @@ vi.mock("@/composables/useCopyLink", () => ({
 vi.mock("@/components/shared/DownloadMapData.vue", () => ({
   default: {
     name: "DownloadMapData",
-    props: ["variant"],
     template: '<div data-testid="download-map-data" />',
   },
 }));
@@ -115,9 +114,6 @@ describe("ViewSidebar", () => {
     expect(wrapper.find('[data-testid="download-map-data"]').exists()).toBe(
       true,
     );
-    expect(
-      wrapper.findComponent({ name: "DownloadMapData" }).props("variant"),
-    ).toBe("violet");
 
     const metadata = wrapper.findComponent({ name: "FeatureMetadata" });
     expect(metadata.props("showMiniMap")).toBe(false);

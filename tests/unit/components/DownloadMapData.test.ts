@@ -182,37 +182,6 @@ describe("DownloadMapData component", () => {
         expect(button.classes()).not.toContain("bg-blue-500");
       });
     });
-
-    it("should render violet primary buttons", () => {
-      const wrapper = mount(DownloadMapData, {
-        props: {
-          dataForDownload: simpleFeatureCollection,
-          variant: "violet",
-        },
-        global: globalConfig,
-      });
-
-      wrapper.findAll("button").forEach((button) => {
-        expect(button.classes()).toContain("bg-violet-700");
-        expect(button.classes()).toContain("hover:bg-violet-800");
-      });
-    });
-
-    it("should render violet outline buttons", () => {
-      const wrapper = mount(DownloadMapData, {
-        props: {
-          dataForDownload: simpleFeatureCollection,
-          variant: "outline-violet",
-        },
-        global: globalConfig,
-      });
-
-      wrapper.findAll("button").forEach((button) => {
-        expect(button.classes()).toContain("border-violet-300");
-        expect(button.classes()).toContain("text-violet-700");
-        expect(button.classes()).not.toContain("bg-blue-500");
-      });
-    });
   });
 
   describe("Bulk export with filter params", () => {
