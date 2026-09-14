@@ -1,6 +1,11 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-import { loadMapIcon, mapboxStyleToStudioUrl } from "@/utils/mapGLHelpers";
+import {
+  isMapboxPublicToken,
+  isUsableMapboxStyle,
+  loadMapIcon,
+  mapboxStyleToStudioUrl,
+} from "@/utils/mapGLHelpers";
 
 /** Mutated by tests to drive the global `Image` stub for the next `new Image()`. */
 let nextImageState = {
@@ -121,5 +126,36 @@ describe("mapboxStyleToStudioUrl", () => {
         layers: [],
       }),
     ).toBeNull();
+  });
+});
+
+describe("isUsableMapboxStyle", () => {
+  it("accepts mapbox style URIs and inline style objects", () => {
+    expect(
+      isUsableMapboxStyle("mapbox://styles/mapbox/satellite-streets-v12"),
+    ).toBe(true);
+    expect(isUsableMapboxStyle({ version: 8, sources: {}, layers: [] })).toBe(
+      true,
+    );
+  });
+
+  it("rejects empty or malformed style URIs", () => {
+    expect(isUsableMapboxStyle("")).toBe(false);
+    expect(isUsableMapboxStyle("invalid-style")).toBe(false);
+    expect(isUsableMapboxStyle(null)).toBe(false);
+  });
+});
+
+describe("isMapboxPublicToken", () => {
+  it("accepts pk.ey tokens without spaces", () => {
+    expect(isMapboxPublicToken("pk.eyTestToken")).toBe(true);
+    expect(isMapboxPublicToken("pk.eyJ1IjoiZXhhbXBsZSJ9.abc")).toBe(true);
+  });
+
+  it("rejects blank or malformed tokens", () => {
+    expect(isMapboxPublicToken("")).toBe(false);
+    expect(isMapboxPublicToken("   ")).toBe(false);
+    expect(isMapboxPublicToken("invalid-token")).toBe(false);
+    expect(isMapboxPublicToken("pk.ey token")).toBe(false);
   });
 });

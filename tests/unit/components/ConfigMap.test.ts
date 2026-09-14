@@ -1054,6 +1054,10 @@ describe("ConfigMap component", () => {
     });
 
     expect(wrapper.get("#test_table-basemap-style-0").exists()).toBe(true);
+    const styleInput = wrapper.get("#test_table-basemap-style-0")
+      .element as HTMLInputElement;
+    expect(styleInput.value).toBe("");
+    expect(styleInput.checkValidity()).toBe(true);
     expect(wrapper.find("[data-testid='basemap-studio-link-0']").exists()).toBe(
       false,
     );

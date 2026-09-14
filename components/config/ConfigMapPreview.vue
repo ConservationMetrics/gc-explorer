@@ -10,11 +10,11 @@ import {
 import { MapPin } from "lucide-vue-next";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import type { ViewConfig } from "@/types";
+import type { MapboxStyleConfig, ViewConfig } from "@/types";
 
 const props = defineProps<{
   config: ViewConfig;
-  mapboxStyle: string;
+  mapboxStyle: MapboxStyleConfig;
   accessToken: string;
 }>();
 const emit = defineEmits<{
@@ -123,6 +123,7 @@ onMounted(() => {
       resizeMap();
     });
     map.on("error", () => {
+      if (ready.value) return;
       ready.value = false;
       dispose();
     });
