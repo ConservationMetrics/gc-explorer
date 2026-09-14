@@ -5,15 +5,21 @@ import Minimap from "@/components/shared/Minimap.vue";
 
 import type { AllowedFileExtensions, DataEntry } from "@/types";
 
-const props = defineProps<{
-  allowedFileExtensions: AllowedFileExtensions;
-  centroid?: string;
-  feature: DataEntry;
-  filePaths: string[];
-  mapboxAccessToken?: string;
-  mapboxStyle?: string;
-  mediaBasePath: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    allowedFileExtensions: AllowedFileExtensions;
+    centroid?: string;
+    feature: DataEntry;
+    filePaths: string[];
+    mapboxAccessToken?: string;
+    mapboxStyle?: string;
+    mediaBasePath: string;
+    showMiniMap?: boolean;
+  }>(),
+  {
+    showMiniMap: true,
+  },
+);
 
 /**
  * Detects values that are structured JSON blobs (e.g. raw attachment
@@ -34,7 +40,7 @@ const isJsonBlobValue = (value: unknown): boolean => {
   }
 };
 
-/** Sorted metadata fields: DataFeature exclusions plus attachment/json-blob hiding. */
+/** Sorted metadata fields. Hide empty values, ids, media keys, attachments, and JSON blobs. */
 const visibleFields = computed(() =>
   Object.keys(props.feature)
     .sort()
@@ -134,7 +140,7 @@ const fileName = (filePath: string): string =>
           >
         </span>
         <Minimap
-          v-if="index === lastCoordinateFieldIndex"
+          v-if="showMiniMap && index === lastCoordinateFieldIndex"
           class="mt-2"
           :alt="$t('galleryLocation')"
           :centroid="centroid"
@@ -145,7 +151,7 @@ const fileName = (filePath: string): string =>
     </div>
 
     <Minimap
-      v-if="centroid && lastCoordinateFieldIndex < 0"
+      v-if="showMiniMap && centroid && lastCoordinateFieldIndex < 0"
       :alt="$t('galleryLocation')"
       :centroid="centroid"
       :mapbox-access-token="mapboxAccessToken"

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { mount } from "@vue/test-utils";
 import { computed, ref, watch } from "vue";
 
-import GalleryDetailMetadata from "@/components/gallery/GalleryDetailMetadata.vue";
+import FeatureMetadata from "@/components/shared/FeatureMetadata.vue";
 import type { AllowedFileExtensions, DataEntry } from "@/types";
 
 Object.assign(globalThis, {
@@ -25,7 +25,7 @@ const globalConfig = {
   },
 };
 
-describe("GalleryDetailMetadata", () => {
+describe("FeatureMetadata", () => {
   it("renders visible fields with violet labels and hides excluded keys", () => {
     const feature: DataEntry = {
       _id: "1",
@@ -37,7 +37,7 @@ describe("GalleryDetailMetadata", () => {
       attachmentMeta: '{"file":"x.jpg"}',
     };
 
-    const wrapper = mount(GalleryDetailMetadata, {
+    const wrapper = mount(FeatureMetadata, {
       props: {
         allowedFileExtensions,
         feature,
@@ -69,7 +69,7 @@ describe("GalleryDetailMetadata", () => {
       geocoordinates: "3.44, -76.54",
     };
 
-    const wrapper = mount(GalleryDetailMetadata, {
+    const wrapper = mount(FeatureMetadata, {
       props: {
         allowedFileExtensions,
         feature,
@@ -86,7 +86,7 @@ describe("GalleryDetailMetadata", () => {
   });
 
   it("renders Filebrowser links for gallery media file paths", () => {
-    const wrapper = mount(GalleryDetailMetadata, {
+    const wrapper = mount(FeatureMetadata, {
       props: {
         allowedFileExtensions,
         feature: { _id: "1" },
@@ -112,7 +112,7 @@ describe("GalleryDetailMetadata", () => {
   });
 
   it("renders minimap below coordinate fields when token and centroid are set", () => {
-    const wrapper = mount(GalleryDetailMetadata, {
+    const wrapper = mount(FeatureMetadata, {
       props: {
         allowedFileExtensions,
         centroid: "3.44, -76.54",
@@ -129,5 +129,27 @@ describe("GalleryDetailMetadata", () => {
     });
 
     expect(wrapper.find('[data-testid="detail-minimap"]').exists()).toBe(true);
+  });
+
+  it("hides the minimap when showMiniMap is false", () => {
+    const wrapper = mount(FeatureMetadata, {
+      props: {
+        allowedFileExtensions,
+        centroid: "3.44, -76.54",
+        feature: {
+          _id: "1",
+          geocoordinates: "3.44, -76.54",
+        },
+        filePaths: [],
+        mapboxAccessToken: "pk.test",
+        mapboxStyle: "mapbox://styles/mapbox/satellite-streets-v12",
+        mediaBasePath: "/media",
+        showMiniMap: false,
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.find('[data-testid="detail-minimap"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain("3.44, -76.54");
   });
 });

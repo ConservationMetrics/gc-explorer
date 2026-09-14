@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronLeft, X } from "lucide-vue-next";
-import GalleryDetailMetadata from "@/components/gallery/GalleryDetailMetadata.vue";
+import FeatureMetadata from "@/components/shared/FeatureMetadata.vue";
 import GalleryMediaCarousel from "@/components/gallery/GalleryMediaCarousel.vue";
 
 import type { AllowedFileExtensions, DataEntry } from "@/types";
@@ -104,7 +104,7 @@ onBeforeUnmount(() => {
           data-testid="gallery-detail-metadata"
         >
           <div class="p-4 sm:p-6 lg:absolute lg:inset-0 lg:overflow-y-auto">
-            <GalleryDetailMetadata
+            <FeatureMetadata
               :allowed-file-extensions="allowedFileExtensions"
               :centroid="centroid"
               :feature="feature"
