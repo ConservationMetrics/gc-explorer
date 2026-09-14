@@ -37,7 +37,7 @@ const downloadStatistics = async () => {
 <template>
   <div class="flex flex-wrap gap-2 justify-center mt-6">
     <button
-      class="inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]"
+      class="inline-flex items-center justify-center gap-1.5 rounded-md bg-violet-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-violet-800 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 active:scale-[0.96] disabled:pointer-events-none disabled:opacity-50"
       :disabled="exporting"
       type="button"
       @click="downloadStatistics"

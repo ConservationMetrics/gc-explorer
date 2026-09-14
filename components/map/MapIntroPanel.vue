@@ -35,7 +35,9 @@ const fullDescription = computed(() => props.viewDescription?.trim() || "");
 
 <template>
   <div class="space-y-4">
-    <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+    <div
+      class="rounded-2xl border border-violet-100 bg-violet-50 text-card-foreground shadow-sm"
+    >
       <div class="p-6 space-y-4">
         <img
           v-if="props.logoUrl"
@@ -90,7 +92,9 @@ const fullDescription = computed(() => props.viewDescription?.trim() || "");
       </div>
     </div>
 
-    <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+    <div
+      class="rounded-2xl border border-violet-100 bg-violet-50 text-card-foreground shadow-sm"
+    >
       <div class="p-6">
         <DownloadMapData
           :data-for-download="mapFeatureCollection"
@@ -99,17 +103,18 @@ const fullDescription = computed(() => props.viewDescription?.trim() || "");
           :export-min-date="exportMinDate"
           :export-max-date="exportMaxDate"
           :export-timestamp-column="exportTimestampColumn"
+          variant="violet"
         />
       </div>
     </div>
 
     <div
       v-if="canToggleIcons"
-      class="rounded-lg border bg-card text-card-foreground shadow-sm"
+      class="rounded-2xl border border-violet-100 bg-violet-50 text-card-foreground shadow-sm"
     >
       <div class="p-6 flex justify-center">
         <button
-          class="toggle-icons-button bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50 disabled:cursor-not-allowed"
+          class="toggle-icons-button rounded-lg bg-violet-700 px-4 py-2 text-white transition-colors hover:bg-violet-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
           :disabled="loadingIcons"
           @click="emit('toggleIcons')"
         >
