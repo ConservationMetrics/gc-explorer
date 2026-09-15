@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from "lucide-vue-next";
 import MediaFile from "@/components/shared/MediaFile.vue";
+import MediaImageCarouselModal from "@/components/shared/MediaImageCarouselModal.vue";
 
 import type { AllowedFileExtensions } from "@/types";
 
@@ -23,6 +24,7 @@ const navButtonPositionClass = computed(() =>
 const { t } = useI18n();
 
 const currentIndex = ref(0);
+const imageCarouselModalOpen = ref(false);
 
 const hasMultiple = computed(() => props.filePaths.length > 1);
 
@@ -68,6 +70,16 @@ const blurCarouselControl = (event: Event) => {
     requestAnimationFrame(() => control.blur());
   }
 };
+
+/** Opens the full-screen carousel when a media image is selected. */
+const openImageCarouselModal = () => {
+  imageCarouselModalOpen.value = true;
+};
+
+/** Closes the full-screen carousel. */
+const closeImageCarouselModal = () => {
+  imageCarouselModalOpen.value = false;
+};
 </script>
 
 <template>
@@ -81,6 +93,8 @@ const blurCarouselControl = (event: Event) => {
       :media-base-path="mediaBasePath"
       :variant="variant ?? 'gallery'"
       :enable-image-modal="enableImageModal"
+      :image-modal-mode="enableImageModal ? 'carousel' : undefined"
+      @image-click="openImageCarouselModal"
     />
 
     <template v-if="hasMultiple">
@@ -144,5 +158,13 @@ const blurCarouselControl = (event: Event) => {
         </div>
       </div>
     </template>
+    <MediaImageCarouselModal
+      v-if="enableImageModal"
+      :allowed-file-extensions="allowedFileExtensions"
+      :file-paths="filePaths"
+      :media-base-path="mediaBasePath"
+      :open="imageCarouselModalOpen"
+      @close="closeImageCarouselModal"
+    />
   </div>
 </template>

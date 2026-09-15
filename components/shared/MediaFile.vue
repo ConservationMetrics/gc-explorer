@@ -12,7 +12,7 @@ const props = withDefaults(
     filePath: string;
     mediaBasePath: string;
     variant?: "default" | "gallery";
-    imageModalMode?: "single" | "comparison";
+    imageModalMode?: "single" | "comparison" | "carousel";
     /** When true, image click opens MediaImageModal. Defaults off for gallery tiles. */
     enableImageModal?: boolean;
   }>(),
@@ -79,7 +79,10 @@ const openImageModal = () => {
   if (!canOpenImageModal.value || !imageLoaded.value || imageError.value) {
     return;
   }
-  if (props.imageModalMode === "comparison") {
+  if (
+    props.imageModalMode === "comparison" ||
+    props.imageModalMode === "carousel"
+  ) {
     emit("image-click");
     return;
   }
@@ -297,7 +300,11 @@ const imageClass = computed(() => {
     </div>
 
     <MediaImageModal
-      v-if="canOpenImageModal && imageModalMode !== 'comparison'"
+      v-if="
+        canOpenImageModal &&
+        imageModalMode !== 'comparison' &&
+        imageModalMode !== 'carousel'
+      "
       :open="imageModalOpen"
       :image-url="rawImageUrl"
       :file-name="fileName"
