@@ -7,6 +7,7 @@ import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
 import MapIntroPanel from "@/components/map/MapIntroPanel.vue";
 import { useCopyLink } from "@/composables/useCopyLink";
 import { warehouseRecordIdForExport } from "@/utils/identifierUtils";
+import { isImageFilePath } from "@/utils/mediaHelpers";
 
 import type {
   AlertsData,
@@ -70,21 +71,17 @@ const filteredFeature = computed<DataEntry>(() => {
 
 const featureFilePaths = computed(() => props.filePaths ?? []);
 
-const isImageFilePath = (filePath: string): boolean => {
-  const extension = filePath.split(".").pop()?.toLowerCase();
-  if (!extension) return false;
-
-  return (props.allowedFileExtensions?.image ?? []).some(
-    (candidate) => candidate.replace(/^\./, "").toLowerCase() === extension,
-  );
-};
-
 const imageFilePaths = computed(() =>
-  featureFilePaths.value.filter(isImageFilePath),
+  featureFilePaths.value.filter((filePath) =>
+    isImageFilePath(filePath, props.allowedFileExtensions?.image ?? []),
+  ),
 );
 
 const nonImageFilePaths = computed(() =>
-  featureFilePaths.value.filter((filePath) => !isImageFilePath(filePath)),
+  featureFilePaths.value.filter(
+    (filePath) =>
+      !isImageFilePath(filePath, props.allowedFileExtensions?.image ?? []),
+  ),
 );
 
 const showPhotoCarousel = computed(

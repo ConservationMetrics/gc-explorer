@@ -166,6 +166,15 @@ const fileNameHasExtension = (fileName: string, ext: string): boolean => {
 const extensionListIncludes = (list: string[] = [], ext: string): boolean =>
   list.some((candidate) => normalizeExtension(candidate) === ext);
 
+/** Returns whether a file path uses one of the supplied extensions. */
+export const isImageFilePath = (
+  filePath: string,
+  imageExtensions: string[],
+): boolean => {
+  const extension = filePath.split(".").pop()?.toLowerCase();
+  return extension ? extensionListIncludes(imageExtensions, extension) : false;
+};
+
 /** Extracts file paths with valid extensions from a feature object. */
 export const getFilePathsWithExtension = (
   feature: { [key: string]: unknown },
