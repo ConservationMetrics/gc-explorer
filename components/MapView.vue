@@ -84,6 +84,7 @@ const selectedFeature = ref<DataEntry>();
 const selectedFeatureOriginal = ref<Feature>();
 const selectedFeatureLoading = ref(false);
 const showSidebar = ref(true);
+const mobileDrawerHeight = ref(0);
 const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showIcons = ref(false);
@@ -550,6 +551,11 @@ const handleSidebarClose = () => {
   showIntroPanel.value = true;
 };
 
+/** Update the mobile drawer height used to offset the map legend. */
+const handleMobileDrawerHeight = (height: number) => {
+  mobileDrawerHeight.value = height;
+};
+
 /** Toggle between icons and points */
 const handleToggleIcons = async () => {
   if (!map.value) return;
@@ -650,11 +656,13 @@ onBeforeUnmount(() => {
       :view-name="viewName"
       :view-description="viewDescription"
       @close="handleSidebarClose"
+      @mobile-height-change="handleMobileDrawerHeight"
       @toggle-icons="handleToggleIcons"
     />
     <MapLegend
       v-if="mapLegendContent && mapData"
       :map-legend-content="mapLegendContent"
+      :mobile-drawer-height="mobileDrawerHeight"
       @toggle-layer-visibility="toggleLayerVisibility"
     />
     <BasemapSelector

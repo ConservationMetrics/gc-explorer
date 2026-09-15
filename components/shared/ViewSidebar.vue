@@ -3,6 +3,7 @@ import { Check, ChevronDown, Copy, X } from "lucide-vue-next";
 import GalleryMediaCarousel from "@/components/gallery/GalleryMediaCarousel.vue";
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import FeatureMetadata from "@/components/shared/FeatureMetadata.vue";
+import MobileResizableDrawer from "@/components/shared/MobileResizableDrawer.vue";
 import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
 import MapIntroPanel from "@/components/map/MapIntroPanel.vue";
 import { useCopyLink } from "@/composables/useCopyLink";
@@ -121,6 +122,7 @@ const { showCopied, copyLink } = useCopyLink(
 const emit = defineEmits<{
   close: [];
   "date-range-changed": [[string, string]];
+  "mobile-height-change": [number];
   "toggle-icons": [];
   "update:showSidebar": [boolean];
 }>();
@@ -170,11 +172,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    class="fixed top-0 left-0 h-full max-w-full w-[400px] bg-white shadow-lg transform transition-transform duration-300 ease-in-out overflow-y-auto z-50 sidebar"
-    :class="{ 'translate-x-0': showSidebar, '-translate-x-full': !showSidebar }"
+  <MobileResizableDrawer
+    class="sidebar"
+    :open="showSidebar ?? false"
+    @height-change="emit('mobile-height-change', $event)"
   >
-    <div class="relative h-full">
+    <div class="relative min-h-full">
       <button
         v-if="isScrollable && showIntroPanel && isAlertsDashboard"
         class="scroll-indicator border-0 cursor-pointer"
@@ -301,7 +304,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </div>
-  </div>
+  </MobileResizableDrawer>
 </template>
 
 <style scoped>
