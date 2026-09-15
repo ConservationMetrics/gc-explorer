@@ -12,6 +12,7 @@ const props = withDefaults(
     filePath: string;
     mediaBasePath: string;
     variant?: "default" | "gallery";
+    imageModalMode?: "single" | "comparison" | "carousel";
     /** When true, image click opens MediaImageModal. Defaults off for gallery tiles. */
     enableImageModal?: boolean;
   }>(),
@@ -27,6 +28,10 @@ const canOpenImageModal = computed(() => {
   if (props.enableImageModal !== undefined) return props.enableImageModal;
   return !isGalleryVariant.value;
 });
+
+const emit = defineEmits<{
+  "image-click": [];
+}>();
 
 /** Conditional rendering based on file extension */
 const isAudio = computed(() =>
@@ -72,6 +77,13 @@ const imageModalOpen = ref(false);
 
 const openImageModal = () => {
   if (!canOpenImageModal.value || !imageLoaded.value || imageError.value) {
+    return;
+  }
+  if (
+    props.imageModalMode === "comparison" ||
+    props.imageModalMode === "carousel"
+  ) {
+    emit("image-click");
     return;
   }
   imageModalOpen.value = true;
@@ -211,12 +223,14 @@ const imageClass = computed(() => {
         v-if="filePath && !isGalleryVariant"
         class="text-center flex items-center justify-center mt-2"
       >
-        <span v-if="filePath.includes('t0.jpg')" class="italic">{{
+        <span v-if="/(?:^|[/_])t0(?:[_./]|$)/i.test(filePath)" class="italic">{{
           $t("before")
         }}</span>
-        <span v-else-if="filePath.includes('t1.jpg')" class="italic">{{
-          $t("after")
-        }}</span>
+        <span
+          v-else-if="/(?:^|[/_])t1(?:[_./]|$)/i.test(filePath)"
+          class="italic"
+          >{{ $t("after") }}</span
+        >
       </div>
     </div>
     <div
@@ -286,7 +300,11 @@ const imageClass = computed(() => {
     </div>
 
     <MediaImageModal
-      v-if="canOpenImageModal"
+      v-if="
+        canOpenImageModal &&
+        imageModalMode !== 'comparison' &&
+        imageModalMode !== 'carousel'
+      "
       :open="imageModalOpen"
       :image-url="rawImageUrl"
       :file-name="fileName"

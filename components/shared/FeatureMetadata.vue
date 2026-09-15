@@ -2,6 +2,7 @@
 import { FileAudio, FileDown, FileImage, FileVideo } from "lucide-vue-next";
 
 import MediaFile from "@/components/shared/MediaFile.vue";
+import MediaImageComparisonModal from "@/components/shared/MediaImageComparisonModal.vue";
 import Minimap from "@/components/shared/Minimap.vue";
 import { formatDisplayName } from "@/utils";
 
@@ -101,6 +102,56 @@ const fileUrl = (filePath: string): string =>
 
 const fileName = (filePath: string): string =>
   filePath.split("/").pop() || filePath;
+
+/**
+ * Identifies whether an alert image is a before or after image.
+ *
+ * @param {string} filePath - The alert image path.
+ * @returns {number | null} The image time index, or null for other files.
+ */
+const alertImageTime = (filePath: string): number | null => {
+  const match = filePath.match(/(?:^|[/_])t([01])(?:[_./]|$)/i);
+  return match ? Number(match[1]) : null;
+};
+
+const comparisonImagePaths = computed(() => {
+  if (!props.isAlert) return [];
+
+  return props.filePaths
+    .filter(
+      (filePath) =>
+        fileType(filePath) === "image" && alertImageTime(filePath) !== null,
+    )
+    .sort(
+      (left, right) =>
+        (alertImageTime(left) ?? 0) - (alertImageTime(right) ?? 0),
+    )
+    .slice(0, 2);
+});
+
+const comparisonEnabled = computed(
+  () => comparisonImagePaths.value.length === 2,
+);
+const comparisonModalOpen = ref(false);
+
+const comparisonImageUrls = computed(() =>
+  comparisonImagePaths.value.map((filePath) => fileUrl(filePath)),
+);
+const comparisonImageNames = computed(() =>
+  comparisonImagePaths.value.map((filePath) => fileName(filePath)),
+);
+
+/** Opens the paired before/after image preview. */
+const openComparisonModal = () => {
+  if (comparisonEnabled.value) {
+    comparisonModalOpen.value = true;
+  }
+};
+
+/** Closes the paired before/after image preview. */
+const closeComparisonModal = () => {
+  comparisonModalOpen.value = false;
+};
 </script>
 
 <template>
@@ -117,6 +168,8 @@ const fileName = (filePath: string): string =>
           :allowed-file-extensions="allowedFileExtensions"
           :file-path="filePath"
           :media-base-path="mediaBasePath"
+          :image-modal-mode="comparisonEnabled ? 'comparison' : 'single'"
+          @image-click="openComparisonModal"
         />
       </div>
       <div
@@ -211,5 +264,13 @@ const fileName = (filePath: string): string =>
         </li>
       </ul>
     </div>
+    <MediaImageComparisonModal
+      v-if="comparisonEnabled"
+      :file-names="comparisonImageNames"
+      :image-urls="comparisonImageUrls"
+      :labels="['before', 'after']"
+      :open="comparisonModalOpen"
+      @close="closeComparisonModal"
+    />
   </div>
 </template>

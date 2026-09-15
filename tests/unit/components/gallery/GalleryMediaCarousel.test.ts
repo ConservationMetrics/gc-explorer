@@ -27,9 +27,10 @@ Object.assign(globalThis, {
 vi.mock("@/components/shared/MediaFile.vue", () => ({
   default: {
     name: "MediaFile",
-    props: ["filePath"],
+    props: ["filePath", "imageModalMode"],
+    emits: ["image-click"],
     template:
-      '<div data-testid="stub-carousel-media-file">{{ filePath }}</div>',
+      '<button data-testid="stub-carousel-media-file" @click="$emit(\'image-click\')">{{ filePath }}</button>',
   },
 }));
 
@@ -132,5 +133,45 @@ describe("GalleryMediaCarousel", () => {
     expect(wrapper.find('[data-testid="gallery-carousel-dots"]').exists()).toBe(
       false,
     );
+  });
+
+  it("opens a carousel modal when image expansion is enabled", async () => {
+    const wrapper = mount(GalleryMediaCarousel, {
+      props: {
+        allowedFileExtensions,
+        enableImageModal: true,
+        filePaths: ["a.jpg", "b.jpg"],
+        mediaBasePath: "/media",
+      },
+      global: {
+        mocks: {
+          $t: mockT,
+        },
+      },
+    });
+
+    await wrapper
+      .get('[data-testid="stub-carousel-media-file"]')
+      .trigger("click");
+
+    expect(
+      document.querySelector('[data-testid="media-image-carousel-modal"]'),
+    ).toBeTruthy();
+    expect(
+      document.querySelector('[data-testid="media-image-carousel-modal-next"]'),
+    ).toBeTruthy();
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
+    await wrapper.vm.$nextTick();
+    expect(
+      document.querySelector('[data-testid="media-image-carousel-modal"]')
+        ?.textContent,
+    ).toContain("b.jpg");
+
+    document
+      .querySelector<HTMLButtonElement>(
+        '[data-testid="media-image-carousel-modal-close"]',
+      )
+      ?.click();
   });
 });
