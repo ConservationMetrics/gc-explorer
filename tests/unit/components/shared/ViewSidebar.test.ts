@@ -41,6 +41,14 @@ vi.mock("@/components/shared/DownloadMapData.vue", () => ({
   },
 }));
 
+vi.mock("@/components/gallery/GalleryMediaCarousel.vue", () => ({
+  default: {
+    name: "GalleryMediaCarousel",
+    props: ["filePaths", "mediaBasePath", "enableImageModal"],
+    template: '<div data-testid="gallery-media-carousel" />',
+  },
+}));
+
 vi.mock("@/components/shared/MediaFile.vue", () => ({
   default: {
     name: "MediaFile",
@@ -108,7 +116,7 @@ describe("ViewSidebar", () => {
         allowedFileExtensions,
         feature,
         featureGeojson,
-        filePaths: ["photo.jpg"],
+        filePaths: ["photo.jpg", "clip.mp3"],
         mediaBasePath: "/media",
         showSidebar: true,
         showIntroPanel: false,
@@ -127,20 +135,24 @@ describe("ViewSidebar", () => {
     expect(wrapper.find('[data-testid="download-map-data"]').exists()).toBe(
       true,
     );
+    const carousel = wrapper.findComponent({ name: "GalleryMediaCarousel" });
+    expect(carousel.props("filePaths")).toEqual(["photo.jpg"]);
+    expect(carousel.props("mediaBasePath")).toBe("/media");
 
     const metadata = wrapper.findComponent({ name: "FeatureMetadata" });
     expect(metadata.props("showMiniMap")).toBe(false);
     expect(metadata.props("showMedia")).toBe(true);
+    expect(metadata.props("filePaths")).toEqual(["clip.mp3"]);
     expect(metadata.props("mediaBasePath")).toBe("/media");
   });
 
-  it("shows FeatureMetadata, copy-link, and alert media path when an alert is selected", () => {
+  it("shows alert media side by side without a carousel", () => {
     const wrapper = mount(ViewSidebar, {
       props: {
         allowedFileExtensions,
         feature,
         featureGeojson,
-        filePaths: ["alert.jpg"],
+        filePaths: ["t0.jpg", "t1.jpg"],
         isAlert: true,
         isAlertsDashboard: true,
         isSecondary: false,
@@ -161,11 +173,43 @@ describe("ViewSidebar", () => {
     expect(wrapper.find('[data-testid="data-feature"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="detail-minimap"]').exists()).toBe(false);
 
+    expect(
+      wrapper.findComponent({ name: "GalleryMediaCarousel" }).exists(),
+    ).toBe(false);
+
     const metadata = wrapper.findComponent({ name: "FeatureMetadata" });
     expect(metadata.props("showMiniMap")).toBe(false);
     expect(metadata.props("showMedia")).toBe(true);
     expect(metadata.props("isAlert")).toBe(true);
+    expect(metadata.props("filePaths")).toEqual(["t0.jpg", "t1.jpg"]);
     expect(metadata.props("mediaBasePath")).toBe("/alerts-media");
+  });
+
+  it("uses the carousel for secondary alerts-dashboard features", () => {
+    const wrapper = mount(ViewSidebar, {
+      props: {
+        allowedFileExtensions,
+        feature,
+        filePaths: ["secondary-1.jpg", "secondary-2.jpg"],
+        isAlertsDashboard: true,
+        isSecondary: true,
+        mediaBasePath: "/media",
+        mediaBasePathAlerts: "/alerts-media",
+        showSidebar: true,
+        showIntroPanel: false,
+      },
+      global: globalConfig,
+    });
+
+    const carousel = wrapper.findComponent({ name: "GalleryMediaCarousel" });
+    expect(carousel.props("filePaths")).toEqual([
+      "secondary-1.jpg",
+      "secondary-2.jpg",
+    ]);
+    expect(carousel.props("mediaBasePath")).toBe("/media");
+
+    const metadata = wrapper.findComponent({ name: "FeatureMetadata" });
+    expect(metadata.props("filePaths")).toEqual([]);
   });
 
   it("uses the alert copy-link label and emits close from the X button", async () => {

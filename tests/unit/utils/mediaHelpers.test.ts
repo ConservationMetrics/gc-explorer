@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { inferContentType } from "@/utils/mediaHelpers";
+import { inferContentType, isImageFilePath } from "@/utils/mediaHelpers";
 
 describe("inferContentType", () => {
   it.each([
@@ -40,5 +40,16 @@ describe("inferContentType", () => {
 
   it("falls back for non-URL inputs", () => {
     expect(inferContentType("not-a-url", "image/png")).toBe("image/png");
+  });
+});
+
+describe("isImageFilePath", () => {
+  it("matches configured image extensions case-insensitively", () => {
+    expect(isImageFilePath("folder/photo.JPG", ["jpg"])).toBe(true);
+    expect(isImageFilePath("folder/audio.mp3", ["jpg"])).toBe(false);
+  });
+
+  it("supports configured extensions with a leading dot", () => {
+    expect(isImageFilePath("photo.webp", [".webp"])).toBe(true);
   });
 });

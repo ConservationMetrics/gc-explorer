@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Check, ChevronDown, Copy, X } from "lucide-vue-next";
+import GalleryMediaCarousel from "@/components/gallery/GalleryMediaCarousel.vue";
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import FeatureMetadata from "@/components/shared/FeatureMetadata.vue";
 import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
 import MapIntroPanel from "@/components/map/MapIntroPanel.vue";
 import { useCopyLink } from "@/composables/useCopyLink";
 import { warehouseRecordIdForExport } from "@/utils/identifierUtils";
+import { isImageFilePath } from "@/utils/mediaHelpers";
 
 import type {
   AlertsData,
@@ -66,6 +68,29 @@ const filteredFeature = computed<DataEntry>(() => {
   const { latitude, longitude, ...rest } = props.feature;
   return rest;
 });
+
+const featureFilePaths = computed(() => props.filePaths ?? []);
+
+const imageFilePaths = computed(() =>
+  featureFilePaths.value.filter((filePath) =>
+    isImageFilePath(filePath, props.allowedFileExtensions?.image ?? []),
+  ),
+);
+
+const nonImageFilePaths = computed(() =>
+  featureFilePaths.value.filter(
+    (filePath) =>
+      !isImageFilePath(filePath, props.allowedFileExtensions?.image ?? []),
+  ),
+);
+
+const showPhotoCarousel = computed(
+  () => !props.isAlertsDashboard || Boolean(props.isSecondary),
+);
+
+const metadataFilePaths = computed(() =>
+  showPhotoCarousel.value ? nonImageFilePaths.value : featureFilePaths.value,
+);
 
 const dataForAlertsIntroPanel = computed<AlertsData | undefined>(() => {
   if (props.localAlertsData && "mostRecentAlerts" in props.localAlertsData) {
@@ -220,10 +245,19 @@ onBeforeUnmount(() => {
           data-testid="feature-metadata"
         >
           <div class="p-4 sm:p-6">
+            <GalleryMediaCarousel
+              v-if="showPhotoCarousel && imageFilePaths.length > 0"
+              class="mb-6 h-60 overflow-hidden rounded-2xl bg-gray-50 sm:h-80"
+              :allowed-file-extensions="allowedFileExtensions"
+              :file-paths="imageFilePaths"
+              :media-base-path="featureMediaBasePath"
+              variant="gallery"
+              :enable-image-modal="true"
+            />
             <FeatureMetadata
               :allowed-file-extensions="allowedFileExtensions"
               :feature="filteredFeature"
-              :file-paths="filePaths ?? []"
+              :file-paths="metadataFilePaths"
               :is-alert="isAlert"
               :media-base-path="featureMediaBasePath"
               :show-media="true"
