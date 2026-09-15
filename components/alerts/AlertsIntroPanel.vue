@@ -27,7 +27,7 @@ const showDownloads = computed(
 <template>
   <div class="space-y-4" data-testid="alerts-intro-panel">
     <div
-      class="rounded-lg border bg-card text-card-foreground shadow-sm"
+      class="rounded-2xl border border-violet-100 bg-violet-50 text-card-foreground shadow-sm"
       data-testid="alerts-intro-header"
     >
       <div class="p-6 space-y-4">
@@ -81,7 +81,7 @@ const showDownloads = computed(
     </div>
 
     <div
-      class="rounded-lg border bg-card text-card-foreground shadow-sm"
+      class="rounded-2xl border border-violet-100 bg-violet-50 text-card-foreground shadow-sm"
       data-testid="alerts-statistics"
     >
       <div class="p-6 space-y-4">
@@ -129,7 +129,7 @@ const showDownloads = computed(
 
     <div
       v-if="props.alertsStatistics && props.alertsStatistics.alertsTotal > 0"
-      class="rounded-lg border bg-card text-card-foreground shadow-sm"
+      class="rounded-2xl border border-violet-100 bg-violet-50 text-card-foreground shadow-sm"
       data-testid="alerts-chart"
     >
       <div class="p-6">
@@ -142,7 +142,7 @@ const showDownloads = computed(
 
     <div
       v-if="showDownloads"
-      class="rounded-lg border bg-card text-card-foreground shadow-sm"
+      class="rounded-2xl border border-violet-100 bg-violet-50 text-card-foreground shadow-sm"
       data-testid="alerts-download-data"
     >
       <div class="p-6 space-y-5">
@@ -162,7 +162,7 @@ const showDownloads = computed(
               :data-for-download="props.dataForAlertsIntroPanel"
               :export-min-date="props.statsExportMinDate"
               :export-max-date="props.statsExportMaxDate"
-              variant="outline"
+              variant="violet"
             />
           </div>
         </div>
@@ -179,6 +179,7 @@ const showDownloads = computed(
               :min-date="props.statsExportMinDate"
               :max-date="props.statsExportMaxDate"
               filename-prefix="statistics"
+              variant="outline-violet"
             />
           </div>
         </div>
