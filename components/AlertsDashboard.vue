@@ -142,6 +142,7 @@ const mapReady = ref(false);
 const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showSidebar = ref(true);
+const mobileDrawerHeight = ref(0);
 const showSlider = ref(false);
 
 const route = useRoute();
@@ -1494,6 +1495,11 @@ const handleSidebarClose = () => {
   resetSelectedFeature();
 };
 
+/** Update the mobile drawer height used to offset the map legend. */
+const handleMobileDrawerHeight = (height: number) => {
+  mobileDrawerHeight.value = height;
+};
+
 // ===========================================
 // === Methods for selecting and resetting ===
 // ===========================================
@@ -1699,10 +1705,12 @@ onBeforeUnmount(() => {
       :table-name="primaryDataset"
       @close="handleSidebarClose"
       @date-range-changed="handleDateRangeChanged"
+      @mobile-height-change="handleMobileDrawerHeight"
     />
     <MapLegend
       v-if="mapLegendContent && alertsData"
       :map-legend-content="mapLegendContent"
+      :mobile-drawer-height="mobileDrawerHeight"
       @toggle-layer-visibility="toggleLayerVisibility"
     />
     <BasemapSelector

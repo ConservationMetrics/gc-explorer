@@ -2,9 +2,15 @@
 import type { MapLegendItem } from "@/types";
 import { ChevronDown } from "lucide-vue-next";
 
-const props = defineProps<{
-  mapLegendContent: MapLegendItem[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    mapLegendContent: MapLegendItem[];
+    mobileDrawerHeight?: number;
+  }>(),
+  {
+    mobileDrawerHeight: 0,
+  },
+);
 
 const emit = defineEmits(["toggle-layer-visibility"]);
 
@@ -50,6 +56,9 @@ watch(
   <div
     data-testid="map-legend"
     class="map-legend feature p-4 rounded-lg shadow-lg"
+    :style="{
+      '--mobile-drawer-height': `${props.mobileDrawerHeight}px`,
+    }"
   >
     <button class="legend-header" @click="toggleExpanded">
       <h2 class="text-2xl font-semibold">{{ $t("mapLegend") }}</h2>
@@ -258,8 +267,12 @@ watch(
   .map-legend {
     right: 10px;
     width: min(265px, calc(100vw - 20px));
-    max-height: min(32vh, 220px);
-    bottom: 44px;
+    bottom: calc(var(--mobile-drawer-height, 0px) + 44px);
+    max-height: min(
+      32vh,
+      220px,
+      calc(100vh - var(--mobile-drawer-height, 0px) - 60px)
+    );
   }
 }
 </style>
