@@ -93,6 +93,8 @@ export function reset(): void {
   mockMap.addSource.mockClear();
   mockMap.addLayer.mockClear();
   mockMap.addImage.mockClear();
+  mockMap.getSource.mockReset();
+  mockMap.getSource.mockReturnValue(false);
   mockMap.setTerrain.mockClear();
   mockMap.flyTo.mockClear();
   mockMap.fitBounds.mockClear();
