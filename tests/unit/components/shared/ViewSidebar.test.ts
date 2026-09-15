@@ -249,5 +249,17 @@ describe("ViewSidebar", () => {
     window.dispatchEvent(new Event("resize"));
     await nextTick();
     expect(alertsWrapper.find(".scroll-indicator").exists()).toBe(true);
+
+    const scrollTo = vi.fn();
+    Object.defineProperty(alertsSidebar, "scrollTo", {
+      configurable: true,
+      value: scrollTo,
+    });
+    await alertsWrapper.get(".scroll-indicator").trigger("click");
+    expect(scrollTo).toHaveBeenCalledWith({
+      top: 100,
+      behavior: "smooth",
+    });
+    alertsWrapper.unmount();
   });
 });

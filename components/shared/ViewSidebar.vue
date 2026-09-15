@@ -107,6 +107,12 @@ const checkIfScrollable = () => {
   }
 };
 
+/** Scrolls the sidebar to the bottom when the indicator is activated. */
+const scrollToBottom = () => {
+  const sidebar = document.querySelector(".sidebar") as HTMLElement | null;
+  sidebar?.scrollTo({ top: sidebar.scrollHeight, behavior: "smooth" });
+};
+
 // Check scrollability when content changes or sidebar becomes visible
 watch(
   () => props.feature,
@@ -144,12 +150,15 @@ onBeforeUnmount(() => {
     :class="{ 'translate-x-0': showSidebar, '-translate-x-full': !showSidebar }"
   >
     <div class="relative h-full">
-      <div
+      <button
         v-if="isScrollable && showIntroPanel && isAlertsDashboard"
-        class="scroll-indicator"
+        class="scroll-indicator border-0 cursor-pointer"
+        aria-label="Scroll to bottom"
+        type="button"
+        @click="scrollToBottom"
       >
         <ChevronDown class="w-6 h-6 text-gray-600 animate-bounce" />
-      </div>
+      </button>
       <button
         class="absolute top-5 right-5 p-2.5 bg-white/80 backdrop-blur-sm hover:bg-gray-100 rounded-full transition-all duration-200 ease-in-out shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2"
         @click="emit('close')"
