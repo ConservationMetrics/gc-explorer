@@ -12,6 +12,7 @@ const props = withDefaults(
     filePath: string;
     mediaBasePath: string;
     variant?: "default" | "gallery";
+    imageModalMode?: "single" | "comparison";
     /** When true, image click opens MediaImageModal. Defaults off for gallery tiles. */
     enableImageModal?: boolean;
   }>(),
@@ -27,6 +28,10 @@ const canOpenImageModal = computed(() => {
   if (props.enableImageModal !== undefined) return props.enableImageModal;
   return !isGalleryVariant.value;
 });
+
+const emit = defineEmits<{
+  "image-click": [];
+}>();
 
 /** Conditional rendering based on file extension */
 const isAudio = computed(() =>
@@ -72,6 +77,10 @@ const imageModalOpen = ref(false);
 
 const openImageModal = () => {
   if (!canOpenImageModal.value || !imageLoaded.value || imageError.value) {
+    return;
+  }
+  if (props.imageModalMode === "comparison") {
+    emit("image-click");
     return;
   }
   imageModalOpen.value = true;
@@ -286,7 +295,7 @@ const imageClass = computed(() => {
     </div>
 
     <MediaImageModal
-      v-if="canOpenImageModal"
+      v-if="canOpenImageModal && imageModalMode !== 'comparison'"
       :open="imageModalOpen"
       :image-url="rawImageUrl"
       :file-name="fileName"

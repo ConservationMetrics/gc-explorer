@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import FeatureMetadata from "@/components/shared/FeatureMetadata.vue";
 import type { AllowedFileExtensions, DataEntry } from "@/types";
@@ -8,7 +8,12 @@ import type { AllowedFileExtensions, DataEntry } from "@/types";
 vi.mock("@/components/shared/MediaFile.vue", () => ({
   default: {
     name: "MediaFile",
-    props: ["allowedFileExtensions", "filePath", "mediaBasePath"],
+    props: [
+      "allowedFileExtensions",
+      "filePath",
+      "mediaBasePath",
+      "imageModalMode",
+    ],
     template: '<div data-testid="media-file" />',
   },
 }));
@@ -144,6 +149,44 @@ describe("FeatureMetadata", () => {
     expect(
       wrapper.find('[data-testid="gallery-metadata-files"]').exists(),
     ).toBe(false);
+  });
+
+  it("opens before and after images together for primary alerts", async () => {
+    const wrapper = mount(FeatureMetadata, {
+      props: {
+        allowedFileExtensions,
+        feature: { _id: "1" },
+        filePaths: ["t1.jpg", "t0.jpg"],
+        isAlert: true,
+        mediaBasePath: "/alerts-media",
+        showMedia: true,
+      },
+      global: globalConfig,
+    });
+
+    const mediaFiles = wrapper.findAllComponents({ name: "MediaFile" });
+    expect(mediaFiles[0].props("imageModalMode")).toBe("comparison");
+
+    mediaFiles[0].vm.$emit("image-click");
+    await nextTick();
+
+    const modal = document.querySelector(
+      '[data-testid="media-image-comparison-modal"]',
+    );
+    expect(modal).toBeTruthy();
+    expect(modal?.querySelectorAll("img")).toHaveLength(2);
+    expect(modal?.textContent).toContain("before");
+    expect(modal?.textContent).toContain("after");
+
+    modal
+      ?.querySelector<HTMLButtonElement>(
+        '[data-testid="media-image-comparison-modal-close"]',
+      )
+      ?.click();
+    await nextTick();
+    expect(
+      document.querySelector('[data-testid="media-image-comparison-modal"]'),
+    ).toBeFalsy();
   });
 
   it("renders minimap below coordinate fields when token and centroid are set", () => {
