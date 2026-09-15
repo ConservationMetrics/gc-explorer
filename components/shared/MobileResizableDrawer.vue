@@ -179,7 +179,7 @@ onBeforeUnmount(() => {
 <template>
   <aside
     :class="[
-      'mobile-resizable-drawer fixed z-50 flex max-w-full flex-col overflow-hidden bg-white shadow-lg transition-transform duration-300 ease-in-out',
+      'mobile-resizable-drawer fixed z-[1050] flex max-w-full flex-col overflow-hidden bg-white shadow-lg transition-transform duration-300 ease-in-out',
       'bottom-0 left-0 w-full rounded-t-2xl',
       'sm:top-0 sm:bottom-auto sm:left-0 sm:h-full sm:w-[400px] sm:rounded-none',
       open
