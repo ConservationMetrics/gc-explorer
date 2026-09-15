@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Check, ChevronDown, Copy, X } from "lucide-vue-next";
+import GalleryMediaCarousel from "@/components/gallery/GalleryMediaCarousel.vue";
 import DownloadMapData from "@/components/shared/DownloadMapData.vue";
 import FeatureMetadata from "@/components/shared/FeatureMetadata.vue";
 import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
@@ -66,6 +67,25 @@ const filteredFeature = computed<DataEntry>(() => {
   const { latitude, longitude, ...rest } = props.feature;
   return rest;
 });
+
+const featureFilePaths = computed(() => props.filePaths ?? []);
+
+const isImageFilePath = (filePath: string): boolean => {
+  const extension = filePath.split(".").pop()?.toLowerCase();
+  if (!extension) return false;
+
+  return (props.allowedFileExtensions?.image ?? []).some(
+    (candidate) => candidate.replace(/^\./, "").toLowerCase() === extension,
+  );
+};
+
+const imageFilePaths = computed(() =>
+  featureFilePaths.value.filter(isImageFilePath),
+);
+
+const nonImageFilePaths = computed(() =>
+  featureFilePaths.value.filter((filePath) => !isImageFilePath(filePath)),
+);
 
 const dataForAlertsIntroPanel = computed<AlertsData | undefined>(() => {
   if (props.localAlertsData && "mostRecentAlerts" in props.localAlertsData) {
@@ -220,10 +240,19 @@ onBeforeUnmount(() => {
           data-testid="feature-metadata"
         >
           <div class="p-4 sm:p-6">
+            <GalleryMediaCarousel
+              v-if="imageFilePaths.length > 0"
+              class="mb-6 h-60 overflow-hidden rounded-2xl bg-gray-50 sm:h-80"
+              :allowed-file-extensions="allowedFileExtensions"
+              :file-paths="imageFilePaths"
+              :media-base-path="featureMediaBasePath"
+              variant="gallery"
+              :enable-image-modal="true"
+            />
             <FeatureMetadata
               :allowed-file-extensions="allowedFileExtensions"
               :feature="filteredFeature"
-              :file-paths="filePaths ?? []"
+              :file-paths="nonImageFilePaths"
               :is-alert="isAlert"
               :media-base-path="featureMediaBasePath"
               :show-media="true"
