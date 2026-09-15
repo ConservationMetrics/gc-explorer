@@ -63,30 +63,6 @@ describe("alertMapLayers", () => {
   it("defines every stable alert source and layer ID once", () => {
     expect(alertMapLayers).toEqual([
       expect.objectContaining({
-        period: "mostRecent",
-        kind: "point",
-        sourceId: "most-recent-alerts-point",
-        layerId: "most-recent-alerts-point",
-      }),
-      expect.objectContaining({
-        period: "mostRecent",
-        kind: "polygon",
-        sourceId: "most-recent-alerts-polygon",
-        layerId: "most-recent-alerts-polygon",
-      }),
-      expect.objectContaining({
-        period: "mostRecent",
-        kind: "linestring",
-        sourceId: "most-recent-alerts-linestring",
-        layerId: "most-recent-alerts-linestring",
-      }),
-      expect.objectContaining({
-        period: "mostRecent",
-        kind: "centroids",
-        sourceId: "most-recent-alerts-centroids",
-        layerId: "most-recent-alerts-centroids",
-      }),
-      expect.objectContaining({
         period: "previous",
         kind: "point",
         sourceId: "previous-alerts-point",
@@ -109,6 +85,30 @@ describe("alertMapLayers", () => {
         kind: "centroids",
         sourceId: "previous-alerts-centroids",
         layerId: "previous-alerts-centroids",
+      }),
+      expect.objectContaining({
+        period: "mostRecent",
+        kind: "point",
+        sourceId: "most-recent-alerts-point",
+        layerId: "most-recent-alerts-point",
+      }),
+      expect.objectContaining({
+        period: "mostRecent",
+        kind: "polygon",
+        sourceId: "most-recent-alerts-polygon",
+        layerId: "most-recent-alerts-polygon",
+      }),
+      expect.objectContaining({
+        period: "mostRecent",
+        kind: "linestring",
+        sourceId: "most-recent-alerts-linestring",
+        layerId: "most-recent-alerts-linestring",
+      }),
+      expect.objectContaining({
+        period: "mostRecent",
+        kind: "centroids",
+        sourceId: "most-recent-alerts-centroids",
+        layerId: "most-recent-alerts-centroids",
       }),
     ]);
   });

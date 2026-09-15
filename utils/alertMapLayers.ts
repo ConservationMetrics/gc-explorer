@@ -15,34 +15,6 @@ export type AlertMapLayer = {
 
 export const alertMapLayers: readonly AlertMapLayer[] = [
   {
-    period: "mostRecent",
-    alertsKey: "mostRecentAlerts",
-    kind: "point",
-    sourceId: "most-recent-alerts-point",
-    layerId: "most-recent-alerts-point",
-  },
-  {
-    period: "mostRecent",
-    alertsKey: "mostRecentAlerts",
-    kind: "polygon",
-    sourceId: "most-recent-alerts-polygon",
-    layerId: "most-recent-alerts-polygon",
-  },
-  {
-    period: "mostRecent",
-    alertsKey: "mostRecentAlerts",
-    kind: "linestring",
-    sourceId: "most-recent-alerts-linestring",
-    layerId: "most-recent-alerts-linestring",
-  },
-  {
-    period: "mostRecent",
-    alertsKey: "mostRecentAlerts",
-    kind: "centroids",
-    sourceId: "most-recent-alerts-centroids",
-    layerId: "most-recent-alerts-centroids",
-  },
-  {
     period: "previous",
     alertsKey: "previousAlerts",
     kind: "point",
@@ -69,6 +41,34 @@ export const alertMapLayers: readonly AlertMapLayer[] = [
     kind: "centroids",
     sourceId: "previous-alerts-centroids",
     layerId: "previous-alerts-centroids",
+  },
+  {
+    period: "mostRecent",
+    alertsKey: "mostRecentAlerts",
+    kind: "point",
+    sourceId: "most-recent-alerts-point",
+    layerId: "most-recent-alerts-point",
+  },
+  {
+    period: "mostRecent",
+    alertsKey: "mostRecentAlerts",
+    kind: "polygon",
+    sourceId: "most-recent-alerts-polygon",
+    layerId: "most-recent-alerts-polygon",
+  },
+  {
+    period: "mostRecent",
+    alertsKey: "mostRecentAlerts",
+    kind: "linestring",
+    sourceId: "most-recent-alerts-linestring",
+    layerId: "most-recent-alerts-linestring",
+  },
+  {
+    period: "mostRecent",
+    alertsKey: "mostRecentAlerts",
+    kind: "centroids",
+    sourceId: "most-recent-alerts-centroids",
+    layerId: "most-recent-alerts-centroids",
   },
 ];
 
