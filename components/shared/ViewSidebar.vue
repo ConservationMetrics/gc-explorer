@@ -87,6 +87,14 @@ const nonImageFilePaths = computed(() =>
   featureFilePaths.value.filter((filePath) => !isImageFilePath(filePath)),
 );
 
+const showPhotoCarousel = computed(
+  () => !props.isAlertsDashboard || Boolean(props.isSecondary),
+);
+
+const metadataFilePaths = computed(() =>
+  showPhotoCarousel.value ? nonImageFilePaths.value : featureFilePaths.value,
+);
+
 const dataForAlertsIntroPanel = computed<AlertsData | undefined>(() => {
   if (props.localAlertsData && "mostRecentAlerts" in props.localAlertsData) {
     return props.localAlertsData;
@@ -241,7 +249,7 @@ onBeforeUnmount(() => {
         >
           <div class="p-4 sm:p-6">
             <GalleryMediaCarousel
-              v-if="imageFilePaths.length > 0"
+              v-if="showPhotoCarousel && imageFilePaths.length > 0"
               class="mb-6 h-60 overflow-hidden rounded-2xl bg-gray-50 sm:h-80"
               :allowed-file-extensions="allowedFileExtensions"
               :file-paths="imageFilePaths"
@@ -252,7 +260,7 @@ onBeforeUnmount(() => {
             <FeatureMetadata
               :allowed-file-extensions="allowedFileExtensions"
               :feature="filteredFeature"
-              :file-paths="nonImageFilePaths"
+              :file-paths="metadataFilePaths"
               :is-alert="isAlert"
               :media-base-path="featureMediaBasePath"
               :show-media="true"
