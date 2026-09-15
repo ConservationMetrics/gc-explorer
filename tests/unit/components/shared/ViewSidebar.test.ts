@@ -10,7 +10,12 @@ import {
 } from "vue";
 
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
-import type { AllowedFileExtensions, DataEntry, MapStatistics } from "@/types";
+import type {
+  AlertsStatistics,
+  AllowedFileExtensions,
+  DataEntry,
+  MapStatistics,
+} from "@/types";
 import type { Feature, FeatureCollection } from "geojson";
 
 Object.assign(globalThis, {
@@ -78,6 +83,7 @@ const featureGeojson: Feature = {
 };
 
 const mapStatistics: MapStatistics = { totalFeatures: 1 };
+const alertsStatistics = { alertsTotal: 0 } as AlertsStatistics;
 
 const emptyCollection: FeatureCollection = {
   type: "FeatureCollection",
@@ -202,5 +208,46 @@ describe("ViewSidebar", () => {
     expect(wrapper.find('[data-testid="feature-metadata"]').exists()).toBe(
       false,
     );
+  });
+
+  it("shows the scroll indicator only for the alerts intro panel", async () => {
+    const mapWrapper = mount(ViewSidebar, {
+      props: {
+        mapStatistics,
+        mapFeatureCollection: emptyCollection,
+        showIntroPanel: true,
+        showSidebar: true,
+      },
+      global: globalConfig,
+      attachTo: document.body,
+    });
+    const mapSidebar = mapWrapper.get(".sidebar").element;
+    Object.defineProperties(mapSidebar, {
+      offsetHeight: { configurable: true, value: 50 },
+      scrollHeight: { configurable: true, value: 100 },
+    });
+    window.dispatchEvent(new Event("resize"));
+    await nextTick();
+    expect(mapWrapper.find(".scroll-indicator").exists()).toBe(false);
+    mapWrapper.unmount();
+
+    const alertsWrapper = mount(ViewSidebar, {
+      props: {
+        alertsStatistics,
+        isAlertsDashboard: true,
+        showIntroPanel: true,
+        showSidebar: true,
+      },
+      global: globalConfig,
+      attachTo: document.body,
+    });
+    const alertsSidebar = alertsWrapper.get(".sidebar").element;
+    Object.defineProperties(alertsSidebar, {
+      offsetHeight: { configurable: true, value: 50 },
+      scrollHeight: { configurable: true, value: 100 },
+    });
+    window.dispatchEvent(new Event("resize"));
+    await nextTick();
+    expect(alertsWrapper.find(".scroll-indicator").exists()).toBe(true);
   });
 });

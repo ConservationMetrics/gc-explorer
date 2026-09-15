@@ -144,7 +144,10 @@ onBeforeUnmount(() => {
     :class="{ 'translate-x-0': showSidebar, '-translate-x-full': !showSidebar }"
   >
     <div class="relative h-full">
-      <div v-if="isScrollable" class="scroll-indicator">
+      <div
+        v-if="isScrollable && showIntroPanel && isAlertsDashboard"
+        class="scroll-indicator"
+      >
         <ChevronDown class="w-6 h-6 text-gray-600 animate-bounce" />
       </div>
       <button
