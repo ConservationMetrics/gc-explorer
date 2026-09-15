@@ -156,7 +156,7 @@ describe("FeatureMetadata", () => {
       props: {
         allowedFileExtensions,
         feature: { _id: "1" },
-        filePaths: ["t1.jpg", "t0.jpg"],
+        filePaths: ["images/S2_T1_123.jpg", "images/S2_T0_123.jpg"],
         isAlert: true,
         mediaBasePath: "/alerts-media",
         showMedia: true,

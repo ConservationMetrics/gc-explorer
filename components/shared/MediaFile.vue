@@ -220,12 +220,14 @@ const imageClass = computed(() => {
         v-if="filePath && !isGalleryVariant"
         class="text-center flex items-center justify-center mt-2"
       >
-        <span v-if="filePath.includes('t0.jpg')" class="italic">{{
+        <span v-if="/(?:^|[/_])t0(?:[_./]|$)/i.test(filePath)" class="italic">{{
           $t("before")
         }}</span>
-        <span v-else-if="filePath.includes('t1.jpg')" class="italic">{{
-          $t("after")
-        }}</span>
+        <span
+          v-else-if="/(?:^|[/_])t1(?:[_./]|$)/i.test(filePath)"
+          class="italic"
+          >{{ $t("after") }}</span
+        >
       </div>
     </div>
     <div

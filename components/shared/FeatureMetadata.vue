@@ -103,18 +103,28 @@ const fileUrl = (filePath: string): string =>
 const fileName = (filePath: string): string =>
   filePath.split("/").pop() || filePath;
 
+/**
+ * Identifies whether an alert image is a before or after image.
+ *
+ * @param {string} filePath - The alert image path.
+ * @returns {number | null} The image time index, or null for other files.
+ */
+const alertImageTime = (filePath: string): number | null => {
+  const match = filePath.match(/(?:^|[/_])t([01])(?:[_./]|$)/i);
+  return match ? Number(match[1]) : null;
+};
+
 const comparisonImagePaths = computed(() => {
   if (!props.isAlert) return [];
 
   return props.filePaths
     .filter(
       (filePath) =>
-        fileType(filePath) === "image" &&
-        (filePath.includes("t0.") || filePath.includes("t1.")),
+        fileType(filePath) === "image" && alertImageTime(filePath) !== null,
     )
     .sort(
       (left, right) =>
-        Number(left.includes("t1.")) - Number(right.includes("t1.")),
+        (alertImageTime(left) ?? 0) - (alertImageTime(right) ?? 0),
     )
     .slice(0, 2);
 });
