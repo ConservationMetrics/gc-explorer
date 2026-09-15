@@ -36,6 +36,13 @@ vi.mock("@/components/shared/DownloadMapData.vue", () => ({
   },
 }));
 
+vi.mock("@/components/shared/MediaFile.vue", () => ({
+  default: {
+    name: "MediaFile",
+    template: '<div data-testid="media-file" />',
+  },
+}));
+
 vi.mock("@/components/alerts/AlertsIntroPanel.vue", () => ({
   default: {
     name: "AlertsIntroPanel",
@@ -117,6 +124,7 @@ describe("ViewSidebar", () => {
 
     const metadata = wrapper.findComponent({ name: "FeatureMetadata" });
     expect(metadata.props("showMiniMap")).toBe(false);
+    expect(metadata.props("showMedia")).toBe(true);
     expect(metadata.props("mediaBasePath")).toBe("/media");
   });
 
@@ -149,6 +157,8 @@ describe("ViewSidebar", () => {
 
     const metadata = wrapper.findComponent({ name: "FeatureMetadata" });
     expect(metadata.props("showMiniMap")).toBe(false);
+    expect(metadata.props("showMedia")).toBe(true);
+    expect(metadata.props("isAlert")).toBe(true);
     expect(metadata.props("mediaBasePath")).toBe("/alerts-media");
   });
 

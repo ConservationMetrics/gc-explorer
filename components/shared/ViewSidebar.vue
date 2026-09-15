@@ -212,7 +212,9 @@ onBeforeUnmount(() => {
               :allowed-file-extensions="allowedFileExtensions"
               :feature="filteredFeature"
               :file-paths="filePaths ?? []"
+              :is-alert="isAlert"
               :media-base-path="featureMediaBasePath"
+              :show-media="true"
               :show-mini-map="false"
             />
           </div>

@@ -1,9 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { computed, ref, watch } from "vue";
 
 import FeatureMetadata from "@/components/shared/FeatureMetadata.vue";
 import type { AllowedFileExtensions, DataEntry } from "@/types";
+
+vi.mock("@/components/shared/MediaFile.vue", () => ({
+  default: {
+    name: "MediaFile",
+    props: ["allowedFileExtensions", "filePath", "mediaBasePath"],
+    template: '<div data-testid="media-file" />',
+  },
+}));
 
 Object.assign(globalThis, {
   computed,
@@ -111,6 +119,31 @@ describe("FeatureMetadata", () => {
     expect(links[1].text()).toContain("clip.mp4");
     expect(links[2].attributes("href")).toBe("/media/note.mp3");
     expect(links[2].text()).toContain("note.mp3");
+  });
+
+  it("renders embedded media when enabled", () => {
+    const wrapper = mount(FeatureMetadata, {
+      props: {
+        allowedFileExtensions,
+        feature: { _id: "1" },
+        filePaths: ["t0.jpg", "t1.jpg"],
+        isAlert: true,
+        mediaBasePath: "/alerts-media",
+        showMedia: true,
+      },
+      global: globalConfig,
+    });
+
+    const mediaContainer = wrapper.get('[data-testid="media-files-container"]');
+    expect(mediaContainer.classes()).toContain("grid-cols-2");
+
+    const mediaFiles = wrapper.findAllComponents({ name: "MediaFile" });
+    expect(mediaFiles).toHaveLength(2);
+    expect(mediaFiles[0].props("filePath")).toBe("t0.jpg");
+    expect(mediaFiles[0].props("mediaBasePath")).toBe("/alerts-media");
+    expect(
+      wrapper.find('[data-testid="gallery-metadata-files"]').exists(),
+    ).toBe(false);
   });
 
   it("renders minimap below coordinate fields when token and centroid are set", () => {
