@@ -1,9 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { computed, ref, watch } from "vue";
 
-import GalleryDetailMetadata from "@/components/gallery/GalleryDetailMetadata.vue";
+import FeatureMetadata from "@/components/shared/FeatureMetadata.vue";
 import type { AllowedFileExtensions, DataEntry } from "@/types";
+
+vi.mock("@/components/shared/MediaFile.vue", () => ({
+  default: {
+    name: "MediaFile",
+    props: ["allowedFileExtensions", "filePath", "mediaBasePath"],
+    template: '<div data-testid="media-file" />',
+  },
+}));
 
 Object.assign(globalThis, {
   computed,
@@ -25,11 +33,12 @@ const globalConfig = {
   },
 };
 
-describe("GalleryDetailMetadata", () => {
+describe("FeatureMetadata", () => {
   it("renders visible fields with violet labels and hides excluded keys", () => {
     const feature: DataEntry = {
       _id: "1",
       abundance: "High",
+      plantSpecies: "Test plant",
       uuid: "hidden-uuid",
       photo: "hidden.jpg",
       audio: "hidden.mp3",
@@ -37,7 +46,7 @@ describe("GalleryDetailMetadata", () => {
       attachmentMeta: '{"file":"x.jpg"}',
     };
 
-    const wrapper = mount(GalleryDetailMetadata, {
+    const wrapper = mount(FeatureMetadata, {
       props: {
         allowedFileExtensions,
         feature,
@@ -55,6 +64,7 @@ describe("GalleryDetailMetadata", () => {
       .map((node) => node.text());
 
     expect(labels).toContain("Abundance");
+    expect(labels).toContain("Plant Species");
     expect(values.some((value) => value.includes("High"))).toBe(true);
     expect(labels).not.toContain("Uuid");
     expect(labels).not.toContain("Photo");
@@ -69,7 +79,7 @@ describe("GalleryDetailMetadata", () => {
       geocoordinates: "3.44, -76.54",
     };
 
-    const wrapper = mount(GalleryDetailMetadata, {
+    const wrapper = mount(FeatureMetadata, {
       props: {
         allowedFileExtensions,
         feature,
@@ -86,7 +96,7 @@ describe("GalleryDetailMetadata", () => {
   });
 
   it("renders Filebrowser links for gallery media file paths", () => {
-    const wrapper = mount(GalleryDetailMetadata, {
+    const wrapper = mount(FeatureMetadata, {
       props: {
         allowedFileExtensions,
         feature: { _id: "1" },
@@ -111,8 +121,33 @@ describe("GalleryDetailMetadata", () => {
     expect(links[2].text()).toContain("note.mp3");
   });
 
+  it("renders embedded media when enabled", () => {
+    const wrapper = mount(FeatureMetadata, {
+      props: {
+        allowedFileExtensions,
+        feature: { _id: "1" },
+        filePaths: ["t0.jpg", "t1.jpg"],
+        isAlert: true,
+        mediaBasePath: "/alerts-media",
+        showMedia: true,
+      },
+      global: globalConfig,
+    });
+
+    const mediaContainer = wrapper.get('[data-testid="media-files-container"]');
+    expect(mediaContainer.classes()).toContain("grid-cols-2");
+
+    const mediaFiles = wrapper.findAllComponents({ name: "MediaFile" });
+    expect(mediaFiles).toHaveLength(2);
+    expect(mediaFiles[0].props("filePath")).toBe("t0.jpg");
+    expect(mediaFiles[0].props("mediaBasePath")).toBe("/alerts-media");
+    expect(
+      wrapper.find('[data-testid="gallery-metadata-files"]').exists(),
+    ).toBe(false);
+  });
+
   it("renders minimap below coordinate fields when token and centroid are set", () => {
-    const wrapper = mount(GalleryDetailMetadata, {
+    const wrapper = mount(FeatureMetadata, {
       props: {
         allowedFileExtensions,
         centroid: "3.44, -76.54",
@@ -129,5 +164,27 @@ describe("GalleryDetailMetadata", () => {
     });
 
     expect(wrapper.find('[data-testid="detail-minimap"]').exists()).toBe(true);
+  });
+
+  it("hides the minimap when showMiniMap is false", () => {
+    const wrapper = mount(FeatureMetadata, {
+      props: {
+        allowedFileExtensions,
+        centroid: "3.44, -76.54",
+        feature: {
+          _id: "1",
+          geocoordinates: "3.44, -76.54",
+        },
+        filePaths: [],
+        mapboxAccessToken: "pk.test",
+        mapboxStyle: "mapbox://styles/mapbox/satellite-streets-v12",
+        mediaBasePath: "/media",
+        showMiniMap: false,
+      },
+      global: globalConfig,
+    });
+
+    expect(wrapper.find('[data-testid="detail-minimap"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain("3.44, -76.54");
   });
 });

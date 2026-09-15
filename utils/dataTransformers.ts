@@ -161,7 +161,7 @@ export const transformSurveyEntry = (
 
 /**
  * Transforms a raw alert database record into the display-ready format
- * expected by the alerts sidebar (DataFeature).
+ * expected by the alerts sidebar.
  *
  * @param {DataEntry} entry - A raw alert row from the single-record endpoint.
  * @param {string} table - The dataset table name (used for imagery URL construction).

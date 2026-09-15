@@ -1,19 +1,30 @@
 <script setup lang="ts">
 import { FileAudio, FileDown, FileImage, FileVideo } from "lucide-vue-next";
 
+import MediaFile from "@/components/shared/MediaFile.vue";
 import Minimap from "@/components/shared/Minimap.vue";
+import { formatDisplayName } from "@/utils";
 
 import type { AllowedFileExtensions, DataEntry } from "@/types";
 
-const props = defineProps<{
-  allowedFileExtensions: AllowedFileExtensions;
-  centroid?: string;
-  feature: DataEntry;
-  filePaths: string[];
-  mapboxAccessToken?: string;
-  mapboxStyle?: string;
-  mediaBasePath: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    allowedFileExtensions: AllowedFileExtensions;
+    centroid?: string;
+    feature: DataEntry;
+    filePaths: string[];
+    mapboxAccessToken?: string;
+    mapboxStyle?: string;
+    mediaBasePath: string;
+    isAlert?: boolean;
+    showMedia?: boolean;
+    showMiniMap?: boolean;
+  }>(),
+  {
+    showMedia: false,
+    showMiniMap: true,
+  },
+);
 
 /**
  * Detects values that are structured JSON blobs (e.g. raw attachment
@@ -34,7 +45,7 @@ const isJsonBlobValue = (value: unknown): boolean => {
   }
 };
 
-/** Sorted metadata fields: DataFeature exclusions plus attachment/json-blob hiding. */
+/** Sorted metadata fields. Hide empty values, ids, media keys, attachments, and JSON blobs. */
 const visibleFields = computed(() =>
   Object.keys(props.feature)
     .sort()
@@ -46,7 +57,8 @@ const visibleFields = computed(() =>
       if (lowerKey === "uuid") return false;
       if (lowerKey.includes("photo")) return false;
       if (lowerKey === "audio") return false;
-      if (lowerKey.includes("data source")) return false;
+      if (lowerKey === "datasource" || lowerKey.includes("data source"))
+        return false;
       if (lowerKey.includes("attachment")) return false;
       if (isJsonBlobValue(value)) return false;
 
@@ -95,6 +107,19 @@ const fileName = (filePath: string): string =>
   <div class="space-y-6" data-testid="gallery-detail-metadata-fields">
     <div class="space-y-4">
       <div
+        v-if="showMedia && mediaBasePath && filePaths.length > 0"
+        :class="{ 'grid grid-cols-2 gap-6': isAlert }"
+        data-testid="media-files-container"
+      >
+        <MediaFile
+          v-for="filePath in filePaths"
+          :key="filePath"
+          :allowed-file-extensions="allowedFileExtensions"
+          :file-path="filePath"
+          :media-base-path="mediaBasePath"
+        />
+      </div>
+      <div
         v-for="(field, index) in visibleFields"
         :key="field.key"
         class="flex flex-col gap-0.5"
@@ -107,7 +132,7 @@ const fileName = (filePath: string): string =>
           {{
             field.key === "dataCollectedOn"
               ? $t(field.key)
-              : field.key.charAt(0).toUpperCase() + field.key.slice(1)
+              : formatDisplayName(field.key)
           }}
         </span>
         <span
@@ -134,7 +159,7 @@ const fileName = (filePath: string): string =>
           >
         </span>
         <Minimap
-          v-if="index === lastCoordinateFieldIndex"
+          v-if="showMiniMap && index === lastCoordinateFieldIndex"
           class="mt-2"
           :alt="$t('galleryLocation')"
           :centroid="centroid"
@@ -145,7 +170,7 @@ const fileName = (filePath: string): string =>
     </div>
 
     <Minimap
-      v-if="centroid && lastCoordinateFieldIndex < 0"
+      v-if="showMiniMap && centroid && lastCoordinateFieldIndex < 0"
       :alt="$t('galleryLocation')"
       :centroid="centroid"
       :mapbox-access-token="mapboxAccessToken"
@@ -153,7 +178,7 @@ const fileName = (filePath: string): string =>
     />
 
     <div
-      v-if="filePaths.length > 0"
+      v-if="!showMedia && filePaths.length > 0"
       class="border-t border-violet-100 pt-4"
       data-testid="gallery-metadata-files"
     >

@@ -20,7 +20,7 @@ const props = defineProps<{
   exportMaxDate?: string;
   exportTimestampColumn?: string;
   filenamePrefix?: string;
-  variant?: "primary" | "outline";
+  variant?: "primary" | "outline" | "violet" | "outline-violet";
 }>();
 
 const spatialFormats = [
@@ -34,6 +34,12 @@ const buttonClass = computed(() => {
     "inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]";
   if (props.variant === "outline") {
     return `${base} border border-blue-500 bg-white text-blue-600 hover:bg-blue-50`;
+  }
+  if (props.variant === "outline-violet") {
+    return `${base} border border-violet-300 bg-white text-violet-700 hover:bg-violet-50 focus-visible:ring-violet-500`;
+  }
+  if (props.variant === "violet") {
+    return `${base} bg-violet-700 text-white hover:bg-violet-800 focus-visible:ring-violet-500`;
   }
   return `${base} bg-blue-500 text-white hover:bg-blue-600`;
 });

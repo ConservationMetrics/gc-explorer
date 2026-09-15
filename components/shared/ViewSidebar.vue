@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { X, ChevronDown } from "lucide-vue-next";
-import DataFeature from "@/components/shared/DataFeature.vue";
+import { Check, ChevronDown, Copy, X } from "lucide-vue-next";
+import DownloadMapData from "@/components/shared/DownloadMapData.vue";
+import FeatureMetadata from "@/components/shared/FeatureMetadata.vue";
 import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
 import MapIntroPanel from "@/components/map/MapIntroPanel.vue";
+import { useCopyLink } from "@/composables/useCopyLink";
+import { warehouseRecordIdForExport } from "@/utils/identifierUtils";
 
 import type {
   AlertsData,
@@ -71,6 +74,25 @@ const dataForAlertsIntroPanel = computed<AlertsData | undefined>(() => {
   return undefined;
 });
 
+const showFeatureMetadata = computed(() =>
+  Boolean(props.feature && !props.featureLoading),
+);
+
+const featureMediaBasePath = computed(() => {
+  if (props.isAlert && props.mediaBasePathAlerts) {
+    return props.mediaBasePathAlerts;
+  }
+  return props.mediaBasePath ?? "";
+});
+
+const exportRecordId = computed(() =>
+  warehouseRecordIdForExport(props.featureGeojson, props.feature ?? {}),
+);
+
+const { showCopied, copyLink } = useCopyLink(
+  props.isAlertsDashboard ? ["incidentId"] : undefined,
+);
+
 const emit = defineEmits<{
   close: [];
   "date-range-changed": [[string, string]];
@@ -83,6 +105,12 @@ const checkIfScrollable = () => {
   if (sidebar) {
     isScrollable.value = sidebar.scrollHeight > sidebar.offsetHeight;
   }
+};
+
+/** Scrolls the sidebar to the bottom when the indicator is activated. */
+const scrollToBottom = () => {
+  const sidebar = document.querySelector(".sidebar") as HTMLElement | null;
+  sidebar?.scrollTo({ top: sidebar.scrollHeight, behavior: "smooth" });
 };
 
 // Check scrollability when content changes or sidebar becomes visible
@@ -122,9 +150,15 @@ onBeforeUnmount(() => {
     :class="{ 'translate-x-0': showSidebar, '-translate-x-full': !showSidebar }"
   >
     <div class="relative h-full">
-      <div v-if="isScrollable" class="scroll-indicator">
+      <button
+        v-if="isScrollable && showIntroPanel && isAlertsDashboard"
+        class="scroll-indicator border-0 cursor-pointer"
+        aria-label="Scroll to bottom"
+        type="button"
+        @click="scrollToBottom"
+      >
         <ChevronDown class="w-6 h-6 text-gray-600 animate-bounce" />
-      </div>
+      </button>
       <button
         class="absolute top-5 right-5 p-2.5 bg-white/80 backdrop-blur-sm hover:bg-gray-100 rounded-full transition-all duration-200 ease-in-out shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2"
         @click="emit('close')"
@@ -180,19 +214,57 @@ onBeforeUnmount(() => {
           <div class="h-4 bg-gray-200 rounded w-5/6"></div>
           <div class="h-4 bg-gray-200 rounded w-2/3"></div>
         </div>
-        <DataFeature
-          v-if="feature && !featureLoading"
-          :allowed-file-extensions="allowedFileExtensions"
-          :export-table-name="exportTableName"
-          :feature="filteredFeature"
-          :feature-geojson="featureGeojson"
-          :file-paths="filePaths"
-          :is-alert="isAlert"
-          :is-secondary="isSecondary"
-          :is-alerts-dashboard="isAlertsDashboard"
-          :media-base-path="mediaBasePath"
-          :media-base-path-alerts="mediaBasePathAlerts"
-        />
+        <div
+          v-if="showFeatureMetadata && allowedFileExtensions"
+          class="overflow-hidden rounded-2xl bg-violet-50"
+          data-testid="feature-metadata"
+        >
+          <div class="p-4 sm:p-6">
+            <FeatureMetadata
+              :allowed-file-extensions="allowedFileExtensions"
+              :feature="filteredFeature"
+              :file-paths="filePaths ?? []"
+              :is-alert="isAlert"
+              :media-base-path="featureMediaBasePath"
+              :show-media="true"
+              :show-mini-map="false"
+            />
+          </div>
+          <div
+            v-if="isAlertsDashboard"
+            class="mt-2 px-4 pt-4 sm:px-6 border-t border-violet-100"
+            data-testid="copy-link-section"
+          >
+            <button
+              class="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200"
+              data-testid="copy-link-button"
+              type="button"
+              @click="copyLink"
+            >
+              <component
+                :is="showCopied ? Check : Copy"
+                class="w-4 h-4"
+                :class="{ 'text-green-500': showCopied }"
+              />
+              <span>{{
+                showCopied
+                  ? $t("copied")
+                  : isSecondary
+                    ? $t("copySecondaryLink")
+                    : $t("copyLink")
+              }}</span>
+            </button>
+          </div>
+          <div v-if="featureGeojson" class="px-4 pb-4 sm:px-6 sm:pb-6">
+            <DownloadMapData
+              :data-for-download="featureGeojson"
+              :export-record-id="exportRecordId"
+              :export-table-name="exportTableName"
+              :filename-prefix="exportRecordId"
+              variant="violet"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </div>

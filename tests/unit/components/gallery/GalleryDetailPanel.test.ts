@@ -23,9 +23,9 @@ vi.mock("@/components/gallery/GalleryMediaCarousel.vue", () => ({
   },
 }));
 
-vi.mock("@/components/gallery/GalleryDetailMetadata.vue", () => ({
+vi.mock("@/components/shared/FeatureMetadata.vue", () => ({
   default: {
-    name: "GalleryDetailMetadata",
+    name: "FeatureMetadata",
     props: ["feature", "filePaths"],
     template: '<div data-testid="gallery-detail-metadata-fields"></div>',
   },
@@ -71,7 +71,7 @@ describe("GalleryDetailPanel", () => {
       "photo.jpg,audio.mp3",
     );
 
-    const metadata = wrapper.findComponent({ name: "GalleryDetailMetadata" });
+    const metadata = wrapper.findComponent({ name: "FeatureMetadata" });
     expect(metadata.exists()).toBe(true);
     expect(metadata.props("filePaths")).toEqual(["photo.jpg", "audio.mp3"]);
   });
