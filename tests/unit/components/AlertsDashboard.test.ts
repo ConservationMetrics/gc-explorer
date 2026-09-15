@@ -180,7 +180,12 @@ describe("AlertsDashboard component", () => {
     expect(wrapper.exists()).toBe(true);
   });
 
-  it("adds MultiPolygon alerts to the polygon source on initial load", async () => {
+  it("keeps MultiPolygon alerts in the polygon source through filtering and reset", async () => {
+    mockRoute.value = {
+      path: "/alerts/test_alerts",
+      params: { tablename: "test_alerts" },
+      query: {},
+    };
     const props = JSON.parse(JSON.stringify(baseProps));
     const multiPolygonAlert = {
       id: "multipolygon-alert",
@@ -213,9 +218,26 @@ describe("AlertsDashboard component", () => {
         geographicCentroid: "1.5, 1.5",
       },
     };
+    const olderMultiPolygonAlert = {
+      ...multiPolygonAlert,
+      id: "older-multipolygon-alert",
+      properties: {
+        ...multiPolygonAlert.properties,
+        _id: "older-multipolygon-alert",
+        alertID: "older-multipolygon-alert",
+        YYYYMM: "202402",
+      },
+    };
     props.alertsData.mostRecentAlerts.features.push(multiPolygonAlert);
+    props.alertsData.mostRecentAlerts.features.push(olderMultiPolygonAlert);
+    props.alertsStatistics = {
+      ...props.alertsStatistics,
+      allDates: ["02-2024", "03-2024"],
+      earliestAlertsDate: "02-2024",
+      twelveMonthsBefore: "02-2024",
+    };
 
-    mountComponent(props);
+    const wrapper = mountComponent(props);
     mapboxMock.fireLoad();
     await flushPromises();
 
@@ -223,59 +245,48 @@ describe("AlertsDashboard component", () => {
       "most-recent-alerts-polygon",
       expect.objectContaining({
         data: expect.objectContaining({
-          features: [multiPolygonAlert],
+          features: [multiPolygonAlert, olderMultiPolygonAlert],
         }),
       }),
     );
-  });
 
-  it("selects an initial MultiPolygon alert from the polygon layer", async () => {
-    mockRoute.value = {
-      path: "/alerts/test_alerts",
-      params: { tablename: "test_alerts" },
-      query: { alertId: "multipolygon-alert" },
+    const polygonSource = { setData: vi.fn(), type: "geojson" };
+    mapboxMock.mockMap.getSource.mockImplementation((sourceId) =>
+      sourceId === "most-recent-alerts-polygon" ? polygonSource : false,
+    );
+
+    const testWindow = window as unknown as {
+      _testHandleDateRangeChanged?: (range: [string, string]) => void;
     };
-    const props = JSON.parse(JSON.stringify(baseProps));
-    props.alertsData.mostRecentAlerts.features.push({
-      id: "multipolygon-alert",
-      type: "Feature",
-      geometry: {
-        type: "MultiPolygon",
-        coordinates: [
-          [
-            [
-              [0, 0],
-              [1, 0],
-              [1, 1],
-              [0, 0],
-            ],
-          ],
-          [
-            [
-              [2, 2],
-              [3, 2],
-              [3, 3],
-              [2, 2],
-            ],
-          ],
-        ],
-      },
-      properties: {
-        _id: "multipolygon-alert",
-        alertID: "multipolygon-alert",
-        YYYYMM: "202403",
-        geographicCentroid: "1.5, 1.5",
-      },
+    testWindow._testHandleDateRangeChanged?.(["03-2024", "03-2024"]);
+    await flushPromises();
+
+    expect(polygonSource.setData).toHaveBeenLastCalledWith({
+      type: "FeatureCollection",
+      features: [multiPolygonAlert],
     });
 
-    mountComponent(props);
-    mapboxMock.fireLoad();
+    mapboxMock.fireClick("most-recent-alerts-polygon", {
+      features: [multiPolygonAlert],
+      point: { x: 10, y: 10 },
+    });
     await flushPromises();
 
     expect(mapboxMock.setFeatureState).toHaveBeenCalledWith(
       { source: "most-recent-alerts-polygon", id: "multipolygon-alert" },
       { selected: true },
     );
+
+    const vm = wrapper.vm as unknown as {
+      resetToInitialState: () => void;
+    };
+    vm.resetToInitialState();
+    await flushPromises();
+
+    expect(polygonSource.setData).toHaveBeenCalledWith({
+      type: "FeatureCollection",
+      features: [multiPolygonAlert, olderMultiPolygonAlert],
+    });
   });
 
   it("uses the selected basemap access token", async () => {

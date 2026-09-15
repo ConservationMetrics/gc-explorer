@@ -4,6 +4,12 @@ import type mapboxgl from "mapbox-gl";
 import { along, length, lineString } from "@turf/turf";
 import type { Feature } from "geojson";
 import type { AlertsData } from "@/types";
+import {
+  clusteredAlertMapLayers,
+  getAlertGeometryRenderKind,
+  getAlertMapLayer,
+  getAlertMapLayersForPeriod,
+} from "@/utils/alertMapLayers";
 import { prepareCoordinatesForSelectedFeature } from "@/utils/mapGLHelpers";
 import { parsePhotosFromRecord } from "@/utils/index";
 
@@ -40,25 +46,29 @@ export function useFeatureSelection(
   ): string | null => {
     if (!map.value) return null;
 
-    // Map geometry layers to their centroid companions
+    const alertMapLayer = getAlertMapLayer(layerId);
+    if (!alertMapLayer) return null;
+
+    // Map geometry layers to their centroid companions.
     if (
-      layerId.includes("-polygon") ||
-      layerId.includes("-linestring") ||
-      layerId.includes("-multipolygon")
+      alertMapLayer.kind === "polygon" ||
+      alertMapLayer.kind === "linestring"
     ) {
-      const prefix = layerId.replace(/-polygon|-linestring|-multipolygon/i, "");
-      return `${prefix}-centroids`;
+      return (
+        getAlertMapLayersForPeriod(alertMapLayer.period).find(
+          (layer) => layer.kind === "centroids",
+        )?.layerId ?? null
+      );
     }
 
     // Map centroid layers to their geometry companions
     // Need to determine which geometry type by checking the original feature
-    if (layerId.includes("-centroids") && featureAlertId) {
-      const prefix = layerId.replace("-centroids", "");
-      const possibleLayers = [
-        `${prefix}-polygon`,
-        `${prefix}-linestring`,
-        `${prefix}-multipolygon`,
-      ];
+    if (alertMapLayer.kind === "centroids" && featureAlertId) {
+      const possibleLayers = getAlertMapLayersForPeriod(alertMapLayer.period)
+        .filter(
+          (layer) => layer.kind === "polygon" || layer.kind === "linestring",
+        )
+        .map((layer) => layer.layerId);
 
       // Check each possible geometry source to find which one has this feature
       for (const possibleLayer of possibleLayers) {
@@ -94,28 +104,13 @@ export function useFeatureSelection(
     if (!map.value) return;
 
     // List of all cluster layer IDs that need updating
-    const clusterLayers = [
-      {
-        clustersLayer: "most-recent-alerts-centroids-clusters",
-        source: "most-recent-alerts-centroids",
-        color: "#FF0000",
-      },
-      {
-        clustersLayer: "most-recent-alerts-point-clusters",
-        source: "most-recent-alerts-point",
-        color: "#FF0000",
-      },
-      {
-        clustersLayer: "previous-alerts-centroids-clusters",
-        source: "previous-alerts-centroids",
-        color: "#FD8D3C",
-      },
-      {
-        clustersLayer: "previous-alerts-point-clusters",
-        source: "previous-alerts-point",
-        color: "#FD8D3C",
-      },
-    ];
+    const clusterLayers = clusteredAlertMapLayers.map(
+      ({ period, sourceId }) => ({
+        clustersLayer: `${sourceId}-clusters`,
+        source: sourceId,
+        color: period === "mostRecent" ? "#FF0000" : "#FD8D3C",
+      }),
+    );
 
     clusterLayers.forEach(({ clustersLayer, source, color }) => {
       if (map.value!.getLayer(clustersLayer)) {
@@ -164,20 +159,23 @@ export function useFeatureSelection(
     let clusterLayerName: string;
     let sourceName: string;
 
-    if (selectedLayerId.includes("-point")) {
-      sourceName = selectedLayerId;
-      clusterLayerName = `${selectedLayerId}-clusters`;
-    } else if (selectedLayerId.includes("-centroids")) {
+    const selectedAlertMapLayer = getAlertMapLayer(selectedLayerId);
+    if (!selectedAlertMapLayer) return;
+
+    if (
+      selectedAlertMapLayer.kind === "point" ||
+      selectedAlertMapLayer.kind === "centroids"
+    ) {
       sourceName = selectedLayerId;
       clusterLayerName = `${selectedLayerId}-clusters`;
     } else {
       // For other geometry types, check the corresponding centroids layer
-      const prefix = selectedLayerId.replace(
-        /-polygon|-linestring|-multipolygon/i,
-        "",
-      );
-      sourceName = `${prefix}-centroids`;
-      clusterLayerName = `${prefix}-centroids-clusters`;
+      const centroidLayer = getAlertMapLayersForPeriod(
+        selectedAlertMapLayer.period,
+      ).find((layer) => layer.kind === "centroids");
+      if (!centroidLayer) return;
+      sourceName = centroidLayer.sourceId;
+      clusterLayerName = `${centroidLayer.layerId}-clusters`;
     }
 
     const sourceObj = map.value.getSource(sourceName) as mapboxgl.GeoJSONSource;
@@ -284,9 +282,10 @@ export function useFeatureSelection(
 
     // For centroid layers, use alertID as the feature ID (due to promoteId)
     // For other layers, use feature.id
-    const featureId = layerId.includes("-centroids")
-      ? featureObject.alertID
-      : feature.id;
+    const featureId =
+      getAlertMapLayer(layerId)?.kind === "centroids"
+        ? featureObject.alertID
+        : feature.id;
 
     // Update URL with alertId or secondaryDocId; remove incidentId so address bar matches "copy link to alert"
     const query = { ...route.query };
@@ -357,12 +356,11 @@ export function useFeatureSelection(
 
     // For polygon/linestring features (or their centroid representations),
     // also set state on companion layer so selection persists across zoom thresholds
-    const geometryType = feature.geometry.type;
+    const renderKind = getAlertGeometryRenderKind(feature);
     const isPolygonLinestring =
-      geometryType === "Polygon" ||
-      geometryType === "LineString" ||
-      geometryType === "MultiPolygon" ||
-      layerId.includes("-centroids"); // Centroids are Points but represent Polygons/LineStrings
+      renderKind === "polygon" ||
+      renderKind === "linestring" ||
+      getAlertMapLayer(layerId)?.kind === "centroids";
 
     if (isPolygonLinestring) {
       const companionLayer = getCompanionLayerId(

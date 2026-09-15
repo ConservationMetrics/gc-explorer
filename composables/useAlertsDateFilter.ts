@@ -2,6 +2,7 @@ import { computed, nextTick, ref, type Ref, type ComputedRef } from "vue";
 import type mapboxgl from "mapbox-gl";
 import type { Feature } from "geojson";
 import type { AlertsData, AlertsStatistics } from "@/types";
+import { alertMapLayers, getAlertSourceFeatures } from "@/utils/alertMapLayers";
 import { filterAlertsStatisticsByDateRange } from "@/utils/alertsStatistics";
 
 /**
@@ -132,81 +133,18 @@ export function useAlertsDateFilter(
     nextTick(() => {
       if (!map.value) return;
 
-      // Update source data for all alert sources so clusters reflect filtered data
-      const sourceIds = [
-        "most-recent-alerts-point",
-        "most-recent-alerts-polygon",
-        "most-recent-alerts-linestring",
-        "most-recent-alerts-centroids",
-        "previous-alerts-point",
-        "previous-alerts-polygon",
-        "previous-alerts-linestring",
-        "previous-alerts-centroids",
-      ];
-
-      sourceIds.forEach((sourceId) => {
+      // Update source data for all alert sources so clusters reflect filtered data.
+      alertMapLayers.forEach(({ alertsKey, kind, sourceId }) => {
         const source = map.value!.getSource(sourceId) as mapboxgl.GeoJSONSource;
         if (!source) return;
 
-        const isMostRecent = sourceId.startsWith("most-recent-alerts");
-        const filteredFeatures = isMostRecent
-          ? filteredData.value.mostRecentAlerts.features
-          : filteredData.value.previousAlerts.features;
-
-        if (sourceId.endsWith("-point")) {
-          // Point source: filter by Point geometry type
-          const pointFeatures = filteredFeatures.filter(
-            (f) => f.geometry.type === "Point",
-          );
-          source.setData({
-            type: "FeatureCollection",
-            features: pointFeatures,
-          });
-        } else if (sourceId.endsWith("-polygon")) {
-          // Polygon source: filter by Polygon/MultiPolygon geometry type
-          const polygonFeatures = filteredFeatures.filter(
-            (f) =>
-              f.geometry.type === "Polygon" ||
-              f.geometry.type === "MultiPolygon",
-          );
-          source.setData({
-            type: "FeatureCollection",
-            features: polygonFeatures,
-          });
-        } else if (sourceId.endsWith("-linestring")) {
-          // LineString source: filter by LineString geometry type
-          const linestringFeatures = filteredFeatures.filter(
-            (f) => f.geometry.type === "LineString",
-          );
-          source.setData({
-            type: "FeatureCollection",
-            features: linestringFeatures,
-          });
-        } else if (sourceId.endsWith("-centroids")) {
-          // Centroid source: create Point features from geographicCentroid
-          const centroidFeatures = filteredFeatures
-            .filter(
-              (f) =>
-                f.properties?.geographicCentroid && f.geometry.type !== "Point",
-            )
-            .map((feature) => ({
-              type: "Feature" as const,
-              geometry: {
-                type: "Point" as const,
-                coordinates: feature.properties?.geographicCentroid
-                  .split(",")
-                  .map(Number)
-                  .reverse(),
-              },
-              properties: {
-                ...feature.properties,
-              },
-            }));
-          source.setData({
-            type: "FeatureCollection",
-            features: centroidFeatures,
-          });
-        }
+        source.setData({
+          type: "FeatureCollection",
+          features: getAlertSourceFeatures(
+            filteredData.value[alertsKey].features,
+            kind,
+          ),
+        });
       });
 
       // Update layer filters for non-clustered features (still needed for unclustered points/centroids)
