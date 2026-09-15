@@ -161,6 +161,13 @@ describe("GalleryMediaCarousel", () => {
       document.querySelector('[data-testid="media-image-carousel-modal-next"]'),
     ).toBeTruthy();
 
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
+    await wrapper.vm.$nextTick();
+    expect(
+      document.querySelector('[data-testid="media-image-carousel-modal"]')
+        ?.textContent,
+    ).toContain("b.jpg");
+
     document
       .querySelector<HTMLButtonElement>(
         '[data-testid="media-image-carousel-modal-close"]',

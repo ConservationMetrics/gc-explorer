@@ -58,6 +58,12 @@ const onKeydown = (event: KeyboardEvent) => {
   if (event.key === "Escape") {
     event.preventDefault();
     close();
+  } else if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    moveToSlide(-1);
+  } else if (event.key === "ArrowRight") {
+    event.preventDefault();
+    moveToSlide(1);
   }
 };
 
