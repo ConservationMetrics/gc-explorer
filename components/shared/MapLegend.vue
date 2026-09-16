@@ -71,6 +71,9 @@ watch(
     >
       <Layers class="h-5 w-5" aria-hidden="true" />
     </button>
+    <span v-if="!isExpanded" class="legend-tooltip" role="tooltip">
+      {{ $t("mapLegend") }}
+    </span>
     <template v-else>
       <header class="legend-header">
         <span class="flex items-center gap-2 text-lg font-semibold">
@@ -154,7 +157,7 @@ watch(
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  z-index: 10;
+  z-index: 1020;
 }
 
 .map-legend.is-collapsed {
@@ -275,6 +278,37 @@ watch(
   background: rgb(91 33 182);
 }
 
+.legend-tooltip {
+  position: absolute;
+  top: 7px;
+  right: 54px;
+  padding: 6px 9px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.85);
+  color: white;
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(4px);
+  transition:
+    opacity 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.legend-trigger:focus-visible + .legend-tooltip {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .legend-trigger:hover + .legend-tooltip {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .legend-close {
   display: flex;
   align-items: center;
@@ -309,6 +343,7 @@ watch(
 
 @media (prefers-reduced-motion: reduce) {
   .legend-trigger,
+  .legend-tooltip,
   .legend-close,
   .legend-content {
     animation: none;
