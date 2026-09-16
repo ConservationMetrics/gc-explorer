@@ -100,6 +100,30 @@ describe("FeatureMetadata", () => {
     expect(link.text()).toContain("viewOnGoogleMaps");
   });
 
+  it("truncates long field values and expands them on request", async () => {
+    const longValue = "A long metadata value. ".repeat(20);
+    const wrapper = mount(FeatureMetadata, {
+      props: {
+        allowedFileExtensions,
+        feature: { _id: "1", description: longValue },
+        filePaths: [],
+        mediaBasePath: "/media",
+      },
+      global: globalConfig,
+    });
+
+    const field = wrapper
+      .findAll('[data-testid="gallery-metadata-field"]')
+      .find((node) => node.text().includes("Description"));
+    expect(field).toBeDefined();
+    expect(field!.text()).toContain("showMore");
+    expect(field!.text()).not.toContain(longValue);
+
+    await field!.get("button").trigger("click");
+    expect(field!.text()).toContain(longValue);
+    expect(field!.text()).toContain("showLess");
+  });
+
   it("renders Filebrowser links for gallery media file paths", () => {
     const wrapper = mount(FeatureMetadata, {
       props: {
