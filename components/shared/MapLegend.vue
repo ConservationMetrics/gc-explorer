@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { MapLegendItem } from "@/types";
-import { ChevronDown } from "lucide-vue-next";
+import { ChevronDown, Layers } from "lucide-vue-next";
 
 const props = withDefaults(
   defineProps<{
@@ -15,7 +15,7 @@ const props = withDefaults(
 const emit = defineEmits(["toggle-layer-visibility"]);
 
 const localMapLegendContent = ref();
-const isExpanded = ref(true);
+const isExpanded = ref(false);
 
 onMounted(() => {
   // Ensure all items are visible initially
@@ -55,13 +55,23 @@ watch(
 <template>
   <div
     data-testid="map-legend"
-    class="map-legend feature p-4 rounded-lg shadow-lg"
+    class="map-legend feature rounded-lg shadow-lg"
+    :class="{ 'is-collapsed': !isExpanded }"
     :style="{
       '--mobile-drawer-height': `${props.mobileDrawerHeight}px`,
     }"
   >
-    <button class="legend-header" @click="toggleExpanded">
-      <h2 class="text-2xl font-semibold">{{ $t("mapLegend") }}</h2>
+    <button
+      class="legend-header rounded-lg bg-violet-700 px-3 py-2 text-white hover:bg-violet-800"
+      data-testid="map-legend-toggle"
+      :aria-expanded="isExpanded"
+      :aria-label="$t('mapLegend')"
+      @click="toggleExpanded"
+    >
+      <span class="flex items-center gap-2 text-lg font-semibold">
+        <Layers class="h-5 w-5" aria-hidden="true" />
+        <span v-if="isExpanded">{{ $t("mapLegend") }}</span>
+      </span>
       <ChevronDown class="toggle-arrow" :class="{ rotated: !isExpanded }" />
     </button>
     <Transition name="slide">
@@ -126,12 +136,18 @@ watch(
   width: min(315px, calc(100vw - 20px));
   max-height: min(38vh, 260px);
   background-color: #fff;
+  border: 1px solid #ddd6fe;
   padding: 16px;
   line-height: 18px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 10;
+}
+
+.map-legend.is-collapsed {
+  width: 44px;
+  padding: 0;
 }
 
 .color-box {
@@ -222,13 +238,25 @@ watch(
   margin-bottom: 10px;
 }
 
+.map-legend.is-collapsed .legend-header {
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.map-legend.is-collapsed .toggle-arrow {
+  display: none;
+}
+
 .legend-header h2 {
   margin: 0;
 }
 
 .toggle-arrow {
   transition: transform 0.3s ease;
-  color: #333;
+  color: white;
   flex-shrink: 0;
   margin-left: 10px;
 }

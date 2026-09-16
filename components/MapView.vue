@@ -13,11 +13,10 @@ import {
   resolveTerrainExaggeration,
 } from "@/utils/mapGLHelpers";
 
-import DataFilter from "@/components/shared/DataFilter.vue";
-import TimestampFilter from "@/components/shared/TimestampFilter.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
 import MapLegend from "@/components/shared/MapLegend.vue";
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
+import MapFilterControls from "@/components/shared/MapFilterControls.vue";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type { FeatureCollection, Feature } from "geojson";
@@ -602,26 +601,16 @@ onBeforeUnmount(() => {
     >
       {{ $t("resetMap") }}
     </button>
-    <div
-      class="absolute top-16 sm:top-4 right-14 z-10 flex flex-col gap-0.5 hidden sm:flex"
-    >
-      <DataFilter
-        v-if="filterColumn"
-        :key="`filter-${filterResetKey}`"
-        :data="flatDataForFilter"
-        :filter-column="filterColumn"
-        :color-column="colorColumn"
-        :show-colored-dot="true"
-        @filter="filterValues"
-      />
-      <TimestampFilter
-        v-if="timestampColumn"
-        :key="`timestamp-${filterResetKey}`"
-        :data="flatDataForFilter"
-        :timestamp-column="timestampColumn"
-        @filter="onTimestampFilter"
-      />
-    </div>
+    <MapFilterControls
+      v-if="filterColumn || timestampColumn"
+      :key="filterResetKey"
+      :data="flatDataForFilter"
+      :filter-column="filterColumn"
+      :color-column="colorColumn"
+      :timestamp-column="timestampColumn"
+      @filter="filterValues"
+      @date-filter="onTimestampFilter"
+    />
     <ViewSidebar
       :allowed-file-extensions="allowedFileExtensions"
       :feature="selectedFeature"
