@@ -596,7 +596,7 @@ onBeforeUnmount(() => {
     <div id="map"></div>
     <button
       v-if="!showSidebar"
-      class="reset-button bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mx-2"
+      class="reset-button bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 px-4 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 mx-2"
       @click="resetToInitialState"
     >
       {{ $t("resetMap") }}
