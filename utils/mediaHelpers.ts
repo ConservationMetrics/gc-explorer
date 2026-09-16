@@ -158,7 +158,7 @@ export const getBaseUrlFromInput = (
 const CLEAN_PHOTO_TOKEN_EDGES = /^[\s"'\\[]+|[\s"'\\[\]]+$/g;
 
 /**
- * Parses Mapeo / survey photo list strings (comma-separated and/or bracket-wrapped).
+ * Parses photo list strings (comma-separated and/or bracket-wrapped).
  */
 export const parsePhotoListString = (raw: unknown): string[] => {
   if (raw == null || raw === "") return [];
@@ -171,7 +171,7 @@ export const parsePhotoListString = (raw: unknown): string[] => {
 };
 
 /**
- * Resolves `photos` (display-transformed) or `_photos` (raw Mapeo) into file paths.
+ * Resolves `photos` (display-transformed) or `_photos` into file paths.
  */
 export const parsePhotosFromRecord = (
   record: Record<string, unknown>,
@@ -197,6 +197,9 @@ export const isImageFilePath = (
   imageExtensions: string[],
 ): boolean => pathHasAnyExtension(filePath, imageExtensions);
 
+/** True when the value is a filename, not a URL or directory-prefixed path. */
+const isFilenameOnly = (filePath: string): boolean => !filePath.includes("/");
+
 /** File paths on a feature that match any configured media extension. */
 export const getFilePathsWithExtension = (
   feature: { [key: string]: unknown },
@@ -211,10 +214,12 @@ export const getFilePathsWithExtension = (
     const value = feature[key];
     if (typeof value !== "string" || value.includes("attachment")) return [];
 
-    return parsePhotoListString(value).filter((filePath) =>
-      Object.values(allExtensions).some((extensions) =>
-        pathHasAnyExtension(filePath, extensions),
-      ),
+    return parsePhotoListString(value).filter(
+      (filePath) =>
+        isFilenameOnly(filePath) &&
+        Object.values(allExtensions).some((extensions) =>
+          pathHasAnyExtension(filePath, extensions),
+        ),
     );
   });
 };

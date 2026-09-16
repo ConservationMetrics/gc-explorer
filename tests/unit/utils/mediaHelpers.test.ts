@@ -79,4 +79,30 @@ describe("getFilePathsWithExtension", () => {
       ),
     ).toEqual([]);
   });
+
+  it("keeps bare filenames and drops remote URLs", () => {
+    expect(
+      getFilePathsWithExtension(
+        {
+          photo:
+            "medium.jpg, https://inaturalist-open-data.s3.amazonaws.com/photos/639345356/medium.jpg",
+        },
+        extensions,
+        "photo",
+      ),
+    ).toEqual(["medium.jpg"]);
+  });
+
+  it("drops paths where the filename is preceded by a slash", () => {
+    expect(
+      getFilePathsWithExtension(
+        {
+          photo:
+            "Https:/inaturalist-open-data.s3.amazonaws.com/photos/639345356/medium.jpg, photos/nested.jpg",
+        },
+        extensions,
+        "photo",
+      ),
+    ).toEqual([]);
+  });
 });
