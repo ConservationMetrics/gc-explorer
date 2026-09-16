@@ -78,6 +78,34 @@ describe("FeatureMetadata", () => {
     expect(labels).not.toContain("Attachment meta");
   });
 
+  it("renders http(s) field values as outbound links", () => {
+    const wrapper = mount(FeatureMetadata, {
+      props: {
+        allowedFileExtensions,
+        feature: {
+          _id: "1",
+          sourceUrl: "https://example.com/record/42",
+          report: "  http://example.org/report  ",
+          notes: "See the report",
+          javascript: "javascript:alert(1)",
+          ftp: "ftp://files.example.com/doc",
+        },
+        filePaths: [],
+        mediaBasePath: "/media",
+      },
+      global: globalConfig,
+    });
+
+    const links = wrapper.findAll('[data-testid="gallery-metadata-url"]');
+    expect(links).toHaveLength(2);
+    expect(links.map((link) => link.attributes("href"))).toEqual([
+      "http://example.org/report",
+      "https://example.com/record/42",
+    ]);
+    expect(links[0].attributes("target")).toBe("_blank");
+    expect(links[0].attributes("rel")).toBe("noopener noreferrer");
+  });
+
   it("renders Google Maps link for coordinate fields", () => {
     const feature: DataEntry = {
       _id: "1",
