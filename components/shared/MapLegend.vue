@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { MapLegendItem } from "@/types";
-import { ChevronDown, Layers } from "lucide-vue-next";
+import { ChevronDown, Layers, X } from "lucide-vue-next";
 
 const props = withDefaults(
   defineProps<{
@@ -62,7 +62,7 @@ watch(
     }"
   >
     <button
-      class="legend-header rounded-lg bg-violet-700 px-3 py-2 text-white hover:bg-violet-800"
+      class="legend-header rounded-lg bg-violet-700 px-3 py-2 pr-12 text-white hover:bg-violet-800"
       data-testid="map-legend-toggle"
       :aria-expanded="isExpanded"
       :aria-label="$t('mapLegend')"
@@ -73,6 +73,16 @@ watch(
         <span v-if="isExpanded">{{ $t("mapLegend") }}</span>
       </span>
       <ChevronDown class="toggle-arrow" :class="{ rotated: !isExpanded }" />
+    </button>
+    <button
+      v-if="isExpanded"
+      class="legend-close"
+      data-testid="map-legend-close"
+      type="button"
+      :aria-label="$t('close')"
+      @click.stop="isExpanded = false"
+    >
+      <X class="h-4 w-4" aria-hidden="true" />
     </button>
     <Transition name="slide">
       <div v-show="isExpanded" class="legend-content">
@@ -231,7 +241,6 @@ watch(
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  background: none;
   border: none;
   padding: 0;
   cursor: pointer;
@@ -250,12 +259,33 @@ watch(
   display: none;
 }
 
+.legend-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 9999px;
+  color: white;
+  background: rgb(109 40 217 / 0.8);
+  transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.legend-close:hover {
+  background: rgb(91 33 182 / 0.95);
+}
+
 .legend-header h2 {
   margin: 0;
 }
 
 .toggle-arrow {
-  transition: transform 0.3s ease;
+  transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
   color: white;
   flex-shrink: 0;
   margin-left: 10px;
@@ -275,20 +305,29 @@ watch(
 .slide-enter-active,
 .slide-leave-active {
   transition:
-    max-height 0.3s ease,
-    opacity 0.3s ease;
+    clip-path 180ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .slide-enter-from,
 .slide-leave-to {
-  max-height: 0;
+  clip-path: inset(0 0 100% 0);
   opacity: 0;
 }
 
 .slide-enter-to,
 .slide-leave-from {
-  max-height: 1000px;
+  clip-path: inset(0);
   opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .legend-close,
+  .toggle-arrow,
+  .slide-enter-active,
+  .slide-leave-active {
+    transition: none;
+  }
 }
 
 @media (max-width: 900px) {
