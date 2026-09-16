@@ -32,8 +32,7 @@ export const capitalizeFirstLetter = (value: string): string => {
 
 /**
  * Transforms a raw survey data key for display records.
- * Removes internal prefixes (`g__`, `p__`, leftover leading `_`) and
- * standardizes known key names (e.g. "today" → "dataCollectedOn").
+ * Removes internal prefixes (`g__`, `p__`, leftover leading `_`).
  * Underscores inside names are kept so configured columns like
  * `photo_filenames` still match; spacing is a render concern.
  *
@@ -53,11 +52,7 @@ export const transformSurveyDataKey = (
     .replace(/^g__/, "geo")
     .replace(/^p__/, "")
     .replace(/^_+/, "");
-  if (transformedKey.toLowerCase() === "today") {
-    transformedKey = "dataCollectedOn";
-  } else if (transformedKey.toLowerCase().includes("categoryid")) {
-    transformedKey = "category";
-  } else if (transformedKey.toLowerCase() === "id") {
+  if (transformedKey.toLowerCase() === "id") {
     transformedKey = "id";
   }
   return transformedKey;
@@ -65,8 +60,7 @@ export const transformSurveyDataKey = (
 
 /**
  * Transforms a raw survey data value into a human-readable display value.
- * Replaces underscores and semicolons, capitalizes the first letter,
- * and formats bracket-enclosed lists.
+ * Replaces underscores and semicolons, and formats bracket-enclosed lists.
  *
  * @param {string} key - The raw database column key (used for context-specific transforms).
  * @param {string | number | null} value - The raw value to transform.
@@ -85,15 +79,8 @@ export const transformSurveyDataValue = (
 
   let transformedValue = value;
   if (typeof transformedValue === "string") {
+    // snake_case → words; semicolon-delimited lists → comma-separated
     transformedValue = transformedValue.replace(/_/g, " ").replace(/;/g, ", ");
-    if (key.toLowerCase().includes("category")) {
-      transformedValue = transformedValue.replace(/-/g, " ");
-    }
-    // TODO: For now this is a quick fix to ensure original timestamps are
-    // returned in file downloads. We need to rethink how we do data transformations
-    // so that file downloads return the original records, not transformed ones.
-    transformedValue =
-      transformedValue.charAt(0).toUpperCase() + transformedValue.slice(1);
   }
   // Handle lists enclosed in square brackets
   if (
@@ -115,10 +102,8 @@ export const transformSurveyDataValue = (
  * This function processes an array of survey data entries, transforming both the keys
  * and values of each entry to enhance readability and consistency. The transformation
  * includes:
- * - Modifying key names by removing prefixes and standardizing certain key
- *   names (e.g., "today" becomes "dataCollectedOn").
- * - Adjusting value formats by replacing underscores and semicolons with spaces and commas,
- *   respectively, capitalizing the first letter, and formatting date-related values.
+ * - Modifying key names by removing prefixes (`g__`, `p__`, leftover leading `_`).
+ * - Adjusting value formats by replacing underscores and semicolons with spaces and commas.
  * - Handling lists enclosed in square brackets by removing brackets and quotes, and
  *   joining items with commas.
  *

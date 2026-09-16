@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { MapLegendItem } from "@/types";
-import { ChevronDown } from "lucide-vue-next";
+import { Layers, X } from "lucide-vue-next";
 
 const props = withDefaults(
   defineProps<{
@@ -15,7 +15,7 @@ const props = withDefaults(
 const emit = defineEmits(["toggle-layer-visibility"]);
 
 const localMapLegendContent = ref();
-const isExpanded = ref(true);
+const isExpanded = ref(false);
 
 onMounted(() => {
   // Ensure all items are visible initially
@@ -55,17 +55,42 @@ watch(
 <template>
   <div
     data-testid="map-legend"
-    class="map-legend feature p-4 rounded-lg shadow-lg"
+    class="map-legend feature rounded-lg shadow-lg"
+    :class="{ 'is-collapsed': !isExpanded }"
     :style="{
       '--mobile-drawer-height': `${props.mobileDrawerHeight}px`,
     }"
   >
-    <button class="legend-header" @click="toggleExpanded">
-      <h2 class="text-2xl font-semibold">{{ $t("mapLegend") }}</h2>
-      <ChevronDown class="toggle-arrow" :class="{ rotated: !isExpanded }" />
+    <button
+      v-if="!isExpanded"
+      class="legend-trigger"
+      data-testid="map-legend-toggle"
+      :aria-expanded="false"
+      :aria-label="$t('mapLegend')"
+      @click="toggleExpanded"
+    >
+      <Layers class="h-5 w-5" aria-hidden="true" />
     </button>
-    <Transition name="slide">
-      <div v-show="isExpanded" class="legend-content">
+    <span v-if="!isExpanded" class="legend-tooltip" role="tooltip">
+      {{ $t("mapLegend") }}
+    </span>
+    <template v-else>
+      <header class="legend-header">
+        <span class="flex items-center gap-2 text-lg font-semibold">
+          <Layers class="h-5 w-5 text-violet-700" aria-hidden="true" />
+          {{ $t("mapLegend") }}
+        </span>
+        <button
+          class="legend-close"
+          data-testid="map-legend-close"
+          type="button"
+          :aria-label="$t('close')"
+          @click="isExpanded = false"
+        >
+          <X class="h-4 w-4" aria-hidden="true" />
+        </button>
+      </header>
+      <div class="legend-content">
         <div
           v-for="item in localMapLegendContent"
           :key="item.id"
@@ -114,7 +139,7 @@ watch(
           </label>
         </div>
       </div>
-    </Transition>
+    </template>
   </div>
 </template>
 
@@ -126,12 +151,22 @@ watch(
   width: min(315px, calc(100vw - 20px));
   max-height: min(38vh, 260px);
   background-color: #fff;
+  border: 1px solid #ddd6fe;
   padding: 16px;
   line-height: 18px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  z-index: 10;
+  z-index: 1020;
+}
+
+.map-legend.is-collapsed {
+  height: 44px;
+  padding: 0;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  pointer-events: none;
 }
 
 .color-box {
@@ -215,55 +250,108 @@ watch(
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  background: none;
   border: none;
   padding: 0;
-  cursor: pointer;
   margin-bottom: 10px;
 }
 
-.legend-header h2 {
-  margin: 0;
+.legend-trigger {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0.5rem;
+  color: white;
+  background: rgb(109 40 217);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+  pointer-events: auto;
+  transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.toggle-arrow {
-  transition: transform 0.3s ease;
-  color: #333;
-  flex-shrink: 0;
-  margin-left: 10px;
+.legend-trigger:hover {
+  background: rgb(91 33 182);
 }
 
-.toggle-arrow.rotated {
-  transform: rotate(180deg);
+.legend-tooltip {
+  position: absolute;
+  top: 7px;
+  right: 54px;
+  padding: 6px 9px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.85);
+  color: white;
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(4px);
+  transition:
+    opacity 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.legend-trigger:focus-visible + .legend-tooltip {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .legend-trigger:hover + .legend-tooltip {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.legend-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 9999px;
+  color: rgb(55 65 81);
+  background: rgb(243 244 246);
+  transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.legend-close:hover {
+  background: rgb(229 231 235);
 }
 
 .legend-content {
+  animation: legend-content-enter 180ms cubic-bezier(0.23, 1, 0.32, 1);
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
   scrollbar-gutter: stable;
 }
 
-.slide-enter-active,
-.slide-leave-active {
-  transition:
-    max-height 0.3s ease,
-    opacity 0.3s ease;
+@keyframes legend-content-enter {
+  from {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0;
+  }
 }
 
-.slide-enter-from,
-.slide-leave-to {
-  max-height: 0;
-  opacity: 0;
+@media (prefers-reduced-motion: reduce) {
+  .legend-trigger,
+  .legend-tooltip,
+  .legend-close,
+  .legend-content {
+    animation: none;
+    transition: none;
+  }
 }
 
-.slide-enter-to,
-.slide-leave-from {
-  max-height: 1000px;
-  opacity: 1;
-}
-
-@media (max-width: 900px) {
+@media (max-width: 639px) {
   .map-legend {
     right: 10px;
     width: min(265px, calc(100vw - 20px));

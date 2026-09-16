@@ -1,13 +1,30 @@
 import type { ToastOptions } from "@/types";
+import { useRouter } from "#imports";
+import { readonly, ref } from "vue";
+
 export interface Toast extends ToastOptions {
   id: string;
 }
 
-// Global toast state - shared across all components
+// Global toast state - shared across all components (layouts keep ToastContainer mounted)
 const globalToasts = ref<Toast[]>([]);
+let isRouteHookBound = false;
+
+// Vue watch() stops when the caller unmounts (layout swap). Router hooks do not.
+const bindClearOnRouteChange = () => {
+  if (import.meta.server || isRouteHookBound) return;
+  isRouteHookBound = true;
+  const router = useRouter();
+  router.beforeEach((to, from) => {
+    if (to.path !== from.path) {
+      globalToasts.value = [];
+    }
+  });
+};
 
 export const useToast = () => {
   const toasts = globalToasts;
+  bindClearOnRouteChange();
 
   const addToast = (options: ToastOptions) => {
     const id = Math.random().toString(36).substr(2, 9);

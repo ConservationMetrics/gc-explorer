@@ -101,6 +101,10 @@ test("alerts dashboard - layer visibility toggles", async ({
   // Then wait for it to be visible
   await expect(mapLegend).toBeVisible();
 
+  // Open the collapsed legend before interacting with its layer controls.
+  await page.getByTestId("map-legend-toggle").click();
+  await expect(page.getByTestId("map-legend-close")).toBeVisible();
+
   // 10. Get all legend checkboxes
   const legendCheckboxes = page.getByTestId("map-legend-checkbox");
   const checkboxCount = await legendCheckboxes.count();
@@ -205,6 +209,8 @@ test("alerts dashboard - legend can control all alert layer types", async ({
 
   // Wait for legend to appear
   await page.waitForSelector('[data-testid="map-legend"]', { timeout: 10000 });
+  await page.getByTestId("map-legend-toggle").click();
+  await expect(page.getByTestId("map-legend-close")).toBeVisible();
 
   // Test that we can control all alert layer types by simulating the toggle function behavior
   const alertTests = [

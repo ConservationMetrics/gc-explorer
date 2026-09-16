@@ -29,6 +29,7 @@ const emit = defineEmits<{
 const viewportHeight = ref(0);
 const drawerHeight = ref(0);
 const isDragging = ref(false);
+const isReadyForTransition = ref(false);
 
 const drawerStyle = computed(() => ({
   "--drawer-height": `${drawerHeight.value}px`,
@@ -168,6 +169,9 @@ watch(
 onMounted(() => {
   updateViewportHeight();
   window.addEventListener("resize", updateViewportHeight);
+  requestAnimationFrame(() => {
+    isReadyForTransition.value = true;
+  });
 });
 
 onBeforeUnmount(() => {
@@ -179,13 +183,13 @@ onBeforeUnmount(() => {
 <template>
   <aside
     :class="[
-      'mobile-resizable-drawer fixed z-[1050] flex max-w-full flex-col overflow-hidden bg-white shadow-lg transition-transform duration-300 ease-in-out',
+      'mobile-resizable-drawer fixed z-[1050] flex max-w-full flex-col overflow-hidden bg-white shadow-lg transition-transform',
       'bottom-0 left-0 w-full rounded-t-2xl',
       'sm:top-0 sm:bottom-auto sm:left-0 sm:h-full sm:w-[400px] sm:rounded-none',
       open
         ? 'translate-y-0 sm:translate-x-0'
         : 'translate-y-full sm:-translate-x-full',
-      { 'transition-none': isDragging },
+      { 'transition-none': isDragging || !isReadyForTransition },
     ]"
     :style="drawerStyle"
   >
@@ -215,11 +219,18 @@ onBeforeUnmount(() => {
 <style scoped>
 .mobile-resizable-drawer {
   height: var(--drawer-height, 50vh);
+  transition: transform 250ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @media (min-width: 640px) {
   .mobile-resizable-drawer {
     height: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-resizable-drawer {
+    transition: none;
   }
 }
 </style>
