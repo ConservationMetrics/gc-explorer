@@ -4,7 +4,7 @@ import "vue-datepicker-next/index.css";
 
 import type { Basemap, BasemapConfig } from "@/types";
 import { formatPlanetMonth, getPlanetMaxMonth } from "@/utils/dateUtils";
-import { Layers } from "lucide-vue-next";
+import { Map as MapIcon } from "lucide-vue-next";
 
 const props = defineProps({
   hasRulerControl: Boolean,
@@ -100,14 +100,20 @@ const emitBasemapChange = () => {
 
 <template>
   <div>
-    <div
+    <button
+      type="button"
       class="basemap-toggle rounded shadow"
       :class="{ active: showBasemapWindow }"
       :style="{ top: topPosition }"
+      :aria-label="$t('selectBasemap')"
+      :aria-expanded="showBasemapWindow"
       @click="toggleBasemapWindow"
     >
-      <Layers class="w-full h-full" />
-    </div>
+      <MapIcon class="h-5 w-5" aria-hidden="true" />
+    </button>
+    <span class="basemap-tooltip" :style="{ top: topPosition }" role="tooltip">
+      {{ $t("selectBasemap") }}
+    </span>
     <div
       v-if="showBasemapWindow"
       class="basemap-window rounded shadow"
@@ -164,8 +170,13 @@ const emitBasemapChange = () => {
 .basemap-toggle {
   position: absolute;
   right: 10px;
-  padding: 3px;
-  width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #ccc;
   background-color: #fff;
   z-index: 20;
 }
@@ -177,6 +188,37 @@ const emitBasemapChange = () => {
 
 .basemap-toggle.active {
   background-color: #fff44f;
+}
+
+.basemap-tooltip {
+  position: absolute;
+  right: 56px;
+  z-index: 1002;
+  max-width: 180px;
+  padding: 6px 9px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.85);
+  color: white;
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.basemap-toggle:focus-visible + .basemap-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .basemap-toggle:hover + .basemap-tooltip {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .basemap-window {
@@ -200,5 +242,11 @@ const emitBasemapChange = () => {
 
 label {
   margin-bottom: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .basemap-tooltip {
+    transition: none;
+  }
 }
 </style>

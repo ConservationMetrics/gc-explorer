@@ -152,6 +152,7 @@ const globalConfig = {
   },
   stubs: {
     DataFilter: true,
+    MapFilterControls: false,
     ViewSidebar: true,
     MapLegend: true,
     BasemapSelector: true,
@@ -366,8 +367,10 @@ describe("MapView component", () => {
     mapboxMock.fireLoad();
     await flushPromises();
 
-    const dataFilter = wrapper.findComponent({ name: "DataFilter" });
-    await dataFilter.vm.$emit("filter", ["null"]);
+    const filterControls = wrapper.findComponent({
+      name: "MapFilterControls",
+    });
+    await filterControls.vm.$emit("filter", ["null"]);
     await flushPromises();
 
     const vm = wrapper.vm as unknown as {
@@ -466,6 +469,8 @@ describe("MapView component", () => {
       mapboxMock.fireLoad();
       await flushPromises();
 
+      await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
+      await flushPromises();
       const slider = wrapper.findComponent(VueSlider);
       slider.vm.$emit("drag-start");
       slider.vm.$emit("update:modelValue", ["2024-02", "2024-02"]);
@@ -829,6 +834,7 @@ describe("MapView component", () => {
     mapboxMock.fireLoad();
     await flushPromises();
 
+    await wrapper.get('[data-testid="toggle-data-filter"]').trigger("click");
     const dataFilter = wrapper.findComponent({ name: "DataFilter" });
     expect(dataFilter.exists()).toBe(true);
     expect(dataFilter.props("colorColumn")).toBe("color");

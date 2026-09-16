@@ -134,7 +134,7 @@ const resetDateRange = () => {
 <template>
   <div
     v-if="dateInfo.options.length > 1"
-    class="mb-2 min-w-[325px] max-w-[500px] rounded-xl bg-gray-100 p-2.5 shadow-md"
+    class="timestamp-filter mb-2 rounded-xl bg-gray-100 p-2.5 shadow-md"
     data-testid="timestamp-filter"
   >
     <div
@@ -173,3 +173,10 @@ const resetDateRange = () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.timestamp-filter {
+  min-width: min(325px, calc(100vw - 24px));
+  max-width: min(500px, calc(100vw - 24px));
+}
+</style>
