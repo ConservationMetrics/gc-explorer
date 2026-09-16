@@ -31,12 +31,14 @@ export const capitalizeFirstLetter = (value: string): string => {
 };
 
 /**
- * Transforms a raw survey data key into a human-readable display label.
- * Removes internal prefixes (g__, p__), and replaces underscores with spaces
+ * Transforms a raw survey data key for display records.
+ * Removes internal prefixes (`g__`, `p__`, leftover leading `_`).
+ * Underscores inside names are kept so configured columns like
+ * `photo_filenames` still match; spacing is a render concern.
  *
  * @param {string} key - The raw database column key.
  * @param {string} [iconColumn] - Optional icon column name to preserve unchanged.
- * @returns {string} The transformed display-ready key.
+ * @returns {string} The transformed key.
  */
 export const transformSurveyDataKey = (
   key: string,
@@ -46,11 +48,14 @@ export const transformSurveyDataKey = (
     return key;
   }
 
-  let transformedKey = key.replace(/^g__/, "geo").replace(/_/g, " ");
+  let transformedKey = key
+    .replace(/^g__/, "geo")
+    .replace(/^p__/, "")
+    .replace(/^_+/, "");
   if (transformedKey.toLowerCase() === "id") {
     transformedKey = "id";
   }
-  return transformedKey.trimStart();
+  return transformedKey;
 };
 
 /**
@@ -97,10 +102,8 @@ export const transformSurveyDataValue = (
  * This function processes an array of survey data entries, transforming both the keys
  * and values of each entry to enhance readability and consistency. The transformation
  * includes:
- * - Modifying key names by removing prefixes, replacing underscores with spaces, and
- *   standardizing certain key names (e.g., "today" becomes "dataCollectedOn").
- * - Adjusting value formats by replacing underscores and semicolons with spaces and commas,
- *   respectively, capitalizing the first letter, and formatting date-related values.
+ * - Modifying key names by removing prefixes (`g__`, `p__`, leftover leading `_`).
+ * - Adjusting value formats by replacing underscores and semicolons with spaces and commas.
  * - Handling lists enclosed in square brackets by removing brackets and quotes, and
  *   joining items with commas.
  *

@@ -70,10 +70,10 @@ describe("FeatureMetadata", () => {
 
     expect(labels).toContain("Abundance");
     expect(labels).toContain("Plant Species");
+    expect(labels).toContain("Photo");
+    expect(labels).toContain("Audio");
     expect(values.some((value) => value.includes("High"))).toBe(true);
     expect(labels).not.toContain("Uuid");
-    expect(labels).not.toContain("Photo");
-    expect(labels).not.toContain("Audio");
     expect(labels).not.toContain("Data source");
     expect(labels).not.toContain("Attachment meta");
   });

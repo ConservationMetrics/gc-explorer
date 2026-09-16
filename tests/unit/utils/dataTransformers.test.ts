@@ -18,8 +18,19 @@ describe("transformSurveyDataKey", () => {
     expect(transformSurveyDataKey("g__type")).toBe("geotype");
   });
 
-  it("should replace underscores with spaces", () => {
-    expect(transformSurveyDataKey("building_type")).toBe("building type");
+  it("should remove p__ prefix", () => {
+    expect(transformSurveyDataKey("p__notes")).toBe("notes");
+    expect(transformSurveyDataKey("p__activity")).toBe("activity");
+  });
+
+  it("keeps underscores in keys so configured column names still match", () => {
+    expect(transformSurveyDataKey("building_type")).toBe("building_type");
+    expect(transformSurveyDataKey("photo_filenames")).toBe("photo_filenames");
+  });
+
+  it("strips leftover leading underscores after prefix removal", () => {
+    expect(transformSurveyDataKey("_id")).toBe("id");
+    expect(transformSurveyDataKey("p___photos")).toBe("photos");
   });
 
   it("should preserve icon column key unchanged", () => {
@@ -123,6 +134,16 @@ describe("transformSurveyEntry", () => {
     };
     const result = transformSurveyEntry(record, "icon_col");
     expect(result.icon_col).toBe("icon.png");
+  });
+
+  it("preserves snake_case keys such as photo_filenames", () => {
+    const result = transformSurveyEntry({
+      photo_filenames: "medium.jpg",
+      common_name: "waxcaps",
+    });
+    expect(result).toHaveProperty("photo_filenames");
+    expect(result).not.toHaveProperty("photo filenames");
+    expect(result).toHaveProperty("common_name");
   });
 });
 

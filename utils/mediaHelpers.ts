@@ -89,18 +89,6 @@ export const isValidFilebrowserInput = (input: string): boolean => {
   return /^[a-zA-Z0-9_-]+$/.test(input.trim());
 };
 
-/**
- * Extracts base URL from input if it's a full URL, otherwise uses default.
- * @example
- * // "https://files.demo.guardianconnector.net/share/abc123", "https://files.localhost/api/public/dl/"
- * // → "https://files.demo.guardianconnector.net/api/public/dl/"
- * @example
- * // "https://files.demo.guardianconnector.net/api/public/dl/abc123", "https://files.localhost/api/public/dl/"
- * // → "https://files.demo.guardianconnector.net/api/public/dl/"
- * @example
- * // "abc123" (raw hash), "https://files.localhost/api/public/dl/"
- * // → "https://files.localhost/api/public/dl/"
- */
 const MIME_BY_EXTENSION: Record<string, string> = {
   png: "image/png",
   jpg: "image/jpeg",
@@ -134,6 +122,18 @@ export const inferContentType = (
   return fallback ?? "application/octet-stream";
 };
 
+/**
+ * Extracts base URL from input if it's a full URL, otherwise uses default.
+ * @example
+ * // "https://files.demo.guardianconnector.net/share/abc123", "https://files.localhost/api/public/dl/"
+ * // → "https://files.demo.guardianconnector.net/api/public/dl/"
+ * @example
+ * // "https://files.demo.guardianconnector.net/api/public/dl/abc123", "https://files.localhost/api/public/dl/"
+ * // → "https://files.demo.guardianconnector.net/api/public/dl/"
+ * @example
+ * // "abc123" (raw hash), "https://files.localhost/api/public/dl/"
+ * // → "https://files.localhost/api/public/dl/"
+ */
 export const getBaseUrlFromInput = (
   input: string,
   defaultBaseUrl: string,
@@ -155,64 +155,73 @@ export const getBaseUrlFromInput = (
   return defaultBaseUrl;
 };
 
+const CLEAN_PHOTO_TOKEN_EDGES = /^[\s"'\\[]+|[\s"'\\[\]]+$/g;
+
+/**
+ * Parses photo list strings (comma-separated and/or bracket-wrapped).
+ */
+export const parsePhotoListString = (raw: unknown): string[] => {
+  if (raw == null || raw === "") return [];
+  return String(raw)
+    .split(",")
+    .map((file) =>
+      file.trim().replace(CLEAN_PHOTO_TOKEN_EDGES, "").replace(/ /g, "_"),
+    )
+    .filter(Boolean);
+};
+
+/**
+ * Resolves `photos` (display-transformed) or `_photos` into file paths.
+ */
+export const parsePhotosFromRecord = (
+  record: Record<string, unknown>,
+): string[] => parsePhotoListString(record.photos ?? record._photos);
+
+/** Normalizes an extension to lowercase and removes the leading dot. */
 const normalizeExtension = (ext: string): string =>
   ext.toLowerCase().replace(/^\./, "");
-
-const fileNameHasExtension = (fileName: string, ext: string): boolean => {
-  const suffix = normalizeExtension(ext);
-  return fileName.toLowerCase().endsWith(`.${suffix}`);
-};
 
 const extensionListIncludes = (list: string[] = [], ext: string): boolean =>
   list.some((candidate) => normalizeExtension(candidate) === ext);
 
-/** Returns whether a file path uses one of the supplied extensions. */
+const pathHasAnyExtension = (
+  filePath: string,
+  extensions: string[] = [],
+): boolean => {
+  const extension = filePath.split(".").pop()?.toLowerCase();
+  return Boolean(extension && extensionListIncludes(extensions, extension));
+};
+
 export const isImageFilePath = (
   filePath: string,
   imageExtensions: string[],
-): boolean => {
-  const extension = filePath.split(".").pop()?.toLowerCase();
-  return extension ? extensionListIncludes(imageExtensions, extension) : false;
-};
+): boolean => pathHasAnyExtension(filePath, imageExtensions);
 
-/** Extracts file paths with valid extensions from a feature object. */
+/** True when the value is a filename, not a URL or directory-prefixed path. */
+const isFilenameOnly = (filePath: string): boolean => !filePath.includes("/");
+
+/** File paths on a feature that match any configured media extension. */
 export const getFilePathsWithExtension = (
   feature: { [key: string]: unknown },
-  allExtensions: { [category: string]: string[] },
+  allExtensions: AllowedFileExtensions,
   mediaColumn?: string,
 ): string[] => {
   if (!feature) return [];
 
-  const filePaths: string[] = [];
-  const keysToProcess = mediaColumn ? [mediaColumn] : Object.keys(feature);
+  const keys = mediaColumn ? [mediaColumn] : Object.keys(feature);
 
-  keysToProcess.forEach((key) => {
-    if (typeof feature[key] !== "string") return;
-    if (feature[key].includes("attachment")) return;
+  return keys.flatMap((key) => {
+    const value = feature[key];
+    if (typeof value !== "string" || value.includes("attachment")) return [];
 
-    const files = feature[key].split(",");
-    // handle ["\"5bf52de27e1a7b36f2d2cec254b766c8.jpg\""]
-
-    files.forEach((file: string) => {
-      const cleanedFile = file
-        .trim()
-        .replace(/^[\s"'\\[]+|[\s"'\\[\]]+$/g, "") // Remove brackets, quotes, backslashes, and whitespace from edges
-        .replace(/ /g, "_");
-
-      const hasValidExtension = Object.values(allExtensions).some(
-        (extensions) =>
-          extensions.some((ext: string) =>
-            fileNameHasExtension(cleanedFile, ext),
-          ),
-      );
-
-      if (hasValidExtension) {
-        filePaths.push(cleanedFile);
-      }
-    });
+    return parsePhotoListString(value).filter(
+      (filePath) =>
+        isFilenameOnly(filePath) &&
+        Object.values(allExtensions).some((extensions) =>
+          pathHasAnyExtension(filePath, extensions),
+        ),
+    );
   });
-
-  return filePaths;
 };
 
 export const getMediaTypesForEntry = (
@@ -224,11 +233,9 @@ export const getMediaTypesForEntry = (
   const types = new Set<GalleryMediaType>();
 
   for (const path of paths) {
-    const ext = path.split(".").pop()?.toLowerCase() ?? "";
-    if (!ext) continue;
-    if (extensionListIncludes(allExtensions.audio, ext)) types.add("audio");
-    if (extensionListIncludes(allExtensions.image, ext)) types.add("image");
-    if (extensionListIncludes(allExtensions.video, ext)) types.add("video");
+    if (pathHasAnyExtension(path, allExtensions.audio)) types.add("audio");
+    if (pathHasAnyExtension(path, allExtensions.image)) types.add("image");
+    if (pathHasAnyExtension(path, allExtensions.video)) types.add("video");
   }
 
   return Array.from(types);
