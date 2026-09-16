@@ -156,8 +156,12 @@ watch(
 }
 
 .map-legend.is-collapsed {
-  width: 44px;
+  height: 44px;
   padding: 0;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  pointer-events: none;
 }
 
 .color-box {
@@ -248,11 +252,15 @@ watch(
 }
 
 .map-legend.is-collapsed .legend-header {
+  position: absolute;
+  top: 0;
+  right: 0;
   justify-content: center;
   width: 44px;
   height: 44px;
   margin-bottom: 0;
   padding: 0;
+  pointer-events: auto;
 }
 
 .map-legend.is-collapsed .toggle-arrow {
