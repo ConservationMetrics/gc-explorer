@@ -46,7 +46,7 @@ const isJsonBlobValue = (value: unknown): boolean => {
   }
 };
 
-/** Sorted metadata fields. Hide empty values, ids, media keys, attachments, and JSON blobs. */
+/** Sorted metadata fields. Hide empty values, ids, and JSON blobs. */
 const visibleFields = computed(() =>
   Object.keys(props.feature)
     .sort()
@@ -56,11 +56,8 @@ const visibleFields = computed(() =>
 
       const lowerKey = key.toLowerCase();
       if (lowerKey === "uuid") return false;
-      if (lowerKey.includes("photo")) return false;
-      if (lowerKey === "audio") return false;
       if (lowerKey === "datasource" || lowerKey.includes("data source"))
         return false;
-      if (lowerKey.includes("attachment")) return false;
       if (isJsonBlobValue(value)) return false;
 
       return true;
