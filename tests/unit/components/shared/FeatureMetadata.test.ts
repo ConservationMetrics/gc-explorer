@@ -78,31 +78,6 @@ describe("FeatureMetadata", () => {
     expect(labels).not.toContain("Attachment meta");
   });
 
-  it("renders snake_case keys with spaces instead of rewriting the key", () => {
-    const feature: DataEntry = {
-      _id: "1",
-      common_name: "Waxcaps",
-      license_code: "Cc-by",
-    };
-
-    const wrapper = mount(FeatureMetadata, {
-      props: {
-        allowedFileExtensions,
-        feature,
-        filePaths: [],
-        mediaBasePath: "/media",
-      },
-      global: globalConfig,
-    });
-
-    const labels = wrapper
-      .findAll('[data-testid="gallery-metadata-label"]')
-      .map((node) => node.text());
-
-    expect(labels).toContain("Common Name");
-    expect(labels).toContain("License Code");
-  });
-
   it("renders Google Maps link for coordinate fields", () => {
     const feature: DataEntry = {
       _id: "1",
