@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { inferContentType, isImageFilePath } from "@/utils/mediaHelpers";
+import { allowedFileExtensionsFixture as extensions } from "@/tests/unit/fixtures/allowedFileExtensions";
+import {
+  getFilePathsWithExtension,
+  inferContentType,
+  isImageFilePath,
+} from "@/utils/mediaHelpers";
 
 describe("inferContentType", () => {
   it.each([
@@ -51,5 +56,27 @@ describe("isImageFilePath", () => {
 
   it("supports configured extensions with a leading dot", () => {
     expect(isImageFilePath("photo.webp", [".webp"])).toBe(true);
+  });
+});
+
+describe("getFilePathsWithExtension", () => {
+  it("cleans quoted list strings and keeps matching media paths", () => {
+    expect(
+      getFilePathsWithExtension(
+        { photo: '["5bf52de27e1a7b36f2d2cec254b766c8.jpg"], notes.txt' },
+        extensions,
+        "photo",
+      ),
+    ).toEqual(["5bf52de27e1a7b36f2d2cec254b766c8.jpg"]);
+  });
+
+  it("skips attachment metadata strings", () => {
+    expect(
+      getFilePathsWithExtension(
+        { photo: "download/attachment/1.jpg" },
+        extensions,
+        "photo",
+      ),
+    ).toEqual([]);
   });
 });
