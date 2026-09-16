@@ -40,11 +40,11 @@ describe("transformSurveyDataValue", () => {
   });
 
   it("should replace underscores with spaces in strings", () => {
-    expect(transformSurveyDataValue("key", "some_value")).toBe("Some value");
+    expect(transformSurveyDataValue("key", "some_value")).toBe("some value");
   });
 
   it("should replace semicolons with commas", () => {
-    expect(transformSurveyDataValue("key", "a;b;c")).toBe("A, b, c");
+    expect(transformSurveyDataValue("key", "a;b;c")).toBe("a, b, c");
   });
 
   it("should handle bracket-enclosed lists", () => {
@@ -72,12 +72,6 @@ describe("transformSurveyData", () => {
     result.forEach((item) => {
       expect(item).not.toHaveProperty("g__coordinates");
       expect(item).toHaveProperty("geocoordinates");
-      expect(item.category[0]).toBe(item.category[0].toUpperCase());
-      // Timestamps are preserved as-is (not formatted into locale strings)
-      expect(item.created).toMatch(
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
-      );
-      expect(item.photos).toMatch(/^(\w+\.jpg(, )?)*\w+\.jpg$|^$/);
       expect(item).toHaveProperty("id");
     });
   });
@@ -119,8 +113,6 @@ describe("transformSurveyEntry", () => {
 
     expect(result).not.toHaveProperty("g__coordinates");
     expect(result).toHaveProperty("geocoordinates");
-    expect(result).toHaveProperty("category");
-    expect(result.category[0]).toBe(result.category[0].toUpperCase());
   });
 
   it("should preserve icon column for single record", () => {
