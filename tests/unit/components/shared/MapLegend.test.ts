@@ -38,12 +38,24 @@ describe("MapLegend", () => {
     );
 
     await toggle.trigger("click");
-    expect(toggle.attributes("aria-expanded")).toBe("true");
+    expect(wrapper.find('[data-testid="map-legend-toggle"]').exists()).toBe(
+      false,
+    );
     expect(wrapper.find('[data-testid="map-legend-close"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.find('[data-testid="map-legend-checkbox"]').exists()).toBe(
       true,
     );
 
     await wrapper.get('[data-testid="map-legend-close"]').trigger("click");
-    expect(toggle.attributes("aria-expanded")).toBe("false");
+    expect(
+      wrapper
+        .get('[data-testid="map-legend-toggle"]')
+        .attributes("aria-expanded"),
+    ).toBe("false");
+    expect(wrapper.find('[data-testid="map-legend-checkbox"]').exists()).toBe(
+      false,
+    );
   });
 });

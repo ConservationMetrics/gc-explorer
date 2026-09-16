@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { MapLegendItem } from "@/types";
-import { ChevronDown, Layers, X } from "lucide-vue-next";
+import { Layers, X } from "lucide-vue-next";
 
 const props = withDefaults(
   defineProps<{
@@ -62,30 +62,32 @@ watch(
     }"
   >
     <button
-      class="legend-header rounded-lg bg-violet-700 px-3 py-2 pr-12 text-white hover:bg-violet-800"
+      v-if="!isExpanded"
+      class="legend-trigger"
       data-testid="map-legend-toggle"
-      :aria-expanded="isExpanded"
+      :aria-expanded="false"
       :aria-label="$t('mapLegend')"
       @click="toggleExpanded"
     >
-      <span class="flex items-center gap-2 text-lg font-semibold">
-        <Layers class="h-5 w-5" aria-hidden="true" />
-        <span v-if="isExpanded">{{ $t("mapLegend") }}</span>
-      </span>
-      <ChevronDown class="toggle-arrow" :class="{ rotated: !isExpanded }" />
+      <Layers class="h-5 w-5" aria-hidden="true" />
     </button>
-    <button
-      v-if="isExpanded"
-      class="legend-close"
-      data-testid="map-legend-close"
-      type="button"
-      :aria-label="$t('close')"
-      @click.stop="isExpanded = false"
-    >
-      <X class="h-4 w-4" aria-hidden="true" />
-    </button>
-    <Transition name="slide">
-      <div v-show="isExpanded" class="legend-content">
+    <template v-else>
+      <header class="legend-header">
+        <span class="flex items-center gap-2 text-lg font-semibold">
+          <Layers class="h-5 w-5 text-violet-700" aria-hidden="true" />
+          {{ $t("mapLegend") }}
+        </span>
+        <button
+          class="legend-close"
+          data-testid="map-legend-close"
+          type="button"
+          :aria-label="$t('close')"
+          @click="isExpanded = false"
+        >
+          <X class="h-4 w-4" aria-hidden="true" />
+        </button>
+      </header>
+      <div class="legend-content">
         <div
           v-for="item in localMapLegendContent"
           :key="item.id"
@@ -134,7 +136,7 @@ watch(
           </label>
         </div>
       </div>
-    </Transition>
+    </template>
   </div>
 </template>
 
@@ -247,31 +249,33 @@ watch(
   width: 100%;
   border: none;
   padding: 0;
-  cursor: pointer;
   margin-bottom: 10px;
 }
 
-.map-legend.is-collapsed .legend-header {
+.legend-trigger {
   position: absolute;
   top: 0;
   right: 0;
+  display: flex;
+  align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
-  margin-bottom: 0;
   padding: 0;
+  border: 0;
+  border-radius: 0.5rem;
+  color: white;
+  background: rgb(109 40 217);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
   pointer-events: auto;
+  transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.map-legend.is-collapsed .toggle-arrow {
-  display: none;
+.legend-trigger:hover {
+  background: rgb(91 33 182);
 }
 
 .legend-close {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -279,61 +283,35 @@ watch(
   height: 28px;
   border: 0;
   border-radius: 9999px;
-  color: white;
-  background: rgb(109 40 217 / 0.8);
+  color: rgb(55 65 81);
+  background: rgb(243 244 246);
   transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .legend-close:hover {
-  background: rgb(91 33 182 / 0.95);
-}
-
-.legend-header h2 {
-  margin: 0;
-}
-
-.toggle-arrow {
-  transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
-  color: white;
-  flex-shrink: 0;
-  margin-left: 10px;
-}
-
-.toggle-arrow.rotated {
-  transform: rotate(180deg);
+  background: rgb(229 231 235);
 }
 
 .legend-content {
+  animation: legend-content-enter 180ms cubic-bezier(0.23, 1, 0.32, 1);
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
   scrollbar-gutter: stable;
 }
 
-.slide-enter-active,
-.slide-leave-active {
-  transition:
-    clip-path 180ms cubic-bezier(0.23, 1, 0.32, 1),
-    opacity 180ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.slide-enter-from,
-.slide-leave-to {
-  clip-path: inset(0 0 100% 0);
-  opacity: 0;
-}
-
-.slide-enter-to,
-.slide-leave-from {
-  clip-path: inset(0);
-  opacity: 1;
+@keyframes legend-content-enter {
+  from {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .legend-trigger,
   .legend-close,
-  .toggle-arrow,
-  .slide-enter-active,
-  .slide-leave-active {
+  .legend-content {
+    animation: none;
     transition: none;
   }
 }
