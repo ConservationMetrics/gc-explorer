@@ -1,5 +1,11 @@
 <script setup lang="ts">
-import { FileAudio, FileDown, FileImage, FileVideo } from "lucide-vue-next";
+import {
+  ExternalLink,
+  FileAudio,
+  FileDown,
+  FileImage,
+  FileVideo,
+} from "lucide-vue-next";
 
 import MediaFile from "@/components/shared/MediaFile.vue";
 import MediaImageComparisonModal from "@/components/shared/MediaImageComparisonModal.vue";
@@ -71,6 +77,24 @@ const visibleFields = computed(() =>
 
 const isCoordinateField = (key: string): boolean =>
   key === "geocoordinates" || key === "geographicCentroid";
+
+/**
+ * Returns whether a metadata value is a complete http(s) URL.
+ *
+ * @param {string} value - The metadata value to inspect.
+ * @returns {boolean} Whether the value should render as an outbound link.
+ */
+const isHttpUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value.trim());
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      Boolean(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+};
 
 /** Index of the last visible coordinate field, for minimap placement. */
 const lastCoordinateFieldIndex = computed(() => {
@@ -236,7 +260,21 @@ const closeComparisonModal = () => {
           class="break-words text-sm text-gray-900"
           data-testid="gallery-metadata-value"
         >
-          {{ displayFieldValue(field) }}
+          <a
+            v-if="isHttpUrl(field.value)"
+            :href="field.value.trim()"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline break-all text-violet-600 underline underline-offset-4 hover:text-violet-800"
+            data-testid="gallery-metadata-url"
+          >
+            {{ displayFieldValue(field) }}
+            <ExternalLink
+              class="mb-0.5 inline h-3.5 w-3.5 shrink-0"
+              aria-hidden="true"
+            />
+          </a>
+          <template v-else>{{ displayFieldValue(field) }}</template>
           <button
             v-if="isFieldExpandable(field.value)"
             class="ml-1 text-sm font-medium text-violet-700 underline underline-offset-2 hover:text-violet-900"
