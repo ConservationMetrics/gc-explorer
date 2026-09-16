@@ -8,6 +8,8 @@ import { formatDisplayName } from "@/utils";
 
 import type { AllowedFileExtensions, DataEntry } from "@/types";
 
+const MAX_FIELD_VALUE_LENGTH = 240;
+
 const props = withDefaults(
   defineProps<{
     allowedFileExtensions: AllowedFileExtensions;
@@ -26,6 +28,8 @@ const props = withDefaults(
     showMiniMap: true,
   },
 );
+
+const expandedFields = ref<Set<string>>(new Set());
 
 /**
  * Detects values that are structured JSON blobs (e.g. raw attachment
@@ -81,6 +85,52 @@ const lastCoordinateFieldIndex = computed(() => {
   });
   return lastIndex;
 });
+
+/**
+ * Returns whether a metadata value exceeds the compact display limit.
+ *
+ * @param {string} value - The metadata value to inspect.
+ * @returns {boolean} Whether the value can be expanded.
+ */
+const isFieldExpandable = (value: string): boolean =>
+  value.length > MAX_FIELD_VALUE_LENGTH;
+
+/**
+ * Returns whether a metadata field is currently expanded.
+ *
+ * @param {string} key - The metadata field key.
+ * @returns {boolean} Whether the field is expanded.
+ */
+const isFieldExpanded = (key: string): boolean => expandedFields.value.has(key);
+
+/**
+ * Returns a compact or full metadata value.
+ *
+ * @param {{ key: string; value: string }} field - The metadata field.
+ * @returns {string} The value to display.
+ */
+const displayFieldValue = (field: { key: string; value: string }): string => {
+  if (!isFieldExpandable(field.value) || isFieldExpanded(field.key)) {
+    return field.value;
+  }
+  return `${field.value.slice(0, MAX_FIELD_VALUE_LENGTH).trimEnd()}…`;
+};
+
+/**
+ * Toggles the expanded state for a metadata field.
+ *
+ * @param {string} key - The metadata field key.
+ * @returns {void}
+ */
+const toggleFieldExpanded = (key: string) => {
+  const nextExpandedFields = new Set(expandedFields.value);
+  if (nextExpandedFields.has(key)) {
+    nextExpandedFields.delete(key);
+  } else {
+    nextExpandedFields.add(key);
+  }
+  expandedFields.value = nextExpandedFields;
+};
 
 const fileType = (filePath: string): "image" | "audio" | "video" | null => {
   const extension = (filePath.split(".").pop() || "").toLowerCase();
@@ -193,7 +243,15 @@ const closeComparisonModal = () => {
           class="break-words text-sm text-gray-900"
           data-testid="gallery-metadata-value"
         >
-          {{ field.value }}
+          {{ displayFieldValue(field) }}
+          <button
+            v-if="isFieldExpandable(field.value)"
+            class="ml-1 text-sm font-medium text-violet-700 underline underline-offset-2 hover:text-violet-900"
+            type="button"
+            @click="toggleFieldExpanded(field.key)"
+          >
+            {{ isFieldExpanded(field.key) ? $t("showLess") : $t("showMore") }}
+          </button>
         </span>
         <span
           v-else
