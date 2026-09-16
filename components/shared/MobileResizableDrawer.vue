@@ -29,6 +29,7 @@ const emit = defineEmits<{
 const viewportHeight = ref(0);
 const drawerHeight = ref(0);
 const isDragging = ref(false);
+const isReadyForTransition = ref(false);
 
 const drawerStyle = computed(() => ({
   "--drawer-height": `${drawerHeight.value}px`,
@@ -168,6 +169,9 @@ watch(
 onMounted(() => {
   updateViewportHeight();
   window.addEventListener("resize", updateViewportHeight);
+  requestAnimationFrame(() => {
+    isReadyForTransition.value = true;
+  });
 });
 
 onBeforeUnmount(() => {
@@ -185,7 +189,7 @@ onBeforeUnmount(() => {
       open
         ? 'translate-y-0 sm:translate-x-0'
         : 'translate-y-full sm:-translate-x-full',
-      { 'transition-none': isDragging },
+      { 'transition-none': isDragging || !isReadyForTransition },
     ]"
     :style="drawerStyle"
   >
