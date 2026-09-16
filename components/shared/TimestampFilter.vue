@@ -146,7 +146,7 @@ const resetDateRange = () => {
       </h4>
       <button
         type="button"
-        class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 h-10 px-4 py-2 shadow-sm"
+        class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-violet-700 text-white hover:bg-violet-800 h-10 px-4 py-2 shadow-sm"
         data-testid="reset-date-button"
         :disabled="isResetDisabled"
         @click="resetDateRange"
@@ -163,7 +163,7 @@ const resetDateRange = () => {
         :height="8"
         :hide-label="true"
         :marks="true"
-        :process-style="{ backgroundColor: '#3b82f6' }"
+        :process-style="{ backgroundColor: '#7c3aed' }"
         :rail-style="{ backgroundColor: '#e5e7eb' }"
         :tooltip="'always'"
         :tooltip-placement="'bottom'"
@@ -178,5 +178,10 @@ const resetDateRange = () => {
 .timestamp-filter {
   min-width: min(325px, calc(100vw - 24px));
   max-width: min(500px, calc(100vw - 24px));
+}
+
+.date-slider :deep(.vue-slider-dot-tooltip-inner) {
+  border-color: #7c3aed;
+  background-color: #7c3aed;
 }
 </style>

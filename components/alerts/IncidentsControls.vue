@@ -198,13 +198,14 @@ const emit = defineEmits<{
 }
 
 .incident-control-btn.active {
-  background: #4a90e2;
+  background: #6d28d9;
   color: white;
-  border-color: #4a90e2;
+  border-color: #6d28d9;
 }
 
 .incident-control-btn.active:hover {
-  background: #357abd;
+  background: #5b21b6;
+  border-color: #5b21b6;
 }
 
 .incident-control-btn:disabled {

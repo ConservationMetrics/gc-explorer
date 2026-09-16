@@ -650,7 +650,7 @@ const handleClose = () => {
   height: 100%;
   background: white;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: 1060;
   display: flex;
   flex-direction: column;
   overflow: hidden;
