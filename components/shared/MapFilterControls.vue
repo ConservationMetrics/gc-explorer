@@ -64,7 +64,7 @@ const toggleDateFilter = () => {
     </button>
     <div
       v-if="showFilter"
-      class="map-filter-panel absolute right-0 top-12 w-[calc(100vw-5rem)] max-w-[600px]"
+      class="map-filter-panel absolute right-0 top-12 w-[calc(100vw-5rem)] max-w-[400px]"
     >
       <DataFilter
         :data="data"
@@ -76,7 +76,7 @@ const toggleDateFilter = () => {
     </div>
     <div
       v-if="showDateFilter"
-      class="map-filter-panel absolute right-0 top-12 w-[calc(100vw-5rem)] max-w-[500px]"
+      class="map-filter-panel absolute right-0 top-12 w-[calc(100vw-5rem)] max-w-[400px]"
     >
       <TimestampFilter
         :data="data"

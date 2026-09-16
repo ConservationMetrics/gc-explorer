@@ -177,7 +177,7 @@ const resetDateRange = () => {
 <style scoped>
 .timestamp-filter {
   min-width: min(325px, calc(100vw - 24px));
-  max-width: min(500px, calc(100vw - 24px));
+  max-width: min(400px, calc(100vw - 24px));
 }
 
 .date-slider :deep(.vue-slider-dot-tooltip-inner) {
