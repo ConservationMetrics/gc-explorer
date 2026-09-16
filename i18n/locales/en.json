@@ -59,7 +59,6 @@
   "created": "Created",
   "createViewTypeDescription": "Choose a view type to continue. You can optionally pick a primary dataset now, or on the next page.",
   "data": "data",
-  "dataCollectedOn": "Data collected on",
   "dataLoadErrorMessage": "Something went wrong. You can try again, go back, or return to the home page.",
   "dataLoadErrorTitle": "We couldn't load this data",
   "dataProvider": "Data provider",

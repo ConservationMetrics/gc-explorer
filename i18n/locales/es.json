@@ -56,7 +56,6 @@
   "created": "Creado",
   "createViewTypeDescription": "Elija un tipo de vista para continuar. Puede seleccionar un conjunto de datos principal ahora o en la página siguiente.",
   "data": "datos",
-  "dataCollectedOn": "Datos recopilados el",
   "dataLoadErrorMessage": "Algo salió mal. Puede intentar de nuevo, volver o ir al inicio.",
   "dataLoadErrorTitle": "No pudimos cargar estos datos",
   "dataProvider": "Proveedor de datos",

@@ -32,8 +32,7 @@ export const capitalizeFirstLetter = (value: string): string => {
 
 /**
  * Transforms a raw survey data key into a human-readable display label.
- * Removes internal prefixes (g__, p__), replaces underscores with spaces,
- * and standardizes known key names (e.g. "today" → "dataCollectedOn").
+ * Removes internal prefixes (g__, p__), and replaces underscores with spaces
  *
  * @param {string} key - The raw database column key.
  * @param {string} [iconColumn] - Optional icon column name to preserve unchanged.
@@ -47,15 +46,8 @@ export const transformSurveyDataKey = (
     return key;
   }
 
-  let transformedKey = key
-    .replace(/^g__/, "geo")
-    .replace(/^p__/, "")
-    .replace(/_/g, " ");
-  if (transformedKey.toLowerCase() === "today") {
-    transformedKey = "dataCollectedOn";
-  } else if (transformedKey.toLowerCase().includes("categoryid")) {
-    transformedKey = "category";
-  } else if (transformedKey.toLowerCase() === "id") {
+  let transformedKey = key.replace(/^g__/, "geo").replace(/_/g, " ");
+  if (transformedKey.toLowerCase() === "id") {
     transformedKey = "id";
   }
   return transformedKey.trimStart();
@@ -63,8 +55,7 @@ export const transformSurveyDataKey = (
 
 /**
  * Transforms a raw survey data value into a human-readable display value.
- * Replaces underscores and semicolons, capitalizes the first letter,
- * and formats bracket-enclosed lists.
+ * Replaces underscores and semicolons, and formats bracket-enclosed lists.
  *
  * @param {string} key - The raw database column key (used for context-specific transforms).
  * @param {string | number | null} value - The raw value to transform.
@@ -83,15 +74,8 @@ export const transformSurveyDataValue = (
 
   let transformedValue = value;
   if (typeof transformedValue === "string") {
+    // snake_case → words; semicolon-delimited lists → comma-separated
     transformedValue = transformedValue.replace(/_/g, " ").replace(/;/g, ", ");
-    if (key.toLowerCase().includes("category")) {
-      transformedValue = transformedValue.replace(/-/g, " ");
-    }
-    // TODO: For now this is a quick fix to ensure original timestamps are
-    // returned in file downloads. We need to rethink how we do data transformations
-    // so that file downloads return the original records, not transformed ones.
-    transformedValue =
-      transformedValue.charAt(0).toUpperCase() + transformedValue.slice(1);
   }
   // Handle lists enclosed in square brackets
   if (

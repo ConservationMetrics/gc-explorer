@@ -232,11 +232,7 @@ const closeComparisonModal = () => {
           class="text-xs font-semibold uppercase tracking-wide text-violet-700"
           data-testid="gallery-metadata-label"
         >
-          {{
-            field.key === "dataCollectedOn"
-              ? $t(field.key)
-              : formatDisplayName(field.key)
-          }}
+          {{ formatDisplayName(field.key) }}
         </span>
         <span
           v-if="!isCoordinateField(field.key)"
