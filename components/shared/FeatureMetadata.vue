@@ -8,7 +8,7 @@ import { formatDisplayName } from "@/utils";
 
 import type { AllowedFileExtensions, DataEntry } from "@/types";
 
-const MAX_FIELD_VALUE_LENGTH = 240;
+const FIELD_VALUE_PREVIEW_LENGTH = 120;
 
 const props = withDefaults(
   defineProps<{
@@ -93,7 +93,7 @@ const lastCoordinateFieldIndex = computed(() => {
  * @returns {boolean} Whether the value can be expanded.
  */
 const isFieldExpandable = (value: string): boolean =>
-  value.length > MAX_FIELD_VALUE_LENGTH;
+  value.length > FIELD_VALUE_PREVIEW_LENGTH;
 
 /**
  * Returns whether a metadata field is currently expanded.
@@ -113,7 +113,7 @@ const displayFieldValue = (field: { key: string; value: string }): string => {
   if (!isFieldExpandable(field.value) || isFieldExpanded(field.key)) {
     return field.value;
   }
-  return `${field.value.slice(0, MAX_FIELD_VALUE_LENGTH).trimEnd()}…`;
+  return `${field.value.slice(0, FIELD_VALUE_PREVIEW_LENGTH).trimEnd()}…`;
 };
 
 /**
