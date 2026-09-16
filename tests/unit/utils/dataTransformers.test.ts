@@ -23,8 +23,14 @@ describe("transformSurveyDataKey", () => {
     expect(transformSurveyDataKey("p__activity")).toBe("activity");
   });
 
-  it("should replace underscores with spaces", () => {
-    expect(transformSurveyDataKey("building_type")).toBe("building type");
+  it("keeps underscores in keys so configured column names still match", () => {
+    expect(transformSurveyDataKey("building_type")).toBe("building_type");
+    expect(transformSurveyDataKey("photo_filenames")).toBe("photo_filenames");
+  });
+
+  it("strips leftover leading underscores after prefix removal", () => {
+    expect(transformSurveyDataKey("_id")).toBe("id");
+    expect(transformSurveyDataKey("p___photos")).toBe("photos");
   });
 
   it("should map 'today' to 'dataCollectedOn'", () => {
@@ -156,6 +162,16 @@ describe("transformSurveyEntry", () => {
     };
     const result = transformSurveyEntry(record, "icon_col");
     expect(result.icon_col).toBe("icon.png");
+  });
+
+  it("preserves snake_case keys such as photo_filenames", () => {
+    const result = transformSurveyEntry({
+      photo_filenames: "medium.jpg",
+      common_name: "waxcaps",
+    });
+    expect(result).toHaveProperty("photo_filenames");
+    expect(result).not.toHaveProperty("photo filenames");
+    expect(result).toHaveProperty("common_name");
   });
 });
 
