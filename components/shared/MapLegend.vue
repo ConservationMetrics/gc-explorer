@@ -351,7 +351,7 @@ watch(
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 639px) {
   .map-legend {
     right: 10px;
     width: min(265px, calc(100vw - 20px));

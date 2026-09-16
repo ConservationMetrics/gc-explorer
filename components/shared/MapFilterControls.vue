@@ -37,7 +37,7 @@ const toggleDateFilter = () => {
 
 <template>
   <div
-    class="absolute right-3 top-16 z-10 flex items-start gap-2 sm:right-14 sm:top-4"
+    class="absolute right-16 top-3 z-[1010] flex items-start gap-2 sm:right-14 sm:top-4"
     data-testid="map-filter-controls"
   >
     <button
@@ -64,7 +64,7 @@ const toggleDateFilter = () => {
     </button>
     <div
       v-if="showFilter"
-      class="absolute right-0 top-12 w-[calc(100vw-1.5rem)] max-w-[600px]"
+      class="map-filter-panel absolute right-0 top-12 w-[calc(100vw-5rem)] max-w-[600px]"
     >
       <DataFilter
         :data="data"
@@ -76,7 +76,7 @@ const toggleDateFilter = () => {
     </div>
     <div
       v-if="showDateFilter"
-      class="absolute right-0 top-12 w-[calc(100vw-1.5rem)] max-w-[500px]"
+      class="map-filter-panel absolute right-0 top-12 w-[calc(100vw-5rem)] max-w-[500px]"
     >
       <TimestampFilter
         :data="data"
@@ -86,3 +86,12 @@ const toggleDateFilter = () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.map-filter-panel :deep(.filter-modal),
+.map-filter-panel :deep(.timestamp-filter) {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+</style>
