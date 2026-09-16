@@ -420,12 +420,11 @@ export interface Incident {
   };
 }
 
-/** "mapeo" is a legacy alias for secondary features (lookup by `_id`). */
-export type FeatureType = "alert" | "secondary" | "mapeo";
+export type FeatureType = "alert" | "secondary";
 
 export const isSecondaryFeatureType = (
   featureType: FeatureType | string | undefined,
-): boolean => featureType === "secondary" || featureType === "mapeo";
+): boolean => featureType === "secondary";
 
 export interface CollectionEntryInput {
   source_table: string;

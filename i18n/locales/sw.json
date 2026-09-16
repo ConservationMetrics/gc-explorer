@@ -59,7 +59,6 @@
   "created": "Imeundwa",
   "createViewTypeDescription": "Chagua aina ya mwonekano ili kuendelea. Unaweza kuchagua seti kuu ya data sasa, au kwenye ukurasa unaofuata.",
   "data": "data",
-  "dataCollectedOn": "Data iliyokusanywa tarehe",
   "dataLoadErrorMessage": "Kitu kimeenda vibaya. Unaweza kujaribu tena, rudi nyuma, au urudi kwenye ukurasa wa kwanza.",
   "dataLoadErrorTitle": "Hatukuweza kupakia data hii",
   "dataProvider": "Mtoa data",

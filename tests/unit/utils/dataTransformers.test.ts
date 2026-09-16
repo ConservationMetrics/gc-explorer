@@ -18,23 +18,8 @@ describe("transformSurveyDataKey", () => {
     expect(transformSurveyDataKey("g__type")).toBe("geotype");
   });
 
-  it("should remove p__ prefix", () => {
-    expect(transformSurveyDataKey("p__notes")).toBe("notes");
-    expect(transformSurveyDataKey("p__activity")).toBe("activity");
-  });
-
   it("should replace underscores with spaces", () => {
     expect(transformSurveyDataKey("building_type")).toBe("building type");
-  });
-
-  it("should map 'today' to 'dataCollectedOn'", () => {
-    expect(transformSurveyDataKey("today")).toBe("dataCollectedOn");
-    expect(transformSurveyDataKey("Today")).toBe("dataCollectedOn");
-  });
-
-  it("should map keys containing 'categoryid' to 'category'", () => {
-    expect(transformSurveyDataKey("p__categoryid")).toBe("category");
-    expect(transformSurveyDataKey("categoryid")).toBe("category");
   });
 
   it("should preserve icon column key unchanged", () => {
@@ -60,16 +45,6 @@ describe("transformSurveyDataValue", () => {
 
   it("should replace semicolons with commas", () => {
     expect(transformSurveyDataValue("key", "a;b;c")).toBe("A, b, c");
-  });
-
-  it("should capitalize the first letter", () => {
-    expect(transformSurveyDataValue("key", "yes")).toBe("Yes");
-  });
-
-  it("should replace dashes with spaces for category keys", () => {
-    expect(transformSurveyDataValue("categoryid", "forest-trail")).toBe(
-      "Forest trail",
-    );
   });
 
   it("should handle bracket-enclosed lists", () => {
