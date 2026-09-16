@@ -30,6 +30,20 @@ test("retired /config redirects to index with bookmark toast", async ({
   ).toBeVisible();
 });
 
+test("index toast does not persist after client-side navigation", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  await page.goto("/config");
+  await page.waitForURL((url) => url.pathname === "/", { timeout: 10000 });
+  await expect(page.getByText(/page moved/i).first()).toBeVisible({
+    timeout: 10000,
+  });
+
+  await page.locator("[data-testid='open-dataset-view-link']").first().click();
+  await page.waitForURL((url) => url.pathname !== "/", { timeout: 10000 });
+  await expect(page.getByText(/page moved/i)).toHaveCount(0);
+});
+
 test("retired /dataset and /dataset/{name} redirect to index with toast", async ({
   authenticatedPageAsAdmin: page,
 }) => {
