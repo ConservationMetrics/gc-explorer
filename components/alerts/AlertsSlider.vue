@@ -49,3 +49,10 @@ watch(selectedRange, (newRange) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.date-slider :deep(.vue-slider-dot-tooltip-inner) {
+  border-color: #7c3aed;
+  background-color: #7c3aed;
+}
+</style>
