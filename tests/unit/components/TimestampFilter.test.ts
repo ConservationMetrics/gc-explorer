@@ -107,4 +107,30 @@ describe("TimestampFilter component", () => {
     expect(end.getFullYear()).toBe(2024);
     expect(end.getMonth()).toBe(1);
   });
+
+  it("emits active true after the user narrows the range, then false on reset", async () => {
+    const wrapper = mountFilter([
+      { id: "1", timestamp: "2024-01-15T12:00:00Z" },
+      { id: "2", timestamp: "2024-02-10T12:00:00Z" },
+    ] as Dataset);
+
+    await nextTick();
+    expect(wrapper.emitted("active")).toBeUndefined();
+
+    const vm = wrapper.vm as unknown as {
+      userInteracted: boolean;
+      selectedRange: string[];
+      resetDateRange: () => void;
+    };
+    vm.userInteracted = true;
+    vm.selectedRange = ["2024-02", "2024-02"];
+    await nextTick();
+
+    expect(wrapper.emitted("active")).toEqual([[true]]);
+
+    vm.resetDateRange();
+    await nextTick();
+
+    expect(wrapper.emitted("active")?.at(-1)).toEqual([false]);
+  });
 });

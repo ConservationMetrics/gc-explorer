@@ -23,6 +23,22 @@ const showFilter = ref(false);
 const showDateFilter = ref(false);
 const filterMounted = ref(false);
 const dateFilterMounted = ref(false);
+const columnFilterActive = ref(false);
+const dateFilterActive = ref(false);
+
+const filterButtonClass =
+  "relative flex h-10 w-10 items-center justify-center rounded-md bg-violet-700 text-white shadow-sm transition-colors hover:bg-violet-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2";
+
+/** Keeps the column-applied button state in sync, then forwards the selection. */
+const onColumnFilter = (values: unknown[]) => {
+  columnFilterActive.value = values.length > 0;
+  emit("filter", values as string[]);
+};
+
+/** Keeps the date-applied button state in sync. */
+const onDateFilterActive = (active: boolean) => {
+  dateFilterActive.value = active;
+};
 
 /** Toggles the category filter panel. */
 const toggleFilter = () => {
@@ -51,24 +67,41 @@ const toggleDateFilter = () => {
     <button
       v-if="filterColumn"
       type="button"
-      class="flex h-10 w-10 items-center justify-center rounded-md bg-violet-700 text-white shadow-sm transition-colors hover:bg-violet-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
+      :class="[
+        filterButtonClass,
+        columnFilterActive ? 'ring-2 ring-white' : '',
+      ]"
       :aria-label="$t('filterDataByColumn')"
       :aria-expanded="showFilter"
+      :aria-pressed="columnFilterActive"
       data-testid="toggle-data-filter"
       @click="toggleFilter"
     >
       <Filter class="h-5 w-5" aria-hidden="true" />
+      <span
+        v-if="columnFilterActive"
+        class="pointer-events-none absolute -right-1 -top-1 h-3 w-3 rounded-full bg-amber-300 ring-2 ring-violet-700"
+        data-testid="column-filter-applied"
+        aria-hidden="true"
+      ></span>
     </button>
     <button
       v-if="timestampColumn"
       type="button"
-      class="flex h-10 w-10 items-center justify-center rounded-md bg-violet-700 text-white shadow-sm transition-colors hover:bg-violet-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2"
+      :class="[filterButtonClass, dateFilterActive ? 'ring-2 ring-white' : '']"
       :aria-label="$t('filterByDate')"
       :aria-expanded="showDateFilter"
+      :aria-pressed="dateFilterActive"
       data-testid="toggle-date-filter"
       @click="toggleDateFilter"
     >
       <CalendarDays class="h-5 w-5" aria-hidden="true" />
+      <span
+        v-if="dateFilterActive"
+        class="pointer-events-none absolute -right-1 -top-1 h-3 w-3 rounded-full bg-amber-300 ring-2 ring-violet-700"
+        data-testid="date-filter-applied"
+        aria-hidden="true"
+      ></span>
     </button>
     <div
       v-if="filterMounted"
@@ -83,7 +116,7 @@ const toggleDateFilter = () => {
         :filter-column="filterColumn || ''"
         :color-column="colorColumn"
         :show-colored-dot="true"
-        @filter="emit('filter', $event)"
+        @filter="onColumnFilter"
       />
     </div>
     <!-- Stay mounted once opened; opacity hides VueSlider tooltips without collapsing width. -->
@@ -102,6 +135,7 @@ const toggleDateFilter = () => {
         :data="data"
         :timestamp-column="timestampColumn || ''"
         @filter="emit('date-filter', $event)"
+        @active="onDateFilterActive"
       />
     </div>
   </div>
@@ -113,5 +147,9 @@ const toggleDateFilter = () => {
   width: 100%;
   min-width: 0;
   max-width: 100%;
+}
+
+.map-filter-panel[aria-hidden="true"] :deep(.vue-slider-dot-tooltip) {
+  display: none;
 }
 </style>

@@ -17,6 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "filter", payload: { start: Date | null; end: Date | null }): void;
+  (e: "active", active: boolean): void;
 }>();
 
 /** Unique months that contain data, as "YYYY-MM", for month-level slider (like alerts). */
@@ -114,6 +115,10 @@ const isResetDisabled = computed(() => {
   ];
   const [selMin, selMax] = selectedRange.value;
   return selMin === minOpt && selMax === maxOpt;
+});
+
+watch(isResetDisabled, (disabled) => {
+  emit("active", !disabled);
 });
 
 const resetDateRange = () => {
