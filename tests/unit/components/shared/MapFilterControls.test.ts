@@ -43,6 +43,11 @@ describe("MapFilterControls", () => {
     expect(wrapper.find('[data-testid="stub-data-filter"]').exists()).toBe(
       true,
     );
+    expect(
+      wrapper
+        .get('[data-testid="data-filter-panel"]')
+        .attributes("aria-hidden"),
+    ).toBe("false");
     expect(wrapper.find('[data-testid="stub-timestamp-filter"]').exists()).toBe(
       false,
     );
@@ -52,15 +57,57 @@ describe("MapFilterControls", () => {
 
     await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
     expect(wrapper.find('[data-testid="stub-data-filter"]').exists()).toBe(
-      false,
+      true,
     );
+    expect(
+      wrapper
+        .get('[data-testid="data-filter-panel"]')
+        .attributes("aria-hidden"),
+    ).toBe("true");
     expect(wrapper.find('[data-testid="stub-timestamp-filter"]').exists()).toBe(
       true,
     );
+    expect(
+      wrapper
+        .get('[data-testid="date-filter-panel"]')
+        .attributes("aria-hidden"),
+    ).toBe("false");
 
     await wrapper.get('[data-testid="stub-timestamp-filter"]').trigger("click");
     expect(wrapper.emitted("date-filter")).toEqual([
       [{ start: null, end: null }],
     ]);
+  });
+
+  it("keeps both filter panels mounted after switching between them", async () => {
+    const wrapper = mount(MapFilterControls, {
+      props: {
+        data: [],
+        filterColumn: "category",
+        timestampColumn: "createdAt",
+      },
+      global: globalConfig,
+    });
+
+    await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
+    await wrapper.get('[data-testid="toggle-data-filter"]').trigger("click");
+    await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
+
+    expect(wrapper.find('[data-testid="stub-data-filter"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.find('[data-testid="stub-timestamp-filter"]').exists()).toBe(
+      true,
+    );
+    expect(
+      wrapper
+        .get('[data-testid="data-filter-panel"]')
+        .attributes("aria-hidden"),
+    ).toBe("true");
+    expect(
+      wrapper
+        .get('[data-testid="date-filter-panel"]')
+        .attributes("aria-hidden"),
+    ).toBe("false");
   });
 });
