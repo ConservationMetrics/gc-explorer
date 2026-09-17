@@ -514,6 +514,109 @@ describe("MapView component", () => {
     },
   );
 
+  it("does not rebuild map layers when opening the date filter (#684)", async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        ...baseProps,
+        timestampColumn: "observed_at",
+        mapData: makeFeatureCollection([
+          {
+            type: "Point",
+            coordinates: [0, 0],
+            properties: { observed_at: "2024-01-15" },
+          },
+          {
+            type: "Point",
+            coordinates: [1, 1],
+            properties: { observed_at: "2024-02-15" },
+          },
+        ]),
+      },
+      global: {
+        ...globalConfig,
+        stubs: {
+          ...globalConfig.stubs,
+          TimestampFilter: false,
+        },
+      },
+    });
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const addSourceCalls = mapboxMock.mockMap.addSource.mock.calls.length;
+    const removeSourceCalls = mapboxMock.mockMap.removeSource.mock.calls.length;
+
+    await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
+    await flushPromises();
+
+    expect(mapboxMock.mockMap.addSource.mock.calls.length).toBe(addSourceCalls);
+    expect(mapboxMock.mockMap.removeSource.mock.calls.length).toBe(
+      removeSourceCalls,
+    );
+    wrapper.unmount();
+  });
+
+  it("keeps an applied date filter when switching to the column filter and back (#684)", async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        ...baseProps,
+        timestampColumn: "observed_at",
+        mapData: makeFeatureCollection([
+          {
+            type: "Point",
+            coordinates: [0, 0],
+            properties: { observed_at: "2024-01-15" },
+          },
+          {
+            type: "Point",
+            coordinates: [1, 1],
+            properties: { observed_at: "2024-02-15" },
+          },
+          {
+            type: "Point",
+            coordinates: [2, 2],
+            properties: {
+              observed_at: new Date(
+                new Date(2024, 1, 1).getTime() - 1,
+              ).toISOString(),
+            },
+          },
+        ]),
+      },
+      global: {
+        ...globalConfig,
+        stubs: {
+          ...globalConfig.stubs,
+          TimestampFilter: false,
+          ViewSidebar: {
+            name: "ViewSidebar",
+            props: ["mapFeatureCollection", "mapStatistics"],
+            template: "<div></div>",
+          },
+        },
+      },
+    });
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
+    await flushPromises();
+    const slider = wrapper.findComponent(VueSlider);
+    slider.vm.$emit("drag-start");
+    slider.vm.$emit("update:modelValue", ["2024-02", "2024-02"]);
+    await flushPromises();
+
+    const sidebar = wrapper.findComponent({ name: "ViewSidebar" });
+    expect(sidebar.props("mapFeatureCollection").features).toHaveLength(1);
+
+    await wrapper.get('[data-testid="toggle-data-filter"]').trigger("click");
+    await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
+    await flushPromises();
+
+    expect(sidebar.props("mapFeatureCollection").features).toHaveLength(1);
+    wrapper.unmount();
+  });
+
   it("selects a feature and fetches full record on click", async () => {
     const wrapper = mount(MapView, {
       props: baseProps,

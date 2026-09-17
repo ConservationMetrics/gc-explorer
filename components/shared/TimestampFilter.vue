@@ -88,14 +88,12 @@ const emitFilter = () => {
 
 watch(
   dateInfo,
-  async (info) => {
+  (info) => {
     if (info.options.length > 0 && selectedRange.value.length === 0) {
       selectedRange.value = [
         info.options[0],
         info.options[info.options.length - 1],
       ];
-      await nextTick();
-      emitFilter();
     }
   },
   { immediate: true },

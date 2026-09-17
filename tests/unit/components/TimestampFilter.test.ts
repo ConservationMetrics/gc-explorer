@@ -72,7 +72,7 @@ describe("TimestampFilter component", () => {
     );
   });
 
-  it("emits full range on mount when multiple months exist", async () => {
+  it("does not emit a date range until the user moves the slider", async () => {
     const wrapper = mountFilter([
       { id: "1", timestamp: "2024-01-15T12:00:00Z" },
       { id: "2", timestamp: "2024-02-10T12:00:00Z" },
@@ -80,13 +80,30 @@ describe("TimestampFilter component", () => {
 
     await nextTick();
 
+    expect(wrapper.emitted("filter")).toBeUndefined();
+  });
+
+  it("emits the selected range after the user moves the slider", async () => {
+    const wrapper = mountFilter([
+      { id: "1", timestamp: "2024-01-15T12:00:00Z" },
+      { id: "2", timestamp: "2024-02-10T12:00:00Z" },
+    ] as Dataset);
+
+    await nextTick();
+
+    const vm = wrapper.vm as unknown as {
+      userInteracted: boolean;
+      selectedRange: string[];
+    };
+    vm.userInteracted = true;
+    vm.selectedRange = ["2024-02", "2024-02"];
+    await nextTick();
+
     const filterEvents = wrapper.emitted("filter");
     expect(filterEvents).toBeTruthy();
-    expect(filterEvents!.length).toBeGreaterThanOrEqual(1);
-
     const [{ start, end }] = filterEvents![0] as [{ start: Date; end: Date }];
     expect(start.getFullYear()).toBe(2024);
-    expect(start.getMonth()).toBe(0);
+    expect(start.getMonth()).toBe(1);
     expect(end.getFullYear()).toBe(2024);
     expect(end.getMonth()).toBe(1);
   });

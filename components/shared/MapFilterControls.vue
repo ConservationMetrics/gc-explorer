@@ -21,17 +21,25 @@ const emit = defineEmits<{
 
 const showFilter = ref(false);
 const showDateFilter = ref(false);
+const filterMounted = ref(false);
+const dateFilterMounted = ref(false);
 
 /** Toggles the category filter panel. */
 const toggleFilter = () => {
   showFilter.value = !showFilter.value;
-  if (showFilter.value) showDateFilter.value = false;
+  if (showFilter.value) {
+    filterMounted.value = true;
+    showDateFilter.value = false;
+  }
 };
 
 /** Toggles the date filter panel. */
 const toggleDateFilter = () => {
   showDateFilter.value = !showDateFilter.value;
-  if (showDateFilter.value) showFilter.value = false;
+  if (showDateFilter.value) {
+    dateFilterMounted.value = true;
+    showFilter.value = false;
+  }
 };
 </script>
 
@@ -63,8 +71,12 @@ const toggleDateFilter = () => {
       <CalendarDays class="h-5 w-5" aria-hidden="true" />
     </button>
     <div
-      v-if="showFilter"
+      v-if="filterMounted"
       class="map-filter-panel absolute right-0 top-12 w-[calc(100vw-5rem)] max-w-[400px]"
+      :class="{ 'opacity-0': !showFilter, 'pointer-events-none': !showFilter }"
+      :aria-hidden="!showFilter"
+      :inert="!showFilter"
+      data-testid="data-filter-panel"
     >
       <DataFilter
         :data="data"
@@ -74,9 +86,17 @@ const toggleDateFilter = () => {
         @filter="emit('filter', $event)"
       />
     </div>
+    <!-- Stay mounted once opened; opacity hides VueSlider tooltips without collapsing width. -->
     <div
-      v-if="showDateFilter"
+      v-if="dateFilterMounted"
       class="map-filter-panel absolute right-0 top-12 w-[calc(100vw-5rem)] max-w-[400px]"
+      :class="{
+        'opacity-0': !showDateFilter,
+        'pointer-events-none': !showDateFilter,
+      }"
+      :aria-hidden="!showDateFilter"
+      :inert="!showDateFilter"
+      data-testid="date-filter-panel"
     >
       <TimestampFilter
         :data="data"
