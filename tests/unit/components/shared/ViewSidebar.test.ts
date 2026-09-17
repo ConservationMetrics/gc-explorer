@@ -31,6 +31,7 @@ const copyLink = vi.fn();
 const showCopied = ref(false);
 
 vi.mock("@/composables/useCopyLink", () => ({
+  COPY_ALERT_LINK_EXCLUDE_PARAMS: ["incidentId", "lat", "lng", "zoom"],
   useCopyLink: () => ({ showCopied, copyLink }),
 }));
 

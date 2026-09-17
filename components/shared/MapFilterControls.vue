@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { CalendarDays, Filter } from "lucide-vue-next";
 
+import CopyMapLocationButton from "@/components/shared/CopyMapLocationButton.vue";
 import DataFilter from "@/components/shared/DataFilter.vue";
 import TimestampFilter from "@/components/shared/TimestampFilter.vue";
 
@@ -12,11 +13,13 @@ defineProps<{
   filterColumn?: string;
   colorColumn?: string;
   timestampColumn?: string;
+  showCopiedLocation?: boolean;
 }>();
 
 const emit = defineEmits<{
   filter: [values: string[]];
   "date-filter": [{ start: Date | null; end: Date | null }];
+  "copy-location": [];
 }>();
 
 const showFilter = ref(false);
@@ -64,6 +67,10 @@ const toggleDateFilter = () => {
     class="absolute right-16 top-3 z-[1010] flex items-start gap-2 sm:right-14 sm:top-4"
     data-testid="map-filter-controls"
   >
+    <CopyMapLocationButton
+      :show-copied="showCopiedLocation ?? false"
+      @copy="emit('copy-location')"
+    />
     <button
       v-if="filterColumn"
       type="button"

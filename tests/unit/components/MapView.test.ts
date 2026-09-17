@@ -162,6 +162,8 @@ const globalConfig = {
 describe("MapView component", () => {
   beforeEach(() => {
     mapboxMock.reset();
+    mockRoute.value = { params: {}, query: {} };
+    mockRouter.replace.mockClear();
     mockFetchRecord.mockClear();
     mockFetchRecord.mockResolvedValue({
       _id: "1",
@@ -194,6 +196,45 @@ describe("MapView component", () => {
     });
     expect(mapboxMock.addControl).toHaveBeenCalledTimes(3);
     expect(wrapper.exists()).toBe(true);
+  });
+
+  it("initializes the map from lat, lng, and zoom query params", async () => {
+    mockRoute.value = {
+      params: {},
+      query: { lat: "-3.12000", lng: "-60.02000", zoom: "11.50" },
+    };
+
+    mount(MapView, {
+      props: baseProps,
+      global: globalConfig,
+    });
+
+    expect(mapboxMock.Map).toHaveBeenCalledWith(
+      expect.objectContaining({
+        center: [-60.02, -3.12],
+        zoom: 11.5,
+      }),
+    );
+  });
+
+  it("writes camera query params after the map moves", async () => {
+    mapboxMock.mockMap.getCenter.mockReturnValue({ lat: -3.12, lng: -60.02 });
+    mapboxMock.mockMap.getZoom.mockReturnValue(11.5);
+
+    mount(MapView, {
+      props: baseProps,
+      global: globalConfig,
+    });
+    mapboxMock.fireMapEvent("moveend");
+    await flushPromises();
+
+    expect(mockRouter.replace).toHaveBeenCalledWith({
+      query: {
+        lat: "-3.12000",
+        lng: "-60.02000",
+        zoom: "11.50",
+      },
+    });
   });
 
   it("adds 3D terrain when mapbox3d is true", async () => {

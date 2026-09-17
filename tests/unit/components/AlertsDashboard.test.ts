@@ -180,6 +180,43 @@ describe("AlertsDashboard component", () => {
     expect(wrapper.exists()).toBe(true);
   });
 
+  it("initializes the map from lat, lng, and zoom query params", async () => {
+    mockRoute.value = {
+      params: {},
+      query: { lat: "-3.12000", lng: "-60.02000", zoom: "11.50" },
+    };
+
+    mountComponent();
+
+    expect(mapboxMock.Map).toHaveBeenCalledWith(
+      expect.objectContaining({
+        center: [-60.02, -3.12],
+        zoom: 11.5,
+      }),
+    );
+  });
+
+  it("uses the view default camera when a feature id is also in the query", async () => {
+    mockRoute.value = {
+      params: {},
+      query: {
+        alertId: "alert-1",
+        lat: "-3.12000",
+        lng: "-60.02000",
+        zoom: "11.50",
+      },
+    };
+
+    mountComponent();
+
+    expect(mapboxMock.Map).toHaveBeenCalledWith(
+      expect.objectContaining({
+        center: [0, -15],
+        zoom: 2,
+      }),
+    );
+  });
+
   it("keeps MultiPolygon alerts in the polygon source through filtering and reset", async () => {
     mockRoute.value = {
       path: "/alerts/test_alerts",

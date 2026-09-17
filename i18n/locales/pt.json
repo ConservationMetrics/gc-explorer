@@ -52,6 +52,7 @@
   "copyConfigDescription": "Selecione uma visualização para copiar seus valores de configuração no formulário atual. Você pode modificar os valores antes de salvar.",
   "copyConfigFromDatasetView": "Copiar configuração de outra visualização",
   "copyLink": "Copiar link para alerta",
+  "copyMapLocation": "Copiar link para este local",
   "copySecondaryLink": "Copiar link para o feição",
   "created": "Criado",
   "createViewTypeDescription": "Escolha um tipo de visualização para continuar. Você pode selecionar um conjunto de dados principal agora ou na próxima página.",

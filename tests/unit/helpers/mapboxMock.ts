@@ -9,6 +9,7 @@ export const layers: Array<Record<string, unknown>> = [];
 let loadCallback: (() => void) | undefined;
 let accessToken: string | null = null;
 const clickCallbacks: Record<string, Array<(evt: unknown) => void>> = {};
+const eventCallbacks: Record<string, Array<() => void>> = {};
 
 // Spyable helpers --------------------------------------------------------
 export const addControl = vi.fn();
@@ -22,7 +23,12 @@ export const mockMap = {
     } else if (event === "click" && typeof layerOrCb === "string" && cb) {
       (clickCallbacks[layerOrCb] ||= []).push(cb as (evt: unknown) => void);
     }
+    if (typeof layerOrCb === "function") {
+      (eventCallbacks[event] ||= []).push(layerOrCb as () => void);
+    }
   }),
+  getCenter: vi.fn(() => ({ lat: 10, lng: 10 })),
+  getZoom: vi.fn(() => 10),
   addControl,
   addSource: vi.fn(),
   addLayer: vi.fn((layer: Record<string, unknown>) => layers.push(layer)),
@@ -79,6 +85,10 @@ export function fireClick(layerId: string, evt: unknown): void {
   clickCallbacks[layerId]?.forEach((cb) => cb(evt));
 }
 
+export function fireMapEvent(event: string): void {
+  eventCallbacks[event]?.forEach((callback) => callback());
+}
+
 export function getAccessToken(): string | null {
   return accessToken;
 }
@@ -99,12 +109,20 @@ export function reset(): void {
   mockMap.flyTo.mockClear();
   mockMap.fitBounds.mockClear();
   mockMap.remove.mockClear();
+  mockMap.getCenter.mockReset();
+  mockMap.getZoom.mockReset();
+  mockMap.getCenter.mockReturnValue({ lat: 10, lng: 10 });
+  mockMap.getZoom.mockReturnValue(10);
   layers.length = 0;
   loadCallback = undefined;
   accessToken = null;
   Object.keys(clickCallbacks).forEach((k) => {
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete clickCallbacks[k];
+  });
+  Object.keys(eventCallbacks).forEach((k) => {
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete eventCallbacks[k];
   });
 }
 
