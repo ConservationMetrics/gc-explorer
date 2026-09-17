@@ -83,7 +83,7 @@ const toggleDateFilter = () => {
         class="pointer-events-none absolute -right-1 -top-1 h-3 w-3 rounded-full bg-amber-300 ring-2 ring-violet-700"
         data-testid="column-filter-applied"
         aria-hidden="true"
-      />
+      ></span>
     </button>
     <button
       v-if="timestampColumn"
@@ -101,7 +101,7 @@ const toggleDateFilter = () => {
         class="pointer-events-none absolute -right-1 -top-1 h-3 w-3 rounded-full bg-amber-300 ring-2 ring-violet-700"
         data-testid="date-filter-applied"
         aria-hidden="true"
-      />
+      ></span>
     </button>
     <div
       v-if="filterMounted"
