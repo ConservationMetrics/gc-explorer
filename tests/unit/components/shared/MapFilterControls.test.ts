@@ -8,17 +8,19 @@ vi.mock("@/components/shared/DataFilter.vue", () => ({
     name: "DataFilter",
     props: ["filterColumn"],
     emits: ["filter"],
-    template:
-      "<button data-testid=\"stub-data-filter\" @click=\"$emit('filter', ['selected'])\">{{ filterColumn }}</button>",
+    template: `<div>
+      <button data-testid="stub-data-filter" @click="$emit('filter', ['selected'])">{{ filterColumn }}</button>
+      <button data-testid="stub-data-filter-clear" @click="$emit('filter', [])">clear</button>
+    </div>`,
   },
 }));
 
 vi.mock("@/components/shared/TimestampFilter.vue", () => ({
   default: {
     name: "TimestampFilter",
-    emits: ["filter"],
+    emits: ["filter", "active"],
     template:
-      '<button data-testid="stub-timestamp-filter" @click="$emit(\'filter\', { start: null, end: null })">date</button>',
+      "<button data-testid=\"stub-timestamp-filter\" @click=\"$emit('filter', { start: null, end: null }); $emit('active', true)\">date</button>",
   },
 }));
 
@@ -109,5 +111,66 @@ describe("MapFilterControls", () => {
         .get('[data-testid="date-filter-panel"]')
         .attributes("aria-hidden"),
     ).toBe("false");
+  });
+
+  it("marks both filter buttons as applied at the same time (#685)", async () => {
+    const wrapper = mount(MapFilterControls, {
+      props: {
+        data: [],
+        filterColumn: "category",
+        timestampColumn: "createdAt",
+      },
+      global: globalConfig,
+    });
+
+    const columnButton = wrapper.get('[data-testid="toggle-data-filter"]');
+    const dateButton = wrapper.get('[data-testid="toggle-date-filter"]');
+
+    expect(columnButton.attributes("aria-pressed")).toBe("false");
+    expect(dateButton.attributes("aria-pressed")).toBe("false");
+    expect(wrapper.find('[data-testid="column-filter-applied"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.find('[data-testid="date-filter-applied"]').exists()).toBe(
+      false,
+    );
+
+    await columnButton.trigger("click");
+    await wrapper.get('[data-testid="stub-data-filter"]').trigger("click");
+    await dateButton.trigger("click");
+    await wrapper.get('[data-testid="stub-timestamp-filter"]').trigger("click");
+    await columnButton.trigger("click");
+
+    expect(columnButton.attributes("aria-pressed")).toBe("true");
+    expect(dateButton.attributes("aria-pressed")).toBe("true");
+    expect(wrapper.find('[data-testid="column-filter-applied"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.find('[data-testid="date-filter-applied"]').exists()).toBe(
+      true,
+    );
+    expect(columnButton.attributes("aria-expanded")).toBe("true");
+    expect(dateButton.attributes("aria-expanded")).toBe("false");
+
+    await columnButton.trigger("click");
+
+    expect(columnButton.attributes("aria-expanded")).toBe("false");
+    expect(dateButton.attributes("aria-expanded")).toBe("false");
+    expect(columnButton.attributes("aria-pressed")).toBe("true");
+    expect(dateButton.attributes("aria-pressed")).toBe("true");
+
+    await columnButton.trigger("click");
+    await wrapper
+      .get('[data-testid="stub-data-filter-clear"]')
+      .trigger("click");
+
+    expect(columnButton.attributes("aria-pressed")).toBe("false");
+    expect(dateButton.attributes("aria-pressed")).toBe("true");
+    expect(wrapper.find('[data-testid="column-filter-applied"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.find('[data-testid="date-filter-applied"]').exists()).toBe(
+      true,
+    );
   });
 });
