@@ -62,6 +62,14 @@ button:focus-visible + .copy-map-location-tooltip {
   transform: translateX(0);
 }
 
+/* Touch has no hover. A tap focuses the button, so show the label then. */
+@media (hover: none), (pointer: coarse) {
+  button:focus + .copy-map-location-tooltip {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @media (hover: hover) and (pointer: fine) {
   button:hover + .copy-map-location-tooltip {
     opacity: 1;
