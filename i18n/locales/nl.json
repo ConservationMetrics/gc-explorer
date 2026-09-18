@@ -53,6 +53,7 @@
   "copyConfigDescription": "Selecteer een weergave om de configuratiewaarden in het huidige formulier te kopiëren. U kunt de waarden aanpassen voordat u opslaat.",
   "copyConfigFromDatasetView": "Configuratie kopiëren van een andere weergave",
   "copyLink": "Kopieer link naar alert",
+  "copyMapLocation": "Kopieer link naar deze locatie",
   "copySecondaryLink": "Kopieer link naar object",
   "created": "Gemaakt",
   "createViewTypeDescription": "Kies een weergavetype om verder te gaan. U kunt nu optioneel een primaire dataset kiezen, of op de volgende pagina.",

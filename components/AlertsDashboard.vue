@@ -30,6 +30,7 @@ import {
 } from "@/utils/pulsingHalo";
 
 import BasemapSelector from "@/components/shared/BasemapSelector.vue";
+import MapFilterControls from "@/components/shared/MapFilterControls.vue";
 import ViewSidebar from "@/components/shared/ViewSidebar.vue";
 import MapLegend from "@/components/shared/MapLegend.vue";
 import IncidentsSidebar from "@/components/alerts/IncidentsSidebar.vue";
@@ -39,6 +40,11 @@ import { useHasRole } from "@/composables/useHasRole";
 import { useFeatureSelection } from "@/composables/useFeatureSelection";
 import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
 import { useRecordCache } from "@/composables/useRecordCache";
+import { useCopyMapLocation } from "@/composables/useCopyLink";
+import {
+  attachMapCameraQuerySync,
+  getInitialMapCamera,
+} from "@/utils/mapCameraQuery";
 import {
   transformSurveyEntry,
   transformAlertEntry,
@@ -138,6 +144,8 @@ const calculateHectares = ref(false);
 const dateOptions = ref();
 const hasRulerControl = ref(false);
 const map = ref();
+const { showCopied: showCopiedLocation, copyLocation } =
+  useCopyMapLocation(map);
 const mapReady = ref(false);
 const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
@@ -379,15 +387,21 @@ const selectInitialSecondaryFeature = (secondaryDocId: string) => {
 
 onMounted(() => {
   mapboxgl.accessToken = props.mapboxAccessToken;
+  const initialCamera = getInitialMapCamera(route.query, {
+    lat: props.mapboxLatitude || -15,
+    lng: props.mapboxLongitude || 0,
+    zoom: props.mapboxZoom || 2.5,
+  });
   map.value = new mapboxgl.Map({
     container: "map",
     style: props.mapboxStyle || "mapbox://styles/mapbox/streets-v12",
     projection: props.mapboxProjection || "mercator",
-    center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
-    zoom: props.mapboxZoom || 2.5,
+    center: [initialCamera.lng, initialCamera.lat],
+    zoom: initialCamera.zoom,
     pitch: props.mapboxPitch || 0,
     bearing: props.mapboxBearing || 0,
   });
+  attachMapCameraQuerySync(map.value, route, router);
 
   // @ts-expect-error: Expose map instance for Playwright E2E tests; not a standard property on window
   window._testMap = map.value;
@@ -1677,6 +1691,11 @@ onBeforeUnmount(() => {
     >
       {{ $t("resetDashboard") }}
     </button>
+    <MapFilterControls
+      :data="[]"
+      :show-copied-location="showCopiedLocation"
+      @copy-location="copyLocation"
+    />
     <ViewSidebar
       :alerts-statistics="filteredStatistics"
       :allowed-file-extensions="allowedFileExtensions"

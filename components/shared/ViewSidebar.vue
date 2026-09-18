@@ -6,7 +6,10 @@ import FeatureMetadata from "@/components/shared/FeatureMetadata.vue";
 import MobileResizableDrawer from "@/components/shared/MobileResizableDrawer.vue";
 import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
 import MapIntroPanel from "@/components/map/MapIntroPanel.vue";
-import { useCopyLink } from "@/composables/useCopyLink";
+import {
+  COPY_ALERT_LINK_EXCLUDE_PARAMS,
+  useCopyLink,
+} from "@/composables/useCopyLink";
 import { warehouseRecordIdForExport } from "@/utils/identifierUtils";
 import { isImageFilePath } from "@/utils/mediaHelpers";
 
@@ -116,7 +119,7 @@ const exportRecordId = computed(() =>
 );
 
 const { showCopied, copyLink } = useCopyLink(
-  props.isAlertsDashboard ? ["incidentId"] : undefined,
+  props.isAlertsDashboard ? COPY_ALERT_LINK_EXCLUDE_PARAMS : undefined,
 );
 
 const emit = defineEmits<{

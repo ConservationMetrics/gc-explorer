@@ -55,6 +55,7 @@
   "copyConfigDescription": "Select a view to copy its configuration values into the current form. You can modify the values before saving.",
   "copyConfigFromDatasetView": "Copy Config from Another View",
   "copyLink": "Copy link to alert",
+  "copyMapLocation": "Copy link to this location",
   "copySecondaryLink": "Copy link to feature",
   "created": "Created",
   "createViewTypeDescription": "Choose a view type to continue. You can optionally pick a primary dataset now, or on the next page.",

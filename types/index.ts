@@ -455,3 +455,34 @@ export interface CollectionStatistics {
     bounds: [number, number, number, number]; // [minLng, minLat, maxLng, maxLat]
   };
 }
+
+/** Map center and zoom restored from or written to the URL. */
+export type MapCamera = {
+  lat: number;
+  lng: number;
+  zoom: number;
+};
+
+/** Serialized `lat`, `lng`, and `zoom` query values. */
+export type MapCameraQuery = {
+  lat: string;
+  lng: string;
+  zoom: string;
+};
+
+export const MAP_CAMERA_QUERY_KEYS = ["lat", "lng", "zoom"] as const;
+
+export type MapCameraQueryKey = (typeof MAP_CAMERA_QUERY_KEYS)[number];
+
+/**
+ * Feature ids that own the map camera on load. When any of these are present,
+ * camera query params do not restore the view.
+ */
+export const MAP_FEATURE_ID_QUERY_KEYS = [
+  "alertId",
+  "incidentId",
+  "secondaryDocId",
+  "mapeoDocId",
+] as const;
+
+export type MapFeatureIdQueryKey = (typeof MAP_FEATURE_ID_QUERY_KEYS)[number];

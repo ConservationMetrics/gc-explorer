@@ -1,8 +1,14 @@
 <script setup lang="ts">
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { useRoute, useRouter } from "vue-router";
 
 import { getFilePathsWithExtension } from "@/utils";
+import {
+  attachMapCameraQuerySync,
+  getInitialMapCamera,
+} from "@/utils/mapCameraQuery";
+import { useCopyMapLocation } from "@/composables/useCopyLink";
 import {
   changeMapStyle,
   applyTerrain,
@@ -78,7 +84,11 @@ const terrainExaggeration = computed(() =>
 
 const { fetchRecord } = useRecordCache();
 
+const route = useRoute();
+const router = useRouter();
 const map = ref();
+const { showCopied: showCopiedLocation, copyLocation } =
+  useCopyMapLocation(map);
 const selectedFeature = ref<DataEntry>();
 const selectedFeatureOriginal = ref<Feature>();
 const selectedFeatureLoading = ref(false);
@@ -116,15 +126,22 @@ const filteredMapStatistics = computed<MapStatistics>(() => {
 onMounted(() => {
   mapboxgl.accessToken = props.mapboxAccessToken;
 
+  const initialCamera = getInitialMapCamera(route.query, {
+    lat: props.mapboxLatitude || -15,
+    lng: props.mapboxLongitude || 0,
+    zoom: props.mapboxZoom || 2.5,
+  });
+
   map.value = new mapboxgl.Map({
     container: "map",
     style: props.mapboxStyle || "mapbox://styles/mapbox/streets-v12",
     projection: props.mapboxProjection || "mercator",
-    center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
-    zoom: props.mapboxZoom || 2.5,
+    center: [initialCamera.lng, initialCamera.lat],
+    zoom: initialCamera.zoom,
     pitch: props.mapboxPitch || 0,
     bearing: props.mapboxBearing || 0,
   });
+  attachMapCameraQuerySync(map.value, route, router);
   // Apply 3D terrain whenever the style loads
   let controlsAdded = false;
 
@@ -602,14 +619,15 @@ onBeforeUnmount(() => {
       {{ $t("resetMap") }}
     </button>
     <MapFilterControls
-      v-if="filterColumn || timestampColumn"
       :key="filterResetKey"
       :data="flatDataForFilter"
       :filter-column="filterColumn"
       :color-column="colorColumn"
       :timestamp-column="timestampColumn"
+      :show-copied-location="showCopiedLocation"
       @filter="filterValues"
       @date-filter="onTimestampFilter"
+      @copy-location="copyLocation"
     />
     <ViewSidebar
       :allowed-file-extensions="allowedFileExtensions"

@@ -7,7 +7,10 @@ import {
   sanitizeFilenameSegment,
 } from "@/utils/identifierUtils";
 import { Check, ChevronLeft, Copy, X } from "lucide-vue-next";
-import { useCopyLink } from "@/composables/useCopyLink";
+import {
+  COPY_INCIDENT_LINK_EXCLUDE_PARAMS,
+  useCopyLink,
+} from "@/composables/useCopyLink";
 import {
   buildIncidentEntriesFeatureCollection,
   buildIncidentMetadataCsv,
@@ -128,11 +131,7 @@ const downloadIncidentFeatures = () => {
 };
 
 const showCreateForm = ref(false);
-const { showCopied, copyLink } = useCopyLink([
-  "alertId",
-  "mapeoDocId",
-  "secondaryDocId",
-]);
+const { showCopied, copyLink } = useCopyLink(COPY_INCIDENT_LINK_EXCLUDE_PARAMS);
 const formData = ref({
   name: "",
   description: "",

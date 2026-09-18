@@ -173,4 +173,18 @@ describe("MapFilterControls", () => {
       true,
     );
   });
+
+  it("emits copy-location from the location button", async () => {
+    const wrapper = mount(MapFilterControls, {
+      props: {
+        data: [],
+      },
+      global: globalConfig,
+    });
+
+    await wrapper
+      .get('[data-testid="copy-map-location-button"]')
+      .trigger("click");
+    expect(wrapper.emitted("copy-location")).toEqual([[]]);
+  });
 });
