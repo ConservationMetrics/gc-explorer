@@ -141,6 +141,8 @@ onMounted(() => {
     pitch: props.mapboxPitch || 0,
     bearing: props.mapboxBearing || 0,
   });
+  // @ts-expect-error: Expose map instance for Playwright E2E tests; not a standard property on window
+  window._testMap = map.value;
   attachMapCameraQuerySync(map.value, route, router);
   // Apply 3D terrain whenever the style loads
   let controlsAdded = false;
@@ -316,11 +318,7 @@ const addDataToMap = () => {
       id: "data-layer-polygon",
       type: "fill",
       source: "data-source",
-      filter: [
-        "any",
-        ["==", "$type", "Polygon"],
-        ["==", "$type", "MultiPolygon"],
-      ],
+      filter: ["==", "$type", "Polygon"],
       paint: {
         "fill-color": colorExpression,
         "fill-opacity": 0.5,

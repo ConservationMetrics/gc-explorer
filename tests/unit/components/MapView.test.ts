@@ -323,11 +323,7 @@ describe("MapView component", () => {
         id: "data-layer-polygon",
         type: "fill",
         source: "data-source",
-        filter: [
-          "any",
-          ["==", "$type", "Polygon"],
-          ["==", "$type", "MultiPolygon"],
-        ],
+        filter: ["==", "$type", "Polygon"],
       }),
     );
   });
@@ -371,6 +367,7 @@ describe("MapView component", () => {
         id: "data-layer-polygon",
         type: "fill",
         source: "data-source",
+        filter: ["==", "$type", "Polygon"],
       }),
     );
   });
