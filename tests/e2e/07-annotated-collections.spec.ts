@@ -12,7 +12,6 @@ type LngLat = [number, number];
 
 async function getSelectableFeatureLngLat(page: Page): Promise<LngLat | null> {
   return await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
     const map = window._testMap;
     if (!map) return null;
 
@@ -54,15 +53,13 @@ async function getSelectableFeatureLngLat(page: Page): Promise<LngLat | null> {
 
 async function getMapZoom(page: Page): Promise<number> {
   return page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    return window._testMap.getZoom();
+    return window.getTestMap().getZoom();
   });
 }
 
 async function waitForMapIdle(page: Page): Promise<void> {
   await page.locator("#map[data-map-ready='true']").waitFor();
   await page.waitForFunction(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
     const map = window._testMap;
     return !!map && !map.isMoving();
   });
@@ -73,7 +70,6 @@ async function projectLngLatToPagePoint(
   lngLat: LngLat,
 ): Promise<{ x: number; y: number } | null> {
   return await page.evaluate(([lng, lat]) => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
     const map = window._testMap;
     if (!map) return null;
 
@@ -155,7 +151,6 @@ test("annotated collections - cluster highlighting when viewing incident details
   await page.getByText("Cluster Highlight Test Incident").click();
 
   const hasHighlight = await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
     const map = window._testMap;
     if (!map) return false;
 
@@ -270,8 +265,7 @@ test("annotated collections - shareable incident link URL parameter", async ({
   await waitForMapIdle(page);
 
   const afterLoad = await page.evaluate((featureLngLat) => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
+    const map = window.getTestMap();
     const bounds = map.getBounds();
     return {
       zoom: map.getZoom(),

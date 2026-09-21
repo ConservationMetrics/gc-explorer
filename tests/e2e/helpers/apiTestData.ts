@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
+import type { Sql } from "postgres";
 
 import { viewConfig as viewsTable } from "@/server/database/schemas/viewConfig";
 import type { ApiTestView, ApiTestViewInput } from "@/types";
@@ -10,6 +11,14 @@ import {
   TEST_CONFIG_DATABASE,
   TEST_WAREHOUSE_DATABASE,
 } from "./testDatabase";
+
+type WarehouseInitializer = (database: Sql, tableName: string) => Promise<void>;
+
+type CreateApiTestViewInput = Omit<ApiTestViewInput, "sourceTable"> &
+  (
+    | { sourceTable: string; warehouseInitializer?: never }
+    | { sourceTable?: never; warehouseInitializer: WarehouseInitializer }
+  );
 
 const quoteIdentifier = (value: string): string =>
   `"${value.replaceAll('"', '""')}"`;
@@ -21,7 +30,7 @@ const quoteIdentifier = (value: string): string =>
  * @returns {Promise<ApiTestView>} Identity used by the route and teardown.
  */
 export const createApiTestView = async (
-  input: ApiTestViewInput,
+  input: CreateApiTestViewInput,
 ): Promise<ApiTestView> => {
   const primaryDataset = `api_test_${randomUUID().replaceAll("-", "").slice(0, 12)}`;
   const configSql = createTestDatabaseClient(TEST_CONFIG_DATABASE);
@@ -29,9 +38,13 @@ export const createApiTestView = async (
   const warehouseSql = createTestDatabaseClient(TEST_WAREHOUSE_DATABASE);
 
   try {
-    await warehouseSql.unsafe(
-      `CREATE TABLE ${quoteIdentifier(primaryDataset)} AS TABLE ${quoteIdentifier(input.sourceTable)}`,
-    );
+    if (input.warehouseInitializer) {
+      await input.warehouseInitializer(warehouseSql, primaryDataset);
+    } else {
+      await warehouseSql.unsafe(
+        `CREATE TABLE ${quoteIdentifier(primaryDataset)} AS TABLE ${quoteIdentifier(input.sourceTable)}`,
+      );
+    }
     await configDb.insert(viewsTable).values({
       primaryDataset,
       secondaryDataset: input.secondaryDataset ?? null,
