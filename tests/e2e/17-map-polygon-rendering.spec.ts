@@ -6,6 +6,7 @@ import {
   deleteApiTestView,
 } from "@/tests/e2e/helpers/apiTestData";
 import { stubMapboxTelemetry } from "@/tests/e2e/helpers/configPage";
+import { waitForTestMap } from "@/tests/e2e/helpers/testMap";
 import type { ApiTestView, ViewConfig } from "@/types";
 
 type PolygonFixtureRow = {
@@ -130,6 +131,7 @@ test.describe("polygon map rendering", () => {
 
     await stubMapboxTelemetry(page);
     await page.goto(`/${mixedView.viewType}/${mixedView.primaryDataset}`);
+    await waitForTestMap(page);
 
     await expect
       .poll(async () =>
@@ -168,6 +170,7 @@ test.describe("polygon map rendering", () => {
     await page.goto(
       `/${multiPolygonOnlyView.viewType}/${multiPolygonOnlyView.primaryDataset}`,
     );
+    await waitForTestMap(page);
 
     await expect
       .poll(() =>
