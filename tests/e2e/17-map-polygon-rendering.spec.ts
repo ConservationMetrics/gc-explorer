@@ -1,6 +1,6 @@
 import type { FeatureCollection } from "geojson";
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import {
   createApiTestView,
   deleteApiTestView,
@@ -40,7 +40,7 @@ test.describe("polygon map rendering", () => {
         MAPBOX_PITCH: 0,
         MAPBOX_PROJECTION: "mercator",
         MAPBOX_ZOOM: 5,
-        ROUTE_LEVEL_PERMISSION: "anyone",
+        ROUTE_LEVEL_PERMISSION: "member",
       },
       viewType: "map",
     });
@@ -50,7 +50,10 @@ test.describe("polygon map rendering", () => {
     if (view) await deleteApiTestView(view);
   });
 
-  test("renders Polygon and MultiPolygon features", async ({ page }) => {
+  test("renders Polygon and MultiPolygon features", async ({
+    authenticatedPageAsAdmin: page,
+    authenticatedRequestAsAdmin: request,
+  }) => {
     if (!view) throw new Error("Polygon map test view was not created");
 
     const consoleErrors: string[] = [];
@@ -60,7 +63,7 @@ test.describe("polygon map rendering", () => {
       }
     });
 
-    const apiResponse = await page.request.get(
+    const apiResponse = await request.get(
       `/api/${view.primaryDataset}/${view.viewType}`,
     );
     expect(apiResponse.status()).toBe(200);
