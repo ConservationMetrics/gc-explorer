@@ -105,6 +105,7 @@ export default defineEventHandler(async (event: H3Event) => {
     // When MEDIA_COLUMN is unset, keep every string field that carries allowed
     // media extensions (e.g. separate photo + audio columns). Otherwise the
     // client media-type filter has nothing to classify and appears broken.
+    // thing
     const minimalData = dataWithFilesOnly.map((entry) => {
       const minimal: Record<string, unknown> = {};
       if (entry._id != null) minimal._id = entry._id;
