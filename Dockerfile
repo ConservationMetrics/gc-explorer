@@ -32,16 +32,11 @@ FROM node:22-slim AS production
 # Set the working directory
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm@11.25.0
+# Nitro already bundles a standalone Node server into .output, including the
+# few unbundled runtime packages under .output/server/node_modules. Do not
+# reinstall app dependencies or pnpm here: pnpm 11 leaves a ~400MB registry
+# metadata cache plus a content-addressable store, which is unused at runtime
 
-# Copy package files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-
-# Install only production dependencies
-RUN pnpm install --prod --frozen-lockfile --ignore-scripts
-
-# Copy built application from builder stage
 COPY --from=builder /app/.output ./.output
 
 # Copy startup script and SQL migrations (Nitro plugin reads these at runtime)
