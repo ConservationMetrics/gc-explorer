@@ -211,6 +211,28 @@ CREATE TABLE public.seed_survey_data (
 
 
 --
+-- Name: test_polygon_features; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.test_polygon_features (
+    _id text NOT NULL,
+    g__coordinates text NOT NULL,
+    g__type text NOT NULL,
+    filter_color text
+);
+
+
+--
+-- Data for Name: test_polygon_features; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.test_polygon_features (_id, g__coordinates, g__type, filter_color) FROM stdin;
+test-polygon	[[[-1.5, -1], [-0.25, -1], [-0.25, 1], [-1.5, 1], [-1.5, -1]]]	Polygon	#dc2626
+test-multipolygon	[[[[0.25, -1], [1.5, -1], [1.5, 1], [0.25, 1], [0.25, -1]]]]	MultiPolygon	#16a34a
+\.
+
+
+--
 -- Data for Name: bcmform_responses; Type: TABLE DATA; Schema: public; Owner: -
 --
 
@@ -757,6 +779,14 @@ ALTER TABLE ONLY public.mapeo_data
 
 ALTER TABLE ONLY public.seed_survey_data
     ADD CONSTRAINT seed_survey_data_pkey PRIMARY KEY (_id);
+
+
+--
+-- Name: test_polygon_features test_polygon_features_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.test_polygon_features
+    ADD CONSTRAINT test_polygon_features_pkey PRIMARY KEY (_id);
 
 
 
