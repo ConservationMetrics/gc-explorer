@@ -316,11 +316,7 @@ const addDataToMap = () => {
       id: "data-layer-polygon",
       type: "fill",
       source: "data-source",
-      filter: [
-        "any",
-        ["==", "$type", "Polygon"],
-        ["==", "$type", "MultiPolygon"],
-      ],
+      filter: ["==", "$type", "Polygon"],
       paint: {
         "fill-color": colorExpression,
         "fill-opacity": 0.5,
