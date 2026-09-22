@@ -10,8 +10,7 @@ test("alerts dashboard - camera query params restore the map view", async ({
   await expect(copyButton).toBeVisible();
 
   await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
+    const map = window.getTestMap();
     map.jumpTo({ center: [-60.02, -3.12], zoom: 11.5 });
   });
 
@@ -24,8 +23,7 @@ test("alerts dashboard - camera query params restore the map view", async ({
   await page.locator("#map[data-map-ready='true']").waitFor();
 
   const camera = await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
+    const map = window.getTestMap();
     const center = map.getCenter();
     return { lat: center.lat, lng: center.lng, zoom: map.getZoom() };
   });

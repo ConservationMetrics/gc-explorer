@@ -1,4 +1,4 @@
-import type { FeatureCollection } from "geojson";
+import type { Sql } from "postgres";
 
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import {
@@ -6,140 +6,201 @@ import {
   deleteApiTestView,
 } from "@/tests/e2e/helpers/apiTestData";
 import { stubMapboxTelemetry } from "@/tests/e2e/helpers/configPage";
-import type { ApiTestView } from "@/types";
+import { waitForTestMap } from "@/tests/e2e/helpers/testMap";
+import type { ApiTestView, ViewConfig } from "@/types";
+
+type PolygonFixtureRow = {
+  color: string;
+  coordinates: string;
+  displayName: string;
+  id: string;
+  type: "Polygon" | "MultiPolygon";
+};
+
+const polygonRows: PolygonFixtureRow[] = [
+  {
+    id: "test-polygon",
+    type: "Polygon",
+    coordinates:
+      "[[[-63.5,2.5],[-62.5,2.5],[-62.5,3.5],[-63.5,3.5],[-63.5,2.5]]]",
+    color: "#dc2626",
+    displayName: "Ordinary polygon fixture",
+  },
+  {
+    id: "test-multipolygon",
+    type: "MultiPolygon",
+    coordinates:
+      "[[[[-60.5,4.5],[-59.5,4.5],[-59.5,5.5],[-60.5,5.5],[-60.5,4.5]]],[[[-57.5,6.5],[-56.5,6.5],[-56.5,7.5],[-57.5,7.5],[-57.5,6.5]]]]",
+    color: "#16a34a",
+    displayName: "Multipart polygon fixture",
+  },
+];
+
+const multiPolygonOnlyRows = polygonRows.filter(
+  (row) => row.type === "MultiPolygon",
+);
+
+const viewConfig: ViewConfig = {
+  COLOR_COLUMN: "filter_color",
+  MAPBOX_BASEMAPS: JSON.stringify([
+    {
+      name: "Default Style",
+      style: {
+        version: 8,
+        sources: {},
+        layers: [
+          {
+            id: "background",
+            type: "background",
+            paint: { "background-color": "#f8fafc" },
+          },
+        ],
+      },
+      access_token: "pk.e2e",
+      isDefault: true,
+    },
+  ]),
+  MAPBOX_BEARING: 0,
+  MAPBOX_CENTER_LATITUDE: "5",
+  MAPBOX_CENTER_LONGITUDE: "-60",
+  MAPBOX_PITCH: 0,
+  MAPBOX_PROJECTION: "mercator",
+  MAPBOX_ZOOM: 5,
+  ROUTE_LEVEL_PERMISSION: "member",
+};
+
+const initializePolygonFixture =
+  (rows: PolygonFixtureRow[]) => async (database: Sql, tableName: string) => {
+    const table = `"${tableName.replaceAll('"', '""')}"`;
+    await database.unsafe(`
+      CREATE TABLE ${table} (
+        _id text NOT NULL,
+        g__coordinates text NOT NULL,
+        g__type text NOT NULL,
+        filter_color text NOT NULL,
+        display_name text NOT NULL
+      )
+    `);
+
+    await Promise.all(
+      rows.map((row) =>
+        database.unsafe(
+          `INSERT INTO ${table} (_id, g__coordinates, g__type, filter_color, display_name)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [row.id, row.coordinates, row.type, row.color, row.displayName],
+        ),
+      ),
+    );
+  };
 
 test.describe("polygon map rendering", () => {
-  let view: ApiTestView | null = null;
+  let mixedView: ApiTestView | null = null;
+  let multiPolygonOnlyView: ApiTestView | null = null;
 
   test.beforeAll(async () => {
-    view = await createApiTestView({
-      sourceTable: "test_polygon_features",
-      viewConfig: {
-        COLOR_COLUMN: "filter_color",
-        MAPBOX_BASEMAPS: JSON.stringify([
-          {
-            name: "Default Style",
-            style: {
-              version: 8,
-              sources: {},
-              layers: [
-                {
-                  id: "background",
-                  type: "background",
-                  paint: { "background-color": "#f8fafc" },
-                },
-              ],
-            },
-            access_token: "pk.e2e",
-            isDefault: true,
-          },
-        ]),
-        MAPBOX_BEARING: 0,
-        MAPBOX_CENTER_LATITUDE: "0",
-        MAPBOX_CENTER_LONGITUDE: "0",
-        MAPBOX_PITCH: 0,
-        MAPBOX_PROJECTION: "mercator",
-        MAPBOX_ZOOM: 5,
-        ROUTE_LEVEL_PERMISSION: "member",
-      },
+    mixedView = await createApiTestView({
+      warehouseInitializer: initializePolygonFixture(polygonRows),
+      viewConfig,
+      viewType: "map",
+    });
+    multiPolygonOnlyView = await createApiTestView({
+      warehouseInitializer: initializePolygonFixture(multiPolygonOnlyRows),
+      viewConfig,
       viewType: "map",
     });
   });
 
   test.afterAll(async () => {
-    if (view) await deleteApiTestView(view);
+    await Promise.all(
+      [mixedView, multiPolygonOnlyView]
+        .filter((view): view is ApiTestView => view !== null)
+        .map(deleteApiTestView),
+    );
   });
 
   test("renders Polygon and MultiPolygon features", async ({
     authenticatedPageAsAdmin: page,
-    authenticatedRequestAsAdmin: request,
   }) => {
-    if (!view) throw new Error("Polygon map test view was not created");
+    if (!mixedView)
+      throw new Error("Mixed polygon map test view was not created");
 
     const consoleErrors: string[] = [];
     page.on("console", (message) => {
-      if (message.type() === "error") {
-        consoleErrors.push(message.text());
-      }
+      if (message.type() === "error") consoleErrors.push(message.text());
     });
-
-    const apiResponse = await request.get(
-      `/api/${view.primaryDataset}/${view.viewType}`,
-    );
-    expect(apiResponse.status()).toBe(200);
-
-    const responseBody = (await apiResponse.json()) as {
-      data: FeatureCollection;
-    };
-    expect(
-      responseBody.data.features.map((feature) => feature.geometry.type),
-    ).toEqual(["Polygon", "MultiPolygon"]);
 
     await stubMapboxTelemetry(page);
-    await page.goto(`/${view.viewType}/${view.primaryDataset}`);
-    await page.waitForFunction(() => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      return Boolean(window._testMap?.getLayer("data-layer-polygon"));
-    });
-    await page.waitForFunction(() => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      return Boolean(window._testMap?.loaded());
-    });
-    await page.evaluate(async () => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
-      map.resize();
-      map.fitBounds(
-        [
-          [-2, -1.5],
-          [2, 1.5],
-        ],
-        { duration: 0, padding: 20 },
-      );
-      await new Promise<void>((resolve) => map.once("idle", resolve));
-    });
+    await page.goto(`/${mixedView.viewType}/${mixedView.primaryDataset}`);
+    await waitForTestMap(page);
 
-    const mapState = await page.evaluate(() => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
-      const source = map.getSource("data-source") as {
-        _data?: FeatureCollection;
-      };
-      const polygonLayer = map
-        .getStyle()
-        .layers.find(
-          (layer: { id: string }) => layer.id === "data-layer-polygon",
-        );
-      const renderedFeatureIds = map
-        .queryRenderedFeatures({ layers: ["data-layer-polygon"] })
-        .map((feature: { properties?: { _id?: string } }) => {
-          return feature.properties?._id;
-        });
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const map = window.getTestMap();
+          if (!map.getLayer("data-layer-polygon")) return [];
+          return [
+            ...new Set(
+              map
+                .queryRenderedFeatures({ layers: ["data-layer-polygon"] })
+                .map((feature) => feature.properties?._id)
+                .filter((id): id is string => typeof id === "string"),
+            ),
+          ];
+        }),
+      )
+      .toEqual(expect.arrayContaining(["test-polygon", "test-multipolygon"]));
 
-      return {
-        filter: polygonLayer?.filter,
-        renderedFeatureIds,
-        sourceFeatureIds:
-          source._data?.features.map((feature) => feature.properties?._id) ??
-          [],
-      };
-    });
+    expect(
+      consoleErrors.filter(
+        (message) =>
+          message.includes("layers.data-layer-polygon.filter") ||
+          message.includes('"MultiPolygon" found'),
+      ),
+    ).toEqual([]);
+  });
 
-    expect(mapState.filter).toEqual(["==", "$type", "Polygon"]);
-    expect(mapState.sourceFeatureIds).toEqual([
-      "test-polygon",
-      "test-multipolygon",
-    ]);
-    expect(mapState.renderedFeatureIds).toEqual(
-      expect.arrayContaining(["test-polygon", "test-multipolygon"]),
+  test("creates the polygon layer for MultiPolygon-only data", async ({
+    authenticatedPageAsAdmin: page,
+  }) => {
+    if (!multiPolygonOnlyView) {
+      throw new Error("MultiPolygon-only map test view was not created");
+    }
+
+    await stubMapboxTelemetry(page);
+    await page.goto(
+      `/${multiPolygonOnlyView.viewType}/${multiPolygonOnlyView.primaryDataset}`,
+    );
+    await waitForTestMap(page);
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const map = window.getTestMap();
+          return map.getLayer("data-layer-polygon")?.id ?? null;
+        }),
+      )
+      .toBe("data-layer-polygon");
+  });
+
+  test("clicking a MultiPolygon interior opens its feature sidebar", async ({
+    authenticatedPageAsAdmin: page,
+  }) => {
+    if (!mixedView)
+      throw new Error("Mixed polygon map test view was not created");
+
+    await stubMapboxTelemetry(page);
+    await page.goto(`/${mixedView.viewType}/${mixedView.primaryDataset}`);
+    const canvas = page.locator("canvas.mapboxgl-canvas");
+    await expect(canvas).toBeVisible();
+
+    // The first MultiPolygon part surrounds the configured camera center.
+    const bounds = await canvas.boundingBox();
+    if (!bounds) throw new Error("Map canvas has no bounding box");
+    await page.mouse.click(
+      bounds.x + bounds.width / 2,
+      bounds.y + bounds.height / 2,
     );
 
-    const polygonLayerErrors = consoleErrors.filter((message) => {
-      return (
-        message.includes("layers.data-layer-polygon.filter") ||
-        message.includes('"MultiPolygon" found')
-      );
-    });
-    expect(polygonLayerErrors).toEqual([]);
+    await expect(page.getByText("Multipart polygon fixture")).toBeVisible();
   });
 });

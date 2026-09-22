@@ -129,8 +129,7 @@ test("alerts dashboard - layer visibility toggles", async ({
 
     // Get the layer ID from the label text
     await page.evaluate((text) => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
+      const map = window.getTestMap();
       const layers = map.getStyle().layers;
       // Find layer that matches the label text
       const layer = layers.find((l: { id: string }) =>
@@ -183,10 +182,9 @@ test("alerts dashboard - includes MultiPolygon alerts on initial load and deep l
       .waitFor({ timeout: 15000 });
 
     const polygonSourceAlertIds = await page.evaluate(() => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const source = window._testMap.getSource(
-        "most-recent-alerts-polygon",
-      ) as {
+      const source = window
+        .getTestMap()
+        .getSource("most-recent-alerts-polygon") as {
         _data?: { features?: Array<{ properties?: { alertID?: string } }> };
       };
       return source?._data?.features?.map(
@@ -223,8 +221,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
 
     // Get all layers for this alert type
     const alertLayers = await page.evaluate((prefix) => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
+      const map = window.getTestMap();
       const layers = map.getStyle().layers;
 
       const layerIds = layers
@@ -243,8 +240,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
 
     // Verify all layers are initially visible
     const initialVisibility = await page.evaluate((layerIds) => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
+      const map = window.getTestMap();
       return layerIds.map((layerId: string) => ({
         id: layerId,
         visible: map.getLayoutProperty(layerId, "visibility") !== "none",
@@ -260,8 +256,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
     // Simulate the toggle function behavior by directly controlling map layers
     // This tests that the layer setup supports the grouped toggle functionality
     await page.evaluate((layerIds) => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
+      const map = window.getTestMap();
 
       // Hide all layers for this alert type (simulating toggleLayerVisibility with visible: false)
       layerIds.forEach((layerId: string) => {
@@ -275,8 +270,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
 
     // Verify all layers are now hidden
     const hiddenVisibility = await page.evaluate((layerIds) => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
+      const map = window.getTestMap();
       return layerIds.map((layerId: string) => ({
         id: layerId,
         visible: map.getLayoutProperty(layerId, "visibility") !== "none",
@@ -290,8 +284,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
 
     // Show all layers again (simulating toggleLayerVisibility with visible: true)
     await page.evaluate((layerIds) => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
+      const map = window.getTestMap();
 
       layerIds.forEach((layerId: string) => {
         if (map.getLayer(layerId)) {
@@ -304,8 +297,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
 
     // Verify all layers are visible again
     const visibleAgain = await page.evaluate((layerIds) => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
+      const map = window.getTestMap();
       return layerIds.map((layerId: string) => ({
         id: layerId,
         visible: map.getLayoutProperty(layerId, "visibility") !== "none",
@@ -419,8 +411,7 @@ test("alerts dashboard - LineString buffer click behavior", async ({
 
   // 9. Check if LineString features exist
   const hasLineStrings = await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
+    const map = window.getTestMap();
     const features = map.queryRenderedFeatures({
       layers: ["most-recent-alerts-linestring", "previous-alerts-linestring"],
     });
@@ -438,8 +429,7 @@ test("alerts dashboard - LineString buffer click behavior", async ({
 
       // Check if cursor changes to pointer when over LineString
       const cursorStyle = await page.evaluate(() => {
-        // @ts-expect-error _testMap is exposed for E2E testing only
-        return window._testMap.getCanvas().style.cursor;
+        return window.getTestMap().getCanvas().style.cursor;
       });
 
       // Cursor should be pointer when over LineString features
@@ -448,8 +438,7 @@ test("alerts dashboard - LineString buffer click behavior", async ({
 
     // 11. Test buffer click functionality
     const lineStringFeatures = await page.evaluate(() => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
+      const map = window.getTestMap();
       return map.queryRenderedFeatures({
         layers: ["most-recent-alerts-linestring", "previous-alerts-linestring"],
       });
@@ -462,8 +451,7 @@ test("alerts dashboard - LineString buffer click behavior", async ({
       // Click on the LineString feature
       await page.evaluate(
         ([lng, lat]) => {
-          // @ts-expect-error _testMap is exposed for E2E testing only
-          const map = window._testMap;
+          const map = window.getTestMap();
           const pt = map.project([lng, lat]);
           map.fire("click", {
             point: pt,
@@ -547,8 +535,7 @@ test("alerts dashboard - geometry type specific interactions", async ({
 
   // 9. Test Point features (clustered circles)
   const pointFeatures = await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
+    const map = window.getTestMap();
     // Try to find point features, including clustered ones
     let features = map.queryRenderedFeatures({
       layers: ["most-recent-alerts-point", "previous-alerts-point"],
@@ -574,8 +561,7 @@ test("alerts dashboard - geometry type specific interactions", async ({
       // Click on Point feature
       await page.evaluate(
         ([lng, lat]) => {
-          // @ts-expect-error _testMap is exposed for E2E testing only
-          const map = window._testMap;
+          const map = window.getTestMap();
           const pt = map.project([lng, lat]);
           map.fire("click", {
             point: pt,
@@ -595,8 +581,7 @@ test("alerts dashboard - geometry type specific interactions", async ({
 
   // 10. Test Polygon features
   const polygonFeatures = await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
+    const map = window.getTestMap();
     return map.queryRenderedFeatures({
       layers: ["most-recent-alerts-polygon", "previous-alerts-polygon"],
     });
@@ -614,8 +599,7 @@ test("alerts dashboard - geometry type specific interactions", async ({
     // Click on Polygon feature
     await page.evaluate(
       ([lng, lat]) => {
-        // @ts-expect-error _testMap is exposed for E2E testing only
-        const map = window._testMap;
+        const map = window.getTestMap();
         const pt = map.project([lng, lat]);
         map.fire("click", {
           point: pt,
@@ -634,8 +618,7 @@ test("alerts dashboard - geometry type specific interactions", async ({
 
   // 11. Test LineString features with buffer
   const lineStringFeatures = await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
+    const map = window.getTestMap();
     return map.queryRenderedFeatures({
       layers: ["most-recent-alerts-linestring", "previous-alerts-linestring"],
     });
@@ -652,8 +635,7 @@ test("alerts dashboard - geometry type specific interactions", async ({
     // Test buffer click behavior
     await page.evaluate(
       ([lng, lat]) => {
-        // @ts-expect-error _testMap is exposed for E2E testing only
-        const map = window._testMap;
+        const map = window.getTestMap();
         const pt = map.project([lng, lat]);
 
         // Simulate buffer click with pixel offset
@@ -747,8 +729,7 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
 
   // Test 1: Verify cluster circles exist (instead of old symbols)
   const clusterFeatures = await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
+    const map = window.getTestMap();
     const clusters = map.queryRenderedFeatures({
       layers: [
         "most-recent-alerts-centroids-clusters",
@@ -763,8 +744,7 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
 
     // Test 2: Click on a centroid circle (Point geometry)
     const centroidFeatures = await page.evaluate(() => {
-      // @ts-expect-error _testMap is exposed for E2E testing only
-      const map = window._testMap;
+      const map = window.getTestMap();
       return map.queryRenderedFeatures({
         layers: ["most-recent-alerts-centroids", "previous-alerts-centroids"],
       });
@@ -781,8 +761,7 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
         // Click the centroid
         await page.evaluate(
           ([lng, lat, alertID]) => {
-            // @ts-expect-error _testMap is exposed for E2E testing only
-            const map = window._testMap;
+            const map = window.getTestMap();
             const pt = map.project([lng, lat]);
             map.fire("click", {
               point: pt,
@@ -804,8 +783,7 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
 
   // Test 3: Verify clusters update when date range changes
   const initialSourceData = await page.evaluate(() => {
-    // @ts-expect-error _testMap is exposed for E2E testing only
-    const map = window._testMap;
+    const map = window.getTestMap();
     const source = map.getSource(
       "most-recent-alerts-centroids",
     ) as mapboxgl.GeoJSONSource;
@@ -862,7 +840,6 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
 
       // Trigger date range change using the exposed test helper
       await page.evaluate((range) => {
-        // @ts-expect-error _testHandleDateRangeChanged is exposed for E2E testing only
         const handler = window._testHandleDateRangeChanged;
         if (handler && typeof handler === "function") {
           handler(range);
@@ -874,8 +851,7 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
 
       // Verify source data has been updated
       const updatedSourceData = await page.evaluate(() => {
-        // @ts-expect-error _testMap is exposed for E2E testing only
-        const map = window._testMap;
+        const map = window.getTestMap();
         const source = map.getSource(
           "most-recent-alerts-centroids",
         ) as mapboxgl.GeoJSONSource;

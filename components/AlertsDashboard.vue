@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 
 import mapboxgl from "mapbox-gl";
+import { exposeTestMap } from "@/utils/e2eTestHooks";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import { bbox } from "@turf/turf";
@@ -403,9 +404,7 @@ onMounted(() => {
   });
   attachMapCameraQuerySync(map.value, route, router);
 
-  // @ts-expect-error: Expose map instance for Playwright E2E tests; not a standard property on window
-  window._testMap = map.value;
-  // @ts-expect-error: Expose test helper for date range changes; not a standard property on window
+  exposeTestMap(map.value);
   window._testHandleDateRangeChanged = handleDateRangeChanged;
 
   // Apply 3D terrain whenever the style loads
