@@ -6,9 +6,9 @@ import SelectDatasetField from "@/components/config/SelectDatasetField.vue";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import Tooltip from "@/components/shared/Tooltip.vue";
 import ViewTypePill from "@/components/shared/ViewTypePill.vue";
-import { useCopyConfig } from "@/composables/useCopyConfig";
-import { useDatasetColumns } from "@/composables/useDatasetColumns";
-import { useDuplicateViewCheck } from "@/composables/useDuplicateViewCheck";
+import { useCopyConfig } from "@/composables/config/useCopyConfig";
+import { useDatasetColumns } from "@/composables/config/useDatasetColumns";
+import { useDuplicateViewCheck } from "@/composables/config/useDuplicateViewCheck";
 import { useAppConfig } from "#imports";
 import {
   supportsSecondaryDataset,

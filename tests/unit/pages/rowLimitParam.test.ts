@@ -34,7 +34,7 @@ describe("client pages pass ?limit to dataset API endpoints", () => {
 describe("row limit toast composable", () => {
   it("uses useToast warning for partial results", () => {
     const content = readFileSync(
-      resolve("composables/useRowLimitReachedToast.ts"),
+      resolve("composables/toast/useRowLimitReachedToast.ts"),
       "utf-8",
     );
     expect(content).toContain("useToast");

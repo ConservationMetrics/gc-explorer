@@ -1,5 +1,6 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import { navigateToAlertsDashboard } from "./helpers/navigateToAlertsDashboard";
+import { waitForTestMap } from "./helpers/testMap";
 
 test("alerts dashboard - camera query params restore the map view", async ({
   authenticatedPageAsAdmin: page,
@@ -20,7 +21,7 @@ test("alerts dashboard - camera query params restore the map view", async ({
 
   const alertsPath = new URL(page.url()).pathname;
   await page.goto(`${alertsPath}?lat=-3.12000&lng=-60.02000&zoom=11.50`);
-  await page.locator("#map[data-map-ready='true']").waitFor();
+  await waitForTestMap(page);
 
   const camera = await page.evaluate(() => {
     const map = window.getTestMap();

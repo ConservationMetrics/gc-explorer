@@ -14,7 +14,7 @@ import {
   isUsableMapboxStyle,
   mapboxStyleToStudioUrl,
 } from "@/utils/mapGLHelpers";
-import { updateTags } from "@/composables/useTags";
+import { updateTags } from "@/composables/config/useTags";
 
 import type { ViewConfig, BasemapConfig, ColumnEntry } from "@/types";
 

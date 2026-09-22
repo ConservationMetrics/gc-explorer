@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft, ChevronRight } from "lucide-vue-next";
-import MediaFile from "@/components/shared/MediaFile.vue";
-import MediaImageCarouselModal from "@/components/shared/MediaImageCarouselModal.vue";
+import MediaFile from "@/components/shared/media/MediaFile.vue";
+import MediaImageCarouselModal from "@/components/shared/media/MediaImageCarouselModal.vue";
 
 import type { AllowedFileExtensions } from "@/types";
 

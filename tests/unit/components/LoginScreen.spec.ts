@@ -8,7 +8,7 @@ const { useLoginBackgroundMock } = vi.hoisted(() => ({
   useLoginBackgroundMock: vi.fn(),
 }));
 
-vi.mock("@/composables/useLoginBackground", () => ({
+vi.mock("@/composables/auth/useLoginBackground", () => ({
   useLoginBackground: () => useLoginBackgroundMock(),
 }));
 

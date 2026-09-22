@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import DownloadMapData from "@/components/shared/DownloadMapData.vue";
-import DownloadStatistics from "@/components/shared/DownloadStatistics.vue";
+import DownloadMapData from "@/components/shared/downloads/DownloadMapData.vue";
+import DownloadStatistics from "@/components/shared/downloads/DownloadStatistics.vue";
 import AdminConfigGear from "@/components/shared/AdminConfigGear.vue";
 
 import type { AlertsData, AlertsStatistics } from "@/types";

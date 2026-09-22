@@ -27,7 +27,7 @@ vi.mock("vue-3-slider-component", () => ({
 }));
 
 // Mock composables
-vi.mock("@/composables/useTags", () => ({
+vi.mock("@/composables/config/useTags", () => ({
   updateTags: () => ({
     tags: { MAP_LEGEND_LAYER_IDS: [] },
     handleTagsChanged: vi.fn(),

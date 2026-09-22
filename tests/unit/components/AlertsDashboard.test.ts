@@ -120,7 +120,7 @@ vi.mock("#imports", async () => {
 });
 
 const canAccessIncidents = ref(true);
-vi.mock("@/composables/useHasRole", () => ({
+vi.mock("@/composables/auth/useHasRole", () => ({
   useHasRole: () => canAccessIncidents,
 }));
 

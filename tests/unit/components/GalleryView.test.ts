@@ -28,7 +28,7 @@ vi.mock("@/composables/useRecordCache", () => ({
 
 const filterByDateAndCategoryMock = vi.fn((data: Dataset) => data);
 const setDateRangeMock = vi.fn();
-vi.mock("@/composables/useDateAndCategoryFilter", () => ({
+vi.mock("@/composables/filters/useDateAndCategoryFilter", () => ({
   filterByDateAndCategory: (...args: unknown[]) =>
     filterByDateAndCategoryMock(...args),
   normalizeFilterValues: (v: unknown) => v,
@@ -52,7 +52,7 @@ vi.mock("@/utils/mapGLHelpers", () => ({
 }));
 
 const canManageConfig = ref(true);
-vi.mock("@/composables/useCanManageConfig", () => ({
+vi.mock("@/composables/auth/useCanManageConfig", () => ({
   useCanManageConfig: () => canManageConfig,
 }));
 

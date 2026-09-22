@@ -4,9 +4,9 @@ import { computed, defineComponent, onMounted, ref, watch } from "vue";
 import VueSlider from "vue-3-slider-component";
 import { useI18n, useRoute, useToast } from "#imports";
 import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
-import DownloadMapData from "@/components/shared/DownloadMapData.vue";
+import DownloadMapData from "@/components/shared/downloads/DownloadMapData.vue";
 import AlertsSlider from "@/components/alerts/AlertsSlider.vue";
-import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
+import { useAlertsDateFilter } from "@/composables/alerts/useAlertsDateFilter";
 import type { AlertsData, AlertsStatistics } from "@/types";
 
 vi.mock("@/utils/browserDownload", () => ({ triggerBrowserDownload: vi.fn() }));

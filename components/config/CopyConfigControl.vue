@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import ConfigFieldLabel from "@/components/config/ConfigFieldLabel.vue";
-import type { CopyConfigSource } from "@/composables/useCopyConfig";
+import type { CopyConfigSource } from "@/composables/config/useCopyConfig";
 import { compareLabels } from "@/utils/identifierUtils";
 import { Copy } from "lucide-vue-next";
 

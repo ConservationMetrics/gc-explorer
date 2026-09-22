@@ -7,11 +7,11 @@ import type { FeatureCollection } from "geojson";
 Object.assign(globalThis, { ref, computed });
 
 const canManageConfig = ref(true);
-vi.mock("@/composables/useCanManageConfig", () => ({
+vi.mock("@/composables/auth/useCanManageConfig", () => ({
   useCanManageConfig: () => canManageConfig,
 }));
 
-vi.mock("@/components/shared/DownloadMapData.vue", () => ({
+vi.mock("@/components/shared/downloads/DownloadMapData.vue", () => ({
   default: { name: "DownloadMapData", template: "<div />" },
 }));
 

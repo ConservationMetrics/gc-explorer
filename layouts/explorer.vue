@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import AppHeader from "@/components/shared/AppHeader.vue";
-import ToastContainer from "@/components/shared/ToastContainer.vue";
+import AppHeader from "@/components/shared/header/AppHeader.vue";
+import ToastContainer from "@/components/shared/toast/ToastContainer.vue";
 </script>
 
 <template>

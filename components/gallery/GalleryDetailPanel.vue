@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronLeft, X } from "lucide-vue-next";
-import FeatureMetadata from "@/components/shared/FeatureMetadata.vue";
+import FeatureMetadata from "@/components/shared/sidebar/FeatureMetadata.vue";
 import GalleryMediaCarousel from "@/components/gallery/GalleryMediaCarousel.vue";
 
 import type { AllowedFileExtensions, DataEntry } from "@/types";

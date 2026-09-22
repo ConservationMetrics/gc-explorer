@@ -13,13 +13,13 @@ Object.assign(globalThis, {
 
 const mockT = (key: string) => key;
 
-vi.mock("@/composables/useIntersectionObserver", () => ({
+vi.mock("@/composables/media/useIntersectionObserver", () => ({
   useIntersectionObserver: () => ({
     target: ref(null),
   }),
 }));
 
-vi.mock("@/composables/useOptimizedImages", () => ({
+vi.mock("@/composables/media/useOptimizedImages", () => ({
   useOptimizedImages: () => ({
     getGalleryImageUrl: (url: string) => url,
   }),

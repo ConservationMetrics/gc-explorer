@@ -4,10 +4,10 @@ import { Role } from "@/types";
 import DataLoadError from "@/components/shared/DataLoadError.vue";
 import EmptyStateIllustration from "@/components/shared/EmptyStateIllustration.vue";
 import SearchBar from "@/components/shared/SearchBar.vue";
-import ViewTypeFilter from "@/components/shared/ViewTypeFilter.vue";
+import ViewTypeFilter from "@/components/shared/filters/ViewTypeFilter.vue";
 import DatasetCard from "@/components/index/DatasetCard.vue";
 import { matchesSearchQuery, matchesViewTypeFilter } from "@/utils/viewFilters";
-import { useCanManageConfig } from "@/composables/useCanManageConfig";
+import { useCanManageConfig } from "@/composables/auth/useCanManageConfig";
 import { Plus } from "lucide-vue-next";
 
 const viewRows = ref<ViewConfigRow[]>([]);

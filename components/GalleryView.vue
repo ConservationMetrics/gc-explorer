@@ -12,14 +12,14 @@ import {
   filterByDateAndCategory,
   normalizeFilterValues,
   useTimestampFilter,
-} from "@/composables/useDateAndCategoryFilter";
+} from "@/composables/filters/useDateAndCategoryFilter";
 import { prepareCoordinatesForSelectedFeature } from "@/utils/mapGLHelpers";
 import { useRecordCache } from "@/composables/useRecordCache";
 import { transformSurveyEntry } from "@/utils/dataTransformers";
 
-import DataFilter from "@/components/shared/DataFilter.vue";
-import MediaTypeFilter from "@/components/shared/MediaTypeFilter.vue";
-import TimestampFilter from "@/components/shared/TimestampFilter.vue";
+import DataFilter from "@/components/shared/filters/DataFilter.vue";
+import MediaTypeFilter from "@/components/shared/media/MediaTypeFilter.vue";
+import TimestampFilter from "@/components/shared/filters/TimestampFilter.vue";
 import GalleryDetailPanel from "@/components/gallery/GalleryDetailPanel.vue";
 import GalleryGrid from "@/components/gallery/GalleryGrid.vue";
 import GalleryTile from "@/components/gallery/GalleryTile.vue";
