@@ -9,7 +9,7 @@ import {
   attachMapCameraQuerySync,
   getInitialMapCamera,
 } from "@/utils/mapCameraQuery";
-import { useCopyMapLocation } from "@/composables/useCopyLink";
+import { useCopyMapLocation } from "@/composables/map/useCopyLink";
 import {
   changeMapStyle,
   applyTerrain,
@@ -20,10 +20,10 @@ import {
   resolveTerrainExaggeration,
 } from "@/utils/mapGLHelpers";
 
-import ViewSidebar from "@/components/shared/ViewSidebar.vue";
-import MapLegend from "@/components/shared/MapLegend.vue";
-import BasemapSelector from "@/components/shared/BasemapSelector.vue";
-import MapFilterControls from "@/components/shared/MapFilterControls.vue";
+import ViewSidebar from "@/components/shared/sidebar/ViewSidebar.vue";
+import MapLegend from "@/components/shared/map/MapLegend.vue";
+import BasemapSelector from "@/components/shared/map/BasemapSelector.vue";
+import MapFilterControls from "@/components/shared/map/MapFilterControls.vue";
 
 import type { Layer, MapMouseEvent } from "mapbox-gl";
 import type { FeatureCollection, Feature } from "geojson";
@@ -33,7 +33,7 @@ import {
   filterByDateAndCategory,
   normalizeFilterValues,
   useTimestampFilter,
-} from "@/composables/useDateAndCategoryFilter";
+} from "@/composables/filters/useDateAndCategoryFilter";
 import { mapStatisticsFromFeatureCollection } from "@/utils/geoUtils";
 
 import type {

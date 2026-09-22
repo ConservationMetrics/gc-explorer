@@ -16,7 +16,7 @@ import {
 import * as mapboxMock from "@/tests/unit/helpers/mapboxMock";
 
 import MapView from "@/components/MapView.vue";
-import DownloadMapData from "@/components/shared/DownloadMapData.vue";
+import DownloadMapData from "@/components/shared/downloads/DownloadMapData.vue";
 import { useRoute, useI18n, useToast } from "#imports";
 
 import type { FeatureCollection } from "geojson";

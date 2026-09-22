@@ -68,7 +68,7 @@ vi.mock("@vojtechlanka/vue-tags-input", () => ({
 vi.mock("vue-3-slider-component", () => ({
   default: { template: "<div></div>" },
 }));
-vi.mock("@/composables/useTags", () => ({
+vi.mock("@/composables/config/useTags", () => ({
   updateTags: () => ({ tags: {}, handleTagsChanged: vi.fn() }),
 }));
 

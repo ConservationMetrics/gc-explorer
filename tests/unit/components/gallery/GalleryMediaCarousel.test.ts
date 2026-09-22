@@ -24,7 +24,7 @@ Object.assign(globalThis, {
   useI18n: () => ({ t: mockT }),
 });
 
-vi.mock("@/components/shared/MediaFile.vue", () => ({
+vi.mock("@/components/shared/media/MediaFile.vue", () => ({
   default: {
     name: "MediaFile",
     props: ["filePath", "imageModalMode"],

@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { onMounted, useI18n, useUserSession } from "#imports";
 import GlassCard from "@/components/shared/GlassCard.vue";
-import GlobeLanguagePicker from "./shared/GlobeLanguagePicker.vue";
-import { useLoginBackground } from "@/composables/useLoginBackground";
+import GlobeLanguagePicker from "./shared/header/GlobeLanguagePicker.vue";
+import { useLoginBackground } from "@/composables/auth/useLoginBackground";
 
 interface Props {
   errorMessage: string;

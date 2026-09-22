@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ToastContainer from "@/components/shared/ToastContainer.vue";
+import ToastContainer from "@/components/shared/toast/ToastContainer.vue";
 </script>
 
 <template>

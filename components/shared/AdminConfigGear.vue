@@ -2,7 +2,7 @@
 import { Settings } from "lucide-vue-next";
 import type { ViewType } from "@/types";
 import { encodeDatasetNameForUrl } from "@/utils/identifierUtils";
-import { useCanManageConfig } from "@/composables/useCanManageConfig";
+import { useCanManageConfig } from "@/composables/auth/useCanManageConfig";
 
 const props = defineProps<{
   tableName: string;

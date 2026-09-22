@@ -9,7 +9,7 @@ import { toCamelCase } from "@/utils/identifierUtils";
 // @ts-expect-error - vue-tags-input does not have types
 import { VueTagsInput } from "@vojtechlanka/vue-tags-input";
 
-import { updateTags } from "@/composables/useTags";
+import { updateTags } from "@/composables/config/useTags";
 
 import type { ColumnEntry, ViewConfig, ViewType } from "@/types";
 

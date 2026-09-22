@@ -8,7 +8,7 @@ import {
   type ViewConfig,
   type ViewType,
 } from "@/types";
-import { VIEW_INFO_CONFIG_KEYS } from "@/composables/useCopyConfig";
+import { VIEW_INFO_CONFIG_KEYS } from "@/composables/config/useCopyConfig";
 import { CONFIG_LIMITS } from "@/utils";
 import { isMapboxPublicToken, isUsableMapboxStyle } from "@/utils/mapGLHelpers";
 import {

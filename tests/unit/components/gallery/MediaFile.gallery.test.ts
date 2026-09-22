@@ -9,7 +9,7 @@ import {
   watchEffect,
 } from "vue";
 
-import MediaFile from "@/components/shared/MediaFile.vue";
+import MediaFile from "@/components/shared/media/MediaFile.vue";
 import type { AllowedFileExtensions } from "@/types";
 
 Object.assign(globalThis, {
@@ -23,7 +23,7 @@ Object.assign(globalThis, {
 
 const mockT = (key: string) => key;
 
-vi.mock("@/composables/useIntersectionObserver", () => ({
+vi.mock("@/composables/media/useIntersectionObserver", () => ({
   useIntersectionObserver: (
     callback: (entries: IntersectionObserverEntry[]) => void,
   ) => {
@@ -37,7 +37,7 @@ vi.mock("@/composables/useIntersectionObserver", () => ({
   },
 }));
 
-vi.mock("@/composables/useOptimizedImages", () => ({
+vi.mock("@/composables/media/useOptimizedImages", () => ({
   useOptimizedImages: () => ({
     getGalleryImageUrl: (url: string) => url,
   }),

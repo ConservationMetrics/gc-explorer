@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
-import { useAuth } from "@/composables/useAuth";
+import { useAuth } from "@/composables/auth/useAuth";
 
 const { loggedIn } = useUserSession();
 const { t } = useI18n();

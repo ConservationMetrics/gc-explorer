@@ -23,7 +23,7 @@ vi.mock("@/components/gallery/GalleryMediaCarousel.vue", () => ({
   },
 }));
 
-vi.mock("@/components/shared/FeatureMetadata.vue", () => ({
+vi.mock("@/components/shared/sidebar/FeatureMetadata.vue", () => ({
   default: {
     name: "FeatureMetadata",
     props: ["feature", "filePaths"],

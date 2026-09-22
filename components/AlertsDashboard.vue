@@ -30,18 +30,18 @@ import {
   stopPulsingHalo,
 } from "@/utils/pulsingHalo";
 
-import BasemapSelector from "@/components/shared/BasemapSelector.vue";
-import MapFilterControls from "@/components/shared/MapFilterControls.vue";
-import ViewSidebar from "@/components/shared/ViewSidebar.vue";
-import MapLegend from "@/components/shared/MapLegend.vue";
+import BasemapSelector from "@/components/shared/map/BasemapSelector.vue";
+import MapFilterControls from "@/components/shared/map/MapFilterControls.vue";
+import ViewSidebar from "@/components/shared/sidebar/ViewSidebar.vue";
+import MapLegend from "@/components/shared/map/MapLegend.vue";
 import IncidentsSidebar from "@/components/alerts/IncidentsSidebar.vue";
 import IncidentsControls from "@/components/alerts/IncidentsControls.vue";
-import { useIncidents } from "@/composables/useIncidents";
-import { useHasRole } from "@/composables/useHasRole";
-import { useFeatureSelection } from "@/composables/useFeatureSelection";
-import { useAlertsDateFilter } from "@/composables/useAlertsDateFilter";
+import { useIncidents } from "@/composables/alerts/useIncidents";
+import { useHasRole } from "@/composables/auth/useHasRole";
+import { useFeatureSelection } from "@/composables/map/useFeatureSelection";
+import { useAlertsDateFilter } from "@/composables/alerts/useAlertsDateFilter";
 import { useRecordCache } from "@/composables/useRecordCache";
-import { useCopyMapLocation } from "@/composables/useCopyLink";
+import { useCopyMapLocation } from "@/composables/map/useCopyLink";
 import {
   attachMapCameraQuerySync,
   getInitialMapCamera,

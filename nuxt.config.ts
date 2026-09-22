@@ -23,6 +23,11 @@ export default defineNuxtConfig({
 
   devtools: { enabled: true },
 
+  // Nuxt scans only the top level of composables/. Nested folders need an explicit glob.
+  imports: {
+    dirs: ["composables/**"],
+  },
+
   nitro: {
     plugins: ["@/server/index.ts"],
     compressPublicAssets: { gzip: true, brotli: true },

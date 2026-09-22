@@ -10,7 +10,7 @@ import { Check, ChevronLeft, Copy, X } from "lucide-vue-next";
 import {
   COPY_INCIDENT_LINK_EXCLUDE_PARAMS,
   useCopyLink,
-} from "@/composables/useCopyLink";
+} from "@/composables/map/useCopyLink";
 import {
   buildIncidentEntriesFeatureCollection,
   buildIncidentMetadataCsv,
