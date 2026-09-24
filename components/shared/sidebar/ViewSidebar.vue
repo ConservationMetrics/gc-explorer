@@ -8,6 +8,7 @@ import AlertsIntroPanel from "@/components/alerts/AlertsIntroPanel.vue";
 import MapIntroPanel from "@/components/map/MapIntroPanel.vue";
 import {
   COPY_ALERT_LINK_EXCLUDE_PARAMS,
+  COPY_MAP_FEATURE_LINK_EXCLUDE_PARAMS,
   useCopyLink,
 } from "@/composables/map/useCopyLink";
 import { warehouseRecordIdForExport } from "@/utils/identifierUtils";
@@ -119,7 +120,9 @@ const exportRecordId = computed(() =>
 );
 
 const { showCopied, copyLink } = useCopyLink(
-  props.isAlertsDashboard ? COPY_ALERT_LINK_EXCLUDE_PARAMS : undefined,
+  props.isAlertsDashboard
+    ? COPY_ALERT_LINK_EXCLUDE_PARAMS
+    : COPY_MAP_FEATURE_LINK_EXCLUDE_PARAMS,
 );
 
 const emit = defineEmits<{
@@ -271,7 +274,6 @@ onBeforeUnmount(() => {
             />
           </div>
           <div
-            v-if="isAlertsDashboard"
             class="mt-2 px-4 pt-4 sm:px-6 border-t border-violet-100"
             data-testid="copy-link-section"
           >
@@ -289,7 +291,7 @@ onBeforeUnmount(() => {
               <span>{{
                 showCopied
                   ? $t("copied")
-                  : isSecondary
+                  : isSecondary || !isAlertsDashboard
                     ? $t("copySecondaryLink")
                     : $t("copyLink")
               }}</span>

@@ -83,6 +83,17 @@ describe("getInitialMapCamera", () => {
         defaults,
       ),
     ).toEqual(defaults);
+    expect(
+      getInitialMapCamera(
+        {
+          featureId: "rec-1",
+          lat: "-3.12",
+          lng: "-60.02",
+          zoom: "11.5",
+        },
+        defaults,
+      ),
+    ).toEqual(defaults);
   });
 
   it("uses the view default camera when camera params are incomplete", () => {
@@ -121,7 +132,7 @@ describe("serializeMapCameraQuery and hasSameMapCameraQuery", () => {
 describe("buildMapLocationShareUrl", () => {
   it("sets camera params and removes feature ids", () => {
     const href =
-      "http://localhost:8080/alerts/fake_alerts?alertId=a1&incidentId=i1&secondaryDocId=s1&mapeoDocId=m1&lat=1.00000&lng=2.00000&zoom=3.00";
+      "http://localhost:8080/alerts/fake_alerts?alertId=a1&incidentId=i1&secondaryDocId=s1&mapeoDocId=m1&featureId=rec-1&lat=1.00000&lng=2.00000&zoom=3.00";
     expect(
       buildMapLocationShareUrl(href, {
         lat: -3.12,

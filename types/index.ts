@@ -483,6 +483,7 @@ export const MAP_FEATURE_ID_QUERY_KEYS = [
   "incidentId",
   "secondaryDocId",
   "mapeoDocId",
+  "featureId",
 ] as const;
 
 export type MapFeatureIdQueryKey = (typeof MAP_FEATURE_ID_QUERY_KEYS)[number];
