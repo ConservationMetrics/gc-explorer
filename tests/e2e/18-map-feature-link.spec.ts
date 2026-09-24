@@ -85,16 +85,32 @@ test.describe("map feature link", () => {
 
     await expect(page.getByTestId("copy-link-section")).toHaveCount(0);
 
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const map = window.getTestMap();
+          if (!map.getLayer("data-layer-point")) return false;
+          return map
+            .querySourceFeatures("data-source")
+            .some((feature) => feature.properties?._id === "point-feature-1");
+        }),
+      )
+      .toBe(true);
+
     const canvas = page.locator("canvas.mapboxgl-canvas");
     await expect(canvas).toBeVisible();
     const bounds = await canvas.boundingBox();
     if (!bounds) throw new Error("Map canvas has no bounding box");
-    await page.mouse.click(
-      bounds.x + bounds.width / 2,
-      bounds.y + bounds.height / 2,
-    );
+    const projected = await page.evaluate(() => {
+      const map = window.getTestMap();
+      const point = map.project([-60, 5]);
+      return { x: point.x, y: point.y };
+    });
+    await page.mouse.click(bounds.x + projected.x, bounds.y + projected.y);
 
-    await expect(page.getByText("Point feature fixture")).toBeVisible();
+    await expect(page.getByText("Point feature fixture")).toBeVisible({
+      timeout: 15000,
+    });
     await expect(page).toHaveURL(/[?&]featureId=point-feature-1/);
     await expect(page.getByTestId("copy-link-button")).toContainText(
       "Copy link to feature",
@@ -122,7 +138,9 @@ test.describe("map feature link", () => {
 
     await page.goto(copiedUrl);
     await waitForTestMap(page);
-    await expect(page.getByText("Point feature fixture")).toBeVisible();
+    await expect(page.getByText("Point feature fixture")).toBeVisible({
+      timeout: 15000,
+    });
 
     const camera = await page.evaluate(() => {
       const map = window.getTestMap();
