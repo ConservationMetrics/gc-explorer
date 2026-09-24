@@ -1,11 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   alertMapLayers,
   getAlertGeometryRenderKind,
   getAlertSourceFeatures,
+  setAlertMapLayerGroupVisibility,
+  setSecondaryDataLayerVisibility,
 } from "@/utils/alertMapLayers";
 import type { Feature } from "geojson";
+import type { Map as MapboxMap } from "mapbox-gl";
 
 const point: Feature = {
   type: "Feature",
@@ -156,5 +159,68 @@ describe("alertMapLayers", () => {
     expect(
       getAlertSourceFeatures([point, polygonWithoutCentroid], "centroids"),
     ).toEqual([]);
+  });
+
+  it("toggles every layer used by an alert period", () => {
+    const setLayoutProperty = vi.fn();
+    const map = {
+      getLayer: vi.fn(() => ({})),
+      setLayoutProperty,
+    } as unknown as MapboxMap;
+
+    setAlertMapLayerGroupVisibility(map, "mostRecent", "none");
+
+    const expectedLayerIds = [
+      "most-recent-alerts-point",
+      "most-recent-alerts-point-clusters",
+      "most-recent-alerts-point-cluster-count",
+      "most-recent-alerts-point-halo",
+      "most-recent-alerts-point-clusters-halo",
+      "most-recent-alerts-polygon",
+      "most-recent-alerts-polygon-stroke",
+      "most-recent-alerts-linestring",
+      "most-recent-alerts-centroids",
+      "most-recent-alerts-centroids-clusters",
+      "most-recent-alerts-centroids-cluster-count",
+      "most-recent-alerts-centroids-halo",
+      "most-recent-alerts-centroids-clusters-halo",
+    ];
+    expect(setLayoutProperty.mock.calls).toEqual(
+      expectedLayerIds.map((layerId) => [layerId, "visibility", "none"]),
+    );
+  });
+
+  it("skips alert sublayers that are not present in the map style", () => {
+    const setLayoutProperty = vi.fn();
+    const map = {
+      getLayer: vi.fn((layerId: string) =>
+        layerId === "previous-alerts-polygon" ? {} : undefined,
+      ),
+      setLayoutProperty,
+    } as unknown as MapboxMap;
+
+    setAlertMapLayerGroupVisibility(map, "previous", "visible");
+
+    expect(setLayoutProperty).toHaveBeenCalledTimes(1);
+    expect(setLayoutProperty).toHaveBeenCalledWith(
+      "previous-alerts-polygon",
+      "visibility",
+      "visible",
+    );
+  });
+
+  it("toggles the secondary data layer and its optional stroke", () => {
+    const setLayoutProperty = vi.fn();
+    const map = {
+      getLayer: vi.fn(() => ({})),
+      setLayoutProperty,
+    } as unknown as MapboxMap;
+
+    setSecondaryDataLayerVisibility(map, "none");
+
+    expect(setLayoutProperty.mock.calls).toEqual([
+      ["secondary-data", "visibility", "none"],
+      ["secondary-data-stroke", "visibility", "none"],
+    ]);
   });
 });
