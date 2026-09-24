@@ -47,13 +47,8 @@ test("index page - displays available views and navigation flow", async ({
   const cardCount = await datasetCards.count();
   expect(cardCount).toBeGreaterThan(0);
 
-  // 7. Verify each view type has the matching Open link copy
-  const viewLinkLabels = {
-    alerts: "Open Alerts Dashboard",
-    gallery: "Open Gallery",
-    map: "Open Map",
-  };
-  for (const [viewType, label] of Object.entries(viewLinkLabels)) {
+  // 7. Each whole card links directly to the matching view route.
+  for (const viewType of ["alerts", "gallery", "map"]) {
     const card = datasetCards
       .filter({
         has: page.locator(`[data-testid='view-tag-${viewType}']`),
@@ -61,7 +56,7 @@ test("index page - displays available views and navigation flow", async ({
       .first();
     await expect(
       card.locator("[data-testid='open-dataset-view-link']"),
-    ).toHaveText(label);
+    ).toHaveAttribute("href", new RegExp(`^/${viewType}/`));
   }
 
   const openViewLink = page
