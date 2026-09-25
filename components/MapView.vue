@@ -3,6 +3,7 @@ import mapboxgl from "mapbox-gl";
 import { exposeTestMap } from "@/utils/e2eTestHooks";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useRoute, useRouter } from "vue-router";
+import { along, bbox, length, lineString } from "@turf/turf";
 
 import { getFilePathsWithExtension } from "@/utils";
 import {
@@ -93,6 +94,8 @@ const { showCopied: showCopiedLocation, copyLocation } =
 const selectedFeature = ref<DataEntry>();
 const selectedFeatureOriginal = ref<Feature>();
 const selectedFeatureLoading = ref(false);
+const selectedMapFeatureStateId = ref<string | number | null>(null);
+const SELECTED_HALO_COLOR = "#00E5FF";
 const showSidebar = ref(true);
 const mobileDrawerHeight = ref(0);
 const showBasemapSelector = ref(false);
@@ -177,6 +180,11 @@ onMounted(() => {
 
       showBasemapSelector.value = true;
       controlsAdded = true;
+
+      const featureId = readFeatureIdQuery();
+      if (featureId) {
+        selectInitialMapFeature(featureId);
+      }
     } else {
       // On style changes (not initial load), just prepare canvas content
       prepareMapCanvasContent();
@@ -233,6 +241,30 @@ const addDataToMap = () => {
       showIcons.value && props.iconColumn && props.mediaBasePathIcons;
 
     if (useIcons) {
+      map.value.addLayer({
+        id: "data-layer-point-halo",
+        type: "circle",
+        source: "data-source",
+        filter: ["==", "$type", "Point"],
+        paint: {
+          "circle-radius": 16,
+          "circle-color": SELECTED_HALO_COLOR,
+          "circle-opacity": 0,
+          "circle-stroke-width": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            4,
+            0,
+          ],
+          "circle-stroke-color": SELECTED_HALO_COLOR,
+          "circle-stroke-opacity": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            0.9,
+            0,
+          ],
+        },
+      });
       // Add symbol layer for icons
       map.value.addLayer({
         id: "data-layer-point",
@@ -271,8 +303,18 @@ const addDataToMap = () => {
         paint: {
           "circle-radius": 8,
           "circle-color": colorExpression,
-          "circle-stroke-width": 3,
-          "circle-stroke-color": "#fff",
+          "circle-stroke-width": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            5,
+            3,
+          ],
+          "circle-stroke-color": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            SELECTED_HALO_COLOR,
+            "#fff",
+          ],
         },
       });
     }
@@ -296,8 +338,24 @@ const addDataToMap = () => {
       source: "data-source",
       filter: ["==", "$type", "LineString"],
       paint: {
-        "line-color": colorExpression,
-        "line-width": 2,
+        "line-color": [
+          "case",
+          ["boolean", ["feature-state", "selected"], false],
+          SELECTED_HALO_COLOR,
+          colorExpression,
+        ],
+        "line-width": [
+          "case",
+          ["boolean", ["feature-state", "selected"], false],
+          6,
+          2,
+        ],
+        "line-blur": [
+          "case",
+          ["boolean", ["feature-state", "selected"], false],
+          1.2,
+          0,
+        ],
       },
     });
   }
@@ -321,10 +379,34 @@ const addDataToMap = () => {
       filter: ["==", "$type", "Polygon"],
       paint: {
         "fill-color": colorExpression,
-        "fill-opacity": 0.5,
+        "fill-opacity": [
+          "case",
+          ["boolean", ["feature-state", "selected"], false],
+          0.65,
+          0.5,
+        ],
+      },
+    });
+
+    map.value.addLayer({
+      id: "data-layer-polygon-stroke",
+      type: "line",
+      source: "data-source",
+      filter: ["==", "$type", "Polygon"],
+      paint: {
+        "line-color": SELECTED_HALO_COLOR,
+        "line-width": [
+          "case",
+          ["boolean", ["feature-state", "selected"], false],
+          5,
+          0,
+        ],
+        "line-blur": 1.2,
       },
     });
   }
+
+  applySelectedMapFeatureState();
 
   // Add event listeners
   const layersToAddListeners = [];
@@ -352,56 +434,10 @@ const addDataToMap = () => {
     map.value.on(
       "click",
       layerId,
-      async (e: MapMouseEvent) => {
+      (e: MapMouseEvent) => {
         if (!e.features || e.features.length === 0) return;
         const clickedFeature = e.features[0];
-        if (!clickedFeature.properties) return;
-
-        const recordId = clickedFeature.properties._id as string | undefined;
-
-        // Open sidebar immediately with loading state
-        selectedFeature.value = undefined;
-        selectedFeatureLoading.value = true;
-        showSidebar.value = true;
-        showIntroPanel.value = false;
-
-        // Create GeoJSON Feature for download
-        const featureGeojson: Feature = {
-          type: "Feature",
-          geometry: clickedFeature.geometry,
-          properties: { ...clickedFeature.properties },
-        };
-        // Remove filter-color from properties
-        delete featureGeojson.properties!["filter-color"];
-        selectedFeatureOriginal.value = featureGeojson;
-
-        // Fetch the full raw record from the single-record endpoint
-        // and apply presentation transforms for display
-        if (recordId) {
-          const record = await fetchRecord(props.table, recordId);
-          if (record) {
-            const displayRecord = transformSurveyEntry(record);
-            delete displayRecord["filter-color"];
-
-            // Rewrite coordinates string from [long, lat] to lat, long, removing brackets for display
-            if (displayRecord.geocoordinates) {
-              displayRecord.geocoordinates =
-                prepareCoordinatesForSelectedFeature(
-                  displayRecord.geocoordinates,
-                );
-            } else if (
-              clickedFeature.geometry.type === "Point" &&
-              clickedFeature.geometry.coordinates
-            ) {
-              const [lng, lat] = clickedFeature.geometry.coordinates;
-              displayRecord.geocoordinates = `${lat}, ${lng}`;
-            }
-
-            selectedFeature.value = displayRecord;
-          }
-        }
-
-        selectedFeatureLoading.value = false;
+        void openMapFeature(clickedFeature);
       },
       { passive: true },
     );
@@ -533,6 +569,237 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
   utilsToggleLayerVisibility(map.value, item);
 };
 
+/**
+ * Reads the Map view feature id from the current query.
+ *
+ * @returns Warehouse `_id` when `featureId` is a non-empty string, otherwise null
+ */
+const readFeatureIdQuery = (): string | null => {
+  const value = route.query.featureId;
+  if (typeof value !== "string" || value.trim() === "") {
+    return null;
+  }
+  return value;
+};
+
+/**
+ * Writes the selected warehouse `_id` into the query.
+ *
+ * @param featureId - Warehouse `_id` of the selected map feature
+ */
+const writeFeatureIdQuery = (featureId: string) => {
+  if (route.query.featureId === featureId) {
+    return;
+  }
+  router.replace({
+    query: {
+      ...route.query,
+      featureId,
+    },
+  });
+};
+
+/**
+ * Removes `featureId` from the query. Camera params stay.
+ */
+const clearFeatureIdQuery = () => {
+  if (typeof route.query.featureId !== "string") {
+    return;
+  }
+  const query = { ...route.query };
+  delete query.featureId;
+  router.replace({ query });
+};
+
+/** Caps a long flight so it finishes about as fast as an Alerts feature fly. */
+const FEATURE_FOCUS_MAX_DURATION_MS = 1000;
+
+/**
+ * Moves the map to a feature the same way Alerts opens a secondary feature.
+ * Points and lines use flyTo. Polygons use fitBounds.
+ *
+ * @param feature - GeoJSON feature to focus
+ */
+const focusMapOnFeature = (feature: Feature) => {
+  if (!map.value) {
+    return;
+  }
+  const geometry = feature.geometry;
+  if (geometry.type === "Point") {
+    const [lng, lat] = geometry.coordinates;
+    map.value.flyTo({
+      center: [lng, lat],
+      zoom: 13,
+      maxDuration: FEATURE_FOCUS_MAX_DURATION_MS,
+    });
+    return;
+  }
+  if (geometry.type === "Polygon" || geometry.type === "MultiPolygon") {
+    map.value.fitBounds(bbox(feature), {
+      padding: 50,
+      maxDuration: FEATURE_FOCUS_MAX_DURATION_MS,
+    });
+    return;
+  }
+  if (geometry.type === "LineString") {
+    const line = lineString(geometry.coordinates);
+    const lineLength = length(line, { units: "kilometers" });
+    const midpoint = along(line, lineLength / 2, { units: "kilometers" });
+    const [lng, lat] = midpoint.geometry.coordinates;
+    map.value.flyTo({
+      center: [lng, lat],
+      zoom: 13,
+      maxDuration: FEATURE_FOCUS_MAX_DURATION_MS,
+    });
+  }
+};
+
+/**
+ * Returns the Mapbox feature id used for selection state.
+ *
+ * @param feature - Clicked or restored map feature
+ * @returns Feature id, or null when the feature cannot be highlighted
+ */
+const resolveMapFeatureStateId = (feature: Feature): string | number | null => {
+  if (typeof feature.id === "number" || typeof feature.id === "string") {
+    return feature.id;
+  }
+  const recordId = feature.properties?._id;
+  if (typeof recordId !== "string") {
+    return null;
+  }
+  const match = filteredFeatureCollection.value.features.find(
+    (candidate) => candidate.properties?._id === recordId,
+  );
+  if (typeof match?.id === "number" || typeof match?.id === "string") {
+    return match.id;
+  }
+  return null;
+};
+
+/**
+ * Paints the cyan selection halo on the current map feature.
+ */
+const applySelectedMapFeatureState = () => {
+  if (
+    !map.value?.getSource("data-source") ||
+    selectedMapFeatureStateId.value === null
+  ) {
+    return;
+  }
+  map.value.setFeatureState(
+    { source: "data-source", id: selectedMapFeatureStateId.value },
+    { selected: true },
+  );
+};
+
+/**
+ * Marks one map feature as selected and clears the previous halo.
+ *
+ * @param feature - Clicked or restored map feature
+ */
+const setSelectedMapFeatureState = (feature: Feature) => {
+  const featureStateId = resolveMapFeatureStateId(feature);
+  if (
+    selectedMapFeatureStateId.value !== null &&
+    selectedMapFeatureStateId.value !== featureStateId &&
+    map.value?.getSource("data-source")
+  ) {
+    map.value.setFeatureState(
+      { source: "data-source", id: selectedMapFeatureStateId.value },
+      { selected: false },
+    );
+  }
+  selectedMapFeatureStateId.value = featureStateId;
+  applySelectedMapFeatureState();
+};
+
+/**
+ * Clears the cyan selection halo.
+ */
+const clearSelectedMapFeatureState = () => {
+  if (
+    map.value?.getSource("data-source") &&
+    selectedMapFeatureStateId.value !== null
+  ) {
+    map.value.setFeatureState(
+      { source: "data-source", id: selectedMapFeatureStateId.value },
+      { selected: false },
+    );
+  }
+  selectedMapFeatureStateId.value = null;
+};
+
+/**
+ * Opens the details panel for a clicked or restored map feature.
+ *
+ * @param clickedFeature - Map feature with warehouse properties
+ */
+const openMapFeature = async (clickedFeature: Feature) => {
+  if (!clickedFeature.properties) {
+    return;
+  }
+
+  setSelectedMapFeatureState(clickedFeature);
+
+  const recordId = clickedFeature.properties._id as string | undefined;
+
+  selectedFeature.value = undefined;
+  selectedFeatureLoading.value = true;
+  showSidebar.value = true;
+  showIntroPanel.value = false;
+
+  const featureGeojson: Feature = {
+    type: "Feature",
+    geometry: clickedFeature.geometry,
+    properties: { ...clickedFeature.properties },
+  };
+  delete featureGeojson.properties!["filter-color"];
+  selectedFeatureOriginal.value = featureGeojson;
+
+  if (typeof recordId === "string" && recordId.trim() !== "") {
+    writeFeatureIdQuery(recordId);
+    const record = await fetchRecord(props.table, recordId);
+    if (record) {
+      const displayRecord = transformSurveyEntry(record);
+      delete displayRecord["filter-color"];
+
+      if (displayRecord.geocoordinates) {
+        displayRecord.geocoordinates = prepareCoordinatesForSelectedFeature(
+          displayRecord.geocoordinates,
+        );
+      } else if (
+        clickedFeature.geometry.type === "Point" &&
+        clickedFeature.geometry.coordinates
+      ) {
+        const [lng, lat] = clickedFeature.geometry.coordinates;
+        displayRecord.geocoordinates = `${lat}, ${lng}`;
+      }
+
+      selectedFeature.value = displayRecord;
+    }
+  }
+
+  selectedFeatureLoading.value = false;
+};
+
+/**
+ * Selects a map feature from `featureId` after the map loads.
+ * An unknown or filtered-out id leaves the intro panel in place.
+ *
+ * @param featureId - Warehouse `_id` from the query
+ */
+const selectInitialMapFeature = (featureId: string) => {
+  const feature = filteredFeatureCollection.value.features.find(
+    (candidate) => candidate.properties?._id === featureId,
+  );
+  if (!feature) {
+    return;
+  }
+  focusMapOnFeature(feature);
+  void openMapFeature(feature);
+};
+
 /** Reset the map to initial state */
 const resetToInitialState = () => {
   selectedFeature.value = undefined;
@@ -540,6 +807,8 @@ const resetToInitialState = () => {
   selectedFeatureLoading.value = false;
   showSidebar.value = true;
   showIntroPanel.value = true;
+  clearSelectedMapFeatureState();
+  clearFeatureIdQuery();
 
   // Reset filters
   selectedFilterValues.value = [];
@@ -563,6 +832,8 @@ const handleSidebarClose = () => {
   selectedFeatureOriginal.value = undefined;
   selectedFeatureLoading.value = false;
   showIntroPanel.value = true;
+  clearSelectedMapFeatureState();
+  clearFeatureIdQuery();
 };
 
 /** Update the mobile drawer height used to offset the map legend. */

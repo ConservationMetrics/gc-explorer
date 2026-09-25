@@ -42,7 +42,7 @@ const isFeatureIdQueryValue = (value: unknown): boolean => {
 };
 
 /**
- * Returns true when the URL has an alert, incident, or secondary feature id.
+ * Returns true when the URL has an alert, incident, map, or secondary feature id.
  *
  * @param query - Current route query
  * @returns True when a feature id is present

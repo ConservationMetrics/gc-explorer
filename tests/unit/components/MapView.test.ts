@@ -673,6 +673,7 @@ describe("MapView component", () => {
 
     mapboxMock.fireLoad();
     await flushPromises();
+    mapboxMock.mockMap.getSource.mockReturnValue(true);
 
     // Simulate click on Point layer
     mapboxMock.fireClick("data-layer-point", {
@@ -702,6 +703,133 @@ describe("MapView component", () => {
     expect(vm.selectedFeature?.id).toBe("1");
     expect(vm.selectedFeature?.["filter-color"]).toBeUndefined();
     expect(vm.selectedFeatureLoading).toBe(false);
+    expect(mockRouter.replace).toHaveBeenCalledWith({
+      query: { featureId: "1" },
+    });
+    expect(mapboxMock.setFeatureState).toHaveBeenCalledWith(
+      { source: "data-source", id: 1 },
+      { selected: true },
+    );
+  });
+
+  it("opens a point from featureId and flies to it", async () => {
+    mockRoute.value = {
+      params: {},
+      query: {
+        featureId: "1",
+        lat: "-3.12000",
+        lng: "-60.02000",
+        zoom: "11.50",
+      },
+    };
+
+    const wrapper = mount(MapView, {
+      props: baseProps,
+      global: globalConfig,
+    });
+
+    expect(mapboxMock.Map).toHaveBeenCalledWith(
+      expect.objectContaining({
+        center: [10, 10],
+        zoom: 10,
+      }),
+    );
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    expect(mockFetchRecord).toHaveBeenCalledWith("test_table", "1");
+    expect(mapboxMock.mockMap.flyTo).toHaveBeenCalledWith({
+      center: [0, 0],
+      zoom: 13,
+      maxDuration: 1000,
+    });
+    const vm = wrapper.vm as unknown as {
+      showIntroPanel: boolean;
+      selectedFeatureLoading: boolean;
+    };
+    expect(vm.showIntroPanel).toBe(false);
+    expect(vm.selectedFeatureLoading).toBe(false);
+  });
+
+  it("fits a polygon from featureId", async () => {
+    mockRoute.value = {
+      params: {},
+      query: { featureId: "2" },
+    };
+
+    mount(MapView, {
+      props: baseProps,
+      global: globalConfig,
+    });
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    expect(mapboxMock.mockMap.fitBounds).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ padding: 50, maxDuration: 1000 }),
+    );
+    expect(mapboxMock.mockMap.flyTo).not.toHaveBeenCalled();
+  });
+
+  it("flies to the centroid of a line from featureId", async () => {
+    mockRoute.value = {
+      params: {},
+      query: { featureId: "line-1" },
+    };
+
+    mount(MapView, {
+      props: {
+        ...baseProps,
+        mapData: makeFeatureCollection([
+          {
+            id: 3,
+            type: "LineString",
+            coordinates: [
+              [0, 0],
+              [2, 0],
+            ],
+            properties: { _id: "line-1" },
+          },
+        ]),
+      },
+      global: globalConfig,
+    });
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const flyTo = mapboxMock.mockMap.flyTo.mock.calls[0]?.[0] as {
+      center: [number, number];
+      zoom: number;
+      maxDuration: number;
+    };
+    expect(flyTo.zoom).toBe(13);
+    expect(flyTo.maxDuration).toBe(1000);
+    expect(flyTo.center[0]).toBeCloseTo(1, 5);
+    expect(flyTo.center[1]).toBeCloseTo(0, 5);
+  });
+
+  it("leaves the intro panel when featureId is unknown", async () => {
+    mockRoute.value = {
+      params: {},
+      query: { featureId: "missing" },
+    };
+
+    const wrapper = mount(MapView, {
+      props: baseProps,
+      global: globalConfig,
+    });
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const vm = wrapper.vm as unknown as {
+      showIntroPanel: boolean;
+      selectedFeatureLoading: boolean;
+    };
+    expect(mockFetchRecord).not.toHaveBeenCalled();
+    expect(mapboxMock.mockMap.flyTo).not.toHaveBeenCalled();
+    expect(vm.showIntroPanel).toBe(true);
+    expect(vm.selectedFeatureLoading).toBe(false);
   });
 
   it("closes sidebar and resets selection", async () => {
@@ -712,6 +840,17 @@ describe("MapView component", () => {
 
     mapboxMock.fireLoad();
     await flushPromises();
+    mapboxMock.mockMap.getSource.mockReturnValue(true);
+    mapboxMock.fireClick("data-layer-point", {
+      features: [
+        {
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [0, 0] },
+          properties: { _id: "1" },
+        },
+      ],
+    });
+    await flushPromises();
 
     // Call the close handler directly
     const vm = wrapper.vm as unknown as {
@@ -721,12 +860,20 @@ describe("MapView component", () => {
       handleSidebarClose: () => void;
     };
 
+    mockRoute.value.query = { featureId: "1", lat: "-3.12000" };
     vm.handleSidebarClose();
     await flushPromises();
 
     expect(vm.showSidebar).toBe(false);
     expect(vm.selectedFeature).toBeUndefined();
     expect(vm.showIntroPanel).toBe(true);
+    expect(mockRouter.replace).toHaveBeenCalledWith({
+      query: { lat: "-3.12000" },
+    });
+    expect(mapboxMock.setFeatureState).toHaveBeenCalledWith(
+      { source: "data-source", id: 1 },
+      { selected: false },
+    );
   });
 
   it("shows reset button when sidebar is closed", async () => {
@@ -763,6 +910,8 @@ describe("MapView component", () => {
     const sidebar = wrapper.findComponent({ name: "ViewSidebar" });
     await sidebar.vm.$emit("close");
     await flushPromises();
+    mockRouter.replace.mockClear();
+    mockRoute.value.query = { featureId: "1", lat: "-3.12000" };
 
     // Click reset button
     await wrapper.find(".reset-button").trigger("click");
@@ -781,6 +930,9 @@ describe("MapView component", () => {
       zoom: 10,
       pitch: 0,
       bearing: 0,
+    });
+    expect(mockRouter.replace).toHaveBeenCalledWith({
+      query: { lat: "-3.12000" },
     });
   });
 

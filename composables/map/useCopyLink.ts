@@ -13,6 +13,8 @@ export const COPY_ALERT_LINK_EXCLUDE_PARAMS = [
   ...MAP_CAMERA_QUERY_KEYS,
 ];
 
+export const COPY_MAP_FEATURE_LINK_EXCLUDE_PARAMS = [...MAP_CAMERA_QUERY_KEYS];
+
 export const COPY_INCIDENT_LINK_EXCLUDE_PARAMS = [
   "alertId",
   "mapeoDocId",

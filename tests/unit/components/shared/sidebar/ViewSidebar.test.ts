@@ -32,6 +32,7 @@ const showCopied = ref(false);
 
 vi.mock("@/composables/map/useCopyLink", () => ({
   COPY_ALERT_LINK_EXCLUDE_PARAMS: ["incidentId", "lat", "lng", "zoom"],
+  COPY_MAP_FEATURE_LINK_EXCLUDE_PARAMS: ["lat", "lng", "zoom"],
   useCopyLink: () => ({ showCopied, copyLink }),
 }));
 
@@ -131,7 +132,10 @@ describe("ViewSidebar", () => {
     expect(wrapper.find('[data-testid="data-feature"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="detail-minimap"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="copy-link-section"]').exists()).toBe(
-      false,
+      true,
+    );
+    expect(wrapper.get('[data-testid="copy-link-button"]').text()).toContain(
+      "copySecondaryLink",
     );
     expect(wrapper.find('[data-testid="download-map-data"]').exists()).toBe(
       true,
@@ -251,6 +255,9 @@ describe("ViewSidebar", () => {
 
     expect(wrapper.find('[data-testid="map-intro-panel"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="feature-metadata"]').exists()).toBe(
+      false,
+    );
+    expect(wrapper.find('[data-testid="copy-link-section"]').exists()).toBe(
       false,
     );
   });
