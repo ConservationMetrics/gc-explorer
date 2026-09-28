@@ -196,10 +196,8 @@ export const attachMapCameraQuerySync = (
     const query = {
       ...route.query,
       ...serializeMapCameraQuery(camera),
+      ...(!shouldPreserveFeatureId() ? { featureId: undefined } : {}),
     };
-    if (!shouldPreserveFeatureId()) {
-      MAP_FEATURE_ID_QUERY_KEYS.forEach((key) => delete query[key]);
-    }
     router.replace({ query });
   });
 };
