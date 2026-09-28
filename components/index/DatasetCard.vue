@@ -6,6 +6,7 @@ import {
   Globe2,
   Images,
   Map,
+  MoveRight,
   Settings,
   Shield,
   TriangleAlert,
@@ -56,15 +57,6 @@ const truncateDisplayName = (name: string): string => {
 };
 
 const fullDescription = computed(() => props.config.VIEW_DESCRIPTION || "");
-const CARD_DESCRIPTION_PREVIEW = 120;
-const displayDescription = computed(() => {
-  if (fullDescription.value.length <= CARD_DESCRIPTION_PREVIEW) {
-    return fullDescription.value;
-  }
-  return (
-    fullDescription.value.substring(0, CARD_DESCRIPTION_PREVIEW).trimEnd() + "…"
-  );
-});
 
 const headerImage = computed(() => props.config.VIEW_HEADER_IMAGE || "");
 const viewPath = computed(
@@ -84,7 +76,7 @@ const configEditPath = computed(() => ({
     <NuxtLink
       :to="viewPath"
       data-testid="open-dataset-view-link"
-      class="block h-full focus-visible:relative focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-700"
+      class="group relative block h-full focus-visible:relative focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-700"
     >
       <div
         data-testid="dataset-card-header-image"
@@ -142,27 +134,32 @@ const configEditPath = computed(() => ({
         </div>
       </div>
 
-      <div class="p-4 sm:p-6 flex flex-col min-h-44">
+      <div class="p-4 sm:p-6 pr-12 pb-12 flex flex-col min-h-44">
         <h2
-          class="text-lg sm:text-xl font-semibold text-gray-800 break-words mb-2 line-clamp-2 min-h-14"
+          class="text-lg sm:text-xl font-semibold text-gray-800 break-words mb-2 line-clamp-2"
           style="overflow-wrap: anywhere; word-break: break-word; hyphens: auto"
         >
           {{ truncateDisplayName(viewName || String(tableName)) }}
         </h2>
         <p
-          class="text-sm sm:text-base text-gray-600 line-clamp-3 min-h-[4.5rem]"
+          class="text-sm sm:text-base text-gray-600 line-clamp-4"
           data-testid="dataset-card-description"
         >
-          {{ displayDescription }}
+          {{ fullDescription }}
         </p>
       </div>
+
+      <MoveRight
+        aria-hidden="true"
+        class="absolute bottom-4 right-4 h-5 w-5 text-violet-500 opacity-60 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+      />
     </NuxtLink>
 
     <NuxtLink
       v-if="showAdminGear"
       :to="configEditPath"
       data-testid="dataset-card-config-gear"
-      class="absolute right-2 top-2 z-20 p-2.5 text-gray-700 bg-white/90 hover:text-violet-900 hover:bg-violet-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-700"
+      class="absolute right-2 top-2 z-20 p-2.5 text-gray-700 bg-white/70 hover:text-violet-900 hover:bg-violet-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-700"
       :aria-label="$t('accessConfig')"
       :title="$t('accessConfig')"
       @click.stop
