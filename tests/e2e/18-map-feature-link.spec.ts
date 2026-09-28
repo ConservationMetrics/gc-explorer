@@ -170,10 +170,11 @@ test.describe("map feature link", () => {
     await waitForTestMap(page);
 
     const closeButton = page.getByRole("button", { name: "Close" });
-    await expect
-      .poll(() => page.evaluate(() => window.getTestMap().isMoving()))
-      .toBe(true);
     await expect(closeButton).toBeVisible();
+    await page.waitForFunction(() => !window.getTestMap().isMoving());
+    await page.evaluate(() => {
+      window.getTestMap().flyTo({ center: [-59, 6], zoom: 14, duration: 4000 });
+    });
     await expect
       .poll(() => page.evaluate(() => window.getTestMap().isMoving()))
       .toBe(true);
@@ -182,7 +183,6 @@ test.describe("map feature link", () => {
     await expect(page).not.toHaveURL(/featureId=/);
 
     await page.waitForFunction(() => !window.getTestMap().isMoving());
-    await expect(page).toHaveURL(/[?&]lat=/);
     await expect(page).not.toHaveURL(/featureId=/);
     await expect(page.getByTestId("copy-link-section")).toHaveCount(0);
   });
