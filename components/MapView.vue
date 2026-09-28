@@ -95,6 +95,7 @@ const selectedFeature = ref<DataEntry>();
 const selectedFeatureOriginal = ref<Feature>();
 const selectedFeatureLoading = ref(false);
 const selectedMapFeatureStateId = ref<string | number | null>(null);
+const preserveFeatureIdInCameraQuery = ref(true);
 const SELECTED_HALO_COLOR = "#00E5FF";
 const showSidebar = ref(true);
 const mobileDrawerHeight = ref(0);
@@ -146,7 +147,12 @@ onMounted(() => {
     bearing: props.mapboxBearing || 0,
   });
   exposeTestMap(map.value);
-  attachMapCameraQuerySync(map.value, route, router);
+  attachMapCameraQuerySync(
+    map.value,
+    route,
+    router,
+    () => preserveFeatureIdInCameraQuery.value,
+  );
   // Apply 3D terrain whenever the style loads
   let controlsAdded = false;
 
@@ -741,6 +747,7 @@ const openMapFeature = async (clickedFeature: Feature) => {
   }
 
   setSelectedMapFeatureState(clickedFeature);
+  preserveFeatureIdInCameraQuery.value = true;
 
   const recordId = clickedFeature.properties._id as string | undefined;
 
@@ -802,6 +809,7 @@ const selectInitialMapFeature = (featureId: string) => {
 
 /** Reset the map to initial state */
 const resetToInitialState = () => {
+  preserveFeatureIdInCameraQuery.value = false;
   selectedFeature.value = undefined;
   selectedFeatureOriginal.value = undefined;
   selectedFeatureLoading.value = false;
@@ -827,6 +835,7 @@ const resetToInitialState = () => {
 
 /** Handle sidebar close */
 const handleSidebarClose = () => {
+  preserveFeatureIdInCameraQuery.value = false;
   showSidebar.value = false;
   selectedFeature.value = undefined;
   selectedFeatureOriginal.value = undefined;
