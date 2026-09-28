@@ -196,6 +196,7 @@ export const attachMapCameraQuerySync = (
     const query = {
       ...route.query,
       ...serializeMapCameraQuery(camera),
+      // A late moveend after closing the sidebar must not restore its featureId.
       ...(!shouldPreserveFeatureId() ? { featureId: undefined } : {}),
     };
     router.replace({ query });
