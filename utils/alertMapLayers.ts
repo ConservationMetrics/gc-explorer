@@ -1,4 +1,5 @@
 import type { Feature } from "geojson";
+import type { Map as MapboxMap } from "mapbox-gl";
 
 export type AlertPeriod = "mostRecent" | "previous";
 export type AlertRenderKind = "point" | "polygon" | "linestring" | "centroids";
@@ -140,6 +141,46 @@ export const getAlertMapLayer = (layerId: string) =>
 
 export const getAlertMapLayersForPeriod = (period: AlertPeriod) =>
   alertMapLayers.filter((alertMapLayer) => alertMapLayer.period === period);
+
+/** Set visibility for an alert period and every supporting layer it uses. */
+export const setAlertMapLayerGroupVisibility = (
+  map: Pick<MapboxMap, "getLayer" | "setLayoutProperty">,
+  period: AlertPeriod,
+  visibility: "visible" | "none",
+) => {
+  const setLayerVisibility = (layerId: string) => {
+    if (map.getLayer(layerId)) {
+      map.setLayoutProperty(layerId, "visibility", visibility);
+    }
+  };
+
+  getAlertMapLayersForPeriod(period).forEach(({ kind, layerId }) => {
+    setLayerVisibility(layerId);
+
+    if (kind === "polygon") {
+      setLayerVisibility(`${layerId}-stroke`);
+    }
+
+    if (kind === "point" || kind === "centroids") {
+      setLayerVisibility(`${layerId}-clusters`);
+      setLayerVisibility(`${layerId}-cluster-count`);
+      setLayerVisibility(`${layerId}-halo`);
+      setLayerVisibility(`${layerId}-clusters-halo`);
+    }
+  });
+};
+
+/** Set visibility for the secondary-data layer and its optional stroke layer. */
+export const setSecondaryDataLayerVisibility = (
+  map: Pick<MapboxMap, "getLayer" | "setLayoutProperty">,
+  visibility: "visible" | "none",
+) => {
+  ["secondary-data", "secondary-data-stroke"].forEach((layerId) => {
+    if (map.getLayer(layerId)) {
+      map.setLayoutProperty(layerId, "visibility", visibility);
+    }
+  });
+};
 
 export const clusteredAlertMapLayers = alertMapLayers.filter(
   (alertMapLayer) =>

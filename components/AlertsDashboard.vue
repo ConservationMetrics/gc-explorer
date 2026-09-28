@@ -53,9 +53,10 @@ import {
 import {
   alertMapLayers,
   getAlertGeometryRenderKind,
-  getAlertMapLayersForPeriod,
   getAlertSourceFeatures,
   isPolygonal,
+  setAlertMapLayerGroupVisibility,
+  setSecondaryDataLayerVisibility,
 } from "@/utils/alertMapLayers";
 import { parsePhotosFromRecord } from "@/utils/index";
 
@@ -1440,58 +1441,9 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
   // Handle alert group layers - toggle all related layers
   if (item.id === "most-recent-alerts" || item.id === "previous-alerts") {
     const period = item.id === "most-recent-alerts" ? "mostRecent" : "previous";
-
-    getAlertMapLayersForPeriod(period).forEach(({ kind: type, layerId }) => {
-      if (map.value.getLayer(layerId)) {
-        map.value.setLayoutProperty(layerId, "visibility", visibility);
-      }
-
-      // Handle stroke layers for polygons
-      if (type === "polygon") {
-        const strokeLayerId = `${layerId}-stroke`;
-        if (map.value.getLayer(strokeLayerId)) {
-          map.value.setLayoutProperty(strokeLayerId, "visibility", visibility);
-        }
-      }
-
-      // Handle cluster layers for points and centroids
-      if (type === "point" || type === "centroids") {
-        const clusterLayerId = `${layerId}-clusters`;
-        const clusterCountLayerId = `${layerId}-cluster-count`;
-        if (map.value.getLayer(clusterLayerId)) {
-          map.value.setLayoutProperty(clusterLayerId, "visibility", visibility);
-        }
-        if (map.value.getLayer(clusterCountLayerId)) {
-          map.value.setLayoutProperty(
-            clusterCountLayerId,
-            "visibility",
-            visibility,
-          );
-        }
-        const haloLayerId = `${layerId}-halo`;
-        const clusterHaloLayerId = `${layerId}-clusters-halo`;
-        if (map.value.getLayer(haloLayerId)) {
-          map.value.setLayoutProperty(haloLayerId, "visibility", visibility);
-        }
-        if (map.value.getLayer(clusterHaloLayerId)) {
-          map.value.setLayoutProperty(
-            clusterHaloLayerId,
-            "visibility",
-            visibility,
-          );
-        }
-      }
-    });
+    setAlertMapLayerGroupVisibility(map.value, period, visibility);
   } else if (item.id === "secondary-data") {
-    SECONDARY_INTERACTIVE_LAYER_IDS.forEach((layerId) => {
-      if (map.value.getLayer(layerId)) {
-        map.value.setLayoutProperty(layerId, "visibility", visibility);
-      }
-      const strokeLayerId = `${layerId}-stroke`;
-      if (map.value.getLayer(strokeLayerId)) {
-        map.value.setLayoutProperty(strokeLayerId, "visibility", visibility);
-      }
-    });
+    setSecondaryDataLayerVisibility(map.value, visibility);
   } else {
     // Handle individual layers (secondary-data, etc.)
     utilsToggleLayerVisibility(map.value, item);
@@ -1581,85 +1533,13 @@ const resetToInitialState = () => {
 
     // Make all layers visible
     mapLegendContent.value.forEach((item: MapLegendItem) => {
-      const visibility = "visible";
-
       // Handle alert group layers
       if (item.id === "most-recent-alerts" || item.id === "previous-alerts") {
         const period =
           item.id === "most-recent-alerts" ? "mostRecent" : "previous";
-
-        getAlertMapLayersForPeriod(period).forEach(
-          ({ kind: type, layerId }) => {
-            if (map.value.getLayer(layerId)) {
-              map.value.setLayoutProperty(layerId, "visibility", visibility);
-            }
-
-            // Handle stroke layers for polygons
-            if (type === "polygon") {
-              const strokeLayerId = `${layerId}-stroke`;
-              if (map.value.getLayer(strokeLayerId)) {
-                map.value.setLayoutProperty(
-                  strokeLayerId,
-                  "visibility",
-                  visibility,
-                );
-              }
-            }
-
-            // Handle cluster layers for points
-            if (type === "point") {
-              const clusterLayerId = `${layerId}-clusters`;
-              const clusterCountLayerId = `${layerId}-cluster-count`;
-              if (map.value.getLayer(clusterLayerId)) {
-                map.value.setLayoutProperty(
-                  clusterLayerId,
-                  "visibility",
-                  visibility,
-                );
-              }
-              if (map.value.getLayer(clusterCountLayerId)) {
-                map.value.setLayoutProperty(
-                  clusterCountLayerId,
-                  "visibility",
-                  visibility,
-                );
-              }
-            }
-
-            if (type === "point" || type === "centroids") {
-              const haloLayerId = `${layerId}-halo`;
-              const clusterHaloLayerId = `${layerId}-clusters-halo`;
-              if (map.value.getLayer(haloLayerId)) {
-                map.value.setLayoutProperty(
-                  haloLayerId,
-                  "visibility",
-                  visibility,
-                );
-              }
-              if (map.value.getLayer(clusterHaloLayerId)) {
-                map.value.setLayoutProperty(
-                  clusterHaloLayerId,
-                  "visibility",
-                  visibility,
-                );
-              }
-            }
-          },
-        );
+        setAlertMapLayerGroupVisibility(map.value, period, "visible");
       } else if (item.id === "secondary-data") {
-        SECONDARY_INTERACTIVE_LAYER_IDS.forEach((layerId) => {
-          if (map.value.getLayer(layerId)) {
-            map.value.setLayoutProperty(layerId, "visibility", visibility);
-          }
-          const strokeLayerId = `${layerId}-stroke`;
-          if (map.value.getLayer(strokeLayerId)) {
-            map.value.setLayoutProperty(
-              strokeLayerId,
-              "visibility",
-              visibility,
-            );
-          }
-        });
+        setSecondaryDataLayerVisibility(map.value, "visible");
       } else {
         // Handle individual layers (secondary-data, etc.)
         utilsToggleLayerVisibility(map.value, item);
