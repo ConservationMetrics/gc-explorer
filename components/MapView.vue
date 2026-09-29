@@ -123,6 +123,19 @@ const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showIcons = ref(false);
 const loadingIcons = ref(false);
+const primaryDatasetVisible = ref(true);
+
+const applyPrimaryDatasetVisibility = () => {
+  map.value?.getStyle()?.layers?.forEach((layer: Layer) => {
+    if ("source" in layer && layer.source === "data-source") {
+      map.value.setLayoutProperty(
+        layer.id,
+        "visibility",
+        primaryDatasetVisible.value ? "visible" : "none",
+      );
+    }
+  });
+};
 
 // Check if icon toggle is available
 const canToggleIcons = computed(() => {
@@ -443,6 +456,7 @@ const addDataToMap = () => {
   }
 
   applySelectedMapFeatureState();
+  applyPrimaryDatasetVisibility();
 
   // Add event listeners
   const layersToAddListeners = [];
@@ -576,11 +590,10 @@ const mapLegendContent = ref();
 /** Prepare map legend content based on layer IDs */
 const prepareMapLegendContent = () => {
   const prepare = () => {
-    const items = props.mapLegendLayerIds
-      ? prepareMapLegendLayers(map.value, props.mapLegendLayerIds).filter(
-          (item) => item.id !== SECONDARY_SOURCE_ID,
-        )
-      : [];
+    const items = (
+      (prepareMapLegendLayers(map.value, props.mapLegendLayerIds ?? null) ??
+        []) as MapLegendItem[]
+    ).filter((item) => item.id !== SECONDARY_SOURCE_ID);
     if (props.secondaryData?.features.length) {
       items.unshift({
         id: SECONDARY_SOURCE_ID,
@@ -592,6 +605,17 @@ const prepareMapLegendContent = () => {
         visible: secondaryLayer.visible.value,
       });
     }
+    if (props.mapData.features.length) {
+      items.unshift({
+        id: "data-source",
+        name: props.table
+          .replace(/_/g, " ")
+          .replace(/^\w/, (character) => character.toUpperCase()),
+        type: "circle",
+        color: "#64748b",
+        visible: primaryDatasetVisible.value,
+      });
+    }
     mapLegendContent.value = items;
   };
   prepare();
@@ -600,7 +624,11 @@ const prepareMapLegendContent = () => {
 
 /** Toggle visibility of a map layer */
 const toggleLayerVisibility = (item: MapLegendItem) => {
-  if (item.id === SECONDARY_SOURCE_ID) secondaryLayer.setVisible(item.visible);
+  if (item.id === "data-source") {
+    primaryDatasetVisible.value = item.visible;
+    applyPrimaryDatasetVisibility();
+  } else if (item.id === SECONDARY_SOURCE_ID)
+    secondaryLayer.setVisible(item.visible);
   else utilsToggleLayerVisibility(map.value, item);
 };
 

@@ -221,6 +221,18 @@ test("shows both datasets, restores secondary metadata, toggles the group and re
     0,
   );
   await page.getByTestId("map-legend-toggle").click();
+  await expect(page.locator('input[id="data-source"]')).toBeChecked();
+  await page.locator('input[id="data-source"]').uncheck();
+  expect(
+    await page.evaluate(() =>
+      window.getTestMap().getLayoutProperty("data-layer-point", "visibility"),
+    ),
+  ).toBe("none");
+  expect(
+    await page.evaluate(() =>
+      window.getTestMap().getLayoutProperty("secondary-data", "visibility"),
+    ),
+  ).toBe("visible");
   await page.locator('input[id="secondary-data"]').uncheck();
   expect(
     await page.evaluate(() =>
@@ -246,7 +258,14 @@ test("shows both datasets, restores secondary metadata, toggles the group and re
     )
     .toBe("none");
   await expect(page.locator('input[id="secondary-data"]')).not.toBeChecked();
+  await expect(page.locator('input[id="data-source"]')).not.toBeChecked();
+  expect(
+    await page.evaluate(() =>
+      window.getTestMap().getLayoutProperty("data-layer-point", "visibility"),
+    ),
+  ).toBe("none");
   await page.locator(".basemap-toggle").click();
+  await page.locator('input[id="data-source"]').check();
   await page.locator('input[id="secondary-data"]').check();
   await page.evaluate(() =>
     window.getTestMap().fitBounds(
