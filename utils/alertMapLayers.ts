@@ -170,8 +170,6 @@ export const setAlertMapLayerGroupVisibility = (
   });
 };
 
-export { setSecondaryDataLayerVisibility } from "./secondaryMapLayers";
-
 export const clusteredAlertMapLayers = alertMapLayers.filter(
   (alertMapLayer) =>
     alertMapLayer.kind === "point" || alertMapLayer.kind === "centroids",

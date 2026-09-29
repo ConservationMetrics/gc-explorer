@@ -312,6 +312,47 @@ describe("MapView component", () => {
   });
 
   it("leaves secondary data intact when primary filters remove every feature", async () => {
+    const sources = new Map<
+      string,
+      { data: FeatureCollection; setData: (data: FeatureCollection) => void }
+    >();
+    const layers = new Map<
+      string,
+      { id: string; source: string; layout?: Record<string, unknown> }
+    >();
+    // Track live map state so removal, data updates and visibility changes
+    // after initial installation are observable.
+    const statefulMethods = {
+      addSource: vi.fn((id: string, source: { data: FeatureCollection }) => {
+        sources.set(id, {
+          data: JSON.parse(JSON.stringify(source.data)) as FeatureCollection,
+          setData(data) {
+            this.data = JSON.parse(JSON.stringify(data)) as FeatureCollection;
+          },
+        });
+      }),
+      getSource: vi.fn((id: string) => sources.get(id)),
+      removeSource: vi.fn((id: string) => sources.delete(id)),
+      addLayer: vi.fn((layer: { id: string; source: string }) => {
+        layers.set(layer.id, structuredClone(layer));
+      }),
+      getLayer: vi.fn((id: string) => layers.get(id)),
+      removeLayer: vi.fn((id: string) => layers.delete(id)),
+      getStyle: vi.fn(() => ({ layers: [...layers.values()] })),
+      setLayoutProperty: vi.fn((id: string, name: string, value: unknown) => {
+        const layer = layers.get(id);
+        if (layer) (layer.layout ??= {})[name] = value;
+      }),
+    };
+    const originalMethods = Object.fromEntries(
+      Object.keys(statefulMethods).map((key) => [
+        key,
+        mapboxMock.mockMap[key as keyof typeof statefulMethods],
+      ]),
+    );
+    Object.assign(mapboxMock.mockMap, statefulMethods);
+    onTestFinished(() => Object.assign(mapboxMock.mockMap, originalMethods));
+
     const wrapper = mount(MapView, {
       props: {
         ...baseProps,
@@ -328,11 +369,20 @@ describe("MapView component", () => {
       filteredFeatureCollection: FeatureCollection;
     };
     vm.filterValues(["missing"]);
+    await flushPromises();
     expect(vm.filteredFeatureCollection.features).toHaveLength(0);
-    expect(mapboxMock.mockMap.addSource).toHaveBeenCalledWith(
+    expect(sources.get("secondary-data")?.data).toEqual(secondaryGeometry);
+    for (const id of [
       "secondary-data",
-      { type: "geojson", data: secondaryGeometry },
-    );
+      "secondary-data-line",
+      "secondary-data-polygon",
+      "secondary-data-stroke",
+    ]) {
+      expect(layers.get(id)).toMatchObject({
+        source: "secondary-data",
+        layout: { visibility: "visible" },
+      });
+    }
     wrapper.unmount();
   });
 
