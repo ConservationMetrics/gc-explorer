@@ -1,3 +1,4 @@
+import { secondaryGeometry } from "@/tests/fixtures/secondaryGeometry";
 import { describe, it, expect, beforeEach, onTestFinished, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import {
@@ -208,6 +209,188 @@ describe("AlertsDashboard component", () => {
       },
     });
   };
+
+  it("normal secondary polygon selection and reset target the shared source", async () => {
+    Object.assign(mockRoute.value, {
+      path: "/alerts/test_alerts",
+      params: { tablename: "test_alerts" },
+    });
+    hoisted.mockFetch.mockResolvedValue({
+      _id: "multipolygon",
+      name: "Mapping areas",
+    });
+    const wrapper = mountComponent({
+      ...baseProps,
+      secondaryData: secondaryGeometry,
+    });
+    mapboxMock.fireLoad();
+    await flushPromises();
+    mapboxMock.mockMap.getSource.mockReturnValue(true);
+    mapboxMock.fireClick("secondary-data-polygon", {
+      features: [secondaryGeometry.features[4]],
+    });
+    await flushPromises();
+    expect(mapboxMock.setFeatureState).toHaveBeenCalledWith(
+      { source: "secondary-data", id: 5 },
+      { selected: true },
+    );
+    expect(mockRouter.replace).toHaveBeenCalledWith({
+      query: { secondaryDocId: "multipolygon" },
+    });
+    mockRoute.value.query = { secondaryDocId: "multipolygon" };
+    const vm = wrapper.vm as unknown as { resetSelectedFeature: () => void };
+    vm.resetSelectedFeature();
+    expect(mapboxMock.setFeatureState).toHaveBeenCalledWith(
+      { source: "secondary-data", id: 5 },
+      { selected: false },
+    );
+    expect(mockRouter.replace).toHaveBeenLastCalledWith({ query: {} });
+    wrapper.unmount();
+  });
+
+  it.each([
+    secondaryGeometry,
+    {
+      ...secondaryGeometry,
+      features: secondaryGeometry.features.filter((feature) =>
+        feature.geometry.type.startsWith("Multi"),
+      ),
+    },
+  ])(
+    "renders mixed and multipart secondary geometry and selects incidents once per record",
+    async (secondaryData) => {
+      const wrapper = mountComponent({ ...baseProps, secondaryData });
+      mapboxMock.fireLoad();
+      await flushPromises();
+      expect(
+        mapboxMock.layers
+          .filter((layer) => layer.source === "secondary-data")
+          .map((layer) => layer.type),
+      ).toEqual(["circle", "line", "fill", "line"]);
+      const vm = wrapper.vm as unknown as {
+        multiSelectMode: boolean;
+        selectedSources: Array<{ source_table: string; source_id: string }>;
+        openIncidentDetails: (id: string) => Promise<void>;
+        handleMultiSelectFeature: (feature: unknown, layer: string) => void;
+      };
+      vm.multiSelectMode = true;
+      mapboxMock.mockMap.getLayer.mockImplementation(
+        (id?: string) => ({ id, source: "secondary-data" }) as never,
+      );
+      mapboxMock.mockMap.getSource.mockReturnValue(true);
+      for (const feature of secondaryData.features) {
+        const layer = feature.geometry.type.includes("Line")
+          ? "secondary-data-line"
+          : feature.geometry.type.includes("Polygon")
+            ? "secondary-data-polygon"
+            : "secondary-data";
+        mapboxMock.fireClick(layer, { features: [feature] });
+        mapboxMock.fireClick(layer, { features: [feature] });
+        expect(mapboxMock.setFeatureState).toHaveBeenCalledWith(
+          { source: "secondary-data", id: feature.id },
+          { incidentSelected: true },
+        );
+      }
+      expect(vm.selectedSources).toHaveLength(secondaryData.features.length);
+      expect(
+        vm.selectedSources.every(
+          (source) => source.source_table === "mapeo_data",
+        ),
+      ).toBe(true);
+      wrapper.unmount();
+      mapboxMock.mockMap.getLayer.mockReturnValue(false);
+    },
+  );
+
+  it("box-selects secondary lines and polygons once and restores saved incident highlights", async () => {
+    const canvas = document.createElement("div");
+    mapboxMock.mockMap.getCanvasContainer.mockReturnValue(canvas);
+    const wrapper = mountComponent({
+      ...baseProps,
+      secondaryData: secondaryGeometry,
+    });
+    mapboxMock.fireLoad();
+    await flushPromises();
+    mapboxMock.mockMap.getLayer.mockImplementation(
+      (id?: string) => ({ id, source: "secondary-data" }) as never,
+    );
+    mapboxMock.mockMap.getSource.mockReturnValue(true);
+    const features = secondaryGeometry.features.filter(
+      (feature) => feature.geometry.type !== "Point",
+    );
+    mapboxMock.mockMap.queryRenderedFeatures.mockImplementation(
+      (_box: unknown, options?: { layers: string[] }) => {
+        const id = options?.layers[0];
+        return features
+          .filter(
+            (feature) =>
+              id ===
+              (feature.geometry.type.includes("Line")
+                ? "secondary-data-line"
+                : "secondary-data-polygon"),
+          )
+          .flatMap((feature) => [
+            { ...feature, layer: { id } },
+            { ...feature, layer: { id } },
+          ]) as never;
+      },
+    );
+    const vm = wrapper.vm as unknown as {
+      toggleBoundingBoxMode: () => void;
+      selectedSources: unknown[];
+      openIncidentDetails: (id: string) => Promise<void>;
+    };
+    vm.toggleBoundingBoxMode();
+    await flushPromises();
+    canvas.dispatchEvent(
+      new MouseEvent("mousedown", {
+        button: 0,
+        ctrlKey: true,
+        clientX: 0,
+        clientY: 0,
+      }),
+    );
+    document.dispatchEvent(
+      new MouseEvent("mouseup", { clientX: 100, clientY: 100 }),
+    );
+    await flushPromises();
+    expect(vm.selectedSources).toHaveLength(4);
+    mapboxMock.mockMap.querySourceFeatures.mockImplementation(
+      (_id: unknown, options?: { filter: unknown[] }) => {
+        const text = JSON.stringify(options?.filter);
+        return features.filter((feature) =>
+          text.includes(`"${feature.properties?._id}"`),
+        ) as never;
+      },
+    );
+    mapboxMock.setFeatureState.mockClear();
+    hoisted.mockFetch.mockResolvedValueOnce({
+      incident: { id: "saved-secondary" },
+      entries: features.map((feature) => ({
+        source_table: "mapeo_data",
+        source_id: feature.properties?._id,
+        feature_type: "secondary",
+        source_data: {
+          g__type: feature.geometry.type,
+          g__coordinates: JSON.stringify(
+            "coordinates" in feature.geometry
+              ? feature.geometry.coordinates
+              : [],
+          ),
+        },
+      })),
+    });
+    await vm.openIncidentDetails("saved-secondary");
+    for (const feature of features)
+      expect(mapboxMock.setFeatureState).toHaveBeenCalledWith(
+        { source: "secondary-data", id: feature.id },
+        { incidentSelected: true },
+      );
+    wrapper.unmount();
+    mapboxMock.mockMap.getLayer.mockReturnValue(false);
+    mapboxMock.mockMap.queryRenderedFeatures.mockReturnValue([]);
+    mapboxMock.mockMap.querySourceFeatures.mockReturnValue([]);
+  });
 
   it.each([
     ["most-recent-alerts-polygon", "secondary-data"],

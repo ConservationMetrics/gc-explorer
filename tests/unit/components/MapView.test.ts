@@ -1,3 +1,4 @@
+import { secondaryGeometry } from "@/tests/fixtures/secondaryGeometry";
 import { describe, it, expect, beforeEach, onTestFinished, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import VueSlider from "vue-3-slider-component";
@@ -173,6 +174,186 @@ describe("MapView component", () => {
     });
     document.body.innerHTML = '<div id="map"></div>';
   });
+
+  it("leaves secondary data intact when primary filters remove every feature", async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        ...baseProps,
+        filterColumn: "status",
+        secondaryData: secondaryGeometry,
+        secondaryDataset: "mapping",
+      },
+      global: globalConfig,
+    });
+    mapboxMock.fireLoad();
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      filterValues: (values: string[]) => void;
+      filteredFeatureCollection: FeatureCollection;
+    };
+    vm.filterValues(["missing"]);
+    expect(vm.filteredFeatureCollection.features).toHaveLength(0);
+    expect(mapboxMock.mockMap.addSource).toHaveBeenCalledWith(
+      "secondary-data",
+      { type: "geojson", data: secondaryGeometry },
+    );
+    wrapper.unmount();
+  });
+
+  it("omits an empty secondary legend and leaves unknown secondary links at the intro", async () => {
+    mockRoute.value.query = { secondaryDocId: "missing" };
+    const wrapper = mount(MapView, {
+      props: {
+        ...baseProps,
+        secondaryData: { type: "FeatureCollection", features: [] },
+      },
+      global: globalConfig,
+    });
+    mapboxMock.fireLoad();
+    await flushPromises();
+    expect(mockFetchRecord).not.toHaveBeenCalled();
+    const vm = wrapper.vm as unknown as {
+      showIntroPanel: boolean;
+      mapLegendContent: Array<{ id: string }>;
+    };
+    expect(vm.showIntroPanel).toBe(true);
+    expect(
+      vm.mapLegendContent.some((item) => item.id === "secondary-data"),
+    ).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("renders secondary geometry with an empty primary and an automatic grouped legend", async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        ...baseProps,
+        mapData: { type: "FeatureCollection", features: [] },
+        secondaryData: secondaryGeometry,
+        secondaryDataset: "camera_deployments",
+        mapLegendLayerIds: undefined,
+      },
+      global: globalConfig,
+    });
+    mapboxMock.fireLoad();
+    await flushPromises();
+    expect(
+      mapboxMock.layers
+        .filter((layer) => layer.source === "secondary-data")
+        .map((layer) => layer.type),
+    ).toEqual(["circle", "line", "fill", "line"]);
+    const vm = wrapper.vm as unknown as {
+      mapLegendContent: Array<{ id: string; name: string; visible: boolean }>;
+      toggleLayerVisibility: (item: { id: string; visible: boolean }) => void;
+      prepareMapCanvasContent: () => Promise<void>;
+    };
+    expect(vm.mapLegendContent).toEqual([
+      expect.objectContaining({
+        id: "secondary-data",
+        name: "Camera deployments",
+      }),
+    ]);
+    mapboxMock.mockMap.getLayer.mockReturnValue(true);
+    vm.toggleLayerVisibility({ id: "secondary-data", visible: false });
+    await vm.prepareMapCanvasContent();
+    expect(vm.mapLegendContent[0].visible).toBe(false);
+    for (const id of [
+      "secondary-data",
+      "secondary-data-line",
+      "secondary-data-polygon",
+      "secondary-data-stroke",
+    ])
+      expect(mapboxMock.mockMap.setLayoutProperty).toHaveBeenCalledWith(
+        id,
+        "visibility",
+        "none",
+      );
+    const clicks = mapboxMock.mockMap.on.mock.calls.filter(
+      ([event, layer]) => event === "click" && layer === "secondary-data-line",
+    );
+    expect(clicks).toHaveLength(1);
+    wrapper.unmount();
+    expect(mapboxMock.mockMap.off).toHaveBeenCalledWith(
+      "click",
+      "secondary-data-line",
+      expect.any(Function),
+    );
+    mapboxMock.mockMap.getLayer.mockReturnValue(false);
+  });
+
+  it("distinguishes matching IDs, clears the old source, and ignores late record responses", async () => {
+    let resolveOld!: (record: Record<string, unknown>) => void;
+    mockFetchRecord.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveOld = resolve;
+        }),
+    );
+    const wrapper = mount(MapView, {
+      props: {
+        ...baseProps,
+        secondaryData: secondaryGeometry,
+        secondaryDataset: "camera_deployments",
+      },
+      global: globalConfig,
+    });
+    mapboxMock.fireLoad();
+    await flushPromises();
+    mapboxMock.mockMap.getSource.mockReturnValue(true);
+    mapboxMock.fireClick("data-layer-point", {
+      features: [baseMapData.features[0]],
+    });
+    mapboxMock.fireClick("secondary-data", {
+      features: [secondaryGeometry.features[0]],
+    });
+    await flushPromises();
+    expect(mockFetchRecord).toHaveBeenLastCalledWith("camera_deployments", "1");
+    expect(mockRouter.replace).toHaveBeenLastCalledWith({
+      query: { secondaryDocId: "1" },
+    });
+    expect(mapboxMock.setFeatureState).toHaveBeenCalledWith(
+      { source: "data-source", id: 1 },
+      { selected: false },
+    );
+    expect(mapboxMock.setFeatureState).toHaveBeenCalledWith(
+      { source: "secondary-data", id: 1 },
+      { selected: true },
+    );
+    const vm = wrapper.vm as unknown as {
+      selectedFeature: unknown;
+      handleSidebarClose: () => void;
+    };
+    const current = vm.selectedFeature;
+    resolveOld({ _id: "old", name: "Old primary" });
+    await flushPromises();
+    expect(vm.selectedFeature).toEqual(current);
+    mockRoute.value.query = { secondaryDocId: "1" };
+    vm.handleSidebarClose();
+    expect(mockRouter.replace).toHaveBeenLastCalledWith({ query: {} });
+    wrapper.unmount();
+  });
+
+  it.each(["1", "line", "multiline", "polygon", "multipolygon"])(
+    "restores secondary link %s",
+    async (id) => {
+      mockRoute.value.query = { secondaryDocId: id };
+      const wrapper = mount(MapView, {
+        props: {
+          ...baseProps,
+          secondaryData: secondaryGeometry,
+          secondaryDataset: "mapping",
+        },
+        global: globalConfig,
+      });
+      mapboxMock.fireLoad();
+      await flushPromises();
+      expect(mockFetchRecord).toHaveBeenCalledWith("mapping", id);
+      expect(
+        mapboxMock.mockMap.flyTo.mock.calls.length +
+          mapboxMock.mockMap.fitBounds.mock.calls.length,
+      ).toBe(1);
+      wrapper.unmount();
+    },
+  );
 
   it.each([
     ["data-layer-polygon", "data-layer-point"],
