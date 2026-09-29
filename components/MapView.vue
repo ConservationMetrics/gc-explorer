@@ -103,7 +103,7 @@ const selectedFeature = ref<DataEntry>();
 const selectedFeatureOriginal = ref<Feature>();
 const selectedFeatureLoading = ref(false);
 const selectedMapFeatureStateId = ref<string | number | null>(null);
-const preserveFeatureIdInCameraQuery = ref(true);
+const preserveSelectionInCameraQuery = ref(true);
 const selectedSource = ref("data-source");
 const isSecondary = computed(
   () => selectedSource.value === SECONDARY_SOURCE_ID,
@@ -177,7 +177,7 @@ onMounted(() => {
     map.value,
     route,
     router,
-    () => preserveFeatureIdInCameraQuery.value,
+    () => preserveSelectionInCameraQuery.value,
   );
   // Apply 3D terrain whenever the style loads
   let controlsAdded = false;
@@ -764,7 +764,7 @@ const openMapFeature = async (clickedFeature: Feature, secondary = false) => {
 
   const request = ++selectionRequest;
   setSelectedMapFeatureState(clickedFeature, secondary);
-  preserveFeatureIdInCameraQuery.value = true;
+  preserveSelectionInCameraQuery.value = true;
 
   const recordId = clickedFeature.properties._id as string | undefined;
 
@@ -830,7 +830,7 @@ const selectInitialMapFeature = (featureId: string, secondary = false) => {
 
 /** Reset the map to initial state */
 const resetToInitialState = () => {
-  preserveFeatureIdInCameraQuery.value = false;
+  preserveSelectionInCameraQuery.value = false;
   selectionRequest++;
   selectedFeature.value = undefined;
   selectedFeatureOriginal.value = undefined;
@@ -857,7 +857,7 @@ const resetToInitialState = () => {
 
 /** Handle sidebar close */
 const handleSidebarClose = () => {
-  preserveFeatureIdInCameraQuery.value = false;
+  preserveSelectionInCameraQuery.value = false;
   selectionRequest++;
   showSidebar.value = false;
   selectedFeature.value = undefined;

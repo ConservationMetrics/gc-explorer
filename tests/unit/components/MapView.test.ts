@@ -1042,6 +1042,50 @@ describe("MapView component", () => {
     expect(vm.selectedFeatureLoading).toBe(false);
   });
 
+  it.each(["handleSidebarClose", "resetToInitialState"] as const)(
+    "keeps secondary selection cleared after %s and a late camera event",
+    async (action) => {
+      mockRoute.value.query = { secondaryDocId: "1" };
+      const wrapper = mount(MapView, {
+        props: {
+          ...baseProps,
+          secondaryData: secondaryGeometry,
+          secondaryDataset: "mapping",
+        },
+        global: globalConfig,
+      });
+      mapboxMock.fireLoad();
+      await flushPromises();
+      const vm = wrapper.vm as unknown as Record<typeof action, () => void>;
+      vm[action]();
+      // The router mock leaves the previous query in place, reproducing a pending replace.
+      mapboxMock.fireMapEvent("moveend");
+      expect(mockRouter.replace).toHaveBeenLastCalledWith({
+        query: {
+          featureId: undefined,
+          secondaryDocId: undefined,
+          lat: "10.00000",
+          lng: "10.00000",
+          zoom: "10.00",
+        },
+      });
+      mapboxMock.fireClick("secondary-data", {
+        features: [secondaryGeometry.features[0]],
+      });
+      await flushPromises();
+      mapboxMock.fireMapEvent("moveend");
+      expect(mockRouter.replace).toHaveBeenLastCalledWith({
+        query: {
+          secondaryDocId: "1",
+          lat: "10.00000",
+          lng: "10.00000",
+          zoom: "10.00",
+        },
+      });
+      wrapper.unmount();
+    },
+  );
+
   it("closes sidebar and resets selection", async () => {
     const wrapper = mount(MapView, {
       props: baseProps,

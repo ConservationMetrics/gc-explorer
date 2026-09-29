@@ -283,3 +283,31 @@ test("shows both datasets, restores secondary metadata, toggles the group and re
   ).toBeVisible();
   await page.screenshot({ path: "/tmp/gc-secondary-mobile.png" });
 });
+
+for (const selectionKey of ["featureId", "secondaryDocId"]) {
+  test(`keeps ${selectionKey} cleared when closing during a camera flight`, async ({
+    page,
+  }) => {
+    await page.route("**/api.mapbox.com/map-sessions/**", (route) =>
+      route.fulfill({ status: 200, body: "{}" }),
+    );
+    await page.route("**/events.mapbox.com/**", (route) =>
+      route.fulfill({ status: 200, body: "{}" }),
+    );
+    await page.goto(`/map/${view.primaryDataset}?${selectionKey}=1`);
+    await waitForTestMap(page);
+    await expect(page.getByTestId("copy-link-section")).toBeVisible();
+    await page.waitForFunction(() => !window.getTestMap().isMoving());
+    await page.evaluate(() =>
+      window.getTestMap().flyTo({ center: [-59, 6], zoom: 14, duration: 4000 }),
+    );
+    await expect
+      .poll(() => page.evaluate(() => window.getTestMap().isMoving()))
+      .toBe(true);
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(page).not.toHaveURL(/(?:featureId|secondaryDocId)=/);
+    await page.waitForFunction(() => !window.getTestMap().isMoving());
+    await expect(page).not.toHaveURL(/(?:featureId|secondaryDocId)=/);
+    await expect(page.getByTestId("copy-link-section")).toHaveCount(0);
+  });
+}

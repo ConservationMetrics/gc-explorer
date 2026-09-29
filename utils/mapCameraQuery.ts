@@ -186,7 +186,7 @@ export const attachMapCameraQuerySync = (
   map: MapboxMap,
   route: RouteLocationNormalizedLoaded,
   router: Router,
-  shouldPreserveFeatureId: () => boolean = () => true,
+  shouldPreserveSelection: () => boolean = () => true,
 ): void => {
   map.on("moveend", () => {
     const camera = readMapCamera(map);
@@ -196,8 +196,10 @@ export const attachMapCameraQuerySync = (
     const query = {
       ...route.query,
       ...serializeMapCameraQuery(camera),
-      // A late moveend after closing the sidebar must not restore its featureId.
-      ...(!shouldPreserveFeatureId() ? { featureId: undefined } : {}),
+      // A late moveend after closing the sidebar must not restore either selection.
+      ...(!shouldPreserveSelection()
+        ? { featureId: undefined, secondaryDocId: undefined }
+        : {}),
     };
     router.replace({ query });
   });
