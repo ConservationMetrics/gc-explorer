@@ -31,7 +31,10 @@ export default defineEventHandler(async (event: H3Event) => {
 
   try {
     const tableConfig = await fetchTableConfig(table, "map");
-    const { primaryTable } = await fetchViewTables(table, "map");
+    const { primaryTable, secondaryTable } = await fetchViewTables(
+      table,
+      "map",
+    );
 
     // Check visibility permissions
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
@@ -82,6 +85,19 @@ export default defineEventHandler(async (event: H3Event) => {
       mainColumns,
     });
 
+    const secondaryResult = secondaryTable
+      ? await fetchData(secondaryTable, {
+          limit,
+          mainColumns: await fetchTableSqlColumns(secondaryTable),
+        })
+      : null;
+    const secondaryCollection = secondaryResult
+      ? buildMinimalFeatureCollection(filterGeoData(secondaryResult.mainData), {
+          idField: "_id",
+          includeAllProperties: true,
+        })
+      : null;
+
     // Filter only data with valid geofields
     const filteredGeoData = filterGeoData(mainData);
 
@@ -129,10 +145,16 @@ export default defineEventHandler(async (event: H3Event) => {
       mediaColumn: tableConfig.MEDIA_COLUMN,
       planetApiKey: tableConfig.PLANET_API_KEY,
       primary_dataset: primaryTable,
+      secondary_dataset: secondaryTable,
+      secondaryData: secondaryCollection?.features.length
+        ? secondaryCollection
+        : null,
       table: primaryTable,
       viewDescription: tableConfig.VIEW_DESCRIPTION || undefined,
       viewName: tableConfig.DATASET_TABLE?.trim() || undefined,
-      rowLimitReached: mainData.length >= limit,
+      rowLimitReached:
+        mainData.length >= limit ||
+        (secondaryResult?.mainData.length ?? 0) >= limit,
       routeLevelPermission: tableConfig.ROUTE_LEVEL_PERMISSION,
     };
   } catch (error) {

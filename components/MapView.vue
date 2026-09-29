@@ -1,5 +1,10 @@
 <script setup lang="ts">
+import { useSecondaryDatasetLayer } from "@/composables/map/useSecondaryDatasetLayer";
 import { attachMapHover } from "@/utils/mapHover";
+import {
+  SECONDARY_SOURCE_ID,
+  SECONDARY_INTERACTIVE_LAYER_IDS,
+} from "@/utils/secondaryMapLayers";
 import mapboxgl from "mapbox-gl";
 import { exposeTestMap } from "@/utils/e2eTestHooks";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -69,6 +74,8 @@ const props = defineProps<{
   mapbox3d: boolean;
   mapbox3dTerrainExaggeration?: number | null | undefined;
   mapData: FeatureCollection;
+  secondaryData?: FeatureCollection | null;
+  secondaryDataset?: string | null;
   mediaBasePath?: string;
   mediaBasePathIcons?: string;
   mediaColumn?: string;
@@ -97,6 +104,18 @@ const selectedFeatureOriginal = ref<Feature>();
 const selectedFeatureLoading = ref(false);
 const selectedMapFeatureStateId = ref<string | number | null>(null);
 const preserveFeatureIdInCameraQuery = ref(true);
+const selectedSource = ref("data-source");
+const isSecondary = computed(
+  () => selectedSource.value === SECONDARY_SOURCE_ID,
+);
+let selectionRequest = 0;
+const secondaryLayer = useSecondaryDatasetLayer(
+  map,
+  () => props.secondaryData,
+  (feature) => {
+    void openMapFeature(feature, true);
+  },
+);
 const SELECTED_HALO_COLOR = "#00E5FF";
 const showSidebar = ref(true);
 const mobileDrawerHeight = ref(0);
@@ -151,6 +170,7 @@ onMounted(() => {
     "data-layer-point",
     "data-layer-linestring",
     "data-layer-polygon",
+    ...SECONDARY_INTERACTIVE_LAYER_IDS,
   ]);
   exposeTestMap(map.value);
   attachMapCameraQuerySync(
@@ -193,8 +213,12 @@ onMounted(() => {
       showBasemapSelector.value = true;
       controlsAdded = true;
 
+      const secondaryId = route.query.secondaryDocId;
+      if (typeof secondaryId === "string") {
+        selectInitialMapFeature(secondaryId, true);
+      }
       const featureId = readFeatureIdQuery();
-      if (featureId) {
+      if (featureId && !secondaryId) {
         selectInitialMapFeature(featureId);
       }
     } else {
@@ -483,6 +507,8 @@ const prepareMapCanvasContent = async () => {
     await loadIconImages();
   }
   addDataToMap();
+  secondaryLayer.install();
+  applySelectedMapFeatureState();
   prepareMapLegendContent();
 };
 
@@ -549,20 +575,33 @@ const mapLegendContent = ref();
 
 /** Prepare map legend content based on layer IDs */
 const prepareMapLegendContent = () => {
-  if (!props.mapLegendLayerIds) {
-    return;
-  }
-  map.value.once("idle", () => {
-    mapLegendContent.value = prepareMapLegendLayers(
-      map.value,
-      props.mapLegendLayerIds ?? null,
-    );
-  });
+  const prepare = () => {
+    const items = props.mapLegendLayerIds
+      ? prepareMapLegendLayers(map.value, props.mapLegendLayerIds).filter(
+          (item) => item.id !== SECONDARY_SOURCE_ID,
+        )
+      : [];
+    if (props.secondaryData?.features.length) {
+      items.unshift({
+        id: SECONDARY_SOURCE_ID,
+        name: (props.secondaryDataset || "")
+          .replace(/_/g, " ")
+          .replace(/^\w/, (character) => character.toUpperCase()),
+        type: "circle",
+        color: "#3333FF",
+        visible: secondaryLayer.visible.value,
+      });
+    }
+    mapLegendContent.value = items;
+  };
+  prepare();
+  map.value.once("idle", prepare);
 };
 
 /** Toggle visibility of a map layer */
 const toggleLayerVisibility = (item: MapLegendItem) => {
-  utilsToggleLayerVisibility(map.value, item);
+  if (item.id === SECONDARY_SOURCE_ID) secondaryLayer.setVisible(item.visible);
+  else utilsToggleLayerVisibility(map.value, item);
 };
 
 /**
@@ -584,26 +623,17 @@ const readFeatureIdQuery = (): string | null => {
  * @param featureId - Warehouse `_id` of the selected map feature
  */
 const writeFeatureIdQuery = (featureId: string) => {
-  if (route.query.featureId === featureId) {
-    return;
-  }
-  router.replace({
-    query: {
-      ...route.query,
-      featureId,
-    },
-  });
-};
-
-/**
- * Removes `featureId` from the query. Camera params stay.
- */
-const clearFeatureIdQuery = () => {
-  if (typeof route.query.featureId !== "string") {
-    return;
-  }
   const query = { ...route.query };
   delete query.featureId;
+  delete query.secondaryDocId;
+  query[isSecondary.value ? "secondaryDocId" : "featureId"] = featureId;
+  router.replace({ query });
+};
+
+const clearFeatureIdQuery = () => {
+  const query = { ...route.query };
+  delete query.featureId;
+  delete query.secondaryDocId;
   router.replace({ query });
 };
 
@@ -630,7 +660,11 @@ const focusMapOnFeature = (feature: Feature) => {
     });
     return;
   }
-  if (geometry.type === "Polygon" || geometry.type === "MultiPolygon") {
+  if (
+    geometry.type === "Polygon" ||
+    geometry.type === "MultiPolygon" ||
+    geometry.type === "MultiLineString"
+  ) {
     map.value.fitBounds(bbox(feature), {
       padding: 50,
       maxDuration: FEATURE_FOCUS_MAX_DURATION_MS,
@@ -664,9 +698,9 @@ const resolveMapFeatureStateId = (feature: Feature): string | number | null => {
   if (typeof recordId !== "string") {
     return null;
   }
-  const match = filteredFeatureCollection.value.features.find(
-    (candidate) => candidate.properties?._id === recordId,
-  );
+  const match = (
+    isSecondary.value ? props.secondaryData : filteredFeatureCollection.value
+  )?.features.find((candidate) => candidate.properties?._id === recordId);
   if (typeof match?.id === "number" || typeof match?.id === "string") {
     return match.id;
   }
@@ -678,13 +712,13 @@ const resolveMapFeatureStateId = (feature: Feature): string | number | null => {
  */
 const applySelectedMapFeatureState = () => {
   if (
-    !map.value?.getSource("data-source") ||
+    !map.value?.getSource(selectedSource.value) ||
     selectedMapFeatureStateId.value === null
   ) {
     return;
   }
   map.value.setFeatureState(
-    { source: "data-source", id: selectedMapFeatureStateId.value },
+    { source: selectedSource.value, id: selectedMapFeatureStateId.value },
     { selected: true },
   );
 };
@@ -694,19 +728,10 @@ const applySelectedMapFeatureState = () => {
  *
  * @param feature - Clicked or restored map feature
  */
-const setSelectedMapFeatureState = (feature: Feature) => {
-  const featureStateId = resolveMapFeatureStateId(feature);
-  if (
-    selectedMapFeatureStateId.value !== null &&
-    selectedMapFeatureStateId.value !== featureStateId &&
-    map.value?.getSource("data-source")
-  ) {
-    map.value.setFeatureState(
-      { source: "data-source", id: selectedMapFeatureStateId.value },
-      { selected: false },
-    );
-  }
-  selectedMapFeatureStateId.value = featureStateId;
+const setSelectedMapFeatureState = (feature: Feature, secondary = false) => {
+  clearSelectedMapFeatureState();
+  selectedSource.value = secondary ? SECONDARY_SOURCE_ID : "data-source";
+  selectedMapFeatureStateId.value = resolveMapFeatureStateId(feature);
   applySelectedMapFeatureState();
 };
 
@@ -715,15 +740,16 @@ const setSelectedMapFeatureState = (feature: Feature) => {
  */
 const clearSelectedMapFeatureState = () => {
   if (
-    map.value?.getSource("data-source") &&
+    map.value?.getSource(selectedSource.value) &&
     selectedMapFeatureStateId.value !== null
   ) {
     map.value.setFeatureState(
-      { source: "data-source", id: selectedMapFeatureStateId.value },
+      { source: selectedSource.value, id: selectedMapFeatureStateId.value },
       { selected: false },
     );
   }
   selectedMapFeatureStateId.value = null;
+  selectedSource.value = "data-source";
 };
 
 /**
@@ -731,12 +757,13 @@ const clearSelectedMapFeatureState = () => {
  *
  * @param clickedFeature - Map feature with warehouse properties
  */
-const openMapFeature = async (clickedFeature: Feature) => {
+const openMapFeature = async (clickedFeature: Feature, secondary = false) => {
   if (!clickedFeature.properties) {
     return;
   }
 
-  setSelectedMapFeatureState(clickedFeature);
+  const request = ++selectionRequest;
+  setSelectedMapFeatureState(clickedFeature, secondary);
   preserveFeatureIdInCameraQuery.value = true;
 
   const recordId = clickedFeature.properties._id as string | undefined;
@@ -756,7 +783,11 @@ const openMapFeature = async (clickedFeature: Feature) => {
 
   if (typeof recordId === "string" && recordId.trim() !== "") {
     writeFeatureIdQuery(recordId);
-    const record = await fetchRecord(props.table, recordId);
+    const record = await fetchRecord(
+      secondary ? props.secondaryDataset! : props.table,
+      recordId,
+    );
+    if (request !== selectionRequest) return;
     if (record) {
       const displayRecord = transformSurveyEntry(record);
       delete displayRecord["filter-color"];
@@ -786,20 +817,21 @@ const openMapFeature = async (clickedFeature: Feature) => {
  *
  * @param featureId - Warehouse `_id` from the query
  */
-const selectInitialMapFeature = (featureId: string) => {
-  const feature = filteredFeatureCollection.value.features.find(
-    (candidate) => candidate.properties?._id === featureId,
-  );
+const selectInitialMapFeature = (featureId: string, secondary = false) => {
+  const feature = (
+    secondary ? props.secondaryData : filteredFeatureCollection.value
+  )?.features.find((candidate) => candidate.properties?._id === featureId);
   if (!feature) {
     return;
   }
   focusMapOnFeature(feature);
-  void openMapFeature(feature);
+  void openMapFeature(feature, secondary);
 };
 
 /** Reset the map to initial state */
 const resetToInitialState = () => {
   preserveFeatureIdInCameraQuery.value = false;
+  selectionRequest++;
   selectedFeature.value = undefined;
   selectedFeatureOriginal.value = undefined;
   selectedFeatureLoading.value = false;
@@ -826,6 +858,7 @@ const resetToInitialState = () => {
 /** Handle sidebar close */
 const handleSidebarClose = () => {
   preserveFeatureIdInCameraQuery.value = false;
+  selectionRequest++;
   showSidebar.value = false;
   selectedFeature.value = undefined;
   selectedFeatureOriginal.value = undefined;
@@ -866,10 +899,13 @@ const handleToggleIcons = async () => {
 
   // Add the new layer (icons are guaranteed to be loaded if needed)
   addDataToMap();
+  secondaryLayer.install();
+  applySelectedMapFeatureState();
   prepareMapLegendContent();
 };
 
 onBeforeUnmount(() => {
+  selectionRequest++;
   if (map.value) {
     map.value.remove();
   }
@@ -907,11 +943,12 @@ onBeforeUnmount(() => {
           ? getFilePathsWithExtension(
               selectedFeature,
               allowedFileExtensions,
-              mediaColumn,
+              isSecondary ? undefined : mediaColumn,
             )
           : []
       "
       :is-alerts-dashboard="false"
+      :is-secondary="isSecondary"
       :map-data="flatDataForFilter"
       :map-feature-collection="filteredFeatureCollection"
       :map-date-min="dateMin"
@@ -927,7 +964,7 @@ onBeforeUnmount(() => {
       :can-toggle-icons="canToggleIcons"
       :loading-icons="loadingIcons"
       :logo-url="logoUrl"
-      :table-name="table"
+      :table-name="isSecondary ? secondaryDataset || table : table"
       :view-name="viewName"
       :view-description="viewDescription"
       @close="handleSidebarClose"
@@ -935,7 +972,7 @@ onBeforeUnmount(() => {
       @toggle-icons="handleToggleIcons"
     />
     <MapLegend
-      v-if="mapLegendContent && mapData"
+      v-if="mapLegendContent?.length && mapData"
       :map-legend-content="mapLegendContent"
       :mobile-drawer-height="mobileDrawerHeight"
       @toggle-layer-visibility="toggleLayerVisibility"
