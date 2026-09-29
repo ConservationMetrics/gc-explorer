@@ -186,17 +186,19 @@ export const attachMapCameraQuerySync = (
   map: MapboxMap,
   route: RouteLocationNormalizedLoaded,
   router: Router,
+  shouldPreserveFeatureId: () => boolean = () => true,
 ): void => {
   map.on("moveend", () => {
     const camera = readMapCamera(map);
     if (hasSameMapCameraQuery(route.query, camera)) {
       return;
     }
-    router.replace({
-      query: {
-        ...route.query,
-        ...serializeMapCameraQuery(camera),
-      },
-    });
+    const query = {
+      ...route.query,
+      ...serializeMapCameraQuery(camera),
+      // A late moveend after closing the sidebar must not restore its featureId.
+      ...(!shouldPreserveFeatureId() ? { featureId: undefined } : {}),
+    };
+    router.replace({ query });
   });
 };

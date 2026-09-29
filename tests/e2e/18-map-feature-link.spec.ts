@@ -151,7 +151,38 @@ test.describe("map feature link", () => {
     expect(camera.lng).toBeCloseTo(-60, 1);
     expect(camera.zoom).toBeCloseTo(13, 0);
 
+    await page.waitForFunction(() => !window.getTestMap().isMoving());
     await page.getByRole("button", { name: "Close" }).click();
+    await expect(page).not.toHaveURL(/featureId=/);
+    await expect(page.getByTestId("copy-link-section")).toHaveCount(0);
+  });
+
+  test("keeps the feature id cleared when closing during the camera flight", async ({
+    authenticatedPageAsAdmin: page,
+  }) => {
+    if (!mapView) throw new Error("Map feature link test view was not created");
+
+    await stubMapboxTelemetry(page);
+    await page.goto(
+      `/${mapView.viewType}/${mapView.primaryDataset}?featureId=point-feature-1`,
+      { waitUntil: "commit" },
+    );
+    await waitForTestMap(page);
+
+    const closeButton = page.getByRole("button", { name: "Close" });
+    await expect(closeButton).toBeVisible();
+    await page.waitForFunction(() => !window.getTestMap().isMoving());
+    await page.evaluate(() => {
+      window.getTestMap().flyTo({ center: [-59, 6], zoom: 14, duration: 4000 });
+    });
+    await expect
+      .poll(() => page.evaluate(() => window.getTestMap().isMoving()))
+      .toBe(true);
+
+    await closeButton.click();
+    await expect(page).not.toHaveURL(/featureId=/);
+
+    await page.waitForFunction(() => !window.getTestMap().isMoving());
     await expect(page).not.toHaveURL(/featureId=/);
     await expect(page.getByTestId("copy-link-section")).toHaveCount(0);
   });
