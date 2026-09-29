@@ -19,6 +19,12 @@ const incidentSelected = [
 const blue = ["coalesce", ["get", "filter-color"], "#3333FF"];
 const color = ["case", incidentSelected, "#FFFF00", selected, "#00E5FF", blue];
 
+/**
+ * Gives Map and Alerts the same secondary geometry styling and selection states.
+ * Geometry filters let one GeoJSON source feed point, line and polygon layers;
+ * Mapbox groups multipart lines and polygons with their corresponding types.
+ * Returns fresh definitions so layers can be installed again after a style change.
+ */
 export const secondaryMapLayers = (): LayerSpecification[] =>
   [
     {
@@ -65,6 +71,11 @@ export const secondaryMapLayers = (): LayerSpecification[] =>
     },
   ] as LayerSpecification[];
 
+/**
+ * Makes the secondary dataset behave as one legend entry even though several
+ * layers draw it. Toggle every layer, including polygon outlines, and tolerate
+ * missing layers while the map style is being recreated.
+ */
 export const setSecondaryDataLayerVisibility = (
   map: Pick<MapboxMap, "getLayer" | "setLayoutProperty">,
   visibility: "visible" | "none",
