@@ -28,6 +28,15 @@ export const mockMap = {
       (eventCallbacks[event] ||= []).push(layerOrCb as () => void);
     }
   }),
+  off: vi.fn(
+    (event: string, layer: string, callback: (evt: unknown) => void) => {
+      if (event === "click" && clickCallbacks[layer]) {
+        clickCallbacks[layer] = clickCallbacks[layer].filter(
+          (cb) => cb !== callback,
+        );
+      }
+    },
+  ),
   getCenter: vi.fn(() => ({ lat: 10, lng: 10 })),
   getZoom: vi.fn(() => 10),
   addControl,
@@ -119,6 +128,8 @@ export function reset(): void {
   FullscreenControl.mockClear();
   addControl.mockClear();
   setFeatureState.mockClear();
+  mockMap.on.mockClear();
+  mockMap.off.mockClear();
   mockMap.addSource.mockClear();
   mockMap.addLayer.mockClear();
   mockMap.addImage.mockClear();
@@ -150,6 +161,12 @@ export function reset(): void {
 // Register global module mock -------------------------------------------
 vi.mock("mapbox-gl", () => {
   const stub = {
+    Point: class {
+      constructor(
+        public x: number,
+        public y: number,
+      ) {}
+    },
     get accessToken() {
       return accessToken;
     },

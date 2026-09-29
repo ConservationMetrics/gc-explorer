@@ -18,10 +18,10 @@ const localMapLegendContent = ref();
 const isExpanded = ref(false);
 
 onMounted(() => {
-  // Ensure all items are visible initially
+  // Respect group visibility restored after a basemap change.
   localMapLegendContent.value = props.mapLegendContent.map((item) => ({
     ...item,
-    visible: true,
+    visible: item.visible ?? true,
   }));
 });
 
@@ -46,7 +46,7 @@ watch(
   (newContent) => {
     localMapLegendContent.value = newContent.map((item) => ({
       ...item,
-      visible: true,
+      visible: item.visible ?? true,
     }));
   },
 );

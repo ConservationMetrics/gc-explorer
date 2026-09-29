@@ -220,6 +220,8 @@ describe("alertMapLayers", () => {
 
     expect(setLayoutProperty.mock.calls).toEqual([
       ["secondary-data", "visibility", "none"],
+      ["secondary-data-line", "visibility", "none"],
+      ["secondary-data-polygon", "visibility", "none"],
       ["secondary-data-stroke", "visibility", "none"],
     ]);
   });
