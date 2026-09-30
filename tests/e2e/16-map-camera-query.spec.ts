@@ -1,11 +1,13 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
-import { navigateToAlertsDashboard } from "./helpers/navigateToAlertsDashboard";
 import { waitForTestMap } from "./helpers/testMap";
 
 test("alerts dashboard - camera query params restore the map view", async ({
   authenticatedPageAsAdmin: page,
 }) => {
-  await navigateToAlertsDashboard(page);
+  // API suites create temporary alerts views alongside the seeded view.
+  await page.goto("/alerts/fake_alerts");
+  await page.locator("#map[data-map-ready='true']").waitFor();
+  await waitForTestMap(page);
 
   const copyButton = page.getByTestId("copy-map-location-button");
   await expect(copyButton).toBeVisible();
