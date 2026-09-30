@@ -393,6 +393,87 @@ describe("AlertsDashboard component", () => {
   });
 
   it.each([
+    ["secondary-data-polygon", "secondary-data"],
+    ["secondary-data-polygon", "most-recent-alerts-point"],
+  ])(
+    "keeps the pointer over %s after leaving overlapping %s",
+    async (remaining, leaving) => {
+      const canvas = document.createElement("canvas");
+      const getCanvas = mapboxMock.mockMap.getCanvas.getMockImplementation()!;
+      mapboxMock.mockMap.getCanvas.mockReturnValue(canvas);
+      onTestFinished(() =>
+        mapboxMock.mockMap.getCanvas.mockImplementation(getCanvas),
+      );
+      const wrapper = mountComponent({
+        ...baseProps,
+        secondaryData: secondaryGeometry,
+        alertsData: {
+          ...baseProps.alertsData,
+          mostRecentAlerts: {
+            type: "FeatureCollection",
+            features: [
+              secondaryGeometry.features[0],
+              secondaryGeometry.features[3],
+            ],
+          },
+        },
+      });
+      onTestFinished(() => wrapper.unmount());
+      mapboxMock.fireLoad();
+      await flushPromises();
+      mapboxMock.fireHover([remaining]);
+      expect(canvas.style.cursor).toBe("pointer");
+      mapboxMock.fireHover([remaining, leaving]);
+      mapboxMock.fireHover([remaining]);
+      expect(canvas.style.cursor).toBe("pointer");
+      mapboxMock.fireHover([]);
+      expect(canvas.style.cursor).toBe("");
+    },
+  );
+
+  it.each(["secondary-data-line", "secondary-data-polygon"])(
+    "preserves %s hover when the primary line buffer finds no features",
+    async (layerId) => {
+      const canvas = document.createElement("canvas");
+      const getCanvas = mapboxMock.mockMap.getCanvas.getMockImplementation()!;
+      const getLayer = mapboxMock.mockMap.getLayer.getMockImplementation()!;
+      mapboxMock.mockMap.getCanvas.mockReturnValue(canvas);
+      onTestFinished(() => {
+        mapboxMock.mockMap.getCanvas.mockImplementation(getCanvas);
+        mapboxMock.mockMap.getLayer.mockImplementation(getLayer);
+      });
+      const wrapper = mountComponent({
+        ...baseProps,
+        secondaryData: secondaryGeometry,
+        alertsData: {
+          ...baseProps.alertsData,
+          mostRecentAlerts: {
+            type: "FeatureCollection",
+            features: [secondaryGeometry.features[1]],
+          },
+        },
+      });
+      onTestFinished(() => wrapper.unmount());
+      mapboxMock.fireLoad();
+      await flushPromises();
+      const move = mapboxMock.mockMap.on.mock.calls.find(
+        ([event, callback]) =>
+          event === "mousemove" && typeof callback === "function",
+      )?.[1] as (event: unknown) => void;
+      mapboxMock.mockMap.getLayer.mockImplementation(
+        (id?: string) => ({ id }) as never,
+      );
+      mapboxMock.fireHover([layerId]);
+      move({ point: { x: 100, y: 100 } });
+      expect(canvas.style.cursor).toBe("pointer");
+      expect(mapboxMock.mockMap.queryRenderedFeatures).toHaveBeenCalled();
+      mapboxMock.fireHover([]);
+      move({ point: { x: 100, y: 100 } });
+      expect(canvas.style.cursor).toBe("");
+    },
+  );
+
+  it.each([
     ["most-recent-alerts-polygon", "secondary-data"],
     ["secondary-data", "most-recent-alerts-polygon"],
     ["most-recent-alerts-point", "most-recent-alerts-polygon"],

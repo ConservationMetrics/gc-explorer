@@ -542,6 +542,36 @@ describe("MapView component", () => {
   );
 
   it.each([
+    ["secondary-data-polygon", "secondary-data"],
+    ["secondary-data-polygon", "data-layer-point"],
+    ["data-layer-polygon", "secondary-data"],
+  ])(
+    "keeps the pointer over %s after leaving overlapping %s",
+    async (remaining, leaving) => {
+      const canvas = document.createElement("canvas");
+      const getCanvas = mapboxMock.mockMap.getCanvas.getMockImplementation()!;
+      mapboxMock.mockMap.getCanvas.mockReturnValue(canvas);
+      onTestFinished(() =>
+        mapboxMock.mockMap.getCanvas.mockImplementation(getCanvas),
+      );
+      const wrapper = mount(MapView, {
+        props: { ...baseProps, secondaryData: secondaryGeometry },
+        global: globalConfig,
+      });
+      onTestFinished(() => wrapper.unmount());
+      mapboxMock.fireLoad();
+      await flushPromises();
+      mapboxMock.fireHover([remaining]);
+      expect(canvas.style.cursor).toBe("pointer");
+      mapboxMock.fireHover([remaining, leaving]);
+      mapboxMock.fireHover([remaining]);
+      expect(canvas.style.cursor).toBe("pointer");
+      mapboxMock.fireHover([]);
+      expect(canvas.style.cursor).toBe("");
+    },
+  );
+
+  it.each([
     ["data-layer-polygon", "data-layer-point"],
     ["data-layer-point", "data-layer-polygon"],
   ])(

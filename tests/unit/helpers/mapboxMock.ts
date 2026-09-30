@@ -147,7 +147,6 @@ export function reset(): void {
   loadCallback = undefined;
   accessToken = null;
   hoveredLayerIds = [];
-  mockMap.on.mockClear();
   Object.keys(clickCallbacks).forEach((k) => {
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete clickCallbacks[k];
