@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { attachMapHover } from "@/utils/mapHover";
 import { computed, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -146,6 +147,7 @@ const calculateHectares = ref(false);
 const dateOptions = ref();
 const hasRulerControl = ref(false);
 const map = ref();
+let isFeatureHovered = false;
 const { showCopied: showCopiedLocation, copyLocation } =
   useCopyMapLocation(map);
 const mapReady = ref(false);
@@ -403,6 +405,20 @@ onMounted(() => {
     pitch: props.mapboxPitch || 0,
     bearing: props.mapboxBearing || 0,
   });
+  attachMapHover(
+    map.value,
+    [
+      ...alertMapLayers.flatMap(({ layerId, kind }) =>
+        kind === "point" || kind === "centroids"
+          ? [layerId, `${layerId}-clusters`, `${layerId}-cluster-count`]
+          : [layerId],
+      ),
+      ...SECONDARY_INTERACTIVE_LAYER_IDS,
+    ],
+    (hovered) => {
+      isFeatureHovered = hovered;
+    },
+  );
   attachMapCameraQuerySync(map.value, route, router);
 
   exposeTestMap(map.value);
@@ -501,7 +517,6 @@ const emit = defineEmits(["reset-legend-visibility"]);
 // ====================
 
 // Add data to the map and set up event listeners
-const featuresUnderCursor = ref(0);
 const hasLineStrings = ref(false);
 const hasPoints = ref(false);
 const secondaryDataColor = ref();
@@ -1025,26 +1040,6 @@ const addAlertsData = async () => {
       (layer.id.startsWith("previous-alerts") && !layer.id.includes("stroke"))
     ) {
       map.value.on(
-        "mouseenter",
-        layer.id,
-        () => {
-          featuresUnderCursor.value++;
-          map.value.getCanvas().style.cursor = "pointer";
-        },
-        { passive: true },
-      );
-      map.value.on(
-        "mouseleave",
-        layer.id,
-        () => {
-          featuresUnderCursor.value--;
-          if (featuresUnderCursor.value === 0) {
-            map.value.getCanvas().style.cursor = "";
-          }
-        },
-        { passive: true },
-      );
-      map.value.on(
         "click",
         layer.id,
         (e: MapMouseEvent) => {
@@ -1210,26 +1205,6 @@ const addSecondaryData = () => {
 
   interactiveLayers.forEach((layerId) => {
     map.value.on(
-      "mouseenter",
-      layerId,
-      () => {
-        featuresUnderCursor.value++;
-        map.value.getCanvas().style.cursor = "pointer";
-      },
-      { passive: true },
-    );
-    map.value.on(
-      "mouseleave",
-      layerId,
-      () => {
-        featuresUnderCursor.value--;
-        if (featuresUnderCursor.value === 0) {
-          map.value.getCanvas().style.cursor = "";
-        }
-      },
-      { passive: true },
-    );
-    map.value.on(
       "click",
       layerId,
       (e: MapMouseEvent) => {
@@ -1345,7 +1320,7 @@ const handleBufferMouseEvent = (e: MapMouseEvent) => {
 
     if (features.length) {
       map.value.getCanvas().style.cursor = "pointer";
-    } else if (featuresUnderCursor.value === 0) {
+    } else if (!isFeatureHovered) {
       map.value.getCanvas().style.cursor = "";
     }
   }

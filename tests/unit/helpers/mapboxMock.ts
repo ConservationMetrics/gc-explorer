@@ -8,6 +8,7 @@ import { vi } from "vitest";
 export const layers: Array<Record<string, unknown>> = [];
 let loadCallback: (() => void) | undefined;
 let accessToken: string | null = null;
+let hoveredLayerIds: string[] = [];
 const clickCallbacks: Record<string, Array<(evt: unknown) => void>> = {};
 const eventCallbacks: Record<string, Array<() => void>> = {};
 
@@ -89,6 +90,24 @@ export function fireMapEvent(event: string): void {
   eventCallbacks[event]?.forEach((callback) => callback());
 }
 
+/** Simulate Mapbox's enter/leave transitions for a layer or a group of layers. */
+export function fireHover(layerIds: string[]): void {
+  mockMap.on.mock.calls.forEach(([event, target, callback]) => {
+    if (event !== "mouseenter" && event !== "mouseleave") return;
+    const targets =
+      typeof target === "string" ? [target] : (target as string[]);
+    const wasInside = targets.some((id) => hoveredLayerIds.includes(id));
+    const isInside = targets.some((id) => layerIds.includes(id));
+    if (
+      (event === "mouseenter" && !wasInside && isInside) ||
+      (event === "mouseleave" && wasInside && !isInside)
+    ) {
+      (callback as () => void)();
+    }
+  });
+  hoveredLayerIds = layerIds;
+}
+
 export function getAccessToken(): string | null {
   return accessToken;
 }
@@ -116,6 +135,8 @@ export function reset(): void {
   layers.length = 0;
   loadCallback = undefined;
   accessToken = null;
+  hoveredLayerIds = [];
+  mockMap.on.mockClear();
   Object.keys(clickCallbacks).forEach((k) => {
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete clickCallbacks[k];

@@ -174,6 +174,35 @@ describe("MapView component", () => {
     document.body.innerHTML = '<div id="map"></div>';
   });
 
+  it.each([
+    ["data-layer-polygon", "data-layer-point"],
+    ["data-layer-point", "data-layer-polygon"],
+  ])(
+    "keeps the pointer over %s after leaving overlapping %s",
+    async (remaining, leaving) => {
+      const canvas = document.createElement("canvas");
+      const getCanvas = mapboxMock.mockMap.getCanvas.getMockImplementation()!;
+      mapboxMock.mockMap.getCanvas.mockReturnValue(canvas);
+      onTestFinished(() =>
+        mapboxMock.mockMap.getCanvas.mockImplementation(getCanvas),
+      );
+      const wrapper = mount(MapView, {
+        props: baseProps,
+        global: globalConfig,
+      });
+      onTestFinished(() => wrapper.unmount());
+      mapboxMock.fireLoad();
+      await flushPromises();
+      mapboxMock.fireHover([remaining]);
+      expect(canvas.style.cursor).toBe("pointer");
+      mapboxMock.fireHover([remaining, leaving]);
+      mapboxMock.fireHover([remaining]);
+      expect(canvas.style.cursor).toBe("pointer");
+      mapboxMock.fireHover([]);
+      expect(canvas.style.cursor).toBe("");
+    },
+  );
+
   it("initializes Mapbox and adds controls", async () => {
     const wrapper = mount(MapView, {
       props: baseProps,
