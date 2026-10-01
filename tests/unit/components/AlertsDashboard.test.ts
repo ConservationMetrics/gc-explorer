@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, onTestFinished, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import {
   ref,
@@ -11,6 +11,7 @@ import {
   type Plugin,
 } from "vue";
 import { createI18n } from "vue-i18n";
+import type { FeatureCollection } from "geojson";
 
 import * as mapboxMock from "@/tests/unit/helpers/mapboxMock";
 
@@ -73,6 +74,46 @@ const baseProps: InstanceType<typeof AlertsDashboard>["$props"] = {
   mediaBasePath: "",
   mediaBasePathAlerts: "",
   planetApiKey: "",
+};
+
+const hoverGeometry: FeatureCollection = {
+  type: "FeatureCollection",
+  features: [
+    {
+      type: "Feature",
+      id: 1,
+      properties: { _id: "point", "filter-color": "#3333FF" },
+      geometry: { type: "Point", coordinates: [0, 0] },
+    },
+    {
+      type: "Feature",
+      id: 2,
+      properties: { _id: "polygon" },
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [0, 0],
+            [1, 1],
+            [1, 0],
+            [0, 0],
+          ],
+        ],
+      },
+    },
+    {
+      type: "Feature",
+      id: 3,
+      properties: { _id: "line" },
+      geometry: {
+        type: "LineString",
+        coordinates: [
+          [0, 0],
+          [1, 1],
+        ],
+      },
+    },
+  ],
 };
 
 // Mock Nuxt composables - needs to be before component import
@@ -167,6 +208,149 @@ describe("AlertsDashboard component", () => {
       },
     });
   };
+
+  it.each([
+    ["most-recent-alerts-polygon", "secondary-data"],
+    ["secondary-data", "most-recent-alerts-polygon"],
+    ["most-recent-alerts-point", "most-recent-alerts-polygon"],
+  ])(
+    "keeps the pointer over %s after leaving overlapping %s",
+    async (remaining, leaving) => {
+      const canvas = document.createElement("canvas");
+      const getCanvas = mapboxMock.mockMap.getCanvas.getMockImplementation()!;
+      mapboxMock.mockMap.getCanvas.mockReturnValue(canvas);
+      onTestFinished(() =>
+        mapboxMock.mockMap.getCanvas.mockImplementation(getCanvas),
+      );
+      const wrapper = mountComponent({
+        ...baseProps,
+        secondaryData: {
+          ...hoverGeometry,
+          features: [hoverGeometry.features[0]],
+        },
+        alertsData: {
+          ...baseProps.alertsData,
+          mostRecentAlerts: {
+            type: "FeatureCollection",
+            features: [hoverGeometry.features[0], hoverGeometry.features[1]],
+          },
+        },
+      });
+      onTestFinished(() => wrapper.unmount());
+      mapboxMock.fireLoad();
+      await flushPromises();
+      mapboxMock.fireHover([remaining]);
+      expect(canvas.style.cursor).toBe("pointer");
+      mapboxMock.fireHover([remaining, leaving]);
+      mapboxMock.fireHover([remaining]);
+      expect(canvas.style.cursor).toBe("pointer");
+      mapboxMock.fireHover([]);
+      expect(canvas.style.cursor).toBe("");
+    },
+  );
+
+  it("does not reattach hover listeners when changing basemaps while hovered", async () => {
+    const canvas = document.createElement("canvas");
+    const getCanvas = mapboxMock.mockMap.getCanvas.getMockImplementation()!;
+    mapboxMock.mockMap.getCanvas.mockReturnValue(canvas);
+    onTestFinished(() =>
+      mapboxMock.mockMap.getCanvas.mockImplementation(getCanvas),
+    );
+    const wrapper = mountComponent({
+      ...baseProps,
+      secondaryData: {
+        ...hoverGeometry,
+        features: [hoverGeometry.features[0]],
+      },
+      alertsData: {
+        ...baseProps.alertsData,
+        mostRecentAlerts: {
+          ...hoverGeometry,
+          features: [hoverGeometry.features[1]],
+        },
+      },
+    });
+    onTestFinished(() => wrapper.unmount());
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const hoverListeners = () =>
+      mapboxMock.mockMap.on.mock.calls.filter(
+        ([event]) => event === "mouseenter" || event === "mouseleave",
+      );
+    const initialListeners = [...hoverListeners()];
+    expect(initialListeners.length).toBeGreaterThan(0);
+    mapboxMock.fireHover(["most-recent-alerts-polygon", "secondary-data"]);
+    expect(canvas.style.cursor).toBe("pointer");
+
+    const vm = wrapper.vm as unknown as {
+      handleBasemapChange: (basemap: { id: string; style: string }) => void;
+    };
+    const idleCallsBefore = mapboxMock.mockMap.once.mock.calls.length;
+    const layersBefore = mapboxMock.mockMap.addLayer.mock.calls.length;
+    vm.handleBasemapChange({
+      id: "satellite",
+      style: "mapbox://styles/mapbox/satellite-v9",
+    });
+    // Run the idle callback that rebuilds map content after the style change.
+    const rebuild = mapboxMock.mockMap.once.mock.calls
+      .slice(idleCallsBefore)
+      .find(([event]) => event === "idle")?.[1] as () => void;
+    expect(rebuild).toBeTypeOf("function");
+    rebuild();
+    await flushPromises();
+    expect(mapboxMock.mockMap.addLayer.mock.calls.length).toBeGreaterThan(
+      layersBefore,
+    );
+    expect(hoverListeners()).toEqual(initialListeners);
+
+    mapboxMock.fireHover(["secondary-data"]);
+    expect(canvas.style.cursor).toBe("pointer");
+    mapboxMock.fireHover([]);
+    expect(canvas.style.cursor).toBe("");
+  });
+
+  it("preserves secondary hover when the primary line buffer finds no features", async () => {
+    const canvas = document.createElement("canvas");
+    const getCanvas = mapboxMock.mockMap.getCanvas.getMockImplementation()!;
+    const getLayer = mapboxMock.mockMap.getLayer.getMockImplementation()!;
+    mapboxMock.mockMap.getCanvas.mockReturnValue(canvas);
+    onTestFinished(() => {
+      mapboxMock.mockMap.getCanvas.mockImplementation(getCanvas);
+      mapboxMock.mockMap.getLayer.mockImplementation(getLayer);
+    });
+    const wrapper = mountComponent({
+      ...baseProps,
+      secondaryData: {
+        ...hoverGeometry,
+        features: [hoverGeometry.features[0]],
+      },
+      alertsData: {
+        ...baseProps.alertsData,
+        mostRecentAlerts: {
+          type: "FeatureCollection",
+          features: [hoverGeometry.features[2]],
+        },
+      },
+    });
+    onTestFinished(() => wrapper.unmount());
+    mapboxMock.fireLoad();
+    await flushPromises();
+    const move = mapboxMock.mockMap.on.mock.calls.find(
+      ([event, callback]) =>
+        event === "mousemove" && typeof callback === "function",
+    )?.[1] as (event: unknown) => void;
+    mapboxMock.mockMap.getLayer.mockImplementation(
+      (id?: string) => ({ id }) as never,
+    );
+    mapboxMock.fireHover(["secondary-data"]);
+    move({ point: { x: 100, y: 100 } });
+    expect(canvas.style.cursor).toBe("pointer");
+    expect(mapboxMock.mockMap.queryRenderedFeatures).toHaveBeenCalled();
+    mapboxMock.fireHover([]);
+    move({ point: { x: 100, y: 100 } });
+    expect(canvas.style.cursor).toBe("");
+  });
 
   it("initialises Mapbox and adds controls", async () => {
     const wrapper = mountComponent();

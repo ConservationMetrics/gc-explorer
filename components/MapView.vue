@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { attachMapHover } from "@/utils/mapHover";
 import mapboxgl from "mapbox-gl";
 import { exposeTestMap } from "@/utils/e2eTestHooks";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -146,6 +147,11 @@ onMounted(() => {
     pitch: props.mapboxPitch || 0,
     bearing: props.mapboxBearing || 0,
   });
+  attachMapHover(map.value, [
+    "data-layer-point",
+    "data-layer-linestring",
+    "data-layer-polygon",
+  ]);
   exposeTestMap(map.value);
   attachMapCameraQuerySync(
     map.value,
@@ -421,22 +427,6 @@ const addDataToMap = () => {
   if (hasPolygonFeatures) layersToAddListeners.push("data-layer-polygon");
 
   layersToAddListeners.forEach((layerId) => {
-    map.value.on(
-      "mouseenter",
-      layerId,
-      () => {
-        map.value.getCanvas().style.cursor = "pointer";
-      },
-      { passive: true },
-    );
-    map.value.on(
-      "mouseleave",
-      layerId,
-      () => {
-        map.value.getCanvas().style.cursor = "";
-      },
-      { passive: true },
-    );
     map.value.on(
       "click",
       layerId,
