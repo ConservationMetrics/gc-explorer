@@ -138,6 +138,31 @@ test("Map API keeps primary fields and permits secondary records only through an
   });
   expect(record.status()).toBe(200);
   expect(await record.json()).toMatchObject({ name: "Camera deployment" });
+  for (const format of ["csv", "geojson", "kml"]) {
+    const exported = await request.get(`/api/${secondary}/export`, {
+      params: {
+        format,
+        recordId: "1",
+        view_type: "map",
+        primary_dataset: view.primaryDataset,
+      },
+    });
+    expect(exported.status()).toBe(200);
+    const content = await exported.text();
+    expect(content).toContain("Camera deployment");
+    expect(content).not.toContain("Primary observation");
+  }
+  for (const primaryDataset of [privateView.primaryDataset, secondary]) {
+    const denied = await request.get(`/api/${secondary}/export`, {
+      params: {
+        format: "csv",
+        recordId: "1",
+        view_type: "map",
+        primary_dataset: primaryDataset,
+      },
+    });
+    expect(denied.ok()).toBe(false);
+  }
   expect(
     (
       await request.get(`/api/${secondary}/1`, { params: { view_type: "map" } })

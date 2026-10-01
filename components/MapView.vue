@@ -963,6 +963,7 @@ onBeforeUnmount(() => {
     />
     <ViewSidebar
       :allowed-file-extensions="allowedFileExtensions"
+      :export-table-name="isSecondary ? secondaryDataset || table : table"
       :feature="selectedFeature"
       :feature-loading="selectedFeatureLoading"
       :feature-geojson="selectedFeatureOriginal"

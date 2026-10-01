@@ -175,6 +175,74 @@ describe("MapView component", () => {
     document.body.innerHTML = '<div id="map"></div>';
   });
 
+  it.each(["csv", "geojson", "kml"])(
+    "exports a secondary feature as %s from its own dataset and restores primary exports",
+    async (format) => {
+      const fetchExport = vi.fn().mockResolvedValue(new Blob());
+      vi.stubGlobal("$fetch", fetchExport);
+      vi.stubGlobal("useI18n", useI18n);
+      vi.stubGlobal("useToast", useToast);
+      const originalRoute = useRoute();
+      onTestFinished(() => {
+        vi.unstubAllGlobals();
+        vi.mocked(useRoute).mockReturnValue(originalRoute);
+      });
+      vi.mocked(useRoute).mockReturnValue({
+        params: { tablename: "test_table" },
+        query: {},
+        path: "/map/test_table",
+      });
+      const wrapper = mount(MapView, {
+        props: {
+          ...baseProps,
+          secondaryData: secondaryGeometry,
+          secondaryDataset: "mapping",
+        },
+        global: {
+          ...globalConfig,
+          stubs: {
+            ...globalConfig.stubs,
+            ViewSidebar: false,
+            AdminConfigGear: true,
+          },
+        },
+      });
+      onTestFinished(() => wrapper.unmount());
+      mapboxMock.fireLoad();
+      await flushPromises();
+      const buttonIndex = ["csv", "geojson", "kml"].indexOf(format);
+      const downloadSelectedFeature = async () => {
+        const download = wrapper.findComponent(DownloadMapData);
+        await download.findAll("button")[buttonIndex].trigger("click");
+        await flushPromises();
+      };
+      // Both datasets contain _id "1"; the dataset must determine which row is exported.
+      mapboxMock.fireClick("secondary-data", {
+        features: [secondaryGeometry.features[0]],
+      });
+      await flushPromises();
+      await downloadSelectedFeature();
+      expect(fetchExport).toHaveBeenLastCalledWith("/api/mapping/export", {
+        params: {
+          format,
+          recordId: "1",
+          view_type: "map",
+          primary_dataset: "test_table",
+        },
+        responseType: "blob",
+      });
+      mapboxMock.fireClick("data-layer-point", {
+        features: [baseMapData.features[0]],
+      });
+      await flushPromises();
+      await downloadSelectedFeature();
+      expect(fetchExport).toHaveBeenLastCalledWith("/api/test_table/export", {
+        params: { format, recordId: "1", view_type: "map" },
+        responseType: "blob",
+      });
+    },
+  );
+
   it("adds an automatic primary legend and preserves grouped visibility through layer recreation", async () => {
     const wrapper = mount(MapView, {
       props: {
