@@ -192,10 +192,20 @@ describe("MapView component", () => {
         query: {},
         path: "/map/test_table",
       });
+      const leanSecondaryData: FeatureCollection = {
+        ...secondaryGeometry,
+        features: secondaryGeometry.features.map((feature) => ({
+          ...feature,
+          properties: {
+            _id: feature.properties!._id,
+            "filter-color": "#3333FF",
+          },
+        })),
+      };
       const wrapper = mount(MapView, {
         props: {
           ...baseProps,
-          secondaryData: secondaryGeometry,
+          secondaryData: leanSecondaryData,
           secondaryDataset: "mapping",
         },
         global: {
@@ -218,7 +228,7 @@ describe("MapView component", () => {
       };
       // Both datasets contain _id "1"; the dataset must determine which row is exported.
       mapboxMock.fireClick("secondary-data", {
-        features: [secondaryGeometry.features[0]],
+        features: [leanSecondaryData.features[0]],
       });
       await flushPromises();
       await downloadSelectedFeature();

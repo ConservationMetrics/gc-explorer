@@ -88,13 +88,17 @@ export default defineEventHandler(async (event: H3Event) => {
     const secondaryResult = secondaryTable
       ? await fetchData(secondaryTable, {
           limit,
-          mainColumns: await fetchTableSqlColumns(secondaryTable),
+          // Secondary layers use a fixed color; details load by ID on selection.
+          mainColumns: (await fetchTableSqlColumns(secondaryTable)).filter(
+            (column) =>
+              ["_id", "id", "g__type", "g__coordinates"].includes(column),
+          ),
         })
       : null;
     const secondaryCollection = secondaryResult
       ? buildMinimalFeatureCollection(filterGeoData(secondaryResult.mainData), {
           idField: "_id",
-          includeAllProperties: true,
+          includeProperties: ["id"],
         })
       : null;
 

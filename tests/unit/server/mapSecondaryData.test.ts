@@ -2,12 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { H3Event } from "h3";
 import { secondaryRows } from "@/tests/fixtures/secondaryGeometry";
 import handler from "@/server/api/[table]/map";
+import { buildMinimalFeatureCollection } from "@/utils/geoUtils";
+import { fetchTableSqlColumns } from "@/server/database/dbOperations";
 
 const mocks = vi.hoisted(() => ({
   fetchData: vi.fn(),
   fetchTableConfig: vi.fn(),
   fetchViewTables: vi.fn(),
   validatePermissions: vi.fn(),
+  fetchInformationSchemaColumns: vi.fn(),
 }));
 vi.mock("@/server/database/dbOperations", () => ({
   ...mocks,
@@ -18,7 +21,6 @@ vi.mock("@/server/database/dbOperations", () => ({
     "name",
     "photo",
   ]),
-  fetchInformationSchemaColumns: vi.fn(),
 }));
 vi.mock("@/utils/accessControls", () => ({
   validatePermissions: mocks.validatePermissions,
@@ -68,7 +70,105 @@ describe("Map secondary dataset", () => {
     expect(mocks.validatePermissions).toHaveBeenCalledWith({}, "member");
     expect(mocks.fetchData).toHaveBeenCalledWith("mapping", {
       limit: 5,
-      mainColumns: ["_id", "g__type", "g__coordinates", "name", "photo"],
+      mainColumns: ["_id", "g__type", "g__coordinates"],
+    });
+  });
+  it("omits unrelated secondary properties while preserving geometry, identity and color", async () => {
+    const rows = secondaryRows.map((row) => ({
+      ...row,
+      notes: "Large record content".repeat(1000),
+      color: "#FF0000",
+    }));
+    mocks.fetchData.mockImplementation(async (table: string) => ({
+      mainData: table === "mapping" ? rows : [],
+    }));
+    const body = await get();
+    const previous = buildMinimalFeatureCollection(rows, {
+      includeAllProperties: true,
+    });
+    expect(body.secondaryData?.features).toEqual(
+      previous.features.map((feature) => ({
+        ...feature,
+        properties: {
+          _id: feature.properties!._id,
+          "filter-color": feature.properties!["filter-color"],
+        },
+      })),
+    );
+  });
+  it("preserves configured primary styling and filtering fields", async () => {
+    mocks.fetchTableConfig.mockResolvedValue({
+      COLOR_COLUMN: "color",
+      ICON_COLUMN: "icon",
+      FRONT_END_FILTER_COLUMN: "category",
+      TIMESTAMP_COLUMN: "timestamp",
+    });
+    mocks.fetchInformationSchemaColumns.mockResolvedValue([
+      "color",
+      "icon",
+      "category",
+      "timestamp",
+    ]);
+    const rows = [
+      {
+        ...secondaryRows[0],
+        color: "#FF0000",
+        icon: "camera",
+        category: "deployment",
+        timestamp: "2026-01-01",
+      },
+    ];
+    mocks.fetchData.mockResolvedValue({ mainData: rows });
+    const body = await get();
+    expect(mocks.fetchData).toHaveBeenCalledWith("observations", {
+      limit: 5,
+      mainColumns: [
+        "_id",
+        "g__type",
+        "g__coordinates",
+        "color",
+        "icon",
+        "category",
+        "timestamp",
+      ],
+    });
+    expect(body.data.features[0].properties).toMatchObject({
+      _id: "1",
+      color: "#FF0000",
+      icon: "camera",
+      category: "deployment",
+      timestamp: "2026-01-01",
+    });
+    expect(body.secondaryData?.features[0].properties).toEqual({
+      _id: "1",
+      "filter-color": "#3333FF",
+    });
+  });
+  it("preserves optional document IDs and their Mapbox feature IDs", async () => {
+    vi.mocked(fetchTableSqlColumns)
+      .mockResolvedValueOnce(["_id", "g__type", "g__coordinates"])
+      .mockResolvedValueOnce([
+        "_id",
+        "id",
+        "g__type",
+        "g__coordinates",
+        "notes",
+      ]);
+    const rows = [{ ...secondaryRows[0], id: "abcdef0123456789" }];
+    mocks.fetchData.mockResolvedValue({ mainData: rows });
+    const body = await get();
+    expect(mocks.fetchData).toHaveBeenCalledWith("mapping", {
+      limit: 5,
+      mainColumns: ["_id", "id", "g__type", "g__coordinates"],
+    });
+    expect(body.secondaryData?.features[0].id).toBe(
+      buildMinimalFeatureCollection(rows, { includeAllProperties: true })
+        .features[0].id,
+    );
+    expect(body.secondaryData?.features[0].properties).toEqual({
+      _id: "1",
+      id: "abcdef0123456789",
+      "filter-color": "#3333FF",
     });
   });
   it("does not fetch an unconfigured secondary table", async () => {
