@@ -190,16 +190,34 @@ test.describe("polygon map rendering", () => {
 
     await stubMapboxTelemetry(page);
     await page.goto(`/${mixedView.viewType}/${mixedView.primaryDataset}`);
+    await waitForTestMap(page);
     const canvas = page.locator("canvas.mapboxgl-canvas");
     await expect(canvas).toBeVisible();
 
-    // The first MultiPolygon part surrounds the configured camera center.
+    // Wait for the first MultiPolygon part to render at the click location.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const map = window.getTestMap();
+          if (!map.getLayer("data-layer-polygon") || map.isMoving()) {
+            return false;
+          }
+          return map
+            .queryRenderedFeatures(map.project([-60, 5]), {
+              layers: ["data-layer-polygon"],
+            })
+            .some((feature) => feature.properties?._id === "test-multipolygon");
+        }),
+      )
+      .toBe(true);
+
+    const point = await page.evaluate(() => {
+      const position = window.getTestMap().project([-60, 5]);
+      return { x: position.x, y: position.y };
+    });
     const bounds = await canvas.boundingBox();
     if (!bounds) throw new Error("Map canvas has no bounding box");
-    await page.mouse.click(
-      bounds.x + bounds.width / 2,
-      bounds.y + bounds.height / 2,
-    );
+    await page.mouse.click(bounds.x + point.x, bounds.y + point.y);
 
     await expect(page.getByText("Multipart polygon fixture")).toBeVisible();
   });
