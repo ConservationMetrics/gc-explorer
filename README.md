@@ -139,9 +139,8 @@ E2E_BASE_URL=http://localhost:8081
 ```
 
 Start the app separately with matching `NUXT_DB_*`, `NUXT_CONFIG_DATABASE`, and
-`NUXT_DATABASE` settings, then run `pnpm test:e2e`. Use isolated test databases;
-overrides pointing to your development database are rejected. Without overrides,
-the existing defaults and workflows are unchanged. No devcontainer rebuild is needed.
+`NUXT_DATABASE` settings, then run `pnpm test:e2e`. Without overrides, the existing
+defaults and workflows are unchanged. No devcontainer rebuild is needed.
 
 ```bash
 # Recommended: use the convenience script (requires .env.test.compose file)
