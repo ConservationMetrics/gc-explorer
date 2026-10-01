@@ -249,6 +249,67 @@ describe("AlertsDashboard component", () => {
     },
   );
 
+  it("does not reattach hover listeners when changing basemaps while hovered", async () => {
+    const canvas = document.createElement("canvas");
+    const getCanvas = mapboxMock.mockMap.getCanvas.getMockImplementation()!;
+    mapboxMock.mockMap.getCanvas.mockReturnValue(canvas);
+    onTestFinished(() =>
+      mapboxMock.mockMap.getCanvas.mockImplementation(getCanvas),
+    );
+    const wrapper = mountComponent({
+      ...baseProps,
+      secondaryData: {
+        ...hoverGeometry,
+        features: [hoverGeometry.features[0]],
+      },
+      alertsData: {
+        ...baseProps.alertsData,
+        mostRecentAlerts: {
+          ...hoverGeometry,
+          features: [hoverGeometry.features[1]],
+        },
+      },
+    });
+    onTestFinished(() => wrapper.unmount());
+    mapboxMock.fireLoad();
+    await flushPromises();
+
+    const hoverListeners = () =>
+      mapboxMock.mockMap.on.mock.calls.filter(
+        ([event]) => event === "mouseenter" || event === "mouseleave",
+      );
+    const initialListeners = [...hoverListeners()];
+    expect(initialListeners.length).toBeGreaterThan(0);
+    mapboxMock.fireHover(["most-recent-alerts-polygon", "secondary-data"]);
+    expect(canvas.style.cursor).toBe("pointer");
+
+    const vm = wrapper.vm as unknown as {
+      handleBasemapChange: (basemap: { id: string; style: string }) => void;
+    };
+    const idleCallsBefore = mapboxMock.mockMap.once.mock.calls.length;
+    const layersBefore = mapboxMock.mockMap.addLayer.mock.calls.length;
+    vm.handleBasemapChange({
+      id: "satellite",
+      style: "mapbox://styles/mapbox/satellite-v9",
+    });
+    // Run the idle callback that rebuilds map content after the style change.
+    const rebuild = mapboxMock.mockMap.once.mock.calls
+      .slice(idleCallsBefore)
+      .find(([event]) => event === "idle")?.[1] as () => void;
+    expect(rebuild).toBeTypeOf("function");
+    rebuild();
+    await flushPromises();
+    expect(mapboxMock.mockMap.addLayer.mock.calls.length).toBeGreaterThan(
+      layersBefore,
+    );
+    expect(hoverListeners()).toEqual(initialListeners);
+
+    mapboxMock.fireHover(["secondary-data"]);
+    expect(canvas.style.cursor).toBe("pointer");
+    mapboxMock.fireHover([]);
+    expect(canvas.style.cursor).toBe("");
+  });
+
   it("preserves secondary hover when the primary line buffer finds no features", async () => {
     const canvas = document.createElement("canvas");
     const getCanvas = mapboxMock.mockMap.getCanvas.getMockImplementation()!;
