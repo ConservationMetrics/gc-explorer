@@ -128,6 +128,20 @@ E2E tests use two separate environment signals:
 
 Local Docker testing does **not** need `CI=true`. Set `NUXT_TEST=true` instead.
 
+For an existing test app and sidecar Postgres, supply optional `NUXT_TEST_DB_*`,
+`NUXT_TEST_CONFIG_DATABASE`, and `NUXT_TEST_DATABASE` environment variables.
+Set these in your shell or `.env.test.playwright`. To connect to an existing app,
+also set:
+
+```dotenv
+NUXT_TEST=true
+E2E_BASE_URL=http://localhost:8081
+```
+
+Start the app separately with matching `NUXT_DB_*`, `NUXT_CONFIG_DATABASE`, and
+`NUXT_DATABASE` settings, then run `pnpm test:e2e`. Without overrides, the existing
+defaults and workflows are unchanged.
+
 ```bash
 # Recommended: use the convenience script (requires .env.test.compose file)
 $ ./run-local-docker-tests.sh
