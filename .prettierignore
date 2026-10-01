@@ -3,4 +3,5 @@ node_modules
 *.md
 pnpm-lock.yaml
 .nuxt
+.output/
 test-results

@@ -140,6 +140,8 @@ useHead({
         :mapbox3d="mapbox3d"
         :mapbox3d-terrain-exaggeration="mapbox3dTerrainExaggeration"
         :map-data="mapData"
+        :secondary-data="data?.secondaryData"
+        :secondary-dataset="data?.secondary_dataset"
         :media-base-path="mediaBasePath"
         :media-base-path-icons="mediaBasePathIcons"
         :media-column="mediaColumn"

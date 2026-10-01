@@ -170,18 +170,6 @@ export const setAlertMapLayerGroupVisibility = (
   });
 };
 
-/** Set visibility for the secondary-data layer and its optional stroke layer. */
-export const setSecondaryDataLayerVisibility = (
-  map: Pick<MapboxMap, "getLayer" | "setLayoutProperty">,
-  visibility: "visible" | "none",
-) => {
-  ["secondary-data", "secondary-data-stroke"].forEach((layerId) => {
-    if (map.getLayer(layerId)) {
-      map.setLayoutProperty(layerId, "visibility", visibility);
-    }
-  });
-};
-
 export const clusteredAlertMapLayers = alertMapLayers.filter(
   (alertMapLayer) =>
     alertMapLayer.kind === "point" || alertMapLayer.kind === "centroids",

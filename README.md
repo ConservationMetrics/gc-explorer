@@ -248,11 +248,13 @@ Currently, GuardianConnector expects these column headers, which follow the stru
 
 If found, GuardianConnector Explorer will use a column mapping SQL table (with "\_\_column" suffix), like the one created by connector scripts of [GuardianConnector Script Hub](https://github.com/ConservationMetrics/gc-scripts-hub), to handle filtering and key/value rewrites.
 
-At this time, media attachments in the popups are handled in a somewhat brittle way by embedding any strings that end in the expected photo, audio, or video file ending (such as `.jpg`, `.mp3`, or `.mp4`). We can improve on this later when we know more about how media attachments will be stored in the SQL database, and what kind of metadata we have access to.
+At this time, media attachments in the sidebar are handled in a somewhat brittle way by embedding any strings that end in the expected photo, audio, or video file ending (such as `.jpg`, `.mp3`, or `.mp4`). We can improve on this later when we know more about how media attachments will be stored in the SQL database, and what kind of metadata we have access to.
 
 ### GeoJSON export formats for map view
 
-The GuardianConnector Explorer map will render the feature on a map in accordance to what kind of `type` it is (Point, LineString, Polygon). The properties are shown in a popup opened by clicking on the feature.
+The GuardianConnector Explorer map renders features according to their geometry type: Point, LineString, MultiLineString, Polygon, or MultiPolygon. Clicking a feature opens its properties and supported media in the sidebar.
+
+Map and Alerts views can include an optional secondary geospatial dataset. Map View automatically provides legend toggles for each dataset with valid features. Its filters, statistics, and bulk downloads remain scoped to the primary dataset. See [view configuration](docs/config.md) for setup and Alerts secondary filtering.
 
 The GuardianConnector Explorer map can work with any GeoJSON data stored in the expected tabular format, but the main purpose is to visualize field data collected using data collection applications such as (Co)Mapeo, ODK, and KoboToolbox.
 

@@ -1,3 +1,4 @@
+import { SECONDARY_INTERACTIVE_LAYER_IDS } from "@/utils/secondaryMapLayers";
 import { computed, onBeforeUnmount, ref } from "vue";
 import type { RouteLocationNormalizedLoaded, Router } from "vue-router";
 import mapboxgl from "mapbox-gl";
@@ -691,7 +692,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
 
     const selectableLayers = [
       ...alertMapLayers.map((layer) => layer.layerId),
-      "secondary-data",
+      ...SECONDARY_INTERACTIVE_LAYER_IDS,
       ...getAdditionalSelectableLayerIds(),
     ].filter((layerId) => map.value!.getLayer(layerId));
 
@@ -928,7 +929,7 @@ const SOURCE_ID_KEYS = ['alertID', '_id', 'source_id', 'sourceId'] as const;
     // Include centroids layers as they contain the alertID property
     const alertLayers = alertMapLayers.map((layer) => layer.layerId);
 
-    const secondaryLayers = ["secondary-data"];
+    const secondaryLayers = SECONDARY_INTERACTIVE_LAYER_IDS;
 
     const additionalLayers = getAdditionalSelectableLayerIds();
 

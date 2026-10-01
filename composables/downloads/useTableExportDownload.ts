@@ -1,5 +1,5 @@
 import { useI18n, useRoute, useToast } from "#imports";
-import { resolveViewTypeForTable } from "@/composables/useViewType";
+import { resolveRecordFetchQuery } from "@/composables/useViewType";
 import { triggerBrowserDownload } from "@/utils/browserDownload";
 import {
   decodeDatasetNameFromUrl,
@@ -118,17 +118,21 @@ export function useTableExportDownload() {
     }
 
     try {
-      const params = buildTableExportQueryParams({
-        format: options.format,
-        exportPath,
-        exportFilterColumn: options.exportFilterColumn,
-        exportFilterValues: options.exportFilterValues,
-        exportMinDate: options.exportMinDate,
-        exportMaxDate: options.exportMaxDate,
-        exportTimestampColumn: options.exportTimestampColumn,
-        recordId: options.recordId,
-        viewType: resolveViewTypeForTable(route, tablename),
-      });
+      const viewQuery = resolveRecordFetchQuery(route, tablename);
+      const params = {
+        ...buildTableExportQueryParams({
+          format: options.format,
+          exportPath,
+          exportFilterColumn: options.exportFilterColumn,
+          exportFilterValues: options.exportFilterValues,
+          exportMinDate: options.exportMinDate,
+          exportMaxDate: options.exportMaxDate,
+          exportTimestampColumn: options.exportTimestampColumn,
+          recordId: options.recordId,
+          viewType: viewQuery.view_type,
+        }),
+        ...viewQuery,
+      };
       const blob = await $fetch<Blob>(
         `/api/${encodeDatasetNameForUrl(tablename)}/${exportPath}`,
         {
