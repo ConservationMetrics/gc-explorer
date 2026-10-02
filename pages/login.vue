@@ -12,7 +12,7 @@ onMounted(() => {
 });
 
 useHead({
-  title: "GuardianConnector Explorer: " + t("login"),
+  title: "Guardian Connector Explorer: " + t("login"),
 });
 </script>
 

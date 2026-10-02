@@ -1,10 +1,10 @@
-# GuardianConnector Explorer
+# Guardian Connector Explorer
 
 <p align="center">
   <img src="docs/gcexplorer-small.png" alt="GC Explorer" />
 </p>
 
-This tool, designed for [GuardianConnector](https://guardianconnector.net) and built using [Nuxt.js](https://nuxt.com/), offers an API compatible with a PostgreSQL databases, and renders tabular data from one or more tables on different views including a map and a media gallery.
+This tool, designed for [Guardian Connector](https://guardianconnector.net) and built using [Nuxt.js](https://nuxt.com/), offers an API compatible with a PostgreSQL databases, and renders tabular data from one or more tables on different views including a map and a media gallery.
 
 ## Configure
 
@@ -12,14 +12,14 @@ To get started, copy `.env.example` to `.env` and add your database and table in
 
 **Database:** Provide your database information in the relevant variables.
 
-**Authentication strategy:** GuardianConnector Explorer supports three different authentication strategies: auth0, password (from an environmental var) with JWT key, or none. Set your authentication strategy in `NUXT_PUBLIC_AUTH_STRATEGY`.
+**Authentication strategy:** Guardian Connector Explorer supports three different authentication strategies: auth0, password (from an environmental var) with JWT key, or none. Set your authentication strategy in `NUXT_PUBLIC_AUTH_STRATEGY`.
 
 - If you are using an auth0 strategy, then you need to provide a domain, client ID, client secret, audience, and base URL.
 - If set to "none", the application will run in local/dev mode with a local Admin session seeded by the `local-auth` middleware.
 
 **Nuxt App API key:** Generate an API key to add to request headers made by the Nuxt front end. You can generate one by running `openssl rand -base64 42`.
 
-**Views configuration:** GuardianConnector Explorer can render multiple tables and you can determine which views to show for each table. To configure your tables and views, access the `/config` route once the application has started. For more information on this, please see [config.md](docs/config.md). You do not need to set this in order for GuardianConnector Explorer to start, however the index page will show an empty list and none of the view routes will load anything.
+**Views configuration:** Guardian Connector Explorer can render multiple tables and you can determine which views to show for each table. To configure your tables and views, access the `/config` route once the application has started. For more information on this, please see [config.md](docs/config.md). You do not need to set this in order for Guardian Connector Explorer to start, however the index page will show an empty list and none of the view routes will load anything.
 
 ## Build Setup
 
@@ -81,7 +81,7 @@ docker run --env-file=.env -it -p 8080:8080 guardianconnector-explorer:latest
 
 ## Testing
 
-GuardianConnector Explorer has three classes of tests:
+Guardian Connector Explorer has three classes of tests:
 
 1. **Unit and component tests (Vitest).** Isolated logic with mocked dependencies. No Nuxt server and no database. `pnpm test:unit`.
 2. **Backend API tests (Playwright `request`).** HTTP calls against the running app and seeded databases. Auth0 setup still uses a browser once (`auth.setup.ts`); the tests themselves reuse `admin.json` on the browserless `request` fixture and do not open a page. Same Docker stack as E2E (`NUXT_TEST=true`). Example: `tests/e2e/12-view-dataset-api.spec.ts`.
@@ -220,24 +220,24 @@ GitHub secrets must be configured based on the `.env.test.playwright.example` fi
 
 ### **Map**
 
-![GuardianConnector Map with KoboToolbox data](docs/GuardianConnector-Map.jpg)
+![Guardian Connector Map with KoboToolbox data](docs/Guardian Connector-Map.jpg)
 _Map view using sample KoboToolbox data, with an image and audio attachment embedded._
 
 ### **Gallery**
 
-![GuardianConnector Gallery with KoboToolbox data](docs/GuardianConnector-Gallery.jpg)
+![Guardian Connector Gallery with KoboToolbox data](docs/Guardian Connector-Gallery.jpg)
 _Gallery view using sample KoboToolbox data._
 
 ### **Alerts (change detection)**
 
-![GuardianConnector Alerts with change detection data](docs/GuardianConnector-Alerts.jpg)
+![Guardian Connector Alerts with change detection data](docs/Guardian Connector-Alerts.jpg)
 _Alerts dashboard view with fake alerts data._
 
 ## How it works
 
 ### Column headers
 
-Currently, GuardianConnector expects these column headers, which follow the structure of a GeoJSON feature. You can use these [GeoJSON to SQL conversion scripts](https://github.com/rudokemper/geojson-csv-sql-conversion-tools) to transform your GeoJSON file into the expected format if needed.
+Currently, Guardian Connector expects these column headers, which follow the structure of a GeoJSON feature. You can use these [GeoJSON to SQL conversion scripts](https://github.com/rudokemper/geojson-csv-sql-conversion-tools) to transform your GeoJSON file into the expected format if needed.
 
 | SQL Column       | GeoJSON Field        |
 | ---------------- | -------------------- |
@@ -246,15 +246,15 @@ Currently, GuardianConnector expects these column headers, which follow the stru
 | g\_\_coordinates | geometry.coordinates |
 | ...              | properties...        |
 
-If found, GuardianConnector Explorer will use a column mapping SQL table (with "\_\_column" suffix), like the one created by connector scripts of [GuardianConnector Script Hub](https://github.com/ConservationMetrics/gc-scripts-hub), to handle filtering and key/value rewrites.
+If found, Guardian Connector Explorer will use a column mapping SQL table (with "\_\_column" suffix), like the one created by connector scripts of [Guardian Connector Script Hub](https://github.com/ConservationMetrics/gc-scripts-hub), to handle filtering and key/value rewrites.
 
 At this time, media attachments in the popups are handled in a somewhat brittle way by embedding any strings that end in the expected photo, audio, or video file ending (such as `.jpg`, `.mp3`, or `.mp4`). We can improve on this later when we know more about how media attachments will be stored in the SQL database, and what kind of metadata we have access to.
 
 ### GeoJSON export formats for map view
 
-The GuardianConnector Explorer map will render the feature on a map in accordance to what kind of `type` it is (Point, LineString, Polygon). The properties are shown in a popup opened by clicking on the feature.
+The Guardian Connector Explorer map will render the feature on a map in accordance to what kind of `type` it is (Point, LineString, Polygon). The properties are shown in a popup opened by clicking on the feature.
 
-The GuardianConnector Explorer map can work with any GeoJSON data stored in the expected tabular format, but the main purpose is to visualize field data collected using data collection applications such as (Co)Mapeo, ODK, and KoboToolbox.
+The Guardian Connector Explorer map can work with any GeoJSON data stored in the expected tabular format, but the main purpose is to visualize field data collected using data collection applications such as (Co)Mapeo, ODK, and KoboToolbox.
 
 - Mapeo data from Mapeo Desktop is already exported as GeoJSON file, and a CoMapeo Archive Server returns data in a GeoJSON-compliant format.
 - ODK / KoboToolbox API survey data with a geospatial column may be transformed into such a format.
