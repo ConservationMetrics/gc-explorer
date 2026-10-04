@@ -88,7 +88,7 @@ const isPublic = useIsPublic(data);
 
 useHead({
   title:
-    "GuardianConnector Explorer " +
+    "Guardian Connector Explorer " +
     t("changeDetectionAlerts") +
     " - " +
     replaceUnderscoreWithSpace(table),
