@@ -1,4 +1,4 @@
-// This fixture covers Mapeo GeoJSON export data that was processed by frizzle and is stored in a GuardianConnector data warehouse
+// This fixture covers Mapeo GeoJSON export data that was processed by frizzle and is stored in a Guardian Connector data warehouse
 
 export const mapeoData = [
   {

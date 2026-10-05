@@ -1,6 +1,6 @@
 # Role-Based Access Control (RBAC) with Auth0
 
-This document describes how Role-Based Access Control (RBAC) is implemented in the GuardianConnector Explorer application using Auth0, including the new route-level visibility permissions.
+This document describes how Role-Based Access Control (RBAC) is implemented in the Guardian Connector Explorer application using Auth0, including the new route-level visibility permissions.
 
 ## Overview
 
@@ -60,7 +60,7 @@ Before implementing RBAC, ensure:
    - Go to **Dashboard > Applications > APIs**
    - Click **"+ Create API"**
    - Provide API details:
-     - **Name**: Your API name (e.g., "GuardianConnector Explorer")
+     - **Name**: Your API name (e.g., "Guardian Connector Explorer")
      - **Identifier**: `https://your-domain.com` (unique identifier)
      - **Signing Algorithm**: HS256 (recommended)
    - Click **"Create"**

@@ -172,7 +172,7 @@ onMounted(async () => {
 });
 
 useHead({
-  title: "GuardianConnector Explorer",
+  title: "Guardian Connector Explorer",
 });
 
 definePageMeta({ layout: "explorer" });

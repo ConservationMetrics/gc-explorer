@@ -195,4 +195,4 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: communityfirst/guardianconnector-explorer
-          short-description: "A Nuxt app to explore GuardianConnector data in different views"
+          short-description: "A Nuxt app to explore Guardian Connector data in different views"
