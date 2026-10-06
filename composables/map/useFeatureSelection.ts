@@ -1,3 +1,4 @@
+import { SECONDARY_SOURCE_ID } from "@/utils/secondaryMapLayers";
 import { ref } from "vue";
 import type { RouteLocationNormalizedLoaded, Router } from "vue-router";
 import type mapboxgl from "mapbox-gl";
@@ -350,7 +351,12 @@ export function useFeatureSelection(
 
     // Set new feature state on the current layer
     map.value.setFeatureState(
-      { source: layerId, id: featureId },
+      {
+        source: layerId.startsWith(SECONDARY_SOURCE_ID)
+          ? SECONDARY_SOURCE_ID
+          : layerId,
+        id: featureId,
+      },
       { selected: true },
     );
 
@@ -405,7 +411,9 @@ export function useFeatureSelection(
     selectedFeature.value = featureObject; // Store properties for sidebar
     selectedFeatureGeometry.value = feature.geometry; // Store geometry for cluster highlighting
     selectedFeatureId.value = featureId;
-    selectedFeatureSource.value = layerId;
+    selectedFeatureSource.value = layerId.startsWith(SECONDARY_SOURCE_ID)
+      ? SECONDARY_SOURCE_ID
+      : layerId;
     showSidebar.value = true;
     showIntroPanel.value = false;
 
@@ -521,6 +529,8 @@ export function useFeatureSelection(
     const query = { ...route.query };
     delete query.alertId;
     delete query.isRecent;
+    delete query.secondaryDocId;
+    delete query.mapeoDocId;
     router.replace({ query });
   };
 

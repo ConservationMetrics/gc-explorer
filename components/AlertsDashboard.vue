@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { useSecondaryDatasetLayer } from "@/composables/map/useSecondaryDatasetLayer";
 import { attachMapHover } from "@/utils/mapHover";
+import { SECONDARY_INTERACTIVE_LAYER_IDS } from "@/utils/secondaryMapLayers";
 import { computed, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -57,7 +59,6 @@ import {
   getAlertSourceFeatures,
   isPolygonal,
   setAlertMapLayerGroupVisibility,
-  setSecondaryDataLayerVisibility,
 } from "@/utils/alertMapLayers";
 import { parsePhotosFromRecord } from "@/utils/index";
 
@@ -218,6 +219,7 @@ const {
   isAlert,
   selectedFeature,
   selectedFeatureSource,
+  selectedFeatureId,
   selectedFeatureGeometry,
   highlightClusterContainingFeature,
   selectFeature,
@@ -377,7 +379,8 @@ const selectInitialSecondaryFeature = (secondaryDocId: string) => {
     map.value.flyTo({ center: [lng, lat], zoom: 13 });
   } else if (
     feature.geometry.type === "Polygon" ||
-    feature.geometry.type === "MultiPolygon"
+    feature.geometry.type === "MultiPolygon" ||
+    feature.geometry.type === "MultiLineString"
   ) {
     const bounds = bbox(feature);
     map.value.fitBounds(bounds, { padding: 50 });
@@ -520,7 +523,7 @@ const emit = defineEmits(["reset-legend-visibility"]);
 const hasLineStrings = ref(false);
 const hasPoints = ref(false);
 const secondaryDataColor = ref();
-const SECONDARY_INTERACTIVE_LAYER_IDS = ["secondary-data"];
+
 const additionalSelectableLayerIds = computed(() =>
   (props.mapLegendLayerIds || "")
     .split(",")
@@ -1135,95 +1138,29 @@ const addAlertsData = async () => {
   });
 };
 
-/**
- * Adds (optional) secondary data to the map as a GeoJSON FeatureCollection source
- * with associated circle and symbol layers.
- */
+/** Secondary geometry shares one source for sidebar and incident selection. */
+const secondaryLayer = useSecondaryDatasetLayer(
+  map,
+  () => props.secondaryData,
+  (feature, layerId) => {
+    if (multiSelectMode.value || boundingBoxMode.value)
+      handleMultiSelectFeature(feature, layerId);
+    else if (!incidentSelectionContextActive.value)
+      selectFeature(feature, layerId);
+  },
+);
 const addSecondaryData = () => {
-  if (!props.secondaryData || props.secondaryData.features.length === 0) {
-    return;
-  }
-
-  secondaryDataColor.value =
-    props.secondaryData.features[0]?.properties?.["filter-color"];
-
-  // Add the source to the map
-  if (!map.value.getSource("secondary-data")) {
-    map.value.addSource("secondary-data", {
-      type: "geojson",
-      data: props.secondaryData,
-    });
-  }
-
-  // Add a layer for Point features, below primary alerts when those exist
-  if (!map.value.getLayer("secondary-data")) {
-    const beforeId = map.value
-      .getStyle()
-      ?.layers?.find(
-        (layer: Layer) =>
-          layer.id.startsWith("most-recent-alerts") ||
-          layer.id.startsWith("previous-alerts"),
-      )?.id;
-
-    map.value.addLayer(
-      {
-        id: "secondary-data",
-        type: "circle",
-        source: "secondary-data",
-        filter: ["==", "$type", "Point"],
-        paint: {
-          "circle-radius": 6,
-          "circle-color": [
-            // Use filter-color for fallback if selected is false
-            "case",
-            ["boolean", ["feature-state", "incidentSelected"], false],
-            "#FFFF00",
-            ["get", "filter-color"],
-          ],
-          "circle-stroke-width": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            3,
-            2,
-          ],
-          "circle-stroke-color": [
-            "case",
-            ["boolean", ["feature-state", "selected"], false],
-            "#00E5FF",
-            "#fff",
-          ],
-        },
-      },
-      beforeId,
+  secondaryDataColor.value = "#3333FF";
+  secondaryLayer.install();
+  if (
+    selectedFeatureSource.value === "secondary-data" &&
+    selectedFeatureId.value != null
+  ) {
+    map.value.setFeatureState(
+      { source: "secondary-data", id: selectedFeatureId.value },
+      { selected: true },
     );
   }
-
-  // Add event listeners
-  const interactiveLayers = SECONDARY_INTERACTIVE_LAYER_IDS.filter((layerId) =>
-    map.value.getLayer(layerId),
-  );
-
-  interactiveLayers.forEach((layerId) => {
-    map.value.on(
-      "click",
-      layerId,
-      (e: MapMouseEvent) => {
-        if (e.features && e.features.length > 0) {
-          const feature = e.features[0];
-          if (multiSelectMode.value || boundingBoxMode.value) {
-            // Add to selected sources instead of selecting for sidebar
-            handleMultiSelectFeature(feature, layerId);
-          } else if (incidentSelectionContextActive.value) {
-            return;
-          } else {
-            // Normal selection behavior
-            selectFeature(feature, layerId);
-          }
-        }
-      },
-      { passive: true },
-    );
-  });
 };
 /**
  * Prepares the map canvas content by adding alert and secondary data,
@@ -1351,7 +1288,7 @@ const prepareMapLegendContent = () => {
     const legendItems: MapLegendItem[] = [];
 
     // Add secondary-data layer first to ensure it's always on top
-    if (props.secondaryData) {
+    if (props.secondaryData?.features.length) {
       legendItems.push({
         id: "secondary-data",
         name: props.secondaryDataset
@@ -1360,8 +1297,8 @@ const prepareMapLegendContent = () => {
               .replace(/^\w/, (character) => character.toUpperCase())
           : t("secondaryData"),
         type: "circle",
-        color: secondaryDataColor.value || "#000000",
-        visible: true,
+        color: secondaryDataColor.value || "#3333FF",
+        visible: secondaryLayer.visible.value,
       });
     }
 
@@ -1395,13 +1332,18 @@ const prepareMapLegendContent = () => {
         secondaryDataColor.value,
       );
       if (additionalLayers) {
-        legendItems.push(...(additionalLayers as MapLegendItem[]));
+        legendItems.push(
+          ...(additionalLayers as MapLegendItem[]).filter(
+            (item) => item.id !== "secondary-data",
+          ),
+        );
       }
     }
 
     mapLegendContent.value = legendItems;
     // E2E tests wait for this after the idle-gated legend content is ready.
     mapReady.value = true;
+    handleIncidentClusterZoom();
     startPulsingHalo();
   });
 };
@@ -1418,7 +1360,7 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
     const period = item.id === "most-recent-alerts" ? "mostRecent" : "previous";
     setAlertMapLayerGroupVisibility(map.value, period, visibility);
   } else if (item.id === "secondary-data") {
-    setSecondaryDataLayerVisibility(map.value, visibility);
+    secondaryLayer.setVisible(item.visible);
   } else {
     // Handle individual layers (secondary-data, etc.)
     utilsToggleLayerVisibility(map.value, item);
@@ -1514,7 +1456,7 @@ const resetToInitialState = () => {
           item.id === "most-recent-alerts" ? "mostRecent" : "previous";
         setAlertMapLayerGroupVisibility(map.value, period, "visible");
       } else if (item.id === "secondary-data") {
-        setSecondaryDataLayerVisibility(map.value, "visible");
+        secondaryLayer.setVisible(true);
       } else {
         // Handle individual layers (secondary-data, etc.)
         utilsToggleLayerVisibility(map.value, item);
