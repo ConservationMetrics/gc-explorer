@@ -49,7 +49,9 @@ Enable a 3D terrain layer in the Mapbox map.
 
 #### `MAP_LEGEND_LAYER_IDS` (optional)
 
-A comma-separated list of Mapbox layer ids to be rendered in an optional map legend component. In the component, the layer `type` and `color` will be used to set the legend symbol style (currently supported: fill, line, circle), and the layer `id` will be set as the legend description. Note that we are currently only supporting adding layers to the legend where the color is directly set and not across zoom / data range or with data conditions.
+A comma-separated list of exact Mapbox style layer IDs to add to the map legend, allowing users to toggle those layers. The layer `type` and `color` determine the legend symbol (supported types: fill, line, circle), and the layer ID is used as its description. Only layers with a directly specified color are supported; colors based on zoom or data expressions are not supported.
+
+Map and Alerts automatically include a legend toggle for a nonempty secondary dataset, even when this setting is unset. The toggle controls all secondary geometry layers, including polygon outlines, and retains its visibility after a basemap change. Use `MAP_LEGEND_LAYER_IDS` for additional basemap or style layers; the secondary dataset toggle does not need to be listed here.
 
 #### `PLANET_API_KEY` (optional)
 
@@ -79,7 +81,9 @@ Depending on your data, you will want to use a meaningful column for filtering. 
 
 Choose any geospatial companion table (columns `g__type` and `g__coordinates`) as the view's secondary dataset. The config UI only lists geospatial tables. Existing views that used a Mapeo table as the companion continue to work.
 
-Alerts secondary datasets support Point, LineString, MultiLineString, Polygon, and MultiPolygon geometry. Clicking a feature opens its metadata and media in the sidebar. The automatic secondary legend toggle controls all geometry layers and retains visibility after a basemap change. Lines and polygons can also be selected for incidents.
+Secondary data appears in both Map and Alerts views and supports Point, LineString, MultiLineString, Polygon, and MultiPolygon geometry. For example, combine two observation datasets or overlay mapping data with camera-trap deployment points. Clicking a secondary feature opens its metadata and supported media in the sidebar. A secondary dataset with valid features can appear even when the primary dataset has no valid features.
+
+In Map View, category and timestamp filters, statistics, and bulk downloads apply only to the primary dataset. Primary filters do not change the secondary data. Alerts retains its configured secondary filtering described below. The configured row limit applies separately to each dataset.
 
 #### `FRONT_END_FILTER_COLUMN` and `SECONDARY_FILTER_VALUES` (optional, for Alerts view)
 
