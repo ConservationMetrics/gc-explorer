@@ -203,6 +203,151 @@ describe("MapView component", () => {
     },
   );
 
+  it("adds an automatic primary legend and preserves grouped visibility through layer recreation", async () => {
+    const wrapper = mount(MapView, {
+      props: {
+        ...baseProps,
+        mapData: {
+          ...baseMapData,
+          features: [
+            ...baseMapData.features,
+            {
+              type: "Feature",
+              id: 3,
+              properties: { _id: "line", status: "active" },
+              geometry: {
+                type: "LineString",
+                coordinates: [
+                  [0, 0],
+                  [1, 1],
+                ],
+              },
+            },
+          ],
+        },
+        iconColumn: "icon",
+        mediaBasePathIcons: "/icons",
+        filterColumn: "status",
+      },
+      global: globalConfig,
+    });
+    mapboxMock.fireLoad();
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      mapLegendContent: Array<{ id: string; name: string; visible: boolean }>;
+      toggleLayerVisibility: (item: { id: string; visible: boolean }) => void;
+      filterValues: (values: string[]) => void;
+      handleToggleIcons: () => Promise<void>;
+      prepareMapCanvasContent: () => Promise<void>;
+    };
+    expect(vm.mapLegendContent.map((item) => item.id)).toEqual(["data-source"]);
+    expect(vm.mapLegendContent[0]).toMatchObject({
+      name: "Test table",
+      visible: true,
+    });
+    mapboxMock.mockMap.setLayoutProperty.mockClear();
+    vm.toggleLayerVisibility({ id: "data-source", visible: false });
+    for (const id of [
+      "data-layer-point",
+      "data-layer-linestring",
+      "data-layer-polygon",
+      "data-layer-polygon-stroke",
+    ]) {
+      expect(mapboxMock.mockMap.setLayoutProperty).toHaveBeenCalledWith(
+        id,
+        "visibility",
+        "none",
+      );
+    }
+    expect(
+      mapboxMock.mockMap.setLayoutProperty.mock.calls.every(([id]) =>
+        id.startsWith("data-layer"),
+      ),
+    ).toBe(true);
+
+    vm.filterValues(["missing"]);
+    expect(vm.mapLegendContent.some((item) => item.id === "data-source")).toBe(
+      true,
+    );
+    vm.filterValues([]);
+    await vm.handleToggleIcons();
+    expect(mapboxMock.mockMap.setLayoutProperty).toHaveBeenCalledWith(
+      "data-layer-point-halo",
+      "visibility",
+      "none",
+    );
+    // Recreate the style's layers as a basemap switch does.
+    mapboxMock.layers.length = 0;
+    await vm.prepareMapCanvasContent();
+    expect(vm.mapLegendContent[0].visible).toBe(false);
+    expect(mapboxMock.mockMap.setLayoutProperty).toHaveBeenLastCalledWith(
+      "data-layer-polygon-stroke",
+      "visibility",
+      "none",
+    );
+
+    vm.toggleLayerVisibility({ id: "data-source", visible: true });
+    expect(mapboxMock.mockMap.setLayoutProperty).toHaveBeenCalledWith(
+      "data-layer-point-halo",
+      "visibility",
+      "visible",
+    );
+    wrapper.unmount();
+  });
+
+  it("provides the primary legend on primary-only maps", async () => {
+    const wrapper = mount(MapView, { props: baseProps, global: globalConfig });
+    mapboxMock.fireLoad();
+    await flushPromises();
+    expect(
+      wrapper.findComponent({ name: "MapLegend" }).props("mapLegendContent"),
+    ).toEqual([
+      expect.objectContaining({
+        id: "data-source",
+        name: "Test table",
+        visible: true,
+      }),
+    ]);
+    wrapper.unmount();
+  });
+
+  it("keeps configured style entries alongside the primary toggle after the style loads", async () => {
+    Object.assign(mapboxMock.mockMap, {
+      getPaintProperty: vi.fn(() => "#333333"),
+    });
+    mapboxMock.mockMap.getLayer.mockImplementation((id?: string) =>
+      id === "roads" ? ({ id, type: "line" } as never) : false,
+    );
+    onTestFinished(() => {
+      mapboxMock.mockMap.getLayer.mockReturnValue(false);
+      mapboxMock.mockMap.isStyleLoaded.mockReturnValue(true);
+    });
+    const wrapper = mount(MapView, {
+      props: { ...baseProps, mapLegendLayerIds: "roads" },
+      global: globalConfig,
+    });
+    mapboxMock.fireLoad();
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      prepareMapLegendContent: () => void;
+      mapLegendContent: Array<{ id: string }>;
+    };
+    expect(vm.mapLegendContent.map((item) => item.id)).toEqual([
+      "data-source",
+      "roads",
+    ]);
+    mapboxMock.mockMap.isStyleLoaded.mockReturnValue(false);
+    vm.prepareMapLegendContent();
+    expect(vm.mapLegendContent.map((item) => item.id)).toEqual(["data-source"]);
+    mapboxMock.mockMap.isStyleLoaded.mockReturnValue(true);
+    vm.prepareMapLegendContent();
+    expect(vm.mapLegendContent.map((item) => item.id)).toEqual([
+      "data-source",
+      "roads",
+    ]);
+    wrapper.unmount();
+  });
+
   it("initializes Mapbox and adds controls", async () => {
     const wrapper = mount(MapView, {
       props: baseProps,

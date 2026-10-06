@@ -105,6 +105,20 @@ const showIntroPanel = ref(true);
 const showIcons = ref(false);
 const loadingIcons = ref(false);
 
+const primaryDatasetVisible = ref(true);
+
+const applyPrimaryDatasetVisibility = () => {
+  map.value?.getStyle()?.layers?.forEach((layer: Layer) => {
+    if ("source" in layer && layer.source === "data-source") {
+      map.value.setLayoutProperty(
+        layer.id,
+        "visibility",
+        primaryDatasetVisible.value ? "visible" : "none",
+      );
+    }
+  });
+};
+
 // Check if icon toggle is available
 const canToggleIcons = computed(() => {
   return !!(props.iconColumn && props.mediaBasePathIcons);
@@ -419,6 +433,7 @@ const addDataToMap = () => {
   }
 
   applySelectedMapFeatureState();
+  applyPrimaryDatasetVisibility();
 
   // Add event listeners
   const layersToAddListeners = [];
@@ -549,20 +564,34 @@ const mapLegendContent = ref();
 
 /** Prepare map legend content based on layer IDs */
 const prepareMapLegendContent = () => {
-  if (!props.mapLegendLayerIds) {
-    return;
-  }
-  map.value.once("idle", () => {
-    mapLegendContent.value = prepareMapLegendLayers(
+  const prepare = () => {
+    const items = (prepareMapLegendLayers(
       map.value,
       props.mapLegendLayerIds ?? null,
-    );
-  });
+    ) ?? []) as MapLegendItem[];
+    if (props.mapData.features.length) {
+      items.unshift({
+        id: "data-source",
+        name: props.table
+          .replace(/_/g, " ")
+          .replace(/^\w/, (character) => character.toUpperCase()),
+        type: "circle",
+        color: "#64748b",
+        visible: primaryDatasetVisible.value,
+      });
+    }
+    mapLegendContent.value = items;
+  };
+  prepare();
+  map.value.once("idle", prepare);
 };
 
 /** Toggle visibility of a map layer */
 const toggleLayerVisibility = (item: MapLegendItem) => {
-  utilsToggleLayerVisibility(map.value, item);
+  if (item.id === "data-source") {
+    primaryDatasetVisible.value = item.visible;
+    applyPrimaryDatasetVisibility();
+  } else utilsToggleLayerVisibility(map.value, item);
 };
 
 /**
@@ -935,7 +964,7 @@ onBeforeUnmount(() => {
       @toggle-icons="handleToggleIcons"
     />
     <MapLegend
-      v-if="mapLegendContent && mapData"
+      v-if="mapLegendContent?.length && mapData"
       :map-legend-content="mapLegendContent"
       :mobile-drawer-height="mobileDrawerHeight"
       @toggle-layer-visibility="toggleLayerVisibility"
