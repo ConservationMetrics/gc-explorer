@@ -79,6 +79,8 @@ Depending on your data, you will want to use a meaningful column for filtering. 
 
 Choose any geospatial companion table (columns `g__type` and `g__coordinates`) as the view's secondary dataset. The config UI only lists geospatial tables. Existing views that used a Mapeo table as the companion continue to work.
 
+Alerts secondary datasets support Point, LineString, MultiLineString, Polygon, and MultiPolygon geometry. Clicking a feature opens its metadata and media in the sidebar. The automatic secondary legend toggle controls all geometry layers and retains visibility after a basemap change. Lines and polygons can also be selected for incidents.
+
 #### `FRONT_END_FILTER_COLUMN` and `SECONDARY_FILTER_VALUES` (optional, for Alerts view)
 
 Set `FRONT_END_FILTER_COLUMN` to a column in the secondary dataset and `SECONDARY_FILTER_VALUES` to a comma-separated list of values to show on the Alerts map. If either value is omitted, all geospatial rows from the secondary dataset are shown.
