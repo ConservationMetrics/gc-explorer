@@ -1,4 +1,4 @@
-import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
+import { test, expect } from "@/tests/e2e/fixtures/config-views";
 import {
   ensureMapFormCanSubmit,
   expandMapSection,
@@ -29,9 +29,9 @@ test("config page - add new dataset view reachable from index", async ({
 
 test("config page - create new view via type-first flow and edit it", async ({
   authenticatedPageAsAdmin: page,
+  configGalleryView,
 }) => {
-  // seed_survey_data already has gallery; create a map view for it.
-  const selectedTableName = "seed_survey_data";
+  const selectedTableName = configGalleryView.primaryDataset;
 
   await page.goto("/config/new");
   await page.waitForLoadState("networkidle");
@@ -109,8 +109,9 @@ test("config page - create new view via type-first flow and edit it", async ({
 
 test("config page - navigate to dataset edit page", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const configCard = page.locator(".bg-white.rounded-lg.shadow-sm").first();
   await expect(configCard).toBeVisible({ timeout: 15000 });
@@ -128,8 +129,9 @@ test("config page - navigate to dataset edit page", async ({
 
 test("config page - edit dataset view form structure", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const configCard = page.locator(".bg-white.rounded-lg.shadow-sm").first();
   await expect(configCard).toBeVisible({ timeout: 15000 });
@@ -203,8 +205,9 @@ test("config page - edit dataset view form structure", async ({
 
 test("config page - View is first with prioritized responsive fields", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const sections = page.locator(
     "form [data-testid='config-section-collapsible']",
@@ -262,6 +265,7 @@ test("config page - View is first with prioritized responsive fields", async ({
 
 test("config page - image URL fields render previews and load errors", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
   const imageBody = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
@@ -278,7 +282,7 @@ test("config page - image URL fields render previews and load errors", async ({
       body: imageBody,
     });
   });
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
   const previewBase = `${new URL(page.url()).origin}/__config-preview`;
 
   const viewSection = page
@@ -325,8 +329,9 @@ test("config page - cancel create leaves database unchanged", async ({
 
 test("config page - form validation and change detection", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const submitButton = page.locator("[data-testid='config-submit-button']");
   await expect(submitButton).toBeVisible();
@@ -366,8 +371,9 @@ test("config page - form validation and change detection", async ({
 
 test("config page - submit configuration changes", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const datasetNameInput = page.locator(
     'input[id*="DATASET_TABLE"], input[placeholder*="e.g., My Mapping Data"]',
@@ -408,8 +414,9 @@ test("config page - submit configuration changes", async ({
 
 test("config page - view metadata displays current view type outside ConfigCard", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const viewMetadata = page.locator("[data-testid='view-metadata']");
   await expect(viewMetadata).toBeVisible({ timeout: 10000 });
@@ -449,8 +456,9 @@ test("config page - view metadata displays current view type outside ConfigCard"
 
 test("config page - map number fields sit in two columns on desktop", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const latitude = page.locator('input[id$="-MAPBOX_CENTER_LATITUDE"]');
   const longitude = page.locator('input[id$="-MAPBOX_CENTER_LONGITUDE"]');
@@ -578,8 +586,9 @@ test("config page - edit secondary dataset for Alert and Map views", async ({
 
 test("config page - conditional form sections based on views", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const configCard = page.locator(".bg-white.rounded-lg.shadow-sm");
   await expect(configCard.first()).toBeVisible({ timeout: 15000 });
@@ -606,8 +615,9 @@ test("config page - conditional form sections based on views", async ({
 
 test("config page - error handling for invalid form submission", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const mapboxTokenInput = page
     .locator('input[id*="basemap-access-token"]')
@@ -707,8 +717,9 @@ test("config page - visibility permissions configuration", async ({
 
 test("config page - basemap configuration - add and remove basemaps", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const basemapLabel = page.locator(
     'label:has-text("Mapbox Background Map(s)")',
@@ -752,8 +763,9 @@ test("config page - basemap configuration - add and remove basemaps", async ({
 
 test("config page - basemap configuration - validation", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const basemapLabel = page.locator(
     'label:has-text("Mapbox Background Map(s)")',
@@ -814,8 +826,9 @@ test("config page - basemap configuration - validation", async ({
 
 test("config page - basemap configuration - update name and style", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const basemapLabel = page.locator(
     'label:has-text("Mapbox Background Map(s)")',
@@ -853,6 +866,7 @@ test("config page - basemap configuration - update name and style", async ({
 
 test("config page - saves Mapbox config after the preview recovers", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
   const rejectedStyle = "mapbox://styles/test-user/rejected-style";
   const rejectedToken = "pk.eyRejectedToken";
@@ -885,7 +899,7 @@ test("config page - saves Mapbox config after the preview recovers", async ({
   await page.route("https://events.mapbox.com/**", async (route) => {
     await route.fulfill({ status: 204, body: "" });
   });
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const styleInput = page.locator('input[id*="basemap-style-0"]').first();
   const tokenInput = page
@@ -935,8 +949,9 @@ test("config page - saves Mapbox config after the preview recovers", async ({
 
 test("config page - color column configuration", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const colorColumnSelect = page.locator('select[id*="COLOR_COLUMN"]');
   const hasColorColumn = (await colorColumnSelect.count()) > 0;
@@ -956,11 +971,12 @@ test("config page - color column configuration", async ({
 
 test("config page - column controls use dataset metadata and reject conflicts", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const response = await page.request.get(
-    "/api/config/columns/bcmform_responses",
+    `/api/config/columns/${configMapView.primaryDataset}`,
   );
   expect(response.ok()).toBe(true);
   const body = (await response.json()) as {
@@ -987,7 +1003,7 @@ test("config page - column controls use dataset metadata and reject conflicts", 
   await expect(iconColumnSelect.locator('option[value="_id"]')).toHaveCount(0);
 
   const viewsResponse = await page.request.get(
-    "/api/views?primary_dataset=bcmform_responses",
+    `/api/views?primary_dataset=${configMapView.primaryDataset}`,
   );
   const views = (await viewsResponse.json()) as ViewConfigRow[];
   const mapView = views.find((view) => view.viewType === "map");
@@ -1009,10 +1025,9 @@ test("config page - column controls use dataset metadata and reject conflicts", 
 
 test("config page - copy config from another same-type view", async ({
   authenticatedPageAsAdmin: page,
+  configGalleryView,
 }) => {
-  // Seed has two gallery views (bcmform_responses, seed_survey_data). Edit the
-  // bcmform gallery so the copy modal has a same-type peer to pick from.
-  await openGalleryConfigEditPage(page);
+  await openGalleryConfigEditPage(page, configGalleryView.primaryDataset);
 
   const copyButton = page.locator("[data-testid='copy-config-button']");
   await expect(copyButton).toBeVisible({ timeout: 5000 });
@@ -1036,7 +1051,7 @@ test("config page - copy config from another same-type view", async ({
     true,
   );
 
-  await dropdown.selectOption({ index: 1 });
+  await dropdown.selectOption({ label: "seed_survey_data" });
   await expect(confirmButton).toBeEnabled();
 
   await confirmButton.click();
@@ -1048,8 +1063,9 @@ test("config page - copy config from another same-type view", async ({
 
 test("config page - copy config modal cancel closes modal", async ({
   authenticatedPageAsAdmin: page,
+  configGalleryView,
 }) => {
-  await openGalleryConfigEditPage(page);
+  await openGalleryConfigEditPage(page, configGalleryView.primaryDataset);
 
   const copyButton = page.locator("[data-testid='copy-config-button']");
   await copyButton.click();
@@ -1067,8 +1083,9 @@ test("config page - copy config modal cancel closes modal", async ({
 
 test("config page - basemap configuration - max 3 limit", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const basemapLabel = page.locator(
     'label:has-text("Mapbox Background Map(s)"), label:has-text("Basemap")',
@@ -1108,8 +1125,9 @@ test("config page - basemap configuration - max 3 limit", async ({
 
 test("config page - two basemaps save with distinct access tokens", async ({
   authenticatedPageAsAdmin: page,
+  configMapView,
 }) => {
-  await openMapConfigEditPage(page);
+  await openMapConfigEditPage(page, configMapView.primaryDataset);
 
   const addBasemapButton = page.locator("[data-testid='basemap-add-button']");
   await expect(addBasemapButton).toBeVisible();

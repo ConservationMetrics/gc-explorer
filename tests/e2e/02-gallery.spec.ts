@@ -13,7 +13,9 @@ test("gallery page - displays gallery with media files", async ({
   });
 
   // 3. Find a dataset card that has a "gallery" view tag
-  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const datasetCards = page.locator(
+    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+  );
   const cardCount = await datasetCards.count();
   expect(cardCount).toBeGreaterThan(0);
 
@@ -70,7 +72,9 @@ test("gallery page - displays gallery tiles with media", async ({
     timeout: 15000,
   });
 
-  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const datasetCards = page.locator(
+    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+  );
   let galleryCard = null;
   for (let i = 0; i < (await datasetCards.count()); i++) {
     const card = datasetCards.nth(i);
@@ -129,6 +133,11 @@ test("gallery page - displays gallery tiles with media", async ({
 test("gallery page - detail panel opens on tile click and closes", async ({
   authenticatedPageAsAdmin: page,
 }) => {
+  // The seeded Mapbox token is a placeholder, so provide the minimap image locally.
+  await page.route("https://api.mapbox.com/styles/v1/**/static/**", (route) =>
+    route.fulfill({ path: "public/gcexplorer.png", contentType: "image/png" }),
+  );
+
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
@@ -136,7 +145,9 @@ test("gallery page - detail panel opens on tile click and closes", async ({
     timeout: 15000,
   });
 
-  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const datasetCards = page.locator(
+    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+  );
   let galleryCard = null;
   for (let i = 0; i < (await datasetCards.count()); i++) {
     const card = datasetCards.nth(i);
@@ -164,13 +175,6 @@ test("gallery page - detail panel opens on tile click and closes", async ({
   await galleryItems.first().waitFor({ state: "visible", timeout: 15000 });
 
   const firstTile = galleryItems.first();
-  const hasMedia = (await firstTile.locator("img, audio, video").count()) > 0;
-  if (!hasMedia) {
-    console.log("First gallery tile has no media, skipping detail panel test");
-    test.skip();
-    return;
-  }
-
   await firstTile.click();
 
   const detailPanel = page.getByTestId("gallery-detail-panel");
@@ -221,7 +225,9 @@ test("gallery page - audio playback functionality", async ({
   });
 
   // Find dataset with gallery view
-  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const datasetCards = page.locator(
+    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+  );
   let galleryCard = null;
   for (let i = 0; i < (await datasetCards.count()); i++) {
     const card = datasetCards.nth(i);
@@ -331,7 +337,9 @@ test("gallery page - filter functionality", async ({
   });
 
   // Find dataset with gallery view
-  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const datasetCards = page.locator(
+    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+  );
   let galleryCard = null;
   for (let i = 0; i < (await datasetCards.count()); i++) {
     const card = datasetCards.nth(i);
@@ -431,7 +439,9 @@ test("gallery page - pagination and infinite scroll", async ({
   });
 
   // Find dataset with gallery view
-  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const datasetCards = page.locator(
+    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+  );
   let galleryCard = null;
   for (let i = 0; i < (await datasetCards.count()); i++) {
     const card = datasetCards.nth(i);
@@ -525,7 +535,9 @@ test("gallery page - responsive grid layout", async ({
   });
 
   // Find dataset with gallery view
-  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const datasetCards = page.locator(
+    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+  );
   let galleryCard = null;
   for (let i = 0; i < (await datasetCards.count()); i++) {
     const card = datasetCards.nth(i);
@@ -591,7 +603,9 @@ test("gallery page - error handling for unavailable gallery", async ({
   });
 
   // Find dataset with gallery view
-  const datasetCards = page.locator("[data-testid='dataset-card']");
+  const datasetCards = page.locator(
+    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+  );
   let galleryCard = null;
   for (let i = 0; i < (await datasetCards.count()); i++) {
     const card = datasetCards.nth(i);
