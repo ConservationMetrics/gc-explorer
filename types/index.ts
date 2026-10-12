@@ -487,3 +487,11 @@ export const MAP_FEATURE_ID_QUERY_KEYS = [
 ] as const;
 
 export type MapFeatureIdQueryKey = (typeof MAP_FEATURE_ID_QUERY_KEYS)[number];
+
+/** `GET /_info`. `tag` is empty outside image builds. `startedAt` is process boot. */
+export interface DeployInfo {
+  tag: string;
+  commit: string;
+  buildId: string;
+  startedAt: string;
+}

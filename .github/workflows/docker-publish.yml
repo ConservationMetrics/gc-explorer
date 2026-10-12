@@ -182,6 +182,9 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: true
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+            IMAGE_TAG=${{ steps.imgtag_date.outputs.DATE_FOR_IMGTAG }}-${{ github.run_number }}
           tags: |
             ${{ steps.meta.outputs.tags }}
             ${{ github.ref == 'refs/heads/main' && 'communityfirst/guardianconnector-explorer:latest' || '' }}
