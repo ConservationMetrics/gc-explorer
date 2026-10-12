@@ -142,6 +142,8 @@ test.describe("map feature link", () => {
       timeout: 15000,
     });
 
+    await page.waitForFunction(() => !window.getTestMap().isMoving());
+
     const camera = await page.evaluate(() => {
       const map = window.getTestMap();
       const center = map.getCenter();
