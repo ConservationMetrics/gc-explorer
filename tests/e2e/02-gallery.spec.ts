@@ -175,13 +175,6 @@ test("gallery page - detail panel opens on tile click and closes", async ({
   await galleryItems.first().waitFor({ state: "visible", timeout: 15000 });
 
   const firstTile = galleryItems.first();
-  const hasMedia = (await firstTile.locator("img, audio, video").count()) > 0;
-  if (!hasMedia) {
-    console.log("First gallery tile has no media, skipping detail panel test");
-    test.skip();
-    return;
-  }
-
   await firstTile.click();
 
   const detailPanel = page.getByTestId("gallery-detail-panel");
