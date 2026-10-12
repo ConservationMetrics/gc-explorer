@@ -4,7 +4,10 @@ import mapboxgl from "mapbox-gl";
 import { exposeTestMap } from "@/utils/e2eTestHooks";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useRoute, useRouter } from "vue-router";
-import { along, bbox, length, lineString } from "@turf/turf";
+import { along } from "@turf/along";
+import { bbox } from "@turf/bbox";
+import { lineString } from "@turf/helpers";
+import { length } from "@turf/length";
 
 import { getFilePathsWithExtension } from "@/utils";
 import {
