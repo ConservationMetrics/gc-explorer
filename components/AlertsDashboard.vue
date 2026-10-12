@@ -8,7 +8,7 @@ import mapboxgl from "mapbox-gl";
 import { exposeTestMap } from "@/utils/e2eTestHooks";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-import { bbox } from "@turf/turf";
+import { bbox } from "@turf/bbox";
 
 // @ts-expect-error - mapbox-gl-ruler-control does not have types
 import rulerControl from "mapbox-gl-ruler-control";
