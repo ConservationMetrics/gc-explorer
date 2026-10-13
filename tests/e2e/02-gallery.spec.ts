@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 
 test("gallery page - displays gallery with media files", async ({
@@ -60,70 +61,48 @@ test("gallery page - displays gallery with media files", async ({
 
 test("gallery page - displays gallery tiles with media", async ({
   authenticatedPageAsAdmin: page,
+  baseURL,
 }) => {
-  // 1. Navigate to index page
-  await page.goto("/");
-  await page.waitForLoadState("networkidle");
-
-  // 2. Find a dataset with gallery view and navigate to it
-  await page.waitForSelector("[data-testid='dataset-card']", {
-    timeout: 15000,
+  const mediaBaseURL = new URL("/test-media/", baseURL).href;
+  // The seed names media files but does not ship them. Serve a local image only
+  // on the configured app origin so a stale port in the seed still fails.
+  await page.route(`${mediaBaseURL}*.webp`, async (route) => {
+    await route.fulfill({
+      contentType: "image/jpeg",
+      path: fileURLToPath(
+        new URL("../../public/background.jpg", import.meta.url),
+      ),
+    });
   });
 
-  const datasetCards = page.locator("[data-testid='dataset-card']");
-  let galleryCard = null;
-  for (let i = 0; i < (await datasetCards.count()); i++) {
-    const card = datasetCards.nth(i);
-    const galleryTag = card.locator("[data-testid='view-tag-gallery']");
-    if ((await galleryTag.count()) > 0) {
-      galleryCard = card;
-      break;
-    }
-  }
+  // This seeded dataset has image tiles, unlike datasets with no media.
+  await page.goto("/gallery/seed_survey_data");
+  await expect(page.getByTestId("gallery-container")).toBeVisible();
 
-  if (!galleryCard) {
-    test.skip();
-    return;
-  }
-
-  // 3. Navigate to dataset page
-  const openProjectButton = galleryCard.locator(
-    "[data-testid='open-dataset-view-link']",
-  );
-  await openProjectButton.click();
-  await page.waitForURL(/\/gallery\/\w+/, { timeout: 15000 });
-  await page.waitForLoadState("networkidle");
-
-  // 5. Wait for gallery container and images to load
-  await page
-    .getByTestId("gallery-container")
-    .waitFor({ state: "attached", timeout: 10000 });
-
-  // 6. Wait for gallery items to render, then check if any images loaded successfully
   const galleryItems = page.locator('[data-testid^="gallery-item-"]');
-  await galleryItems.first().waitFor({ state: "visible", timeout: 15000 });
-  const itemCount = await galleryItems.count();
-  expect(itemCount).toBeGreaterThan(0);
+  await expect(galleryItems.nth(2)).toBeVisible();
 
-  // Give images time to load or error out
-  await page.waitForTimeout(5000);
-
-  const tileImages = page.locator(
-    '[data-testid^="gallery-item-"] img:not(.hidden)',
-  );
-  const imageFallbackCards = page.locator("div.border-red-500");
-  const noMediaTiles = page.locator('[data-testid="gallery-tile-no-media"]');
-
-  // 7. Gallery should show at least one rendered tile image, fallback card, or no-media placeholder.
-  await expect
-    .poll(
-      async () =>
-        (await tileImages.count()) +
-        (await imageFallbackCards.count()) +
-        (await noMediaTiles.count()),
-      { timeout: 10000 },
-    )
-    .toBeGreaterThan(0);
+  // Check several tiles, including lazy-loaded images as they enter the viewport.
+  for (let i = 0; i < 3; i++) {
+    const tile = galleryItems.nth(i);
+    await tile.scrollIntoViewIfNeeded();
+    // The seeded records put an audio clip before their image in the carousel.
+    await tile.getByTestId("gallery-carousel-next").click();
+    const image = tile.locator("img");
+    await expect(image).toBeVisible();
+    await expect(image).toHaveAttribute(
+      "src",
+      new RegExp(`^${mediaBaseURL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
+    );
+    await expect
+      .poll(() =>
+        image.evaluate(
+          (element: HTMLImageElement) =>
+            element.complete && element.naturalWidth > 0,
+        ),
+      )
+      .toBe(true);
+  }
 });
 
 test("gallery page - detail panel opens on tile click and closes", async ({
