@@ -91,10 +91,12 @@ test("gallery page - displays gallery tiles with media", async ({
     await tile.getByTestId("gallery-carousel-next").click();
     const image = tile.locator("img");
     await expect(image).toBeVisible();
-    await expect(image).toHaveAttribute(
-      "src",
-      new RegExp(`^${mediaBaseURL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
-    );
+    await expect
+      .poll(async () => {
+        const src = await image.getAttribute("src");
+        return src?.startsWith(mediaBaseURL) ?? false;
+      })
+      .toBe(true);
     await expect
       .poll(() =>
         image.evaluate(
