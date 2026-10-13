@@ -1,5 +1,5 @@
 import { fileURLToPath } from "node:url";
-import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
+import { test, expect } from "@/tests/e2e/fixtures/gallery-media";
 
 test("gallery page - displays gallery with media files", async ({
   authenticatedPageAsAdmin: page,
@@ -64,10 +64,10 @@ test("gallery page - displays gallery with media files", async ({
 test("gallery page - displays gallery tiles with media", async ({
   authenticatedPageAsAdmin: page,
   baseURL,
+  galleryMediaView,
 }) => {
   const mediaBaseURL = new URL("/test-media/", baseURL).href;
-  // The seed names media files but does not ship them. Serve a local image only
-  // on the configured app origin so a stale port in the seed still fails.
+  // Serve fixture images only on the configured app origin so a wrong URL fails.
   await page.route(`${mediaBaseURL}*.webp`, async (route) => {
     await route.fulfill({
       contentType: "image/jpeg",
@@ -77,18 +77,17 @@ test("gallery page - displays gallery tiles with media", async ({
     });
   });
 
-  // This seeded dataset has image tiles, unlike datasets with no media.
-  await page.goto("/gallery/seed_survey_data");
+  await page.goto(`/gallery/${galleryMediaView.primaryDataset}`);
   await expect(page.getByTestId("gallery-container")).toBeVisible();
 
   const galleryItems = page.locator('[data-testid^="gallery-item-"]');
-  await expect(galleryItems.nth(2)).toBeVisible();
+  await expect(galleryItems).toHaveCount(3);
 
   // Check several tiles, including lazy-loaded images as they enter the viewport.
   for (let i = 0; i < 3; i++) {
     const tile = galleryItems.nth(i);
     await tile.scrollIntoViewIfNeeded();
-    // The seeded records put an audio clip before their image in the carousel.
+    // The fixture records put an audio clip before their image in the carousel.
     await tile.getByTestId("gallery-carousel-next").click();
     const image = tile.locator("img");
     await expect(image).toBeVisible();

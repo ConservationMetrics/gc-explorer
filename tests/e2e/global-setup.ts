@@ -47,21 +47,6 @@ export default async function globalSetup() {
 
   try {
     await sql.unsafe(readFileSync(seedPath, "utf-8"));
-    // Keep fixture media on the same origin as the app, including port overrides.
-    const mediaBasePath = new URL("/test-media", TEST_BACKEND_URL).href;
-    await sql`
-      UPDATE views
-      SET view_config = jsonb_set(
-        view_config::jsonb,
-        '{MEDIA_BASE_PATH}',
-        to_jsonb(${mediaBasePath}::text)
-      )::text
-      WHERE (view_type, primary_dataset) IN (
-        ('gallery', 'seed_survey_data'),
-        ('gallery', 'bcmform_responses'),
-        ('map', 'bcmform_responses')
-      )
-    `;
   } finally {
     await sql.end({ timeout: 5 });
   }

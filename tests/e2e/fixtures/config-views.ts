@@ -48,15 +48,14 @@ export const test = authTest.extend<{
       await deleteApiTestView(view);
     }
   },
-  // eslint-disable-next-line no-empty-pattern -- Playwright requires a fixture dependency pattern.
-  configGalleryView: async ({}, use) => {
+  configGalleryView: async ({ baseURL }, use) => {
     const view = await createApiTestView({
       sourceTable: "seed_survey_data",
       viewType: "gallery",
       viewConfig: {
         FRONT_END_FILTER_COLUMN: "community",
         MEDIA_COLUMN: "photo",
-        MEDIA_BASE_PATH: "http://localhost:8080/test-media",
+        MEDIA_BASE_PATH: new URL("/test-media", baseURL).href,
         ROUTE_LEVEL_PERMISSION: "member",
       },
     });
