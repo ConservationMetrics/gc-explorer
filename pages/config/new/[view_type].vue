@@ -174,7 +174,7 @@ const submitConfig = async ({
 };
 
 useHead({
-  title: "GuardianConnector Explorer: " + t("addNewDatasetView"),
+  title: "Guardian Connector Explorer: " + t("addNewDatasetView"),
 });
 
 definePageMeta({ layout: "explorer" });

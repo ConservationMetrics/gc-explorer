@@ -207,7 +207,7 @@ const pageDisplayName = computed(() => viewName.value.trim() || dataset);
 useHead({
   title: computed(
     () =>
-      "GuardianConnector Explorer: " +
+      "Guardian Connector Explorer: " +
       t("configuration") +
       " - " +
       pageDisplayName.value,

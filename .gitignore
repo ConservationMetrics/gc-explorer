@@ -96,7 +96,7 @@ sw.*
 # Nuxt output
 .output/
 
-# GuardianConnector Explorer specific
+# Guardian Connector Explorer specific
 .env*
 !.env.example
 !.env.test.playwright.example

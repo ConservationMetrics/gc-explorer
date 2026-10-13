@@ -1,6 +1,6 @@
 # Explorer configuration
 
-The configuration for views in a _GuardianConnector Explorer_ deployment is done by setting config for database tables in the `/config` route.
+The configuration for views in a _Guardian Connector Explorer_ deployment is done by setting config for database tables in the `/config` route.
 
 ## Views Configuration Settings
 
