@@ -1,4 +1,5 @@
 import { handleCreateCollection } from "@/server/annotatedCollections/handlers";
+import type { User } from "@/types";
 import { validatePermissions } from "@/utils/accessControls";
 
 export default defineEventHandler(async (event) => {
@@ -8,7 +9,7 @@ export default defineEventHandler(async (event) => {
   // Add user info to the request body
   const body = await readBody(event);
   if (session.user) {
-    body.created_by = (session.user as { email: string }).email;
+    body.created_by = (session.user as User).auth0;
   }
 
   return await handleCreateCollection(event);
