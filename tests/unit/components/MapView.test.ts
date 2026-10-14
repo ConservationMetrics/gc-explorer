@@ -544,12 +544,24 @@ describe("MapView component", () => {
       await flushPromises();
 
       const download = wrapper.findComponent(DownloadMapData);
-      const exportButton =
-        download.findAll("button")[["csv", "geojson", "kml"].indexOf(format)];
+      const clickExportFormat = async () => {
+        if (format === "geojson") {
+          await download
+            .get('[data-testid="download-default"]')
+            .trigger("click");
+          return;
+        }
+        await download
+          .get('[data-testid="download-menu-trigger"]')
+          .trigger("click");
+        await download
+          .get(`[data-testid="download-${format}"]`)
+          .trigger("click");
+      };
       expect(
         (download.props("dataForDownload") as FeatureCollection).features,
       ).toHaveLength(1);
-      await exportButton.trigger("click");
+      await clickExportFormat();
       await flushPromises();
       expect(fetchExport).toHaveBeenLastCalledWith("/api/test_data/export", {
         params: {
@@ -566,7 +578,7 @@ describe("MapView component", () => {
       expect(
         (download.props("dataForDownload") as FeatureCollection).features,
       ).toHaveLength(3);
-      await exportButton.trigger("click");
+      await clickExportFormat();
       await flushPromises();
       expect(fetchExport).toHaveBeenLastCalledWith("/api/test_data/export", {
         params: {

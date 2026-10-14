@@ -27,7 +27,7 @@ const statistics: AlertsStatistics = {
   twelveMonthsBefore: "03-2023",
 };
 
-for (const [buttonIndex, format] of ["csv", "geojson", "kml"].entries()) {
+for (const format of ["csv", "geojson", "kml"] as const) {
   describe(`${format} alert locations export`, () => {
     it("sends the sidebar slider's selected months to the export endpoint", async () => {
       const fetchExport = vi.fn().mockResolvedValue(new Blob());
@@ -110,10 +110,19 @@ for (const [buttonIndex, format] of ["csv", "geojson", "kml"].entries()) {
             .props("dataForDownload") as AlertsData
         ).previousAlerts.features,
       ).toHaveLength(1);
-      const buttons = wrapper
-        .get('[data-testid="alerts-download-data"]')
-        .findAll("button");
-      await buttons[buttonIndex].trigger("click");
+      const downloads = wrapper.get('[data-testid="alerts-download-data"]');
+      if (format === "geojson") {
+        await downloads
+          .get('[data-testid="download-default"]')
+          .trigger("click");
+      } else {
+        await downloads
+          .get('[data-testid="download-menu-trigger"]')
+          .trigger("click");
+        await downloads
+          .get(`[data-testid="download-${format}"]`)
+          .trigger("click");
+      }
       await flushPromises();
       expect(fetchExport).toHaveBeenLastCalledWith("/api/test_data/export", {
         params: {
