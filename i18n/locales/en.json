@@ -304,7 +304,7 @@
   "save": "Save",
   "searchDatasetViews": "Search dataset views...",
   "secondaryData": "Secondary data",
-  "secondaryDatasetDescription": "Load a second dataset alongside the primary dataset to give this view more context. Right now it appears on the Alerts Dashboard map.",
+  "secondaryDatasetDescription": "Load a second dataset alongside the primary dataset to give this view more context. It appears in both Map and Alerts views.",
   "secondaryDatasetLabel": "Secondary dataset",
   "secondaryDatasetOptional": "Secondary dataset",
   "secondaryFilterValues": "Values to include from the secondary dataset on the alerts map",

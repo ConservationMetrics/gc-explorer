@@ -300,7 +300,7 @@
   "save": "Guardar",
   "searchDatasetViews": "Buscar vistas de conjuntos de datos...",
   "secondaryData": "Datos secundarios",
-  "secondaryDatasetDescription": "Cargue un segundo conjunto de datos junto al conjunto de datos principal para dar más contexto a esta vista. Por ahora aparece en el mapa del Panel de alertas.",
+  "secondaryDatasetDescription": "Cargue un segundo conjunto de datos junto al conjunto de datos principal para dar más contexto a esta vista. Aparece en las vistas de Mapa y Alertas.",
   "secondaryDatasetLabel": "Conjunto de datos secundario",
   "secondaryDatasetOptional": "Conjunto de datos secundario",
   "secondaryFilterValues": "Valores del conjunto de datos secundario que se incluirán en el mapa de alertas",

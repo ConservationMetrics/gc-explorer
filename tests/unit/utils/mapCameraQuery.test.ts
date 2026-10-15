@@ -195,38 +195,41 @@ describe("attachMapCameraQuerySync", () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it("does not restore a closed feature id when the camera stops moving", () => {
-    let moveEnd: (() => void) | undefined;
-    const map = {
-      on: (event: string, callback: () => void) => {
-        if (event === "moveend") {
-          moveEnd = callback;
-        }
-      },
-      getCenter: () => ({ lat: -3.12, lng: -60.02 }),
-      getZoom: () => 11.5,
-    };
-    const route = { query: { featureId: "rec-1" } };
-    let writtenQuery: Record<string, string | undefined> | undefined;
-    const router = {
-      replace: vi.fn(
-        (location: { query: Record<string, string | undefined> }) => {
-          writtenQuery = location.query;
+  it.each(["featureId", "secondaryDocId"])(
+    "does not restore closed %s when the camera stops moving",
+    (selectionKey) => {
+      let moveEnd: (() => void) | undefined;
+      const map = {
+        on: (event: string, callback: () => void) => {
+          if (event === "moveend") {
+            moveEnd = callback;
+          }
         },
-      ),
-    };
+        getCenter: () => ({ lat: -3.12, lng: -60.02 }),
+        getZoom: () => 11.5,
+      };
+      const route = { query: { [selectionKey]: "rec-1" } };
+      let writtenQuery: Record<string, string | undefined> | undefined;
+      const router = {
+        replace: vi.fn(
+          (location: { query: Record<string, string | undefined> }) => {
+            writtenQuery = location.query;
+          },
+        ),
+      };
 
-    attachMapCameraQuerySync(
-      map as never,
-      route as never,
-      router as never,
-      () => false,
-    );
-    moveEnd?.();
+      attachMapCameraQuerySync(
+        map as never,
+        route as never,
+        router as never,
+        () => false,
+      );
+      moveEnd?.();
 
-    expect(router.replace).toHaveBeenCalledOnce();
-    expect(stringifyQuery(writtenQuery)).toBe(
-      "lat=-3.12000&lng=-60.02000&zoom=11.50",
-    );
-  });
+      expect(router.replace).toHaveBeenCalledOnce();
+      expect(stringifyQuery(writtenQuery)).toBe(
+        "lat=-3.12000&lng=-60.02000&zoom=11.50",
+      );
+    },
+  );
 });
