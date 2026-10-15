@@ -79,7 +79,7 @@ describe("DownloadMapData component", () => {
       expect(wrapper.exists()).toBe(true);
     });
 
-    it("should render three download buttons", () => {
+    it("shows GeoJSON as the default download and hides alternate formats", () => {
       const wrapper = mount(DownloadMapData, {
         props: {
           dataForDownload: simpleFeatureCollection,
@@ -87,11 +87,15 @@ describe("DownloadMapData component", () => {
         global: globalConfig,
       });
 
-      const buttons = wrapper.findAll("button");
-      expect(buttons.length).toBe(3);
+      expect(wrapper.get('[data-testid="download-default"]').text()).toContain(
+        "downloadGeoJSON",
+      );
+      expect(wrapper.find('[data-testid="download-menu"]').exists()).toBe(
+        false,
+      );
     });
 
-    it("should render CSV download button with correct text", () => {
+    it("shows CSV and KML in the format menu", async () => {
       const wrapper = mount(DownloadMapData, {
         props: {
           dataForDownload: simpleFeatureCollection,
@@ -99,32 +103,33 @@ describe("DownloadMapData component", () => {
         global: globalConfig,
       });
 
-      const buttons = wrapper.findAll("button");
-      expect(buttons[0].text()).toContain("downloadCSV");
+      await wrapper
+        .get('[data-testid="download-menu-trigger"]')
+        .trigger("click");
+
+      const menu = wrapper.get('[data-testid="download-menu"]');
+      const items = menu.findAll("button");
+      expect(items).toHaveLength(2);
+      expect(items[0].text()).toContain("downloadCSV");
+      expect(items[1].text()).toContain("downloadKML");
     });
 
-    it("should render GeoJSON download button with correct text", () => {
+    it("opens the format menu upward when requested", async () => {
       const wrapper = mount(DownloadMapData, {
         props: {
           dataForDownload: simpleFeatureCollection,
+          menuPlacement: "top",
         },
         global: globalConfig,
       });
 
-      const buttons = wrapper.findAll("button");
-      expect(buttons[1].text()).toContain("downloadGeoJSON");
-    });
+      await wrapper
+        .get('[data-testid="download-menu-trigger"]')
+        .trigger("click");
 
-    it("should render KML download button with correct text", () => {
-      const wrapper = mount(DownloadMapData, {
-        props: {
-          dataForDownload: simpleFeatureCollection,
-        },
-        global: globalConfig,
-      });
-
-      const buttons = wrapper.findAll("button");
-      expect(buttons[2].text()).toContain("downloadKML");
+      expect(wrapper.get('[data-testid="download-menu"]').classes()).toContain(
+        "bottom-full",
+      );
     });
   });
 
@@ -158,12 +163,10 @@ describe("DownloadMapData component", () => {
         global: globalConfig,
       });
 
-      const buttons = wrapper.findAll("button");
-      buttons.forEach((button) => {
-        expect(button.classes()).toContain("bg-blue-500");
-        expect(button.classes()).toContain("text-white");
-        expect(button.classes()).toContain("hover:bg-blue-600");
-      });
+      const defaultButton = wrapper.get('[data-testid="download-default"]');
+      expect(defaultButton.classes()).toContain("bg-blue-500");
+      expect(defaultButton.classes()).toContain("text-white");
+      expect(defaultButton.classes()).toContain("hover:bg-blue-600");
     });
 
     it("should render outline buttons when variant is outline", () => {
@@ -175,12 +178,10 @@ describe("DownloadMapData component", () => {
         global: globalConfig,
       });
 
-      const buttons = wrapper.findAll("button");
-      buttons.forEach((button) => {
-        expect(button.classes()).toContain("border-blue-500");
-        expect(button.classes()).toContain("bg-white");
-        expect(button.classes()).not.toContain("bg-blue-500");
-      });
+      const defaultButton = wrapper.get('[data-testid="download-default"]');
+      expect(defaultButton.classes()).toContain("border-blue-500");
+      expect(defaultButton.classes()).toContain("bg-white");
+      expect(defaultButton.classes()).not.toContain("bg-blue-500");
     });
   });
 
@@ -193,6 +194,22 @@ describe("DownloadMapData component", () => {
       global.URL.revokeObjectURL = vi.fn();
     });
 
+    it("downloads GeoJSON from the primary action", async () => {
+      const wrapper = mount(DownloadMapData, {
+        props: {
+          dataForDownload: simpleFeatureCollection,
+        },
+        global: globalConfig,
+      });
+
+      await wrapper.get('[data-testid="download-default"]').trigger("click");
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/test_data/export",
+        expect.objectContaining({ params: { format: "geojson" } }),
+      );
+    });
+
     it("calls export endpoint with filterColumn and filterValues when provided", async () => {
       const wrapper = mount(DownloadMapData, {
         props: {
@@ -203,9 +220,16 @@ describe("DownloadMapData component", () => {
         global: globalConfig,
       });
 
-      const csvButton = wrapper.findAll("button")[0];
+      await wrapper
+        .get('[data-testid="download-menu-trigger"]')
+        .trigger("click");
+      const csvButton = wrapper.get('[data-testid="download-csv"]');
       await csvButton.trigger("click");
       await wrapper.vm.$nextTick();
+
+      expect(wrapper.find('[data-testid="download-menu"]').exists()).toBe(
+        false,
+      );
 
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/test_data/export",
@@ -232,7 +256,10 @@ describe("DownloadMapData component", () => {
         global: globalConfig,
       });
 
-      const csvButton = wrapper.findAll("button")[0];
+      await wrapper
+        .get('[data-testid="download-menu-trigger"]')
+        .trigger("click");
+      const csvButton = wrapper.get('[data-testid="download-csv"]');
       await csvButton.trigger("click");
       await wrapper.vm.$nextTick();
 
@@ -261,7 +288,10 @@ describe("DownloadMapData component", () => {
         global: globalConfig,
       });
 
-      const csvButton = wrapper.findAll("button")[0];
+      await wrapper
+        .get('[data-testid="download-menu-trigger"]')
+        .trigger("click");
+      const csvButton = wrapper.get('[data-testid="download-csv"]');
       await csvButton.trigger("click");
       await wrapper.vm.$nextTick();
 

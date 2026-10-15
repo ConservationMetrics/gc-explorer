@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-expect-error - tokml does not have types
 import tokml from "tokml";
-import { FileSpreadsheet, Globe, Map } from "lucide-vue-next";
+import { ChevronDown, FileSpreadsheet, Globe, Map } from "lucide-vue-next";
 
 import type { Feature, FeatureCollection } from "geojson";
 import type { AlertsData } from "@/types";
@@ -20,31 +20,43 @@ const props = defineProps<{
   exportMaxDate?: string;
   exportTimestampColumn?: string;
   filenamePrefix?: string;
+  menuPlacement?: "top" | "bottom";
   variant?: "primary" | "outline" | "violet" | "outline-violet";
 }>();
 
-const spatialFormats = [
+const defaultSpatialFormat = {
+  format: "geojson" as const,
+  labelKey: "downloadGeoJSON",
+  icon: Map,
+};
+
+const alternateSpatialFormats = [
   { format: "csv" as const, labelKey: "downloadCSV", icon: FileSpreadsheet },
-  { format: "geojson" as const, labelKey: "downloadGeoJSON", icon: Map },
   { format: "kml" as const, labelKey: "downloadKML", icon: Globe },
 ];
 
-const buttonClass = computed(() => {
-  const base =
-    "inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 shadow-sm hover:shadow-md active:scale-[0.98]";
+const buttonAppearanceClass = computed(() => {
   if (props.variant === "outline") {
-    return `${base} border border-blue-500 bg-white text-blue-600 hover:bg-blue-50`;
+    return "border border-blue-500 bg-white text-blue-600 hover:bg-blue-50";
   }
   if (props.variant === "outline-violet") {
-    return `${base} border border-violet-300 bg-white text-violet-700 hover:bg-violet-50 focus-visible:ring-violet-500`;
+    return "border border-violet-300 bg-white text-violet-700 hover:bg-violet-50 focus-visible:ring-violet-500";
   }
   if (props.variant === "violet") {
-    return `${base} bg-violet-700 text-white hover:bg-violet-800 focus-visible:ring-violet-500`;
+    return "border border-violet-700 bg-violet-700 text-white hover:bg-violet-800 focus-visible:ring-violet-500";
   }
-  return `${base} bg-blue-500 text-white hover:bg-blue-600`;
+  return "border border-blue-500 bg-blue-500 text-white hover:bg-blue-600";
+});
+
+const buttonClass = computed(() => {
+  const base =
+    "inline-flex h-10 items-center justify-center gap-1.5 text-sm font-medium transition-colors focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 shadow-sm hover:shadow-md active:scale-[0.98]";
+  return `${base} ${buttonAppearanceClass.value}`;
 });
 
 const exportingFormat = ref<string | null>(null);
+const downloadMenuOpen = ref(false);
+const downloadMenu = ref<HTMLDivElement>();
 
 const { t } = useI18n();
 const { warning: showWarningToast } = useToast();
@@ -284,28 +296,89 @@ const downloadSpatialFormat = (format: "csv" | "geojson" | "kml") => {
   }
   downloadAlertKML();
 };
+
+const downloadAlternateFormat = (format: "csv" | "kml") => {
+  downloadMenuOpen.value = false;
+  downloadSpatialFormat(format);
+};
+
+const closeMenuOnFocusOut = (event: FocusEvent) => {
+  const nextTarget = event.relatedTarget;
+  if (nextTarget instanceof Node && downloadMenu.value?.contains(nextTarget)) {
+    return;
+  }
+  downloadMenuOpen.value = false;
+};
 </script>
 
 <template>
-  <div class="flex flex-wrap gap-2 justify-center mt-6">
-    <button
-      v-for="spatialFormat in spatialFormats"
-      :key="spatialFormat.format"
-      :class="buttonClass"
-      :disabled="!!exportingFormat"
-      type="button"
-      @click="downloadSpatialFormat(spatialFormat.format)"
+  <div class="flex justify-center mt-6">
+    <div
+      ref="downloadMenu"
+      class="relative inline-flex"
+      @focusout="closeMenuOnFocusOut"
+      @keydown.esc="downloadMenuOpen = false"
     >
-      <component
-        :is="spatialFormat.icon"
-        class="h-4 w-4 shrink-0"
-        aria-hidden="true"
-      />
-      {{
-        exportingFormat === spatialFormat.format
-          ? $t("downloading")
-          : $t(spatialFormat.labelKey)
-      }}
-    </button>
+      <button
+        data-testid="download-default"
+        :class="`${buttonClass} rounded-l-md px-4 py-2`"
+        :disabled="!!exportingFormat"
+        type="button"
+        @click="downloadSpatialFormat(defaultSpatialFormat.format)"
+      >
+        <component
+          :is="defaultSpatialFormat.icon"
+          class="h-4 w-4 shrink-0"
+          aria-hidden="true"
+        />
+        {{
+          exportingFormat
+            ? $t("downloading")
+            : $t(defaultSpatialFormat.labelKey)
+        }}
+      </button>
+      <button
+        data-testid="download-menu-trigger"
+        :class="`${buttonClass} -ml-px rounded-r-md px-3 py-2`"
+        :disabled="!!exportingFormat"
+        type="button"
+        :aria-expanded="downloadMenuOpen"
+        aria-controls="download-format-menu"
+        :aria-label="$t('downloadData')"
+        @click="downloadMenuOpen = !downloadMenuOpen"
+      >
+        <ChevronDown
+          class="h-4 w-4 transition-transform"
+          :class="{ 'rotate-180': downloadMenuOpen }"
+          aria-hidden="true"
+        />
+      </button>
+
+      <div
+        v-if="downloadMenuOpen"
+        id="download-format-menu"
+        data-testid="download-menu"
+        class="absolute right-0 z-20 min-w-full overflow-hidden rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+        :class="
+          props.menuPlacement === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
+        "
+      >
+        <button
+          v-for="spatialFormat in alternateSpatialFormats"
+          :key="spatialFormat.format"
+          :data-testid="`download-${spatialFormat.format}`"
+          class="flex w-full items-center gap-2 whitespace-nowrap px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+          type="button"
+          @click="downloadAlternateFormat(spatialFormat.format)"
+        >
+          <component
+            :is="spatialFormat.icon"
+            class="h-4 w-4 shrink-0"
+            aria-hidden="true"
+          />
+          {{ $t(spatialFormat.labelKey) }}
+        </button>
+      </div>
+    </div>
   </div>
 </template>

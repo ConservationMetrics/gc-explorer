@@ -13,8 +13,7 @@ const projectRoot = resolve(__dirname, "../..");
 
 config({ path: resolve(projectRoot, ".env.test.playwright") });
 
-// Must match docker-compose.tests.yml (database service + guardianconnector DB).
-const TEST_BACKEND_URL = "http://localhost:8080";
+const TEST_BACKEND_URL = process.env.E2E_BASE_URL || "http://localhost:8080";
 async function waitForBackend(timeoutMs = 120_000) {
   const deadline = Date.now() + timeoutMs;
 

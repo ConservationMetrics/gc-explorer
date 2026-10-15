@@ -108,7 +108,7 @@ describe("incidents and collections endpoint auth", () => {
     vi.clearAllMocks();
     hoisted.validatePermissions.mockResolvedValue(undefined);
     hoisted.getUserSession.mockResolvedValue({
-      user: { auth0: "auth0|1", email: "member@example.com" },
+      user: { auth0: "member@example.com" },
     });
     hoisted.readBody.mockResolvedValue({ name: "Test incident" });
     hoisted.handleListCollections.mockResolvedValue({
@@ -169,5 +169,23 @@ describe("incidents and collections endpoint auth", () => {
       event,
       "incident",
     );
+  });
+
+  it("attributes a new collection to the authenticated user", async () => {
+    const body = { name: "Test collection" };
+    hoisted.readBody.mockResolvedValue(body);
+
+    await handleCollectionsCreate({});
+
+    expect(body).toMatchObject({ created_by: "member@example.com" });
+  });
+
+  it("attributes new collection entries to the authenticated user", async () => {
+    const body = { entries: [] };
+    hoisted.readBody.mockResolvedValue(body);
+
+    await handleCollectionsEntries({});
+
+    expect(body).toMatchObject({ added_by: "member@example.com" });
   });
 });

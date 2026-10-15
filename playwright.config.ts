@@ -12,6 +12,7 @@ config({ path: resolve(__dirname, ".env.test.playwright") });
 assertValidNuxtTestEnv();
 
 const useExternalServer = isNuxtTestEnv() || Boolean(process.env.CI);
+const baseURL = process.env.E2E_BASE_URL || "http://localhost:8080";
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -21,7 +22,7 @@ export default defineConfig({
     : {
         webServer: {
           command: "pnpm dev",
-          url: "http://localhost:8080",
+          url: baseURL,
           timeout: 200_000,
           reuseExistingServer: false,
           // Server logs (including middleware console.log) will appear in test output
@@ -40,14 +41,14 @@ export default defineConfig({
       name: "chromium",
       use: {
         ...devices["Desktop Chrome"],
-        baseURL: "http://localhost:8080",
+        baseURL,
         headless: true,
       },
       dependencies: ["setup"],
     },
   ],
   use: {
-    baseURL: "http://localhost:8080",
+    baseURL,
     headless: true,
   },
 });

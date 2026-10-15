@@ -39,6 +39,28 @@ const mountViewInfo = (views: string[] = ["alerts"]) =>
   });
 
 describe("ConfigViewInfo", () => {
+  it("leaves description paste to the browser without replacing existing text", async () => {
+    const wrapper = mountViewInfo();
+    const description = wrapper.get<HTMLTextAreaElement>(
+      "#test_table-VIEW_DESCRIPTION",
+    );
+    const paste = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(paste, "clipboardData", {
+      value: { getData: () => "https://example.test" },
+    });
+
+    description.element.dispatchEvent(paste);
+
+    expect(paste.defaultPrevented).toBe(false);
+    expect(description.element.value).toBe("Test description");
+    expect(wrapper.emitted("updateConfig")).toBeUndefined();
+
+    await description.setValue("Test description https://example.test");
+    expect(wrapper.emitted("updateConfig")?.[0]?.[0]).toEqual({
+      VIEW_DESCRIPTION: "Test description https://example.test",
+    });
+  });
+
   it("renders display name, description, header image, and logo in order", () => {
     const wrapper = mountViewInfo();
 

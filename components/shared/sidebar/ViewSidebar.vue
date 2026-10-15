@@ -303,6 +303,7 @@ onBeforeUnmount(() => {
               :export-record-id="exportRecordId"
               :export-table-name="exportTableName"
               :filename-prefix="exportRecordId"
+              menu-placement="top"
               variant="violet"
             />
           </div>

@@ -51,6 +51,8 @@ Enable a 3D terrain layer in the Mapbox map.
 
 A comma-separated list of Mapbox layer ids to be rendered in an optional map legend component. In the component, the layer `type` and `color` will be used to set the legend symbol style (currently supported: fill, line, circle), and the layer `id` will be set as the legend description. Note that we are currently only supporting adding layers to the legend where the color is directly set and not across zoom / data range or with data conditions.
 
+Map View automatically includes a legend toggle for a nonempty primary dataset, even when `MAP_LEGEND_LAYER_IDS` is unset. It controls all primary geometry layers and retains visibility after basemap and icon changes. Use `MAP_LEGEND_LAYER_IDS` to add basemap or style layers.
+
 #### `PLANET_API_KEY` (optional)
 
 Provide a Planet API key to enable the option to use Planet basemaps as a style option in the basemap selector menu.
