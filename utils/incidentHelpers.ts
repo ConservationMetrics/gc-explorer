@@ -1,4 +1,4 @@
-import { bbox } from "@turf/turf";
+import { bbox } from "@turf/bbox";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type {
   AnnotatedCollection,

@@ -1,6 +1,24 @@
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import { navigateToAlertsDashboard } from "./helpers/navigateToAlertsDashboard";
 import { waitForTestMap } from "./helpers/testMap";
+import { createApiTestView, deleteApiTestView } from "./helpers/apiTestData";
+
+test("alerts navigation ignores temporary API test views", async ({
+  authenticatedPageAsAdmin: page,
+}) => {
+  const temporaryView = await createApiTestView({
+    sourceTable: "seed_survey_data",
+    viewType: "alerts",
+    viewConfig: { ROUTE_LEVEL_PERMISSION: "member" },
+  });
+
+  try {
+    await navigateToAlertsDashboard(page);
+    await expect(page).toHaveURL(/\/alerts\/fake_alerts(?:\?|$)/);
+  } finally {
+    await deleteApiTestView(temporaryView);
+  }
+});
 
 test("alerts dashboard - camera query params restore the map view", async ({
   authenticatedPageAsAdmin: page,

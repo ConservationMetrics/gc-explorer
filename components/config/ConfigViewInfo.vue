@@ -151,23 +151,6 @@ const emit = defineEmits(["updateConfig"]);
                 });
               }
             "
-            @paste="
-              (e) => {
-                e.preventDefault();
-                const clipboardData = e.clipboardData;
-                const pastedText = clipboardData
-                  ? clipboardData.getData('text')
-                  : '';
-                const trimmedValue = pastedText.substring(
-                  0,
-                  CONFIG_LIMITS.VIEW_DESCRIPTION,
-                );
-                (e.target as HTMLTextAreaElement).value = trimmedValue;
-                emit('updateConfig', {
-                  [key]: trimmedValue,
-                });
-              }
-            "
           ></textarea>
           <p class="text-gray-500 text-sm">
             {{ $t("viewDescriptionDescription") }}
