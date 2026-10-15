@@ -18,9 +18,13 @@ import { useCopyMapLocation } from "@/composables/map/useCopyLink";
 import {
   changeMapStyle,
   applyTerrain,
+  buildIconImageExpression,
+  isSvgIconFilename,
   loadMapIcon,
+  mapIconImageId,
   prepareMapLegendLayers,
   prepareCoordinatesForSelectedFeature,
+  SVG_MAP_ICON_SCALE,
   toggleLayerVisibility as utilsToggleLayerVisibility,
   resolveTerrainExaggeration,
 } from "@/utils/mapGLHelpers";
@@ -265,11 +269,8 @@ const addDataToMap = () => {
 
   // Add a layer for Point features if present
   if (hasPointFeatures && !map.value.getLayer("data-layer-point")) {
-    // Determine if we should use icons based on config and toggle state
-    const useIcons =
-      showIcons.value && props.iconColumn && props.mediaBasePathIcons;
-
-    if (useIcons) {
+    const iconColumn = props.iconColumn;
+    if (showIcons.value && iconColumn && props.mediaBasePathIcons) {
       map.value.addLayer({
         id: "data-layer-point-halo",
         type: "circle",
@@ -301,13 +302,13 @@ const addDataToMap = () => {
         source: "data-source",
         filter: ["==", "$type", "Point"],
         layout: {
-          "icon-image": ["concat", "icon-", ["get", props.iconColumn]],
+          "icon-image": buildIconImageExpression(iconColumn, props.colorColumn),
           "icon-size": [
             "case",
-            ["==", ["slice", ["get", props.iconColumn], -4], ".png"],
+            ["==", ["slice", ["get", iconColumn], -4], ".png"],
             1.0, // default size if neither .png nor .svg,
-            ["==", ["slice", ["get", props.iconColumn], -4], ".svg"],
-            0.2,
+            ["==", ["slice", ["get", iconColumn], -4], ".svg"],
+            SVG_MAP_ICON_SCALE,
             1.0,
           ],
           "icon-allow-overlap": true,
@@ -460,20 +461,27 @@ const addDataToMap = () => {
 
 /** Load icon images when using icon mode */
 const loadIconImages = async () => {
-  if (!props.iconColumn || !props.mediaBasePathIcons || !map.value) return;
+  const iconColumn = props.iconColumn;
+  if (!iconColumn || !props.mediaBasePathIcons || !map.value) return;
 
-  // Get unique icon filenames from data
-  const iconFilenames = new Set<string>();
-  filteredFeatureCollection.value.features.forEach((feature) => {
-    const iconFilename = feature.properties?.[props.iconColumn!];
-    if (iconFilename && typeof iconFilename === "string") {
-      iconFilenames.add(iconFilename);
-    }
-  });
+  // One image per filename, plus one per color when an SVG needs a border.
+  const jobs = new Map<string, { filename: string; borderColor?: string }>();
+  for (const feature of filteredFeatureCollection.value.features) {
+    const filename = feature.properties?.[iconColumn];
+    if (typeof filename !== "string" || !filename) continue;
 
-  // Load each unique icon
-  for (const filename of iconFilenames) {
-    const iconId = `icon-${filename}`;
+    const rawColor = props.colorColumn
+      ? feature.properties?.[props.colorColumn]
+      : undefined;
+    const borderColor =
+      isSvgIconFilename(filename) && typeof rawColor === "string" && rawColor
+        ? rawColor
+        : undefined;
+    const iconId = mapIconImageId(filename, borderColor);
+    if (!jobs.has(iconId)) jobs.set(iconId, { filename, borderColor });
+  }
+
+  for (const [iconId, { filename, borderColor }] of jobs) {
     if (map.value.hasImage(iconId)) continue;
 
     try {
@@ -482,7 +490,8 @@ const loadIconImages = async () => {
       const iconUrl = `/api/proxy-icon?url=${encodeURIComponent(originalUrl)}`;
       const image = await loadMapIcon(
         iconUrl,
-        filename.toLowerCase().endsWith(".svg"),
+        isSvgIconFilename(filename),
+        borderColor ? { borderColor } : undefined,
       );
       // Re-check before adding in case a concurrent toggle already loaded it
       if (!map.value.hasImage(iconId)) {

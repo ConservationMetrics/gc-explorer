@@ -18,8 +18,24 @@ import * as mapboxMock from "@/tests/unit/helpers/mapboxMock";
 import MapView from "@/components/MapView.vue";
 import DownloadMapData from "@/components/shared/downloads/DownloadMapData.vue";
 import { useRoute, useI18n, useToast } from "#imports";
+import {
+  buildIconImageExpression,
+  SVG_MAP_ICON_SCALE,
+} from "@/utils/mapGLHelpers";
 
 import type { FeatureCollection } from "geojson";
+
+const { loadMapIconMock } = vi.hoisted(() => ({
+  loadMapIconMock: vi.fn(),
+}));
+
+vi.mock("@/utils/mapGLHelpers", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/utils/mapGLHelpers")>();
+  return {
+    ...actual,
+    loadMapIcon: loadMapIconMock,
+  };
+});
 
 vi.mock("@/utils/browserDownload", () => ({
   triggerBrowserDownload: vi.fn(),
@@ -172,6 +188,7 @@ describe("MapView component", () => {
       geocoordinates: "[0, 0]",
     });
     document.body.innerHTML = '<div id="map"></div>';
+    loadMapIconMock.mockReset();
   });
 
   it.each([
@@ -1554,5 +1571,133 @@ describe("MapView component", () => {
     await flushPromises();
 
     expect(vm.showIcons).toBe(true);
+  });
+
+  it("borders each SVG color and leaves raster icons unbordered", async () => {
+    loadMapIconMock.mockResolvedValue({ width: 1, height: 1 });
+    const wrapper = mount(MapView, {
+      props: {
+        ...baseProps,
+        iconColumn: "icon",
+        colorColumn: "color",
+        mediaBasePathIcons: "https://example.com/icons",
+        mapData: makeFeatureCollection([
+          {
+            id: 1,
+            type: "Point",
+            coordinates: [0, 0],
+            properties: { _id: "1", icon: "tree.svg", color: "#112233" },
+          },
+          {
+            id: 2,
+            type: "Point",
+            coordinates: [1, 1],
+            properties: { _id: "2", icon: "tree.svg", color: "#112233" },
+          },
+          {
+            id: 3,
+            type: "Point",
+            coordinates: [2, 2],
+            properties: { _id: "3", icon: "tree.svg", color: "#abcdef" },
+          },
+          {
+            id: 4,
+            type: "Point",
+            coordinates: [3, 3],
+            properties: { _id: "4", icon: "marker.png", color: "#112233" },
+          },
+        ]),
+      },
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+    await wrapper
+      .findComponent({ name: "ViewSidebar" })
+      .vm.$emit("toggle-icons");
+    await flushPromises();
+
+    const svgUrl = `/api/proxy-icon?url=${encodeURIComponent("https://example.com/icons/tree.svg")}`;
+    const pngUrl = `/api/proxy-icon?url=${encodeURIComponent("https://example.com/icons/marker.png")}`;
+    expect(loadMapIconMock).toHaveBeenCalledTimes(3);
+    expect(loadMapIconMock).toHaveBeenCalledWith(svgUrl, true, {
+      borderColor: "#112233",
+    });
+    expect(loadMapIconMock).toHaveBeenCalledWith(svgUrl, true, {
+      borderColor: "#abcdef",
+    });
+    expect(loadMapIconMock).toHaveBeenCalledWith(pngUrl, false, undefined);
+    expect(mapboxMock.mockMap.addImage).toHaveBeenCalledWith(
+      "icon-tree.svg-#112233",
+      expect.anything(),
+    );
+    expect(mapboxMock.mockMap.addImage).toHaveBeenCalledWith(
+      "icon-tree.svg-#abcdef",
+      expect.anything(),
+    );
+    expect(mapboxMock.mockMap.addImage).toHaveBeenCalledWith(
+      "icon-marker.png",
+      expect.anything(),
+    );
+
+    const symbolLayer = mapboxMock.mockMap.addLayer.mock.calls.find(
+      (call: unknown[]) =>
+        (call[0] as { id: string; type: string }).id === "data-layer-point" &&
+        (call[0] as { type: string }).type === "symbol",
+    );
+    const layout = (symbolLayer?.[0] as { layout: Record<string, unknown> })
+      .layout;
+    expect(layout["icon-image"]).toEqual(
+      buildIconImageExpression("icon", "color"),
+    );
+    expect(layout["icon-size"]).toContain(SVG_MAP_ICON_SCALE);
+  });
+
+  it("gives SVG icons a white disc and no border when colorColumn is unset", async () => {
+    loadMapIconMock.mockResolvedValue({ width: 1, height: 1 });
+    const wrapper = mount(MapView, {
+      props: {
+        ...baseProps,
+        iconColumn: "icon",
+        mediaBasePathIcons: "https://example.com/icons",
+        mapData: makeFeatureCollection([
+          {
+            id: 1,
+            type: "Point",
+            coordinates: [0, 0],
+            properties: { _id: "1", icon: "tree.svg", color: "#112233" },
+          },
+        ]),
+      },
+      global: globalConfig,
+    });
+
+    mapboxMock.fireLoad();
+    await flushPromises();
+    await wrapper
+      .findComponent({ name: "ViewSidebar" })
+      .vm.$emit("toggle-icons");
+    await flushPromises();
+
+    expect(loadMapIconMock).toHaveBeenCalledTimes(1);
+    expect(loadMapIconMock).toHaveBeenCalledWith(
+      `/api/proxy-icon?url=${encodeURIComponent("https://example.com/icons/tree.svg")}`,
+      true,
+      undefined,
+    );
+    expect(mapboxMock.mockMap.addImage).toHaveBeenCalledWith(
+      "icon-tree.svg",
+      expect.anything(),
+    );
+
+    const symbolLayer = mapboxMock.mockMap.addLayer.mock.calls.find(
+      (call: unknown[]) =>
+        (call[0] as { id: string; type: string }).id === "data-layer-point" &&
+        (call[0] as { type: string }).type === "symbol",
+    );
+    const layout = (symbolLayer?.[0] as { layout: Record<string, unknown> })
+      .layout;
+    expect(layout["icon-image"]).toEqual(buildIconImageExpression("icon"));
   });
 });
