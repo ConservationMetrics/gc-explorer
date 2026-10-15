@@ -1,6 +1,10 @@
 import { defineNuxtConfig } from "nuxt/config";
 
+import { readBuildIdentity } from "./server/buildIdentity";
+
 export const viewTypes = ["alerts", "map", "gallery"] as const;
+
+const buildIdentity = readBuildIdentity();
 
 export default defineNuxtConfig({
   compatibilityDate: "2025-05-15",
@@ -133,6 +137,8 @@ export default defineNuxtConfig({
     dbSsl: true,
     dbTable: "",
     port: "8080",
+    // Build identity for GET /_info. Tag is the Docker image tag YYYYMMDD-<run>.
+    deploy: buildIdentity,
     // Session secret for nuxt-auth-utils
     sessionSecret: "your-session-secret-key-change-in-production",
     // OAuth configuration for nuxt-auth-utils

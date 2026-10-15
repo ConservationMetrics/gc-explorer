@@ -9,7 +9,10 @@ import mapboxgl from "mapbox-gl";
 import { exposeTestMap } from "@/utils/e2eTestHooks";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useRoute, useRouter } from "vue-router";
-import { along, bbox, length, lineString } from "@turf/turf";
+import { along } from "@turf/along";
+import { bbox } from "@turf/bbox";
+import { lineString } from "@turf/helpers";
+import { length } from "@turf/length";
 
 import { getFilePathsWithExtension } from "@/utils";
 import {
@@ -123,6 +126,20 @@ const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
 const showIcons = ref(false);
 const loadingIcons = ref(false);
+
+const primaryDatasetVisible = ref(true);
+
+const applyPrimaryDatasetVisibility = () => {
+  map.value?.getStyle()?.layers?.forEach((layer: Layer) => {
+    if ("source" in layer && layer.source === "data-source") {
+      map.value.setLayoutProperty(
+        layer.id,
+        "visibility",
+        primaryDatasetVisible.value ? "visible" : "none",
+      );
+    }
+  });
+};
 // Check if icon toggle is available
 const canToggleIcons = computed(() => {
   return !!(props.iconColumn && props.mediaBasePathIcons);
@@ -442,6 +459,7 @@ const addDataToMap = () => {
   }
 
   applySelectedMapFeatureState();
+  applyPrimaryDatasetVisibility();
 
   // Add event listeners
   const layersToAddListeners = [];
@@ -590,6 +608,17 @@ const prepareMapLegendContent = () => {
         visible: secondaryLayer.visible.value,
       });
     }
+    if (props.mapData.features.length) {
+      items.unshift({
+        id: "data-source",
+        name: props.table
+          .replace(/_/g, " ")
+          .replace(/^\w/, (character) => character.toUpperCase()),
+        type: "circle",
+        color: "#64748b",
+        visible: primaryDatasetVisible.value,
+      });
+    }
     mapLegendContent.value = items;
   };
   prepare();
@@ -598,8 +627,12 @@ const prepareMapLegendContent = () => {
 
 /** Toggle visibility of a map layer */
 const toggleLayerVisibility = (item: MapLegendItem) => {
-  if (item.id === SECONDARY_SOURCE_ID) secondaryLayer.setVisible(item.visible);
-  else utilsToggleLayerVisibility(map.value, item);
+  if (item.id === SECONDARY_SOURCE_ID) {
+    secondaryLayer.setVisible(item.visible);
+  } else if (item.id === "data-source") {
+    primaryDatasetVisible.value = item.visible;
+    applyPrimaryDatasetVisibility();
+  } else utilsToggleLayerVisibility(map.value, item);
 };
 
 /**

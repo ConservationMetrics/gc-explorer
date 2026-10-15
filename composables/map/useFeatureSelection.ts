@@ -2,7 +2,9 @@ import { SECONDARY_SOURCE_ID } from "@/utils/secondaryMapLayers";
 import { ref } from "vue";
 import type { RouteLocationNormalizedLoaded, Router } from "vue-router";
 import type mapboxgl from "mapbox-gl";
-import { along, length, lineString } from "@turf/turf";
+import { along } from "@turf/along";
+import { lineString } from "@turf/helpers";
+import { length } from "@turf/length";
 import type { Feature } from "geojson";
 import type { AlertsData } from "@/types";
 import {

@@ -1,4 +1,4 @@
-import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
+import { test, expect } from "@/tests/e2e/fixtures/config-views";
 
 test("index page - displays available views and navigation flow", async ({
   authenticatedPageAsAdmin: page,
@@ -90,33 +90,44 @@ test("index page - displays available views and navigation flow", async ({
 
 test("index page - one card per view for datasets with multiple views", async ({
   authenticatedPageAsAdmin: page,
+  authenticatedRequestAsAdmin: request,
+  configGalleryView,
 }) => {
+  const primaryDataset = configGalleryView.primaryDataset;
+  const mapResponse = await request.post("/api/views", {
+    data: {
+      primaryDataset,
+      viewType: "map",
+      viewConfig: { ROUTE_LEVEL_PERMISSION: "member" },
+    },
+  });
+  expect(mapResponse.status()).toBe(201);
+
   await page.goto("/");
   await page.waitForLoadState("networkidle");
   await page.waitForSelector("[data-testid='dataset-card']", {
     timeout: 15000,
   });
 
-  // Seed has bcmform_responses with both map and gallery views — expect one card each.
-  const bcmformCards = page.locator("[data-testid='dataset-card']").filter({
+  const datasetCards = page.locator("[data-testid='dataset-card']").filter({
     has: page.getByRole("heading", {
-      name: "bcmform_responses",
+      name: primaryDataset,
       exact: true,
     }),
   });
-  await expect(bcmformCards).toHaveCount(2);
+  await expect(datasetCards).toHaveCount(2);
 
-  const bcmformMapCards = bcmformCards.filter({
+  const mapCards = datasetCards.filter({
     has: page.locator("[data-testid='view-tag-map']"),
   });
-  const bcmformGalleryCards = bcmformCards.filter({
+  const galleryCards = datasetCards.filter({
     has: page.locator("[data-testid='view-tag-gallery']"),
   });
-  await expect(bcmformMapCards).toHaveCount(1);
-  await expect(bcmformGalleryCards).toHaveCount(1);
+  await expect(mapCards).toHaveCount(1);
+  await expect(galleryCards).toHaveCount(1);
 
   // Each card shows exactly one view-type pill (not a multi-type group).
-  for (const card of await bcmformCards.all()) {
+  for (const card of await datasetCards.all()) {
     const tags = card.locator("[data-testid^='view-tag-']");
     await expect(tags).toHaveCount(1);
   }

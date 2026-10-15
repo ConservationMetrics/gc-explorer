@@ -53,6 +53,8 @@ A comma-separated list of exact Mapbox style layer IDs to add to the map legend,
 
 Map and Alerts automatically include a legend toggle for a nonempty secondary dataset, even when this setting is unset. The toggle controls all secondary geometry layers, including polygon outlines, and retains its visibility after a basemap change. Use `MAP_LEGEND_LAYER_IDS` for additional basemap or style layers; the secondary dataset toggle does not need to be listed here.
 
+Map View automatically includes a legend toggle for a nonempty primary dataset, even when `MAP_LEGEND_LAYER_IDS` is unset. It controls all primary geometry layers and retains visibility after basemap and icon changes. Use `MAP_LEGEND_LAYER_IDS` to add basemap or style layers.
+
 #### `PLANET_API_KEY` (optional)
 
 Provide a Planet API key to enable the option to use Planet basemaps as a style option in the basemap selector menu.

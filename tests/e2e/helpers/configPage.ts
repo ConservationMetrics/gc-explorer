@@ -56,32 +56,38 @@ export async function expandMapSection(page: Page): Promise<void> {
 }
 
 /**
- * Opens a seeded map view edit page with Map section expanded.
- * Prefer this over adding a new dataset: the suite only has a couple of
- * unconfigured warehouse tables, and previous runs leave the DB dirty.
+ * Opens a map view edit page with the Map section expanded.
  *
  * @param {Page} page - Playwright page.
+ * @param {string} dataset - Test-owned dataset or the default seeded dataset.
  * @returns {Promise<string>} Dataset name opened for editing.
  */
-export async function openMapConfigEditPage(page: Page): Promise<string> {
+export const openMapConfigEditPage = async (
+  page: Page,
+  dataset = "bcmform_responses",
+): Promise<string> => {
   await stubMapboxTelemetry(page);
-  await page.goto(SEEDED_MAP_CONFIG_PATH);
+  await page.goto(`/config/${dataset}?view_type=map`);
   await waitForConfigForm(page);
   await expandMapSection(page);
-  return "bcmform_responses";
-}
+  return dataset;
+};
 
 /**
- * Opens a seeded gallery view edit page.
+ * Opens a gallery view edit page.
  *
  * @param {Page} page - Playwright page.
+ * @param {string} dataset - Test-owned dataset or the default seeded dataset.
  * @returns {Promise<string>} Dataset name opened for editing.
  */
-export async function openGalleryConfigEditPage(page: Page): Promise<string> {
-  await page.goto(SEEDED_GALLERY_CONFIG_PATH);
+export const openGalleryConfigEditPage = async (
+  page: Page,
+  dataset = "bcmform_responses",
+): Promise<string> => {
+  await page.goto(`/config/${dataset}?view_type=gallery`);
   await waitForConfigForm(page);
-  return "bcmform_responses";
-}
+  return dataset;
+};
 
 /**
  * Ensures a map config form can be saved: required map fields present and a
