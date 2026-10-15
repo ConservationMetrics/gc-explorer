@@ -1,5 +1,9 @@
-import { describe, it, expect } from "vitest";
-import { buildTableExportQueryParams } from "@/composables/downloads/useTableExportDownload";
+import { describe, it, expect, vi, onTestFinished } from "vitest";
+import { useRoute } from "#imports";
+import {
+  buildTableExportQueryParams,
+  useTableExportDownload,
+} from "@/composables/downloads/useTableExportDownload";
 
 describe("buildTableExportQueryParams", () => {
   it("includes filter params for spatial export", () => {
@@ -82,4 +86,48 @@ describe("buildTableExportQueryParams", () => {
       }),
     ).toEqual({ format: "csv" });
   });
+});
+
+vi.mock("@/utils/browserDownload", () => ({
+  triggerBrowserDownload: vi.fn(),
+}));
+
+describe("secondary exports from existing Alerts views", () => {
+  it.each(["csv", "geojson", "kml"] as const)(
+    "sends the parent Alerts view when exporting a secondary row as %s",
+    async (format) => {
+      const originalRoute = useRoute();
+      const fetchExport = vi.fn().mockResolvedValue(new Blob());
+      vi.stubGlobal("$fetch", fetchExport);
+      onTestFinished(() => {
+        vi.unstubAllGlobals();
+        vi.mocked(useRoute).mockReturnValue(originalRoute);
+      });
+      vi.mocked(useRoute).mockReturnValue({
+        path: "/alerts/observations",
+        params: { tablename: "observations" },
+        query: {},
+      });
+      const { downloadTableExport } = useTableExportDownload();
+      await downloadTableExport({
+        format,
+        exportTableName: "mapping",
+        recordId: "1",
+      });
+      expect(fetchExport).toHaveBeenLastCalledWith("/api/mapping/export", {
+        params: {
+          format,
+          recordId: "1",
+          view_type: "alerts",
+          primary_dataset: "observations",
+        },
+        responseType: "blob",
+      });
+      await downloadTableExport({ format, recordId: "1" });
+      expect(fetchExport).toHaveBeenLastCalledWith("/api/observations/export", {
+        params: { format, recordId: "1", view_type: "alerts" },
+        responseType: "blob",
+      });
+    },
+  );
 });

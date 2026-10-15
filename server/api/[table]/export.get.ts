@@ -1,6 +1,6 @@
 import {
   fetchData,
-  fetchTableConfig,
+  fetchViewConfigForDatasetRead,
   fetchTableSqlColumns,
 } from "@/server/database/dbOperations";
 import {
@@ -145,7 +145,13 @@ export default defineEventHandler(async (event: H3Event) => {
 
   try {
     const viewType = query.view_type as ViewType | undefined;
-    const tableConfig = await fetchTableConfig(table, viewType);
+    const tableConfig = await fetchViewConfigForDatasetRead(table, {
+      viewType,
+      primaryDataset:
+        typeof query.primary_dataset === "string"
+          ? query.primary_dataset
+          : undefined,
+    });
     const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
     await validatePermissions(event, permission);
 
