@@ -5,8 +5,8 @@ import {
   getAlertGeometryRenderKind,
   getAlertSourceFeatures,
   setAlertMapLayerGroupVisibility,
-  setSecondaryDataLayerVisibility,
 } from "@/utils/alertMapLayers";
+import { setSecondaryDataLayerVisibility } from "@/utils/secondaryMapLayers";
 import type { Feature } from "geojson";
 import type { Map as MapboxMap } from "mapbox-gl";
 
@@ -220,6 +220,8 @@ describe("alertMapLayers", () => {
 
     expect(setLayoutProperty.mock.calls).toEqual([
       ["secondary-data", "visibility", "none"],
+      ["secondary-data-line", "visibility", "none"],
+      ["secondary-data-polygon", "visibility", "none"],
       ["secondary-data-stroke", "visibility", "none"],
     ]);
   });
