@@ -196,6 +196,102 @@ export const prepareCoordinatesForSelectedFeature = (
     .join(",");
 };
 
+/** Symbol-layer `icon-size` for SVG icons. Raster icons stay at 1. */
+export const SVG_MAP_ICON_SCALE = 0.2;
+
+/** On-screen thickness of the optional SVG icon border. */
+export const SVG_MAP_ICON_BORDER_PX = 2;
+
+/**
+ * Canvas-pixel stroke that remains {@link SVG_MAP_ICON_BORDER_PX} after
+ * the symbol layer scales SVGs by {@link SVG_MAP_ICON_SCALE}.
+ */
+const SVG_ICON_BORDER_CANVAS_PX = SVG_MAP_ICON_BORDER_PX / SVG_MAP_ICON_SCALE;
+
+/** True when a map-icon filename should be rasterized as an SVG. */
+export const isSvgIconFilename = (filename: string): boolean =>
+  filename.toLowerCase().endsWith(".svg");
+
+/**
+ * Mapbox image id for a loaded icon.
+ * Must stay in lockstep with {@link buildIconImageExpression}.
+ */
+export const mapIconImageId = (
+  filename: string,
+  borderColor?: string,
+): string =>
+  borderColor ? `icon-${filename}-${borderColor}` : `icon-${filename}`;
+
+/**
+ * Symbol-layer `icon-image` expression.
+ * SVG icons with a color-column value resolve to a bordered image id.
+ */
+export const buildIconImageExpression = (
+  iconColumn: string,
+  colorColumn?: string,
+): mapboxgl.ExpressionSpecification => {
+  const plain: mapboxgl.ExpressionSpecification = [
+    "concat",
+    "icon-",
+    ["get", iconColumn],
+  ];
+  if (!colorColumn) return plain;
+
+  return [
+    "case",
+    [
+      "all",
+      [
+        "==",
+        ["slice", ["downcase", ["to-string", ["get", iconColumn]]], -4],
+        ".svg",
+      ],
+      ["!=", ["to-string", ["coalesce", ["get", colorColumn], ""]], ""],
+    ],
+    ["concat", "icon-", ["get", iconColumn], "-", ["get", colorColumn]],
+    plain,
+  ];
+};
+
+/**
+ * Draws an SVG onto a circular white disc large enough to contain the full
+ * bitmap (the circle circumscribes it, so corners are not cropped). A
+ * `borderColor` strokes that disc from the outside. Pixels beyond the ring
+ * stay transparent.
+ */
+const rasterizeSvgIcon = (
+  img: HTMLImageElement,
+  borderColor?: string,
+): ImageData => {
+  const width = img.naturalWidth || 64;
+  const height = img.naturalHeight || 64;
+  const stroke = borderColor ? SVG_ICON_BORDER_CANVAS_PX : 0;
+  const radius = Math.hypot(width, height) / 2;
+  const canvasSize = Math.ceil((radius + stroke) * 2);
+  const canvas = document.createElement("canvas");
+  canvas.width = canvasSize;
+  canvas.height = canvasSize;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Failed to get 2D canvas context");
+
+  const center = canvasSize / 2;
+  ctx.beginPath();
+  ctx.arc(center, center, radius, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.drawImage(img, center - width / 2, center - height / 2, width, height);
+
+  if (stroke > 0 && borderColor) {
+    ctx.beginPath();
+    ctx.arc(center, center, radius + stroke / 2, 0, Math.PI * 2);
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = stroke;
+    ctx.stroke();
+  }
+
+  return ctx.getImageData(0, 0, canvasSize, canvasSize);
+};
+
 /**
  * Loads an icon image for Mapbox GL `addImage`. SVGs are rasterized to an
  * offscreen canvas and returned as `ImageData` because Mapbox's `addImage`
@@ -204,10 +300,12 @@ export const prepareCoordinatesForSelectedFeature = (
  *
  * @param url Proxied icon URL (must serve CORS-enabled image bytes).
  * @param isSvg Whether the icon is an SVG and therefore needs rasterization.
+ * @param options.borderColor Hex (or other CSS) color for the circular ring.
  */
 export const loadMapIcon = async (
   url: string,
   isSvg: boolean,
+  options?: { borderColor?: string },
 ): Promise<HTMLImageElement | ImageData> => {
   const img = await new Promise<HTMLImageElement>((resolve, reject) => {
     const i = new Image();
@@ -218,16 +316,7 @@ export const loadMapIcon = async (
   });
 
   if (!isSvg) return img;
-
-  const width = img.naturalWidth || 64;
-  const height = img.naturalHeight || 64;
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Failed to get 2D canvas context");
-  ctx.drawImage(img, 0, 0, width, height);
-  return ctx.getImageData(0, 0, width, height);
+  return rasterizeSvgIcon(img, options?.borderColor || undefined);
 };
 
 /** Toggles the visibility of a map layer */

@@ -1,10 +1,15 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 import {
+  buildIconImageExpression,
   isMapboxPublicToken,
+  isSvgIconFilename,
   isUsableMapboxStyle,
   loadMapIcon,
   mapboxStyleToStudioUrl,
+  mapIconImageId,
+  SVG_MAP_ICON_BORDER_PX,
+  SVG_MAP_ICON_SCALE,
 } from "@/utils/mapGLHelpers";
 
 /** Mutated by tests to drive the global `Image` stub for the next `new Image()`. */
@@ -29,16 +34,51 @@ class StubImage {
   }
 }
 
-const drawImage = vi.fn();
+type DrawOp =
+  | { op: "arc"; radius: number }
+  | { op: "fill"; fillStyle: string }
+  | { op: "stroke"; strokeStyle: string; lineWidth: number }
+  | { op: "drawImage" };
+
+const drawOps: DrawOp[] = [];
+const drawImage = vi.fn(() => {
+  drawOps.push({ op: "drawImage" });
+});
 const fakeImageData = { width: 0, height: 0 } as ImageData;
 const getImageData = vi.fn(() => fakeImageData);
 
+const mockCanvasContext = (): CanvasRenderingContext2D => {
+  const ctx = {
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 0,
+    beginPath: () => {},
+    arc: (_x: number, _y: number, radius: number) => {
+      drawOps.push({ op: "arc", radius });
+    },
+    fill: () => {
+      drawOps.push({ op: "fill", fillStyle: ctx.fillStyle });
+    },
+    stroke: () => {
+      drawOps.push({
+        op: "stroke",
+        strokeStyle: ctx.strokeStyle,
+        lineWidth: ctx.lineWidth,
+      });
+    },
+    drawImage,
+    getImageData,
+  };
+  return ctx as unknown as CanvasRenderingContext2D;
+};
+
 beforeEach(() => {
   vi.stubGlobal("Image", StubImage);
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
-    () => ({ drawImage, getImageData }) as unknown as CanvasRenderingContext2D,
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() =>
+    mockCanvasContext(),
   );
   nextImageState = { shouldFail: false, naturalWidth: 100, naturalHeight: 80 };
+  drawOps.length = 0;
   drawImage.mockClear();
   getImageData.mockClear();
 });
@@ -55,21 +95,94 @@ describe("loadMapIcon", () => {
     expect(getImageData).not.toHaveBeenCalled();
   });
 
-  it("rasterizes SVG icons via an offscreen canvas at their natural size", async () => {
+  it("fits the full SVG inside a white disc that circumscribes it", async () => {
     nextImageState.naturalWidth = 256;
     nextImageState.naturalHeight = 256;
+    const radius = Math.hypot(256, 256) / 2;
+    const canvasSize = Math.ceil(radius * 2);
+    const offset = canvasSize / 2 - 128;
 
     const result = await loadMapIcon("/api/proxy-icon?url=foo.svg", true);
 
     expect(result).toBe(fakeImageData);
+    expect(drawOps.map((op) => op.op)).toEqual(["arc", "fill", "drawImage"]);
+    expect(drawOps[0]).toMatchObject({ radius });
+    expect(drawOps[1]).toMatchObject({ fillStyle: "#ffffff" });
     expect(drawImage).toHaveBeenCalledWith(
       expect.any(StubImage),
-      0,
-      0,
+      offset,
+      offset,
       256,
       256,
     );
-    expect(getImageData).toHaveBeenCalledWith(0, 0, 256, 256);
+    expect(radius).toBeGreaterThanOrEqual(128 * Math.SQRT2 - 1e-9);
+    expect(getImageData).toHaveBeenCalledWith(0, 0, canvasSize, canvasSize);
+  });
+
+  it("centers a non-square SVG inside the circumscribed disc", async () => {
+    nextImageState.naturalWidth = 100;
+    nextImageState.naturalHeight = 40;
+    const radius = Math.hypot(100, 40) / 2;
+    const canvasSize = Math.ceil(radius * 2);
+
+    await loadMapIcon("/api/proxy-icon?url=foo.svg", true);
+
+    expect(drawImage).toHaveBeenCalledWith(
+      expect.any(StubImage),
+      canvasSize / 2 - 50,
+      canvasSize / 2 - 20,
+      100,
+      40,
+    );
+    expect(drawOps[0]).toMatchObject({ radius });
+    expect(getImageData).toHaveBeenCalledWith(0, 0, canvasSize, canvasSize);
+  });
+
+  it("strokes a circular border in the color-column hex, 2px on the map", async () => {
+    nextImageState.naturalWidth = 80;
+    nextImageState.naturalHeight = 80;
+    const stroke = SVG_MAP_ICON_BORDER_PX / SVG_MAP_ICON_SCALE;
+    const radius = Math.hypot(80, 80) / 2;
+    const canvasSize = Math.ceil((radius + stroke) * 2);
+    const offset = canvasSize / 2 - 40;
+
+    await loadMapIcon("/api/proxy-icon?url=foo.svg", true, {
+      borderColor: "#336699",
+    });
+
+    expect(drawOps.map((op) => op.op)).toEqual([
+      "arc",
+      "fill",
+      "drawImage",
+      "arc",
+      "stroke",
+    ]);
+    expect(drawOps[0]).toMatchObject({ radius });
+    expect(drawOps[1]).toMatchObject({ fillStyle: "#ffffff" });
+    expect(drawOps[3]).toMatchObject({ radius: radius + stroke / 2 });
+    expect(drawOps[4]).toMatchObject({
+      strokeStyle: "#336699",
+      lineWidth: stroke,
+    });
+    expect(drawImage).toHaveBeenCalledWith(
+      expect.any(StubImage),
+      offset,
+      offset,
+      80,
+      80,
+    );
+    expect(getImageData).toHaveBeenCalledWith(0, 0, canvasSize, canvasSize);
+    expect(stroke * SVG_MAP_ICON_SCALE).toBe(SVG_MAP_ICON_BORDER_PX);
+  });
+
+  it("ignores a border color for raster icons", async () => {
+    const result = await loadMapIcon("/api/proxy-icon?url=foo.png", false, {
+      borderColor: "#ff0000",
+    });
+
+    expect(result).toBeInstanceOf(StubImage);
+    expect(drawOps).toEqual([]);
+    expect(getImageData).not.toHaveBeenCalled();
   });
 
   it("falls back to 64x64 when the SVG has no intrinsic dimensions", async () => {
@@ -78,7 +191,8 @@ describe("loadMapIcon", () => {
 
     await loadMapIcon("/api/proxy-icon?url=foo.svg", true);
 
-    expect(getImageData).toHaveBeenCalledWith(0, 0, 64, 64);
+    const canvasSize = Math.ceil(Math.hypot(64, 64));
+    expect(getImageData).toHaveBeenCalledWith(0, 0, canvasSize, canvasSize);
   });
 
   it("rejects when the image fails to load", async () => {
@@ -95,6 +209,44 @@ describe("loadMapIcon", () => {
     await expect(
       loadMapIcon("/api/proxy-icon?url=foo.svg", true),
     ).rejects.toThrow("Failed to get 2D canvas context");
+  });
+});
+
+describe("map icon ids", () => {
+  it("detects svg filenames case-insensitively", () => {
+    expect(isSvgIconFilename("tree.svg")).toBe(true);
+    expect(isSvgIconFilename("tree.SVG")).toBe(true);
+    expect(isSvgIconFilename("tree.png")).toBe(false);
+  });
+
+  it("appends a border color only when one is provided", () => {
+    expect(mapIconImageId("tree.svg")).toBe("icon-tree.svg");
+    expect(mapIconImageId("tree.svg", "#336699")).toBe("icon-tree.svg-#336699");
+  });
+
+  it("builds a plain icon-image expression without a color column", () => {
+    expect(buildIconImageExpression("icon")).toEqual([
+      "concat",
+      "icon-",
+      ["get", "icon"],
+    ]);
+  });
+
+  it("selects the bordered image id for svg icons that have a color", () => {
+    expect(buildIconImageExpression("icon", "color")).toEqual([
+      "case",
+      [
+        "all",
+        [
+          "==",
+          ["slice", ["downcase", ["to-string", ["get", "icon"]]], -4],
+          ".svg",
+        ],
+        ["!=", ["to-string", ["coalesce", ["get", "color"], ""]], ""],
+      ],
+      ["concat", "icon-", ["get", "icon"], "-", ["get", "color"]],
+      ["concat", "icon-", ["get", "icon"]],
+    ]);
   });
 });
 
