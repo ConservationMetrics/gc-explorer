@@ -298,7 +298,7 @@
   "restrictViewDescription": "Inapozuiliwa, watumiaji wa Mwanachama na Msimamizi tu wanaweza kufikia mtazamo huu. Watumiaji watazamaji wataelekezwa kwenye ukurasa wa kwanza.",
   "retry": "Jaribu tena",
   "returnToHome": "Rudi kwenye mwanzo",
-  "rowLimitReachedMessage": "Seti hii ya data inazidi idadi ya juu zaidi ya rekodi zinazoweza kuonyeshwa. Rekodi {limit} za kwanza tu zinaonyeshwa katika mtazamo huu.",
+  "rowLimitReachedMessage": "Kumbuka: Mtazamo huu unaonyesha hadi vipengele {limit} ili ubaki mwepesi. Hivi si vipengele {limit} vya kwanza vilivyopangwa vya jedwali, na vipengele zaidi vinaweza kupatikana. Tafadhali pakua seti kamili ya data kutoka File Browser, au tazama data katika programu nyingine.",
   "rowLimitReachedTitle": "Matokeo ya sehemu",
   "satelliteUsedForDetection": "Setalaiti iliyotumika kwa utambuzi",
   "save": "Hifadhi",

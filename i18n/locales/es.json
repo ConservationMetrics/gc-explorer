@@ -294,7 +294,7 @@
   "restrictViewDescription": "Cuando está restringida, solo los usuarios Miembro y Administrador pueden acceder a esta vista. Los usuarios Visor serán redirigidos a la página principal.",
   "retry": "Reintentar",
   "returnToHome": "Volver al inicio",
-  "rowLimitReachedMessage": "Este conjunto de datos excede el número máximo de registros que se pueden mostrar. Solo se muestran los primeros {limit} registros en esta vista.",
+  "rowLimitReachedMessage": "Nota: Esta vista muestra hasta {limit} características para mantenerse ágil. No son las primeras {limit} características ordenadas de la tabla, y puede haber más características disponibles. Descargue el conjunto de datos completo desde File Browser, o consulte los datos en otra aplicación.",
   "rowLimitReachedTitle": "Resultados parciales",
   "satelliteUsedForDetection": "Satélite utilizado para la detección",
   "save": "Guardar",

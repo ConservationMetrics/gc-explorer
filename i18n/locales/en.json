@@ -298,7 +298,7 @@
   "restrictViewDescription": "When restricted, only Member and Admin users can access this view. Viewer users will be redirected to the home page.",
   "retry": "Retry",
   "returnToHome": "Return to home",
-  "rowLimitReachedMessage": "This dataset exceeds the maximum number of records that can be displayed. Only the first {limit} records are shown in this view.",
+  "rowLimitReachedMessage": "Note: This view shows up to {limit} features to stay responsive. They are not a sorted first {limit} features of the table, and more features may be available. Please download the full dataset from File Browser, or view the data in a different application.",
   "rowLimitReachedTitle": "Partial results",
   "satelliteUsedForDetection": "Satellite used for detection",
   "save": "Save",

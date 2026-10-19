@@ -295,7 +295,7 @@
   "restrictViewDescription": "Wanneer beperkt, kunnen alleen Leden en Beheerders toegang krijgen tot deze weergave. Kijkers worden doorgestuurd naar de hoofdpagina.",
   "retry": "Opnieuw proberen",
   "returnToHome": "Terug naar start",
-  "rowLimitReachedMessage": "Deze dataset overschrijdt het maximale aantal records dat kan worden weergegeven. Alleen de eerste {limit} records worden getoond in deze weergave.",
+  "rowLimitReachedMessage": "Let op: Deze weergave toont maximaal {limit} kenmerken om responsief te blijven. Dit zijn niet de eerste {limit} gesorteerde kenmerken van de tabel, en er kunnen meer kenmerken beschikbaar zijn. Download de volledige dataset via File Browser, of bekijk de gegevens in een andere toepassing.",
   "rowLimitReachedTitle": "Gedeeltelijke resultaten",
   "satelliteUsedForDetection": "Satelliet gebruikt voor detectie",
   "save": "Opslaan",
