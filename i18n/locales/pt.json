@@ -294,7 +294,7 @@
   "restrictViewDescription": "Quando restringida, apenas usuários Membro e Administrador podem acessar esta visualização. Usuários Visualizador serão redirecionados para a página inicial.",
   "retry": "Tentar novamente",
   "returnToHome": "Voltar ao início",
-  "rowLimitReachedMessage": "Este conjunto de dados excede o número máximo de registros que podem ser exibidos. Apenas os primeiros {limit} registros são mostrados nesta visualização.",
+  "rowLimitReachedMessage": "Nota: Esta visualização mostra até {limit} recursos para se manter responsiva. Eles não são os primeiros {limit} recursos ordenados da tabela, e mais recursos podem estar disponíveis. Baixe o conjunto de dados completo no File Browser, ou visualize os dados em outro aplicativo.",
   "rowLimitReachedTitle": "Resultados parciais",
   "satelliteUsedForDetection": "Satélite usado para detecção",
   "save": "Salvar",
