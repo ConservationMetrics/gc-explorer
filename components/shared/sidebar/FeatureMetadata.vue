@@ -7,6 +7,7 @@ import {
   FileVideo,
 } from "lucide-vue-next";
 
+import AlertTooltip from "@/components/alerts/AlertTooltip.vue";
 import MediaFile from "@/components/shared/media/MediaFile.vue";
 import MediaImageComparisonModal from "@/components/shared/media/MediaImageComparisonModal.vue";
 import Minimap from "@/components/shared/map/Minimap.vue";
@@ -74,6 +75,12 @@ const visibleFields = computed(() =>
     })
     .map((key) => ({ key, value: String(props.feature[key]) })),
 );
+
+/** Whether this alert field should explain its confidence level. */
+const showConfidenceTooltip = (key: string): boolean =>
+  props.isAlert === true &&
+  key.toLowerCase() === "confidencelevel" &&
+  Boolean(props.feature.dataProvider && props.feature.alertType);
 
 const isCoordinateField = (key: string): boolean =>
   key === "geocoordinates" || key === "geographicCentroid";
@@ -249,12 +256,19 @@ const closeComparisonModal = () => {
         class="flex flex-col gap-0.5"
         data-testid="gallery-metadata-field"
       >
-        <span
-          class="text-xs font-semibold uppercase tracking-wide text-violet-700"
-          data-testid="gallery-metadata-label"
-        >
-          {{ formatDisplayName(field.key) }}
-        </span>
+        <div class="flex items-center gap-1.5">
+          <span
+            class="text-xs font-semibold uppercase tracking-wide text-violet-700"
+            data-testid="gallery-metadata-label"
+          >
+            {{ formatDisplayName(field.key) }}
+          </span>
+          <AlertTooltip
+            v-if="showConfidenceTooltip(field.key)"
+            :alert-type="feature.alertType"
+            :data-provider="feature.dataProvider"
+          />
+        </div>
         <span
           v-if="!isCoordinateField(field.key)"
           class="break-words text-sm text-gray-900"

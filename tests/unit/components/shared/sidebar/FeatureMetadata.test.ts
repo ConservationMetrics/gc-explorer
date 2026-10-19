@@ -18,13 +18,14 @@ vi.mock("@/components/shared/media/MediaFile.vue", () => ({
   },
 }));
 
+const mockT = (key: string) => key;
+
 Object.assign(globalThis, {
   computed,
   ref,
+  useI18n: () => ({ t: mockT }),
   watch,
 });
-
-const mockT = (key: string) => key;
 
 const allowedFileExtensions: AllowedFileExtensions = {
   audio: ["mp3"],
@@ -104,6 +105,83 @@ describe("FeatureMetadata", () => {
     ]);
     expect(links[0].attributes("target")).toBe("_blank");
     expect(links[0].attributes("rel")).toBe("noopener noreferrer");
+  });
+
+  it("shows a confidence tooltip for alerts with a provider and type", () => {
+    const wrapper = mount(FeatureMetadata, {
+      props: {
+        allowedFileExtensions,
+        feature: {
+          _id: "1",
+          alertType: "nasa viirs fire alerts",
+          confidenceLevel: "low",
+          dataProvider: "Global Forest Watch",
+        },
+        filePaths: [],
+        isAlert: true,
+        mediaBasePath: "/media",
+      },
+      global: globalConfig,
+    });
+
+    const label = wrapper
+      .findAll('[data-testid="gallery-metadata-label"]')
+      .find((node) => node.text() === "Confidence Level");
+    expect(label).toBeDefined();
+    expect(label!.element.parentElement?.querySelector("svg")).toBeTruthy();
+
+    const tooltip = wrapper.findComponent({ name: "AlertTooltip" });
+    expect(tooltip.props("dataProvider")).toBe("Global Forest Watch");
+    expect(tooltip.props("alertType")).toBe("nasa viirs fire alerts");
+    expect(
+      document
+        .querySelector('[data-testid="confidence-level-tooltip"]')
+        ?.textContent,
+    ).toContain("confidenceLevelNasaVIIRSFireAlerts");
+
+    wrapper.unmount();
+  });
+
+  it("hides the confidence tooltip unless the field can be explained", () => {
+    const feature: DataEntry = {
+      _id: "1",
+      alertType: "nasa viirs fire alerts",
+      confidenceLevel: "low",
+      dataProvider: "Global Forest Watch",
+    };
+
+    const withoutAlert = mount(FeatureMetadata, {
+      props: {
+        allowedFileExtensions,
+        feature,
+        filePaths: [],
+        mediaBasePath: "/media",
+      },
+      global: globalConfig,
+    });
+    expect(withoutAlert.findComponent({ name: "AlertTooltip" }).exists()).toBe(
+      false,
+    );
+    withoutAlert.unmount();
+
+    const withoutProvider = mount(FeatureMetadata, {
+      props: {
+        allowedFileExtensions,
+        feature: {
+          _id: "1",
+          alertType: "gold mining",
+          confidenceLevel: "1",
+        },
+        filePaths: [],
+        isAlert: true,
+        mediaBasePath: "/media",
+      },
+      global: globalConfig,
+    });
+    expect(
+      withoutProvider.findComponent({ name: "AlertTooltip" }).exists(),
+    ).toBe(false);
+    withoutProvider.unmount();
   });
 
   it("renders Google Maps link for coordinate fields", () => {
