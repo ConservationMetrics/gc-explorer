@@ -12,6 +12,7 @@ import MediaFile from "@/components/shared/media/MediaFile.vue";
 import MediaImageComparisonModal from "@/components/shared/media/MediaImageComparisonModal.vue";
 import Minimap from "@/components/shared/map/Minimap.vue";
 import { formatDisplayName } from "@/utils";
+import { alertFieldTooltipKey } from "@/utils/alertFieldTooltips";
 
 import type { AllowedFileExtensions, DataEntry } from "@/types";
 
@@ -76,11 +77,14 @@ const visibleFields = computed(() =>
     .map((key) => ({ key, value: String(props.feature[key]) })),
 );
 
-/** Whether this alert field should explain its confidence level. */
-const showConfidenceTooltip = (key: string): boolean =>
+/** Whether this alert field has an explanation, such as confidence or tier. */
+const showAlertFieldTooltip = (key: string, value: string): boolean =>
   props.isAlert === true &&
-  key.toLowerCase() === "confidencelevel" &&
-  Boolean(props.feature.dataProvider && props.feature.alertType);
+  alertFieldTooltipKey(key, {
+    alertType: props.feature.alertType,
+    dataProvider: props.feature.dataProvider,
+    value,
+  }) !== undefined;
 
 const isCoordinateField = (key: string): boolean =>
   key === "geocoordinates" || key === "geographicCentroid";
@@ -264,9 +268,11 @@ const closeComparisonModal = () => {
             {{ formatDisplayName(field.key) }}
           </span>
           <AlertTooltip
-            v-if="showConfidenceTooltip(field.key)"
+            v-if="showAlertFieldTooltip(field.key, field.value)"
             :alert-type="feature.alertType"
             :data-provider="feature.dataProvider"
+            :field-key="field.key"
+            :field-value="field.value"
           />
         </div>
         <span

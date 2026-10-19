@@ -131,11 +131,11 @@ describe("FeatureMetadata", () => {
     expect(label!.element.parentElement?.querySelector("svg")).toBeTruthy();
 
     const tooltip = wrapper.findComponent({ name: "AlertTooltip" });
+    expect(tooltip.props("fieldKey")).toBe("confidenceLevel");
     expect(tooltip.props("dataProvider")).toBe("Global Forest Watch");
     expect(tooltip.props("alertType")).toBe("nasa viirs fire alerts");
     expect(
-      document
-        .querySelector('[data-testid="confidence-level-tooltip"]')
+      document.querySelector('[data-testid="alert-field-tooltip"]')
         ?.textContent,
     ).toContain("confidenceLevelNasaVIIRSFireAlerts");
 
@@ -182,6 +182,49 @@ describe("FeatureMetadata", () => {
       withoutProvider.findComponent({ name: "AlertTooltip" }).exists(),
     ).toBe(false);
     withoutProvider.unmount();
+  });
+
+  it("explains tier validation 3", () => {
+    const wrapper = mount(FeatureMetadata, {
+      props: {
+        allowedFileExtensions,
+        feature: {
+          _id: "1",
+          tierValidation: "3",
+        },
+        filePaths: [],
+        isAlert: true,
+        mediaBasePath: "/media",
+      },
+      global: globalConfig,
+    });
+
+    const label = wrapper
+      .findAll('[data-testid="gallery-metadata-label"]')
+      .find((node) => node.text() === "Tier Validation");
+    expect(label).toBeDefined();
+    expect(label!.element.parentElement?.querySelector("svg")).toBeTruthy();
+    expect(
+      document.querySelector('[data-testid="alert-field-tooltip"]')
+        ?.textContent,
+    ).toContain("tierValidation3");
+
+    wrapper.unmount();
+
+    const unknownTier = mount(FeatureMetadata, {
+      props: {
+        allowedFileExtensions,
+        feature: { _id: "1", tierValidation: "9" },
+        filePaths: [],
+        isAlert: true,
+        mediaBasePath: "/media",
+      },
+      global: globalConfig,
+    });
+    expect(unknownTier.findComponent({ name: "AlertTooltip" }).exists()).toBe(
+      false,
+    );
+    unknownTier.unmount();
   });
 
   it("renders Google Maps link for coordinate fields", () => {

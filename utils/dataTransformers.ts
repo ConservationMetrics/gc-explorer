@@ -1,3 +1,4 @@
+import { normalizeTierValidation } from "@/utils/alertFieldTooltips";
 import {
   calculateCentroidFromParsedCoords,
   tryParseDataEntryGeoCoordinates,
@@ -163,7 +164,12 @@ export const transformAlertEntry = (
   const formattedMonth = String(entry.month_detec ?? "").padStart(2, "0");
 
   result.alertID = entry.alert_id;
-  result.confidenceLevel = entry.confidence;
+  if (entry.confidence != null && entry.confidence !== "") {
+    result.confidenceLevel = entry.confidence;
+  }
+  if (entry.tier_validation != null && entry.tier_validation !== "") {
+    result.tierValidation = normalizeTierValidation(entry.tier_validation);
+  }
   result.alertType = entry.alert_type?.replace(/_/g, " ") ?? "";
   result.dataProvider = capitalizeFirstLetter(String(entry.data_source ?? ""));
   result.dateDetected = entry.day_detec
