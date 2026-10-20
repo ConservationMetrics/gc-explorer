@@ -1,4 +1,8 @@
-import { defineNuxtRouteMiddleware, navigateTo, useRuntimeConfig } from "#imports";
+import {
+  defineNuxtRouteMiddleware,
+  navigateTo,
+  useRuntimeConfig,
+} from "#imports";
 import type {
   PublicViewRow,
   RouteLevelPermission,

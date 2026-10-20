@@ -91,19 +91,14 @@ const toggleMobileMenu = () => {
         </div>
 
         <!-- Sign out -->
-        <div
-          v-if="isAuth0 && loggedIn"
-          class="relative group"
-        >
+        <div v-if="isAuth0 && loggedIn" class="relative group">
           <button
             type="button"
             class="flex h-10 w-10 items-center justify-center rounded-full bg-white transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
             :aria-label="t('auth.signOut')"
             @click="logout"
           >
-            <LogOut
-              class="h-5 w-5 text-gray-600 group-hover:text-red-600"
-            />
+            <LogOut class="h-5 w-5 text-gray-600 group-hover:text-red-600" />
           </button>
           <div
             class="absolute right-0 mt-2 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap"
