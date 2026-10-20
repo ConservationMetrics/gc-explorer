@@ -18,6 +18,7 @@
   "alertType": "Alert type",
   "all": "All",
   "andPreviousAlertsShownIn": "and previous alerts shown in",
+  "auth.signOut": "Sign Out",
   "auth0LoginError": "Error logging in with Auth0",
   "authMessage": "Please sign up or log in to access this application",
   "availableViews": "Available dataset views",

@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import GlobeLanguagePicker from "@/components/shared/header/GlobeLanguagePicker.vue";
 import HeaderBrand from "@/components/shared/header/HeaderBrand.vue";
+import { useAuthActions } from "@/composables/auth/useAuth";
+import { LogOut, Menu } from "lucide-vue-next";
 
 const config = useRuntimeConfig();
 const { t } = useI18n();
+const { loggedIn } = useUserSession();
+const { logout } = useAuthActions();
+
+const isAuth0 = config.public.authStrategy === "auth0";
 
 const communityName = computed(() => {
   return config.public.communityName || t("community");
@@ -83,6 +89,23 @@ const toggleMobileMenu = () => {
             {{ $t("header.languagePicker") || "Language" }}
           </div>
         </div>
+
+        <!-- Sign out -->
+        <div v-if="isAuth0 && loggedIn" class="relative group">
+          <button
+            type="button"
+            class="flex h-10 w-10 items-center justify-center rounded-full bg-white transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+            :aria-label="t('auth.signOut')"
+            @click="logout"
+          >
+            <LogOut class="h-5 w-5 text-gray-600 group-hover:text-red-600" />
+          </button>
+          <div
+            class="absolute right-0 mt-2 px-2 py-1 text-xs text-white bg-gray-900 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 whitespace-nowrap"
+          >
+            {{ t("auth.signOut") }}
+          </div>
+        </div>
       </div>
     </div>
 
@@ -96,19 +119,7 @@ const toggleMobileMenu = () => {
           aria-label="Menu"
           @click="toggleMobileMenu"
         >
-          <svg
-            class="w-6 h-6 text-gray-700"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
+          <Menu class="w-6 h-6 text-gray-700" />
         </button>
       </div>
     </div>
@@ -120,6 +131,21 @@ const toggleMobileMenu = () => {
     >
       <!-- Language Picker -->
       <GlobeLanguagePicker variant="mobile" />
+
+      <!-- Sign Out -->
+      <button
+        v-if="isAuth0 && loggedIn"
+        class="w-full flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-red-50 transition-colors text-left"
+        @click="
+          logout();
+          mobileMenuOpen = false;
+        "
+      >
+        <LogOut class="w-5 h-5 text-red-600" />
+        <span class="text-sm text-red-600 font-medium">{{
+          t("auth.signOut")
+        }}</span>
+      </button>
     </div>
   </header>
 </template>

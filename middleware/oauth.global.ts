@@ -1,4 +1,8 @@
-import { defineNuxtRouteMiddleware, useRuntimeConfig } from "#imports";
+import {
+  defineNuxtRouteMiddleware,
+  navigateTo,
+  useRuntimeConfig,
+} from "#imports";
 import type {
   PublicViewRow,
   RouteLevelPermission,
@@ -17,6 +21,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
     public: { authStrategy },
   } = useRuntimeConfig();
   const router = useRouter();
+
+  // Handle logout flow
+  if (to.query.logout === "true") {
+    const sessionCookie = useCookie("nuxt-session");
+    sessionCookie.value = null;
+
+    return navigateTo("/");
+  }
 
   // Local/dev bypass when authStrategy is set to "none"
   if (authStrategy === "none") {

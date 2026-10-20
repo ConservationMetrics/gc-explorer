@@ -18,6 +18,7 @@
   "alertType": "Tipo de alerta",
   "all": "Todos",
   "andPreviousAlertsShownIn": "e alertas anteriores mostrados em",
+  "auth.signOut": "Sair",
   "auth0LoginError": "Erro ao fazer login com Auth0",
   "authMessage": "Por favor, inscreva-se ou faça login para acessar este aplicativo",
   "availableViews": "Visualizações de conjuntos de dados disponíveis",
