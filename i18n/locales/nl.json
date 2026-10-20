@@ -18,6 +18,7 @@
   "alertType": "Type alert",
   "all": "Alle",
   "andPreviousAlertsShownIn": "en eerdere alerts getoond in",
+  "auth.signOut": "Uitloggen",
   "auth0LoginError": "Fout bij inloggen met Auth0",
   "authMessage": "Meld u aan of log in om toegang te krijgen tot deze applicatie",
   "availableViews": "Beschikbare dataset weergaven",
