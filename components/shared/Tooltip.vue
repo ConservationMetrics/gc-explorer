@@ -6,7 +6,11 @@ defineProps<{
   testId?: string;
 }>();
 
+/** Bottom-sheet sidebar layout, matching Tailwind's `sm` breakpoint. */
+const MOBILE_TOOLTIP_QUERY = "(max-width: 639px)";
+
 const showTooltip = ref(false);
+const isMobileTooltip = ref(false);
 const tooltipPosition = ref({ x: 0, y: 0 });
 let hideTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -24,37 +28,27 @@ const cancelHideTooltip = () => {
   }
 };
 
-/** Handle tooltip show with position calculation */
+/** Place the tooltip beside the icon, or centered in the viewport on a phone. */
 const showTooltipWithPosition = (event: MouseEvent) => {
   cancelHideTooltip();
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-  const tooltipWidth = 320; // w-80 = 320px
-  const tooltipHeight = 120; // Approximate tooltip height
-  const screenWidth = window.innerWidth;
-  const screenHeight = window.innerHeight;
-  const isMobile = screenWidth < 768; // md breakpoint
+  isMobileTooltip.value = window.matchMedia(MOBILE_TOOLTIP_QUERY).matches;
 
-  let x, y;
-
-  if (isMobile) {
-    // Mobile: center horizontally, position below icon if there's space, otherwise above
-    x = (screenWidth - tooltipWidth) / 2;
-
-    // Check if there's enough space below the icon
-    if (rect.bottom + tooltipHeight + 10 < screenHeight) {
-      y = rect.bottom + 10; // Position below icon
-    } else {
-      y = rect.top - tooltipHeight - 10; // Position above icon
-    }
-  } else {
-    // Desktop: position to the right of icon
-    x = rect.right + 10;
-    y = rect.top - 10;
+  if (!isMobileTooltip.value) {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    tooltipPosition.value = { x: rect.right + 10, y: rect.top - 10 };
   }
 
-  tooltipPosition.value = { x, y };
   showTooltip.value = true;
 };
+
+const tooltipStyle = computed(() =>
+  isMobileTooltip.value
+    ? undefined
+    : {
+        left: `${tooltipPosition.value.x}px`,
+        top: `${tooltipPosition.value.y}px`,
+      },
+);
 
 /** Hide tooltip after a short delay so the cursor can reach a link inside it */
 const scheduleHideTooltip = () => {
@@ -80,19 +74,23 @@ const scheduleHideTooltip = () => {
     <Teleport to="body">
       <div
         v-show="showTooltip"
-        class="tooltip fixed w-80 p-3 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg shadow-lg"
-        :style="{
-          left: tooltipPosition.x + 'px',
-          top: tooltipPosition.y + 'px',
-        }"
+        class="fixed z-[1080] p-3 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg shadow-lg"
+        :class="
+          isMobileTooltip
+            ? 'left-[10%] right-[10%] top-1/2 max-h-[80vh] -translate-y-1/2 overflow-y-auto'
+            : 'w-80'
+        "
+        :style="tooltipStyle"
         :data-testid="testId"
         @mouseenter="cancelHideTooltip"
         @mouseleave="scheduleHideTooltip"
       >
         <div class="relative">
           <slot>{{ decodeHtmlEntities(content ?? "") }}</slot>
-          <!-- Tooltip arrow -->
-          <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
+          <div
+            v-if="!isMobileTooltip"
+            class="absolute -bottom-2 left-1/2 transform -translate-x-1/2"
+          >
             <div class="border-4 border-transparent border-t-white"></div>
             <div
               class="border-4 border-transparent border-t-gray-200 -mt-1"
@@ -103,9 +101,3 @@ const scheduleHideTooltip = () => {
     </Teleport>
   </template>
 </template>
-
-<style scoped>
-.tooltip {
-  z-index: 1000;
-}
-</style>

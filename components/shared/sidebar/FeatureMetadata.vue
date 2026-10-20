@@ -7,10 +7,12 @@ import {
   FileVideo,
 } from "lucide-vue-next";
 
+import AlertTooltip from "@/components/alerts/AlertTooltip.vue";
 import MediaFile from "@/components/shared/media/MediaFile.vue";
 import MediaImageComparisonModal from "@/components/shared/media/MediaImageComparisonModal.vue";
 import Minimap from "@/components/shared/map/Minimap.vue";
 import { formatDisplayName } from "@/utils";
+import { alertFieldTooltipKey } from "@/utils/alertFieldTooltips";
 
 import type { AllowedFileExtensions, DataEntry } from "@/types";
 
@@ -74,6 +76,15 @@ const visibleFields = computed(() =>
     })
     .map((key) => ({ key, value: String(props.feature[key]) })),
 );
+
+/** Whether this alert field has an explanation, such as confidence or tier. */
+const showAlertFieldTooltip = (key: string, value: string): boolean =>
+  props.isAlert === true &&
+  alertFieldTooltipKey(key, {
+    alertType: props.feature.alertType,
+    dataProvider: props.feature.dataProvider,
+    value,
+  }) !== undefined;
 
 const isCoordinateField = (key: string): boolean =>
   key === "geocoordinates" || key === "geographicCentroid";
@@ -249,12 +260,21 @@ const closeComparisonModal = () => {
         class="flex flex-col gap-0.5"
         data-testid="gallery-metadata-field"
       >
-        <span
-          class="text-xs font-semibold uppercase tracking-wide text-violet-700"
-          data-testid="gallery-metadata-label"
-        >
-          {{ formatDisplayName(field.key) }}
-        </span>
+        <div class="flex items-center gap-1.5">
+          <span
+            class="text-xs font-semibold uppercase tracking-wide text-violet-700"
+            data-testid="gallery-metadata-label"
+          >
+            {{ formatDisplayName(field.key) }}
+          </span>
+          <AlertTooltip
+            v-if="showAlertFieldTooltip(field.key, field.value)"
+            :alert-type="feature.alertType"
+            :data-provider="feature.dataProvider"
+            :field-key="field.key"
+            :field-value="field.value"
+          />
+        </div>
         <span
           v-if="!isCoordinateField(field.key)"
           class="break-words text-sm text-gray-900"
