@@ -251,24 +251,20 @@ const assignUserRoles = async (
   }
 };
 
-/**
- * Auth0 OAuth handler for user authentication and role management
- * Handles user login, role assignment, and session creation
- */
-export default oauthAuth0EventHandler({
-  config: {
-    emailRequired: true,
-    redirectURL: `${useRuntimeConfig().public.baseUrl}/login`,
-  },
+/** Avoids nuxt-auth-utils default max_age=0, which forces re-auth and blocks SSO. */
+const AUTH0_SSO_MAX_AGE_SECONDS = 2_592_000; // 30 days (Auth0 default)
 
-  /**
-   * Handles successful Auth0 authentication
-   * Processes user roles, assigns default SignedIn role if needed, and creates user session
-   *
-   * @param {H3Event} event - The H3 event object
-   * @param {{user: Auth0User}} params - Object containing the authenticated user data
-   */
-  async onSuccess(event: H3Event, { user }: { user: Auth0User }) {
+/**
+ * Handles successful Auth0 authentication
+ * Processes user roles, assigns default SignedIn role if needed, and creates user session
+ *
+ * @param {H3Event} event - The H3 event object
+ * @param {{user: Auth0User}} params - Object containing the authenticated user data
+ */
+const onSuccess = async (
+  event: H3Event,
+  { user }: { user: Auth0User },
+) => {
     try {
       // Log user info for debugging
       console.log("🔍 Auth0 User:", { email: user.email, sub: user.sub });
@@ -397,18 +393,37 @@ export default oauthAuth0EventHandler({
     } catch (error) {
       console.error("🔍 Auth0 Error: Error setting user session", error);
     }
-    // Redirect directly to the target page instead of login
-    return sendRedirect(event, "/login");
-  },
+  // Redirect directly to the target page instead of login
+  return sendRedirect(event, "/login");
+};
 
-  /**
-   * Handles Auth0 authentication errors
-   * Logs the error and redirects to login page
-   *
-   * @param {H3Event} event - The H3 event object
-   */
-  onError(event: H3Event) {
-    console.error("OAuth error:", event);
-    return sendRedirect(event, "/login");
-  },
+/**
+ * Handles Auth0 authentication errors
+ * Logs the error and redirects to login page
+ *
+ * @param {H3Event} event - The H3 event object
+ */
+const onError = (event: H3Event) => {
+  console.error("OAuth error:", event);
+  return sendRedirect(event, "/login");
+};
+
+/**
+ * Auth0 OAuth handler. Supports SSO across GC apps (maxAge) and optional silent
+ * auth via ?silent=1 (prompt=none) for auto-login when an Auth0 session exists.
+ */
+export default defineEventHandler((event) => {
+  const query = getQuery(event);
+  const silent = query.silent === "1" || query.silent === "true";
+
+  return oauthAuth0EventHandler({
+    config: {
+      emailRequired: true,
+      redirectURL: `${useRuntimeConfig().public.baseUrl}/login`,
+      maxAge: AUTH0_SSO_MAX_AGE_SECONDS,
+      ...(silent ? { authorizationParams: { prompt: "none" } } : {}),
+    },
+    onSuccess,
+    onError,
+  })(event);
 });

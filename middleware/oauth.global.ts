@@ -1,4 +1,8 @@
-import { defineNuxtRouteMiddleware, useRuntimeConfig } from "#imports";
+import {
+  defineNuxtRouteMiddleware,
+  navigateTo,
+  useRuntimeConfig,
+} from "#imports";
 import type {
   PublicViewRow,
   RouteLevelPermission,
@@ -24,20 +28,23 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return;
   }
 
-  // In order to redirect the user back to the page they were on when unauthenticated, we need to store the redirect url in session storage
-  // We use the window object to get where the user was before they were redirected to the login page
-  // Store it in the session storage and in the Auth0 component we grab and redirect
+  // Preserve post-login destination across silent Auth0 redirect and LoginScreen.
+  if (import.meta.client && to.path.includes("/login")) {
+    const back = window.history.state.back;
+    const current = window.history.state.current;
 
-  if (import.meta.client) {
-    if (to.path.includes("/login")) {
-      const back = window.history.state.back;
-      const current = window.history.state.current;
-
-      if (!current.includes("/login") && !back) {
-        sessionStorage.setItem("redirect_url", current);
-      }
+    if (!current.includes("/login") && !back) {
+      sessionStorage.setItem("redirect_url", current);
     }
   }
+
+  const redirectToSilentAuth = () => {
+    if (import.meta.client) {
+      sessionStorage.setItem("redirect_url", to.fullPath);
+    }
+    return navigateTo("/api/auth/auth0?silent=1", { external: true });
+  };
+
   // Check if this is a dataset route that might have public access
   const isDatasetRoute =
     to.path.startsWith("/alerts/") ||
@@ -63,9 +70,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return;
       }
 
-      // Require authentication
+      // Require authentication (silent SSO when possible; public views stay anonymous)
       if (!loggedIn.value) {
-        if (authStrategy === "auth0") return router.push("/login");
+        if (authStrategy === "auth0") return redirectToSilentAuth();
         return;
       }
 
@@ -101,14 +108,25 @@ export default defineNuxtRouteMiddleware(async (to) => {
       console.error("Error checking view permissions:", error);
       // On error, fall back to requiring authentication
       if (!loggedIn.value && authStrategy === "auth0") {
-        return router.push("/login");
+        return redirectToSilentAuth();
       }
     }
   }
 
-  // Handle authentication for non-dataset routes
+  // Silent SSO for non-dataset routes; LoginScreen on login_required
   if (authStrategy === "auth0" && !loggedIn.value && to.path !== "/login") {
-    return router.push("/login");
+    return redirectToSilentAuth();
+  }
+
+  if (loggedIn.value && to.path === "/login") {
+    if (import.meta.client) {
+      const redirectUrl = sessionStorage.getItem("redirect_url");
+      if (redirectUrl) {
+        sessionStorage.removeItem("redirect_url");
+        return navigateTo(redirectUrl);
+      }
+    }
+    return router.push("/");
   }
 
   // Check role-based access for restricted routes
