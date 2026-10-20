@@ -4,6 +4,8 @@ import {
   alertFieldTooltipKey,
   normalizeTierValidation,
 } from "@/utils/alertFieldTooltips";
+import { transformAlertEntry } from "@/utils/dataTransformers";
+import { alertsData } from "@/tests/unit/fixtures/alertsData";
 
 describe("alertFieldTooltipKey", () => {
   it("resolves confidence copy from the provider and alert type", () => {
@@ -27,6 +29,26 @@ describe("alertFieldTooltipKey", () => {
         dataProvider: "Other",
       }),
     ).toBeUndefined();
+  });
+
+  it("matches GLAD confidence copy from the transformed alert type", () => {
+    const result = transformAlertEntry(
+      {
+        ...alertsData[0],
+        alert_type: "gfw_glad_alerts",
+        confidence: "low",
+        data_source: "Global Forest Watch",
+      },
+      "test_alerts",
+    );
+
+    expect(result.alertType).toBe("gfw glad alerts");
+    expect(
+      alertFieldTooltipKey("confidenceLevel", {
+        alertType: result.alertType,
+        dataProvider: result.dataProvider,
+      }),
+    ).toBe("confidenceLevelGFWGladAlerts");
   });
 
   it("resolves tiers 1, 2, 3, and 4", () => {

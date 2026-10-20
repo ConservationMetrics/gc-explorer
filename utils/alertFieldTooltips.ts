@@ -23,7 +23,7 @@ const confidenceTooltips: ConfidenceTooltip[] = [
   },
   {
     dataProvider: "Global Forest Watch",
-    alertType: "gfw_glad_alerts",
+    alertType: "gfw glad alerts",
     key: "confidenceLevelGFWGladAlerts",
   },
   {
