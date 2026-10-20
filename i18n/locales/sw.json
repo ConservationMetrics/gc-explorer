@@ -18,6 +18,7 @@
   "alertType": "Aina ya tahadhari",
   "all": "Zote",
   "andPreviousAlertsShownIn": "na tahadhari za awali zinaonyeshwa katika",
+  "auth.signOut": "Toka",
   "auth0LoginError": "Hitilafu wakati wa kuingia kwa Auth0",
   "authMessage": "Tafadhali jisajili au ingia ili kufikia programu hii",
   "availableViews": "Mitazamo ya seti ya data inayopatikana",

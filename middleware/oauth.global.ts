@@ -22,6 +22,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
   } = useRuntimeConfig();
   const router = useRouter();
 
+  // Handle logout flow
+  if (to.query.logout === "true") {
+    const sessionCookie = useCookie("nuxt-session");
+    sessionCookie.value = null;
+
+    return navigateTo("/");
+  }
+
   // Local/dev bypass when authStrategy is set to "none"
   if (authStrategy === "none") {
     if (to.path === "/login") return router.push("/");

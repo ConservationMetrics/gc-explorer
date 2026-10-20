@@ -1,58 +1,26 @@
 <script setup lang="ts">
 import Tooltip from "@/components/shared/Tooltip.vue";
+import { alertFieldTooltipKey } from "@/utils/alertFieldTooltips";
 
 const props = defineProps<{
-  dataProvider: string;
-  alertType: string;
+  alertType?: string;
+  dataProvider?: string;
+  fieldKey: string;
+  fieldValue?: string;
 }>();
 
 const { t } = useI18n();
 
-type TooltipEntry = {
-  provider: string;
-  alertType: string;
-  text: string;
-};
-
-/** Confidence level tooltip definitions */
-const confidenceLevelTooltips: TooltipEntry[] = [
-  {
-    provider: "Global Forest Watch",
-    alertType: "nasa viirs fire alerts",
-    text: t("confidenceLevelNasaVIIRSFireAlerts"),
-  },
-  {
-    provider: "Global Forest Watch",
-    alertType: "gfw integrated alerts",
-    text: t("confidenceLevelGFWIntegratedAlerts"),
-  },
-  {
-    provider: "Global Forest Watch",
-    alertType: "gfw_glad_alerts",
-    text: t("confidenceLevelGFWGladAlerts"),
-  },
-  {
-    provider: "Imazon",
-    alertType: "gold mining",
-    text: t("confidenceLevelTerrasImazonGoldMining"),
-  },
-  {
-    provider: "Terras",
-    alertType: "gold mining",
-    text: t("confidenceLevelTerrasImazonGoldMining"),
-  },
-];
-
 const tooltipContent = computed(() => {
-  const entry = confidenceLevelTooltips.find(
-    (tooltip) =>
-      tooltip.provider === props.dataProvider &&
-      tooltip.alertType === props.alertType,
-  );
-  return entry?.text ?? "";
+  const key = alertFieldTooltipKey(props.fieldKey, {
+    alertType: props.alertType,
+    dataProvider: props.dataProvider,
+    value: props.fieldValue,
+  });
+  return key ? t(key) : "";
 });
 </script>
 
 <template>
-  <Tooltip :content="tooltipContent" test-id="confidence-level-tooltip" />
+  <Tooltip :content="tooltipContent" test-id="alert-field-tooltip" />
 </template>

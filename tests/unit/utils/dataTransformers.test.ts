@@ -160,6 +160,18 @@ describe("transformAlertEntry", () => {
     expect(result.dataProvider).toBe("Fake Alerts Provider");
     expect(result.alertDetectionRange).toBe("2024-01-01 to 2024-01-31");
     expect(result.dateDetected).toBe("01-2024");
+    expect(result).not.toHaveProperty("confidenceLevel");
+    expect(result).not.toHaveProperty("tierValidation");
+  });
+
+  it("maps tier validation and keeps a present confidence value", () => {
+    const result = transformAlertEntry(
+      { ...rawAlert, confidence: "0", tier_validation: "3.0" },
+      table,
+    );
+
+    expect(result.confidenceLevel).toBe("0");
+    expect(result.tierValidation).toBe("3");
   });
 
   it("should resolve satellite prefix to full name", () => {
