@@ -1,6 +1,12 @@
 import type { H3Event } from "h3";
+import { getQuery } from "h3";
 import { useRuntimeConfig } from "#imports";
 import { Role } from "@/types";
+import {
+  consumeAuthRedirect,
+  rememberAuthRedirect,
+  safeAuthRedirect,
+} from "@/utils/authRedirect";
 
 /**
  * Interface representing a user object from Auth0
@@ -251,112 +257,91 @@ const assignUserRoles = async (
   }
 };
 
+/** Avoids nuxt-auth-utils default max_age=0, which forces re-auth and blocks SSO. */
+const AUTH0_SSO_MAX_AGE_SECONDS = 2_592_000; // 30 days (Auth0 default)
+
 /**
- * Auth0 OAuth handler for user authentication and role management
- * Handles user login, role assignment, and session creation
+ * Handles successful Auth0 authentication
+ * Processes user roles, assigns default SignedIn role if needed, and creates user session
+ *
+ * @param {H3Event} event - The H3 event object
+ * @param {{user: Auth0User}} params - Object containing the authenticated user data
  */
-export default oauthAuth0EventHandler({
-  config: {
-    emailRequired: true,
-    redirectURL: `${useRuntimeConfig().public.baseUrl}/login`,
-  },
+const onSuccess = async (event: H3Event, { user }: { user: Auth0User }) => {
+  let sessionSet = false;
+  try {
+    // Log user info for debugging
+    console.log("🔍 Auth0 User:", { email: user.email, sub: user.sub });
+    console.log("🔍 User roles from Auth0:", user.roles);
 
-  /**
-   * Handles successful Auth0 authentication
-   * Processes user roles, assigns default SignedIn role if needed, and creates user session
-   *
-   * @param {H3Event} event - The H3 event object
-   * @param {{user: Auth0User}} params - Object containing the authenticated user data
-   */
-  async onSuccess(event: H3Event, { user }: { user: Auth0User }) {
-    try {
-      // Log user info for debugging
-      console.log("🔍 Auth0 User:", { email: user.email, sub: user.sub });
-      console.log("🔍 User roles from Auth0:", user.roles);
-
-      // If roles aren't in the user object, fetch them from Management API
-      let userRoles: Array<{ id: string; name: string; description: string }> =
-        [];
-      if (!user.roles || user.roles.length === 0) {
-        if (user.email) {
-          const userId = await fetchUserIdByEmail(user.email);
-          if (userId) {
-            userRoles = await fetchRoles(userId);
-            console.log("🔍 Fetched roles from Management API:", userRoles);
-          } else {
-            console.log("🔍 Could not find user ID for email:", user.email);
-          }
-        }
-      } else {
-        // Convert string roles to role objects if they exist in user object
-        userRoles = user.roles.map((role: string) => ({
-          id: "",
-          name: role,
-          description: "",
-        }));
-      }
-
-      // Determine user role level
-      let userRole: Role = Role.SignedIn; // Default to SignedIn (signed in but no elevated access)
-      if (userRoles.length > 0) {
-        const hasAdminRole = userRoles.some((role) => role.name === "Admin");
-        const hasMemberRole = userRoles.some((role) => role.name === "Member");
-        const hasGuestRole = userRoles.some((role) => role.name === "Guest");
-
-        if (hasAdminRole) {
-          userRole = Role.Admin;
-        } else if (hasMemberRole) {
-          userRole = Role.Member;
-        } else if (hasGuestRole) {
-          userRole = Role.Guest;
+    // If roles aren't in the user object, fetch them from Management API
+    let userRoles: Array<{ id: string; name: string; description: string }> =
+      [];
+    if (!user.roles || user.roles.length === 0) {
+      if (user.email) {
+        const userId = await fetchUserIdByEmail(user.email);
+        if (userId) {
+          userRoles = await fetchRoles(userId);
+          console.log("🔍 Fetched roles from Management API:", userRoles);
         } else {
-          // User has roles but none of the expected ones, treat as SignedIn
-          userRole = Role.SignedIn;
+          console.log("🔍 Could not find user ID for email:", user.email);
         }
+      }
+    } else {
+      // Convert string roles to role objects if they exist in user object
+      userRoles = user.roles.map((role: string) => ({
+        id: "",
+        name: role,
+        description: "",
+      }));
+    }
+
+    // Determine user role level
+    let userRole: Role = Role.SignedIn; // Default to SignedIn (signed in but no elevated access)
+    if (userRoles.length > 0) {
+      const hasAdminRole = userRoles.some((role) => role.name === "Admin");
+      const hasMemberRole = userRoles.some((role) => role.name === "Member");
+      const hasGuestRole = userRoles.some((role) => role.name === "Guest");
+
+      if (hasAdminRole) {
+        userRole = Role.Admin;
+      } else if (hasMemberRole) {
+        userRole = Role.Member;
+      } else if (hasGuestRole) {
+        userRole = Role.Guest;
       } else {
-        // If user has no roles, assign them the "SignedIn" role via Management API
-        // This creates a "SignedIn" role in Auth0 for users who are logged in but not approved
-        if (user.email) {
-          const userId = await fetchUserIdByEmail(user.email);
-          if (userId) {
-            try {
-              const allRoles = await fetchRoles();
-              console.log("🔍 All roles from Auth0:", allRoles);
-              const signedInRole = allRoles.find(
-                (role) => role.name === "SignedIn" || role.name === "Signedin",
-              );
+        // User has roles but none of the expected ones, treat as SignedIn
+        userRole = Role.SignedIn;
+      }
+    } else {
+      // If user has no roles, assign them the "SignedIn" role via Management API
+      // This creates a "SignedIn" role in Auth0 for users who are logged in but not approved
+      if (user.email) {
+        const userId = await fetchUserIdByEmail(user.email);
+        if (userId) {
+          try {
+            const allRoles = await fetchRoles();
+            console.log("🔍 All roles from Auth0:", allRoles);
+            const signedInRole = allRoles.find(
+              (role) => role.name === "SignedIn" || role.name === "Signedin",
+            );
 
-              if (signedInRole) {
-                const assignSuccess = await assignUserRoles(userId, [
-                  signedInRole.id,
-                ]);
+            if (signedInRole) {
+              const assignSuccess = await assignUserRoles(userId, [
+                signedInRole.id,
+              ]);
 
-                if (assignSuccess) {
-                  console.log(
-                    "🔍 Successfully assigned SignedIn role to user:",
-                    user.email,
-                  );
-                  userRoles = [signedInRole];
-                  userRole = Role.SignedIn; // Internal role is SignedIn for logged-in users with no elevated permissions
-                } else {
-                  console.error(
-                    "🔍 Failed to assign SignedIn role to user:",
-                    user.email,
-                  );
-                  // Fallback: create local role object
-                  userRoles = [
-                    {
-                      id: "signedin-role",
-                      name: "SignedIn",
-                      description:
-                        "User is logged in but not yet approved for higher access",
-                    },
-                  ];
-                  userRole = Role.SignedIn;
-                }
+              if (assignSuccess) {
+                console.log(
+                  "🔍 Successfully assigned SignedIn role to user:",
+                  user.email,
+                );
+                userRoles = [signedInRole];
+                userRole = Role.SignedIn; // Internal role is SignedIn for logged-in users with no elevated permissions
               } else {
-                console.warn(
-                  "🔍 No SignedIn role found in Auth0, creating fallback role",
+                console.error(
+                  "🔍 Failed to assign SignedIn role to user:",
+                  user.email,
                 );
                 // Fallback: create local role object
                 userRoles = [
@@ -369,8 +354,10 @@ export default oauthAuth0EventHandler({
                 ];
                 userRole = Role.SignedIn;
               }
-            } catch (error) {
-              console.error("🔍 Error assigning SignedIn role:", error);
+            } else {
+              console.warn(
+                "🔍 No SignedIn role found in Auth0, creating fallback role",
+              );
               // Fallback: create local role object
               userRoles = [
                 {
@@ -382,33 +369,71 @@ export default oauthAuth0EventHandler({
               ];
               userRole = Role.SignedIn;
             }
+          } catch (error) {
+            console.error("🔍 Error assigning SignedIn role:", error);
+            // Fallback: create local role object
+            userRoles = [
+              {
+                id: "signedin-role",
+                name: "SignedIn",
+                description:
+                  "User is logged in but not yet approved for higher access",
+              },
+            ];
+            userRole = Role.SignedIn;
           }
         }
       }
-
-      await setUserSession(event, {
-        user: {
-          auth0: user.email,
-          roles: userRoles,
-          userRole,
-        },
-        loggedInAt: Date.now(),
-      });
-    } catch (error) {
-      console.error("🔍 Auth0 Error: Error setting user session", error);
     }
-    // Redirect directly to the target page instead of login
-    return sendRedirect(event, "/login");
-  },
 
-  /**
-   * Handles Auth0 authentication errors
-   * Logs the error and redirects to login page
-   *
-   * @param {H3Event} event - The H3 event object
-   */
-  onError(event: H3Event) {
-    console.error("OAuth error:", event);
-    return sendRedirect(event, "/login");
-  },
+    await setUserSession(event, {
+      user: {
+        auth0: user.email,
+        roles: userRoles,
+        userRole,
+      },
+      loggedInAt: Date.now(),
+    });
+    sessionSet = true;
+  } catch (error) {
+    console.error("🔍 Auth0 Error: Error setting user session", error);
+  }
+  const next = sessionSet ? (consumeAuthRedirect(event) ?? "/login") : "/login";
+  return sendRedirect(event, next);
+};
+
+/**
+ * Handles Auth0 authentication errors
+ * Logs the error and redirects to login page
+ *
+ * @param {H3Event} event - The H3 event object
+ */
+const onError = (event: H3Event) => {
+  console.error("OAuth error:", event);
+  return sendRedirect(event, "/login");
+};
+
+/**
+ * Auth0 OAuth handler. Supports SSO across GC apps (maxAge) and optional silent
+ * auth via ?silent=1 (prompt=none) for auto-login when an Auth0 session exists.
+ */
+export default defineEventHandler((event) => {
+  const query = getQuery(event);
+  const silent = query.silent === "1" || query.silent === "true";
+  const redirect =
+    typeof query.redirect === "string"
+      ? safeAuthRedirect(query.redirect)
+      : null;
+  if (redirect) rememberAuthRedirect(event, redirect);
+
+  return oauthAuth0EventHandler({
+    config: {
+      emailRequired: true,
+      redirectURL: `${useRuntimeConfig().public.baseUrl}/login`,
+      maxAge: AUTH0_SSO_MAX_AGE_SECONDS,
+      ...(silent ? { authorizationParams: { prompt: "none" } } : {}),
+    },
+    onSuccess,
+    onError,
+  })(event);
 });
