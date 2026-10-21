@@ -11,6 +11,7 @@ import type {
   ViewType,
 } from "@/types";
 import { Role } from "@/types";
+import { consumeAuthRedirect, safeAuthRedirect } from "@/utils/authRedirect";
 import { decodeDatasetNameFromUrl } from "@/utils/identifierUtils";
 
 // Following example: https://github.com/atinux/atidone/blob/main/app/middleware/auth.ts
@@ -22,8 +23,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   } = useRuntimeConfig();
   const router = useRouter();
 
-  // Legacy logout query: end the Auth0 SSO session, not only the local cookie.
-  // Clearing the cookie and returning home makes silent auth sign the user back in.
+  // Handle logout flow
   if (to.query.logout === "true") {
     return navigateTo("/api/auth/logout", { external: true });
   }
@@ -35,20 +35,25 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // Preserve post-login destination across silent Auth0 redirect and LoginScreen.
+  // sessionStorage is client-only; the redirect query is stored as a cookie by
+  // /api/auth/auth0 so a full page load (no sessionStorage) still returns here.
   if (import.meta.client && to.path.includes("/login")) {
     const back = window.history.state.back;
     const current = window.history.state.current;
 
-    if (!current.includes("/login") && !back) {
+    if (!current.includes("/login") && !back && safeAuthRedirect(current)) {
       sessionStorage.setItem("redirect_url", current);
     }
   }
 
   const redirectToSilentAuth = () => {
-    if (import.meta.client) {
+    if (import.meta.client && safeAuthRedirect(to.fullPath)) {
       sessionStorage.setItem("redirect_url", to.fullPath);
     }
-    return navigateTo("/api/auth/auth0?silent=1", { external: true });
+    const redirect = encodeURIComponent(to.fullPath);
+    return navigateTo(`/api/auth/auth0?silent=1&redirect=${redirect}`, {
+      external: true,
+    });
   };
 
   // Check if this is a dataset route that might have public access
@@ -126,11 +131,18 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (loggedIn.value && to.path === "/login") {
     if (import.meta.client) {
-      const redirectUrl = sessionStorage.getItem("redirect_url");
+      const redirectUrl = safeAuthRedirect(
+        sessionStorage.getItem("redirect_url"),
+      );
       if (redirectUrl) {
         sessionStorage.removeItem("redirect_url");
         return navigateTo(redirectUrl);
       }
+    }
+    const event = useRequestEvent();
+    if (event) {
+      const target = consumeAuthRedirect(event);
+      if (target) return navigateTo(target);
     }
     return router.push("/");
   }
