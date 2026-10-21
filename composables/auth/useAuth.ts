@@ -44,7 +44,7 @@ export const useAuthActions = () => {
   };
 
   const logout = () => {
-    window.location.href = "/?logout=true";
+    window.location.href = "/api/auth/logout";
   };
 
   return {

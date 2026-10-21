@@ -22,12 +22,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   } = useRuntimeConfig();
   const router = useRouter();
 
-  // Handle logout flow
+  // Legacy logout query: end the Auth0 SSO session, not only the local cookie.
+  // Clearing the cookie and returning home makes silent auth sign the user back in.
   if (to.query.logout === "true") {
-    const sessionCookie = useCookie("nuxt-session");
-    sessionCookie.value = null;
-
-    return navigateTo("/");
+    return navigateTo("/api/auth/logout", { external: true });
   }
 
   // Local/dev bypass when authStrategy is set to "none"
