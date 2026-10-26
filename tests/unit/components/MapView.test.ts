@@ -192,6 +192,54 @@ describe("MapView component", () => {
     loadMapIconMock.mockReset();
   });
 
+  it.each([undefined, "photos"])(
+    "disables secondary media and restores primary media with mediaColumn %s",
+    async (mediaColumn) => {
+      mockFetchRecord.mockResolvedValue({
+        _id: "1",
+        photos: "photo.jpg, clip.mp4, recording.mp3",
+      });
+      const wrapper = mount(MapView, {
+        props: {
+          ...baseProps,
+          allowedFileExtensions: {
+            image: ["jpg"],
+            video: ["mp4"],
+            audio: ["mp3"],
+          },
+          mediaColumn,
+          secondaryData: secondaryGeometry,
+          secondaryDataset: "mapping",
+        },
+        global: globalConfig,
+      });
+      onTestFinished(() => wrapper.unmount());
+      mapboxMock.fireLoad();
+      await flushPromises();
+      const sidebar = wrapper.findComponent({ name: "ViewSidebar" });
+
+      for (const secondary of [false, true, false]) {
+        mapboxMock.fireClick(
+          secondary ? "secondary-data" : "data-layer-point",
+          {
+            features: [
+              secondary
+                ? secondaryGeometry.features[0]
+                : baseMapData.features[0],
+            ],
+          },
+        );
+        await flushPromises();
+        expect(sidebar.props("filePaths")).toEqual(
+          secondary ? [] : ["photo.jpg", "clip.mp4", "recording.mp3"],
+        );
+        expect(sidebar.props("feature")).toMatchObject({
+          photos: "photo.jpg, clip.mp4, recording.mp3",
+        });
+      }
+    },
+  );
+
   it.each(["csv", "geojson", "kml"])(
     "exports a secondary feature as %s from its own dataset and restores primary exports",
     async (format) => {
