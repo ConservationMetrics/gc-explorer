@@ -16,7 +16,7 @@ export default defineEventHandler(async (event: H3Event) => {
 
   try {
     const tableConfig = await fetchTableConfig(table, viewType);
-    const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "anyone";
+    const permission = tableConfig.ROUTE_LEVEL_PERMISSION ?? "member";
 
     await validatePermissions(event, permission);
 
