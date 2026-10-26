@@ -980,11 +980,11 @@ onBeforeUnmount(() => {
       :feature-loading="selectedFeatureLoading"
       :feature-geojson="selectedFeatureOriginal"
       :file-paths="
-        selectedFeature
+        selectedFeature && !isSecondary
           ? getFilePathsWithExtension(
               selectedFeature,
               allowedFileExtensions,
-              isSecondary ? undefined : mediaColumn,
+              mediaColumn,
             )
           : []
       "
