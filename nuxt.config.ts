@@ -128,6 +128,13 @@ export default defineNuxtConfig({
   },
 
   runtimeConfig: {
+    filebrowserResolution: {
+      enabled: false,
+      origin: "",
+      username: "",
+      password: "",
+      storagePrefix: "datalake",
+    },
     configDatabase: "guardianconnector",
     database: "",
     dbHost: "",

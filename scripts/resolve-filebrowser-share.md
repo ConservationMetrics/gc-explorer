@@ -1,40 +1,35 @@
-# Filebrowser share resolution proof of concept
+# Filebrowser share resolution API proof of concept
 
-This read-only helper resolves one existing Filebrowser v2 share URL to a **candidate SMB share-relative directory**. It does not modify Explorer configuration or serve media. It calls Filebrowser's login, shares, and owner APIs; the owner scope is required because the share path is relative to that scope. It never writes the password, token, or share-list response to disk. Use an admin account with share and download permissions to find shares belonging to other users and read their scopes.
+This opt-in, admin-only endpoint resolves a Filebrowser v2 share URL to a **candidate SMB share-relative path**. It signs in to Filebrowser, looks up the share and its owner's scope, then combines those paths with a configured storage prefix. It does not modify a view, access SMB, or serve attachments.
 
-## Cmistaging
+## Run locally against cmistaging
 
-1. Obtain a full media base URL from the target view's configuration, such as `https://files.cmistaging.guardianconnector.net/api/public/dl/HASH`. If you have database access, the following read-only query lists media fields from the current Explorer config schema. The schema on staging may differ by deployed version; do not paste the output into public logs, as the URLs grant access to shared data.
+1. Set up Explorer locally following the [README](../README.md), including its database. To call the endpoint, sign in as an Explorer admin. The local `none` auth strategy provides a local admin session; bind the dev server to localhost only when using it.
+2. In your local, uncommitted `.env`, add the following. Obtain a Filebrowser account with admin, share and download permissions; do not share its password in chat or commit it. Keep these credentials in private server configuration only.
 
-   ```sql
-   SELECT view_id, view_name, view_type, primary_dataset,
-          view_config::jsonb ->> 'MEDIA_BASE_PATH' AS media,
-          view_config::jsonb ->> 'MEDIA_BASE_PATH_ALERTS' AS alerts,
-          view_config::jsonb ->> 'MEDIA_BASE_PATH_ICONS' AS icons
-   FROM views
-   ORDER BY view_id;
+   ```dotenv
+   NUXT_FILEBROWSER_RESOLUTION_ENABLED=true
+   NUXT_FILEBROWSER_RESOLUTION_ORIGIN=https://files.cmistaging.guardianconnector.net
+   NUXT_FILEBROWSER_RESOLUTION_USERNAME=admin
+   NUXT_FILEBROWSER_RESOLUTION_PASSWORD=your-filebrowser-password
+   NUXT_FILEBROWSER_RESOLUTION_STORAGE_PREFIX=datalake
    ```
 
-2. From a machine that can reach Filebrowser, run Python 3.9 or later from this checkout. The password is prompted interactively; do not send it to an assistant or put it in shell history.
+3. Start `pnpm dev`, open the local Explorer in a browser, and sign in as an admin. In that browser's developer console, use a share URL copied from a view configuration:
 
-   ```sh
-   python3 scripts/resolve-filebrowser-share.py \
-     'https://files.cmistaging.guardianconnector.net/api/public/dl/HASH' \
-     --username admin
+   ```js
+   const response = await fetch('/api/admin/resolve-filebrowser-share', {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify({ shareUrl: 'https://files.cmistaging.guardianconnector.net/api/public/dl/HASH' }),
+   });
+   console.log(response.status, await response.json());
    ```
 
-   Replace the URL and username. The default Filebrowser origin is specifically cmistaging; `--files-origin` must be explicitly supplied for another host. The helper does not follow redirects, so an authentication gateway or alternate Filebrowser authentication method may require a different approach.
+The result contains the owner ID, scope, path within that scope, and `smbPath`; `verified` is always false. The URL must use the configured origin, and redirects are rejected. Filebrowser must support its v2 username/password login API; other auth methods may require changes. A non-admin Filebrowser account cannot necessarily list shares owned by others or read their scopes.
 
-3. Check the actual Filebrowser container's `FB_ROOT`, its volume mapping, and the host's mount source. The deployment template maps `/srv/datalake` to `/mnt/persistent-storage/datalake` and mounts the SMB share at `/mnt/persistent-storage`, so the default `--storage-prefix datalake` is appropriate only if cmistaging uses that configuration. The result is relative to the SMB **share root**, not a UNC address; combine it with the actual SMB server and share name after checking the mount. Override `--storage-prefix` if needed.
+## Verify the mapping
 
-4. On a trusted machine with the same SMB share mounted, compare a known attachment from the view to the public download:
+The deployment template maps Filebrowser `/srv/datalake` to host `/mnt/persistent-storage/datalake` and mounts the SMB share at `/mnt/persistent-storage`. Check cmistaging's actual Filebrowser root, volume mappings, owner scope, and mount source before relying on the default prefix. `smbPath` is relative to the SMB share root, not a UNC address. Verify a known attachment against the Filebrowser download, including its contents, and check for symlinks. A missing share, generic media URL, unknown root, or inaccessible owner needs manual investigation.
 
-   ```sh
-   python3 scripts/resolve-filebrowser-share.py \
-     'https://files.cmistaging.guardianconnector.net/api/public/dl/HASH' \
-     --username admin --mount /mnt/persistent-storage --sample 'photo.jpg'
-   ```
-
-   The sample is relative to the shared directory. The helper compares SHA-256 digests of the local file and Filebrowser download. A matching sample verifies that file, not every file or the absence of symlinks elsewhere. Password-protected, expired, or inaccessible public shares cannot be verified with this download check; investigate separately. Do not assume a mapping is correct just because a directory exists.
-
-If the share is missing, the owner cannot be read, the URL uses a generic media provider, or the storage root is unknown, resolve it manually. If the shared folder contains symlinks, establish how Filebrowser and the future Explorer service resolve them before migrating. Explorer currently expects HTTP media URLs; replacing them with SMB paths in the database will break media until an authorized Explorer media endpoint is implemented. Restrict that endpoint to the intended view and storage directory, and validate paths and symlinks.
+This endpoint exposes storage paths to Explorer admins and uses Filebrowser credentials with broad access. Keep it disabled outside this controlled proof of concept. Explorer currently expects HTTP media URLs; writing an SMB path into a view will break media until an authorized media endpoint exists. Such an endpoint must restrict access to the intended view and directory and handle traversal and symlinks safely.
