@@ -188,9 +188,15 @@ test("shows both datasets, restores secondary metadata, toggles the group and re
   await waitForTestMap(page);
   await expect
     .poll(() =>
-      page.evaluate(() =>
-        Boolean(window.getTestMap().getLayer("secondary-data")),
-      ),
+      page.evaluate(() => {
+        const map = window.getTestMap();
+        if (!map.getLayer("secondary-data") || map.isMoving()) return false;
+        return map
+          .queryRenderedFeatures(map.project([-60, 5]), {
+            layers: ["secondary-data"],
+          })
+          .some((feature) => feature.properties?._id === "1");
+      }),
     )
     .toBe(true);
   const canvas = page.locator("canvas.mapboxgl-canvas");
