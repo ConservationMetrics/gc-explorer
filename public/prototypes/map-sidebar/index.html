@@ -1042,9 +1042,9 @@
    <div class="absolute left-1/2 top-1/2 w-[2048px] h-[1536px] origin-center" :style="{transform:mapTransform}">
     <img v-for="tile in tiles" :key="tile.left+'-'+tile.top" :src="'tiles/'+tile.x+'-'+tile.y+'.png'" width="256" height="256" alt="" draggable="false" class="absolute select-none pointer-events-none" :style="{left:tile.left+'px',top:tile.top+'px'}">
     <div class="absolute" style="left:324px;top:314px;width:1400px;height:850px">
-     
+
      <button v-for="point in visiblePoints" :key="point.id" class="alert-marker" :class="{'previous':!point.recent}" :aria-label="'View synthetic alert '+point.id" :style="{left:point.x+'px',top:point.y+'px',width:point.size+'px',height:point.size+'px'}" @click="select(point)"></button>
-     
+
     </div>
    </div>
   </div>
@@ -1080,7 +1080,7 @@
    <button class="icon-button absolute right-6 top-6 !rounded-full !bg-white/90" aria-label="Hide panel" @click="toggle"><Icon name="X" :size="18"/></button>
    <CurrentPanel v-if="!selected" :alerts-statistics="statistics" :initial-range="[dateFrom,dateTo]" @date-range-changed="dateFrom=$event[0];dateTo=$event[1]" @download="download"/>
    <section v-else class="card"><button class="text-violet-800 text-sm flex gap-2 items-center min-h-11 mb-2" @click="selected=null"><Icon name="ArrowLeft" :size="16"/>Overview</button><h2>Synthetic alert {{selected.id}}</h2><dl class="text-sm mt-5 space-y-4"><div><dt class="text-gray-500 mb-1">Detection date</dt><dd>{{selected.recent?'15 October 2026':'15 August 2026'}}</dd></div><div><dt class="text-gray-500 mb-1">Territory</dt><dd>Test Territory 130</dd></div><div><dt class="text-gray-500 mb-1">Area</dt><dd>0.42 hectares</dd></div></dl></section>
-   
+
   </aside>
   <div class="absolute right-2.5" :style="{bottom:open&&isMobile?(drawerHeight+30)+'px':'30px',zIndex:15}">
    <button v-if="!legendOpen" class="icon-button !bg-violet-700 !text-white" aria-label="Map legend" @click="legendOpen=true"><Icon name="Layers"/></button>
