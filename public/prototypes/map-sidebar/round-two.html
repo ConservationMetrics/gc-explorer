@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Sidebar actions · GC Explorer #708 · Round 2</title>
+    <link rel="icon" href="/gcexplorer.png" />
+    <script
+      src="https://cdn.jsdelivr.net/npm/vue@3.5.17/dist/vue.global.prod.js"
+      integrity="sha384-H2xBKUDQ/xne/c7DBZjrLhCc6tXYiUu5WAyegWsUsKWMopvozacrKINTNsuJHeFG"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"
+      integrity="sha384-LtmWBcrD5iuFIR4sFphS8IiiaftkypL5dJzLKywbyd9ATLB7ZbPz3JYnI9nvXHkV"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/vue-3-slider-component@1.0.1/dist/vue-3-slider-component.umd.min.js"
+      integrity="sha384-SWILicyRP9Xg2DhNBjDfX0+LC4Nqrgt60r8cEPqbg+1yP8HT3TfxHcMbNt0UR+JU"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.js"
+      integrity="sha384-zYPBGXwO4633CABX/5Spf6emCKUJCfoOkhOMYyxMsatqQZPnDblmmOewfjsIVWCM"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.10/dist/index.global.js"
+      integrity="sha384-FkBJFhbmZnAOfpBY9qb9RG7rffZGJbzQ+DJkeKC2wcHr6RRUDnHQxfzO5gBYDwg7"
+      crossorigin="anonymous"
+    ></script>
+    <style type="text/tailwindcss">
+      @theme {
+        --color-violet-50: #f5f3ff;
+        --color-violet-100: #ede9fe;
+        --color-violet-200: #ddd6fe;
+        --color-violet-700: #6d28d9;
+        --color-violet-800: #5b21b6;
+      }
+      @layer base {
+        body {
+          @apply m-0 bg-white text-gray-900 antialiased;
+          font-family: ui-sans-serif, system-ui, sans-serif;
+        }
+        button,
+        a,
+        input {
+          touch-action: manipulation;
+        }
+        button {
+          cursor: pointer;
+        }
+        button:disabled {
+          cursor: default;
+        }
+        button:focus-visible,
+        a:focus-visible,
+        input:focus-visible {
+          outline: 2px solid #27272a;
+          outline-offset: 3px;
+        }
+        button:active:not(:disabled) {
+          transform: scale(0.96);
+        }
+        input,
+        select {
+          font-size: 16px;
+          accent-color: #6d28d9;
+        }
+        h1,
+        h2,
+        h3 {
+          text-wrap: balance;
+        }
+      }
+      @layer components {
+        .icon-button {
+          @apply relative flex items-center justify-center w-11 h-11 shrink-0 rounded-lg text-gray-600 bg-white;
+        }
+        .control {
+          @apply flex items-center justify-center gap-2 min-h-11 rounded-lg px-3 text-sm font-medium bg-white text-gray-700;
+          box-shadow:
+            0 0 0 1px #0000000e,
+            0 2px 4px #00000008,
+            0 5px 14px #0000000a;
+        }
+        .primary {
+          @apply bg-violet-100 text-violet-800;
+        }
+        .clear-filters {
+          @apply min-h-11 px-2 text-sm font-semibold text-violet-800 rounded-md;
+        }
+        .clear-filters:disabled {
+          @apply text-gray-400;
+        }
+        .surface {
+          @apply bg-white rounded-xl;
+          box-shadow:
+            0 0 0 1px #0000000e,
+            0 2px 4px #00000008,
+            0 6px 18px #0000000b;
+        }
+        .card {
+          @apply bg-violet-50 rounded-2xl border border-violet-100 p-6;
+        }
+        .card h2 {
+          @apply text-2xl font-semibold tracking-tight;
+        }
+        .map-scene {
+          @apply absolute inset-0 overflow-hidden bg-[#e5eadf];
+          cursor: grab;
+          touch-action: none;
+        }
+        .map-scene:active {
+          cursor: grabbing;
+        }
+        .alert-marker {
+          @apply absolute rounded-full border-[3px] border-white bg-red-500/80;
+          box-shadow: 0 1px 5px #00000020;
+        }
+        .alert-marker.previous {
+          @apply bg-orange-400/80;
+        }
+        .alert-marker.selected {
+          outline: 3px solid #6d28d9;
+          outline-offset: 4px;
+        }
+        .panel {
+          @apply absolute left-0 top-0 bottom-0 w-[400px] bg-white flex flex-col;
+          z-index: 20;
+          box-shadow: 3px 0 18px #1f293712;
+        }
+        .panel-header {
+          @apply flex shrink-0 items-center justify-between h-16 px-4 border-b border-gray-100;
+        }
+        .panel-content {
+          @apply min-h-0 overflow-auto p-4 flex-1;
+        }
+        .panel-content [data-testid="alerts-intro-header"] .pr-10 {
+          padding-right: 0;
+        }
+        .compact-rail {
+          @apply absolute top-0 left-0 bottom-0 w-16 bg-white flex flex-col items-center py-3 gap-3 border-r border-gray-200;
+          z-index: 20;
+        }
+        .active-filter {
+          @apply !bg-violet-700 !text-white;
+        }
+        .filter-dot {
+          @apply absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-300 ring-2 ring-white;
+        }
+        .date-slider .vue-slider-dot-tooltip-inner {
+          border-color: #7c3aed !important;
+          background-color: #7c3aed !important;
+        }
+        .date-slider [role="slider"]:focus-visible {
+          outline: 2px solid #27272a;
+          outline-offset: 4px;
+        }
+        .tip {
+          @apply pointer-events-none absolute right-full mr-3 bg-gray-900 text-white rounded-md px-3 py-2 text-xs whitespace-nowrap opacity-0;
+        }
+        .icon-button:focus-visible .tip {
+          opacity: 1;
+        }
+        .mobile-grip {
+          display: none;
+        }
+      }
+      @media (hover: hover) and (pointer: fine) {
+        .icon-button:hover {
+          background: #f5f3ff;
+          color: #5b21b6;
+        }
+        .icon-button.active-filter:hover {
+          background: #5b21b6;
+          color: white;
+        }
+        .control:hover {
+          background: #f5f3ff;
+          color: #5b21b6;
+        }
+        .control.primary:hover {
+          background: #ddd6fe;
+          color: #5b21b6;
+        }
+        .clear-filters:hover:not(:disabled) {
+          background: #ede9fe;
+        }
+        .icon-button:hover .tip {
+          opacity: 1;
+        }
+        .alert-marker:hover {
+          outline: 3px solid #6d28d9;
+          outline-offset: 4px;
+        }
+      }
+      @media (max-width: 639px) {
+        .desktop-only {
+          display: none !important;
+        }
+        .mock-header {
+          height: 60px !important;
+          padding-inline: 16px !important;
+        }
+        #app {
+          top: 60px !important;
+        }
+        .mobile-grip {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: calc(100% - 64px);
+          height: 44px;
+          min-height: 44px;
+          margin-inline: auto;
+          touch-action: none;
+        }
+        .mobile-grip::before {
+          content: "";
+          width: 48px;
+          height: 5px;
+          background: #d1d5db;
+          border-radius: 999px;
+        }
+        .panel {
+          top: auto;
+          width: 100%;
+          height: var(--drawer-height);
+          border-radius: 20px 20px 0 0;
+          padding-bottom: env(safe-area-inset-bottom);
+        }
+        .panel.peek {
+          height: 120px;
+        }
+        .panel-header {
+          height: 52px;
+          padding: 0 16px 8px;
+          border-bottom: 0;
+        }
+        .panel-content {
+          padding-top: 0;
+        }
+        .panel.peek .panel-header {
+          height: 80px;
+          padding-bottom: 20px;
+        }
+        .tip {
+          display: none;
+        }
+        .legend-control {
+          left: 12px;
+          right: auto;
+          top: 12px;
+          bottom: auto !important;
+        }
+        .reset-label {
+          display: none;
+        }
+        .reset-control {
+          min-width: 44px;
+          padding-inline: 0;
+        }
+        .mock-state {
+          left: 8px !important;
+          font-size: 10px !important;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          transition: none !important;
+          animation: none !important;
+          scroll-behavior: auto !important;
+        }
+      }
+      .embedded .mock-header {
+        display: none;
+      }
+      .embedded #app {
+        top: 0 !important;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      if (new URLSearchParams(location.search).get("embedded") === "1")
+        document.body.classList.add("embedded");
+    </script>
+    <header
+      class="mock-header h-[72px] flex items-center justify-between px-6 border-b border-gray-200"
+    >
+      <div class="flex items-center gap-3">
+        <img src="/gcexplorer.png" width="32" height="32" alt="" />
+        <div>
+          <div class="text-sm font-semibold">
+            Sidebar actions
+            <span class="text-gray-400 font-normal">/ #708</span>
+          </div>
+          <div class="text-xs text-gray-500 mt-0.5">
+            Round 2 · interactive mock
+          </div>
+        </div>
+      </div>
+      <span class="desktop-only text-xs text-gray-500"
+        >Synthetic alerts · based on current main</span
+      >
+    </header>
+    <main
+      id="app"
+      class="absolute top-[72px] bottom-0 left-0 right-0 overflow-hidden"
+    ></main>
+    <script>
+      const {
+        createApp,
+        ref,
+        computed,
+        h,
+        onMounted,
+        onBeforeUnmount,
+        nextTick,
+        watch,
+      } = Vue;
+      const Icon = {
+        props: ["name", "size"],
+        setup: (props) => () =>
+          h(
+            "svg",
+            {
+              width: props.size || 20,
+              height: props.size || 20,
+              viewBox: "0 0 24 24",
+              fill: "none",
+              stroke: "currentColor",
+              "stroke-width": 1.75,
+              "stroke-linecap": "round",
+              "stroke-linejoin": "round",
+              "aria-hidden": "true",
+            },
+            lucide.icons[props.name][2].map(([tag, attrs]) => h(tag, attrs)),
+          ),
+      };
+    </script>
+    <script src="round-two-components.js"></script>
+    <script src="round-two.js"></script>
+  </body>
+</html>

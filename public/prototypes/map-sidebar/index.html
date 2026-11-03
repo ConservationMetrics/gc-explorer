@@ -1,0 +1,1179 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Map panel controls · GC Explorer #708</title>
+    <link rel="icon" href="/gcexplorer.png" />
+    <link rel="stylesheet" href="picker.css" />
+    <script
+      src="https://cdn.jsdelivr.net/npm/vue@3.5.17/dist/vue.global.prod.js"
+      integrity="sha384-H2xBKUDQ/xne/c7DBZjrLhCc6tXYiUu5WAyegWsUsKWMopvozacrKINTNsuJHeFG"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.js"
+      integrity="sha384-LtmWBcrD5iuFIR4sFphS8IiiaftkypL5dJzLKywbyd9ATLB7ZbPz3JYnI9nvXHkV"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/vue-3-slider-component@1.0.1/dist/vue-3-slider-component.umd.min.js"
+      integrity="sha384-SWILicyRP9Xg2DhNBjDfX0+LC4Nqrgt60r8cEPqbg+1yP8HT3TfxHcMbNt0UR+JU"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.js"
+      integrity="sha384-zYPBGXwO4633CABX/5Spf6emCKUJCfoOkhOMYyxMsatqQZPnDblmmOewfjsIVWCM"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.10/dist/index.global.js"
+      integrity="sha384-FkBJFhbmZnAOfpBY9qb9RG7rffZGJbzQ+DJkeKC2wcHr6RRUDnHQxfzO5gBYDwg7"
+      crossorigin="anonymous"
+    ></script>
+    <style type="text/tailwindcss">
+      @theme {
+        --color-violet-50: #f5f3ff;
+        --color-violet-100: #ede9fe;
+        --color-violet-200: #ddd6fe;
+        --color-violet-700: #6d28d9;
+        --color-violet-800: #5b21b6;
+      }
+      @layer base {
+        body {
+          @apply m-0 bg-white text-gray-900 antialiased;
+          font-family: ui-sans-serif, system-ui, sans-serif;
+        }
+        button {
+          @apply cursor-pointer;
+          touch-action: manipulation;
+        }
+        button:focus-visible,
+        a:focus-visible,
+        input:focus-visible {
+          outline: 2px solid #18181b;
+          outline-offset: 3px;
+        }
+        button:active {
+          transform: scale(0.97);
+        }
+        input,
+        select {
+          font-size: 16px;
+          accent-color: #6d28d9;
+        }
+        h1,
+        h2,
+        h3 {
+          text-wrap: balance;
+        }
+      }
+      @layer components {
+        .control {
+          @apply flex items-center justify-center gap-2 bg-white text-gray-700 font-medium text-sm rounded-lg min-h-11 px-3;
+          box-shadow:
+            0 0 0 1px #0000000d,
+            0 2px 4px #0000000a,
+            0 5px 14px #0000000a;
+        }
+        .primary {
+          @apply bg-violet-700 text-white;
+        }
+        .card {
+          @apply bg-violet-50 rounded-2xl p-6;
+          box-shadow:
+            0 0 0 1px #6d28d910,
+            0 1px 2px #00000004;
+        }
+        .card h2 {
+          @apply text-2xl font-semibold tracking-tight;
+        }
+        .icon-button {
+          @apply flex min-h-11 min-w-11 items-center justify-center bg-white text-gray-600 rounded-lg;
+        }
+        .map-scene {
+          @apply absolute inset-0 overflow-hidden bg-[#e9ecdF];
+          touch-action: none;
+          cursor: grab;
+        }
+        .map-scene:active {
+          cursor: grabbing;
+        }
+        .sidebar {
+          @apply absolute top-0 bottom-0 left-0 w-[400px] bg-white p-4 overflow-auto;
+          z-index: 20;
+          box-shadow: 4px 0 18px #1f293712;
+        }
+        .rail {
+          @apply absolute top-2.5 right-2.5 flex flex-col gap-3 items-end;
+          z-index: 10;
+        }
+        .tool-group {
+          @apply bg-white rounded-lg p-0.5;
+          box-shadow:
+            0 0 0 1px #00000014,
+            0 2px 5px #00000012;
+        }
+        .zoom-controls .icon-button {
+          min-width: 30px;
+          min-height: 30px;
+          border-radius: 0;
+        }
+        .map-label {
+          @apply absolute bg-white/95 px-3 py-2 rounded-lg text-xs font-medium text-gray-600;
+          box-shadow: 0 1px 5px #00000012;
+        }
+        .alert-marker {
+          @apply absolute rounded-full border-[3px] border-white bg-red-500/80;
+          box-shadow: 0 1px 5px #00000020;
+        }
+        .alert-marker.previous {
+          @apply bg-orange-400/80;
+        }
+      }
+      @media (hover: hover) and (pointer: fine) {
+        .control:hover {
+          background: #f5f3ff;
+          color: #5b21b6;
+        }
+        .control.primary:hover {
+          background: #5b21b6;
+          color: white;
+        }
+        .icon-button:hover {
+          background: #f5f3ff;
+          color: #5b21b6;
+        }
+        .alert-marker:hover {
+          outline: 3px solid #6d28d9;
+          outline-offset: 3px;
+        }
+      }
+      @media (max-width: 639px) {
+        .sidebar {
+          top: auto;
+          width: 100%;
+          height: var(--drawer-height, 50dvh);
+          border-radius: 20px 20px 0 0;
+          padding-top: 0;
+        }
+        .sidebar .card {
+          padding: 20px;
+        }
+        .sidebar .card h2 {
+          font-size: 22px;
+        }
+        .rail {
+          right: 10px;
+          top: 10px;
+        }
+        .desktop-only {
+          display: none !important;
+        }
+        .toolbar-controls {
+          left: 12px !important;
+          top: 68px;
+        }
+        .toolbar-controls:has([aria-expanded="true"]) {
+          top: 16px;
+        }
+
+        output {
+          left: 12px !important;
+        }
+        .edge-toggle {
+          left: 50% !important;
+          top: auto !important;
+          bottom: 16px;
+          transform: translateX(-50%);
+          border-radius: 999px !important;
+          white-space: nowrap;
+        }
+        .edge-toggle.open {
+          bottom: calc(var(--drawer-height, 50dvh) + 12px);
+        }
+        .edge-toggle:active {
+          transform: translateX(-50%) scale(0.97);
+        }
+        .legend {
+          bottom: 35px !important;
+          left: 12px !important;
+        }
+        .legend.panel-visible {
+          display: none;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+        }
+      }
+      .date-slider .vue-slider-dot-tooltip-inner {
+        border-color: #7c3aed;
+        background-color: #7c3aed;
+      }
+    </style>
+  </head>
+  <body>
+    <header
+      class="h-[88px] flex items-center justify-between px-7 border-b border-gray-200 bg-white"
+    >
+      <div class="desktop-only flex items-center gap-3">
+        <img src="/gcexplorer.png" width="34" height="34" alt="" />
+        <div>
+          <div class="text-sm font-semibold">
+            GC Explorer <span class="text-gray-400 font-normal">/ #708</span>
+          </div>
+          <div class="text-xs text-gray-500 mt-0.5">Panel controls</div>
+        </div>
+      </div>
+      <div class="desktop-only text-right">
+        <div class="text-xs font-medium text-gray-600">Design exploration</div>
+        <div class="text-xs text-gray-400 mt-0.5">
+          Synthetic alerts · live controls
+        </div>
+      </div>
+    </header>
+    <iframe
+      id="revised-prototype"
+      title="Revised sidebar proposal"
+      hidden
+      style="
+        position: absolute;
+        top: 88px;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: calc(100% - 88px);
+        border: 0;
+      "
+    ></iframe>
+    <main
+      id="stage"
+      class="absolute top-[88px] bottom-0 left-0 right-0 overflow-hidden"
+    ></main>
+    <nav
+      class="proto-picker"
+      data-position="top"
+      aria-label="Prototype variants"
+    >
+      <span class="proto-picker-highlight" aria-hidden="true"></span>
+      <button class="proto-picker-item" data-active aria-current="true">
+        Revised
+      </button>
+      <button class="proto-picker-item">Current</button>
+      <button class="proto-picker-item">Top</button>
+      <button class="proto-picker-item">Edge</button>
+      <button class="proto-picker-item">Rail</button>
+    </nav>
+    <script>
+      const {
+        createApp,
+        ref,
+        computed,
+        h,
+        onMounted,
+        onBeforeUnmount,
+        nextTick,
+        watch,
+      } = Vue;
+      const Icon = {
+        props: ["name", "size"],
+        setup: (props) => () =>
+          h(
+            "svg",
+            {
+              width: props.size || 20,
+              height: props.size || 20,
+              viewBox: "0 0 24 24",
+              fill: "none",
+              stroke: "currentColor",
+              "stroke-width": 1.75,
+              "stroke-linecap": "round",
+              "stroke-linejoin": "round",
+              "aria-hidden": "true",
+            },
+            lucide.icons[props.name][2].map(([tag, attrs]) => h(tag, attrs)),
+          ),
+      };
+
+      const translations = {
+        accessConfig: "Access Config",
+        accessDenied: "Access Denied",
+        accessDeniedMessage:
+          "You are not authorized to view the page you were trying to access. Please contact a Guardian Connector administrator to change your role in order to view this page.",
+        accessPermissions: "Access Permissions",
+        addBackgroundMapOption: "Add background map option",
+        addDescription: "Add description",
+        addNewDatasetView: "Add new dataset view",
+        administration: "Administration",
+        after: "After",
+        alertAreaHectares: "Alert area (hectares)",
+        alertDetectionRange: "Alert detection range",
+        alertID: "Alert ID",
+        alerts: "Alerts",
+        alertsDashboard: "Alerts Dashboard",
+        alertsLast12Months: "Alerts in the last 12 months",
+        alertsTotal: "Total number of alerts",
+        alertType: "Alert type",
+        all: "All",
+        andPreviousAlertsShownIn: "and previous alerts shown in",
+        "auth.signOut": "Sign Out",
+        auth0LoginError: "Error logging in with Auth0",
+        authMessage: "Please sign up or log in to access this application",
+        availableViews: "Available dataset views",
+        basemapName: "Basemap name",
+        basemapsDescription:
+          "Provide up to three background map options from Mapbox. Each background map has its own access token.",
+        before: "Before",
+        browserDoesntSupportAudio:
+          "Sorry, your browser does not support the audio element",
+        browserDoesntSupportVideo:
+          "Sorry, your browser does not support the video element",
+        cancel: "Cancel",
+        category: "Category",
+        changeDetectionAlerts: "Change Detection Alerts",
+        clearAll: "Clear all",
+        clickOnAlertsForMoreInfo: "Click on alerts for more information",
+        clickOnFeaturesForMoreInfo:
+          "Click on map features for more information",
+        close: "Close",
+        colorColumn: "Color Column",
+        colorColumnDescription:
+          "Specify a column name (e.g., {color}) that contains color values (e.g., hex codes like #FF0000). When set, map features and filter dots will use these colors instead of the randomly generated colors.",
+        columnNotAvailable:
+          "This column is not available in the selected dataset.",
+        community: { community: "community" },
+        confidenceLevel: "Confidence level",
+        confidenceLevelGFWGladAlerts:
+          "Probable loss is defined as a single observation to date flagged as loss. If there are repeat loss observations within 4 observations or 180 days it becomes confirmed loss, otherwise, it reverts back to no loss.",
+        confidenceLevelGFWIntegratedAlerts:
+          "Confidence levels help forest monitors prioritize alerts for follow up since satellite-derived data is subject to errors including false alerts. If two or more alert systems detect a change in the same location, we are more confident (&quot;highest confidence&quot;) that these alerts indicate real disturbance. For individual systems, there is a delay before a first detection can be verified by additional satellite passes and thus reach &quot;high confidence.&quot; The integrated layer displays where multiple systems overlap, in some cases providing increased confidence faster than waiting for individual systems to reach high confidence through additional satellite images, which can take weeks or months. False positives are effectively eliminated in the highest confidence class as it's uncommon for two systems to commit the same error since they use different data streams and algorithms.",
+        confidenceLevelNasaVIIRSFireAlerts:
+          "This value is based on a collection of intermediate algorithm quantities used in the detection process. It is intended to help users gauge the quality of individual hotspot/fire pixels. Confidence values are set to low, nominal and high. &quot;Low&quot; confidence daytime fire pixels are typically associated with areas of sun glint and lower relative temperature anomaly (&lt;15K) in the mid-infrared channel I4. &quot;Nominal&quot; confidence pixels are those free of potential sun glint contamination during the day and marked by strong (&gt;15K) temperature anomaly in either day or nighttime data. &quot;High&quot; confidence fire pixels are associated with day or nighttime saturated pixels.",
+        confidenceLevelTerrasImazonGoldMining:
+          "1: High confidence level. It has all the characteristics of gold mining. 0: Low confidence level. It is possible to see the change in land cover, but it is not possible to be sure that it is gold mining.",
+        config: "Configuration",
+        configUpdated: "Configuration updated",
+        configuration: "Configuration",
+        configurationOptions: "Configuration Options",
+        configureNewView: "Configure new view",
+        confirm: "Confirm",
+        continue: "Continue",
+        copied: "Copied!",
+        copyConfigDescription:
+          "Select a view to copy its configuration values into the current form. You can modify the values before saving.",
+        copyConfigFromDatasetView: "Copy Config from Another View",
+        copyLink: "Copy link to alert",
+        copyMapLocation: "Copy link to this location",
+        copySecondaryLink: "Copy link to feature",
+        created: "Created",
+        createViewTypeDescription:
+          "Choose a view type to continue. You can optionally pick a primary dataset now, or on the next page.",
+        data: "data",
+        dataLoadErrorMessage:
+          "Something went wrong. You can try again, go back, or return to the home page.",
+        dataLoadErrorTitle: "We couldn't load this data",
+        dataProvider: "Data provider",
+        dataProviders: "Data provider(s)",
+        dataset: "Dataset",
+        datasetViewAddedToViews: "Dataset view added to views",
+        datasetViewManagement: "Dataset View Management",
+        datasetViewRemovedFromViews: "Dataset view removed from views",
+        datasetViewRemovedNote:
+          "Note: this does not delete the dataset view from the database. It only removes any views configuration for the dataset view",
+        dateDetected: "Date detected",
+        dateFilterFrom: "From date",
+        dateFilterTo: "To date",
+        dateRange: "Date range",
+        default: "Default",
+        downloadAlertLocations: "Alert locations",
+        downloadAlertLocationsDescription:
+          "Alerts shown on the map for the selected date range.",
+        downloadCSV: "Download CSV",
+        downloadData: "Download data",
+        downloadGeoJSON: "Download GeoJSON",
+        downloading: "Downloading\u2026",
+        downloadKML: "Download KML",
+        downloadMonthlySummary: "Monthly summary",
+        downloadMonthlySummaryDescription:
+          "Monthly counts for the selected date range.",
+        downloadStatistics: "Download statistics",
+        duplicateViewWarning:
+          "A view of this type already exists for the selected primary dataset. Save is disabled until you choose a different dataset.",
+        earlier: "Earlier",
+        editExistingView: "Open the existing view",
+        enable: "Enable",
+        errorCouldNotAddDatasetView: "Could not add dataset view",
+        errorCouldNotCreateIncident: "Could not create incident",
+        errorCouldNotDeleteIncident: "Could not remove incident",
+        errorCouldNotLoadIncident: "Could not load this incident",
+        errorCouldNotLoadIncidents: "Could not load incidents",
+        errorCouldNotRemoveDatasetView: "Could not remove dataset view",
+        errorCouldNotSaveChanges: "Could not save changes",
+        errorNoDataToDownload: "No data available to download",
+        filterAlertsIntro:
+          "On the Alerts Dashboard, you can optionally show matching features from a secondary dataset. Choose a column to filter on, then one or more values to include. For example, {column} = {values}.",
+        filterByDate: "Filter by date",
+        filterByMediaType: "Filter by media type",
+        filterDataByColumn: "Filter data by column",
+        filterDataByColumnDescription:
+          "Select a column whose values will appear in a dropdown filter on the dataset view.",
+        filtering: "Filtering",
+        filters: "Filters",
+        gallery: "Gallery",
+        galleryClickToViewDetails: "Click to view details",
+        galleryEmpty: "There are no items to show in this gallery yet.",
+        galleryFiles: "Files",
+        galleryGoToSlide: "Go to slide {number} of {total}",
+        galleryLocation: "Location",
+        galleryMediaDetails: "Media details",
+        galleryNextMedia: "Next media",
+        galleryNoFilterResults: "No items match the current filters.",
+        galleryNotAvailable:
+          "The gallery view is not yet configured for this dataset",
+        galleryPreviousMedia: "Previous media",
+        gallerySlideOf: "Slide {current} of {total}",
+        geocoordinates: "Coordinates",
+        geographicCentroid: "Geographic centroid",
+        geotype: "Geotype",
+        goBack: "Go back",
+        "header.languagePicker": "Language",
+        hectaresAffected: "Hectares affected",
+        hectaresPerMonth: "Hectares per month",
+        hectaresTotal: "Total number of hectares affected",
+        iconColumn: "Icon Column",
+        iconColumnDescription:
+          "Specify a column name (e.g., {icon}) that contains icon filenames (e.g., {filename}). When set and icons base path is configured, point features can be displayed as icons instead of circles.",
+        ifYouAreZoomedOutAlertsWillBeShownAsA:
+          "If you are zoomed out, alerts will be shown as a",
+        imageNotFound: "Image not found",
+        imagePreview: "Image preview",
+        imagePreviewLoadError: "The image preview could not be loaded.",
+        incidents: "Incidents",
+        "incidents.backToIncidents": "Back to saved incidents",
+        "incidents.by": "By",
+        "incidents.clearAll": "Clear All",
+        "incidents.close": "Close",
+        "incidents.copyLink": "Copy link to incident",
+        "incidents.created": "Created",
+        "incidents.createIncident": "Create Incident",
+        "incidents.createIncidentWithFeatures":
+          "Create incident with {count} selected feature",
+        "incidents.createIncidentWithFeaturesPlural":
+          "Create incident with {count} selected features",
+        "incidents.createNewIncident": "Create New Incident",
+        "incidents.creating": "Creating...",
+        "incidents.describeImpact": "Describe the impact",
+        "incidents.description": "Description",
+        "incidents.deselectSelection": "Deselect current selection",
+        "incidents.disableBoundingBox": "Disable bounding box selection",
+        "incidents.disableMultiSelect": "Disable multi-select mode",
+        "incidents.downloadIncidentFeatures": "Download incident features",
+        "incidents.downloadIncidentFeaturesTooltip": "GeoJSON with all entries",
+        "incidents.downloadIncidentMetadata": "Download incident metadata",
+        "incidents.downloadIncidentMetadataTooltip": "CSV with incident data",
+        "incidents.enableBoundingBox":
+          "Drag to pan the map. Hold Ctrl or \u2318 and drag to draw a selection box",
+        "incidents.enableMultiSelect":
+          "Select multiple features one by one by clicking features",
+        "incidents.enterDescription": "Enter description",
+        "incidents.enterIncidentName": "Enter incident name",
+        "incidents.enterResponsibleParty": "Enter responsible party",
+        "incidents.entries": "Entries",
+        "incidents.hideSidebar": "Hide incidents sidebar",
+        "incidents.impactDescription": "Impact Description",
+        "incidents.incidentRemoved": "Incident removed.",
+        "incidents.incidentType": "Incident Type",
+        "incidents.incidentTypes": {
+          deforestation: "Deforestation",
+          illegalLogging: "Illegal Logging",
+          mining: "Mining",
+          poaching: "Poaching",
+          encroachment: "Encroachment",
+          fire: "Fire",
+          other: "Other",
+        },
+        "incidents.loadingIncident": "Loading incident...",
+        "incidents.loadingIncidents": "Loading incidents...",
+        "incidents.loadingMore": "Loading more...",
+        "incidents.loadMore": "Load more",
+        "incidents.name": "Name",
+        "incidents.newIncident": "+ New Incident",
+        "incidents.noEntries": "No entries in this incident.",
+        "incidents.noIncidentsYet":
+          "No incidents yet. Create your first incident!",
+        "incidents.removeIncident": "Remove incident",
+        "incidents.removeIncidentConfirm":
+          "Remove this incident? This cannot be undone.",
+        "incidents.responsibleParty": "Responsible Party",
+        "incidents.savedIncidents": "Saved Incidents",
+        "incidents.selectedAlertsCount": "Alerts selected: {count}",
+        "incidents.selectedSecondaryCount": "Secondary items selected: {count}",
+        "incidents.selectedSources": "Selected Sources",
+        "incidents.selectFeaturesFirst":
+          "Select features first to create an incident",
+        "incidents.selectType": "Select type",
+        "incidents.status": "Status",
+        "incidents.type": "Type",
+        "incidents.viewSavedIncidents":
+          "View saved incidents and create new ones",
+        "incidents.viewSavedIncidentsTooltip": "View saved incidents",
+        loading: "Loading...",
+        login: "Log in",
+        loginButton: "Log in",
+        loginError: "An error occurred while trying to log in",
+        loginPleaseSignIn: "Please sign in to continue.",
+        loginWelcomeTitle: "Welcome to Guardian Connector Explorer",
+        logoUrl: "Logo URL",
+        logoUrlDescription: "A logo to be shown on the view sidebar",
+        map: "Map",
+        mapbox3d: "Do you want to enable 3D terrain?",
+        mapboxAccessToken: "Mapbox Access Token",
+        mapboxBackgroundMaps: "Mapbox Background Map(s)",
+        mapboxBearing: "Map bearing (-180 to 180)",
+        mapboxBearingDescription:
+          "Bearing is the map's rotation around its center, in degrees. 0 points north. Positive values rotate the map clockwise.",
+        mapboxCenterLatitude: "Center latitude (-90 to 90)",
+        mapboxCenterLongitude: "Center longitude (-180 to 180)",
+        mapboxPitch: "Map pitch (0 to 85)",
+        mapboxPitchDescription:
+          "Pitch is the map's tilt, in degrees. 0 looks straight down. Higher values tilt toward the horizon, up to 85.",
+        mapboxProjection: "Map projection",
+        mapboxProjectionDescription:
+          "A map projection is a way to flatten the planet's surface onto a page or screen. Every projection has strengths and weaknesses, so the right projection depends on your use case. See {link} for information on specific projection options.",
+        mapboxProjectionDescriptionLink: "Mapbox's guide on projections",
+        mapboxSatellite: "Mapbox Satellite",
+        mapboxSettings: "Mapbox Settings",
+        mapboxSettingsDescription:
+          "Set the {link} of the map. You can either interact with the map to set these values, or fill in the fields manually.",
+        mapboxSettingsDescriptionLink: "camera position",
+        mapboxStreets: "Mapbox Streets",
+        mapboxStyle: "Mapbox Style",
+        mapboxZoom: "Zoom level (0 to 22)",
+        mapboxZoomDescription:
+          "A zoom level is an integer that represents how much of the world is visible on a map. See {link} for a helpful breakdown of what you can see at different zoom levels.",
+        mapboxZoomDescriptionLink: "this page from OpenStreetMap",
+        mapLegend: "Map Legend",
+        mapLegendLayerIds: "Layer IDs to show in the map legend",
+        mapLegendLayerIdsDescription:
+          "Here, you can add Mapbox style layer IDs that you want to show in the map legend, and allow users to turn on and off. You must use the {exact} ID of the Mapbox layer.",
+        mapLegendLayerIdsExact: "exact",
+        media: "Media",
+        mediaAccepts: "Accepts:",
+        mediaBasePath: "Base path for attachments media",
+        mediaBasePathAlerts: "Base path for alert images",
+        mediaBasePathIcons: "Base path for map icons",
+        mediaBasePathIconsTooltip:
+          "If you have an Icon Column set in the map settings above, then you have to provide a base path for where the map icon images can be found",
+        mediaBasePathTooltip:
+          "This is for rendering images, videos, or audio associated with individual records or observations in your dataset.",
+        mediaBaseUrl: "Base URL",
+        mediaColumn: "Column to use for media files",
+        mediaColumnDescription:
+          "Specify the column name containing media file references (e.g., {photo}, {audio}). Only values from this column will be rendered as media files. Leave empty to render media from {all} columns.",
+        mediaColumnDescriptionAll: "all",
+        mediaFilebrowserDefault: "Filebrowser (default)",
+        mediaGenericHttpBaseUrl: "Generic HTTP base URL",
+        mediaImageOpenModal: "View larger image",
+        mediaIntroBasePath:
+          'To render media on a dataset view, you need to provide a "base path" for where the media can be found. For example, if your media files are located at {example}, then that is your base path.',
+        mediaIntroFilebrowser:
+          'Currently, we use Filebrowser to share and serve media content in Guardian Connector. To do this, you need to generate a "Share Link" in Filebrowser and provide that here. {link}',
+        mediaIntroFilebrowserAccess: "Access Filebrowser",
+        mediaIntroFilebrowserDocs:
+          "For more information, see the {link} in our documentation.",
+        mediaIntroFilebrowserLink: "Filebrowser page",
+        mediaInvalidFormat:
+          "Invalid format. Please use a Filebrowser share URL or hash.",
+        mediaPasteFilebrowserShareUrlOrHash: "Filebrowser share URL or hash",
+        mediaProvider: "Media Provider",
+        mediaTypeAudio: "Audio",
+        mediaTypeImage: "Photo",
+        mediaTypeNone: "None",
+        mediaTypeVideo: "Video",
+        missingConfiguredColumn:
+          "The {field} setting refers to column {column}, which does not exist on table {table}.",
+        missingConfiguredColumnItem: "{field} ({column})",
+        missingConfiguredColumns:
+          "These settings refer to columns that do not exist on table {table}: {list}.",
+        modified: "Modified",
+        mostRecentAlerts: "Most recent alerts",
+        mostRecentAlertsShownIn: "Most recent alerts shown on map in",
+        noColumnEntry: "No column entry",
+        noDatasetViewsAvailable: "No views have been configured yet.",
+        noDescriptionProvidedYet: "No description provided yet.",
+        noResultsFound: "No dataset views match your search.",
+        notes: "Notes",
+        numberOfAlerts: "Number of alerts",
+        openMapboxStudio: "Open in Mapbox Studio",
+        openView: "Open {view}",
+        or: "or",
+        orange: "orange",
+        other: "Other",
+        pageMovedMessage: "This page has moved. Please update your bookmarks.",
+        pageMovedTitle: "Page moved",
+        password: "Password",
+        passwordIncorrect: "The password you entered is incorrect",
+        permissionLevel: "Permission level",
+        permissionLevel_admin: "Admin",
+        permissionLevel_anyone: "Public",
+        permissionLevel_guest: "Guest",
+        permissionLevel_member: "Member",
+        planetApiKey: "Planet API Key",
+        planetApiKeyDescription:
+          "If you have an API key from {planet} to access Monthly Visual Basemaps, add it here to enable this as a background map option.",
+        planetApiKeyDescriptionPlanet: "Planet",
+        pleaseMatchFormat: "Por favor, siga el formato esperado",
+        previewImagerySource: "Preview Imagery Source",
+        previousAlerts: "Previous alerts",
+        primaryDatasetLabel: "Primary dataset",
+        primaryDatasetOptional: "Primary dataset (optional)",
+        primaryDatasetRequired: "Primary dataset (required)",
+        recentAlertsDate: "Date of most recent alerts published",
+        recentAlertsNumber: "Number of most recent alerts",
+        red: "red",
+        remove: "Remove",
+        removeDatasetView: "Remove dataset view",
+        removeDatasetViewAreYouSure:
+          "Are you sure you want to remove this dataset view",
+        reset: "Reset",
+        resetDashboard: "Reset Dashboard",
+        resetMap: "Reset Map",
+        restrictView: "Do you want to restrict this view?",
+        restrictViewDescription:
+          "When restricted, only Member and Admin users can access this view. Viewer users will be redirected to the home page.",
+        retry: "Retry",
+        returnToHome: "Return to home",
+        rowLimitReachedMessage:
+          "Note: This view shows up to {limit} features to stay responsive. They are not a sorted first {limit} features of the table, and more features may be available. Please download the full dataset from File Browser, or view the data in a different application.",
+        rowLimitReachedTitle: "Partial results",
+        satelliteUsedForDetection: "Satellite used for detection",
+        save: "Save",
+        searchDatasetViews: "Search dataset views...",
+        secondaryData: "Secondary data",
+        secondaryDatasetDescription:
+          "Load a second dataset alongside the primary dataset to give this view more context. It appears in both Map and Alerts views.",
+        secondaryDatasetLabel: "Secondary dataset",
+        secondaryDatasetOptional: "Secondary dataset",
+        secondaryFilterValues:
+          "Values to include from the secondary dataset on the alerts map",
+        selectAlertDateRange: "Select an alert date range",
+        selectBasemap: "Select basemap",
+        selectColumn: "Select a column\u2026",
+        selectMoreOptions: "Select more options",
+        selectPrimaryDataset: "Select a primary dataset\u2026",
+        selectPrimaryDatasetOptional: "Select later\u2026",
+        selectSecondaryDataset: "Select a secondary dataset\u2026",
+        selectView: "Select a view...",
+        selectViewType: "Select a view type",
+        showIcons: "Show Icons",
+        showLess: "Show less",
+        showMore: "Show more",
+        showPoints: "Show Points",
+        statistics: "Statistics",
+        submit: "Submit",
+        table: "Table",
+        terrainExaggeration: "terrain exaggeration",
+        territory: "Territory",
+        tierValidation1:
+          "Tier 1 \u2014 Field Validation. Confirmed by local inspection, airborne/drone survey, or ground enforcement action.",
+        tierValidation2:
+          "Tier 2 \u2014 Confirmed Alert. AI alerts with probability > 40% validated by an image interpretation expert using satellite.",
+        tierValidation3:
+          "Tier 3 \u2014 Preliminary Alert. AI probability > 40% pending review.",
+        tierValidation4:
+          "Tier 4 \u2014 Discard / Low Confidence. AI probability < 40%, or flagged as False Positive during expert review.",
+        timestampColumn: "Timestamp column (for date range filter)",
+        timestampColumnDescription:
+          "This is used to configure a date filter slider on the dataset view.",
+        totalFeatures: "Total features",
+        type: "Type",
+        typeOfAlerts: "Type of alerts",
+        version: "Version",
+        view: "View",
+        viewDescription: "View Description",
+        viewDescriptionAlerts: "Dashboard visualizing alerts on a map",
+        viewDescriptionDescription: "Description of this view",
+        viewDescriptionGallery:
+          "Gallery of data containing media content (images, audio, video)",
+        viewDescriptionMap: "Geographic data visualized on a map",
+        viewDescriptionPlaceholder: "Enter a description for this view...",
+        viewDisplayName: "View Display Name",
+        viewDisplayNameDescription:
+          "A nicer display name for this view. If not set, the dataset table name will be used.",
+        viewDisplayNamePlaceholder: "e.g., My Mapping Data",
+        viewHeaderImage: "View Header Image",
+        viewHeaderImageDescription: "URL for the header background image",
+        viewOnGoogleMaps: "view on Google Maps",
+        views: "Views",
+        visibility: "Visibility",
+        visibilityAdmins: "Admins",
+        visibilityAdminsDescription:
+          "Only signed-in users with the Admin role can view.",
+        visibilityGuest: "Guest",
+        visibilityGuestDescription:
+          "Only signed-in users with the Guest, Member, or Admin role can view.",
+        visibilityHelpText: "Choose who can view this view.",
+        visibilityMembers: "Members",
+        visibilityMembersDescription:
+          "Only signed-in users with the Member or Admin role can view.",
+        visibilityPublic: "Public \u2014 no sign-in required",
+        visibilityPublicDescription: "Anyone with the link can view.",
+        visibilityRequired:
+          "Please select a visibility level for this dataset.",
+        yourAccessIsPending:
+          "Your access is pending. Please contact a Guardian Connector administrator for account approval.",
+        yourMapboxStyleDefault: "Mapbox - your style (default)",
+      };
+      const CurrentSlider = {
+        components: { VueSlider: window.index.default },
+        props: ["dateOptions", "initialRange"],
+        emits: ["date-range-changed"],
+        setup: (props, { emit }) => {
+          const selectedRange = ref([...props.initialRange]);
+          const userInteracted = ref(false);
+          watch(selectedRange, (value) => {
+            if (userInteracted.value) emit("date-range-changed", value);
+          });
+          return { selectedRange, userInteracted };
+        },
+        template:
+          '\n  <div>\n    <h3 class="text-2xl font-semibold tracking-tight mb-3">\n      {{ $t("selectAlertDateRange") }}\n    </h3>\n    <div class="mb-8">\n      <VueSlider\n        v-model="selectedRange"\n        class="date-slider"\n        :contained="true"\n        :data="dateOptions"\n        :height="8"\n        :hide-label="true"\n        :marks="true"\n        :process-style="{ backgroundColor: \'#7c3aed\' }"\n        :tooltip="\'always\'"\n        :tooltip-placement="\'bottom\'"\n        @drag-start="userInteracted = true"\n      />\n    </div>\n  </div>\n',
+      };
+      const CurrentChart = {
+        props: ["alertsStatistics"],
+        setup: (props) => {
+          const canvas = ref();
+          let chart;
+          onMounted(() => {
+            chart = new Chart(canvas.value, {
+              type: "line",
+              data: {
+                labels: Object.keys(props.alertsStatistics.alertsPerMonth),
+                datasets: [
+                  {
+                    backgroundColor: "rgba(0,0,0,0)",
+                    borderColor: "#f87979",
+                    data: Object.values(props.alertsStatistics.alertsPerMonth),
+                    fill: false,
+                    label: translations.numberOfAlerts,
+                    pointBackgroundColor: "#f87979",
+                  },
+                ],
+              },
+              options: { animation: false },
+            });
+          });
+          onBeforeUnmount(() => chart?.destroy());
+          return { canvas };
+        },
+        template:
+          '<div class="mt-4"><h3 class="text-2xl font-semibold mb-2">{{$t("alertsLast12Months")}}</h3><div class="mb-2"><canvas ref="canvas" aria-label="Synthetic monthly alert counts" role="img"></canvas></div></div>',
+      };
+      const CurrentDownload = {
+        components: { Icon },
+        emits: ["download"],
+        template:
+          '<button class="control primary mx-auto mt-2" @click="$emit(\'download\')"><Icon name="Download" :size="18"/>Download <Icon name="ChevronDown" :size="16"/></button>',
+      };
+      const CurrentPanel = {
+        components: {
+          AlertsSlider: CurrentSlider,
+          AlertsChart: CurrentChart,
+          DownloadMapData: CurrentDownload,
+          DownloadStatistics: CurrentDownload,
+          AdminConfigGear: { template: "<span></span>" },
+        },
+        props: ["alertsStatistics", "initialRange"],
+        emits: ["date-range-changed", "download"],
+        setup: (properties, { emit }) => {
+          const props = computed(() => ({
+            alertsStatistics: properties.alertsStatistics,
+            dateOptions: ["2026-07", "2026-08", "2026-09", "2026-10"],
+            showSlider: true,
+            initialRange: properties.initialRange,
+            dataForAlertsIntroPanel: {},
+            calculateHectares: false,
+          }));
+          const showDownloads = ref(true);
+          return { props, showDownloads, emit };
+        },
+        template:
+          '\n  <div class="space-y-4" data-testid="alerts-intro-panel">\n    <div\n      class="rounded-2xl border border-violet-100 bg-violet-50 text-card-foreground shadow-sm"\n      data-testid="alerts-intro-header"\n    >\n      <div class="p-6 space-y-4">\n        <img\n          v-if="props.logoUrl"\n          :src="props.logoUrl"\n          class="w-auto mx-auto mb-4 max-h-25"\n          alt="Logo"\n          loading="eager"\n        />\n        <div class="flex items-center gap-2 pr-10">\n          <h2 class="text-2xl font-semibold tracking-tight min-w-0">\n            {{ $t("changeDetectionAlerts")\n            }}<span\n              v-if="props.alertsStatistics.territory"\n              class="text-muted-foreground"\n              >: {{ props.alertsStatistics.territory }}</span\n            >\n          </h2>\n          <AdminConfigGear\n            v-if="tableName"\n            :table-name="tableName"\n            view-type="alerts"\n          />\n        </div>\n        <div\n          v-if="props.alertsStatistics.alertsTotal > 0"\n          class="space-y-2 text-sm text-muted-foreground"\n        >\n          <p class="italic">\n            {{ $t("mostRecentAlertsShownIn") }}\n            <span class="text-red-500 font-bold">{{ $t("red") }}</span\n            >,\n            {{ $t("andPreviousAlertsShownIn") }}\n            <span class="text-orange-500 font-bold">{{ $t("orange") }}</span\n            >.\n          </p>\n          <p class="italic">{{ $t("clickOnAlertsForMoreInfo") }}.</p>\n        </div>\n        <div\n          v-if="props.showSlider"\n          data-testid="alerts-date-range"\n          class="pt-2"\n        >\n          <AlertsSlider\n            :date-options="props.dateOptions" :initial-range="props.initialRange"\n            @date-range-changed="emit(\'dateRangeChanged\', $event)"\n          />\n        </div>\n      </div>\n    </div>\n\n    <div\n      class="rounded-2xl border border-violet-100 bg-violet-50 text-card-foreground shadow-sm"\n      data-testid="alerts-statistics"\n    >\n      <div class="p-6 space-y-4">\n        <h3 class="text-2xl font-semibold tracking-tight">\n          {{ $t("statistics") }}\n        </h3>\n        <div class="space-y-2 text-sm">\n          <p v-if="props.alertsStatistics.typeOfAlerts?.length">\n            <span class="font-bold">{{ $t("typeOfAlerts") }}:&nbsp;</span>\n            {{ props.alertsStatistics.typeOfAlerts.join(", ") }}\n          </p>\n          <p v-if="props.alertsStatistics.dataProviders?.length">\n            <span class="font-bold">{{ $t("dataProviders") }}:&nbsp;</span>\n            {{ props.alertsStatistics.dataProviders.join(", ") }}\n          </p>\n          <p>\n            <span class="font-bold"\n              >{{ $t("alertDetectionRange") }}:&nbsp;</span\n            >\n            {{ props.alertsStatistics.alertDetectionRange }}\n          </p>\n          <p>\n            <span class="font-bold">{{ $t("recentAlertsDate") }}:&nbsp;</span>\n            {{ props.alertsStatistics.recentAlertsDate }}\n          </p>\n          <p>\n            <span class="font-bold">{{ $t("recentAlertsNumber") }}:&nbsp;</span>\n            {{ $n(props.alertsStatistics.recentAlertsNumber) }}\n          </p>\n          <p>\n            <span class="font-bold">{{ $t("alertsTotal") }}:&nbsp;</span>\n            {{ $n(props.alertsStatistics.alertsTotal) }}\n          </p>\n          <p\n            v-if="\n              props.calculateHectares && props.alertsStatistics.hectaresTotal\n            "\n          >\n            <span class="font-bold">{{ $t("hectaresTotal") }}:&nbsp;</span>\n            {{ $n(Number(props.alertsStatistics.hectaresTotal)) }}\n          </p>\n        </div>\n      </div>\n    </div>\n\n    <div\n      v-if="props.alertsStatistics && props.alertsStatistics.alertsTotal > 0"\n      class="rounded-2xl border border-violet-100 bg-violet-50 text-card-foreground shadow-sm"\n      data-testid="alerts-chart"\n    >\n      <div class="p-6">\n        <AlertsChart\n          :alerts-statistics="props.alertsStatistics"\n          :calculate-hectares="props.calculateHectares"\n        />\n      </div>\n    </div>\n\n    <div\n      v-if="showDownloads"\n      class="rounded-2xl border border-violet-100 bg-violet-50 text-card-foreground shadow-sm"\n      data-testid="alerts-download-data"\n    >\n      <div class="p-6 space-y-5">\n        <h3 class="text-2xl font-semibold tracking-tight">\n          {{ $t("downloadData") }}\n        </h3>\n\n        <div class="space-y-2">\n          <h4 class="text-sm font-semibold">\n            {{ $t("downloadAlertLocations") }}\n          </h4>\n          <p class="text-sm text-muted-foreground">\n            {{ $t("downloadAlertLocationsDescription") }}\n          </p>\n          <div class="flex justify-center [&>div]:!mt-0">\n            <DownloadMapData @download="emit(\'download\')"\n              :data-for-download="props.dataForAlertsIntroPanel"\n              :export-min-date="props.statsExportMinDate"\n              :export-max-date="props.statsExportMaxDate"\n              variant="violet"\n            />\n          </div>\n        </div>\n\n        <div class="border-t pt-5 space-y-2">\n          <h4 class="text-sm font-semibold">\n            {{ $t("downloadMonthlySummary") }}\n          </h4>\n          <p class="text-sm text-muted-foreground">\n            {{ $t("downloadMonthlySummaryDescription") }}\n          </p>\n          <div class="flex justify-center [&>div]:!mt-0">\n            <DownloadStatistics @download="emit(\'download\')"\n              :min-date="props.statsExportMinDate"\n              :max-date="props.statsExportMaxDate"\n              filename-prefix="statistics"\n              variant="outline-violet"\n            />\n          </div>\n        </div>\n      </div>\n    </div>\n  </div>\n',
+      };
+
+      const fixtures = Array.from({ length: 31 }, (_, index) => ({
+        id: index + 1,
+        x: 420 + ((index * 113) % 690),
+        y: 130 + ((index * 79) % 570),
+        size: 15 + ((index * 7) % 28),
+        recent: index % 3 !== 0,
+        date: index % 3 !== 0 ? "2026-10" : "2026-08",
+      }));
+      const panels = [
+        "Revised",
+        "Current",
+        "Toolbar",
+        "Edge tab",
+        "Map control",
+      ];
+      let app;
+      const mountVariant = (direction) => {
+        if (app) app.unmount();
+        app = createApp({
+          components: { Icon, CurrentPanel },
+          setup() {
+            const params = new URLSearchParams(location.search);
+            const isMobile = ref(innerWidth < 640);
+            const resize = () => {
+              isMobile.value = innerWidth < 640;
+            };
+            onMounted(() => window.addEventListener("resize", resize));
+            onBeforeUnmount(() => window.removeEventListener("resize", resize));
+            const open = ref(params.get("panel") !== "closed");
+            const drawerHeight = ref(innerHeight * 0.5);
+            let drawerDrag = false;
+            const resizeDrawer = (event) => {
+              if (drawerDrag)
+                drawerHeight.value = Math.min(
+                  innerHeight * 0.9,
+                  Math.max(innerHeight * 0.25, innerHeight - event.clientY),
+                );
+            };
+            const beginResize = (event) => {
+              drawerDrag = true;
+              event.currentTarget.setPointerCapture(event.pointerId);
+            };
+            const endResize = () => {
+              drawerDrag = false;
+            };
+            const resizeKey = (event) => {
+              if (["ArrowUp", "ArrowDown"].includes(event.key)) {
+                event.preventDefault();
+                event.stopPropagation();
+                drawerHeight.value = Math.min(
+                  innerHeight * 0.9,
+                  Math.max(
+                    innerHeight * 0.25,
+                    drawerHeight.value + (event.key === "ArrowUp" ? 40 : -40),
+                  ),
+                );
+              }
+            };
+            const zoom = ref(10);
+            const pan = ref({ x: 0, y: 0 });
+            const dateFrom = ref("2026-07");
+            const dateTo = ref("2026-10");
+            const showRecent = ref(true);
+            const showPrevious = ref(true);
+            const selected = ref(null);
+            const filterOpen = ref(false);
+            const legendOpen = ref(false);
+            const toast = ref("");
+            const visiblePoints = computed(() =>
+              fixtures.filter(
+                (point) =>
+                  point.date >= dateFrom.value &&
+                  point.date <= dateTo.value &&
+                  (point.recent ? showRecent.value : showPrevious.value),
+              ),
+            );
+            const count = computed(() => visiblePoints.value.length);
+            const statistics = computed(() => ({
+              territory: "Test Territory 130",
+              alertsTotal: count.value,
+              typeOfAlerts: ["Forest disturbance"],
+              dataProviders: ["Synthetic data"],
+              alertDetectionRange: dateFrom.value + " to " + dateTo.value,
+              recentAlertsDate: "2026-10-15",
+              recentAlertsNumber: visiblePoints.value.filter(
+                (point) => point.recent,
+              ).length,
+              alertsPerMonth: {
+                "2026-07": 0,
+                "2026-08": 11,
+                "2026-09": 0,
+                "2026-10": 20,
+              },
+              hectaresPerMonth: null,
+            }));
+            const recentCount = computed(
+              () => visiblePoints.value.filter((point) => point.recent).length,
+            );
+            const tiles = Array.from({ length: 48 }, (_, i) => ({
+              x: 524 + (i % 8),
+              y: 345 + Math.floor(i / 8),
+              left: (i % 8) * 256,
+              top: Math.floor(i / 8) * 256,
+            }));
+            const mapTransform = computed(
+              () =>
+                `translate(calc(-50% + ${pan.value.x}px),calc(-50% + ${pan.value.y}px)) scale(${Math.pow(1.25, zoom.value - 10)})`,
+            );
+            let drag;
+            const begin = (event) => {
+              if (event.target.closest("button")) return;
+              drag = {
+                x: event.clientX,
+                y: event.clientY,
+                pan: { ...pan.value },
+              };
+              event.currentTarget.setPointerCapture(event.pointerId);
+            };
+            const move = (event) => {
+              if (drag)
+                pan.value = {
+                  x: drag.pan.x + event.clientX - drag.x,
+                  y: drag.pan.y + event.clientY - drag.y,
+                };
+            };
+            const end = () => {
+              drag = null;
+            };
+            const toggle = () => {
+              open.value = !open.value;
+              filterOpen.value = false;
+              nextTick(() => document.getElementById("panel-toggle")?.focus());
+            };
+            const reset = () => {
+              zoom.value = 10;
+              pan.value = { x: 0, y: 0 };
+              dateFrom.value = "2026-07";
+              dateTo.value = "2026-10";
+              showRecent.value = true;
+              showPrevious.value = true;
+              selected.value = null;
+              open.value = true;
+              filterOpen.value = false;
+            };
+            const select = (point) => {
+              selected.value = point;
+              open.value = true;
+            };
+            const copy = async () => {
+              await navigator.clipboard.writeText(
+                `Synthetic map view: zoom ${zoom.value}, offset ${pan.value.x}, ${pan.value.y}`,
+              );
+              toast.value = "Map location copied";
+            };
+            const download = () => {
+              const url = URL.createObjectURL(
+                new Blob(
+                  [
+                    JSON.stringify({
+                      type: "FeatureCollection",
+                      features: visiblePoints.value.map((point) => ({
+                        type: "Feature",
+                        properties: {
+                          id: point.id,
+                          date: point.recent ? "2026-10-15" : "2026-08-15",
+                        },
+                        geometry: {
+                          type: "Point",
+                          coordinates: [
+                            5 + (point.x - 420) / 10000,
+                            50 + (point.y - 130) / 10000,
+                          ],
+                        },
+                      })),
+                    }),
+                  ],
+                  { type: "application/geo+json" },
+                ),
+              );
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = "synthetic-alerts.geojson";
+              link.click();
+              URL.revokeObjectURL(url);
+              toast.value = "Synthetic alert locations downloaded";
+            };
+            const key = (event) => {
+              if (event.key === "Escape") {
+                filterOpen.value = false;
+                if (open.value) toggle();
+              }
+            };
+            onMounted(() => document.addEventListener("keydown", key));
+            onBeforeUnmount(() => document.removeEventListener("keydown", key));
+            return {
+              innerHeight,
+              direction,
+              isMobile,
+              drawerHeight,
+              beginResize,
+              resizeDrawer,
+              endResize,
+              resizeKey,
+              open,
+              zoom,
+              pan,
+              dateFrom,
+              dateTo,
+              showRecent,
+              showPrevious,
+              selected,
+              filterOpen,
+              legendOpen,
+              statistics,
+              toast,
+              count,
+              recentCount,
+              visiblePoints,
+              tiles,
+              mapTransform,
+              fixtures,
+              begin,
+              move,
+              end,
+              toggle,
+              reset,
+              select,
+              copy,
+              download,
+            };
+          },
+          template: `
+ <section class="absolute inset-0" :aria-label="direction + ' prototype'" :style="{'--drawer-height':drawerHeight+'px'}">
+  <div class="map-scene" aria-label="Synthetic alert map. Drag to pan; use zoom buttons to zoom." @pointerdown="begin" @pointermove="move" @pointerup="end" @pointercancel="end">
+   <div class="absolute left-1/2 top-1/2 w-[2048px] h-[1536px] origin-center" :style="{transform:mapTransform}">
+    <img v-for="tile in tiles" :key="tile.left+'-'+tile.top" :src="'tiles/'+tile.x+'-'+tile.y+'.png'" width="256" height="256" alt="" draggable="false" class="absolute select-none pointer-events-none" :style="{left:tile.left+'px',top:tile.top+'px'}">
+    <div class="absolute" style="left:324px;top:314px;width:1400px;height:850px">
+     
+     <button v-for="point in visiblePoints" :key="point.id" class="alert-marker" :class="{'previous':!point.recent}" :aria-label="'View synthetic alert '+point.id" :style="{left:point.x+'px',top:point.y+'px',width:point.size+'px',height:point.size+'px'}" @click="select(point)"></button>
+     
+    </div>
+   </div>
+  </div>
+  <div v-if="direction==='Toolbar'" class="toolbar-controls absolute top-2.5 flex items-center gap-2" :style="{left:open?'416px':'196px',zIndex:21}">
+   <button id="panel-toggle" class="control !min-h-10 max-sm:!min-h-11" :aria-expanded="open" aria-controls="map-panel" @click="toggle"><Icon :name="open?'PanelLeftClose':'PanelLeftOpen'"/><span>{{open?'Hide panel':'Show panel'}}</span></button>
+
+  </div>
+  <template v-if="direction==='Edge tab'">
+   <button id="panel-toggle" class="control edge-toggle absolute" :class="{open}" :style="{left:open?'400px':'0',top:'90px',zIndex:21,borderRadius:'0 10px 10px 0',padding:'0 14px'}" :aria-expanded="open" aria-controls="map-panel" @click="toggle"><Icon :name="open?'ChevronLeft':'ChevronRight'" :size="18"/>{{open?'Hide panel':'Show panel'}}</button>
+
+  </template>
+  <button v-if="!open" class="absolute top-2.5 left-[18px] bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 px-4 rounded" aria-label="Reset Dashboard" @click="reset">Reset Dashboard</button>
+  <button class="absolute top-4 right-14 flex h-10 w-10 items-center justify-center rounded-md bg-violet-700 text-white shadow-sm" aria-label="Copy map location" @click="copy"><Icon name="Copy"/></button>
+  <div class="rail">
+   <div class="tool-group zoom-controls">
+    <button class="icon-button" aria-label="Zoom in" @click="zoom=Math.min(zoom+1,14)" :disabled="zoom===14"><Icon name="Plus"/></button>
+    <div class="mx-2 border-t border-gray-100"></div>
+    <button class="icon-button" aria-label="Zoom out" @click="zoom=Math.max(zoom-1,8)" :disabled="zoom===8"><Icon name="Minus"/></button>
+    <div class="mx-2 border-t border-gray-100"></div>
+    <button class="icon-button" aria-label="Return to starting map position" @click="pan={x:0,y:0};zoom=10"><Icon name="Navigation" :size="17"/></button>
+   </div>
+   <div v-if="direction==='Map control'" class="tool-group">
+    <button id="panel-toggle" class="icon-button flex-col gap-1 !min-w-14 !min-h-14 !text-violet-700" :class="{'!bg-violet-50':open}" :aria-label="open?'Hide panel':'Show panel'" :aria-expanded="open" aria-controls="map-panel" @click="toggle"><Icon :name="open?'PanelLeftClose':'PanelLeftOpen'"/><span class="text-[11px] font-semibold">Panel</span></button>
+   </div>
+  </div>
+  <div v-if="filterOpen" class="absolute top-4 right-[82px] rounded-xl bg-white p-5 shadow-lg w-60" style="z-index:30">
+   <div class="flex items-center justify-between mb-3"><h2 class="text-sm font-semibold">Alert layers</h2><button aria-label="Close filters" class="icon-button" @click="filterOpen=false"><Icon name="X" :size="16"/></button></div>
+   <label class="flex items-center gap-3 py-3 text-sm"><input type="checkbox" v-model="showRecent">Recent alerts</label>
+   <label class="flex items-center gap-3 py-3 text-sm"><input type="checkbox" v-model="showPrevious">Previous alerts</label>
+  </div>
+  <aside v-if="open" id="map-panel" class="sidebar" aria-label="Map panel">
+   <button class="sm:hidden flex justify-center h-8 w-full items-center touch-none" aria-label="Resize sidebar" role="separator" aria-orientation="horizontal" :aria-valuenow="drawerHeight" :aria-valuemin="innerHeight*.25" :aria-valuemax="innerHeight*.9" @pointerdown="beginResize" @pointermove="resizeDrawer" @pointerup="endResize" @pointercancel="endResize" @keydown="resizeKey"><span class="h-1.5 w-12 rounded-full bg-gray-300"></span></button>
+   <button class="icon-button absolute right-6 top-6 !rounded-full !bg-white/90" aria-label="Hide panel" @click="toggle"><Icon name="X" :size="18"/></button>
+   <CurrentPanel v-if="!selected" :alerts-statistics="statistics" :initial-range="[dateFrom,dateTo]" @date-range-changed="dateFrom=$event[0];dateTo=$event[1]" @download="download"/>
+   <section v-else class="card"><button class="text-violet-800 text-sm flex gap-2 items-center min-h-11 mb-2" @click="selected=null"><Icon name="ArrowLeft" :size="16"/>Overview</button><h2>Synthetic alert {{selected.id}}</h2><dl class="text-sm mt-5 space-y-4"><div><dt class="text-gray-500 mb-1">Detection date</dt><dd>{{selected.recent?'15 October 2026':'15 August 2026'}}</dd></div><div><dt class="text-gray-500 mb-1">Territory</dt><dd>Test Territory 130</dd></div><div><dt class="text-gray-500 mb-1">Area</dt><dd>0.42 hectares</dd></div></dl></section>
+   
+  </aside>
+  <div class="absolute right-2.5" :style="{bottom:open&&isMobile?(drawerHeight+30)+'px':'30px',zIndex:15}">
+   <button v-if="!legendOpen" class="icon-button !bg-violet-700 !text-white" aria-label="Map legend" @click="legendOpen=true"><Icon name="Layers"/></button>
+   <div v-else class="bg-white p-4 rounded-lg shadow-lg w-64"><div class="flex justify-between items-center"><h2 class="text-lg font-semibold">Map legend</h2><button class="icon-button" aria-label="Close map legend" @click="legendOpen=false"><Icon name="X" :size="16"/></button></div><label class="flex gap-3 py-3 items-center text-sm"><input type="checkbox" v-model="showRecent"><span class="w-3 h-3 bg-red-500 rounded-full"></span>Most recent alerts</label><label class="flex gap-3 py-3 items-center text-sm"><input type="checkbox" v-model="showPrevious"><span class="w-3 h-3 bg-orange-400 rounded-full"></span>Previous alerts</label></div>
+  </div>
+  <div class="absolute bottom-0 right-0 bg-white/85 px-2 py-1 text-[10px] text-gray-600"><a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a></div>
+  <output class="absolute bottom-1 left-4 bg-white/85 px-2 py-1 text-[10px] tabular-nums text-gray-600" :style="{left:open?'416px':'16px'}">Zoom {{zoom}} · Offset {{Math.round(pan.x)}}, {{Math.round(pan.y)}}</output>
+  <div v-if="toast" role="status" class="absolute top-20 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-5 py-3 rounded-lg text-sm" style="z-index:30" @click="toast=''">{{toast}}</div>
+ </section>`,
+        });
+        app.config.globalProperties.$t = (key) => translations[key] || key;
+        app.config.globalProperties.$n = (value) =>
+          new Intl.NumberFormat("en").format(value);
+        app.mount("#stage");
+      };
+      const stage = document.getElementById("stage");
+      const picker = document.querySelector(".proto-picker");
+      const highlight = picker.querySelector(".proto-picker-highlight");
+      const items = [
+        ...picker.querySelectorAll(
+          ".proto-picker-item:not(.proto-picker-replay)",
+        ),
+      ];
+      const replay = picker.querySelector(".proto-picker-replay");
+      let current = 0;
+      const moveHighlight = () => {
+        const el = items[current];
+        highlight.style.width = el.offsetWidth + "px";
+        highlight.style.transform = `translateX(${el.offsetLeft}px)`;
+      };
+      const revisedFrame = document.getElementById("revised-prototype");
+      const mount = (i) => {
+        if (app) {
+          app.unmount();
+          app = null;
+        }
+        stage.style.display = i === 0 ? "none" : "";
+        revisedFrame.hidden = i !== 0;
+        if (i === 0) revisedFrame.src = "round-two.html?embedded=1";
+        else {
+          revisedFrame.removeAttribute("src");
+          mountVariant(panels[i]);
+        }
+      };
+      const setActive = (i) => {
+        if (i < 0 || i >= panels.length) return;
+        current = i;
+        items.forEach((el, j) => {
+          el.toggleAttribute("data-active", j === i);
+          if (j === i) el.setAttribute("aria-current", "true");
+          else el.removeAttribute("aria-current");
+        });
+        moveHighlight();
+        const url = new URL(location);
+        url.searchParams.set("v", i + 1);
+        history.replaceState(null, "", url);
+        mount(i);
+      };
+      items.forEach((el, i) =>
+        el.addEventListener("click", () => setActive(i)),
+      );
+      window.addEventListener("resize", moveHighlight);
+      const switchWithKeyboard = (e) => {
+        if (
+          /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) ||
+          e.target.isContentEditable ||
+          e.target.closest("[role=slider],[role=separator]")
+        )
+          return;
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+        const num = parseInt(e.key, 10);
+        if (num >= 1 && num <= panels.length) setActive(num - 1);
+        else if (e.key === "ArrowRight")
+          setActive((current + 1) % panels.length);
+        else if (e.key === "ArrowLeft")
+          setActive((current - 1 + panels.length) % panels.length);
+        else if (e.key === "r" || e.key === "R") mount(current);
+      };
+      document.addEventListener("keydown", switchWithKeyboard);
+      revisedFrame.addEventListener("load", () =>
+        revisedFrame.contentDocument?.addEventListener(
+          "keydown",
+          switchWithKeyboard,
+        ),
+      );
+      const initial = parseInt(
+        new URLSearchParams(location.search).get("v"),
+        10,
+      );
+      setActive(initial >= 1 && initial <= panels.length ? initial - 1 : 0);
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => picker.setAttribute("data-ready", "")),
+      );
+    </script>
+  </body>
+</html>
