@@ -2,8 +2,8 @@
 import { useSecondaryDatasetLayer } from "@/composables/map/useSecondaryDatasetLayer";
 import { attachMapHover } from "@/utils/mapHover";
 import { SECONDARY_INTERACTIVE_LAYER_IDS } from "@/utils/secondaryMapLayers";
-import { computed, toRef } from "vue";
-import { LocateFixed } from "lucide-vue-next";
+import { computed, shallowRef, toRef } from "vue";
+import { House } from "lucide-vue-next";
 import SidebarPrototypePicker from "@/components/prototypes/SidebarPrototypePicker.vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -167,14 +167,7 @@ const revisedSidebar = computed(
 );
 const sidebarCollapsed = ref(false);
 const selectedAlertGeojson = ref<Feature | AlertsData>();
-const activeDateFilters = computed(() => {
-  const dates = getDateOptions();
-  return Boolean(
-    selectedDateRange.value &&
-      (selectedDateRange.value[0] !== dates[0] ||
-        selectedDateRange.value[1] !== dates[dates.length - 1]),
-  );
-});
+const homeControl = shallowRef<HTMLDivElement>();
 
 const isSecondary = ref(false);
 const selectedFeatureLoading = ref(false);
@@ -489,6 +482,14 @@ onMounted(() => {
       // Fullscreen Control
       const fullscreenControl = new mapboxgl.FullscreenControl();
       map.value.addControl(fullscreenControl, "top-right");
+
+      const home = document.createElement("div");
+      home.className = "mapboxgl-ctrl mapboxgl-ctrl-group alerts-home-control";
+      map.value.addControl(
+        { onAdd: () => home, onRemove: () => home.remove() },
+        "top-right",
+      );
+      homeControl.value = home;
 
       // Ruler control
       const ruler = new rulerControl();
@@ -1544,20 +1545,22 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <div id="map" :data-map-ready="mapReady || undefined"></div>
+    <div
+      id="map"
+      :class="{ 'revised-alerts-controls': revisedSidebar }"
+      :data-map-ready="mapReady || undefined"
+    ></div>
     <SidebarPrototypePicker />
-    <button
-      v-if="revisedSidebar"
-      type="button"
-      class="absolute right-14 top-28 z-[1010] flex h-11 items-center gap-2 rounded-lg bg-violet-100 px-3 text-sm font-medium text-violet-800 shadow-sm hover:bg-violet-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800"
-      aria-label="Reset map view"
-      @click="resetMapView"
-    >
-      <LocateFixed class="h-5 w-5" aria-hidden="true" /><span
-        class="hidden sm:inline"
-        >Reset map view</span
+    <Teleport v-if="homeControl && revisedSidebar" :to="homeControl">
+      <button
+        type="button"
+        aria-label="Reset map view"
+        title="Reset map view"
+        @click="resetMapView"
       >
-    </button>
+        <House class="mx-auto h-4 w-4" aria-hidden="true" />
+      </button>
+    </Teleport>
     <button
       v-if="!showSidebar && !revisedSidebar"
       class="absolute top-2.5 left-2.5 z-10 bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 px-4 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 mx-2"
@@ -1574,7 +1577,6 @@ onBeforeUnmount(() => {
     <ViewSidebar
       :sidebar-prototype="revisedSidebar"
       :collapsed="sidebarCollapsed"
-      :active-date-filters="activeDateFilters"
       :selected-date-range="revisedSidebar ? selectedDateRange : undefined"
       :alerts-statistics="filteredStatistics"
       :allowed-file-extensions="allowedFileExtensions"
@@ -1731,6 +1733,14 @@ body {
 
 .mapboxgl-popup-content {
   word-wrap: break-word;
+}
+
+:deep(.alerts-home-control:empty),
+.revised-alerts-controls
+  :deep(.mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen)),
+.revised-alerts-controls
+  :deep(.mapboxgl-ctrl-group:has(.mapboxgl-ctrl-shrink)) {
+  display: none;
 }
 
 :deep(.mapboxgl-ctrl-ruler) {

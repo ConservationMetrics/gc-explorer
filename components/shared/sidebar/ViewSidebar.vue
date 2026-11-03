@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  CalendarDays,
   Check,
   ChevronDown,
   ChevronUp,
@@ -37,7 +36,6 @@ import type { Feature, FeatureCollection } from "geojson";
 const props = defineProps<{
   sidebarPrototype?: boolean;
   collapsed?: boolean;
-  activeDateFilters?: boolean;
   selectedDateRange?: [string, string];
   alertsStatistics?: AlertsStatistics;
   allowedFileExtensions?: AllowedFileExtensions;
@@ -77,18 +75,6 @@ const props = defineProps<{
 }>();
 
 const isScrollable = ref(false);
-const filtersOpen = ref(false);
-const sidebarContent = ref<HTMLElement>();
-
-/** Expand the existing sidebar and reveal its real date controls. */
-const openDateFilters = async () => {
-  emit("update:collapsed", false);
-  filtersOpen.value = !props.showIntroPanel;
-  await nextTick();
-  sidebarContent.value
-    ?.querySelector("[data-testid=alerts-date-range]")
-    ?.scrollIntoView({ block: "center" });
-};
 
 /** Filter out latitude and longitude from feature object */
 const filteredFeature = computed<DataEntry>(() => {
@@ -227,23 +213,6 @@ onBeforeUnmount(() => {
         <div class="flex gap-1" :class="{ 'sm:flex-col-reverse': collapsed }">
           <button
             type="button"
-            class="flex h-11 w-11 items-center justify-center rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800"
-            :class="
-              activeDateFilters
-                ? 'bg-violet-700 text-white'
-                : 'bg-violet-100 text-violet-800'
-            "
-            :aria-label="
-              activeDateFilters
-                ? 'Date filters active. Open date filters'
-                : 'Open date filters'
-            "
-            @click="openDateFilters"
-          >
-            <CalendarDays class="h-5 w-5" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
             class="flex h-11 w-11 items-center justify-center rounded-lg bg-violet-100 text-violet-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800"
             :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
             :aria-expanded="!collapsed"
@@ -279,24 +248,7 @@ onBeforeUnmount(() => {
         <X class="w-5 h-5 text-gray-600" />
       </button>
 
-      <div
-        v-show="!sidebarPrototype || !collapsed"
-        ref="sidebarContent"
-        class="p-4 sidebar-content"
-      >
-        <section
-          v-if="sidebarPrototype && !showIntroPanel && filtersOpen"
-          class="mb-4 rounded-2xl bg-violet-50 p-6"
-          data-testid="alerts-date-range"
-        >
-          <AlertsSlider
-            :date-options="dateOptions"
-            :selected-date-range="selectedDateRange"
-            :show-clear-filters="true"
-            @date-range-changed="emit('date-range-changed', $event)"
-            @clear-filters="emit('clear-filters')"
-          />
-        </section>
+      <div v-show="!sidebarPrototype || !collapsed" class="p-4 sidebar-content">
         <AlertsIntroPanel
           v-if="showIntroPanel && alertsStatistics && isAlertsDashboard"
           :selected-date-range="selectedDateRange"

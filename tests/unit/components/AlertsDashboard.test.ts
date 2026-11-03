@@ -197,6 +197,7 @@ describe("AlertsDashboard component", () => {
       global: {
         plugins: [i18n, ...(options.plugins || [])],
         stubs: {
+          Teleport: true,
           ViewSidebar: true,
           MapLegend: true,
           BasemapSelector: true,
