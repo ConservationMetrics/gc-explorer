@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { Check, ChevronDown, Copy, X } from "lucide-vue-next";
+import {
+  CalendarDays,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  PanelLeftClose,
+  PanelLeftOpen,
+  X,
+} from "lucide-vue-next";
 import GalleryMediaCarousel from "@/components/gallery/GalleryMediaCarousel.vue";
 import DownloadMapData from "@/components/shared/downloads/DownloadMapData.vue";
 import FeatureMetadata from "@/components/shared/sidebar/FeatureMetadata.vue";
@@ -26,6 +35,10 @@ import type {
 import type { Feature, FeatureCollection } from "geojson";
 
 const props = defineProps<{
+  sidebarPrototype?: boolean;
+  collapsed?: boolean;
+  activeDateFilters?: boolean;
+  selectedDateRange?: [string, string];
   alertsStatistics?: AlertsStatistics;
   allowedFileExtensions?: AllowedFileExtensions;
   calculateHectares?: boolean;
@@ -64,6 +77,18 @@ const props = defineProps<{
 }>();
 
 const isScrollable = ref(false);
+const filtersOpen = ref(false);
+const sidebarContent = ref<HTMLElement>();
+
+/** Expand the existing sidebar and reveal its real date controls. */
+const openDateFilters = async () => {
+  emit("update:collapsed", false);
+  filtersOpen.value = !props.showIntroPanel;
+  await nextTick();
+  sidebarContent.value
+    ?.querySelector("[data-testid=alerts-date-range]")
+    ?.scrollIntoView({ block: "center" });
+};
 
 /** Filter out latitude and longitude from feature object */
 const filteredFeature = computed<DataEntry>(() => {
@@ -127,6 +152,9 @@ const { showCopied, copyLink } = useCopyLink(
 
 const emit = defineEmits<{
   close: [];
+  "close-feature": [];
+  "clear-filters": [];
+  "update:collapsed": [boolean];
   "date-range-changed": [[string, string]];
   "mobile-height-change": [number];
   "toggle-icons": [];
@@ -181,11 +209,60 @@ onBeforeUnmount(() => {
   <MobileResizableDrawer
     class="sidebar"
     :open="showSidebar ?? false"
+    :collapsed="sidebarPrototype ? collapsed : undefined"
+    @update:collapsed="emit('update:collapsed', $event)"
     @height-change="emit('mobile-height-change', $event)"
   >
     <div class="relative min-h-full">
+      <header
+        v-if="sidebarPrototype"
+        class="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-2 bg-white px-3"
+        :class="collapsed ? 'sm:flex-col sm:justify-start sm:py-3' : ''"
+      >
+        <span
+          class="text-sm font-semibold"
+          :class="{ 'sm:hidden': collapsed }"
+          >{{ showIntroPanel ? "Overview" : "Alert details" }}</span
+        >
+        <div class="flex gap-1" :class="{ 'sm:flex-col-reverse': collapsed }">
+          <button
+            type="button"
+            class="flex h-11 w-11 items-center justify-center rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800"
+            :class="
+              activeDateFilters
+                ? 'bg-violet-700 text-white'
+                : 'bg-violet-100 text-violet-800'
+            "
+            :aria-label="
+              activeDateFilters
+                ? 'Date filters active. Open date filters'
+                : 'Open date filters'
+            "
+            @click="openDateFilters"
+          >
+            <CalendarDays class="h-5 w-5" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            class="flex h-11 w-11 items-center justify-center rounded-lg bg-violet-100 text-violet-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800"
+            :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+            :aria-expanded="!collapsed"
+            @click="emit('update:collapsed', !collapsed)"
+          >
+            <component
+              :is="collapsed ? ChevronUp : ChevronDown"
+              class="h-5 w-5 sm:hidden"
+              aria-hidden="true"
+            /><component
+              :is="collapsed ? PanelLeftOpen : PanelLeftClose"
+              class="hidden h-5 w-5 sm:block"
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+      </header>
       <button
-        v-if="isScrollable && showIntroPanel && isAlertsDashboard"
+        v-if="!collapsed && isScrollable && showIntroPanel && isAlertsDashboard"
         class="scroll-indicator border-0 cursor-pointer"
         aria-label="Scroll to bottom"
         type="button"
@@ -194,6 +271,7 @@ onBeforeUnmount(() => {
         <ChevronDown class="w-6 h-6 text-gray-600 animate-bounce" />
       </button>
       <button
+        v-if="!sidebarPrototype"
         class="absolute top-5 right-5 p-2.5 bg-white/80 backdrop-blur-sm hover:bg-gray-100 rounded-full transition-all duration-200 ease-in-out shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2"
         @click="emit('close')"
       >
@@ -201,9 +279,28 @@ onBeforeUnmount(() => {
         <X class="w-5 h-5 text-gray-600" />
       </button>
 
-      <div class="p-4 sidebar-content">
+      <div
+        v-show="!sidebarPrototype || !collapsed"
+        ref="sidebarContent"
+        class="p-4 sidebar-content"
+      >
+        <section
+          v-if="sidebarPrototype && !showIntroPanel && filtersOpen"
+          class="mb-4 rounded-2xl bg-violet-50 p-6"
+          data-testid="alerts-date-range"
+        >
+          <AlertsSlider
+            :date-options="dateOptions"
+            :selected-date-range="selectedDateRange"
+            :show-clear-filters="true"
+            @date-range-changed="emit('date-range-changed', $event)"
+            @clear-filters="emit('clear-filters')"
+          />
+        </section>
         <AlertsIntroPanel
           v-if="showIntroPanel && alertsStatistics && isAlertsDashboard"
+          :selected-date-range="selectedDateRange"
+          :show-clear-filters="sidebarPrototype"
           :calculate-hectares="calculateHectares"
           :date-options="dateOptions"
           :data-for-alerts-intro-panel="dataForAlertsIntroPanel"
@@ -213,6 +310,7 @@ onBeforeUnmount(() => {
           :stats-export-max-date="statsExportMaxDate"
           :alerts-statistics="alertsStatistics"
           :table-name="tableName"
+          @clear-filters="emit('clear-filters')"
           @date-range-changed="emit('date-range-changed', $event)"
         />
         <MapIntroPanel
@@ -254,6 +352,16 @@ onBeforeUnmount(() => {
           data-testid="feature-metadata"
         >
           <div class="p-4 sm:p-6">
+            <div v-if="sidebarPrototype" class="mb-3 flex justify-end">
+              <button
+                type="button"
+                class="flex h-11 w-11 items-center justify-center rounded-full bg-violet-100 text-violet-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800"
+                aria-label="Close selected alert"
+                @click="emit('close-feature')"
+              >
+                <X class="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
             <GalleryMediaCarousel
               v-if="showPhotoCarousel && imageFilePaths.length > 0"
               class="mb-6 h-60 overflow-hidden rounded-2xl bg-gray-50 sm:h-80"

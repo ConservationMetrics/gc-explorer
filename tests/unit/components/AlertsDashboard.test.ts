@@ -799,6 +799,80 @@ describe("AlertsDashboard component", () => {
     );
   });
 
+  it("collapses the revised sidebar without resetting the camera, filters or selection", async () => {
+    const wrapper = mountComponent(baseProps);
+    mapboxMock.fireLoad();
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      sidebarCollapsed: boolean;
+      selectedFeature: Record<string, unknown>;
+      selectedDateRange: [string, string];
+    };
+    vm.selectedFeature = { alertID: "Test Alert 130" };
+    vm.selectedDateRange = ["01-2024", "02-2024"];
+    await flushPromises();
+    mapboxMock.mockMap.flyTo.mockClear();
+    vm.sidebarCollapsed = true;
+    await flushPromises();
+    expect(vm.selectedFeature).toEqual({ alertID: "Test Alert 130" });
+    expect(vm.selectedDateRange).toEqual(["01-2024", "02-2024"]);
+    expect(mapboxMock.mockMap.flyTo).not.toHaveBeenCalled();
+    expect(
+      wrapper.findComponent({ name: "ViewSidebar" }).props("showSidebar"),
+    ).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("resets only the camera from the revised map reset button", async () => {
+    const wrapper = mountComponent(baseProps);
+    mapboxMock.fireLoad();
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      selectedFeature: Record<string, unknown>;
+      selectedDateRange: [string, string];
+    };
+    vm.selectedFeature = { alertID: "Test Alert 130" };
+    vm.selectedDateRange = ["01-2024", "02-2024"];
+    await wrapper.get('[aria-label="Reset map view"]').trigger("click");
+    expect(mapboxMock.mockMap.flyTo).toHaveBeenCalled();
+    expect(vm.selectedFeature).toEqual({ alertID: "Test Alert 130" });
+    expect(vm.selectedDateRange).toEqual(["01-2024", "02-2024"]);
+    wrapper.unmount();
+  });
+
+  it("keeps selected-feature export scoped through filtering and restores overview downloads on close", async () => {
+    const props = structuredClone(baseProps);
+    props.alertsStatistics.allDates = ["01-2024", "02-2024"];
+    props.alertsData.mostRecentAlerts.features = [
+      {
+        type: "Feature",
+        id: "Test Alert 130",
+        geometry: { type: "Point", coordinates: [0, 0] },
+        properties: { alertID: "Test Alert 130", YYYYMM: "202402" },
+      },
+    ];
+    const wrapper = mountComponent(props);
+    mapboxMock.fireLoad();
+    await flushPromises();
+    mapboxMock.fireClick("most-recent-alerts-point", {
+      features: props.alertsData.mostRecentAlerts.features,
+      point: { x: 10, y: 10 },
+    });
+    await flushPromises();
+    const sidebar = wrapper.findComponent({ name: "ViewSidebar" });
+    const selectedExport = sidebar.props("featureGeojson");
+    sidebar.vm.$emit("clear-filters");
+    await flushPromises();
+    expect(sidebar.props("featureGeojson")).toEqual(selectedExport);
+    expect(sidebar.props("feature")).toBeTruthy();
+    sidebar.vm.$emit("close-feature");
+    await flushPromises();
+    expect(sidebar.props("showIntroPanel")).toBe(true);
+    expect(sidebar.props("feature")).toBeNull();
+    expect(sidebar.props("localAlertsData")).toEqual(props.alertsData);
+    wrapper.unmount();
+  });
+
   it("selects an alert feature and opens sidebar", async () => {
     const props = JSON.parse(JSON.stringify(baseProps));
     props.alertsData.mostRecentAlerts.features.push({

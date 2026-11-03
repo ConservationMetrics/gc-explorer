@@ -7,6 +7,8 @@ import type { AlertsData, AlertsStatistics } from "@/types";
 
 const props = defineProps<{
   alertsStatistics: AlertsStatistics;
+  selectedDateRange?: [string, string];
+  showClearFilters?: boolean;
   calculateHectares?: boolean;
   dateOptions?: Array<string>;
   dataForAlertsIntroPanel?: AlertsData;
@@ -17,7 +19,7 @@ const props = defineProps<{
   tableName?: string;
 }>();
 
-const emit = defineEmits(["dateRangeChanged"]);
+const emit = defineEmits(["dateRangeChanged", "clear-filters"]);
 
 const showDownloads = computed(
   () => Boolean(props.showSlider) && Boolean(props.dataForAlertsIntroPanel),
@@ -74,6 +76,9 @@ const showDownloads = computed(
         >
           <AlertsSlider
             :date-options="props.dateOptions"
+            :selected-date-range="selectedDateRange"
+            :show-clear-filters="showClearFilters"
+            @clear-filters="emit('clear-filters')"
             @date-range-changed="emit('dateRangeChanged', $event)"
           />
         </div>

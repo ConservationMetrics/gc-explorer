@@ -3,6 +3,8 @@ import { useSecondaryDatasetLayer } from "@/composables/map/useSecondaryDatasetL
 import { attachMapHover } from "@/utils/mapHover";
 import { SECONDARY_INTERACTIVE_LAYER_IDS } from "@/utils/secondaryMapLayers";
 import { computed, toRef } from "vue";
+import { LocateFixed } from "lucide-vue-next";
+import SidebarPrototypePicker from "@/components/prototypes/SidebarPrototypePicker.vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 
@@ -160,6 +162,19 @@ const showSlider = ref(false);
 
 const route = useRoute();
 const router = useRouter();
+const revisedSidebar = computed(
+  () => route.query.sidebarPrototype !== "current",
+);
+const sidebarCollapsed = ref(false);
+const selectedAlertGeojson = ref<Feature | AlertsData>();
+const activeDateFilters = computed(() => {
+  const dates = getDateOptions();
+  return Boolean(
+    selectedDateRange.value &&
+      (selectedDateRange.value[0] !== dates[0] ||
+        selectedDateRange.value[1] !== dates[dates.length - 1]),
+  );
+});
 
 const isSecondary = ref(false);
 const selectedFeatureLoading = ref(false);
@@ -222,7 +237,7 @@ const {
   selectedFeatureId,
   selectedFeatureGeometry,
   highlightClusterContainingFeature,
-  selectFeature,
+  selectFeature: selectMapFeature,
   resetSelectedFeature,
   calculateLineStringCentroid,
 } = useFeatureSelection(
@@ -234,6 +249,18 @@ const {
   showIntroPanel,
   isSecondary,
 );
+
+/**
+ * Expand the sidebar when a feature is opened, including the same feature again.
+ * @param {Feature} feature - The clicked map feature.
+ * @param {string} layerId - The feature's source layer.
+ * @returns {void}
+ */
+const selectFeature = (feature: Feature, layerId: string) => {
+  sidebarCollapsed.value = false;
+  selectMapFeature(feature, layerId);
+  selectedAlertGeojson.value = localAlertsData.value;
+};
 
 // Fetch full record on demand when a minimal feature is selected.
 // Handles both secondary features and alert features — the minimal
@@ -296,6 +323,7 @@ watch(
 
 // Use alerts date filter composable
 const {
+  selectedDateRange,
   filteredData,
   filteredStatistics,
   resolvedDateRange,
@@ -1377,6 +1405,38 @@ const handleSidebarClose = () => {
   resetSelectedFeature();
 };
 
+/** Return to the overview without changing the map or date filters. */
+const closeSelectedAlert = () => {
+  resetSelectedFeature();
+  selectedFeatureLoading.value = false;
+  showIntroPanel.value = true;
+  selectedAlertGeojson.value = undefined;
+  localAlertsData.value = filteredData.value;
+};
+
+/** Restore the configured camera without clearing the current work. */
+const resetMapView = () => {
+  map.value?.flyTo({
+    center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
+    zoom: props.mapboxZoom || 2.5,
+    pitch: props.mapboxPitch || 0,
+    bearing: props.mapboxBearing || 0,
+  });
+};
+
+/** Restore all dates while keeping the camera and selected feature. */
+const clearDateFilters = () => {
+  const dates = getDateOptions();
+  if (!dates.length) return;
+  handleDateRangeChanged([dates[0], dates[dates.length - 1]]);
+  resetDateRange();
+};
+
+watch(revisedSidebar, () => {
+  showSidebar.value = true;
+  sidebarCollapsed.value = false;
+});
+
 /** Update the mobile drawer height used to offset the map legend. */
 const handleMobileDrawerHeight = (height: number) => {
   mobileDrawerHeight.value = height;
@@ -1480,19 +1540,37 @@ onBeforeUnmount(() => {
 <template>
   <div>
     <div id="map" :data-map-ready="mapReady || undefined"></div>
+    <SidebarPrototypePicker />
     <button
-      v-if="!showSidebar"
+      v-if="revisedSidebar"
+      type="button"
+      class="absolute right-14 top-28 z-[1010] flex h-11 items-center gap-2 rounded-lg bg-violet-100 px-3 text-sm font-medium text-violet-800 shadow-sm hover:bg-violet-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800"
+      aria-label="Reset map view"
+      @click="resetMapView"
+    >
+      <LocateFixed class="h-5 w-5" aria-hidden="true" /><span
+        class="hidden sm:inline"
+        >Reset map view</span
+      >
+    </button>
+    <button
+      v-if="!showSidebar && !revisedSidebar"
       class="absolute top-2.5 left-2.5 z-10 bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 px-4 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 mx-2"
       @click="resetToInitialState"
     >
       {{ $t("resetDashboard") }}
     </button>
     <MapFilterControls
+      class="max-[360px]:top-16"
       :data="[]"
       :show-copied-location="showCopiedLocation"
       @copy-location="copyLocation"
     />
     <ViewSidebar
+      :sidebar-prototype="revisedSidebar"
+      :collapsed="sidebarCollapsed"
+      :active-date-filters="activeDateFilters"
+      :selected-date-range="revisedSidebar ? selectedDateRange : undefined"
       :alerts-statistics="filteredStatistics"
       :allowed-file-extensions="allowedFileExtensions"
       :calculate-hectares="calculateHectares"
@@ -1502,7 +1580,11 @@ onBeforeUnmount(() => {
       "
       :feature="selectedFeature"
       :feature-loading="selectedFeatureLoading"
-      :feature-geojson="localAlertsData"
+      :feature-geojson="
+        revisedSidebar && !showIntroPanel
+          ? selectedAlertGeojson
+          : localAlertsData
+      "
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
       :is-alert="isAlert"
@@ -1518,6 +1600,9 @@ onBeforeUnmount(() => {
       :stats-export-min-date="resolvedDateRange?.[0]"
       :stats-export-max-date="resolvedDateRange?.[1]"
       :table-name="primaryDataset"
+      @update:collapsed="sidebarCollapsed = $event"
+      @clear-filters="clearDateFilters"
+      @close-feature="closeSelectedAlert"
       @close="handleSidebarClose"
       @date-range-changed="handleDateRangeChanged"
       @mobile-height-change="handleMobileDrawerHeight"
