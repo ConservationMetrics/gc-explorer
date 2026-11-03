@@ -823,20 +823,82 @@ describe("AlertsDashboard component", () => {
     wrapper.unmount();
   });
 
-  it("resets only the camera from the revised map reset button", async () => {
-    const wrapper = mountComponent(baseProps);
+  it("resets the camera and returns to overview without clearing dates or expanding the sidebar", async () => {
+    const props = structuredClone(baseProps);
+    props.alertsData.mostRecentAlerts.features = [
+      {
+        type: "Feature",
+        id: "Test Alert 130",
+        geometry: { type: "Point", coordinates: [0, 0] },
+        properties: { alertID: "Test Alert 130", YYYYMM: "202402" },
+      },
+    ];
+    const wrapper = mountComponent(props);
     mapboxMock.fireLoad();
     await flushPromises();
+    mapboxMock.fireClick("most-recent-alerts-point", {
+      features: props.alertsData.mostRecentAlerts.features,
+      point: { x: 10, y: 10 },
+    });
+    await flushPromises();
     const vm = wrapper.vm as unknown as {
-      selectedFeature: Record<string, unknown>;
+      selectedFeature: Record<string, unknown> | null;
       selectedDateRange: [string, string];
+      sidebarCollapsed: boolean;
+      showIntroPanel: boolean;
     };
-    vm.selectedFeature = { alertID: "Test Alert 130" };
     vm.selectedDateRange = ["01-2024", "02-2024"];
+    vm.sidebarCollapsed = true;
     await wrapper.get('[aria-label="Reset map view"]').trigger("click");
+    await flushPromises();
     expect(mapboxMock.mockMap.flyTo).toHaveBeenCalled();
-    expect(vm.selectedFeature).toEqual({ alertID: "Test Alert 130" });
+    expect(vm.selectedFeature).toBeNull();
+    expect(vm.showIntroPanel).toBe(true);
+    expect(vm.sidebarCollapsed).toBe(true);
     expect(vm.selectedDateRange).toEqual(["01-2024", "02-2024"]);
+    wrapper.unmount();
+  });
+
+  it("does not restore alert details when a pending record finishes after reset", async () => {
+    Object.assign(mockRoute.value, { path: "/alerts/test_alerts" });
+    let finishRecord!: (record: Record<string, unknown>) => void;
+    const record = new Promise<Record<string, unknown>>((resolve) => {
+      finishRecord = resolve;
+    });
+    hoisted.mockFetch.mockImplementation((url: string) =>
+      url.includes("reset-pending-130")
+        ? record
+        : Promise.resolve({ incidents: [], total: 0 }),
+    );
+    const props = structuredClone(baseProps);
+    props.alertsData.mostRecentAlerts.features = [
+      {
+        type: "Feature",
+        id: "reset-pending-130",
+        geometry: { type: "Point", coordinates: [0, 0] },
+        properties: {
+          _id: "reset-pending-130",
+          alertID: "Test Alert 130",
+          YYYYMM: "202402",
+        },
+      },
+    ];
+    const wrapper = mountComponent(props);
+    mapboxMock.fireLoad();
+    await flushPromises();
+    mapboxMock.fireClick("most-recent-alerts-point", {
+      features: props.alertsData.mostRecentAlerts.features,
+      point: { x: 10, y: 10 },
+    });
+    await flushPromises();
+    const sidebar = wrapper.findComponent({ name: "ViewSidebar" });
+    expect(sidebar.props("featureLoading")).toBe(true);
+    await wrapper.get('[aria-label="Reset map view"]').trigger("click");
+    finishRecord({ _id: "reset-pending-130", alertID: "Test Alert 130" });
+    await flushPromises();
+    expect(sidebar.props("showIntroPanel")).toBe(true);
+    expect(sidebar.props("featureLoading")).toBe(false);
+    expect(sidebar.props("feature")).toBeNull();
     wrapper.unmount();
   });
 

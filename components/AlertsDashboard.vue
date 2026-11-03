@@ -267,6 +267,7 @@ const selectFeature = (feature: Feature, layerId: string) => {
 // FeatureCollection only carries IDs and map-rendering fields, so
 // the full record is loaded via the single-record endpoint.
 let skipNextWatch = false;
+let selectionResetVersion = 0;
 watch(
   () => selectedFeature.value,
   async (feature) => {
@@ -291,7 +292,9 @@ watch(
     selectedFeature.value = null;
     selectedFeatureLoading.value = true;
 
+    const resetVersion = selectionResetVersion;
     const fullRecord = await fetchRecord(fetchTable, recordId);
+    if (resetVersion !== selectionResetVersion) return;
     skipNextWatch = true;
 
     let displayRecord: Record<string, unknown>;
@@ -1407,6 +1410,7 @@ const handleSidebarClose = () => {
 
 /** Return to the overview without changing the map or date filters. */
 const closeSelectedAlert = () => {
+  selectionResetVersion += 1;
   resetSelectedFeature();
   selectedFeatureLoading.value = false;
   showIntroPanel.value = true;
@@ -1414,8 +1418,9 @@ const closeSelectedAlert = () => {
   localAlertsData.value = filteredData.value;
 };
 
-/** Restore the configured camera without clearing the current work. */
+/** Restore the configured camera and overview while keeping date filters. */
 const resetMapView = () => {
+  closeSelectedAlert();
   map.value?.flyTo({
     center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
     zoom: props.mapboxZoom || 2.5,
