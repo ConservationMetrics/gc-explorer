@@ -1,12 +1,5 @@
 import type { Page } from "@playwright/test";
 
-/** Seeded map view used when no unconfigured datasets remain. */
-export const SEEDED_MAP_CONFIG_PATH = "/config/bcmform_responses?view_type=map";
-
-/** Seeded gallery view used for copy-config and gallery edit tests. */
-export const SEEDED_GALLERY_CONFIG_PATH =
-  "/config/bcmform_responses?view_type=gallery";
-
 /**
  * Waits for the config edit form instead of network idle.
  * Mapbox telemetry from a test token never quiets the network.
@@ -59,12 +52,12 @@ export async function expandMapSection(page: Page): Promise<void> {
  * Opens a map view edit page with the Map section expanded.
  *
  * @param {Page} page - Playwright page.
- * @param {string} dataset - Test-owned dataset or the default seeded dataset.
+ * @param {string} dataset - Test-owned dataset.
  * @returns {Promise<string>} Dataset name opened for editing.
  */
 export const openMapConfigEditPage = async (
   page: Page,
-  dataset = "bcmform_responses",
+  dataset: string,
 ): Promise<string> => {
   await stubMapboxTelemetry(page);
   await page.goto(`/config/${dataset}?view_type=map`);
@@ -77,12 +70,12 @@ export const openMapConfigEditPage = async (
  * Opens a gallery view edit page.
  *
  * @param {Page} page - Playwright page.
- * @param {string} dataset - Test-owned dataset or the default seeded dataset.
+ * @param {string} dataset - Test-owned dataset.
  * @returns {Promise<string>} Dataset name opened for editing.
  */
 export const openGalleryConfigEditPage = async (
   page: Page,
-  dataset = "bcmform_responses",
+  dataset: string,
 ): Promise<string> => {
   await page.goto(`/config/${dataset}?view_type=gallery`);
   await waitForConfigForm(page);

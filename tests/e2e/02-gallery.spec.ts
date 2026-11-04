@@ -3,6 +3,7 @@ import { test, expect } from "@/tests/e2e/fixtures/gallery-media";
 
 test("gallery page - displays gallery with media files", async ({
   authenticatedPageAsAdmin: page,
+  galleryView,
 }) => {
   // 1. Navigate to index page
   await page.goto("/");
@@ -15,7 +16,7 @@ test("gallery page - displays gallery with media files", async ({
 
   // 3. Find a dataset card that has a "gallery" view tag
   const datasetCards = page.locator(
-    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+    `[data-testid='dataset-card']:has([href='/gallery/${galleryView.primaryDataset}'])`,
   );
   const cardCount = await datasetCards.count();
   expect(cardCount).toBeGreaterThan(0);
@@ -110,6 +111,7 @@ test("gallery page - displays gallery tiles with media", async ({
 
 test("gallery page - detail panel opens on tile click and closes", async ({
   authenticatedPageAsAdmin: page,
+  galleryView,
 }) => {
   // The seeded Mapbox token is a placeholder, so provide the minimap image locally.
   await page.route("https://api.mapbox.com/styles/v1/**/static/**", (route) =>
@@ -124,7 +126,7 @@ test("gallery page - detail panel opens on tile click and closes", async ({
   });
 
   const datasetCards = page.locator(
-    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+    `[data-testid='dataset-card']:has([href='/gallery/${galleryView.primaryDataset}'])`,
   );
   let galleryCard = null;
   for (let i = 0; i < (await datasetCards.count()); i++) {
@@ -193,6 +195,7 @@ test("gallery page - detail panel opens on tile click and closes", async ({
 
 test("gallery page - audio playback functionality", async ({
   authenticatedPageAsAdmin: page,
+  galleryView,
 }) => {
   // 1. Navigate to gallery via proper flow
   await page.goto("/");
@@ -204,7 +207,7 @@ test("gallery page - audio playback functionality", async ({
 
   // Find dataset with gallery view
   const datasetCards = page.locator(
-    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+    `[data-testid='dataset-card']:has([href='/gallery/${galleryView.primaryDataset}'])`,
   );
   let galleryCard = null;
   for (let i = 0; i < (await datasetCards.count()); i++) {
@@ -305,6 +308,7 @@ test("gallery page - audio playback functionality", async ({
 
 test("gallery page - filter functionality", async ({
   authenticatedPageAsAdmin: page,
+  galleryView,
 }) => {
   // 1. Navigate to gallery via proper flow
   await page.goto("/");
@@ -316,7 +320,7 @@ test("gallery page - filter functionality", async ({
 
   // Find dataset with gallery view
   const datasetCards = page.locator(
-    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+    `[data-testid='dataset-card']:has([href='/gallery/${galleryView.primaryDataset}'])`,
   );
   let galleryCard = null;
   for (let i = 0; i < (await datasetCards.count()); i++) {
@@ -407,6 +411,7 @@ test("gallery page - filter functionality", async ({
 
 test("gallery page - pagination and infinite scroll", async ({
   authenticatedPageAsAdmin: page,
+  galleryView,
 }) => {
   // 1. Navigate to gallery via proper flow
   await page.goto("/");
@@ -418,7 +423,7 @@ test("gallery page - pagination and infinite scroll", async ({
 
   // Find dataset with gallery view
   const datasetCards = page.locator(
-    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+    `[data-testid='dataset-card']:has([href='/gallery/${galleryView.primaryDataset}'])`,
   );
   let galleryCard = null;
   for (let i = 0; i < (await datasetCards.count()); i++) {
@@ -503,6 +508,7 @@ test("gallery page - pagination and infinite scroll", async ({
 
 test("gallery page - responsive grid layout", async ({
   authenticatedPageAsAdmin: page,
+  galleryView,
 }) => {
   // 1. Navigate to gallery via proper flow
   await page.goto("/");
@@ -514,7 +520,7 @@ test("gallery page - responsive grid layout", async ({
 
   // Find dataset with gallery view
   const datasetCards = page.locator(
-    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+    `[data-testid='dataset-card']:has([href='/gallery/${galleryView.primaryDataset}'])`,
   );
   let galleryCard = null;
   for (let i = 0; i < (await datasetCards.count()); i++) {
@@ -571,6 +577,7 @@ test("gallery page - responsive grid layout", async ({
 
 test("gallery page - error handling for unavailable gallery", async ({
   authenticatedPageAsAdmin: page,
+  galleryView,
 }) => {
   // 1. Navigate to gallery via proper flow
   await page.goto("/");
@@ -582,7 +589,7 @@ test("gallery page - error handling for unavailable gallery", async ({
 
   // Find dataset with gallery view
   const datasetCards = page.locator(
-    "[data-testid='dataset-card']:has([href='/gallery/bcmform_responses'])",
+    `[data-testid='dataset-card']:has([href='/gallery/${galleryView.primaryDataset}'])`,
   );
   let galleryCard = null;
   for (let i = 0; i < (await datasetCards.count()); i++) {
@@ -628,8 +635,9 @@ test("gallery page - error handling for unavailable gallery", async ({
 
 test("gallery page - admin gear opens config in a new tab", async ({
   authenticatedPageAsAdmin: page,
+  galleryView,
 }) => {
-  await page.goto("/gallery/bcmform_responses");
+  await page.goto(`/gallery/${galleryView.primaryDataset}`);
   await page.waitForLoadState("networkidle");
   await page
     .getByTestId("gallery-container")
@@ -639,5 +647,7 @@ test("gallery page - admin gear opens config in a new tab", async ({
   await expect(gear).toBeVisible({ timeout: 15000 });
   await expect(gear).toHaveAttribute("target", "_blank");
   const href = await gear.getAttribute("href");
-  expect(href).toMatch(/\/config\/bcmform_responses\?view_type=gallery/);
+  expect(href).toContain(
+    `/config/${galleryView.primaryDataset}?view_type=gallery`,
+  );
 });

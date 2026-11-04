@@ -89,7 +89,6 @@ test.beforeAll(async () => {
   });
   const configSql = createTestDatabaseClient(TEST_CONFIG_DATABASE);
   try {
-    await configSql`INSERT INTO public_views (view_id) SELECT view_id FROM views WHERE primary_dataset = ${view.primaryDataset}`;
     // Both parents share one secondary table, so access must depend on the parent view.
     await configSql`UPDATE views SET secondary_dataset = ${secondary} WHERE primary_dataset = ${privateView.primaryDataset}`;
   } finally {

@@ -1,8 +1,9 @@
-import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
+import { test, expect } from "@/tests/e2e/fixtures/warehouse-views";
 import { navigateToAlertsDashboard } from "./helpers/navigateToAlertsDashboard";
 
 test("alerts dashboard - layer visibility toggles", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
@@ -22,27 +23,13 @@ test("alerts dashboard - layer visibility toggles", async ({
     timeout: 15000,
   });
 
-  // 4. Find a dataset card that has an "alerts" tag/pill
-  // Look for a card that contains a span with "alerts" test ID
-  const datasetCards = page.locator("[data-testid='dataset-card']");
-  const cardCount = await datasetCards.count();
-  expect(cardCount).toBeGreaterThan(0);
-
-  // Find the first card that has an "alerts" tag
-  let alertsCard = null;
-  for (let i = 0; i < cardCount; i++) {
-    const card = datasetCards.nth(i);
-    const alertsTag = card.locator("[data-testid='view-tag-alerts']");
-    if ((await alertsTag.count()) > 0) {
-      alertsCard = card;
-      break;
-    }
-  }
-
-  expect(alertsCard).not.toBeNull();
+  // 4. Find the card for this test's alerts view
+  const alertsCard = page.locator("[data-testid='dataset-card']").filter({
+    has: page.locator(`[href='/alerts/${alertsView.primaryDataset}']`),
+  });
 
   // 5. Click "Open Alerts Dashboard" on the card with alerts tag
-  const openProjectButton = alertsCard!.locator(
+  const openProjectButton = alertsCard.locator(
     "[data-testid='open-dataset-view-link']",
   );
   await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
@@ -153,13 +140,14 @@ test("alerts dashboard - layer visibility toggles", async ({
 
 test("alerts dashboard - basemap toggle icon is visible", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
-  await page.goto("/alerts/fake_alerts");
+  await page.goto(`/alerts/${alertsView.primaryDataset}`);
 
   // Wait for map to load (BasemapSelector renders when >1 basemap or Planet is available)
   await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
 
-  // fake_alerts seed has PLANET_API_KEY, so selector shows even with a single Mapbox basemap
+  // The alerts view has PLANET_API_KEY, so selector shows even with a single Mapbox basemap
   const basemapToggle = page.locator(".basemap-toggle").first();
   await expect(basemapToggle).toBeVisible({ timeout: 10000 });
 
@@ -169,12 +157,13 @@ test("alerts dashboard - basemap toggle icon is visible", async ({
 
 test("alerts dashboard - includes MultiPolygon alerts on initial load and deep links", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
-  const multiPolygonAlertId = "202401009999999";
+  const multiPolygonAlertId = "202403000000001";
 
   for (const url of [
-    "/alerts/fake_alerts",
-    `/alerts/fake_alerts?alertId=${multiPolygonAlertId}`,
+    `/alerts/${alertsView.primaryDataset}`,
+    `/alerts/${alertsView.primaryDataset}?alertId=${multiPolygonAlertId}`,
   ]) {
     await page.goto(url);
     await page
@@ -198,9 +187,10 @@ test("alerts dashboard - includes MultiPolygon alerts on initial load and deep l
 
 test("alerts dashboard - legend can control all alert layer types", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
   // Navigate to alerts dashboard (auth required so API returns data and #map renders)
-  await page.goto("/alerts/fake_alerts");
+  await page.goto(`/alerts/${alertsView.primaryDataset}`);
 
   // Wait for map to load (AlertsDashboard mounts inside ClientOnly after fetch)
   await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
@@ -352,6 +342,7 @@ test("alerts dashboard - legend can control all alert layer types", async ({
 
 test("alerts dashboard - LineString buffer click behavior", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
@@ -371,27 +362,13 @@ test("alerts dashboard - LineString buffer click behavior", async ({
     timeout: 15000,
   });
 
-  // 4. Find a dataset card that has an "alerts" tag/pill
-  // Look for a card that contains a span with "alerts" test ID
-  const datasetCards = page.locator("[data-testid='dataset-card']");
-  const cardCount = await datasetCards.count();
-  expect(cardCount).toBeGreaterThan(0);
-
-  // Find the first card that has an "alerts" tag
-  let alertsCard = null;
-  for (let i = 0; i < cardCount; i++) {
-    const card = datasetCards.nth(i);
-    const alertsTag = card.locator("[data-testid='view-tag-alerts']");
-    if ((await alertsTag.count()) > 0) {
-      alertsCard = card;
-      break;
-    }
-  }
-
-  expect(alertsCard).not.toBeNull();
+  // 4. Find the card for this test's alerts view
+  const alertsCard = page.locator("[data-testid='dataset-card']").filter({
+    has: page.locator(`[href='/alerts/${alertsView.primaryDataset}']`),
+  });
 
   // 5. Click "Open Alerts Dashboard" on the card with alerts tag
-  const openProjectButton = alertsCard!.locator(
+  const openProjectButton = alertsCard.locator(
     "[data-testid='open-dataset-view-link']",
   );
   await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
@@ -476,6 +453,7 @@ test("alerts dashboard - LineString buffer click behavior", async ({
 
 test("alerts dashboard - geometry type specific interactions", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
@@ -495,27 +473,13 @@ test("alerts dashboard - geometry type specific interactions", async ({
     timeout: 15000,
   });
 
-  // 4. Find a dataset card that has an "alerts" tag/pill
-  // Look for a card that contains a span with "alerts" test ID
-  const datasetCards = page.locator("[data-testid='dataset-card']");
-  const cardCount = await datasetCards.count();
-  expect(cardCount).toBeGreaterThan(0);
-
-  // Find the first card that has an "alerts" tag
-  let alertsCard = null;
-  for (let i = 0; i < cardCount; i++) {
-    const card = datasetCards.nth(i);
-    const alertsTag = card.locator("[data-testid='view-tag-alerts']");
-    if ((await alertsTag.count()) > 0) {
-      alertsCard = card;
-      break;
-    }
-  }
-
-  expect(alertsCard).not.toBeNull();
+  // 4. Find the card for this test's alerts view
+  const alertsCard = page.locator("[data-testid='dataset-card']").filter({
+    has: page.locator(`[href='/alerts/${alertsView.primaryDataset}']`),
+  });
 
   // 5. Click "Open Alerts Dashboard" on the card with alerts tag
-  const openProjectButton = alertsCard!.locator(
+  const openProjectButton = alertsCard.locator(
     "[data-testid='open-dataset-view-link']",
   );
   await openProjectButton.waitFor({ state: "visible", timeout: 15000 });
@@ -672,6 +636,7 @@ test("alerts dashboard - geometry type specific interactions", async ({
 
 test("alerts dashboard - cluster circles and centroid selection behavior", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
   // 1. Navigate to the index page first to get available tables
   await page.goto("/");
@@ -691,27 +656,13 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
     timeout: 15000,
   });
 
-  // 4. Find a dataset card that has an "alerts" tag/pill
-  // Look for a card that contains a span with "alerts" test ID
-  const datasetCards = page.locator("[data-testid='dataset-card']");
-  const cardCount = await datasetCards.count();
-  expect(cardCount).toBeGreaterThan(0);
-
-  // Find the first card that has an "alerts" tag
-  let alertsCard = null;
-  for (let i = 0; i < cardCount; i++) {
-    const card = datasetCards.nth(i);
-    const alertsTag = card.locator("[data-testid='view-tag-alerts']");
-    if ((await alertsTag.count()) > 0) {
-      alertsCard = card;
-      break;
-    }
-  }
-
-  expect(alertsCard).not.toBeNull();
+  // 4. Find the card for this test's alerts view
+  const alertsCard = page.locator("[data-testid='dataset-card']").filter({
+    has: page.locator(`[href='/alerts/${alertsView.primaryDataset}']`),
+  });
 
   // 5. Click "Open Alerts Dashboard" on the card with alerts tag
-  const openProjectButton = alertsCard!.locator(
+  const openProjectButton = alertsCard.locator(
     "[data-testid='open-dataset-view-link']",
   );
   await openProjectButton.waitFor({ state: "visible", timeout: 10000 });
@@ -888,8 +839,9 @@ test("alerts dashboard - cluster circles and centroid selection behavior", async
 
 test("alerts dashboard - restores alerts intro after exiting incident multiselect mode", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
-  await navigateToAlertsDashboard(page);
+  await navigateToAlertsDashboard(page, alertsView);
 
   const intro = page.getByTestId("alerts-intro-panel");
   const multiSelectButton = page.getByTestId("incidents-multiselect-button");
@@ -905,24 +857,27 @@ test("alerts dashboard - restores alerts intro after exiting incident multiselec
 
 test("alerts dashboard - hides incidents controls for signed-in users", async ({
   authenticatedPageAsSignedIn: page,
+  alertsView,
 }) => {
-  await page.goto("/alerts/fake_alerts");
+  await page.goto(`/alerts/${alertsView.primaryDataset}`);
   await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
   await expect(page.getByTestId("incidents-view-button")).toHaveCount(0);
 });
 
 test("alerts dashboard - hides incidents controls for guest users", async ({
   authenticatedPageAsGuest: page,
+  alertsView,
 }) => {
-  await page.goto("/alerts/fake_alerts");
+  await page.goto(`/alerts/${alertsView.primaryDataset}`);
   await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
   await expect(page.getByTestId("incidents-view-button")).toHaveCount(0);
 });
 
 test("alerts dashboard - shows incidents controls for member users", async ({
   authenticatedPageAsMember: page,
+  alertsView,
 }) => {
-  await page.goto("/alerts/fake_alerts");
+  await page.goto(`/alerts/${alertsView.primaryDataset}`);
   await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
   await expect(page.getByTestId("incidents-view-button")).toBeVisible({
     timeout: 20000,
@@ -931,8 +886,9 @@ test("alerts dashboard - shows incidents controls for member users", async ({
 
 test("alerts dashboard - admin gear opens config in a new tab", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
-  await navigateToAlertsDashboard(page);
+  await navigateToAlertsDashboard(page, alertsView);
 
   const gear = page.getByTestId("admin-config-gear");
   await expect(gear).toBeVisible({ timeout: 20000 });

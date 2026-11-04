@@ -10,7 +10,7 @@ import { test as baseTest, expect } from "@playwright/test";
 
 const test = baseTest;
 
-// Table name that is NOT in the CI hardcoded config (seed_survey_data, bcmform_responses, fake_alerts).
+// Table name that has no view row.
 const UNREGISTERED_TABLE = "timelapse_data_template";
 
 /**

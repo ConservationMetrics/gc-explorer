@@ -1,15 +1,20 @@
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
+import type { ApiTestView } from "@/types";
 import { waitForTestMap } from "./testMap";
 
 /**
- * Navigates from the index page to the seeded alerts map view.
+ * Navigates from the index page to one alerts map view.
  *
  * @param page - Authenticated Playwright page.
+ * @param view - Alerts view to open.
  * @returns Promise that resolves when the map is ready and the test map hook is available.
  */
-export const navigateToAlertsDashboard = async (page: Page): Promise<void> => {
+export const navigateToAlertsDashboard = async (
+  page: Page,
+  view: ApiTestView,
+): Promise<void> => {
   await page.goto("/");
   await page.waitForLoadState("networkidle");
 
@@ -22,10 +27,12 @@ export const navigateToAlertsDashboard = async (page: Page): Promise<void> => {
   // Parallel API tests create and delete other alerts views while this page is open.
   await page
     .locator(
-      "[data-testid='open-dataset-view-link'][href='/alerts/fake_alerts']",
+      `[data-testid='open-dataset-view-link'][href='/alerts/${view.primaryDataset}']`,
     )
     .click();
-  await page.waitForURL(/\/alerts\/fake_alerts(?:\?|$)/, { timeout: 15000 });
+  await page.waitForURL(new RegExp(`/alerts/${view.primaryDataset}(?:\\?|$)`), {
+    timeout: 15000,
+  });
 
   await page.locator("canvas.mapboxgl-canvas").waitFor();
   await page.locator("#map[data-map-ready='true']").waitFor();

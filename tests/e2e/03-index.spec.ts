@@ -1,4 +1,15 @@
-import { test, expect } from "@/tests/e2e/fixtures/config-views";
+import { test as viewsTest, expect } from "@/tests/e2e/fixtures/config-views";
+import type { ApiTestView } from "@/types";
+
+// The index shows test-owned views only, so each test creates one per view type.
+const test = viewsTest.extend<{ indexViews: ApiTestView[] }>({
+  indexViews: [
+    async ({ alertsView, galleryView, mapView }, use) => {
+      await use([alertsView, galleryView, mapView]);
+    },
+    { auto: true },
+  ],
+});
 
 test("index page - displays available views and navigation flow", async ({
   authenticatedPageAsAdmin: page,
@@ -135,6 +146,7 @@ test("index page - one card per view for datasets with multiple views", async ({
 
 test("index page - admin gear links to config edit for that view", async ({
   authenticatedPageAsAdmin: page,
+  mapView,
 }) => {
   await page.goto("/");
   await page.waitForLoadState("networkidle");
@@ -142,7 +154,10 @@ test("index page - admin gear links to config edit for that view", async ({
     timeout: 15000,
   });
 
-  const gear = page.locator("[data-testid='dataset-card-config-gear']").first();
+  const gear = page
+    .locator("[data-testid='dataset-card']")
+    .filter({ has: page.locator(`[href='/map/${mapView.primaryDataset}']`) })
+    .locator("[data-testid='dataset-card-config-gear']");
   await expect(gear).toBeVisible({ timeout: 5000 });
 
   const href = await gear.getAttribute("href");

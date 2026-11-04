@@ -1,10 +1,10 @@
-import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
+import { test, expect } from "@/tests/e2e/fixtures/warehouse-views";
 
 test("map page - filter container and optional timestamp filter", async ({
   authenticatedPageAsAdmin: page,
+  mapView,
 }) => {
-  // Seeded map view — skip brittle index → dataset → view-card hops
-  await page.goto("/map/bcmform_responses");
+  await page.goto(`/map/${mapView.primaryDataset}`);
   await page.waitForLoadState("networkidle");
 
   // MapView is ClientOnly and mounts after /api/.../map resolves
@@ -24,8 +24,9 @@ test("map page - filter container and optional timestamp filter", async ({
 
 test("map page - admin gear opens config in a new tab", async ({
   authenticatedPageAsAdmin: page,
+  mapView,
 }) => {
-  await page.goto("/map/bcmform_responses");
+  await page.goto(`/map/${mapView.primaryDataset}`);
   await page.waitForLoadState("networkidle");
   await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
 
@@ -33,14 +34,14 @@ test("map page - admin gear opens config in a new tab", async ({
   await expect(gear).toBeVisible({ timeout: 15000 });
   await expect(gear).toHaveAttribute("target", "_blank");
   const href = await gear.getAttribute("href");
-  expect(href).toMatch(/\/config\/bcmform_responses\?view_type=map/);
+  expect(href).toContain(`/config/${mapView.primaryDataset}?view_type=map`);
 });
 
 test("gallery page - filter container and optional timestamp filter", async ({
   authenticatedPageAsAdmin: page,
+  galleryView,
 }) => {
-  // Seeded gallery view — skip brittle index → dataset → view-card hops
-  await page.goto("/gallery/bcmform_responses");
+  await page.goto(`/gallery/${galleryView.primaryDataset}`);
   await page.waitForLoadState("networkidle");
 
   await page

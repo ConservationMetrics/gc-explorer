@@ -1,8 +1,8 @@
-import { test as authTest, expect } from "./auth-storage";
+import { test as viewsTest, expect } from "./warehouse-views";
 import { createApiTestView, deleteApiTestView } from "../helpers/apiTestData";
 import type { ApiTestView } from "@/types";
 
-export const test = authTest.extend<{
+export const test = viewsTest.extend<{
   galleryMediaView: ApiTestView;
 }>({
   galleryMediaView: async ({ baseURL }, use) => {
