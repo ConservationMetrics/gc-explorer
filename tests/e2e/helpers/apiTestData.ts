@@ -5,49 +5,82 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import type { Sql } from "postgres";
 
 import { viewConfig as viewsTable } from "@/server/database/schemas/viewConfig";
-import type { ApiTestView, ApiTestViewInput } from "@/types";
+import type {
+  ApiTestView,
+  ApiTestViewInput,
+  WarehouseTestTable,
+} from "@/types";
 import {
   createTestDatabaseClient,
   TEST_CONFIG_DATABASE,
   TEST_WAREHOUSE_DATABASE,
 } from "./testDatabase";
 
-type WarehouseInitializer = (database: Sql, tableName: string) => Promise<void>;
-
-type CreateApiTestViewInput = Omit<ApiTestViewInput, "sourceTable"> &
-  (
-    | { sourceTable: string; warehouseInitializer?: never }
-    | { sourceTable?: never; warehouseInitializer: WarehouseInitializer }
-  );
-
 const quoteIdentifier = (value: string): string =>
   `"${value.replaceAll('"', '""')}"`;
 
 /**
- * Creates a unique warehouse table and its matching view row for one API test.
+ * Creates a warehouse table with text columns and inserts its rows.
  *
- * @param input - Source table and view fields needed by the test.
+ * @param database - Warehouse database client.
+ * @param tableName - Name of the table to create.
+ * @param table - Columns and rows for the table.
+ * @returns {Promise<void>}
+ */
+const createWarehouseTable = async (
+  database: Sql,
+  tableName: string,
+  { columns, rows }: WarehouseTestTable,
+): Promise<void> => {
+  const columnDefinitions = columns
+    .map((column) => `${quoteIdentifier(column)} text`)
+    .join(", ");
+  await database.unsafe(
+    `CREATE TABLE ${quoteIdentifier(tableName)} (${columnDefinitions})`,
+  );
+  const unknownColumns = rows
+    .flatMap(Object.keys)
+    .filter((column) => !columns.includes(column));
+  if (unknownColumns.length > 0) {
+    throw new Error(
+      `Rows use undeclared columns: ${unknownColumns.join(", ")}`,
+    );
+  }
+  const values = rows.map((row) =>
+    Object.fromEntries(columns.map((column) => [column, row[column] ?? null])),
+  );
+  await database`INSERT INTO ${database(tableName)} ${database(values, columns)}`;
+};
+
+/**
+ * Creates unique warehouse tables and the matching view row for one test.
+ *
+ * @param input - Warehouse tables and view fields needed by the test.
  * @returns {Promise<ApiTestView>} Identity used by the route and teardown.
  */
 export const createApiTestView = async (
-  input: CreateApiTestViewInput,
+  input: ApiTestViewInput,
 ): Promise<ApiTestView> => {
   const primaryDataset = `api_test_${randomUUID().replaceAll("-", "").slice(0, 12)}`;
+  const secondaryDataset = input.secondaryTable
+    ? `${primaryDataset}_secondary`
+    : null;
   const configSql = createTestDatabaseClient(TEST_CONFIG_DATABASE);
   const configDb = drizzle(configSql);
   const warehouseSql = createTestDatabaseClient(TEST_WAREHOUSE_DATABASE);
 
   try {
-    if (input.warehouseInitializer) {
-      await input.warehouseInitializer(warehouseSql, primaryDataset);
-    } else {
-      await warehouseSql.unsafe(
-        `CREATE TABLE ${quoteIdentifier(primaryDataset)} AS TABLE ${quoteIdentifier(input.sourceTable)}`,
+    await createWarehouseTable(warehouseSql, primaryDataset, input.table);
+    if (input.secondaryTable && secondaryDataset) {
+      await createWarehouseTable(
+        warehouseSql,
+        secondaryDataset,
+        input.secondaryTable,
       );
     }
     await configDb.insert(viewsTable).values({
       primaryDataset,
-      secondaryDataset: input.secondaryDataset ?? null,
+      secondaryDataset,
       viewConfig: JSON.stringify(input.viewConfig),
       viewName: primaryDataset,
       viewType: input.viewType,
@@ -55,7 +88,7 @@ export const createApiTestView = async (
 
     return {
       primaryDataset,
-      secondaryDataset: input.secondaryDataset ?? null,
+      secondaryDataset,
       viewType: input.viewType,
     };
   } catch (error) {
@@ -65,6 +98,11 @@ export const createApiTestView = async (
     await warehouseSql.unsafe(
       `DROP TABLE IF EXISTS ${quoteIdentifier(primaryDataset)}`,
     );
+    if (secondaryDataset) {
+      await warehouseSql.unsafe(
+        `DROP TABLE IF EXISTS ${quoteIdentifier(secondaryDataset)}`,
+      );
+    }
     throw error;
   } finally {
     await Promise.all([
@@ -75,7 +113,7 @@ export const createApiTestView = async (
 };
 
 /**
- * Deletes one test-owned view row and its copied warehouse table.
+ * Deletes one test-owned view row and its warehouse tables.
  *
  * @param view - Identity returned by createApiTestView.
  * @returns {Promise<void>}
@@ -97,6 +135,11 @@ export const deleteApiTestView = async (view: ApiTestView): Promise<void> => {
     await warehouseSql.unsafe(
       `DROP TABLE IF EXISTS ${quoteIdentifier(view.primaryDataset)}`,
     );
+    if (view.secondaryDataset) {
+      await warehouseSql.unsafe(
+        `DROP TABLE IF EXISTS ${quoteIdentifier(view.secondaryDataset)}`,
+      );
+    }
   } finally {
     await Promise.all([
       configSql.end({ timeout: 5 }),

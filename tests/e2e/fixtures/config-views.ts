@@ -1,5 +1,6 @@
 import { test as authTest, expect } from "./auth-storage";
 import { createApiTestView, deleteApiTestView } from "../helpers/apiTestData";
+import { surveyTable } from "@/tests/fixtures/warehouseTables";
 import type { ApiTestView, ViewConfig } from "@/types";
 
 const mapConfig: ViewConfig = {
@@ -38,7 +39,7 @@ export const test = authTest.extend<{
   // eslint-disable-next-line no-empty-pattern -- Playwright requires a fixture dependency pattern.
   configMapView: async ({}, use) => {
     const view = await createApiTestView({
-      sourceTable: "bcmform_responses",
+      table: surveyTable,
       viewType: "map",
       viewConfig: mapConfig,
     });
@@ -50,7 +51,7 @@ export const test = authTest.extend<{
   },
   configGalleryView: async ({ baseURL }, use) => {
     const view = await createApiTestView({
-      sourceTable: "seed_survey_data",
+      table: surveyTable,
       viewType: "gallery",
       viewConfig: {
         FRONT_END_FILTER_COLUMN: "community",
