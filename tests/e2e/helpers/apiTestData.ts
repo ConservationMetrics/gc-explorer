@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import type { Sql } from "postgres";
 
+import { publicViews } from "@/server/database/schemas/publicViews";
 import { viewConfig as viewsTable } from "@/server/database/schemas/viewConfig";
 import type {
   ApiTestView,
@@ -78,13 +79,20 @@ export const createApiTestView = async (
         input.secondaryTable,
       );
     }
-    await configDb.insert(viewsTable).values({
-      primaryDataset,
-      secondaryDataset,
-      viewConfig: JSON.stringify(input.viewConfig),
-      viewName: primaryDataset,
-      viewType: input.viewType,
-    });
+    const [{ viewId }] = await configDb
+      .insert(viewsTable)
+      .values({
+        primaryDataset,
+        secondaryDataset,
+        viewConfig: JSON.stringify(input.viewConfig),
+        viewName: primaryDataset,
+        viewType: input.viewType,
+      })
+      .returning({ viewId: viewsTable.viewId });
+    // The app lists "anyone" views in public_views when it saves them.
+    if (input.viewConfig.ROUTE_LEVEL_PERMISSION === "anyone") {
+      await configDb.insert(publicViews).values({ viewId });
+    }
 
     return {
       primaryDataset,
