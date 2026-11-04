@@ -1,5 +1,3 @@
-import type { Sql } from "postgres";
-
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import {
   createApiTestView,
@@ -69,29 +67,16 @@ const viewConfig: ViewConfig = {
   ROUTE_LEVEL_PERMISSION: "member",
 };
 
-const initializePolygonFixture =
-  (rows: PolygonFixtureRow[]) => async (database: Sql, tableName: string) => {
-    const table = `"${tableName.replaceAll('"', '""')}"`;
-    await database.unsafe(`
-      CREATE TABLE ${table} (
-        _id text NOT NULL,
-        g__coordinates text NOT NULL,
-        g__type text NOT NULL,
-        filter_color text NOT NULL,
-        display_name text NOT NULL
-      )
-    `);
-
-    await Promise.all(
-      rows.map((row) =>
-        database.unsafe(
-          `INSERT INTO ${table} (_id, g__coordinates, g__type, filter_color, display_name)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [row.id, row.coordinates, row.type, row.color, row.displayName],
-        ),
-      ),
-    );
-  };
+const polygonTable = (rows: PolygonFixtureRow[]) => ({
+  columns: ["_id", "g__coordinates", "g__type", "filter_color", "display_name"],
+  rows: rows.map((row) => ({
+    _id: row.id,
+    g__coordinates: row.coordinates,
+    g__type: row.type,
+    filter_color: row.color,
+    display_name: row.displayName,
+  })),
+});
 
 test.describe("polygon map rendering", () => {
   let mixedView: ApiTestView | null = null;
@@ -99,12 +84,12 @@ test.describe("polygon map rendering", () => {
 
   test.beforeAll(async () => {
     mixedView = await createApiTestView({
-      warehouseInitializer: initializePolygonFixture(polygonRows),
+      table: polygonTable(polygonRows),
       viewConfig,
       viewType: "map",
     });
     multiPolygonOnlyView = await createApiTestView({
-      warehouseInitializer: initializePolygonFixture(multiPolygonOnlyRows),
+      table: polygonTable(multiPolygonOnlyRows),
       viewConfig,
       viewType: "map",
     });

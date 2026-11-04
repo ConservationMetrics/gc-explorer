@@ -5,10 +5,7 @@ import {
   createApiTestView,
   deleteApiTestView,
 } from "@/tests/e2e/helpers/apiTestData";
-import {
-  createTestDatabaseClient,
-  TEST_WAREHOUSE_DATABASE,
-} from "@/tests/e2e/helpers/testDatabase";
+import { alertsTable } from "@/tests/fixtures/warehouseTables";
 import type { ApiTestView } from "@/types";
 
 /**
@@ -61,7 +58,20 @@ for (const viewType of ["map", "alerts"] as const) {
 
     test.beforeAll(async () => {
       view = await createApiTestView({
-        sourceTable: viewType === "map" ? "seed_survey_data" : "fake_alerts",
+        table: {
+          columns:
+            viewType === "map"
+              ? ["_id", "_submission_time", "g__type", "g__coordinates"]
+              : alertsTable.columns,
+          rows: records.map((record) => ({
+            _id: record._id,
+            ...(viewType === "map"
+              ? { _submission_time: record.date }
+              : { year_detec: "2024", month_detec: record.month }),
+            g__type: "Point",
+            g__coordinates: "[10,20]",
+          })),
+        },
         viewConfig: {
           ...(viewType === "map"
             ? { TIMESTAMP_COLUMN: "_submission_time" }
@@ -70,22 +80,6 @@ for (const viewType of ["map", "alerts"] as const) {
         },
         viewType,
       });
-      const sql = createTestDatabaseClient(TEST_WAREHOUSE_DATABASE);
-      try {
-        await sql`DELETE FROM ${sql(view.primaryDataset)}`;
-        await sql`INSERT INTO ${sql(view.primaryDataset)} ${sql(
-          records.map((record) => ({
-            _id: record._id,
-            ...(viewType === "map"
-              ? { _submission_time: record.date }
-              : { year_detec: "2024", month_detec: record.month }),
-            g__type: "Point",
-            g__coordinates: "[10,20]",
-          })),
-        )}`;
-      } finally {
-        await sql.end({ timeout: 5 });
-      }
     });
 
     test.afterAll(async () => {

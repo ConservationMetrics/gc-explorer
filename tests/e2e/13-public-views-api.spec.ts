@@ -5,6 +5,7 @@ import {
   createApiTestView,
   deleteApiTestView,
 } from "@/tests/e2e/helpers/apiTestData";
+import { surveyTable } from "@/tests/fixtures/warehouseTables";
 import type { ApiTestView, PublicViewRow, ViewConfigRow } from "@/types";
 
 /**
@@ -36,7 +37,7 @@ const createMemberGalleryWithAnyoneMap = async (
   mapViewId: number;
 }> => {
   const fixture = await createApiTestView({
-    sourceTable: "seed_survey_data",
+    table: surveyTable,
     viewConfig: { ROUTE_LEVEL_PERMISSION: "member" },
     viewType: "gallery",
   });

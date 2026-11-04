@@ -218,9 +218,15 @@ export type WarehouseTablesResponse = {
   tables: string[];
 };
 
+/** Rows may omit a declared column, which is stored as NULL. */
+export type WarehouseTestTable = {
+  columns: string[];
+  rows: Record<string, string | null>[];
+};
+
 export type ApiTestViewInput = {
-  secondaryDataset?: string | null;
-  sourceTable: string;
+  secondaryTable?: WarehouseTestTable;
+  table: WarehouseTestTable;
   viewConfig: ViewConfig;
   viewType: ViewType;
 };

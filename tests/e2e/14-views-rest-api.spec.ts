@@ -5,6 +5,7 @@ import {
   createApiTestView,
   deleteApiTestView,
 } from "@/tests/e2e/helpers/apiTestData";
+import { surveyTable } from "@/tests/fixtures/warehouseTables";
 import type {
   ApiTestView,
   PublicViewRow,
@@ -53,7 +54,7 @@ const createMemberGalleryAndMap = async (
   map: ViewConfigRow;
 }> => {
   const fixture = await createApiTestView({
-    sourceTable: "seed_survey_data",
+    table: surveyTable,
     viewConfig: { ROUTE_LEVEL_PERMISSION: "member" },
     viewType: "gallery",
   });
@@ -288,13 +289,23 @@ test("missing view cannot be deleted", async ({
   ).toBe(404);
 });
 
-test("warehouse tables API lists seeded survey and geospatial tables", async ({
+test("warehouse tables API lists survey and geospatial tables", async ({
   authenticatedRequestAsAdmin: request,
 }) => {
-  const response = await request.get("/api/warehouse/tables");
-  expect(response.status()).toBe(200);
+  const fixture = await createApiTestView({
+    table: surveyTable,
+    viewConfig: { ROUTE_LEVEL_PERMISSION: "member" },
+    viewType: "gallery",
+  });
 
-  const body = (await response.json()) as WarehouseTablesResponse;
-  expect(body.tables).toContain("seed_survey_data");
-  expect(body.geospatialTables).toContain("bcmform_responses");
+  try {
+    const response = await request.get("/api/warehouse/tables");
+    expect(response.status()).toBe(200);
+
+    const body = (await response.json()) as WarehouseTablesResponse;
+    expect(body.tables).toContain(fixture.primaryDataset);
+    expect(body.geospatialTables).toContain(fixture.primaryDataset);
+  } finally {
+    await deleteApiTestView(fixture);
+  }
 });
