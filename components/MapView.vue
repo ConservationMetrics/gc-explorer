@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { shallowRef } from "vue";
+import { House } from "lucide-vue-next";
+import SidebarPrototypePicker from "@/components/prototypes/SidebarPrototypePicker.vue";
 import { useSecondaryDatasetLayer } from "@/composables/map/useSecondaryDatasetLayer";
 import { attachMapHover } from "@/utils/mapHover";
 import {
@@ -103,6 +106,11 @@ const { fetchRecord } = useRecordCache();
 
 const route = useRoute();
 const router = useRouter();
+const revisedSidebar = computed(
+  () => route.query.sidebarPrototype !== "current",
+);
+const sidebarCollapsed = ref(false);
+const homeControl = shallowRef<HTMLDivElement>();
 const map = ref();
 const { showCopied: showCopiedLocation, copyLocation } =
   useCopyMapLocation(map);
@@ -229,6 +237,13 @@ onMounted(() => {
       // Fullscreen Control
       const fullscreenControl = new mapboxgl.FullscreenControl();
       map.value.addControl(fullscreenControl, "top-right");
+      const home = document.createElement("div");
+      home.className = "mapboxgl-ctrl mapboxgl-ctrl-group map-home-control";
+      map.value.addControl(
+        { onAdd: () => home, onRemove: () => home.remove() },
+        "top-right",
+      );
+      homeControl.value = home;
 
       showBasemapSelector.value = true;
       controlsAdded = true;
@@ -868,6 +883,42 @@ const selectInitialMapFeature = (featureId: string, secondary = false) => {
   void openMapFeature(feature, secondary);
 };
 
+/** Return to Overview while preserving the camera, sidebar and filters. */
+const closeSelectedFeature = () => {
+  preserveSelectionInCameraQuery.value = false;
+  selectionRequest++;
+  selectedFeature.value = undefined;
+  selectedFeatureOriginal.value = undefined;
+  selectedFeatureLoading.value = false;
+  showIntroPanel.value = true;
+  clearSelectedMapFeatureState();
+  clearFeatureIdQuery();
+};
+
+/** Restore the configured camera and overview while keeping filters. */
+const resetMapView = () => {
+  closeSelectedFeature();
+  map.value.flyTo({
+    center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
+    zoom: props.mapboxZoom || 2.5,
+    pitch: props.mapboxPitch || 0,
+    bearing: props.mapboxBearing || 0,
+  });
+};
+
+/** Clear category and date filters without moving the map or closing details. */
+const clearFilters = () => {
+  selectedFilterValues.value = [];
+  setDateRange({ start: null, end: null });
+  filterResetKey.value++;
+  applyAllFilters();
+};
+
+watch(revisedSidebar, () => {
+  showSidebar.value = true;
+  sidebarCollapsed.value = false;
+});
+
 /** Reset the map to initial state */
 const resetToInitialState = () => {
   preserveSelectionInCameraQuery.value = false;
@@ -954,9 +1005,20 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <div id="map"></div>
+    <div id="map" :class="{ 'revised-map-controls': revisedSidebar }"></div>
+    <SidebarPrototypePicker class="max-sm:!top-auto max-sm:!bottom-4" />
+    <Teleport v-if="homeControl && revisedSidebar" :to="homeControl">
+      <button
+        type="button"
+        aria-label="Reset map view"
+        title="Reset map view"
+        @click="resetMapView"
+      >
+        <House class="mx-auto h-4 w-4" aria-hidden="true" />
+      </button>
+    </Teleport>
     <button
-      v-if="!showSidebar"
+      v-if="!showSidebar && !revisedSidebar"
       class="reset-button bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 px-4 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 mx-2"
       @click="resetToInitialState"
     >
@@ -964,16 +1026,23 @@ onBeforeUnmount(() => {
     </button>
     <MapFilterControls
       :key="filterResetKey"
+      :show-clear-filters="revisedSidebar"
+      :filters-active="
+        selectedFilterValues.length > 0 || !!dateMin || !!dateMax
+      "
       :data="flatDataForFilter"
       :filter-column="filterColumn"
       :color-column="colorColumn"
       :timestamp-column="timestampColumn"
       :show-copied-location="showCopiedLocation"
+      @clear-filters="clearFilters"
       @filter="filterValues"
       @date-filter="onTimestampFilter"
       @copy-location="copyLocation"
     />
     <ViewSidebar
+      :sidebar-prototype="revisedSidebar"
+      :collapsed="sidebarCollapsed"
       :allowed-file-extensions="allowedFileExtensions"
       :export-table-name="isSecondary ? secondaryDataset || table : table"
       :feature="selectedFeature"
@@ -1008,6 +1077,8 @@ onBeforeUnmount(() => {
       :table-name="isSecondary ? secondaryDataset || table : table"
       :view-name="viewName"
       :view-description="viewDescription"
+      @update:collapsed="sidebarCollapsed = $event"
+      @close-feature="closeSelectedFeature"
       @close="handleSidebarClose"
       @mobile-height-change="handleMobileDrawerHeight"
       @toggle-icons="handleToggleIcons"
@@ -1031,6 +1102,13 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+:deep(.map-home-control:empty),
+.revised-map-controls
+  :deep(.mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen)),
+.revised-map-controls :deep(.mapboxgl-ctrl-group:has(.mapboxgl-ctrl-shrink)) {
+  display: none;
+}
+
 body {
   margin: 0;
   padding: 0;

@@ -168,6 +168,7 @@ const globalConfig = {
     $n: (value: number) => value.toString(),
   },
   stubs: {
+    Teleport: true,
     DataFilter: true,
     MapFilterControls: false,
     ViewSidebar: true,
@@ -838,7 +839,7 @@ describe("MapView component", () => {
       pitch: 0,
       bearing: 0,
     });
-    expect(mapboxMock.addControl).toHaveBeenCalledTimes(3);
+    expect(mapboxMock.addControl).toHaveBeenCalledTimes(4);
     expect(wrapper.exists()).toBe(true);
   });
 
@@ -1576,7 +1577,67 @@ describe("MapView component", () => {
     );
   });
 
+  it("keeps filters and collapse state when Home clears a selected map feature", async () => {
+    const wrapper = mount(MapView, { props: baseProps, global: globalConfig });
+    mapboxMock.fireLoad();
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      selectedFilterValues: string[];
+      sidebarCollapsed: boolean;
+      selectedFeature: unknown;
+      showIntroPanel: boolean;
+    };
+    vm.selectedFilterValues = ["active"];
+    vm.sidebarCollapsed = true;
+    vm.selectedFeature = { id: "1" };
+    vm.showIntroPanel = false;
+    mockRoute.value.query = { featureId: "1", lat: "1" };
+    await wrapper.get('[aria-label="Reset map view"]').trigger("click");
+    await flushPromises();
+    expect(vm.selectedFeature).toBeUndefined();
+    expect(vm.showIntroPanel).toBe(true);
+    expect(vm.sidebarCollapsed).toBe(true);
+    expect(vm.selectedFilterValues).toEqual(["active"]);
+    expect(mapboxMock.mockMap.flyTo).toHaveBeenCalledWith({
+      center: [10, 10],
+      zoom: 10,
+      pitch: 0,
+      bearing: 0,
+    });
+    expect(mockRouter.replace).toHaveBeenCalledWith({ query: { lat: "1" } });
+    wrapper.unmount();
+  });
+
+  it("clears map filters without changing the camera or selected feature", async () => {
+    const wrapper = mount(MapView, { props: baseProps, global: globalConfig });
+    mapboxMock.fireLoad();
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      selectedFilterValues: string[];
+      selectedFeature: unknown;
+      dateMin: string | null;
+      onTimestampFilter: (range: { start: Date; end: Date }) => void;
+    };
+    vm.selectedFilterValues = ["active"];
+    vm.onTimestampFilter({
+      start: new Date("2024-01-01"),
+      end: new Date("2024-02-01"),
+    });
+    vm.selectedFeature = { id: "1" };
+    mapboxMock.mockMap.flyTo.mockClear();
+    await wrapper
+      .findComponent({ name: "MapFilterControls" })
+      .vm.$emit("clear-filters");
+    await flushPromises();
+    expect(vm.selectedFilterValues).toEqual([]);
+    expect(vm.dateMin).toBe("");
+    expect(vm.selectedFeature).toEqual({ id: "1" });
+    expect(mapboxMock.mockMap.flyTo).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
   it("shows reset button when sidebar is closed", async () => {
+    mockRoute.value.query = { sidebarPrototype: "current" };
     const wrapper = mount(MapView, {
       props: baseProps,
       global: globalConfig,
@@ -1598,6 +1659,7 @@ describe("MapView component", () => {
   });
 
   it("resets to initial state when reset button is clicked", async () => {
+    mockRoute.value.query = { sidebarPrototype: "current" };
     const wrapper = mount(MapView, {
       props: baseProps,
       global: globalConfig,

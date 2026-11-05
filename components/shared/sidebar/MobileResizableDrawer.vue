@@ -26,7 +26,6 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   "height-change": [height: number];
-  "update:collapsed": [collapsed: boolean];
 }>();
 
 const viewportHeight = ref(0);
@@ -35,7 +34,7 @@ const isDragging = ref(false);
 const isReadyForTransition = ref(false);
 
 const drawerStyle = computed(() => ({
-  "--drawer-height": `${props.collapsed ? 120 : drawerHeight.value}px`,
+  "--drawer-height": `${drawerHeight.value}px`,
 }));
 
 const minDrawerHeight = computed(
@@ -45,7 +44,7 @@ const maxDrawerHeight = computed(
   () => viewportHeight.value * props.maxHeightRatio,
 );
 const visibleDrawerHeight = computed(() =>
-  props.open ? (props.collapsed ? 120 : drawerHeight.value) : 0,
+  props.open ? drawerHeight.value : 0,
 );
 
 /**
@@ -101,7 +100,6 @@ const updateViewportHeight = () => {
  */
 const startResize = (event: PointerEvent) => {
   if (!props.open) return;
-  if (props.collapsed !== undefined) emit("update:collapsed", false);
   isDragging.value = true;
   (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
   window.addEventListener("pointermove", handlePointerMove);
@@ -137,16 +135,6 @@ const stopResize = () => {
  * @returns {void}
  */
 const handleResizeKeydown = (event: KeyboardEvent) => {
-  if (
-    props.collapsed !== undefined &&
-    ["ArrowUp", "PageUp", "Home"].includes(event.key)
-  )
-    emit("update:collapsed", false);
-  if (props.collapsed !== undefined && event.key === "End") {
-    event.preventDefault();
-    emit("update:collapsed", true);
-    return;
-  }
   const step = Math.max(viewportHeight.value * 0.05, 24);
   if (event.key === "ArrowUp" || event.key === "PageUp") {
     event.preventDefault();
@@ -200,7 +188,8 @@ onBeforeUnmount(() => {
       'mobile-resizable-drawer fixed z-[1050] flex max-w-full flex-col overflow-hidden bg-white shadow-lg transition-transform',
       'bottom-0 left-0 w-full rounded-t-2xl',
       'sm:top-0 sm:bottom-auto sm:left-0 sm:h-full sm:rounded-none',
-      collapsed ? 'sm:w-16' : 'sm:w-[400px]',
+      'sm:w-[400px]',
+      { 'desktop-collapsed': open && collapsed },
       open
         ? 'translate-y-0 sm:translate-x-0'
         : 'translate-y-full sm:-translate-x-full',
@@ -213,10 +202,8 @@ onBeforeUnmount(() => {
       aria-label="Resize sidebar"
       aria-orientation="horizontal"
       :aria-valuemax="Math.round(maxDrawerHeight)"
-      :aria-valuemin="
-        collapsed !== undefined ? 120 : Math.round(minDrawerHeight)
-      "
-      :aria-valuenow="collapsed ? 120 : Math.round(drawerHeight)"
+      :aria-valuemin="Math.round(minDrawerHeight)"
+      :aria-valuenow="Math.round(drawerHeight)"
       role="separator"
       type="button"
       @keydown="handleResizeKeydown"
@@ -242,6 +229,10 @@ onBeforeUnmount(() => {
 @media (min-width: 640px) {
   .mobile-resizable-drawer {
     height: 100%;
+  }
+
+  .mobile-resizable-drawer.desktop-collapsed {
+    transform: translateX(calc(64px - 100%));
   }
 }
 

@@ -31,22 +31,19 @@ describe("MobileResizableDrawer", () => {
     await resizeHandle.trigger("keydown", { key: "Home" });
     expect(resizeHandle.attributes("aria-valuenow")).toBe("720");
   });
-  it("keeps the prototype drawer visible when collapsed and expands from the handle", async () => {
+  it("keeps mobile resizing independent of desktop collapse", async () => {
     const wrapper = mount(MobileResizableDrawer, {
       props: { open: true, collapsed: true },
     });
     await nextTick();
-    expect(wrapper.attributes("style")).toContain("120px");
-    expect(wrapper.classes()).not.toContain("translate-y-full");
-    expect(wrapper.emitted("height-change")?.at(-1)).toEqual([120]);
-    await wrapper
-      .get('[role="separator"]')
-      .trigger("keydown", { key: "ArrowUp" });
-    expect(wrapper.emitted("update:collapsed")?.at(-1)).toEqual([false]);
-    await wrapper.setProps({ collapsed: false });
-    expect(wrapper.attributes("style")).not.toContain("120px");
-    await wrapper.get('[role="separator"]').trigger("keydown", { key: "End" });
-    expect(wrapper.emitted("update:collapsed")?.at(-1)).toEqual([true]);
+    const handle = wrapper.get('[role="separator"]');
+    expect(handle.attributes("aria-valuenow")).toBe("400");
+    expect(wrapper.emitted("height-change")?.at(-1)).toEqual([400]);
+    await handle.trigger("keydown", { key: "End" });
+    expect(handle.attributes("aria-valuenow")).toBe("200");
+    await handle.trigger("keydown", { key: "Home" });
+    expect(handle.attributes("aria-valuenow")).toBe("720");
+    expect(wrapper.emitted("update:collapsed")).toBeUndefined();
     wrapper.unmount();
   });
 });
