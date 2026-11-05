@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { Check, ChevronDown, Copy, X } from "lucide-vue-next";
+import {
+  Check,
+  ChevronDown,
+  Copy,
+  PanelLeftClose,
+  PanelLeftOpen,
+  X,
+} from "lucide-vue-next";
 import GalleryMediaCarousel from "@/components/gallery/GalleryMediaCarousel.vue";
 import DownloadMapData from "@/components/shared/downloads/DownloadMapData.vue";
 import FeatureMetadata from "@/components/shared/sidebar/FeatureMetadata.vue";
@@ -26,6 +33,9 @@ import type {
 import type { Feature, FeatureCollection } from "geojson";
 
 const props = defineProps<{
+  sidebarPrototype?: boolean;
+  collapsed?: boolean;
+  selectedDateRange?: [string, string];
   alertsStatistics?: AlertsStatistics;
   allowedFileExtensions?: AllowedFileExtensions;
   calculateHectares?: boolean;
@@ -127,6 +137,9 @@ const { showCopied, copyLink } = useCopyLink(
 
 const emit = defineEmits<{
   close: [];
+  "close-feature": [];
+  "clear-filters": [];
+  "update:collapsed": [boolean];
   "date-range-changed": [[string, string]];
   "mobile-height-change": [number];
   "toggle-icons": [];
@@ -181,11 +194,48 @@ onBeforeUnmount(() => {
   <MobileResizableDrawer
     class="sidebar"
     :open="showSidebar ?? false"
+    :collapsed="sidebarPrototype ? collapsed : undefined"
     @height-change="emit('mobile-height-change', $event)"
   >
     <div class="relative min-h-full">
+      <header
+        v-if="sidebarPrototype"
+        class="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-2 bg-white px-3"
+        :class="
+          collapsed
+            ? 'sm:ml-auto sm:w-16 sm:flex-col sm:justify-start sm:py-3'
+            : ''
+        "
+      >
+        <span
+          class="text-sm font-semibold"
+          :class="{ 'sm:hidden': collapsed }"
+          >{{
+            showIntroPanel
+              ? "Overview"
+              : isAlertsDashboard
+                ? "Alert details"
+                : "Feature details"
+          }}</span
+        >
+        <div class="flex gap-1" :class="{ 'sm:flex-col-reverse': collapsed }">
+          <button
+            type="button"
+            class="hidden h-11 w-11 items-center justify-center rounded-lg bg-violet-100 text-violet-800 sm:flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800"
+            :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+            :aria-expanded="!collapsed"
+            @click="emit('update:collapsed', !collapsed)"
+          >
+            <component
+              :is="collapsed ? PanelLeftOpen : PanelLeftClose"
+              class="hidden h-5 w-5 sm:block"
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+      </header>
       <button
-        v-if="isScrollable && showIntroPanel && isAlertsDashboard"
+        v-if="!collapsed && isScrollable && showIntroPanel && isAlertsDashboard"
         class="scroll-indicator border-0 cursor-pointer"
         aria-label="Scroll to bottom"
         type="button"
@@ -194,6 +244,7 @@ onBeforeUnmount(() => {
         <ChevronDown class="w-6 h-6 text-gray-600 animate-bounce" />
       </button>
       <button
+        v-if="!sidebarPrototype"
         class="absolute top-5 right-5 p-2.5 bg-white/80 backdrop-blur-sm hover:bg-gray-100 rounded-full transition-all duration-200 ease-in-out shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2"
         @click="emit('close')"
       >
@@ -201,9 +252,14 @@ onBeforeUnmount(() => {
         <X class="w-5 h-5 text-gray-600" />
       </button>
 
-      <div class="p-4 sidebar-content">
+      <div
+        :class="{ 'sm:invisible': sidebarPrototype && collapsed }"
+        class="p-4 sidebar-content"
+      >
         <AlertsIntroPanel
           v-if="showIntroPanel && alertsStatistics && isAlertsDashboard"
+          :selected-date-range="selectedDateRange"
+          :show-clear-filters="sidebarPrototype"
           :calculate-hectares="calculateHectares"
           :date-options="dateOptions"
           :data-for-alerts-intro-panel="dataForAlertsIntroPanel"
@@ -213,6 +269,7 @@ onBeforeUnmount(() => {
           :stats-export-max-date="statsExportMaxDate"
           :alerts-statistics="alertsStatistics"
           :table-name="tableName"
+          @clear-filters="emit('clear-filters')"
           @date-range-changed="emit('date-range-changed', $event)"
         />
         <MapIntroPanel
@@ -254,6 +311,20 @@ onBeforeUnmount(() => {
           data-testid="feature-metadata"
         >
           <div class="p-4 sm:p-6">
+            <div v-if="sidebarPrototype" class="mb-3 flex justify-end">
+              <button
+                type="button"
+                class="flex h-11 w-11 items-center justify-center rounded-full bg-violet-100 text-violet-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800"
+                :aria-label="
+                  isAlertsDashboard
+                    ? 'Close selected alert'
+                    : 'Close selected feature'
+                "
+                @click="emit('close-feature')"
+              >
+                <X class="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
             <GalleryMediaCarousel
               v-if="showPhotoCarousel && imageFilePaths.length > 0"
               class="mb-6 h-60 overflow-hidden rounded-2xl bg-gray-50 sm:h-80"

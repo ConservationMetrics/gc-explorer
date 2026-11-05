@@ -11,11 +11,13 @@ import {
 const props = withDefaults(
   defineProps<{
     open: boolean;
+    collapsed?: boolean;
     initialHeightRatio?: number;
     minHeightRatio?: number;
     maxHeightRatio?: number;
   }>(),
   {
+    collapsed: undefined,
     initialHeightRatio: 0.5,
     minHeightRatio: 0.25,
     maxHeightRatio: 0.9,
@@ -185,7 +187,9 @@ onBeforeUnmount(() => {
     :class="[
       'mobile-resizable-drawer fixed z-[1050] flex max-w-full flex-col overflow-hidden bg-white shadow-lg transition-transform',
       'bottom-0 left-0 w-full rounded-t-2xl',
-      'sm:top-0 sm:bottom-auto sm:left-0 sm:h-full sm:w-[400px] sm:rounded-none',
+      'sm:top-0 sm:bottom-auto sm:left-0 sm:h-full sm:rounded-none',
+      'sm:w-[400px]',
+      { 'desktop-collapsed': open && collapsed },
       open
         ? 'translate-y-0 sm:translate-x-0'
         : 'translate-y-full sm:-translate-x-full',
@@ -225,6 +229,10 @@ onBeforeUnmount(() => {
 @media (min-width: 640px) {
   .mobile-resizable-drawer {
     height: 100%;
+  }
+
+  .mobile-resizable-drawer.desktop-collapsed {
+    transform: translateX(calc(64px - 100%));
   }
 }
 

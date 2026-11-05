@@ -2,7 +2,9 @@
 import { useSecondaryDatasetLayer } from "@/composables/map/useSecondaryDatasetLayer";
 import { attachMapHover } from "@/utils/mapHover";
 import { SECONDARY_INTERACTIVE_LAYER_IDS } from "@/utils/secondaryMapLayers";
-import { computed, toRef } from "vue";
+import { computed, shallowRef, toRef } from "vue";
+import { House } from "lucide-vue-next";
+import SidebarPrototypePicker from "@/components/prototypes/SidebarPrototypePicker.vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 
@@ -160,6 +162,12 @@ const showSlider = ref(false);
 
 const route = useRoute();
 const router = useRouter();
+const revisedSidebar = computed(
+  () => route.query.sidebarPrototype !== "current",
+);
+const sidebarCollapsed = ref(false);
+const selectedAlertGeojson = ref<Feature | AlertsData>();
+const homeControl = shallowRef<HTMLDivElement>();
 
 const isSecondary = ref(false);
 const selectedFeatureLoading = ref(false);
@@ -222,7 +230,7 @@ const {
   selectedFeatureId,
   selectedFeatureGeometry,
   highlightClusterContainingFeature,
-  selectFeature,
+  selectFeature: selectMapFeature,
   resetSelectedFeature,
   calculateLineStringCentroid,
 } = useFeatureSelection(
@@ -235,11 +243,24 @@ const {
   isSecondary,
 );
 
+/**
+ * Expand the sidebar when a feature is opened, including the same feature again.
+ * @param {Feature} feature - The clicked map feature.
+ * @param {string} layerId - The feature's source layer.
+ * @returns {void}
+ */
+const selectFeature = (feature: Feature, layerId: string) => {
+  sidebarCollapsed.value = false;
+  selectMapFeature(feature, layerId);
+  selectedAlertGeojson.value = localAlertsData.value;
+};
+
 // Fetch full record on demand when a minimal feature is selected.
 // Handles both secondary features and alert features — the minimal
 // FeatureCollection only carries IDs and map-rendering fields, so
 // the full record is loaded via the single-record endpoint.
 let skipNextWatch = false;
+let selectionResetVersion = 0;
 watch(
   () => selectedFeature.value,
   async (feature) => {
@@ -264,7 +285,9 @@ watch(
     selectedFeature.value = null;
     selectedFeatureLoading.value = true;
 
+    const resetVersion = selectionResetVersion;
     const fullRecord = await fetchRecord(fetchTable, recordId);
+    if (resetVersion !== selectionResetVersion) return;
     skipNextWatch = true;
 
     let displayRecord: Record<string, unknown>;
@@ -296,6 +319,7 @@ watch(
 
 // Use alerts date filter composable
 const {
+  selectedDateRange,
   filteredData,
   filteredStatistics,
   resolvedDateRange,
@@ -458,6 +482,14 @@ onMounted(() => {
       // Fullscreen Control
       const fullscreenControl = new mapboxgl.FullscreenControl();
       map.value.addControl(fullscreenControl, "top-right");
+
+      const home = document.createElement("div");
+      home.className = "mapboxgl-ctrl mapboxgl-ctrl-group alerts-home-control";
+      map.value.addControl(
+        { onAdd: () => home, onRemove: () => home.remove() },
+        "top-right",
+      );
+      homeControl.value = home;
 
       // Ruler control
       const ruler = new rulerControl();
@@ -1377,6 +1409,40 @@ const handleSidebarClose = () => {
   resetSelectedFeature();
 };
 
+/** Return to the overview without changing the map or date filters. */
+const closeSelectedAlert = () => {
+  selectionResetVersion += 1;
+  resetSelectedFeature();
+  selectedFeatureLoading.value = false;
+  showIntroPanel.value = true;
+  selectedAlertGeojson.value = undefined;
+  localAlertsData.value = filteredData.value;
+};
+
+/** Restore the configured camera and overview while keeping date filters. */
+const resetMapView = () => {
+  closeSelectedAlert();
+  map.value?.flyTo({
+    center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
+    zoom: props.mapboxZoom || 2.5,
+    pitch: props.mapboxPitch || 0,
+    bearing: props.mapboxBearing || 0,
+  });
+};
+
+/** Restore all dates while keeping the camera and selected feature. */
+const clearDateFilters = () => {
+  const dates = getDateOptions();
+  if (!dates.length) return;
+  handleDateRangeChanged([dates[0], dates[dates.length - 1]]);
+  resetDateRange();
+};
+
+watch(revisedSidebar, () => {
+  showSidebar.value = true;
+  sidebarCollapsed.value = false;
+});
+
 /** Update the mobile drawer height used to offset the map legend. */
 const handleMobileDrawerHeight = (height: number) => {
   mobileDrawerHeight.value = height;
@@ -1479,20 +1545,39 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <div id="map" :data-map-ready="mapReady || undefined"></div>
+    <div
+      id="map"
+      :class="{ 'revised-alerts-controls': revisedSidebar }"
+      :data-map-ready="mapReady || undefined"
+    ></div>
+    <SidebarPrototypePicker />
+    <Teleport v-if="homeControl && revisedSidebar" :to="homeControl">
+      <button
+        type="button"
+        aria-label="Reset map view"
+        title="Reset map view"
+        @click="resetMapView"
+      >
+        <House class="mx-auto h-4 w-4" aria-hidden="true" />
+      </button>
+    </Teleport>
     <button
-      v-if="!showSidebar"
+      v-if="!showSidebar && !revisedSidebar"
       class="absolute top-2.5 left-2.5 z-10 bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 px-4 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 mx-2"
       @click="resetToInitialState"
     >
       {{ $t("resetDashboard") }}
     </button>
     <MapFilterControls
+      class="max-[360px]:top-16"
       :data="[]"
       :show-copied-location="showCopiedLocation"
       @copy-location="copyLocation"
     />
     <ViewSidebar
+      :sidebar-prototype="revisedSidebar"
+      :collapsed="sidebarCollapsed"
+      :selected-date-range="revisedSidebar ? selectedDateRange : undefined"
       :alerts-statistics="filteredStatistics"
       :allowed-file-extensions="allowedFileExtensions"
       :calculate-hectares="calculateHectares"
@@ -1502,7 +1587,11 @@ onBeforeUnmount(() => {
       "
       :feature="selectedFeature"
       :feature-loading="selectedFeatureLoading"
-      :feature-geojson="localAlertsData"
+      :feature-geojson="
+        revisedSidebar && !showIntroPanel
+          ? selectedAlertGeojson
+          : localAlertsData
+      "
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
       :is-alert="isAlert"
@@ -1518,6 +1607,9 @@ onBeforeUnmount(() => {
       :stats-export-min-date="resolvedDateRange?.[0]"
       :stats-export-max-date="resolvedDateRange?.[1]"
       :table-name="primaryDataset"
+      @update:collapsed="sidebarCollapsed = $event"
+      @clear-filters="clearDateFilters"
+      @close-feature="closeSelectedAlert"
       @close="handleSidebarClose"
       @date-range-changed="handleDateRangeChanged"
       @mobile-height-change="handleMobileDrawerHeight"
@@ -1641,6 +1733,14 @@ body {
 
 .mapboxgl-popup-content {
   word-wrap: break-word;
+}
+
+:deep(.alerts-home-control:empty),
+.revised-alerts-controls
+  :deep(.mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen)),
+.revised-alerts-controls
+  :deep(.mapboxgl-ctrl-group:has(.mapboxgl-ctrl-shrink)) {
+  display: none;
 }
 
 :deep(.mapboxgl-ctrl-ruler) {

@@ -10,6 +10,8 @@ import type { Dataset } from "@/types";
 
 defineProps<{
   data: Dataset;
+  showClearFilters?: boolean;
+  filtersActive?: boolean;
   filterColumn?: string;
   colorColumn?: string;
   timestampColumn?: string;
@@ -20,6 +22,7 @@ const emit = defineEmits<{
   filter: [values: string[]];
   "date-filter": [{ start: Date | null; end: Date | null }];
   "copy-location": [];
+  "clear-filters": [];
 }>();
 
 const showFilter = ref(false);
@@ -109,6 +112,15 @@ const toggleDateFilter = () => {
         data-testid="date-filter-applied"
         aria-hidden="true"
       ></span>
+    </button>
+    <button
+      v-if="showClearFilters && (filterColumn || timestampColumn)"
+      type="button"
+      class="h-10 rounded-md bg-violet-100 px-3 text-sm text-violet-800 disabled:opacity-50"
+      :disabled="!filtersActive"
+      @click="emit('clear-filters')"
+    >
+      Clear filters
     </button>
     <div
       v-if="filterMounted"
