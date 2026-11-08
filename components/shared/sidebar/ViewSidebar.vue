@@ -197,42 +197,35 @@ onBeforeUnmount(() => {
     :collapsed="sidebarPrototype ? collapsed : undefined"
     @height-change="emit('mobile-height-change', $event)"
   >
+    <template #edge>
+      <button
+        v-if="sidebarPrototype && showSidebar"
+        type="button"
+        class="absolute bottom-4 left-full hidden h-11 w-11 items-center justify-center rounded-r-lg bg-white text-violet-800 shadow-md hover:bg-violet-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800 sm:flex md:bottom-auto md:top-2.5"
+        :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        :aria-expanded="!collapsed"
+        @click="emit('update:collapsed', !collapsed)"
+      >
+        <component
+          :is="collapsed ? PanelLeftOpen : PanelLeftClose"
+          class="h-5 w-5"
+          aria-hidden="true"
+        />
+      </button>
+    </template>
     <div class="relative min-h-full">
       <header
         v-if="sidebarPrototype"
-        class="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-2 bg-white px-3"
-        :class="
-          collapsed
-            ? 'sm:ml-auto sm:w-16 sm:flex-col sm:justify-start sm:py-3'
-            : ''
-        "
+        class="sticky top-0 z-20 flex min-h-16 items-center bg-white px-3 text-sm font-semibold"
+        :class="{ 'sm:invisible': collapsed }"
       >
-        <span
-          class="text-sm font-semibold"
-          :class="{ 'sm:hidden': collapsed }"
-          >{{
-            showIntroPanel
-              ? "Overview"
-              : isAlertsDashboard
-                ? "Alert details"
-                : "Feature details"
-          }}</span
-        >
-        <div class="flex gap-1" :class="{ 'sm:flex-col-reverse': collapsed }">
-          <button
-            type="button"
-            class="hidden h-11 w-11 items-center justify-center rounded-lg bg-violet-100 text-violet-800 sm:flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800"
-            :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-            :aria-expanded="!collapsed"
-            @click="emit('update:collapsed', !collapsed)"
-          >
-            <component
-              :is="collapsed ? PanelLeftOpen : PanelLeftClose"
-              class="hidden h-5 w-5 sm:block"
-              aria-hidden="true"
-            />
-          </button>
-        </div>
+        {{
+          showIntroPanel
+            ? "Overview"
+            : isAlertsDashboard
+              ? "Alert details"
+              : "Feature details"
+        }}
       </header>
       <button
         v-if="!collapsed && isScrollable && showIntroPanel && isAlertsDashboard"

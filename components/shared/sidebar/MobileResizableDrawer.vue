@@ -187,7 +187,7 @@ onBeforeUnmount(() => {
     :class="[
       'mobile-resizable-drawer fixed z-[1050] flex max-w-full flex-col overflow-hidden bg-white shadow-lg transition-transform',
       'bottom-0 left-0 w-full rounded-t-2xl',
-      'sm:top-0 sm:bottom-auto sm:left-0 sm:h-full sm:rounded-none',
+      'sm:top-0 sm:bottom-auto sm:left-0 sm:h-full sm:overflow-visible sm:rounded-none',
       'sm:w-[400px]',
       { 'desktop-collapsed': open && collapsed },
       open
@@ -197,6 +197,7 @@ onBeforeUnmount(() => {
     ]"
     :style="drawerStyle"
   >
+    <slot name="edge"></slot>
     <button
       class="flex h-8 shrink-0 touch-none items-center justify-center sm:hidden"
       aria-label="Resize sidebar"
@@ -232,7 +233,7 @@ onBeforeUnmount(() => {
   }
 
   .mobile-resizable-drawer.desktop-collapsed {
-    transform: translateX(calc(64px - 100%));
+    transform: translateX(-100%);
   }
 }
 
