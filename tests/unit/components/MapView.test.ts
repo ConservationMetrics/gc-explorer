@@ -168,6 +168,7 @@ const globalConfig = {
     $n: (value: number) => value.toString(),
   },
   stubs: {
+    Teleport: true,
     DataFilter: true,
     MapFilterControls: false,
     ViewSidebar: true,
@@ -521,14 +522,14 @@ describe("MapView component", () => {
     );
     const vm = wrapper.vm as unknown as {
       selectedFeature: unknown;
-      handleSidebarClose: () => void;
+      closeSelectedFeature: () => void;
     };
     const current = vm.selectedFeature;
     resolveOld({ _id: "old", name: "Old primary" });
     await flushPromises();
     expect(vm.selectedFeature).toEqual(current);
     mockRoute.value.query = { secondaryDocId: "1" };
-    vm.handleSidebarClose();
+    vm.closeSelectedFeature();
     expect(mockRouter.replace).toHaveBeenLastCalledWith({ query: {} });
     wrapper.unmount();
   });
@@ -1319,9 +1320,13 @@ describe("MapView component", () => {
         stubs: {
           ...globalConfig.stubs,
           ViewSidebar: {
-            props: ["showSidebar", "feature", "featureLoading"],
+            props: {
+              showSidebar: Boolean,
+              feature: Object,
+              featureLoading: Boolean,
+            },
             template:
-              "<div v-if='showSidebar'>Sidebar {{ feature?._id }}</div>",
+              "<div v-if='showSidebar' data-testid='test-map-sidebar'>Sidebar {{ feature?._id }}</div>",
           },
         },
       },
@@ -1348,11 +1353,12 @@ describe("MapView component", () => {
     await flushPromises();
 
     const vm = wrapper.vm as unknown as {
-      showSidebar: boolean;
       selectedFeature: Record<string, unknown> | undefined;
       selectedFeatureLoading: boolean;
     };
-    expect(vm.showSidebar).toBe(true);
+    expect(wrapper.find('[data-testid="test-map-sidebar"]').exists()).toBe(
+      true,
+    );
     // fetchRecord was called with the table and record ID
     expect(mockFetchRecord).toHaveBeenCalledWith("test_table", "1");
     // Full record is populated from the API response with client-side transforms applied
@@ -1488,7 +1494,7 @@ describe("MapView component", () => {
     expect(vm.selectedFeatureLoading).toBe(false);
   });
 
-  it.each(["handleSidebarClose", "resetToInitialState"] as const)(
+  it.each(["closeSelectedFeature", "resetMapView"] as const)(
     "keeps secondary selection cleared after %s and a late camera event",
     async (action) => {
       mockRoute.value.query = { secondaryDocId: "1" };
@@ -1532,7 +1538,7 @@ describe("MapView component", () => {
     },
   );
 
-  it("closes sidebar and resets selection", async () => {
+  it("returns to the overview when closing a selected feature", async () => {
     const wrapper = mount(MapView, {
       props: baseProps,
       global: globalConfig,
@@ -1554,17 +1560,15 @@ describe("MapView component", () => {
 
     // Call the close handler directly
     const vm = wrapper.vm as unknown as {
-      showSidebar: boolean;
       selectedFeature: undefined | Record<string, unknown>;
       showIntroPanel: boolean;
-      handleSidebarClose: () => void;
+      closeSelectedFeature: () => void;
     };
 
     mockRoute.value.query = { featureId: "1", lat: "-3.12000" };
-    vm.handleSidebarClose();
+    vm.closeSelectedFeature();
     await flushPromises();
 
-    expect(vm.showSidebar).toBe(false);
     expect(vm.selectedFeature).toBeUndefined();
     expect(vm.showIntroPanel).toBe(true);
     expect(mockRouter.replace).toHaveBeenCalledWith({
@@ -1576,64 +1580,63 @@ describe("MapView component", () => {
     );
   });
 
-  it("shows reset button when sidebar is closed", async () => {
-    const wrapper = mount(MapView, {
-      props: baseProps,
-      global: globalConfig,
-    });
-
+  it("keeps filters and collapse state when Home clears a selected map feature", async () => {
+    const wrapper = mount(MapView, { props: baseProps, global: globalConfig });
     mapboxMock.fireLoad();
     await flushPromises();
-
-    // Initially sidebar is shown, button should not exist
-    expect(wrapper.find(".reset-button").exists()).toBe(false);
-
-    // Close sidebar
-    const sidebar = wrapper.findComponent({ name: "ViewSidebar" });
-    await sidebar.vm.$emit("close");
-    await flushPromises();
-
-    // Now reset button should be visible
-    expect(wrapper.find(".reset-button").exists()).toBe(true);
-  });
-
-  it("resets to initial state when reset button is clicked", async () => {
-    const wrapper = mount(MapView, {
-      props: baseProps,
-      global: globalConfig,
-    });
-
-    mapboxMock.fireLoad();
-    await flushPromises();
-
-    // Close sidebar to show reset button
-    const sidebar = wrapper.findComponent({ name: "ViewSidebar" });
-    await sidebar.vm.$emit("close");
-    await flushPromises();
-    mockRouter.replace.mockClear();
-    mockRoute.value.query = { featureId: "1", lat: "-3.12000" };
-
-    // Click reset button
-    await wrapper.find(".reset-button").trigger("click");
-    await flushPromises();
-
     const vm = wrapper.vm as unknown as {
-      selectedFeature: undefined | Record<string, unknown>;
-      showSidebar: boolean;
+      selectedFilterValues: string[];
+      sidebarCollapsed: boolean;
+      selectedFeature: unknown;
       showIntroPanel: boolean;
     };
+    vm.selectedFilterValues = ["active"];
+    vm.sidebarCollapsed = true;
+    vm.selectedFeature = { id: "1" };
+    vm.showIntroPanel = false;
+    mockRoute.value.query = { featureId: "1", lat: "1" };
+    await wrapper.get('[aria-label="Reset map view"]').trigger("click");
+    await flushPromises();
     expect(vm.selectedFeature).toBeUndefined();
-    expect(vm.showSidebar).toBe(true);
     expect(vm.showIntroPanel).toBe(true);
+    expect(vm.sidebarCollapsed).toBe(true);
+    expect(vm.selectedFilterValues).toEqual(["active"]);
     expect(mapboxMock.mockMap.flyTo).toHaveBeenCalledWith({
       center: [10, 10],
       zoom: 10,
       pitch: 0,
       bearing: 0,
     });
-    expect(mockRouter.replace).toHaveBeenCalledWith({
-      query: { lat: "-3.12000" },
+    expect(mockRouter.replace).toHaveBeenCalledWith({ query: { lat: "1" } });
+    wrapper.unmount();
+  });
+
+  it("clears map filters without changing the camera or selected feature", async () => {
+    const wrapper = mount(MapView, { props: baseProps, global: globalConfig });
+    mapboxMock.fireLoad();
+    await flushPromises();
+    const vm = wrapper.vm as unknown as {
+      selectedFilterValues: string[];
+      selectedFeature: unknown;
+      dateMin: string | null;
+      onTimestampFilter: (range: { start: Date; end: Date }) => void;
+    };
+    vm.selectedFilterValues = ["active"];
+    vm.onTimestampFilter({
+      start: new Date("2024-01-01"),
+      end: new Date("2024-02-01"),
     });
+    vm.selectedFeature = { id: "1" };
+    mapboxMock.mockMap.flyTo.mockClear();
+    await wrapper
+      .findComponent({ name: "MapFilterControls" })
+      .vm.$emit("clear-filters");
+    await flushPromises();
+    expect(vm.selectedFilterValues).toEqual([]);
+    expect(vm.dateMin).toBe("");
+    expect(vm.selectedFeature).toEqual({ id: "1" });
+    expect(mapboxMock.mockMap.flyTo).not.toHaveBeenCalled();
+    wrapper.unmount();
   });
 
   it("changes basemap when basemap is selected", async () => {

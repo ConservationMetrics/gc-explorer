@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { onBeforeUnmount } from "vue";
 import type { MapLegendItem } from "@/types";
-import { Layers, X } from "lucide-vue-next";
+import { Layers } from "lucide-vue-next";
 
 const props = withDefaults(
   defineProps<{
@@ -16,13 +17,26 @@ const emit = defineEmits(["toggle-layer-visibility"]);
 
 const localMapLegendContent = ref();
 const isExpanded = ref(false);
+const viewportHeight = ref(0);
+// Keep room above the phone drawer for both the trigger and a usable legend.
+const minVisibleMapHeight = 144;
+
+const updateViewportHeight = () => {
+  viewportHeight.value = window.innerHeight;
+};
 
 onMounted(() => {
+  updateViewportHeight();
+  window.addEventListener("resize", updateViewportHeight);
   // After switching basemaps, keep each layer group visible or hidden as it was before.
   localMapLegendContent.value = props.mapLegendContent.map((item) => ({
     ...item,
     visible: item.visible ?? true,
   }));
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", updateViewportHeight);
 });
 
 /** Layer visibility toggles */
@@ -55,17 +69,20 @@ watch(
 <template>
   <div
     data-testid="map-legend"
-    class="map-legend feature rounded-lg shadow-lg"
-    :class="{ 'is-collapsed': !isExpanded }"
+    class="map-legend"
+    :class="{
+      'drawer-obscures-legend':
+        viewportHeight - mobileDrawerHeight < minVisibleMapHeight,
+    }"
     :style="{
       '--mobile-drawer-height': `${props.mobileDrawerHeight}px`,
     }"
   >
     <button
-      v-if="!isExpanded"
+      type="button"
       class="legend-trigger"
       data-testid="map-legend-toggle"
-      :aria-expanded="false"
+      :aria-expanded="isExpanded"
       :aria-label="$t('mapLegend')"
       @click="toggleExpanded"
     >
@@ -74,21 +91,12 @@ watch(
     <span v-if="!isExpanded" class="legend-tooltip" role="tooltip">
       {{ $t("mapLegend") }}
     </span>
-    <template v-else>
+    <div v-if="isExpanded" class="legend-panel rounded-lg shadow-lg">
       <header class="legend-header">
         <span class="flex items-center gap-2 text-lg font-semibold">
           <Layers class="h-5 w-5 text-violet-700" aria-hidden="true" />
           {{ $t("mapLegend") }}
         </span>
-        <button
-          class="legend-close"
-          data-testid="map-legend-close"
-          type="button"
-          :aria-label="$t('close')"
-          @click="isExpanded = false"
-        >
-          <X class="h-4 w-4" aria-hidden="true" />
-        </button>
       </header>
       <div class="legend-content">
         <div
@@ -139,7 +147,7 @@ watch(
           </label>
         </div>
       </div>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -148,25 +156,23 @@ watch(
   position: absolute;
   bottom: 30px;
   right: 10px;
+  width: 44px;
+  height: 44px;
+  z-index: 1020;
+}
+
+.legend-panel {
+  position: absolute;
+  bottom: 54px;
+  right: 0;
   width: min(315px, calc(100vw - 20px));
   max-height: min(38vh, 260px);
   background-color: #fff;
   border: 1px solid #ddd6fe;
-  padding: 16px;
+  padding: 12px;
   line-height: 18px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  z-index: 1020;
-}
-
-.map-legend.is-collapsed {
-  height: 44px;
-  padding: 0;
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-  pointer-events: none;
 }
 
 .color-box {
@@ -248,7 +254,6 @@ watch(
 .legend-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   width: 100%;
   border: none;
   padding: 0;
@@ -274,7 +279,8 @@ watch(
   transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.legend-trigger:hover {
+.legend-trigger:hover,
+.legend-trigger[aria-expanded="true"] {
   background: rgb(91 33 182);
 }
 
@@ -309,23 +315,6 @@ watch(
   }
 }
 
-.legend-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: 9999px;
-  color: rgb(55 65 81);
-  background: rgb(243 244 246);
-  transition: background-color 150ms cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.legend-close:hover {
-  background: rgb(229 231 235);
-}
-
 .legend-content {
   animation: legend-content-enter 180ms cubic-bezier(0.23, 1, 0.32, 1);
   min-height: 0;
@@ -344,22 +333,37 @@ watch(
 @media (prefers-reduced-motion: reduce) {
   .legend-trigger,
   .legend-tooltip,
-  .legend-close,
   .legend-content {
     animation: none;
     transition: none;
   }
 }
 
+@media (min-width: 640px) and (max-height: 353px) {
+  .map-legend {
+    right: 60px;
+  }
+
+  .legend-panel {
+    width: 265px;
+  }
+}
+
 @media (max-width: 639px) {
   .map-legend {
-    right: 10px;
+    bottom: calc(var(--mobile-drawer-height) + 12px);
+  }
+
+  .map-legend.drawer-obscures-legend {
+    display: none;
+  }
+
+  .legend-panel {
     width: min(265px, calc(100vw - 20px));
-    bottom: calc(var(--mobile-drawer-height, 0px) + 44px);
     max-height: min(
       32vh,
       220px,
-      calc(100vh - var(--mobile-drawer-height, 0px) - 60px)
+      calc(100dvh - var(--mobile-drawer-height) - 76px)
     );
   }
 }

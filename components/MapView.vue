@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { shallowRef } from "vue";
+import { House } from "lucide-vue-next";
 import { useSecondaryDatasetLayer } from "@/composables/map/useSecondaryDatasetLayer";
 import { attachMapHover } from "@/utils/mapHover";
 import {
@@ -8,6 +10,7 @@ import {
 import mapboxgl from "mapbox-gl";
 import { exposeTestMap } from "@/utils/e2eTestHooks";
 import "mapbox-gl/dist/mapbox-gl.css";
+import "@/assets/map-controls.css";
 import { useRoute, useRouter } from "vue-router";
 import { along } from "@turf/along";
 import { bbox } from "@turf/bbox";
@@ -103,6 +106,8 @@ const { fetchRecord } = useRecordCache();
 
 const route = useRoute();
 const router = useRouter();
+const sidebarCollapsed = ref(false);
+const homeControl = shallowRef<HTMLDivElement>();
 const map = ref();
 const { showCopied: showCopiedLocation, copyLocation } =
   useCopyMapLocation(map);
@@ -124,7 +129,6 @@ const secondaryLayer = useSecondaryDatasetLayer(
   },
 );
 const SELECTED_HALO_COLOR = "#00E5FF";
-const showSidebar = ref(true);
 const mobileDrawerHeight = ref(0);
 const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
@@ -226,9 +230,13 @@ onMounted(() => {
       });
       map.value.addControl(scale, "bottom-left");
 
-      // Fullscreen Control
-      const fullscreenControl = new mapboxgl.FullscreenControl();
-      map.value.addControl(fullscreenControl, "top-right");
+      const home = document.createElement("div");
+      home.className = "mapboxgl-ctrl mapboxgl-ctrl-group map-home-control";
+      map.value.addControl(
+        { onAdd: () => home, onRemove: () => home.remove() },
+        "top-right",
+      );
+      homeControl.value = home;
 
       showBasemapSelector.value = true;
       controlsAdded = true;
@@ -810,7 +818,6 @@ const openMapFeature = async (clickedFeature: Feature, secondary = false) => {
 
   selectedFeature.value = undefined;
   selectedFeatureLoading.value = true;
-  showSidebar.value = true;
   showIntroPanel.value = false;
 
   const featureGeojson: Feature = {
@@ -868,25 +875,21 @@ const selectInitialMapFeature = (featureId: string, secondary = false) => {
   void openMapFeature(feature, secondary);
 };
 
-/** Reset the map to initial state */
-const resetToInitialState = () => {
+/** Return to Overview while preserving the camera, sidebar and filters. */
+const closeSelectedFeature = () => {
   preserveSelectionInCameraQuery.value = false;
   selectionRequest++;
   selectedFeature.value = undefined;
   selectedFeatureOriginal.value = undefined;
   selectedFeatureLoading.value = false;
-  showSidebar.value = true;
   showIntroPanel.value = true;
   clearSelectedMapFeatureState();
   clearFeatureIdQuery();
+};
 
-  // Reset filters
-  selectedFilterValues.value = [];
-  setDateRange({ start: null, end: null });
-  filterResetKey.value++;
-  applyAllFilters();
-
-  // Fly to the initial position
+/** Restore the configured camera and overview while keeping filters. */
+const resetMapView = () => {
+  closeSelectedFeature();
   map.value.flyTo({
     center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
     zoom: props.mapboxZoom || 2.5,
@@ -895,17 +898,12 @@ const resetToInitialState = () => {
   });
 };
 
-/** Handle sidebar close */
-const handleSidebarClose = () => {
-  preserveSelectionInCameraQuery.value = false;
-  selectionRequest++;
-  showSidebar.value = false;
-  selectedFeature.value = undefined;
-  selectedFeatureOriginal.value = undefined;
-  selectedFeatureLoading.value = false;
-  showIntroPanel.value = true;
-  clearSelectedMapFeatureState();
-  clearFeatureIdQuery();
+/** Clear category and date filters without moving the map or closing details. */
+const clearFilters = () => {
+  selectedFilterValues.value = [];
+  setDateRange({ start: null, end: null });
+  filterResetKey.value++;
+  applyAllFilters();
 };
 
 /** Update the mobile drawer height used to offset the map legend. */
@@ -954,26 +952,34 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <div id="map"></div>
-    <button
-      v-if="!showSidebar"
-      class="reset-button bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 px-4 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 mx-2"
-      @click="resetToInitialState"
-    >
-      {{ $t("resetMap") }}
-    </button>
+    <div id="map" class="explorer-map-controls"></div>
+    <Teleport v-if="homeControl" :to="homeControl">
+      <button
+        type="button"
+        aria-label="Reset map view"
+        title="Reset map view"
+        @click="resetMapView"
+      >
+        <House class="mx-auto h-4 w-4" aria-hidden="true" />
+      </button>
+    </Teleport>
     <MapFilterControls
       :key="filterResetKey"
+      :filters-active="
+        selectedFilterValues.length > 0 || !!dateMin || !!dateMax
+      "
       :data="flatDataForFilter"
       :filter-column="filterColumn"
       :color-column="colorColumn"
       :timestamp-column="timestampColumn"
       :show-copied-location="showCopiedLocation"
+      @clear-filters="clearFilters"
       @filter="filterValues"
       @date-filter="onTimestampFilter"
       @copy-location="copyLocation"
     />
     <ViewSidebar
+      :collapsed="sidebarCollapsed"
       :allowed-file-extensions="allowedFileExtensions"
       :export-table-name="isSecondary ? secondaryDataset || table : table"
       :feature="selectedFeature"
@@ -1000,7 +1006,7 @@ onBeforeUnmount(() => {
       :timestamp-column="timestampColumn"
       :media-base-path="mediaBasePath"
       :show-intro-panel="showIntroPanel"
-      :show-sidebar="showSidebar"
+      show-sidebar
       :show-icons="showIcons"
       :can-toggle-icons="canToggleIcons"
       :loading-icons="loadingIcons"
@@ -1008,7 +1014,8 @@ onBeforeUnmount(() => {
       :table-name="isSecondary ? secondaryDataset || table : table"
       :view-name="viewName"
       :view-description="viewDescription"
-      @close="handleSidebarClose"
+      @update:collapsed="sidebarCollapsed = $event"
+      @close-feature="closeSelectedFeature"
       @mobile-height-change="handleMobileDrawerHeight"
       @toggle-icons="handleToggleIcons"
     />
@@ -1031,6 +1038,10 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+:deep(.map-home-control:empty) {
+  display: none;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -1052,12 +1063,5 @@ body {
   width: 100%;
   display: block;
   margin-top: 5px;
-}
-
-.reset-button {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 10;
 }
 </style>

@@ -31,4 +31,19 @@ describe("MobileResizableDrawer", () => {
     await resizeHandle.trigger("keydown", { key: "Home" });
     expect(resizeHandle.attributes("aria-valuenow")).toBe("720");
   });
+  it("keeps mobile resizing independent of desktop collapse", async () => {
+    const wrapper = mount(MobileResizableDrawer, {
+      props: { open: true, collapsed: true },
+    });
+    await nextTick();
+    const handle = wrapper.get('[role="separator"]');
+    expect(handle.attributes("aria-valuenow")).toBe("400");
+    expect(wrapper.emitted("height-change")?.at(-1)).toEqual([400]);
+    await handle.trigger("keydown", { key: "End" });
+    expect(handle.attributes("aria-valuenow")).toBe("200");
+    await handle.trigger("keydown", { key: "Home" });
+    expect(handle.attributes("aria-valuenow")).toBe("720");
+    expect(wrapper.emitted("update:collapsed")).toBeUndefined();
+    wrapper.unmount();
+  });
 });
