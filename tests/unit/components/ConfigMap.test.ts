@@ -609,7 +609,7 @@ describe("ConfigMap component", () => {
     expect(firstBasemapContainer).toBeTruthy();
   });
 
-  it("reorders basemaps on drag and drop", async () => {
+  it("reorders basemaps only when the drag starts on the handle", async () => {
     const configWith2Basemaps = {
       ...baseProps.config,
       MAPBOX_BASEMAPS: encodedBasemaps([
@@ -631,24 +631,27 @@ describe("ConfigMap component", () => {
       global: globalConfig,
     });
 
-    const vm = wrapper.vm as unknown as {
-      basemaps: Array<{ name: string; isDefault: boolean }>;
-      handleDragStart: (index: number) => void;
-      handleDrop: (e: DragEvent, dropIndex: number) => void;
-    };
+    const firstCard = wrapper.get('[data-testid="basemap-item-0"]');
+    const secondCard = wrapper.get('[data-testid="basemap-item-1"]');
+    const secondName = secondCard.get('input[id$="basemap-name-1"]');
 
-    vm.handleDragStart(1);
-    const dropEvent = new Event("drop") as DragEvent;
-    Object.defineProperty(dropEvent, "preventDefault", {
-      value: vi.fn(),
-    });
-    vm.handleDrop(dropEvent, 0);
+    await secondName.trigger("dragstart", { bubbles: true });
+    await firstCard.trigger("drop");
+    expect(wrapper.emitted("updateConfig")).toBeUndefined();
 
-    expect(vm.basemaps[0].name).toBe("Second");
-    expect(vm.basemaps[1].name).toBe("First");
-    // After reorder, first item should be default
-    expect(vm.basemaps[0].isDefault).toBe(true);
-    expect(vm.basemaps[1].isDefault).toBe(false);
+    const handle = secondCard.get('[data-testid="basemap-drag-handle"]');
+    await handle.trigger("dragstart");
+    await handle.trigger("dragend");
+    await firstCard.trigger("drop");
+    expect(wrapper.emitted("updateConfig")).toBeUndefined();
+
+    await handle.trigger("dragstart");
+    await firstCard.trigger("drop");
+    const [update] = wrapper.emitted<[Partial<ViewConfig>]>("updateConfig")![0];
+    expect(JSON.parse(update.MAPBOX_BASEMAPS!)).toMatchObject([
+      { name: "Second", isDefault: true },
+      { name: "First", isDefault: false },
+    ]);
   });
 
   it("handles drag over event", () => {
