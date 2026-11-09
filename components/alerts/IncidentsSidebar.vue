@@ -645,7 +645,8 @@ const handleClose = () => {
   position: absolute;
   top: 0;
   right: 0;
-  width: 400px;
+  /* Leave the left drawer edge tab reachable when both drawers are open. */
+  width: min(400px, max(300px, calc(100vw - 444px)));
   height: 100%;
   background: white;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);

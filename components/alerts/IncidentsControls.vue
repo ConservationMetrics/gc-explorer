@@ -163,7 +163,7 @@ const emit = defineEmits<{
 <style scoped>
 .incidents-controls {
   position: absolute;
-  top: 230px;
+  top: 288px;
   right: 10px;
   z-index: 30;
   display: flex;
@@ -243,5 +243,32 @@ const emit = defineEmits<{
   transform: translateY(-50%);
   border: 6px solid transparent;
   border-left-color: rgba(0, 0, 0, 0.85);
+}
+@media (max-height: 593px) {
+  .incidents-controls {
+    top: auto;
+    right: 64px;
+    bottom: 30px;
+    flex-direction: row;
+  }
+
+  .tooltip {
+    right: 0;
+    bottom: 48px;
+  }
+
+  .tooltip::after {
+    top: 100%;
+    right: 14px;
+    transform: none;
+    border-left-color: transparent;
+    border-top-color: rgba(0, 0, 0, 0.85);
+  }
+}
+@media (max-height: 353px) {
+  .incidents-controls {
+    right: 114px;
+    gap: 6px;
+  }
 }
 </style>

@@ -201,7 +201,7 @@ onBeforeUnmount(() => {
       <button
         v-if="sidebarPrototype && showSidebar"
         type="button"
-        class="absolute bottom-4 left-full hidden h-11 w-11 items-center justify-center rounded-r-lg bg-white text-violet-800 shadow-md hover:bg-violet-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800 sm:flex md:bottom-auto md:top-2.5"
+        class="absolute left-full top-2.5 hidden h-11 w-11 items-center justify-center rounded-r-lg bg-white text-violet-800 shadow-md hover:bg-violet-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800 sm:flex"
         :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
         :aria-expanded="!collapsed"
         @click="emit('update:collapsed', !collapsed)"
@@ -215,17 +215,11 @@ onBeforeUnmount(() => {
     </template>
     <div class="relative min-h-full">
       <header
-        v-if="sidebarPrototype"
+        v-if="sidebarPrototype && !showIntroPanel"
         class="sticky top-0 z-20 flex min-h-16 items-center bg-white px-3 text-sm font-semibold"
         :class="{ 'sm:invisible': collapsed }"
       >
-        {{
-          showIntroPanel
-            ? "Overview"
-            : isAlertsDashboard
-              ? "Alert details"
-              : "Feature details"
-        }}
+        {{ isAlertsDashboard ? "Alert details" : "Feature details" }}
       </header>
       <button
         v-if="!collapsed && isScrollable && showIntroPanel && isAlertsDashboard"

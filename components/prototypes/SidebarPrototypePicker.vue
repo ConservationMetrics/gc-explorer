@@ -191,4 +191,15 @@ onBeforeUnmount(() => {
   bottom: auto;
   top: 24px;
 }
+@media (min-width: 640px) and (max-width: 1079px) {
+  .proto-picker[data-position="top"] {
+    top: auto;
+    bottom: 16px;
+  }
+}
+@media (min-width: 640px) and (max-width: 1079px) and (max-height: 593px) {
+  .proto-picker[data-position="top"] {
+    left: calc(50% - 100px);
+  }
+}
 </style>

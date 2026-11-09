@@ -11,6 +11,7 @@ import { useRoute, useRouter } from "vue-router";
 import mapboxgl from "mapbox-gl";
 import { exposeTestMap } from "@/utils/e2eTestHooks";
 import "mapbox-gl/dist/mapbox-gl.css";
+import "@/assets/map-controls.css";
 
 import { bbox } from "@turf/bbox";
 
@@ -1547,6 +1548,7 @@ onBeforeUnmount(() => {
   <div>
     <div
       id="map"
+      class="explorer-map-controls"
       :class="{ 'revised-alerts-controls': revisedSidebar }"
       :data-map-ready="mapReady || undefined"
     ></div>
@@ -1631,7 +1633,11 @@ onBeforeUnmount(() => {
       @basemap-selected="handleBasemapChange"
     />
     <!-- Incidents UI is hidden on mobile and for users below Member -->
-    <div v-if="canAccessIncidents" class="hidden md:block">
+    <div
+      v-if="canAccessIncidents"
+      class="hidden"
+      :class="revisedSidebar ? 'sm:block' : 'md:block'"
+    >
       <IncidentsSidebar
         :incidents="incidents"
         :incidents-total="incidentsTotal"
@@ -1745,7 +1751,7 @@ body {
 
 :deep(.mapboxgl-ctrl-ruler) {
   img {
-    margin-left: 3px;
+    margin-inline: auto;
   }
 
   .active {

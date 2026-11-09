@@ -17,7 +17,7 @@ const props = defineProps({
 
 const emit = defineEmits(["basemapSelected"]);
 
-const topPosition = computed(() => (props.hasRulerControl ? "187px" : "147px"));
+const topPosition = computed(() => (props.hasRulerControl ? "240px" : "190px"));
 
 const showBasemapWindow = ref(false);
 
@@ -173,8 +173,8 @@ const emitBasemapChange = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border: 1px solid #ccc;
   background-color: #fff;
@@ -192,7 +192,7 @@ const emitBasemapChange = () => {
 
 .basemap-tooltip {
   position: absolute;
-  right: 56px;
+  right: 60px;
   z-index: 1002;
   max-width: 180px;
   padding: 6px 9px;
@@ -223,7 +223,7 @@ const emitBasemapChange = () => {
 
 .basemap-window {
   position: absolute;
-  right: 55px;
+  right: 60px;
   background-color: #fff;
   border: 1px solid #ccc;
   z-index: 1001;

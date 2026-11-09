@@ -11,6 +11,7 @@ import {
 import mapboxgl from "mapbox-gl";
 import { exposeTestMap } from "@/utils/e2eTestHooks";
 import "mapbox-gl/dist/mapbox-gl.css";
+import "@/assets/map-controls.css";
 import { useRoute, useRouter } from "vue-router";
 import { along } from "@turf/along";
 import { bbox } from "@turf/bbox";
@@ -1005,7 +1006,11 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <div id="map" :class="{ 'revised-map-controls': revisedSidebar }"></div>
+    <div
+      id="map"
+      class="explorer-map-controls"
+      :class="{ 'revised-map-controls': revisedSidebar }"
+    ></div>
     <SidebarPrototypePicker class="max-sm:!top-auto max-sm:!bottom-4" />
     <Teleport v-if="homeControl && revisedSidebar" :to="homeControl">
       <button
