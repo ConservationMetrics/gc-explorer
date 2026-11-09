@@ -3,6 +3,7 @@ import { mount } from "@vue/test-utils";
 import { onMounted, ref, watch } from "vue";
 
 import MapLegend from "@/components/shared/map/MapLegend.vue";
+import type { MapLegendItem } from "@/types";
 
 Object.assign(globalThis, {
   onMounted,
@@ -10,7 +11,7 @@ Object.assign(globalThis, {
   watch,
 });
 
-const mapLegendContent = [
+const mapLegendContent: MapLegendItem[] = [
   {
     id: "recent-alerts",
     name: "Most recent alerts",
@@ -20,7 +21,7 @@ const mapLegendContent = [
 ];
 
 describe("MapLegend", () => {
-  it("provides visible open and close controls", async () => {
+  it("opens and closes with the same trigger", async () => {
     const wrapper = mount(MapLegend, {
       props: { mapLegendContent },
       global: {
@@ -33,29 +34,17 @@ describe("MapLegend", () => {
     const toggle = wrapper.get('[data-testid="map-legend-toggle"]');
     expect(toggle.find("svg").exists()).toBe(true);
     expect(toggle.attributes("aria-expanded")).toBe("false");
-    expect(wrapper.find('[data-testid="map-legend-close"]').exists()).toBe(
-      false,
+    await toggle.trigger("click");
+    expect(toggle.attributes("aria-expanded")).toBe("true");
+    expect(wrapper.find('[data-testid="map-legend-checkbox"]').exists()).toBe(
+      true,
     );
 
     await toggle.trigger("click");
-    expect(wrapper.find('[data-testid="map-legend-toggle"]').exists()).toBe(
-      false,
-    );
-    expect(wrapper.find('[data-testid="map-legend-close"]').exists()).toBe(
-      true,
-    );
-    expect(wrapper.find('[data-testid="map-legend-checkbox"]').exists()).toBe(
-      true,
-    );
-
-    await wrapper.get('[data-testid="map-legend-close"]').trigger("click");
-    expect(
-      wrapper
-        .get('[data-testid="map-legend-toggle"]')
-        .attributes("aria-expanded"),
-    ).toBe("false");
+    expect(toggle.attributes("aria-expanded")).toBe("false");
     expect(wrapper.find('[data-testid="map-legend-checkbox"]').exists()).toBe(
       false,
     );
+    wrapper.unmount();
   });
 });

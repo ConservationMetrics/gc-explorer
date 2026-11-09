@@ -2,13 +2,15 @@
 import { useSecondaryDatasetLayer } from "@/composables/map/useSecondaryDatasetLayer";
 import { attachMapHover } from "@/utils/mapHover";
 import { SECONDARY_INTERACTIVE_LAYER_IDS } from "@/utils/secondaryMapLayers";
-import { computed, toRef } from "vue";
+import { computed, shallowRef, toRef } from "vue";
+import { House } from "lucide-vue-next";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 
 import mapboxgl from "mapbox-gl";
 import { exposeTestMap } from "@/utils/e2eTestHooks";
 import "mapbox-gl/dist/mapbox-gl.css";
+import "@/assets/map-controls.css";
 
 import { bbox } from "@turf/bbox";
 
@@ -160,6 +162,9 @@ const showSlider = ref(false);
 
 const route = useRoute();
 const router = useRouter();
+const sidebarCollapsed = ref(false);
+const selectedAlertGeojson = ref<Feature | AlertsData>();
+const homeControl = shallowRef<HTMLDivElement>();
 
 const isSecondary = ref(false);
 const selectedFeatureLoading = ref(false);
@@ -214,7 +219,6 @@ const {
 
 // Use feature selection composable
 const {
-  imageCaption,
   imageUrl,
   isAlert,
   selectedFeature,
@@ -222,7 +226,7 @@ const {
   selectedFeatureId,
   selectedFeatureGeometry,
   highlightClusterContainingFeature,
-  selectFeature,
+  selectFeature: selectMapFeature,
   resetSelectedFeature,
   calculateLineStringCentroid,
 } = useFeatureSelection(
@@ -235,11 +239,24 @@ const {
   isSecondary,
 );
 
+/**
+ * Expand the sidebar when a feature is opened, including the same feature again.
+ * @param {Feature} feature - The clicked map feature.
+ * @param {string} layerId - The feature's source layer.
+ * @returns {void}
+ */
+const selectFeature = (feature: Feature, layerId: string) => {
+  sidebarCollapsed.value = false;
+  selectMapFeature(feature, layerId);
+  selectedAlertGeojson.value = localAlertsData.value;
+};
+
 // Fetch full record on demand when a minimal feature is selected.
 // Handles both secondary features and alert features — the minimal
 // FeatureCollection only carries IDs and map-rendering fields, so
 // the full record is loaded via the single-record endpoint.
 let skipNextWatch = false;
+let selectionResetVersion = 0;
 watch(
   () => selectedFeature.value,
   async (feature) => {
@@ -264,7 +281,9 @@ watch(
     selectedFeature.value = null;
     selectedFeatureLoading.value = true;
 
+    const resetVersion = selectionResetVersion;
     const fullRecord = await fetchRecord(fetchTable, recordId);
+    if (resetVersion !== selectionResetVersion) return;
     skipNextWatch = true;
 
     let displayRecord: Record<string, unknown>;
@@ -296,6 +315,7 @@ watch(
 
 // Use alerts date filter composable
 const {
+  selectedDateRange,
   filteredData,
   filteredStatistics,
   resolvedDateRange,
@@ -455,9 +475,13 @@ onMounted(() => {
       });
       map.value.addControl(scale, "bottom-left");
 
-      // Fullscreen Control
-      const fullscreenControl = new mapboxgl.FullscreenControl();
-      map.value.addControl(fullscreenControl, "top-right");
+      const home = document.createElement("div");
+      home.className = "mapboxgl-ctrl mapboxgl-ctrl-group alerts-home-control";
+      map.value.addControl(
+        { onAdd: () => home, onRemove: () => home.remove() },
+        "top-right",
+      );
+      homeControl.value = home;
 
       // Ruler control
       const ruler = new rulerControl();
@@ -512,8 +536,6 @@ onMounted(() => {
     }
   });
 });
-
-const emit = defineEmits(["reset-legend-visibility"]);
 
 // ====================
 // === Map Content ====
@@ -1371,101 +1393,38 @@ const toggleLayerVisibility = (item: MapLegendItem) => {
 // === Sidebar Content ====
 // ========================
 
-/* Closes the sidebar and resets the selected feature. */
-const handleSidebarClose = () => {
-  showSidebar.value = false;
+/** Return to the overview without changing the map or date filters. */
+const closeSelectedAlert = () => {
+  selectionResetVersion += 1;
   resetSelectedFeature();
-};
-
-/** Update the mobile drawer height used to offset the map legend. */
-const handleMobileDrawerHeight = (height: number) => {
-  mobileDrawerHeight.value = height;
-};
-
-// ===========================================
-// === Methods for selecting and resetting ===
-// ===========================================
-
-/**
- * Resets the map and UI to their initial states, clearing selections and filters.
- * Repositions the map to its initial view
- */
-const resetToInitialState = () => {
-  pausePulsingHalo();
-  resetSelectedFeature();
-  localAlertsData.value = props.alertsData;
-  showSidebar.value = true;
+  selectedFeatureLoading.value = false;
   showIntroPanel.value = true;
-  imageUrl.value = [];
-  imageCaption.value = null;
-  resetDateRange();
+  selectedAlertGeojson.value = undefined;
+  localAlertsData.value = filteredData.value;
+};
 
-  // Reset source data for all alert sources to original data.
-  alertMapLayers.forEach(({ alertsKey, kind, sourceId }) => {
-    const source = map.value.getSource(sourceId) as mapboxgl.GeoJSONSource;
-    if (!source) return;
-
-    source.setData({
-      type: "FeatureCollection",
-      features: getAlertSourceFeatures(
-        props.alertsData[alertsKey].features,
-        kind,
-      ),
-    });
-  });
-
-  // Reset filters for every primary alert layer in the shared matrix.
-  // Skip cluster layers as they don't have filters applied
-  map.value.getStyle().layers.forEach((layer: Layer) => {
-    if (
-      alertMapLayers.some(({ layerId }) => layer.id.startsWith(layerId)) &&
-      !layer.id.includes("-cluster")
-    ) {
-      // Point and centroid layers need to restore their cluster exclusion filter
-      if (layer.id.endsWith("-point") || layer.id.endsWith("-centroids")) {
-        map.value.setFilter(layer.id, ["!", ["has", "point_count"]]);
-      } else {
-        map.value.setFilter(layer.id, null);
-      }
-    }
-  });
-
-  // Fly to the initial position
-  map.value.flyTo({
+/** Restore the configured camera and overview while keeping date filters. */
+const resetMapView = () => {
+  closeSelectedAlert();
+  map.value?.flyTo({
     center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
     zoom: props.mapboxZoom || 2.5,
     pitch: props.mapboxPitch || 0,
     bearing: props.mapboxBearing || 0,
   });
+};
 
-  // After map movement is complete, reset visibility
-  map.value.once("idle", () => {
-    // Reset legend visibility state
-    mapLegendContent.value = mapLegendContent.value.map(
-      (item: MapLegendItem) => ({
-        ...item,
-        visible: true,
-      }),
-    );
+/** Restore all dates while keeping the camera and selected feature. */
+const clearDateFilters = () => {
+  const dates = getDateOptions();
+  if (!dates.length) return;
+  handleDateRangeChanged([dates[0], dates[dates.length - 1]]);
+  resetDateRange();
+};
 
-    // Make all layers visible
-    mapLegendContent.value.forEach((item: MapLegendItem) => {
-      // Handle alert group layers
-      if (item.id === "most-recent-alerts" || item.id === "previous-alerts") {
-        const period =
-          item.id === "most-recent-alerts" ? "mostRecent" : "previous";
-        setAlertMapLayerGroupVisibility(map.value, period, "visible");
-      } else if (item.id === "secondary-data") {
-        secondaryLayer.setVisible(true);
-      } else {
-        // Handle individual layers (secondary-data, etc.)
-        utilsToggleLayerVisibility(map.value, item);
-      }
-    });
-
-    emit("reset-legend-visibility");
-    startPulsingHalo();
-  });
+/** Update the mobile drawer height used to offset the map legend. */
+const handleMobileDrawerHeight = (height: number) => {
+  mobileDrawerHeight.value = height;
 };
 
 onBeforeUnmount(() => {
@@ -1479,20 +1438,30 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <div id="map" :data-map-ready="mapReady || undefined"></div>
-    <button
-      v-if="!showSidebar"
-      class="absolute top-2.5 left-2.5 z-10 bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 px-4 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 mx-2"
-      @click="resetToInitialState"
-    >
-      {{ $t("resetDashboard") }}
-    </button>
+    <div
+      id="map"
+      class="explorer-map-controls"
+      :data-map-ready="mapReady || undefined"
+    ></div>
+    <Teleport v-if="homeControl" :to="homeControl">
+      <button
+        type="button"
+        aria-label="Reset map view"
+        title="Reset map view"
+        @click="resetMapView"
+      >
+        <House class="mx-auto h-4 w-4" aria-hidden="true" />
+      </button>
+    </Teleport>
     <MapFilterControls
+      class="max-[360px]:top-16"
       :data="[]"
       :show-copied-location="showCopiedLocation"
       @copy-location="copyLocation"
     />
     <ViewSidebar
+      :collapsed="sidebarCollapsed"
+      :selected-date-range="selectedDateRange"
       :alerts-statistics="filteredStatistics"
       :allowed-file-extensions="allowedFileExtensions"
       :calculate-hectares="calculateHectares"
@@ -1502,7 +1471,9 @@ onBeforeUnmount(() => {
       "
       :feature="selectedFeature"
       :feature-loading="selectedFeatureLoading"
-      :feature-geojson="localAlertsData"
+      :feature-geojson="
+        !showIntroPanel ? selectedAlertGeojson : localAlertsData
+      "
       :file-paths="imageUrl"
       :geojson-selection="filteredData"
       :is-alert="isAlert"
@@ -1518,7 +1489,9 @@ onBeforeUnmount(() => {
       :stats-export-min-date="resolvedDateRange?.[0]"
       :stats-export-max-date="resolvedDateRange?.[1]"
       :table-name="primaryDataset"
-      @close="handleSidebarClose"
+      @update:collapsed="sidebarCollapsed = $event"
+      @clear-filters="clearDateFilters"
+      @close-feature="closeSelectedAlert"
       @date-range-changed="handleDateRangeChanged"
       @mobile-height-change="handleMobileDrawerHeight"
     />
@@ -1539,7 +1512,7 @@ onBeforeUnmount(() => {
       @basemap-selected="handleBasemapChange"
     />
     <!-- Incidents UI is hidden on mobile and for users below Member -->
-    <div v-if="canAccessIncidents" class="hidden md:block">
+    <div v-if="canAccessIncidents" class="hidden sm:block">
       <IncidentsSidebar
         :incidents="incidents"
         :incidents-total="incidentsTotal"
@@ -1643,9 +1616,13 @@ body {
   word-wrap: break-word;
 }
 
+:deep(.alerts-home-control:empty) {
+  display: none;
+}
+
 :deep(.mapboxgl-ctrl-ruler) {
   img {
-    margin-left: 3px;
+    margin-inline: auto;
   }
 
   .active {

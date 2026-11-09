@@ -308,7 +308,9 @@ for (const selectionKey of ["featureId", "secondaryDocId"]) {
     await expect
       .poll(() => page.evaluate(() => window.getTestMap().isMoving()))
       .toBe(true);
-    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Close selected feature", exact: true })
+      .click();
     await expect(page).not.toHaveURL(/(?:featureId|secondaryDocId)=/);
     await page.waitForFunction(() => !window.getTestMap().isMoving());
     await expect(page).not.toHaveURL(/(?:featureId|secondaryDocId)=/);
