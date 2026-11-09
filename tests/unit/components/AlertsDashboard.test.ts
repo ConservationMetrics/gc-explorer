@@ -666,7 +666,7 @@ describe("AlertsDashboard component", () => {
     );
   });
 
-  it("keeps MultiPolygon alerts in the polygon source through filtering and reset", async () => {
+  it("keeps MultiPolygon alerts in the polygon source through filtering and clearing filters", async () => {
     mockRoute.value = {
       path: "/alerts/test_alerts",
       params: { tablename: "test_alerts" },
@@ -763,10 +763,7 @@ describe("AlertsDashboard component", () => {
       { selected: true },
     );
 
-    const vm = wrapper.vm as unknown as {
-      resetToInitialState: () => void;
-    };
-    vm.resetToInitialState();
+    wrapper.findComponent({ name: "ViewSidebar" }).vm.$emit("clear-filters");
     await flushPromises();
 
     expect(polygonSource.setData).toHaveBeenCalledWith({
@@ -800,7 +797,7 @@ describe("AlertsDashboard component", () => {
     );
   });
 
-  it("collapses the revised sidebar without resetting the camera, filters or selection", async () => {
+  it("collapses the sidebar without resetting the camera, filters or selection", async () => {
     const wrapper = mountComponent(baseProps);
     mapboxMock.fireLoad();
     await flushPromises();

@@ -154,7 +154,9 @@ test.describe("map feature link", () => {
     expect(camera.zoom).toBeCloseTo(13, 0);
 
     await page.waitForFunction(() => !window.getTestMap().isMoving());
-    await page.getByRole("button", { name: "Close" }).click();
+    await page
+      .getByRole("button", { name: "Close selected feature", exact: true })
+      .click();
     await expect(page).not.toHaveURL(/featureId=/);
     await expect(page.getByTestId("copy-link-section")).toHaveCount(0);
   });
@@ -171,7 +173,10 @@ test.describe("map feature link", () => {
     );
     await waitForTestMap(page);
 
-    const closeButton = page.getByRole("button", { name: "Close" });
+    const closeButton = page.getByRole("button", {
+      name: "Close selected feature",
+      exact: true,
+    });
     await expect(closeButton).toBeVisible();
     await page.waitForFunction(() => !window.getTestMap().isMoving());
     await page.evaluate(() => {

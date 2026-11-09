@@ -33,7 +33,6 @@ import type {
 import type { Feature, FeatureCollection } from "geojson";
 
 const props = defineProps<{
-  sidebarPrototype?: boolean;
   collapsed?: boolean;
   selectedDateRange?: [string, string];
   alertsStatistics?: AlertsStatistics;
@@ -136,14 +135,12 @@ const { showCopied, copyLink } = useCopyLink(
 );
 
 const emit = defineEmits<{
-  close: [];
   "close-feature": [];
   "clear-filters": [];
   "update:collapsed": [boolean];
   "date-range-changed": [[string, string]];
   "mobile-height-change": [number];
   "toggle-icons": [];
-  "update:showSidebar": [boolean];
 }>();
 
 const checkIfScrollable = () => {
@@ -194,12 +191,12 @@ onBeforeUnmount(() => {
   <MobileResizableDrawer
     class="sidebar"
     :open="showSidebar ?? false"
-    :collapsed="sidebarPrototype ? collapsed : undefined"
+    :collapsed="collapsed"
     @height-change="emit('mobile-height-change', $event)"
   >
     <template #edge>
       <button
-        v-if="sidebarPrototype && showSidebar"
+        v-if="showSidebar"
         type="button"
         class="absolute left-full top-2.5 hidden h-11 w-11 items-center justify-center rounded-r-lg bg-white text-violet-800 shadow-md hover:bg-violet-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800 sm:flex"
         :aria-label="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
@@ -215,7 +212,7 @@ onBeforeUnmount(() => {
     </template>
     <div class="relative min-h-full">
       <header
-        v-if="sidebarPrototype && !showIntroPanel"
+        v-if="!showIntroPanel"
         class="sticky top-0 z-20 flex min-h-16 items-center bg-white px-3 text-sm font-semibold"
         :class="{ 'sm:invisible': collapsed }"
       >
@@ -230,23 +227,10 @@ onBeforeUnmount(() => {
       >
         <ChevronDown class="w-6 h-6 text-gray-600 animate-bounce" />
       </button>
-      <button
-        v-if="!sidebarPrototype"
-        class="absolute top-5 right-5 p-2.5 bg-white/80 backdrop-blur-sm hover:bg-gray-100 rounded-full transition-all duration-200 ease-in-out shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2"
-        @click="emit('close')"
-      >
-        <span class="sr-only">Close</span>
-        <X class="w-5 h-5 text-gray-600" />
-      </button>
-
-      <div
-        :class="{ 'sm:invisible': sidebarPrototype && collapsed }"
-        class="p-4 sidebar-content"
-      >
+      <div :class="{ 'sm:invisible': collapsed }" class="p-4 sidebar-content">
         <AlertsIntroPanel
           v-if="showIntroPanel && alertsStatistics && isAlertsDashboard"
           :selected-date-range="selectedDateRange"
-          :show-clear-filters="sidebarPrototype"
           :calculate-hectares="calculateHectares"
           :date-options="dateOptions"
           :data-for-alerts-intro-panel="dataForAlertsIntroPanel"
@@ -298,7 +282,7 @@ onBeforeUnmount(() => {
           data-testid="feature-metadata"
         >
           <div class="p-4 sm:p-6">
-            <div v-if="sidebarPrototype" class="mb-3 flex justify-end">
+            <div class="mb-3 flex justify-end">
               <button
                 type="button"
                 class="flex h-11 w-11 items-center justify-center rounded-full bg-violet-100 text-violet-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-800"

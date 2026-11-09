@@ -4,7 +4,6 @@ import VueSlider from "vue-3-slider-component";
 const props = defineProps<{
   dateOptions?: Array<string>;
   selectedDateRange?: [string, string];
-  showClearFilters?: boolean;
 }>();
 
 // Set selected range to the first and last date options
@@ -30,7 +29,7 @@ watch(selectedRange, (newRange) => {
 watch(
   () => props.selectedDateRange,
   (range) => {
-    if (!props.showClearFilters || !props.dateOptions?.length) return;
+    if (!props.dateOptions?.length) return;
     if (!range) userInteracted.value = false;
     selectedRange.value = range ?? [
       props.dateOptions[0],
@@ -61,7 +60,7 @@ watch(
         @keydown="userInteracted = true"
       />
     </div>
-    <div v-if="showClearFilters" class="flex justify-end">
+    <div class="flex justify-end">
       <button
         type="button"
         class="min-h-11 rounded-lg px-3 text-sm font-medium text-violet-800 hover:bg-violet-100 disabled:text-gray-400"

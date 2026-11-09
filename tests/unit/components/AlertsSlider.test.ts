@@ -11,12 +11,11 @@ import AlertsSlider from "@/components/alerts/AlertsSlider.vue";
 
 Object.assign(globalThis, { nextTick, onMounted, ref, watch });
 
-describe("AlertsSlider controlled prototype range", () => {
+describe("AlertsSlider controlled date range", () => {
   it("continues applying a drag after parent feedback and resets from clear", async () => {
     const wrapper = mount(AlertsSlider, {
       props: {
         dateOptions: ["01-2024", "02-2024", "03-2024"],
-        showClearFilters: true,
       },
       global: {
         mocks: { $t: (key: string) => key },

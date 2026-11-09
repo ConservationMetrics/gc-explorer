@@ -10,7 +10,6 @@ import type { Dataset } from "@/types";
 
 defineProps<{
   data: Dataset;
-  showClearFilters?: boolean;
   filtersActive?: boolean;
   filterColumn?: string;
   colorColumn?: string;
@@ -114,7 +113,7 @@ const toggleDateFilter = () => {
       ></span>
     </button>
     <button
-      v-if="showClearFilters && (filterColumn || timestampColumn)"
+      v-if="filterColumn || timestampColumn"
       type="button"
       class="h-10 rounded-md bg-violet-100 px-3 text-sm text-violet-800 disabled:opacity-50"
       :disabled="!filtersActive"

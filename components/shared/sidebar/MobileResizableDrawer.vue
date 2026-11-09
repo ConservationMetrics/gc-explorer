@@ -17,7 +17,7 @@ const props = withDefaults(
     maxHeightRatio?: number;
   }>(),
   {
-    collapsed: undefined,
+    collapsed: false,
     initialHeightRatio: 0.5,
     minHeightRatio: 0.25,
     maxHeightRatio: 0.9,
@@ -188,11 +188,7 @@ onBeforeUnmount(() => {
       'mobile-resizable-drawer fixed z-[1050] flex max-w-full flex-col overflow-hidden bg-white shadow-lg transition-transform',
       'bottom-0 left-0 w-full rounded-t-2xl',
       'sm:top-0 sm:bottom-auto sm:left-0 sm:h-full sm:overflow-visible sm:rounded-none',
-      'sm:w-[400px]',
-      {
-        'desktop-revised': collapsed !== undefined,
-        'desktop-collapsed': open && collapsed,
-      },
+      { 'desktop-collapsed': open && collapsed },
       open
         ? 'translate-y-0 sm:translate-x-0'
         : 'translate-y-full sm:-translate-x-full',
@@ -233,9 +229,6 @@ onBeforeUnmount(() => {
 @media (min-width: 640px) {
   .mobile-resizable-drawer {
     height: 100%;
-  }
-
-  .mobile-resizable-drawer.desktop-revised {
     /* Leave room for the edge tab and map filter controls on narrow desktops. */
     width: min(400px, calc(100vw - 344px));
   }

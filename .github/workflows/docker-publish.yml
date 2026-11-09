@@ -58,7 +58,8 @@ jobs:
 
   playwright-tests:
     name: Run Playwright Tests
-    runs-on: ubuntu-latest
+    # The pinned Playwright browser installer supports Ubuntu 24.04.
+    runs-on: ubuntu-24.04
     needs: [lint, unit-tests, docker-build-and-publish]
     env:
       CI: true

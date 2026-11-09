@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { shallowRef } from "vue";
 import { House } from "lucide-vue-next";
-import SidebarPrototypePicker from "@/components/prototypes/SidebarPrototypePicker.vue";
 import { useSecondaryDatasetLayer } from "@/composables/map/useSecondaryDatasetLayer";
 import { attachMapHover } from "@/utils/mapHover";
 import {
@@ -107,9 +106,6 @@ const { fetchRecord } = useRecordCache();
 
 const route = useRoute();
 const router = useRouter();
-const revisedSidebar = computed(
-  () => route.query.sidebarPrototype !== "current",
-);
 const sidebarCollapsed = ref(false);
 const homeControl = shallowRef<HTMLDivElement>();
 const map = ref();
@@ -133,7 +129,6 @@ const secondaryLayer = useSecondaryDatasetLayer(
   },
 );
 const SELECTED_HALO_COLOR = "#00E5FF";
-const showSidebar = ref(true);
 const mobileDrawerHeight = ref(0);
 const showBasemapSelector = ref(false);
 const showIntroPanel = ref(true);
@@ -235,9 +230,6 @@ onMounted(() => {
       });
       map.value.addControl(scale, "bottom-left");
 
-      // Fullscreen Control
-      const fullscreenControl = new mapboxgl.FullscreenControl();
-      map.value.addControl(fullscreenControl, "top-right");
       const home = document.createElement("div");
       home.className = "mapboxgl-ctrl mapboxgl-ctrl-group map-home-control";
       map.value.addControl(
@@ -826,7 +818,6 @@ const openMapFeature = async (clickedFeature: Feature, secondary = false) => {
 
   selectedFeature.value = undefined;
   selectedFeatureLoading.value = true;
-  showSidebar.value = true;
   showIntroPanel.value = false;
 
   const featureGeojson: Feature = {
@@ -915,51 +906,6 @@ const clearFilters = () => {
   applyAllFilters();
 };
 
-watch(revisedSidebar, () => {
-  showSidebar.value = true;
-  sidebarCollapsed.value = false;
-});
-
-/** Reset the map to initial state */
-const resetToInitialState = () => {
-  preserveSelectionInCameraQuery.value = false;
-  selectionRequest++;
-  selectedFeature.value = undefined;
-  selectedFeatureOriginal.value = undefined;
-  selectedFeatureLoading.value = false;
-  showSidebar.value = true;
-  showIntroPanel.value = true;
-  clearSelectedMapFeatureState();
-  clearFeatureIdQuery();
-
-  // Reset filters
-  selectedFilterValues.value = [];
-  setDateRange({ start: null, end: null });
-  filterResetKey.value++;
-  applyAllFilters();
-
-  // Fly to the initial position
-  map.value.flyTo({
-    center: [props.mapboxLongitude || 0, props.mapboxLatitude || -15],
-    zoom: props.mapboxZoom || 2.5,
-    pitch: props.mapboxPitch || 0,
-    bearing: props.mapboxBearing || 0,
-  });
-};
-
-/** Handle sidebar close */
-const handleSidebarClose = () => {
-  preserveSelectionInCameraQuery.value = false;
-  selectionRequest++;
-  showSidebar.value = false;
-  selectedFeature.value = undefined;
-  selectedFeatureOriginal.value = undefined;
-  selectedFeatureLoading.value = false;
-  showIntroPanel.value = true;
-  clearSelectedMapFeatureState();
-  clearFeatureIdQuery();
-};
-
 /** Update the mobile drawer height used to offset the map legend. */
 const handleMobileDrawerHeight = (height: number) => {
   mobileDrawerHeight.value = height;
@@ -1006,13 +952,8 @@ onBeforeUnmount(() => {
 
 <template>
   <div>
-    <div
-      id="map"
-      class="explorer-map-controls"
-      :class="{ 'revised-map-controls': revisedSidebar }"
-    ></div>
-    <SidebarPrototypePicker class="max-sm:!top-auto max-sm:!bottom-4" />
-    <Teleport v-if="homeControl && revisedSidebar" :to="homeControl">
+    <div id="map" class="explorer-map-controls"></div>
+    <Teleport v-if="homeControl" :to="homeControl">
       <button
         type="button"
         aria-label="Reset map view"
@@ -1022,16 +963,8 @@ onBeforeUnmount(() => {
         <House class="mx-auto h-4 w-4" aria-hidden="true" />
       </button>
     </Teleport>
-    <button
-      v-if="!showSidebar && !revisedSidebar"
-      class="reset-button bg-violet-700 hover:bg-violet-800 text-white font-bold py-2 px-4 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 mx-2"
-      @click="resetToInitialState"
-    >
-      {{ $t("resetMap") }}
-    </button>
     <MapFilterControls
       :key="filterResetKey"
-      :show-clear-filters="revisedSidebar"
       :filters-active="
         selectedFilterValues.length > 0 || !!dateMin || !!dateMax
       "
@@ -1046,7 +979,6 @@ onBeforeUnmount(() => {
       @copy-location="copyLocation"
     />
     <ViewSidebar
-      :sidebar-prototype="revisedSidebar"
       :collapsed="sidebarCollapsed"
       :allowed-file-extensions="allowedFileExtensions"
       :export-table-name="isSecondary ? secondaryDataset || table : table"
@@ -1074,7 +1006,7 @@ onBeforeUnmount(() => {
       :timestamp-column="timestampColumn"
       :media-base-path="mediaBasePath"
       :show-intro-panel="showIntroPanel"
-      :show-sidebar="showSidebar"
+      show-sidebar
       :show-icons="showIcons"
       :can-toggle-icons="canToggleIcons"
       :loading-icons="loadingIcons"
@@ -1084,7 +1016,6 @@ onBeforeUnmount(() => {
       :view-description="viewDescription"
       @update:collapsed="sidebarCollapsed = $event"
       @close-feature="closeSelectedFeature"
-      @close="handleSidebarClose"
       @mobile-height-change="handleMobileDrawerHeight"
       @toggle-icons="handleToggleIcons"
     />
@@ -1107,10 +1038,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-:deep(.map-home-control:empty),
-.revised-map-controls
-  :deep(.mapboxgl-ctrl-group:has(.mapboxgl-ctrl-fullscreen)),
-.revised-map-controls :deep(.mapboxgl-ctrl-group:has(.mapboxgl-ctrl-shrink)) {
+:deep(.map-home-control:empty) {
   display: none;
 }
 
@@ -1135,12 +1063,5 @@ body {
   width: 100%;
   display: block;
   margin-top: 5px;
-}
-
-.reset-button {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 10;
 }
 </style>

@@ -217,7 +217,7 @@ describe("ViewSidebar", () => {
     expect(metadata.props("filePaths")).toEqual([]);
   });
 
-  it("uses the alert copy-link label and emits close from the X button", async () => {
+  it("uses the alert copy-link label and closes only the selected alert", async () => {
     const wrapper = mount(ViewSidebar, {
       props: {
         allowedFileExtensions,
@@ -234,12 +234,8 @@ describe("ViewSidebar", () => {
     await copyButton.trigger("click");
     expect(copyLink).toHaveBeenCalledTimes(1);
 
-    const closeButton = wrapper
-      .findAll("button")
-      .find((button) => button.text().includes("Close"));
-    expect(closeButton).toBeDefined();
-    await closeButton!.trigger("click");
-    expect(wrapper.emitted("close")).toBeTruthy();
+    await wrapper.get('[aria-label="Close selected alert"]').trigger("click");
+    expect(wrapper.emitted("close-feature")).toHaveLength(1);
   });
 
   it("still shows the map intro when no feature is selected", () => {
