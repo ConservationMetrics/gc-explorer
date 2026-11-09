@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // @ts-expect-error - vue-tags-input does not have types
 import { VueTagsInput } from "@vojtechlanka/vue-tags-input";
-import { ExternalLink } from "lucide-vue-next";
+import { ExternalLink, GripVertical } from "lucide-vue-next";
 import VueSlider from "vue-3-slider-component";
 
 import ConfigColumnSelect from "@/components/config/ConfigColumnSelect.vue";
@@ -282,14 +282,21 @@ const fullWidthKeys = [
                   ? 'border-violet-300 bg-violet-50'
                   : 'border-gray-200 bg-white hover:border-violet-200'
               "
-              draggable="true"
-              @dragstart="handleDragStart(index)"
               @dragover="handleDragOver($event, index)"
               @drop="handleDrop($event, index)"
             >
               <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 pt-2 text-gray-400 cursor-move">
-                  ☰
+                <div
+                  class="-ml-4 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center text-gray-500 select-none cursor-grab active:cursor-grabbing"
+                  draggable="true"
+                  data-testid="basemap-drag-handle"
+                  @dragstart="handleDragStart(index)"
+                  @dragend="draggedIndex = null"
+                >
+                  <GripVertical
+                    class="h-5 w-5 pointer-events-none"
+                    aria-hidden="true"
+                  />
                 </div>
                 <div class="flex-1 space-y-3">
                   <div>
