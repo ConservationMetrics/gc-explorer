@@ -84,7 +84,7 @@ docker run --env-file=.env -it -p 8080:8080 guardianconnector-explorer:latest
 Guardian Connector Explorer has three classes of tests:
 
 1. **Unit and component tests (Vitest).** Isolated logic with mocked dependencies. No Nuxt server and no database. `pnpm test:unit`.
-2. **Backend API tests (Playwright `request`).** HTTP calls against the running app and seeded databases. Auth0 setup still uses a browser once (`auth.setup.ts`); the tests themselves reuse `admin.json` on the browserless `request` fixture and do not open a page. Same Docker stack as E2E (`NUXT_TEST=true`). Example: `tests/e2e/12-view-dataset-api.spec.ts`.
+2. **Backend API tests (Playwright `request`).** HTTP calls against the running app and the test databases. Each spec creates the warehouse tables and views it needs. Auth0 setup still uses a browser once (`auth.setup.ts`); the tests themselves reuse `admin.json` on the browserless `request` fixture and do not open a page. Same Docker stack as E2E (`NUXT_TEST=true`). Example: `tests/e2e/12-view-dataset-api.spec.ts`.
 3. **End-to-end tests (Playwright browser).** Full UI through backend and database.
 
 ### 1. Unit and Component Tests (Vitest)
@@ -123,7 +123,7 @@ E2E tests use two separate environment signals:
 
 | Variable | Meaning |
 | -------- | ------- |
-| `NUXT_TEST=true` | Use the **Docker test stack**: Playwright connects to containers started by `docker-compose.tests.yml`, waits for migrations, and seeds guardianconnector fixtures via `globalSetup`. |
+| `NUXT_TEST=true` | Use the **Docker test stack**: Playwright connects to containers started by `docker-compose.tests.yml` and waits for migrations. Each spec creates the warehouse tables and views it needs. |
 | `CI` (set automatically on GitHub Actions) | Playwright **does not** start `pnpm dev`; tests assume an external server is already running. |
 
 Local Docker testing does **not** need `CI=true`. Set `NUXT_TEST=true` instead.
@@ -167,9 +167,8 @@ $ pnpm test:e2e
 
 | Step | Owner |
 | ---- | ----- |
-| Warehouse mock data (`warehouse.sql`) | Postgres init on first container start |
 | Drizzle schema migrations | Nitro startup (`server/plugins/migrate.ts`) |
-| Guardianconnector view fixtures (`guardianconnector.sql`) | Playwright `globalSetup` when `NUXT_TEST=true` |
+| Warehouse tables and views for each test | Playwright fixtures (`tests/e2e/fixtures/`) and `tests/e2e/helpers/apiTestData.ts` |
 
 #### Environment setup
 
@@ -184,11 +183,10 @@ $ pnpm test:e2e
 
 `docker-compose.tests.yml`:
 
-1. Seeds warehouse data from `tests/db-seed/warehouse.sql` on first Postgres start
-2. Runs the backend with `NUXT_PUBLIC_AUTH_STRATEGY` from your env file (auth0 in CI, `none` optional locally)
-3. Exposes Postgres on `127.0.0.1:5433` so Playwright can seed guardianconnector fixtures after migrations
+1. Runs the backend with `NUXT_PUBLIC_AUTH_STRATEGY` from your env file (auth0 in CI, `none` optional locally)
+2. Exposes Postgres on `127.0.0.1:5433` so Playwright specs can create their warehouse tables and views after migrations
 
-The database volume is ephemeral. To reload warehouse seed data, remove the volume:
+To reset the test database, remove the volume:
 
 ```bash
 docker volume rm gc-explorer_db_data

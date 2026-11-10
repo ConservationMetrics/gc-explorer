@@ -47,15 +47,13 @@ services:
       # Initialize DB on first container startup
       #   /docker-entrypoint-initdb.d is a special directory recognized by Postgres:
       #   If the data directory is empty postgres will run these files.
-      # Create config DB before warehouse seed (alphabetical order under initdb.d)
+      # Create the config DB. Playwright specs create their own warehouse tables and views.
       - ./tests/db-seed/00-create-guardianconnector.sql:/docker-entrypoint-initdb.d/00-create-guardianconnector.sql:ro
-      # Warehouse seed only — guardianconnector fixtures are seeded by Playwright globalSetup
-      - ./tests/db-seed/warehouse.sql:/docker-entrypoint-initdb.d/warehouse.sql:ro
       # Persist database data after first container startup
       - db_data:/var/lib/postgresql/data
     healthcheck:
       # Require both DBs: guardianconnector used to be created after pg_isready in
-      # the command script, so Playwright could race and fail seed with
+      # the command script, so Playwright could race and fail with
       # "database guardianconnector does not exist".
       test:
         [
@@ -77,7 +75,6 @@ services:
         psql -U testuser -d test_warehouse -c 'CREATE DATABASE guardianconnector;' || echo 'guardianconnector database may already exist'
         # Wait until guardianconnector accepts connections before we finish init logging
         until psql -U testuser -d guardianconnector -c 'SELECT 1' >/dev/null 2>&1; do sleep 1; done
-        # guardianconnector fixtures are seeded by Playwright globalSetup after migrations
         # Log the database state
         echo '🔍 Database initialization complete'
         echo '🔍 Available databases:'
@@ -89,16 +86,6 @@ services:
         echo '🔍 Table row counts:'
         psql -U testuser -d test_warehouse -c 'SELECT schemaname, tablename, n_tup_ins as rows FROM pg_stat_user_tables ORDER BY tablename;'
         echo '🔍 Available tables and their contents:'
-        echo '🔍 test_warehouse tables:'
-        echo '🔍 bcmform_responses table (first 3 rows):'
-        psql -U testuser -d test_warehouse -c 'SELECT * FROM bcmform_responses LIMIT 3;' || echo 'bcmform_responses table does not exist'
-        echo '🔍 fake_alerts table (first 3 rows):'
-        psql -U testuser -d test_warehouse -c 'SELECT * FROM fake_alerts LIMIT 3;' || echo 'fake_alerts table does not exist'
-        echo '🔍 mapeo_data table (first 3 rows):'
-        psql -U testuser -d test_warehouse -c 'SELECT * FROM mapeo_data LIMIT 3;' || echo 'mapeo_data table does not exist'
-        echo '🔍 guardianconnector tables:'
-        echo '🔍 views table (first 3 rows):'
-        psql -U testuser -d guardianconnector -c 'SELECT * FROM views LIMIT 3;' || echo 'views table does not exist yet (seeded by Playwright globalSetup)'
         echo '🔍 annotated_collections table (first 3 rows):'
         psql -U testuser -d guardianconnector -c 'SELECT * FROM annotated_collections LIMIT 3;' || echo 'annotated_collections table does not exist'
         echo '🔍 incidents table (first 3 rows):'
