@@ -1,6 +1,5 @@
-import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
+import { test, expect } from "@/tests/e2e/fixtures/warehouse-views";
 import {
-  SEEDED_MAP_CONFIG_PATH,
   stubMapboxTelemetry,
   waitForConfigForm,
 } from "@/tests/e2e/helpers/configPage";
@@ -32,6 +31,7 @@ test("retired /config redirects to index with bookmark toast", async ({
 
 test("index toast does not persist after client-side navigation", async ({
   authenticatedPageAsAdmin: page,
+  mapView,
 }) => {
   await page.goto("/config");
   await page.waitForURL((url) => url.pathname === "/", { timeout: 10000 });
@@ -39,7 +39,11 @@ test("index toast does not persist after client-side navigation", async ({
     timeout: 10000,
   });
 
-  await page.locator("[data-testid='open-dataset-view-link']").first().click();
+  await page
+    .locator(
+      `[data-testid='open-dataset-view-link'][href='/map/${mapView.primaryDataset}']`,
+    )
+    .click();
   await page.waitForURL((url) => url.pathname !== "/", { timeout: 10000 });
   await expect(page.getByText(/page moved/i)).toHaveCount(0);
 });
@@ -72,6 +76,7 @@ test("retired /dataset and /dataset/{name} redirect to index with toast", async 
 
 test("active create and edit config routes remain reachable", async ({
   authenticatedPageAsAdmin: page,
+  mapView,
 }) => {
   await page.goto("/config/new");
   await expect(
@@ -81,9 +86,9 @@ test("active create and edit config routes remain reachable", async ({
   expect(page.url()).not.toMatch(/[?&]reason=moved/);
 
   await stubMapboxTelemetry(page);
-  await page.goto(SEEDED_MAP_CONFIG_PATH);
+  await page.goto(`/config/${mapView.primaryDataset}?view_type=map`);
   await waitForConfigForm(page);
-  expect(page.url()).toContain("/config/bcmform_responses");
+  expect(page.url()).toContain(`/config/${mapView.primaryDataset}`);
   expect(page.url()).toContain("view_type=map");
   expect(page.url()).not.toMatch(/[?&]reason=moved/);
 });

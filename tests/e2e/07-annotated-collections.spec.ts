@@ -1,4 +1,4 @@
-import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
+import { test, expect } from "@/tests/e2e/fixtures/warehouse-views";
 import type { Page } from "@playwright/test";
 import { navigateToAlertsDashboard } from "./helpers/navigateToAlertsDashboard";
 
@@ -85,8 +85,9 @@ async function projectLngLatToPagePoint(
 
 test("annotated collections - view saved incidents sidebar", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
-  await navigateToAlertsDashboard(page);
+  await navigateToAlertsDashboard(page, alertsView);
 
   await page.getByTestId("incidents-view-button").click();
   await expect(
@@ -99,8 +100,9 @@ test("annotated collections - view saved incidents sidebar", async ({
 
 test("annotated collections - multi-select enables create button", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
-  await navigateToAlertsDashboard(page);
+  await navigateToAlertsDashboard(page, alertsView);
 
   await page.getByTestId("incidents-multiselect-button").click();
 
@@ -123,8 +125,9 @@ test("annotated collections - multi-select enables create button", async ({
 
 test("annotated collections - cluster highlighting when viewing incident details", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
-  await navigateToAlertsDashboard(page);
+  await navigateToAlertsDashboard(page, alertsView);
 
   await page.getByTestId("incidents-multiselect-button").click();
 
@@ -175,8 +178,9 @@ test("annotated collections - cluster highlighting when viewing incident details
 
 test("annotated collections - incident created_by attribution", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
-  await navigateToAlertsDashboard(page);
+  await navigateToAlertsDashboard(page, alertsView);
 
   await page.getByTestId("incidents-multiselect-button").click();
 
@@ -228,8 +232,9 @@ test("annotated collections - incident created_by attribution", async ({
 
 test("annotated collections - shareable incident link URL parameter", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
-  await navigateToAlertsDashboard(page);
+  await navigateToAlertsDashboard(page, alertsView);
   await waitForMapIdle(page);
   const defaultZoom = await getMapZoom(page);
 
@@ -279,8 +284,9 @@ test("annotated collections - shareable incident link URL parameter", async ({
 
 test("annotated collections - incident detail shows CSV and GeoJSON download buttons", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
-  await navigateToAlertsDashboard(page);
+  await navigateToAlertsDashboard(page, alertsView);
 
   await page.getByTestId("incidents-multiselect-button").click();
 
@@ -316,8 +322,9 @@ test("annotated collections - incident detail shows CSV and GeoJSON download but
 
 test("annotated collections - left sidebar shows alerts intro after exiting incident selection modes", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
-  await navigateToAlertsDashboard(page);
+  await navigateToAlertsDashboard(page, alertsView);
 
   const intro = page.getByTestId("alerts-intro-panel");
   const multiSelectButton = page.getByTestId("incidents-multiselect-button");

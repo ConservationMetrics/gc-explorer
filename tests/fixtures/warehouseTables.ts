@@ -23,7 +23,10 @@ export const surveyTable: WarehouseTestTable = {
   ],
 };
 
-/** Synthetic alerts with one newer month and one earlier month. */
+/**
+ * Synthetic alerts around the alerts view center (38, -79). March 2024 is
+ * the most recent month; the other rows fall in earlier months.
+ */
 export const alertsTable: WarehouseTestTable = {
   columns: [
     "_id",
@@ -38,8 +41,20 @@ export const alertsTable: WarehouseTestTable = {
   ],
   rows: [
     {
-      _id: "alert-recent-1",
-      alert_id: "alert-recent-1",
+      _id: "202403000000001",
+      alert_id: "202403000000001",
+      alert_type: "gold_mining",
+      area_alert_ha: "1.5",
+      month_detec: "03",
+      year_detec: "2024",
+      territory_name: "Test Territory 130",
+      g__type: "MultiPolygon",
+      g__coordinates:
+        "[[[[-80.7,38.9],[-80.5,38.9],[-80.5,38.7],[-80.7,38.7],[-80.7,38.9]]],[[[-80.4,38.9],[-80.2,38.9],[-80.2,38.7],[-80.4,38.7],[-80.4,38.9]]]]",
+    },
+    {
+      _id: "202403000000002",
+      alert_id: "202403000000002",
       alert_type: "gold_mining",
       area_alert_ha: "1.5",
       month_detec: "03",
@@ -47,18 +62,52 @@ export const alertsTable: WarehouseTestTable = {
       territory_name: "Test Territory 130",
       g__type: "Polygon",
       g__coordinates:
-        "[[[-79.1,38.1],[-78.9,38.1],[-78.9,37.9],[-79.1,37.9],[-79.1,38.1]]]",
+        "[[[-79.6,38.5],[-78.4,38.5],[-78.4,37.5],[-79.6,37.5],[-79.6,38.5]]]",
     },
     {
-      _id: "alert-previous-1",
-      alert_id: "alert-previous-1",
+      _id: "202403000000003",
+      alert_id: "202403000000003",
       alert_type: "gold_mining",
-      area_alert_ha: "2.5",
+      area_alert_ha: "1.5",
+      month_detec: "03",
+      year_detec: "2024",
+      territory_name: "Test Territory 130",
+      g__type: "LineString",
+      g__coordinates: "[[-81,38],[-77,38]]",
+    },
+    {
+      _id: "202401000000001",
+      alert_id: "202401000000001",
+      alert_type: "gold_mining",
+      area_alert_ha: "1.5",
       month_detec: "01",
       year_detec: "2024",
       territory_name: "Test Territory 130",
+      g__type: "Polygon",
+      g__coordinates:
+        "[[[-80.9,37.5],[-80.7,37.5],[-80.7,37.3],[-80.9,37.3],[-80.9,37.5]]]",
+    },
+    {
+      _id: "202312000000001",
+      alert_id: "202312000000001",
+      alert_type: "gold_mining",
+      area_alert_ha: "1.5",
+      month_detec: "12",
+      year_detec: "2023",
+      territory_name: "Test Territory 130",
       g__type: "Point",
-      g__coordinates: "[-79.2,38.2]",
+      g__coordinates: "[-78.4,37.1]",
+    },
+    {
+      _id: "202310000000001",
+      alert_id: "202310000000001",
+      alert_type: "gold_mining",
+      area_alert_ha: "1.5",
+      month_detec: "10",
+      year_detec: "2023",
+      territory_name: "Test Territory 130",
+      g__type: "LineString",
+      g__coordinates: "[[-77.9,38.6],[-77.6,38.8]]",
     },
   ],
 };

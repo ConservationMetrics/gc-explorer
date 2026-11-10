@@ -1,10 +1,10 @@
-import { test as baseTest, expect, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import {
   test as authTest,
   expect as authExpect,
-} from "@/tests/e2e/fixtures/auth-storage";
-// Use regular test for tests that don't need authentication
-const test = baseTest;
+} from "@/tests/e2e/fixtures/warehouse-views";
+// Tests that use the plain `page` fixture run without a session.
+const test = authTest;
 
 const waitForGalleryResult = async (page: Page) => {
   const galleryContainer = page.getByTestId("gallery-container");
@@ -74,9 +74,9 @@ const waitForDeniedAccess = async (page: Page) => {
 
 authTest(
   "visibility system - public dataset accessible as SignedIn user",
-  async ({ authenticatedPageAsSignedIn: page }) => {
+  async ({ authenticatedPageAsSignedIn: page, publicGalleryView }) => {
     // 1. Navigate directly to the public test dataset as lowest authenticated role
-    await page.goto("/gallery/seed_survey_data");
+    await page.goto(`/gallery/${publicGalleryView.primaryDataset}`);
 
     // 2. Wait for the page to load
     await page.waitForURL("**/gallery/**", { timeout: 10000 });
@@ -112,8 +112,9 @@ authTest(
 
 test("visibility system - public dataset accessible without session (incognito)", async ({
   page,
+  publicGalleryView,
 }) => {
-  await page.goto("/gallery/seed_survey_data");
+  await page.goto(`/gallery/${publicGalleryView.primaryDataset}`);
   await page.waitForURL("**/gallery/**", { timeout: 10000 });
 
   const { galleryContainer, galleryError, dataLoadError, outcome } =
@@ -132,9 +133,10 @@ test("visibility system - public dataset accessible without session (incognito)"
 
 test("visibility system - protected dataset redirects to login when not authenticated", async ({
   page,
+  galleryView,
 }) => {
   // 1. Navigate directly to the authenticated test dataset
-  await page.goto("/gallery/bcmform_responses");
+  await page.goto(`/gallery/${galleryView.primaryDataset}`);
 
   // 2. Check if we're redirected to login or if the page loads
   const currentUrl = page.url();
@@ -148,18 +150,20 @@ test("visibility system - protected dataset redirects to login when not authenti
 
 // Use authTest for RBAC tests that need role setting
 authTest.describe("RBAC - Role-Based Access Control", () => {
-  // Using existing datasets with their configured permissions:
-  // - seed_survey_data: "anyone" (public)
-  // - bcmform_responses: "member" (requires Member role or higher)
+  // Views created for each test:
+  // - publicGalleryView: "anyone" (public)
+  // - galleryView and mapView: "member" (requires Member role or higher)
 
   authTest(
     "RBAC - SignedIn user can access public dataset but not member dataset",
-    async ({ authenticatedPageAsSignedIn }) => {
+    async ({ authenticatedPageAsSignedIn, publicGalleryView, mapView }) => {
       console.log("[TEST] Starting SignedIn role test");
 
       // Should access public dataset
       console.log("[TEST] Attempting to access public dataset");
-      await authenticatedPageAsSignedIn.goto("/gallery/seed_survey_data");
+      await authenticatedPageAsSignedIn.goto(
+        `/gallery/${publicGalleryView.primaryDataset}`,
+      );
       await authenticatedPageAsSignedIn.waitForURL("**/gallery/**", {
         timeout: 5000,
       });
@@ -175,7 +179,7 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       console.log(
         "[TEST] Attempting to access member dataset (should be rejected)",
       );
-      await authenticatedPageAsSignedIn.goto("/map/bcmform_responses");
+      await authenticatedPageAsSignedIn.goto(`/map/${mapView.primaryDataset}`);
       await waitForDeniedAccess(authenticatedPageAsSignedIn);
       const url = authenticatedPageAsSignedIn.url();
       console.log("[TEST] Member dataset access result URL:", url);
@@ -186,7 +190,7 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       authExpect(
         url.includes("?reason=unauthorized") ||
           url.includes("/login") ||
-          url.includes("/map/bcmform_responses"),
+          url.includes(`/map/${mapView.primaryDataset}`),
       ).toBe(true);
       console.log("[TEST] Correctly rejected from member dataset");
     },
@@ -194,12 +198,14 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
 
   authTest(
     "RBAC - Guest user can access public dataset but not member dataset",
-    async ({ authenticatedPageAsGuest }) => {
+    async ({ authenticatedPageAsGuest, publicGalleryView, galleryView }) => {
       console.log("[TEST] Starting Guest role test");
 
       // Should access public dataset
       console.log("[TEST] Guest: Attempting to access public dataset");
-      await authenticatedPageAsGuest.goto("/gallery/seed_survey_data");
+      await authenticatedPageAsGuest.goto(
+        `/gallery/${publicGalleryView.primaryDataset}`,
+      );
       await authenticatedPageAsGuest.waitForURL("**/gallery/**", {
         timeout: 5000,
       });
@@ -213,7 +219,9 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       console.log(
         "[TEST] Guest: Attempting to access member dataset (should be rejected)",
       );
-      await authenticatedPageAsGuest.goto("/gallery/bcmform_responses");
+      await authenticatedPageAsGuest.goto(
+        `/gallery/${galleryView.primaryDataset}`,
+      );
       await waitForDeniedAccess(authenticatedPageAsGuest);
       const url = authenticatedPageAsGuest.url();
       console.log("[TEST] Guest: Member dataset access result URL:", url);
@@ -224,7 +232,7 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       authExpect(
         url.includes("?reason=unauthorized") ||
           url.includes("/login") ||
-          url.includes("/gallery/bcmform_responses"),
+          url.includes(`/gallery/${galleryView.primaryDataset}`),
       ).toBe(true);
       console.log("[TEST] Guest: Correctly rejected from member dataset");
     },
@@ -232,12 +240,14 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
 
   authTest(
     "RBAC - Member user can access both public and member datasets",
-    async ({ authenticatedPageAsMember }) => {
+    async ({ authenticatedPageAsMember, publicGalleryView, galleryView }) => {
       console.log("[TEST] Starting Member role test");
 
       // Should access public dataset
       console.log("[TEST] Member: Attempting to access public dataset");
-      await authenticatedPageAsMember.goto("/gallery/seed_survey_data");
+      await authenticatedPageAsMember.goto(
+        `/gallery/${publicGalleryView.primaryDataset}`,
+      );
       await authenticatedPageAsMember.waitForURL("**/gallery/**", {
         timeout: 5000,
       });
@@ -259,7 +269,9 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       console.log(
         "[TEST] Member: Attempting to access member dataset (gallery)",
       );
-      await authenticatedPageAsMember.goto("/gallery/bcmform_responses");
+      await authenticatedPageAsMember.goto(
+        `/gallery/${galleryView.primaryDataset}`,
+      );
       await authenticatedPageAsMember.waitForURL("**/gallery/**", {
         timeout: 10000,
       });
@@ -287,12 +299,14 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
 
   authTest(
     "RBAC - Admin user can access both public and member datasets",
-    async ({ authenticatedPageAsAdmin }) => {
+    async ({ authenticatedPageAsAdmin, publicGalleryView, galleryView }) => {
       console.log("[TEST] Starting Admin role test");
 
       // Should access public dataset
       console.log("[TEST] Admin: Attempting to access public dataset");
-      await authenticatedPageAsAdmin.goto("/gallery/seed_survey_data");
+      await authenticatedPageAsAdmin.goto(
+        `/gallery/${publicGalleryView.primaryDataset}`,
+      );
       await authenticatedPageAsAdmin.waitForURL("**/gallery/**", {
         timeout: 5000,
       });
@@ -314,7 +328,9 @@ authTest.describe("RBAC - Role-Based Access Control", () => {
       console.log(
         "[TEST] Admin: Attempting to access member dataset (gallery)",
       );
-      await authenticatedPageAsAdmin.goto("/gallery/bcmform_responses");
+      await authenticatedPageAsAdmin.goto(
+        `/gallery/${galleryView.primaryDataset}`,
+      );
       await authenticatedPageAsAdmin.waitForURL("**/gallery/**", {
         timeout: 10000,
       });

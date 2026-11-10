@@ -1,30 +1,12 @@
-import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
+import { test, expect } from "@/tests/e2e/fixtures/warehouse-views";
 import { navigateToAlertsDashboard } from "./helpers/navigateToAlertsDashboard";
 import { waitForTestMap } from "./helpers/testMap";
-import { createApiTestView, deleteApiTestView } from "./helpers/apiTestData";
-import { surveyTable } from "@/tests/fixtures/warehouseTables";
-
-test("alerts navigation ignores temporary API test views", async ({
-  authenticatedPageAsAdmin: page,
-}) => {
-  const temporaryView = await createApiTestView({
-    table: surveyTable,
-    viewType: "alerts",
-    viewConfig: { ROUTE_LEVEL_PERMISSION: "member" },
-  });
-
-  try {
-    await navigateToAlertsDashboard(page);
-    await expect(page).toHaveURL(/\/alerts\/fake_alerts(?:\?|$)/);
-  } finally {
-    await deleteApiTestView(temporaryView);
-  }
-});
 
 test("alerts dashboard - camera query params restore the map view", async ({
   authenticatedPageAsAdmin: page,
+  alertsView,
 }) => {
-  await navigateToAlertsDashboard(page);
+  await navigateToAlertsDashboard(page, alertsView);
 
   const copyButton = page.getByTestId("copy-map-location-button");
   await expect(copyButton).toBeVisible();
@@ -55,8 +37,9 @@ test("alerts dashboard - camera query params restore the map view", async ({
 
 test("map page - copy location control is visible", async ({
   authenticatedPageAsAdmin: page,
+  mapView,
 }) => {
-  await page.goto("/map/bcmform_responses");
+  await page.goto(`/map/${mapView.primaryDataset}`);
   await page.locator("#map").waitFor({ state: "attached", timeout: 15000 });
   await expect(page.getByTestId("copy-map-location-button")).toBeVisible({
     timeout: 15000,
