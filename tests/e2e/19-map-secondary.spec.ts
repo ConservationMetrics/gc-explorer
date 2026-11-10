@@ -1,10 +1,8 @@
-import { randomUUID } from "node:crypto";
 import { test, expect } from "@playwright/test";
 import { secondaryRows } from "@/tests/fixtures/secondaryGeometry";
 import { createApiTestView, deleteApiTestView } from "./helpers/apiTestData";
 import {
   createTestDatabaseClient,
-  TEST_WAREHOUSE_DATABASE,
   TEST_CONFIG_DATABASE,
 } from "./helpers/testDatabase";
 import { waitForTestMap } from "./helpers/testMap";
@@ -49,64 +47,58 @@ const config = {
 };
 let view: ApiTestView;
 let privateView: ApiTestView;
-const secondary = `secondary_${randomUUID().replaceAll("-", "")}`;
+let secondary: string;
 
 test.beforeAll(async () => {
-  const sql = createTestDatabaseClient(TEST_WAREHOUSE_DATABASE);
-  try {
-    await sql.unsafe(
-      `CREATE TABLE "${secondary}" (_id text, g__type text, g__coordinates text, name text, photo text)`,
-    );
-    for (const row of secondaryRows)
-      await sql.unsafe(`INSERT INTO "${secondary}" VALUES ($1,$2,$3,$4,$5)`, [
-        row._id,
-        row.g__type,
-        row.g__coordinates,
-        row.name,
-        row.photo || null,
-      ]);
-  } finally {
-    await sql.end();
-  }
-  const warehouseInitializer = async (
-    database: ReturnType<typeof createTestDatabaseClient>,
-    table: string,
-  ) => {
-    await database.unsafe(
-      `CREATE TABLE "${table}" (_id text, g__type text, g__coordinates text, name text, category text, observed_at text)`,
-    );
-    await database.unsafe(
-      `INSERT INTO "${table}" VALUES ('1','Point','[-59.99,5]','Primary observation','wildlife','2026-01-01')`,
-    );
+  const table = {
+    columns: [
+      "_id",
+      "g__type",
+      "g__coordinates",
+      "name",
+      "category",
+      "observed_at",
+    ],
+    rows: [
+      {
+        _id: "1",
+        g__type: "Point",
+        g__coordinates: "[-59.99,5]",
+        name: "Primary observation",
+        category: "wildlife",
+        observed_at: "2026-01-01",
+      },
+    ],
   };
   view = await createApiTestView({
-    warehouseInitializer,
-    secondaryDataset: secondary,
+    table,
+    secondaryTable: {
+      columns: ["_id", "g__type", "g__coordinates", "name", "photo"],
+      rows: secondaryRows,
+    },
     viewConfig: config,
+    viewType: "map",
+  });
+  if (!view.secondaryDataset)
+    throw new Error("Secondary table was not created");
+  secondary = view.secondaryDataset;
+  privateView = await createApiTestView({
+    table,
+    viewConfig: { ...config, ROUTE_LEVEL_PERMISSION: "member" },
     viewType: "map",
   });
   const configSql = createTestDatabaseClient(TEST_CONFIG_DATABASE);
   try {
     await configSql`INSERT INTO public_views (view_id) SELECT view_id FROM views WHERE primary_dataset = ${view.primaryDataset}`;
+    // Both parents share one secondary table, so access must depend on the parent view.
+    await configSql`UPDATE views SET secondary_dataset = ${secondary} WHERE primary_dataset = ${privateView.primaryDataset}`;
   } finally {
     await configSql.end();
   }
-  privateView = await createApiTestView({
-    warehouseInitializer,
-    secondaryDataset: secondary,
-    viewConfig: { ...config, ROUTE_LEVEL_PERMISSION: "member" },
-    viewType: "map",
-  });
 });
 test.afterAll(async () => {
   if (view) await deleteApiTestView(view);
   if (privateView) await deleteApiTestView(privateView);
-  const sql = createTestDatabaseClient(TEST_WAREHOUSE_DATABASE);
-  try {
-    await sql.unsafe(`DROP TABLE IF EXISTS "${secondary}"`);
-  } finally {
-    await sql.end();
-  }
 });
 
 test("Map API keeps primary fields and permits secondary records only through an authorized parent", async ({

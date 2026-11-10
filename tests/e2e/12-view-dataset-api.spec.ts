@@ -3,6 +3,7 @@ import {
   createApiTestView,
   deleteApiTestView,
 } from "@/tests/e2e/helpers/apiTestData";
+import { surveyTable } from "@/tests/fixtures/warehouseTables";
 import { VIEW_CONFIG_MISSING_COLUMNS_ERROR, type ApiTestView } from "@/types";
 
 test.describe("gallery dataset API", () => {
@@ -10,7 +11,7 @@ test.describe("gallery dataset API", () => {
 
   test.beforeAll(async () => {
     view = await createApiTestView({
-      sourceTable: "seed_survey_data",
+      table: surveyTable,
       viewConfig: {
         FRONT_END_FILTER_COLUMN: "community",
         MEDIA_COLUMN: "photo",
@@ -71,7 +72,7 @@ test.describe("map dataset API", () => {
 
   test.beforeAll(async () => {
     view = await createApiTestView({
-      sourceTable: "bcmform_responses",
+      table: surveyTable,
       viewConfig: {
         FRONT_END_FILTER_COLUMN: "community",
         MAPBOX_BASEMAPS: JSON.stringify([
@@ -162,7 +163,7 @@ test.describe("invalid view config", () => {
 
   test.beforeAll(async () => {
     view = await createApiTestView({
-      sourceTable: "bcmform_responses",
+      table: surveyTable,
       viewConfig: {
         COLOR_COLUMN: "missing_api_test_column",
         ROUTE_LEVEL_PERMISSION: "member",

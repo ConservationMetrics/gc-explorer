@@ -1,5 +1,3 @@
-import type { Sql } from "postgres";
-
 import { test, expect } from "@/tests/e2e/fixtures/auth-storage";
 import {
   createApiTestView,
@@ -37,21 +35,16 @@ const viewConfig: ViewConfig = {
   ROUTE_LEVEL_PERMISSION: "member",
 };
 
-const initializePointFixture = async (database: Sql, tableName: string) => {
-  const table = `"${tableName.replaceAll('"', '""')}"`;
-  await database.unsafe(`
-    CREATE TABLE ${table} (
-      _id text NOT NULL,
-      g__coordinates text NOT NULL,
-      g__type text NOT NULL,
-      display_name text NOT NULL
-    )
-  `);
-  await database.unsafe(
-    `INSERT INTO ${table} (_id, g__coordinates, g__type, display_name)
-     VALUES ($1, $2, $3, $4)`,
-    ["point-feature-1", "[-60, 5]", "Point", "Point feature fixture"],
-  );
+const pointTable = {
+  columns: ["_id", "g__coordinates", "g__type", "display_name"],
+  rows: [
+    {
+      _id: "point-feature-1",
+      g__coordinates: "[-60, 5]",
+      g__type: "Point",
+      display_name: "Point feature fixture",
+    },
+  ],
 };
 
 test.describe("map feature link", () => {
@@ -59,7 +52,7 @@ test.describe("map feature link", () => {
 
   test.beforeAll(async () => {
     mapView = await createApiTestView({
-      warehouseInitializer: initializePointFixture,
+      table: pointTable,
       viewConfig,
       viewType: "map",
     });

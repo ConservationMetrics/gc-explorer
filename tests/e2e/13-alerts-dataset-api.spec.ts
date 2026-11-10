@@ -3,6 +3,11 @@ import {
   createApiTestView,
   deleteApiTestView,
 } from "@/tests/e2e/helpers/apiTestData";
+import {
+  alertsTable,
+  mapeoTable,
+  surveyTable,
+} from "@/tests/fixtures/warehouseTables";
 import type { ApiTestView } from "@/types";
 
 test.describe("alerts dataset API", () => {
@@ -10,8 +15,8 @@ test.describe("alerts dataset API", () => {
 
   test.beforeAll(async () => {
     view = await createApiTestView({
-      sourceTable: "fake_alerts",
-      secondaryDataset: "mapeo_data",
+      table: alertsTable,
+      secondaryTable: mapeoTable,
       viewConfig: {
         FRONT_END_FILTER_COLUMN: "p__categoryid",
         ROUTE_LEVEL_PERMISSION: "anyone",
@@ -89,7 +94,7 @@ test.describe("record APIs", () => {
 
   test.beforeAll(async () => {
     view = await createApiTestView({
-      sourceTable: "seed_survey_data",
+      table: surveyTable,
       viewConfig: { ROUTE_LEVEL_PERMISSION: "member" },
       viewType: "gallery",
     });
@@ -105,12 +110,12 @@ test.describe("record APIs", () => {
     if (!view) throw new Error("Record API test view was not created");
 
     const response = await request.get(
-      `/api/${view.primaryDataset}/254137498?view_type=${view.viewType}`,
+      `/api/${view.primaryDataset}/survey-1?view_type=${view.viewType}`,
     );
     expect(response.status()).toBe(200);
 
     const body = await response.json();
-    expect(body._id).toBe("254137498");
+    expect(body._id).toBe("survey-1");
     expect(typeof body.photo).toBe("string");
     expect(typeof body.community).toBe("string");
   });
@@ -123,14 +128,14 @@ test.describe("record APIs", () => {
     const response = await request.post(
       `/api/${view.primaryDataset}/records?view_type=${view.viewType}`,
       {
-        data: { ids: ["254137498", "missing-id"] },
+        data: { ids: ["survey-1", "missing-id"] },
       },
     );
     expect(response.status()).toBe(200);
 
     const body = await response.json();
     expect(body).toHaveLength(1);
-    expect(body[0]._id).toBe("254137498");
+    expect(body[0]._id).toBe("survey-1");
   });
 });
 
@@ -139,7 +144,7 @@ test.describe("invalid alerts dataset", () => {
 
   test.beforeAll(async () => {
     view = await createApiTestView({
-      sourceTable: "seed_survey_data",
+      table: surveyTable,
       viewConfig: { ROUTE_LEVEL_PERMISSION: "member" },
       viewType: "alerts",
     });
