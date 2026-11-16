@@ -18,7 +18,12 @@ export const useAuth = (loggedIn: { value: boolean }) => {
   const code = urlParams.get("code");
 
   if (code) {
-    window.location.href = `/api/auth/auth0?code=${code}`;
+    // Preserve the browser-bound OAuth state through the /login callback.
+    const callbackParams = new URLSearchParams({ code });
+    const state = urlParams.get("state");
+    if (state !== null) callbackParams.set("state", state);
+    window.location.href = `/api/auth/auth0?${callbackParams.toString()}`;
+    return;
   }
 
   const error = urlParams.get("error");
