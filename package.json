@@ -40,7 +40,7 @@
     "mapbox-gl-ruler-control": "^0.0.2",
     "murmurhash": "^2.0.1",
     "nuxt": "^3.17.5",
-    "nuxt-auth-utils": "^0.3.6",
+    "nuxt-auth-utils": "0.5.34",
     "pg": "^8.13.1",
     "postgres": "^3.4.7",
     "reka-ui": "^2.3.1",
