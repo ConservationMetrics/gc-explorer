@@ -19,8 +19,10 @@ vi.mock("@/components/shared/filters/TimestampFilter.vue", () => ({
   default: {
     name: "TimestampFilter",
     emits: ["filter", "active"],
-    template:
-      "<button data-testid=\"stub-timestamp-filter\" @click=\"$emit('filter', { start: null, end: null }); $emit('active', true)\">date</button>",
+    template: `<div>
+      <button data-testid="stub-timestamp-filter" @click="$emit('filter', { start: null, end: null }); $emit('active', true)">date</button>
+      <button data-testid="stub-timestamp-filter-clear" @click="$emit('active', false)">clear date</button>
+    </div>`,
   },
 }));
 
@@ -31,7 +33,7 @@ const globalConfig = {
 };
 
 describe("MapFilterControls", () => {
-  it("toggles filter panels and emits their selections", async () => {
+  it("opens one pane with both filters and emits their selections (#703)", async () => {
     const wrapper = mount(MapFilterControls, {
       props: {
         data: [],
@@ -41,79 +43,70 @@ describe("MapFilterControls", () => {
       global: globalConfig,
     });
 
-    await wrapper.get('[data-testid="toggle-data-filter"]').trigger("click");
+    const toggle = wrapper.get('[data-testid="toggle-filters"]');
+    expect(toggle.attributes("aria-expanded")).toBe("false");
+    expect(wrapper.find('[data-testid="filters-panel"]').exists()).toBe(false);
+
+    await toggle.trigger("click");
+    expect(toggle.attributes("aria-expanded")).toBe("true");
+    expect(
+      wrapper.get('[data-testid="filters-panel"]').attributes("aria-hidden"),
+    ).toBe("false");
     expect(wrapper.find('[data-testid="stub-data-filter"]').exists()).toBe(
       true,
     );
-    expect(
-      wrapper
-        .get('[data-testid="data-filter-panel"]')
-        .attributes("aria-hidden"),
-    ).toBe("false");
     expect(wrapper.find('[data-testid="stub-timestamp-filter"]').exists()).toBe(
-      false,
+      true,
     );
 
     await wrapper.get('[data-testid="stub-data-filter"]').trigger("click");
-    expect(wrapper.emitted("filter")).toEqual([[["selected"]]]);
-
-    await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
-    expect(wrapper.find('[data-testid="stub-data-filter"]').exists()).toBe(
-      true,
-    );
-    expect(
-      wrapper
-        .get('[data-testid="data-filter-panel"]')
-        .attributes("aria-hidden"),
-    ).toBe("true");
-    expect(wrapper.find('[data-testid="stub-timestamp-filter"]').exists()).toBe(
-      true,
-    );
-    expect(
-      wrapper
-        .get('[data-testid="date-filter-panel"]')
-        .attributes("aria-hidden"),
-    ).toBe("false");
-
     await wrapper.get('[data-testid="stub-timestamp-filter"]').trigger("click");
+    expect(wrapper.emitted("filter")).toEqual([[["selected"]]]);
     expect(wrapper.emitted("date-filter")).toEqual([
       [{ start: null, end: null }],
     ]);
-  });
 
-  it("keeps both filter panels mounted after switching between them", async () => {
-    const wrapper = mount(MapFilterControls, {
-      props: {
-        data: [],
-        filterColumn: "category",
-        timestampColumn: "createdAt",
-      },
-      global: globalConfig,
-    });
-
-    await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
-    await wrapper.get('[data-testid="toggle-data-filter"]').trigger("click");
-    await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
-
+    await toggle.trigger("click");
+    expect(toggle.attributes("aria-expanded")).toBe("false");
+    expect(
+      wrapper.get('[data-testid="filters-panel"]').attributes("aria-hidden"),
+    ).toBe("true");
     expect(wrapper.find('[data-testid="stub-data-filter"]').exists()).toBe(
       true,
     );
     expect(wrapper.find('[data-testid="stub-timestamp-filter"]').exists()).toBe(
       true,
     );
-    expect(
-      wrapper
-        .get('[data-testid="data-filter-panel"]')
-        .attributes("aria-hidden"),
-    ).toBe("true");
-    expect(
-      wrapper
-        .get('[data-testid="date-filter-panel"]')
-        .attributes("aria-hidden"),
-    ).toBe("false");
   });
 
-  it("marks both filter buttons as applied at the same time (#685)", async () => {
+  it("shows only the filters the view is configured for", async () => {
+    const wrapper = mount(MapFilterControls, {
+      props: {
+        data: [],
+        timestampColumn: "createdAt",
+      },
+      global: globalConfig,
+    });
+
+    await wrapper.get('[data-testid="toggle-filters"]').trigger("click");
+    expect(wrapper.find('[data-testid="stub-timestamp-filter"]').exists()).toBe(
+      true,
+    );
+    expect(wrapper.find('[data-testid="stub-data-filter"]').exists()).toBe(
+      false,
+    );
+  });
+
+  it("hides the filter button when no filter is configured", () => {
+    const wrapper = mount(MapFilterControls, {
+      props: { data: [] },
+      global: globalConfig,
+    });
+
+    expect(wrapper.find('[data-testid="toggle-filters"]').exists()).toBe(false);
+  });
+
+  it("marks the filter button as applied while either filter is applied", async () => {
     const wrapper = mount(MapFilterControls, {
       props: {
         data: [],
@@ -123,55 +116,34 @@ describe("MapFilterControls", () => {
       global: globalConfig,
     });
 
-    const columnButton = wrapper.get('[data-testid="toggle-data-filter"]');
-    const dateButton = wrapper.get('[data-testid="toggle-date-filter"]');
+    const toggle = wrapper.get('[data-testid="toggle-filters"]');
+    const applied = () =>
+      wrapper.find('[data-testid="filters-applied"]').exists();
 
-    expect(columnButton.attributes("aria-pressed")).toBe("false");
-    expect(dateButton.attributes("aria-pressed")).toBe("false");
-    expect(wrapper.find('[data-testid="column-filter-applied"]').exists()).toBe(
-      false,
-    );
-    expect(wrapper.find('[data-testid="date-filter-applied"]').exists()).toBe(
-      false,
-    );
+    expect(toggle.attributes("aria-pressed")).toBe("false");
+    expect(applied()).toBe(false);
 
-    await columnButton.trigger("click");
+    await toggle.trigger("click");
     await wrapper.get('[data-testid="stub-data-filter"]').trigger("click");
-    await dateButton.trigger("click");
     await wrapper.get('[data-testid="stub-timestamp-filter"]').trigger("click");
-    await columnButton.trigger("click");
+    expect(toggle.attributes("aria-pressed")).toBe("true");
+    expect(applied()).toBe(true);
 
-    expect(columnButton.attributes("aria-pressed")).toBe("true");
-    expect(dateButton.attributes("aria-pressed")).toBe("true");
-    expect(wrapper.find('[data-testid="column-filter-applied"]').exists()).toBe(
-      true,
-    );
-    expect(wrapper.find('[data-testid="date-filter-applied"]').exists()).toBe(
-      true,
-    );
-    expect(columnButton.attributes("aria-expanded")).toBe("true");
-    expect(dateButton.attributes("aria-expanded")).toBe("false");
-
-    await columnButton.trigger("click");
-
-    expect(columnButton.attributes("aria-expanded")).toBe("false");
-    expect(dateButton.attributes("aria-expanded")).toBe("false");
-    expect(columnButton.attributes("aria-pressed")).toBe("true");
-    expect(dateButton.attributes("aria-pressed")).toBe("true");
-
-    await columnButton.trigger("click");
     await wrapper
       .get('[data-testid="stub-data-filter-clear"]')
       .trigger("click");
+    expect(toggle.attributes("aria-pressed")).toBe("true");
+    expect(applied()).toBe(true);
 
-    expect(columnButton.attributes("aria-pressed")).toBe("false");
-    expect(dateButton.attributes("aria-pressed")).toBe("true");
-    expect(wrapper.find('[data-testid="column-filter-applied"]').exists()).toBe(
-      false,
-    );
-    expect(wrapper.find('[data-testid="date-filter-applied"]').exists()).toBe(
-      true,
-    );
+    await toggle.trigger("click");
+    expect(toggle.attributes("aria-pressed")).toBe("true");
+
+    await toggle.trigger("click");
+    await wrapper
+      .get('[data-testid="stub-timestamp-filter-clear"]')
+      .trigger("click");
+    expect(toggle.attributes("aria-pressed")).toBe("false");
+    expect(applied()).toBe(false);
   });
 
   it("emits copy-location from the location button", async () => {
