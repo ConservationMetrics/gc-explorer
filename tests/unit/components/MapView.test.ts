@@ -1137,6 +1137,11 @@ describe("MapView component", () => {
                 ).toISOString(),
               },
             },
+            {
+              type: "Point",
+              coordinates: [3, 3],
+              properties: { observed_at: "27/12/2023" },
+            },
           ]),
         },
         global: {
@@ -1193,16 +1198,11 @@ describe("MapView component", () => {
       await flushPromises();
       expect(
         (download.props("dataForDownload") as FeatureCollection).features,
-      ).toHaveLength(3);
+      ).toHaveLength(4);
       await clickExportFormat();
       await flushPromises();
       expect(fetchExport).toHaveBeenLastCalledWith("/api/test_data/export", {
-        params: {
-          format,
-          view_type: "map",
-          minDate: new Date(2024, 0, 1).toISOString(),
-          maxDate: new Date(2024, 2, 0, 23, 59, 59, 999).toISOString(),
-        },
+        params: { format, view_type: "map" },
         responseType: "blob",
       });
       wrapper.unmount();

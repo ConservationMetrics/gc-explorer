@@ -108,6 +108,40 @@ describe("TimestampFilter component", () => {
     expect(end.getMonth()).toBe(1);
   });
 
+  it("emits an open range when the slider returns to the full range or is reset", async () => {
+    const wrapper = mountFilter([
+      { id: "1", timestamp: "2024-01-15T12:00:00Z" },
+      { id: "2", timestamp: "2024-02-10T12:00:00Z" },
+      { id: "3", timestamp: "27/12/2023" },
+    ] as Dataset);
+
+    await nextTick();
+
+    const vm = wrapper.vm as unknown as {
+      userInteracted: boolean;
+      selectedRange: string[];
+      resetDateRange: () => void;
+    };
+    vm.userInteracted = true;
+    vm.selectedRange = ["2024-02", "2024-02"];
+    await nextTick();
+    vm.selectedRange = ["2024-01", "2024-02"];
+    await nextTick();
+
+    expect(wrapper.emitted("filter")?.at(-1)).toEqual([
+      { start: null, end: null },
+    ]);
+
+    vm.selectedRange = ["2024-02", "2024-02"];
+    await nextTick();
+    vm.resetDateRange();
+    await nextTick();
+
+    expect(wrapper.emitted("filter")?.at(-1)).toEqual([
+      { start: null, end: null },
+    ]);
+  });
+
   it("emits active true after the user narrows the range, then false on reset", async () => {
     const wrapper = mountFilter([
       { id: "1", timestamp: "2024-01-15T12:00:00Z" },
