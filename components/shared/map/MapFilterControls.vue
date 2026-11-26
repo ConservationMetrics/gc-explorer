@@ -55,7 +55,7 @@ const toggleFilters = () => {
 
 <template>
   <div
-    class="absolute right-16 top-3 z-[1010] flex items-start gap-2 sm:right-14 sm:top-4"
+    class="absolute right-16 top-3 z-[1010] flex items-start gap-2 sm:right-14 sm:top-4 sm:z-[1055]"
     data-testid="map-filter-controls"
   >
     <CopyMapLocationButton
@@ -88,7 +88,7 @@ const toggleFilters = () => {
       :disabled="!filtersActive"
       @click="emit('clear-filters')"
     >
-      Clear filters
+      {{ $t("clearAll") }}
     </button>
     <!-- Stay mounted once opened; opacity hides VueSlider tooltips without collapsing width. -->
     <div
@@ -102,22 +102,20 @@ const toggleFilters = () => {
       :inert="!showFilters"
       data-testid="filters-panel"
     >
-      <!-- Lifts the category dropdown above the date slider below it. -->
-      <DataFilter
-        v-if="filterColumn"
-        class="relative"
-        :data="data"
-        :filter-column="filterColumn"
-        :color-column="colorColumn"
-        :show-colored-dot="true"
-        @filter="onColumnFilter"
-      />
       <TimestampFilter
         v-if="timestampColumn"
         :data="data"
         :timestamp-column="timestampColumn"
         @filter="emit('date-filter', $event)"
         @active="onDateFilterActive"
+      />
+      <DataFilter
+        v-if="filterColumn"
+        :data="data"
+        :filter-column="filterColumn"
+        :color-column="colorColumn"
+        :show-colored-dot="true"
+        @filter="onColumnFilter"
       />
     </div>
   </div>

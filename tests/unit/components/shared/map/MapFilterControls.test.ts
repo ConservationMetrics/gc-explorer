@@ -97,6 +97,33 @@ describe("MapFilterControls", () => {
     );
   });
 
+  it("labels the clear button through i18n", () => {
+    const wrapper = mount(MapFilterControls, {
+      props: { data: [], filterColumn: "category" },
+      global: globalConfig,
+    });
+
+    const labels = wrapper.findAll("button").map((button) => button.text());
+    expect(labels).toContain("clearAll");
+  });
+
+  it("shows the date filter above the category filter", async () => {
+    const wrapper = mount(MapFilterControls, {
+      props: {
+        data: [],
+        filterColumn: "category",
+        timestampColumn: "createdAt",
+      },
+      global: globalConfig,
+    });
+
+    await wrapper.get('[data-testid="toggle-filters"]').trigger("click");
+    const html = wrapper.get('[data-testid="filters-panel"]').html();
+    expect(html.indexOf("stub-timestamp-filter")).toBeLessThan(
+      html.indexOf("stub-data-filter"),
+    );
+  });
+
   it("hides the filter button when no filter is configured", () => {
     const wrapper = mount(MapFilterControls, {
       props: { data: [] },
