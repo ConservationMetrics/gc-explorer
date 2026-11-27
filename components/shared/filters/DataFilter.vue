@@ -76,6 +76,7 @@ const selectMoreLabel = computed(() => JSON.stringify(t("selectMoreOptions")));
       v-model="selectedFilterValue"
       :is-multi="true"
       :options="getUniqueFilterValues"
+      :placeholder="t('selectAnOption')"
       data-testid="filter-select"
       @option-selected="emitFilterSelection"
       @option-deselected="emitFilterSelection"

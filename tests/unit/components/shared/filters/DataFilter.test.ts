@@ -13,6 +13,7 @@ Object.assign(globalThis, {
 vi.mock("vue3-select-component", () => ({
   default: {
     name: "VueSelect",
+    props: ["placeholder"],
     template: "<div></div>",
   },
 }));
@@ -68,6 +69,17 @@ describe("DataFilter component", () => {
     });
 
     expect(wrapper.find('[data-testid="data-filter"]').exists()).toBe(true);
+  });
+
+  it("translates the select placeholder", () => {
+    const wrapper = mount(DataFilter, {
+      props: baseProps,
+      global: globalConfig,
+    });
+
+    expect(
+      wrapper.findComponent({ name: "VueSelect" }).props("placeholder"),
+    ).toBe("selectAnOption");
   });
 
   it("uses filter-color when colorColumn is not set", () => {

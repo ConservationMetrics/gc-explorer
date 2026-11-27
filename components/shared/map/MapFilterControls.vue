@@ -54,8 +54,11 @@ const toggleFilters = () => {
 </script>
 
 <template>
+  <!-- Above the drawer (z 1050) from sm up, where it is the left sidebar. On mobile it is the
+       bottom sheet, so rise above it only while the pane is open, keeping the dropdown visible. -->
   <div
-    class="absolute right-16 top-3 z-[1010] flex items-start gap-2 sm:right-14 sm:top-4 sm:z-[1055]"
+    class="absolute right-16 top-3 flex items-start gap-2 sm:right-14 sm:top-4"
+    :class="showFilters ? 'z-[1055]' : 'z-[1010] sm:z-[1055]'"
     data-testid="map-filter-controls"
   >
     <CopyMapLocationButton
@@ -90,10 +93,12 @@ const toggleFilters = () => {
     >
       {{ $t("clearAll") }}
     </button>
-    <!-- Stay mounted once opened; opacity hides VueSlider tooltips without collapsing width. -->
+    <!-- Stay mounted once opened; opacity hides VueSlider tooltips without collapsing width.
+         From sm up, the width leaves a 16px gap to the sidebar, which is min(400px, 100vw - 344px) wide:
+         472px = 400px sidebar + 56px right offset + 16px gap; 272px = 344px - 56px - 16px. -->
     <div
       v-if="filtersMounted"
-      class="map-filter-panel absolute right-0 top-12 w-[calc(100vw-5rem)] max-w-[400px]"
+      class="map-filter-panel absolute right-0 top-12 w-[calc(100vw-5rem)] max-w-[400px] sm:w-[clamp(272px,calc(100vw-472px),400px)]"
       :class="{
         'opacity-0': !showFilters,
         'pointer-events-none': !showFilters,

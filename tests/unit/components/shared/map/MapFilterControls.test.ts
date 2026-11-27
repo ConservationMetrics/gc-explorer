@@ -107,6 +107,27 @@ describe("MapFilterControls", () => {
     expect(labels).toContain("clearAll");
   });
 
+  it("keeps the controls above the sidebar from sm up, and above the mobile drawer only while open", async () => {
+    const wrapper = mount(MapFilterControls, {
+      props: { data: [], filterColumn: "category" },
+      global: globalConfig,
+    });
+    const controls = wrapper.get('[data-testid="map-filter-controls"]');
+
+    expect(controls.classes()).toEqual(
+      expect.arrayContaining(["z-[1010]", "sm:z-[1055]"]),
+    );
+
+    await wrapper.get('[data-testid="toggle-filters"]').trigger("click");
+    expect(controls.classes()).toContain("z-[1055]");
+    expect(controls.classes()).not.toContain("z-[1010]");
+
+    await wrapper.get('[data-testid="toggle-filters"]').trigger("click");
+    expect(controls.classes()).toEqual(
+      expect.arrayContaining(["z-[1010]", "sm:z-[1055]"]),
+    );
+  });
+
   it("shows the date filter above the category filter", async () => {
     const wrapper = mount(MapFilterControls, {
       props: {

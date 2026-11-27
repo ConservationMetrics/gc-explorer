@@ -306,6 +306,7 @@
   "secondaryDatasetOptional": "Conjunto de dados secundário",
   "secondaryFilterValues": "Valores do conjunto de dados secundário para incluir no mapa de alertas",
   "selectAlertDateRange": "Selecione um intervalo de datas de alerta",
+  "selectAnOption": "Selecionar uma opção",
   "selectBasemap": "Selecione o mapa base",
   "selectColumn": "Selecione uma coluna…",
   "selectMoreOptions": "Selecionar mais opções",
