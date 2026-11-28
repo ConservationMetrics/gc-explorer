@@ -310,6 +310,7 @@
   "secondaryDatasetOptional": "ชุดข้อมูลรอง",
   "secondaryFilterValues": "ค่าจากชุดข้อมูลรองที่จะรวมลงในแผนที่แจ้งเตือน",
   "selectAlertDateRange": "เลือกช่วงวันที่การแจ้งเตือน",
+  "selectAnOption": "เลือกตัวเลือก",
   "selectBasemap": "เลือกแผนที่ฐาน",
   "selectColumn": "เลือกคอลัมน์…",
   "selectMoreOptions": "เลือกตัวเลือกเพิ่มเติม",

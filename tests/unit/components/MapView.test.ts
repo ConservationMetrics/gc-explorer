@@ -1137,6 +1137,11 @@ describe("MapView component", () => {
                 ).toISOString(),
               },
             },
+            {
+              type: "Point",
+              coordinates: [3, 3],
+              properties: { observed_at: "27/12/2023" },
+            },
           ]),
         },
         global: {
@@ -1152,7 +1157,7 @@ describe("MapView component", () => {
       mapboxMock.fireLoad();
       await flushPromises();
 
-      await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
+      await wrapper.get('[data-testid="toggle-filters"]').trigger("click");
       await flushPromises();
       const slider = wrapper.findComponent(VueSlider);
       slider.vm.$emit("drag-start");
@@ -1193,16 +1198,11 @@ describe("MapView component", () => {
       await flushPromises();
       expect(
         (download.props("dataForDownload") as FeatureCollection).features,
-      ).toHaveLength(3);
+      ).toHaveLength(4);
       await clickExportFormat();
       await flushPromises();
       expect(fetchExport).toHaveBeenLastCalledWith("/api/test_data/export", {
-        params: {
-          format,
-          view_type: "map",
-          minDate: new Date(2024, 0, 1).toISOString(),
-          maxDate: new Date(2024, 2, 0, 23, 59, 59, 999).toISOString(),
-        },
+        params: { format, view_type: "map" },
         responseType: "blob",
       });
       wrapper.unmount();
@@ -1241,7 +1241,7 @@ describe("MapView component", () => {
     const addSourceCalls = mapboxMock.mockMap.addSource.mock.calls.length;
     const removeSourceCalls = mapboxMock.mockMap.removeSource.mock.calls.length;
 
-    await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
+    await wrapper.get('[data-testid="toggle-filters"]').trigger("click");
     await flushPromises();
 
     expect(mapboxMock.mockMap.addSource.mock.calls.length).toBe(addSourceCalls);
@@ -1251,7 +1251,7 @@ describe("MapView component", () => {
     wrapper.unmount();
   });
 
-  it("keeps an applied date filter when switching to the column filter and back (#684)", async () => {
+  it("keeps an applied date filter when closing and reopening the filters (#684)", async () => {
     const wrapper = mount(MapView, {
       props: {
         ...baseProps,
@@ -1294,7 +1294,7 @@ describe("MapView component", () => {
     mapboxMock.fireLoad();
     await flushPromises();
 
-    await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
+    await wrapper.get('[data-testid="toggle-filters"]').trigger("click");
     await flushPromises();
     const slider = wrapper.findComponent(VueSlider);
     slider.vm.$emit("drag-start");
@@ -1304,8 +1304,8 @@ describe("MapView component", () => {
     const sidebar = wrapper.findComponent({ name: "ViewSidebar" });
     expect(sidebar.props("mapFeatureCollection").features).toHaveLength(1);
 
-    await wrapper.get('[data-testid="toggle-data-filter"]').trigger("click");
-    await wrapper.get('[data-testid="toggle-date-filter"]').trigger("click");
+    await wrapper.get('[data-testid="toggle-filters"]').trigger("click");
+    await wrapper.get('[data-testid="toggle-filters"]').trigger("click");
     await flushPromises();
 
     expect(sidebar.props("mapFeatureCollection").features).toHaveLength(1);
@@ -1830,7 +1830,7 @@ describe("MapView component", () => {
     mapboxMock.fireLoad();
     await flushPromises();
 
-    await wrapper.get('[data-testid="toggle-data-filter"]').trigger("click");
+    await wrapper.get('[data-testid="toggle-filters"]').trigger("click");
     const dataFilter = wrapper.findComponent({ name: "DataFilter" });
     expect(dataFilter.exists()).toBe(true);
     expect(dataFilter.props("colorColumn")).toBe("color");

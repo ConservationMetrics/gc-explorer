@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { CalendarDays, Filter } from "lucide-vue-next";
+import { computed, ref } from "vue";
+import { Filter } from "lucide-vue-next";
 
 import CopyMapLocationButton from "@/components/shared/map/CopyMapLocationButton.vue";
 import DataFilter from "@/components/shared/filters/DataFilter.vue";
@@ -24,49 +24,41 @@ const emit = defineEmits<{
   "clear-filters": [];
 }>();
 
-const showFilter = ref(false);
-const showDateFilter = ref(false);
-const filterMounted = ref(false);
-const dateFilterMounted = ref(false);
+const showFilters = ref(false);
+const filtersMounted = ref(false);
 const columnFilterActive = ref(false);
 const dateFilterActive = ref(false);
 
-const filterButtonClass =
-  "relative flex h-10 w-10 items-center justify-center rounded-md bg-violet-700 text-white shadow-sm transition-colors hover:bg-violet-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2";
+const anyFilterApplied = computed(
+  () => columnFilterActive.value || dateFilterActive.value,
+);
 
-/** Keeps the column-applied button state in sync, then forwards the selection. */
+/** Keeps the applied-filter indicator in sync, then forwards the selection. */
 const onColumnFilter = (values: unknown[]) => {
   columnFilterActive.value = values.length > 0;
   emit("filter", values as string[]);
 };
 
-/** Keeps the date-applied button state in sync. */
+/** Keeps the applied-filter indicator in sync. */
 const onDateFilterActive = (active: boolean) => {
   dateFilterActive.value = active;
 };
 
-/** Toggles the category filter panel. */
-const toggleFilter = () => {
-  showFilter.value = !showFilter.value;
-  if (showFilter.value) {
-    filterMounted.value = true;
-    showDateFilter.value = false;
-  }
-};
-
-/** Toggles the date filter panel. */
-const toggleDateFilter = () => {
-  showDateFilter.value = !showDateFilter.value;
-  if (showDateFilter.value) {
-    dateFilterMounted.value = true;
-    showFilter.value = false;
+/** Toggles the pane that holds both the category and date filters. */
+const toggleFilters = () => {
+  showFilters.value = !showFilters.value;
+  if (showFilters.value) {
+    filtersMounted.value = true;
   }
 };
 </script>
 
 <template>
+  <!-- Above the drawer (z 1050) from sm up, where it is the left sidebar. On mobile it is the
+       bottom sheet, so rise above it only while the pane is open, keeping the dropdown visible. -->
   <div
-    class="absolute right-16 top-3 z-[1010] flex items-start gap-2 sm:right-14 sm:top-4"
+    class="absolute right-16 top-3 flex items-start gap-2 sm:right-14 sm:top-4"
+    :class="showFilters ? 'z-[1055]' : 'z-[1010] sm:z-[1055]'"
     data-testid="map-filter-controls"
   >
     <CopyMapLocationButton
@@ -74,41 +66,21 @@ const toggleDateFilter = () => {
       @copy="emit('copy-location')"
     />
     <button
-      v-if="filterColumn"
+      v-if="filterColumn || timestampColumn"
       type="button"
-      :class="[
-        filterButtonClass,
-        columnFilterActive ? 'ring-2 ring-white' : '',
-      ]"
-      :aria-label="$t('filterDataByColumn')"
-      :aria-expanded="showFilter"
-      :aria-pressed="columnFilterActive"
-      data-testid="toggle-data-filter"
-      @click="toggleFilter"
+      class="relative flex h-10 w-10 items-center justify-center rounded-md bg-violet-700 text-white shadow-sm transition-colors hover:bg-violet-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2"
+      :class="{ 'ring-2 ring-white': anyFilterApplied }"
+      :aria-label="$t('filters')"
+      :aria-expanded="showFilters"
+      :aria-pressed="anyFilterApplied"
+      data-testid="toggle-filters"
+      @click="toggleFilters"
     >
       <Filter class="h-5 w-5" aria-hidden="true" />
       <span
-        v-if="columnFilterActive"
+        v-if="anyFilterApplied"
         class="pointer-events-none absolute -right-1 -top-1 h-3 w-3 rounded-full bg-amber-300 ring-2 ring-violet-700"
-        data-testid="column-filter-applied"
-        aria-hidden="true"
-      ></span>
-    </button>
-    <button
-      v-if="timestampColumn"
-      type="button"
-      :class="[filterButtonClass, dateFilterActive ? 'ring-2 ring-white' : '']"
-      :aria-label="$t('filterByDate')"
-      :aria-expanded="showDateFilter"
-      :aria-pressed="dateFilterActive"
-      data-testid="toggle-date-filter"
-      @click="toggleDateFilter"
-    >
-      <CalendarDays class="h-5 w-5" aria-hidden="true" />
-      <span
-        v-if="dateFilterActive"
-        class="pointer-events-none absolute -right-1 -top-1 h-3 w-3 rounded-full bg-amber-300 ring-2 ring-violet-700"
-        data-testid="date-filter-applied"
+        data-testid="filters-applied"
         aria-hidden="true"
       ></span>
     </button>
@@ -119,41 +91,36 @@ const toggleDateFilter = () => {
       :disabled="!filtersActive"
       @click="emit('clear-filters')"
     >
-      Clear filters
+      {{ $t("clearAll") }}
     </button>
+    <!-- Stay mounted once opened; opacity hides VueSlider tooltips without collapsing width.
+         From sm up, the width leaves a 16px gap to the sidebar, which is min(400px, 100vw - 344px) wide:
+         472px = 400px sidebar + 56px right offset + 16px gap; 272px = 344px - 56px - 16px. -->
     <div
-      v-if="filterMounted"
-      class="map-filter-panel absolute right-0 top-12 w-[calc(100vw-5rem)] max-w-[400px]"
-      :class="{ 'opacity-0': !showFilter, 'pointer-events-none': !showFilter }"
-      :aria-hidden="!showFilter"
-      :inert="!showFilter"
-      data-testid="data-filter-panel"
+      v-if="filtersMounted"
+      class="map-filter-panel absolute right-0 top-12 w-[calc(100vw-5rem)] max-w-[400px] sm:w-[clamp(272px,calc(100vw-472px),400px)]"
+      :class="{
+        'opacity-0': !showFilters,
+        'pointer-events-none': !showFilters,
+      }"
+      :aria-hidden="!showFilters"
+      :inert="!showFilters"
+      data-testid="filters-panel"
     >
-      <DataFilter
+      <TimestampFilter
+        v-if="timestampColumn"
         :data="data"
-        :filter-column="filterColumn || ''"
+        :timestamp-column="timestampColumn"
+        @filter="emit('date-filter', $event)"
+        @active="onDateFilterActive"
+      />
+      <DataFilter
+        v-if="filterColumn"
+        :data="data"
+        :filter-column="filterColumn"
         :color-column="colorColumn"
         :show-colored-dot="true"
         @filter="onColumnFilter"
-      />
-    </div>
-    <!-- Stay mounted once opened; opacity hides VueSlider tooltips without collapsing width. -->
-    <div
-      v-if="dateFilterMounted"
-      class="map-filter-panel absolute right-0 top-12 w-[calc(100vw-5rem)] max-w-[400px]"
-      :class="{
-        'opacity-0': !showDateFilter,
-        'pointer-events-none': !showDateFilter,
-      }"
-      :aria-hidden="!showDateFilter"
-      :inert="!showDateFilter"
-      data-testid="date-filter-panel"
-    >
-      <TimestampFilter
-        :data="data"
-        :timestamp-column="timestampColumn || ''"
-        @filter="emit('date-filter', $event)"
-        @active="onDateFilterActive"
       />
     </div>
   </div>

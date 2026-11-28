@@ -67,6 +67,19 @@ const dateInfo = computed(() => {
 const selectedRange = ref<string[]>([]);
 const userInteracted = ref(false);
 
+const isResetDisabled = computed(() => {
+  const info = dateInfo.value;
+  if (info.options.length === 0 || selectedRange.value.length !== 2) {
+    return true;
+  }
+  const [minOpt, maxOpt] = [
+    info.options[0],
+    info.options[info.options.length - 1],
+  ];
+  const [selMin, selMax] = selectedRange.value;
+  return selMin === minOpt && selMax === maxOpt;
+});
+
 /** Parse "YYYY-MM" to last moment of that month (23:59:59.999). */
 function endOfMonth(year: number, month1Based: number): Date {
   return getEndOfMonth(new Date(year, month1Based - 1));
@@ -76,7 +89,8 @@ function endOfMonth(year: number, month1Based: number): Date {
 const emitFilter = () => {
   if (selectedRange.value.length !== 2) return;
   const [startStr, endStr] = selectedRange.value;
-  if (!startStr || !endStr) {
+  // The full range means no date filter, so records without a parseable date stay visible.
+  if (!startStr || !endStr || isResetDisabled.value) {
     emit("filter", { start: null, end: null });
     return;
   }
@@ -102,19 +116,6 @@ watch(
 
 watch(selectedRange, () => {
   if (userInteracted.value) emitFilter();
-});
-
-const isResetDisabled = computed(() => {
-  const info = dateInfo.value;
-  if (info.options.length === 0 || selectedRange.value.length !== 2) {
-    return true;
-  }
-  const [minOpt, maxOpt] = [
-    info.options[0],
-    info.options[info.options.length - 1],
-  ];
-  const [selMin, selMax] = selectedRange.value;
-  return selMin === minOpt && selMax === maxOpt;
 });
 
 watch(isResetDisabled, (disabled) => {
